@@ -248,7 +248,9 @@ A new chat should:
 
 1. read this handover
 2. read the implementation spec and checklist
-3. inspect the current open PR / branch before changing files
-4. preserve all fixed safety decisions
-5. continue static implementation without live provider calls
-6. keep GitHub writes within this private repository and authorized feature branches/PR scope
+3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
+4. inspect the current open PR / branch before changing files
+5. preserve all fixed safety decisions
+6. continue static implementation without live provider calls
+7. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+8. keep GitHub writes within this private repository and authorized feature branches/PR scope
