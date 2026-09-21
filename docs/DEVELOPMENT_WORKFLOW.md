@@ -68,3 +68,18 @@ A ZIP may still be useful for:
 - preserving exact build outputs
 
 But source-of-work checkpoints should normally use Git commit SHA.
+
+
+## Chat ⇄ Work autonomy
+
+長時間のChat / Work連携では `docs/CHAT_WORK_AUTONOMY_RULES.md` も適用する。
+
+要点:
+- safe-work exhaustion
+- blocker isolation
+- evidence-first
+- verified reply retrieval only
+- no blind retry
+- 最大6ラウンド
+- system approval bypass禁止
+- 現在のGitHub境界はPRまで、Mergeは禁止
