@@ -196,7 +196,11 @@ The Windows desktop app has shown the red error:
 
 The symptom is consistent with reported Windows ChatGPT Project -> local Work context-sync failures. Continue in Chat + GitHub unless the user explicitly chooses to test Work again.
 
-## 10. Next safe implementation batch
+## 10. Chat ⇄ Work autonomy rules
+
+長時間自律実行・Closed Loop・reply retrieval・retry・承認境界は `docs/CHAT_WORK_AUTONOMY_RULES.md` を正として確認する。この運用ルールはPhase 0安全仕様やシステム承認を上書きしない。
+
+## 11. Next safe implementation batch
 
 No live model execution is needed for this batch.
 
@@ -226,7 +230,7 @@ Before any provider CLI live turn:
 - provider permissions/auth/model-verification methods must be resolved
 - live execution requires explicit user approval
 
-## 11. Still UNKNOWN / deferred
+## 12. Still UNKNOWN / deferred
 
 Do not guess these:
 
@@ -242,15 +246,16 @@ Do not guess these:
 
 UNKNOWN on a safety boundary blocks live execution, not static implementation.
 
-## 12. New-chat instruction
+## 13. New-chat instruction
 
 A new chat should:
 
 1. read this handover
 2. read the implementation spec and checklist
 3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-4. inspect the current open PR / branch before changing files
-5. preserve all fixed safety decisions
-6. continue static implementation without live provider calls
-7. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-8. keep GitHub writes within this private repository and authorized feature branches/PR scope
+4. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
+5. inspect the current open PR / branch before changing files
+6. preserve all fixed safety decisions
+7. continue static implementation without live provider calls
+8. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+9. keep GitHub writes within this private repository and authorized feature branches/PR scope
