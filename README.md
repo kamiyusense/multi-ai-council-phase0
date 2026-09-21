@@ -64,9 +64,10 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 2. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
 3. [docs/PHASE0_IMPLEMENTATION_CHECKLIST.md](docs/PHASE0_IMPLEMENTATION_CHECKLIST.md)
 4. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary
-5. [docs/CHAT_WORK_AUTONOMY_RULES.md](docs/CHAT_WORK_AUTONOMY_RULES.md) — Chat ⇄ Work長時間自律実行・承認境界
-6. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
-7. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
+5. [docs/PIONEER_OSS_RESEARCH_HANDOVER.md](docs/PIONEER_OSS_RESEARCH_HANDOVER.md) — 先駆者/OSS調査・流用候補・監査方針
+6. [docs/CHAT_WORK_AUTONOMY_RULES.md](docs/CHAT_WORK_AUTONOMY_RULES.md) — Chat ⇄ Work長時間自律実行・承認境界
+7. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+8. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
 
 ## Repository roles
 
