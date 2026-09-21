@@ -31,4 +31,3 @@ build/
 dist/
 *.tmp
 *.log
-node_modules/
