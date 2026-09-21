@@ -63,13 +63,14 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md)
 2. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
 3. [docs/PHASE0_IMPLEMENTATION_CHECKLIST.md](docs/PHASE0_IMPLEMENTATION_CHECKLIST.md)
-4. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
-5. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
+4. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary
+5. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+6. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
 
 ## Repository roles
 
 - `AIBO-MkII`: AIBO application
 - `multi-ai-council-raw-records`: Council RAW / principles / design history
-- `multi-ai-council-phase0`: Phase 0 implementation and development checkpoints
+- `multi-ai-council-phase0`: Phase 0 implementation and development checkpoints; Relay is a subsystem inside this repository, not a fourth repository at this stage
 
 Keep these roles separate.
