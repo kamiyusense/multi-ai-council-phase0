@@ -390,6 +390,61 @@ Create normal commits/checkpoints. A commit SHA is the handoff identity.
 
 PR creation is allowed when the static Relay batch is complete and tests/evidence are recorded.
 
+## 10A. Private repository access prerequisite
+
+This repository is private.
+
+Do not try to clone it in Jules with an unauthenticated plain HTTPS `git clone` and then ask the user to upload ZIP files as the normal workflow.
+
+Before Jules starts implementation, the repository must be connected to the user's Jules account through the supported GitHub integration / Jules console repository connection.
+
+Operational rule:
+
+- Jules must have authorized access to `kamiyusense/multi-ai-council-phase0`
+- select/use branch `feature/relay-transport`
+- if repository access is missing, stop with `BLOCKED: JULES_GITHUB_REPO_ACCESS`
+- do not fall back to API keys, PATs, embedded credentials, or ad-hoc credential files
+- do not ask for GitHub passwords/tokens in chat
+- do not make the repository public as a workaround
+- ZIP upload is emergency fallback only, not the normal checkpoint path
+
+Once access is connected, use GitHub commits/PR as the shared checkpoint between Jules and Chat.
+
+## 10B. PR-based Chat ⇄ Jules review loop
+
+Use a single long-lived Relay PR as the shared workbench.
+
+Preferred loop:
+
+```text
+feature/relay-transport
+  -> commit/checkpoint
+  -> PR
+  -> Chat reads latest PR head/diff/tests
+  -> findings are recorded in GitHub handoff/review material
+  -> Jules reads latest branch/PR state
+  -> Jules fixes on the same feature branch
+  -> new commit updates the same PR automatically
+  -> Chat re-reviews latest head
+  -> repeat until static acceptance criteria are satisfied
+  -> human decides Merge
+```
+
+Rules:
+
+- do not Merge just to let Jules read the work
+- main remains the accepted line; the PR branch is the shared in-progress workspace
+- Jules and Chat must identify the exact latest head commit SHA before review/fix work
+- do not create a new PR for each small correction
+- do not force push; preserve review history
+- avoid simultaneous edits to the same implementation files by multiple writers
+- Chat should normally review/read; Jules is the implementation writer for Relay code
+- instruction/document-only fixes may be committed separately when needed
+- if branch head moved during review, mark that review result stale and re-read the new head
+- if GitHub access/readback is unavailable, report UNKNOWN/BLOCKED rather than guessing
+- final Merge still requires explicit human approval
+
+
 ## 11. Completion report
 
 At the end report exactly:
