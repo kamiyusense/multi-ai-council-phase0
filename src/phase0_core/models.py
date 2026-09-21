@@ -75,3 +75,15 @@ class ProviderResponse:
     marker_echoes: MarkerEchoes
     answer_text: str
     schema_version: str = "phase0-response-v1"
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderRunResult:
+    provider: str
+    execution_state: ExecutionState
+    participation_state: ParticipationState
+    answer_state: AnswerState | None
+    response: ProviderResponse | None
+    error: str | None
+    raw_sha256: str | None
+    simulated: bool

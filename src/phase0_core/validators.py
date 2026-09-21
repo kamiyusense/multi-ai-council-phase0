@@ -10,6 +10,16 @@ from .states import AnswerState
 
 
 SAFETY_WARNING_VALUES = {"PRESENT", "ABSENT", "UNKNOWN"}
+_PROVIDER_RESPONSE_FIELDS = {
+    "schema_version",
+    "answer_state",
+    "conclusion_code",
+    "safety_warning",
+    "safety_reason",
+    "evidence_refs",
+    "marker_echoes",
+    "answer_text",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,8 +47,7 @@ def validate_provider_manifest(manifest: ProviderManifest, *, live_gate: bool) -
     if manifest.permission_profile.settings_change:
         errors.append("settings_change must be false")
     if live_gate:
-        timeout = validate_timeout(manifest.timeout_seconds)
-        errors.extend(timeout.errors)
+        errors.extend(validate_timeout(manifest.timeout_seconds).errors)
         if manifest.auth_route != "subscription":
             errors.append("auth_route must be confirmed subscription for live dispatch")
         if manifest.capability_state.value != "CONFIRMED":
@@ -64,18 +73,13 @@ def validate_post_execution_model(manifest: ProviderManifest) -> ValidationResul
 
 
 def parse_provider_response(payload: Mapping[str, Any], *, allowed_conclusion_codes: set[str]) -> ProviderResponse:
-    required = {
-        "answer_state",
-        "conclusion_code",
-        "safety_warning",
-        "safety_reason",
-        "evidence_refs",
-        "marker_echoes",
-        "answer_text",
-    }
+    required = _PROVIDER_RESPONSE_FIELDS - {"schema_version"}
     missing = sorted(required - set(payload))
     if missing:
         raise ValueError(f"missing required fields: {', '.join(missing)}")
+    unexpected = sorted(set(payload) - _PROVIDER_RESPONSE_FIELDS)
+    if unexpected:
+        raise ValueError(f"unexpected fields: {', '.join(unexpected)}")
 
     try:
         answer_state = AnswerState(payload["answer_state"])

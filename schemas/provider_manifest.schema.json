@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase0-provider-manifest-v1",
+  "title": "Phase 0 Provider Manifest",
+  "type": "object",
+  "required": [
+    "schema_version", "provider", "cli_name", "retry_count", "fallback_state",
+    "permission_profile", "execution_state", "capability_state"
+  ],
+  "properties": {
+    "schema_version": {"const": "phase0-provider-v1"},
+    "provider": {"type": "string", "minLength": 1},
+    "cli_name": {"type": "string", "minLength": 1},
+    "cli_version": {"type": ["string", "null"]},
+    "auth_route": {"type": ["string", "null"]},
+    "requested_model": {"type": ["string", "null"]},
+    "configured_model": {"type": ["string", "null"]},
+    "executed_model": {"type": ["string", "null"]},
+    "executed_model_verified": {"type": ["boolean", "null"]},
+    "executed_model_verification_source": {"type": ["string", "null"]},
+    "retry_count": {"const": 0},
+    "fallback_state": {"const": "disabled"},
+    "timeout_seconds": {"type": ["integer", "null"], "exclusiveMinimum": 0},
+    "execution_state": {"enum": ["READY", "RUNNING", "COMPLETE", "TIMEOUT", "AUTH_REQUIRED", "QUOTA_CONFIRMED", "INVALID_OUTPUT", "PARTIAL", "ERROR_UNKNOWN", "USER_DISABLED"]},
+    "participation_state": {"enum": ["PARTICIPANT", "NONPARTICIPANT", null]},
+    "answer_state": {"enum": ["ANSWER", "ANSWER_UNKNOWN", "REFUSAL", null]},
+    "capability_state": {"enum": ["CONFIRMED", "UNKNOWN", "UNAVAILABLE"]},
+    "permission_profile": {
+      "type": "object",
+      "required": ["shell", "git_write", "file_write_scope", "settings_change"],
+      "properties": {
+        "shell": {"type": "string"},
+        "git_write": {"const": false},
+        "file_write_scope": {"type": "string"},
+        "settings_change": {"const": false}
+      }
+    }
+  }
+}

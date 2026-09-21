@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from .comparison import ComparisonResult
-from .models import ProviderResponse
+from .evidence import mask_known_secrets
+from .models import ProviderRunResult, ProviderResponse
 
 
 def render_japanese_summary(
     responses: dict[str, ProviderResponse],
     comparison: ComparisonResult,
+    provider_results: dict[str, ProviderRunResult] | None = None,
 ) -> str:
     lines = [
         "# Phase 0 比較レポート",
@@ -21,10 +23,17 @@ def render_japanese_summary(
         "",
         "## Provider別",
     ]
-    for provider, response in sorted(responses.items()):
-        lines.extend(
-            [
-                f"- {provider}: answer={response.answer_state.value}, conclusion={response.conclusion_code}, safety={response.safety_warning}",
-            ]
-        )
+    if provider_results is None:
+        for provider, response in sorted(responses.items()):
+            lines.append(
+                f"- {provider}: answer={response.answer_state.value}, conclusion={response.conclusion_code}, safety={response.safety_warning}"
+            )
+    else:
+        for provider, result in sorted(provider_results.items()):
+            conclusion = result.response.conclusion_code if result.response else "UNKNOWN"
+            safety = result.response.safety_warning if result.response else "UNKNOWN"
+            error = f", error={mask_known_secrets(result.error)}" if result.error else ""
+            lines.append(
+                f"- {provider}: execution={result.execution_state.value}, participation={result.participation_state.value}, conclusion={conclusion}, safety={safety}{error}"
+            )
     return "\n".join(lines) + "\n"

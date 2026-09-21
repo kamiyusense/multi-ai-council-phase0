@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable, TypeVar
 
@@ -24,12 +24,21 @@ class FileDiff:
     modified: tuple[FileRecord, ...]
     deleted: tuple[FileRecord, ...]
 
+    def to_dict(self) -> dict[str, list[dict[str, object]]]:
+        return {
+            "created": [asdict(x) for x in self.created],
+            "modified": [asdict(x) for x in self.modified],
+            "deleted": [asdict(x) for x in self.deleted],
+        }
+
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
 def sha256_file(path: Path) -> str:
+    if path.is_symlink():
+        raise ValueError(f"refusing to hash symlink: {path}")
     return sha256_bytes(path.read_bytes())
 
 
@@ -47,8 +56,14 @@ def capture_then_parse(path: Path, data: bytes, parser: Callable[[bytes], T]) ->
 def snapshot_tree(root: Path) -> dict[str, FileRecord]:
     if not root.exists():
         return {}
+    if root.is_symlink():
+        raise ValueError("snapshot root must not be a symlink")
     records: dict[str, FileRecord] = {}
-    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise ValueError(f"snapshot contains symlink: {path.relative_to(root)}")
+        if not path.is_file():
+            continue
         rel = path.relative_to(root).as_posix()
         records[rel] = FileRecord(rel, path.stat().st_size, sha256_file(path))
     return records
@@ -82,4 +97,4 @@ def mask_known_secrets(text: str) -> str:
 
 def write_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")

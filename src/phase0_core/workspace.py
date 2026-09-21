@@ -19,8 +19,13 @@ def validate_snapshot_tree(snapshot_root: Path) -> tuple[str, ...]:
     violations: list[str] = []
     if not snapshot_root.exists():
         return ()
+    if snapshot_root.is_symlink():
+        return (".",)
     for path in snapshot_root.rglob("*"):
         rel = path.relative_to(snapshot_root)
+        if path.is_symlink():
+            violations.append(f"{rel}:symlink")
+            continue
         parts = set(rel.parts)
         if parts & FORBIDDEN_SNAPSHOT_NAMES:
             violations.append(str(rel))
