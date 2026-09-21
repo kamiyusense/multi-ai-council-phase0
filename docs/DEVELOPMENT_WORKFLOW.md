@@ -83,3 +83,33 @@ But source-of-work checkpoints should normally use Git commit SHA.
 - 最大6ラウンド
 - system approval bypass禁止
 - 現在のGitHub境界はPRまで、Mergeは禁止
+
+
+## Long-lived PR workbench
+
+For work that needs repeated implementation/review cycles, keep one feature branch and one PR open as the shared workbench.
+
+Recommended loop:
+
+```text
+feature branch
+  -> commit/checkpoint
+  -> PR
+  -> reviewer reads exact PR head SHA/diff/test evidence
+  -> implementation writer fixes on the same branch
+  -> new commit updates the same PR
+  -> reviewer re-reads the new head
+  -> repeat
+  -> human-approved Merge only after acceptance
+```
+
+Rules:
+
+- do not Merge merely to pass work between agents
+- do not open a new PR for every small correction
+- do not force push; preserve review history
+- identify the exact head SHA before each review/fix cycle
+- if the head changes during review, that review is stale until re-read
+- avoid simultaneous edits to the same implementation files by multiple writers
+- if repository access/readback is unavailable, report BLOCKED/UNKNOWN rather than using unverified state
+- private-repository agent access must use the supported repository integration; do not use chat-shared passwords/tokens or make a repository public as a workaround
