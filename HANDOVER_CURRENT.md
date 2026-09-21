@@ -200,7 +200,15 @@ The symptom is consistent with reported Windows ChatGPT Project -> local Work co
 
 長時間自律実行・Closed Loop・reply retrieval・retry・承認境界は `docs/CHAT_WORK_AUTONOMY_RULES.md` を正として確認する。この運用ルールはPhase 0安全仕様やシステム承認を上書きしない。
 
-## 11. Next safe implementation batch
+## 11. Pioneer / OSS reuse research
+
+Generic Relay / multi-agent infrastructureを1から再実装する前に、`docs/PIONEER_OSS_RESEARCH_HANDOVER.md` を読む。
+
+現在の方針は **OSS-first / reuse-first**。ACP / OpenHands / worktree orchestrators / AGENTS.md / stacked PR / CAID等を先にコードレベルで監査し、license・Windows・subscription auth・permission bypass・retry/restart・GitHub副作用・secret handling・test coverageを確認してから採否を決める。
+
+これは採用済み仕様ではなく研究候補。Phase 0固定安全境界は変更しない。
+
+## 12. Next safe implementation batch
 
 No live model execution is needed for this batch.
 
@@ -230,7 +238,7 @@ Before any provider CLI live turn:
 - provider permissions/auth/model-verification methods must be resolved
 - live execution requires explicit user approval
 
-## 12. Still UNKNOWN / deferred
+## 13. Still UNKNOWN / deferred
 
 Do not guess these:
 
@@ -246,16 +254,18 @@ Do not guess these:
 
 UNKNOWN on a safety boundary blocks live execution, not static implementation.
 
-## 13. New-chat instruction
+## 14. New-chat instruction
 
 A new chat should:
 
 1. read this handover
 2. read the implementation spec and checklist
 3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-4. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
-5. inspect the current open PR / branch before changing files
-6. preserve all fixed safety decisions
-7. continue static implementation without live provider calls
-8. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-9. keep GitHub writes within this private repository and authorized feature branches/PR scope
+4. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
+5. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
+6. inspect the current open PR / branch before changing files
+7. preserve all fixed safety decisions
+8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
+9. continue static implementation without live provider calls
+10. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+11. keep GitHub writes within this private repository and authorized feature branches/PR scope
