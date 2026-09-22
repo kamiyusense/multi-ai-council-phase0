@@ -88,6 +88,26 @@ class ReviewerTransportTests(unittest.TestCase):
         self.assertFalse(second.evidence["second_send_attempted"])
         self.assertEqual(len(transport.sent), 1)
 
+    def test_live_capable_transport_is_blocked_in_static_p1(self):
+        class LiveTransport:
+            route = "browser"
+            live_transport = True
+
+            def __init__(self):
+                self.sent = []
+
+            def send(self, wake):
+                self.sent.append(wake)
+                raise AssertionError("live transport must not be called")
+
+        transport = LiveTransport()
+        result = ReviewWakeCoordinator().dispatch(
+            request(), request_ref=REF, transport=transport
+        )
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertFalse(result.evidence["external_send_attempted"])
+        self.assertEqual(transport.sent, [])
+
     def test_bad_durable_request_ref_fails_closed_before_transport(self):
         transport = MockReviewerTransport("browser")
         result = ReviewWakeCoordinator().dispatch(
