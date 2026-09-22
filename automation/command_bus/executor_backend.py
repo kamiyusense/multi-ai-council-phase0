@@ -263,6 +263,9 @@ def _match(expected: dict[str, Any], actual: dict[str, Any]) -> None:
     keys = ("loop_id", "round", "correlation_id", "expected_target_head")
     if tuple(expected.get(k) for k in keys) != tuple(actual.get(k) for k in keys):
         raise ValueError("executor durable context mismatch")
+    if "expected_target_tree" in expected:
+        if actual.get("expected_target_tree") != expected.get("expected_target_tree"):
+            raise ValueError("executor durable target tree mismatch")
 
 
 def _time(value: Any) -> datetime:
