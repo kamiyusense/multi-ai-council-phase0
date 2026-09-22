@@ -35,7 +35,7 @@ REQUIRED_PROHIBITED_PATHS = frozenset({
     "api-keys/**",
 })
 REQUIRED_TEST_COMMANDS = (
-    "PYTHONPATH=src python -m pytest -q tests",
+    "PYTHONPATH=src python -m unittest discover -s tests -v",
     "python -m compileall -q src tests",
     "git diff --check",
 )
