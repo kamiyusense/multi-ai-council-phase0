@@ -37,3 +37,20 @@ Durable-boundary hardening:
   implementing `GitHubContentsClient`; no API key or repository secret is
   embedded in this package. The direct Chat thread remains an optional fast
   path and is not part of correctness.
+
+
+## Exchangeable executor handoff
+
+Implementation work is represented by durable executor-role records:
+`executor_requests/<loop>/<request>.json`,
+`executor_claims/<loop>/<claim>.json`,
+`executor_results/<loop>/<result>.json`, and
+`executor_receipts/<loop>/<receipt>.json`, sharing mutable `state/<loop>.json`.
+
+The protocol is independent of Chat/thread/browser session identity. It supports
+fresh-session recovery, generation-based executor replacement, exact
+loop/round/correlation/target-head matching, and terminal receipt replay
+protection. The current executable policy is intentionally `PREPARE_ONLY`:
+`requires_live_model=true` or `execution_mode=LIVE` is rejected. A future
+Jules/browser/ACP adapter must be separately authorized before it can perform a
+live execution. Carrier PR head is not part of correctness; target PR head is.
