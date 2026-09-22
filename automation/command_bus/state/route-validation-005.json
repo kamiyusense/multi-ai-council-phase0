@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "route-validation-005",
-  "state": "RUNNING",
-  "round": 0,
+  "state": "UNKNOWN",
+  "round": 1,
   "max_rounds": 6,
   "expires_at": "2026-09-24T02:00:00+09:00",
   "stop_requested": false,
-  "last_command_id": null,
-  "last_receipt_id": null,
+  "last_command_id": "route-validation-005-000001",
+  "last_receipt_id": "000001",
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "PR #4 head changed during validation; expected_target_head 62f341b04f9d6e19dd003b42304bb896e4db45ef did not match observed abac6f5aa955167c950d9cb15753ae14ac386317."
 }
