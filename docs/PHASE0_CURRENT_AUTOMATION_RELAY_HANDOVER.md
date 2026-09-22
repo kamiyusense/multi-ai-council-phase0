@@ -597,3 +597,82 @@ Before any Jules write, require both:
 2. proof that the actual workspace tree is synchronized to that head.
 
 A correct commit parent alone is insufficient proof that the workspace contents were current.
+
+
+## 16. Relay recovery + automated Work route status — 2026-09-23
+
+### Current heads
+
+- PR #4: `ffcdff208d12620d423592df78af1fd1eb88950e`
+  - OPEN / unmerged
+  - Git tree exactly matches verified pre-Jules incident tree `62e681613be4de68ee5987634a075078f6bb522a`
+  - net changed files versus `62f341b...`: 0
+- PR #6: latest head at this checkpoint is expected to be read back fresh; it contains the hardened Relay command contract, tests, route-validation-007, and Jules recovery evidence.
+- PR #5: this handover branch records the recovery and automation state.
+
+### Work command-bus hardening added
+
+The Relay command contract now separates:
+
+- `APPLY_RELAY_STATIC_BATCH` / `PREPARE_ONLY` / no target write
+- `EXECUTE_RELAY_STATIC_BATCH` / `STATIC_WRITE` / bounded target write
+
+Both use fixed profile `RELAY_SAFETY_BATCH_V1`.
+
+Hardening includes:
+
+- exact loop / round / command ID / correlation checks
+- exact target-head check
+- fixed allow-list path specs
+- required prohibited path coverage
+- fixed test-command allowlist; arbitrary shell text is rejected
+- retry=0 / fallback disabled
+- live-model=false
+- state expiry / STOP / max6 / terminal receipt / duplicate / predecessor checks
+- wrong repo/PR blocked before target read
+- Chat/thread identity excluded from correctness
+
+### route-validation-006
+
+The event task ran after the 006 command event but produced no durable receipt or state transition.
+006 was therefore closed as `UNKNOWN` by reviewer recovery rather than replayed.
+
+### route-validation-007
+
+A fresh `route-validation-007` command/state was created against PR #4 recovery head `ffcdff2...`.
+
+The event-trigger task was then updated so that a successful 007 validation will append exactly one follow-up command:
+
+- `relay-static-apply-001`
+- action `EXECUTE_RELAY_STATIC_BATCH`
+- profile `RELAY_SAFETY_BATCH_V1`
+
+A subsequent Work event would then:
+
+1. acquire the exact PR #4 target tree;
+2. run baseline tests before editing;
+3. implement the bounded static Relay safety batch within allowed paths only;
+4. rerun full tests / compileall / diff check;
+5. fast-forward one normal PR #4 commit only if all gates pass;
+6. read back target commit/tree/diff;
+7. write durable terminal receipt/state on PR #6;
+8. never Merge.
+
+### Current blocker
+
+After the event-task prompt update, an evidence-only PR #6 commit
+`aa1f45d33d05919fdd83c74c48a7207f9f19d154`
+was created specifically to generate a fresh GitHub event.
+
+That commit timestamp is `2026-09-22T15:18:58Z`.
+The event task's last run remained `2026-09-22T15:11:48Z`.
+
+Therefore the current blocker is:
+
+`BLOCKED / UNKNOWN: GitHub -> Work event wake-up did not occur for the fresh PR #6 event.`
+
+Do not create duplicate route-validation commands or replay 007 automatically.
+
+Because this project has a known Chat -> new Work handoff bug, the safe fallback is one manual Work prompt that tells Work to recover from GitHub, consume `route-validation-007`, and then exhaust the same bounded static Relay batch while preserving all receipt/readback rules.
+
+No Merge, main write, force push, branch deletion, live provider/model execution, API-key route, billing/settings/permission mutation, or Jules restart occurred.
