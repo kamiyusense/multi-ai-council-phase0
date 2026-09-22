@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "static-validation-001-000001",
+  "loop_id": "static-validation-001",
+  "round": 1,
+  "correlation_id": "static-validation-001-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_tested": "ce4c8b168df37d27b9e1746bd2d1c4ba1fdb1317",
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "observed_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "validation_results": {
+    "unittest": {
+      "state": "PASS",
+      "discovered_test_count": 35,
+      "exit_code": 0,
+      "summary": "Ran 35 tests; OK"
+    },
+    "compileall": {
+      "state": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "state": "PASS",
+      "exit_code": 0
+    }
+  },
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/ce4c8b168df37d27b9e1746bd2d1c4ba1fdb1317/automation/command_bus/commands/static-validation-001/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/tree/ce4c8b168df37d27b9e1746bd2d1c4ba1fdb1317/automation/command_bus",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}
