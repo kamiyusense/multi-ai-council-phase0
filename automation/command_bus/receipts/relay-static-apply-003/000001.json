@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "relay-static-apply-003-000001",
+  "loop_id": "relay-static-apply-003",
+  "round": 1,
+  "correlation_id": "relay-static-apply-003-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "starting_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "ending_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "expected_target_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "observed_target_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "reconstructed_write_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "recursive_tree_entry_count": 46,
+  "verified_blob_count": 39,
+  "empty_blob_count": 4,
+  "tree_truncated": false,
+  "workspace_verification": "PASS",
+  "changed_files": [],
+  "mutation_started": false,
+  "target_commit_created": false,
+  "baseline": {
+    "pytest": {
+      "command": "PYTHONPATH=src python -m pytest -q tests",
+      "result": "UNKNOWN",
+      "test_count": null,
+      "exit_code": 1,
+      "error": "No module named pytest"
+    },
+    "compileall": {
+      "command": "python -m compileall -q src tests",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "PASS",
+      "exit_code": 0
+    }
+  },
+  "post_change": {
+    "pytest": {
+      "result": "NOT_RUN"
+    },
+    "compileall": {
+      "result": "NOT_RUN"
+    },
+    "diff_check": {
+      "result": "NOT_RUN"
+    }
+  },
+  "blocker": "Required pytest runtime dependency is unavailable and package installation is prohibited; baseline gate cannot pass.",
+  "model_executed": false,
+  "provider_started": false,
+  "jules_started": false,
+  "api_key_used": false,
+  "billing_credits_overages_changed": false,
+  "settings_permissions_changed": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge_performed": false,
+  "pr4_modified": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/relay-static-apply-003/000001.json",
+    "automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json",
+    "automation/command_bus/evidence/workspace-integrity-p0-20260923.json",
+    "docs/EXECUTOR_WORKSPACE_INTEGRITY_P0_CHECKPOINT.md"
+  ]
+}
