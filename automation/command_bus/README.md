@@ -12,5 +12,10 @@ Only one non-expired claim is active, stale generations and duplicate
 responses are rejected, and Work consumes a response only after exact
 loop/round/correlation/target-head validation. Missing, empty, or unverifiable
 responses are `UNKNOWN` and fail closed.
+Claims must expire strictly after their claim time and no later than the
+request expiry. Request, claim, and response operations reuse the shared
+`StateMachine` gate, so STOP, HALTED, EXPIRED, and the six-round ceiling block
+progress. Records can be serialized and reconstructed in a fresh session
+without a thread binding.
 
 The runtime is intentionally limited to `automation/command_bus/**`; it does not execute Jules, providers, live models, API keys, or GitHub workflows.
