@@ -32,6 +32,7 @@ LEDGER_PREFIXES = (
     ROOT + "execution_claims/",
     ROOT + "execution_results/",
     ROOT + "execution_receipts/",
+    ROOT + "jules_launch_attempts/",
 )
 
 
