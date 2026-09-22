@@ -7,6 +7,7 @@ from automation.command_bus.relay_static import (
     REQUIRED_PROHIBITED_PATHS,
     REQUIRED_PROFILE,
     REQUIRED_TEST_COMMANDS,
+    REQUIRED_PATH_POLICY,
     prepare_relay_batch,
     validate_relay_command,
 )
@@ -14,6 +15,7 @@ from automation.command_bus.relay_static import (
 NOW = datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc)
 REPO = "kamiyusense/multi-ai-council-phase0"
 HEAD = "ffcdff208d12620d423592df78af1fd1eb88950e"
+TREE = "62e681613be4de68ee5987634a075078f6bb522a"
 LOOP = "relay-static-002"
 
 
@@ -86,6 +88,11 @@ class RelayStaticContractTests(unittest.TestCase):
             action=EXECUTE_ACTION,
             execution_mode="STATIC_WRITE",
             requires_github_write=True,
+            expected_target_tree=TREE,
+            path_policy=[
+                {"path": item["path"], "allowed_ops": list(item["allowed_ops"])}
+                for item in REQUIRED_PATH_POLICY
+            ],
         )
         result = prepare_relay_batch(
             execute, client=FakeContents(), repository=REPO,
@@ -95,9 +102,21 @@ class RelayStaticContractTests(unittest.TestCase):
         self.assertEqual(result.evidence["action"], EXECUTE_ACTION)
         self.assertEqual(result.evidence["execution_mode"], "STATIC_WRITE")
 
+        valid_policy = [
+            {"path": item["path"], "allowed_ops": list(item["allowed_ops"])}
+            for item in REQUIRED_PATH_POLICY
+        ]
         for bad in (
-            command(action=EXECUTE_ACTION, execution_mode="PREPARE_ONLY", requires_github_write=True),
-            command(action=EXECUTE_ACTION, execution_mode="STATIC_WRITE", requires_github_write=False),
+            command(
+                action=EXECUTE_ACTION, execution_mode="PREPARE_ONLY",
+                requires_github_write=True, expected_target_tree=TREE,
+                path_policy=valid_policy,
+            ),
+            command(
+                action=EXECUTE_ACTION, execution_mode="STATIC_WRITE",
+                requires_github_write=False, expected_target_tree=TREE,
+                path_policy=valid_policy,
+            ),
             command(action=PREPARE_ACTION, execution_mode="STATIC_WRITE", requires_github_write=False),
             command(action=PREPARE_ACTION, execution_mode="PREPARE_ONLY", requires_github_write=True),
         ):
@@ -112,6 +131,39 @@ class RelayStaticContractTests(unittest.TestCase):
             validate_relay_command(
                 command(profile="OTHER"), current_target_head=HEAD,
                 state=state(), terminal_receipt=None, now=NOW,
+            )
+
+    def test_execute_requires_exact_target_tree_and_operation_policy(self):
+        base = dict(
+            action=EXECUTE_ACTION,
+            execution_mode="STATIC_WRITE",
+            requires_github_write=True,
+            expected_target_tree=TREE,
+            path_policy=[
+                {"path": item["path"], "allowed_ops": list(item["allowed_ops"])}
+                for item in REQUIRED_PATH_POLICY
+            ],
+        )
+        validate_relay_command(
+            command(**base), current_target_head=HEAD,
+            state=state(), terminal_receipt=None, now=NOW,
+        )
+        with self.assertRaises(ValueError):
+            validate_relay_command(
+                command(**{**base, "expected_target_tree": ""}),
+                current_target_head=HEAD, state=state(),
+                terminal_receipt=None, now=NOW,
+            )
+        unsafe = [
+            {"path": item["path"], "allowed_ops": list(item["allowed_ops"])}
+            for item in REQUIRED_PATH_POLICY
+        ]
+        unsafe[0]["allowed_ops"].append("DELETE")
+        with self.assertRaises(ValueError):
+            validate_relay_command(
+                command(**{**base, "path_policy": unsafe}),
+                current_target_head=HEAD, state=state(),
+                terminal_receipt=None, now=NOW,
             )
 
     def test_wrong_repo_or_pr_blocks_before_target_read(self):
