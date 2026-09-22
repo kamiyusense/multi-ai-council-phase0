@@ -2,7 +2,7 @@
 
 Updated: 2026-09-23
 Repository: kamiyusense/multi-ai-council-phase0
-Status: DESIGN + STATIC IMPLEMENTATION PLAN
+Status: P1 STATIC IMPLEMENTED / WORK VALIDATION PENDING
 Live browser-to-Chat POC: NOT STARTED
 
 ## 0. Decision
@@ -177,6 +177,18 @@ After the deterministic Relay static batch completes, Chat/Sol should perform se
 Then Chat writes the next bounded command to GitHub.
 
 ## 8. Implementation phases
+
+Current P1 implementation checkpoint:
+- `DURABLE_REVIEW_V2` request/response contract is implemented on PR #6.
+- target head + target tree binding is implemented.
+- reviewer role/kind/allowed-decision validation is implemented.
+- Browser/Direct/Manual transport-neutral mock wake layer is implemented.
+- free-form browser output is not a correctness input.
+- live-capable reviewer transports are blocked by the static P1 coordinator.
+- regression fixtures are added.
+- deterministic Work validation is pending; see
+  `docs/HYBRID_WORK_CHAT_REVIEWER_P1_CHECKPOINT.md`.
+- no live Browser/Chat POC has been run.
 
 P0 — now
 - Keep GitHub -> Work deterministic execution path.
