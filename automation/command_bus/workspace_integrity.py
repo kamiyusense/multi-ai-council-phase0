@@ -110,7 +110,10 @@ def attest_workspace(
         "skip_worktree_paths", "assume_unchanged_paths", "unmerged_paths",
         "observed_head", "observed_head_tree", "observed_index_tree",
         "workspace_path", "git_toplevel", "git_dir", "git_common_dir",
-        "remote_name", "remote_url",
+        "remote_name", "remote_url", "status_porcelain_v2",
+        "sparse_checkout_state", "submodule_state",
+        "executor_instance_id", "executor_generation",
+        "workspace_attestation_id",
     )
     unknown_fields = [key for key in nullable_integrity_fields if observed.get(key) is None]
     if unknown_fields:
@@ -162,6 +165,15 @@ def attest_workspace(
         reasons.append("git dir identity unavailable")
     if not isinstance(observed["git_common_dir"], str) or not observed["git_common_dir"]:
         reasons.append("git common dir identity unavailable")
+    if not isinstance(observed["status_porcelain_v2"], str):
+        reasons.append("status porcelain evidence malformed")
+    if not isinstance(observed["executor_instance_id"], str) or not observed["executor_instance_id"]:
+        reasons.append("executor instance identity unavailable")
+    generation = observed["executor_generation"]
+    if isinstance(generation, bool) or not isinstance(generation, int) or generation < 1:
+        reasons.append("executor generation invalid")
+    if not isinstance(observed["workspace_attestation_id"], str) or not observed["workspace_attestation_id"]:
+        reasons.append("workspace attestation identity unavailable")
 
     if reasons:
         status = "RECREATE_REQUIRED" if workspace_kind == "disposable" else "BLOCKED"
@@ -398,7 +410,9 @@ def _normalize_policy(path_policy: Iterable[dict[str, Any]]) -> list[dict[str, A
             raise ValueError("malformed path policy")
         path = item.get("path")
         ops = item.get("allowed_ops")
-        if not isinstance(path, str) or not path or not isinstance(ops, (list, tuple, set)):
+        if not isinstance(path, str) or not path or not isinstance(
+            ops, (list, tuple, set, frozenset)
+        ):
             raise ValueError("malformed path policy")
         op_set = frozenset(ops)
         if not op_set or not op_set <= ALLOWED_OPS:
