@@ -38,6 +38,8 @@ def observed(**changes):
         "target_branch": "feature/relay-transport-7070955470193506982",
         "workspace_path": "/tmp/executor-1",
         "git_toplevel": "/tmp/executor-1",
+        "git_dir": "/tmp/executor-1/.git",
+        "git_common_dir": "/tmp/executor-1/.git",
         "remote_name": "origin",
         "remote_url": "git@github.com:kamiyusense/multi-ai-council-phase0.git",
         "observed_head": HEAD,
@@ -183,6 +185,11 @@ class WorkspaceIntegrityTests(unittest.TestCase):
         data = observed()
         del data["observed_index_tree"]
         result = attest_workspace(expected(), data)
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertFalse(result.evidence["mutation_started"])
+
+    def test_none_integrity_observation_is_unknown_not_exception(self):
+        result = attest_workspace(expected(), observed(untracked_paths=None))
         self.assertEqual(result.status, "UNKNOWN")
         self.assertFalse(result.evidence["mutation_started"])
 
