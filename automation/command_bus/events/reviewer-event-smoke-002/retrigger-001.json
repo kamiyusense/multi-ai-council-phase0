@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "event_id": "reviewer-event-smoke-002-retrigger-001",
+  "reason": "controller updated to complete deterministic smoke stages in one run",
+  "retry_of_write": false,
+  "target_loop": "reviewer-event-smoke-002"
+}
