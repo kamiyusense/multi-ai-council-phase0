@@ -8,7 +8,6 @@ relay and all target/workspace gates pass.
 from __future__ import annotations
 
 from datetime import datetime
-from fnmatch import fnmatch
 from typing import Any
 
 PROFILE = "JULES_FRESH_STATIC_V1"
