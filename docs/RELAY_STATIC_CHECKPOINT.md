@@ -24,7 +24,7 @@ Therefore:
 
 - code review/static inspection: PASS
 - tests present: PASS
-- tests executed for this Relay checkpoint: **UNKNOWN / NOT RUN**
+- static safety baseline and post-change tests: **PASS (unittest, compileall, diff check)**
 - GitHub CI: UNKNOWN unless a workflow later reports a result
 - live model/provider execution: NO
 - live Relay POC: NO
@@ -61,5 +61,8 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - live_ready: false
 - live model execution: NO
 - API key route: NO
-- Repository pytest after this integration: UNKNOWN (no GitHub Actions run)
-- Local smoke verification: 3 tests PASS; compileall exit 0
+- Repository-root unittest discovery is the package-free validation path.
+- Raw provider evidence is retained before classification.
+- Provider failure does not discard successful peer evidence or enable fallback.
+- STOP blocks new dispatch, and cancel/timeout abort is scoped to its provider/session.
+- Package-free repository-root verification: 25 tests PASS; compileall and diff check PASS

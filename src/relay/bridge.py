@@ -16,9 +16,14 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         self.simulate_malformed = simulate_malformed
         self.simulate_unknown = simulate_unknown
         self.simulate_no_cli = simulate_no_cli
+        self.dispatch_count = 0
+        self.collect_count = 0
+        self.abort_calls: list[tuple[str, str]] = []
 
     def prepare(self, case_context: dict[str, Any]) -> dict[str, Any]:
         return {"case_id": case_context.get("case_id"),
+                "provider_id": case_context.get("provider_id"),
+                "session_id": case_context.get("session_id"),
                 "payload": case_context.get("payload", {})}
 
     def preflight(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
@@ -29,9 +34,16 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
     def dispatch(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
         if self.simulate_failure:
             raise RuntimeError("Mock failure on dispatch")
-        return {"process_id": "mock_id", "live_process_started": False}
+        self.dispatch_count += 1
+        return {
+            "process_id": "mock_id",
+            "provider_id": prepared_context.get("provider_id"),
+            "session_id": prepared_context.get("session_id"),
+            "live_process_started": False,
+        }
 
     def collect(self, process_handle: dict[str, Any]) -> dict[str, Any]:
+        self.collect_count += 1
         if self.simulate_timeout:
             raise TimeoutError("Timeout")
         if self.simulate_malformed:
@@ -41,6 +53,9 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         return {"stdout": "mock", "rawResponse": '{"answer_state":"ANSWER"}'}
 
     def abort(self, process_handle: dict[str, Any]) -> dict[str, bool]:
+        self.abort_calls.append(
+            (process_handle.get("provider_id"), process_handle.get("session_id"))
+        )
         return {"aborted": True}
 
     def classify(self, raw_result: dict[str, Any]) -> dict[str, Any]:

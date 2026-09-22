@@ -33,10 +33,18 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(d.dispatch("slot4", {"payload": {"a": 2}})["state"], "BLOCKED")
 
     def test_timeout_no_retry(self):
-        result = make(RelayProviderAdapterBridge(simulate_timeout=True)).dispatch(
+        adapter = RelayProviderAdapterBridge(simulate_timeout=True)
+        dispatcher = make(adapter)
+        result = dispatcher.dispatch(
             "slot5", {"payload": {}}
         )
         self.assertEqual(result["state"], "TIMEOUT")
+        self.assertEqual(result["retry_count"], 0)
+        self.assertEqual(adapter.dispatch_count, 1)
+        self.assertEqual(adapter.collect_count, 1)
+        self.assertEqual(adapter.abort_calls, [("slot5", "slot5")])
+        self.assertEqual(dispatcher.dispatch("slot5", {"payload": {}})["state"], "BLOCKED")
+        self.assertEqual(adapter.dispatch_count, 1)
 
     def test_failure_no_fallback(self):
         result = make(RelayProviderAdapterBridge(simulate_failure=True)).dispatch(
@@ -50,6 +58,7 @@ class RelayDispatcherTests(unittest.TestCase):
         )
         self.assertEqual(result["state"], "INVALID_OUTPUT")
         self.assertNotEqual(result["state"], "DELIVERED")
+        self.assertEqual(result["raw_evidence"]["rawResponse"], "{}")
 
     def test_unknown_not_success(self):
         result = make(RelayProviderAdapterBridge(simulate_unknown=True)).dispatch(
@@ -62,6 +71,42 @@ class RelayDispatcherTests(unittest.TestCase):
             make(RelayProviderAdapterBridge(simulate_no_cli=True)).dispatch(
                 "slot9", {"payload": {}}
             )
+
+    def test_stop_prevents_dispatch_without_reserving_slot(self):
+        adapter = RelayProviderAdapterBridge()
+        dispatcher = make(adapter)
+        dispatcher.request_stop()
+        result = dispatcher.dispatch("slot-stop", {"payload": {"q": "test"}})
+        self.assertEqual(result["state"], "BLOCKED")
+        self.assertEqual(result["reason"], "stop_requested")
+        self.assertEqual(adapter.dispatch_count, 0)
+        self.assertNotIn("slot-stop", dispatcher.guard.ledger)
+
+    def test_cancel_is_scoped_and_never_restarts(self):
+        first = RelayProviderAdapterBridge()
+        second = RelayProviderAdapterBridge()
+        first_dispatcher = make(first)
+        second_dispatcher = make(second)
+
+        cancelled = first_dispatcher.dispatch(
+            "openai-slot",
+            {"provider_id": "openai", "session_id": "openai-session", "payload": {}},
+            {"abort_after_dispatch": True},
+        )
+        other = second_dispatcher.dispatch(
+            "anthropic-slot",
+            {"provider_id": "anthropic", "session_id": "anthropic-session", "payload": {}},
+        )
+        replay = first_dispatcher.dispatch("openai-slot", {"payload": {}})
+
+        self.assertEqual(cancelled["state"], "BLOCKED")
+        self.assertEqual(first.abort_calls, [("openai", "openai-session")])
+        self.assertEqual(first.dispatch_count, 1)
+        self.assertEqual(first.collect_count, 0)
+        self.assertEqual(replay["state"], "BLOCKED")
+        self.assertEqual(first.dispatch_count, 1)
+        self.assertEqual(other["state"], "SIMULATED")
+        self.assertEqual(second.abort_calls, [])
 
 
 if __name__ == "__main__":

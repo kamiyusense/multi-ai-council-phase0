@@ -22,6 +22,12 @@ class RelayDispatcher:
     def __init__(self, adapter: RelayProviderAdapterBridge, guard: DuplicateConflictGuard):
         self.adapter = adapter
         self.guard = guard
+        self.stop_requested = False
+        self.cancelled_slots: set[str] = set()
+
+    def request_stop(self) -> None:
+        """Prevent every future dispatch without touching an active provider."""
+        self.stop_requested = True
 
     def dispatch(self, slot_id: str, context: dict[str, Any], abort_signal: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = context.get("payload", {})
@@ -33,21 +39,39 @@ class RelayDispatcher:
             raise ValueError("Request override fields rejected.")
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
         payload_hash = hashlib.sha256(canonical).hexdigest()
-        decision = self.guard.check_intent(slot_id, payload_hash)
         base = {"live_ready": False, "live_turn_executed": False, "retry_count": 0,
                 "fallback_state": "disabled", "simulated": True}
+        if self.stop_requested:
+            return {**base, "state": "BLOCKED", "reason": "stop_requested"}
+        if slot_id in self.cancelled_slots:
+            return {**base, "state": "BLOCKED", "reason": "cancelled"}
+        if abort_signal and abort_signal.get("aborted"):
+            self.cancelled_slots.add(slot_id)
+            return {**base, "state": "BLOCKED", "reason": "aborted"}
+        decision = self.guard.check_intent(slot_id, payload_hash)
         if decision != "RESERVED":
             return {**base, "state": "BLOCKED", "reason": decision}
-        if abort_signal and abort_signal.get("aborted"):
-            return {**base, "state": "BLOCKED", "reason": "aborted"}
+        handle: dict[str, Any] | None = None
         try:
-            prepared = self.adapter.prepare(context)
+            prepared = self.adapter.prepare({
+                **context,
+                "provider_id": context.get("provider_id", slot_id),
+                "session_id": context.get("session_id", slot_id),
+            })
             self.adapter.preflight(prepared)
             handle = self.adapter.dispatch(prepared)
-            state = self.adapter.classify(self.adapter.collect(handle))
+            if abort_signal and abort_signal.get("abort_after_dispatch"):
+                self.adapter.abort(handle)
+                self.cancelled_slots.add(slot_id)
+                return {**base, "state": "BLOCKED", "reason": "cancelled"}
+            raw_evidence = self.adapter.collect(handle)
+            state = self.adapter.classify(raw_evidence)
             return {**base, "state": "SIMULATED" if state.get("success") else state["execution_state"],
-                    "provider_state": state}
+                    "provider_state": state, "raw_evidence": raw_evidence}
         except TimeoutError as exc:
+            if handle is not None:
+                self.adapter.abort(handle)
+                self.cancelled_slots.add(slot_id)
             return {**base, "state": "TIMEOUT", "error": str(exc)}
         except RuntimeError as exc:
             if str(exc) == "CLI unavailable":

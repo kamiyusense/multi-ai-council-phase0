@@ -341,6 +341,8 @@ At minimum, add deterministic tests proving:
 - stop/no-new-dispatch prevents the next dispatch
 - timeout does not trigger retry
 - failure does not trigger fallback
+- raw provider evidence is captured before classification
+- cancel/timeout does not restart or send a second prompt
 - one provider failure does not erase another provider result
 - malformed result does not become success
 - UNKNOWN result remains UNKNOWN
@@ -484,4 +486,3 @@ Not authorized:
 - API key creation/use
 - other repository writes
 - live Relay/app-server/provider POC
-
