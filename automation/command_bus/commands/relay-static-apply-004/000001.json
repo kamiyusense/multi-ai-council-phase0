@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "command_id": "relay-static-apply-004-000001",
+  "loop_id": "relay-static-apply-004",
+  "round": 1,
+  "correlation_id": "relay-static-apply-004-round-1",
+  "target": "work",
+  "action": "EXECUTE_RELAY_STATIC_BATCH",
+  "profile": "RELAY_SAFETY_BATCH_V1",
+  "workspace_integrity_profile": "TREE_IDENTITY_V1",
+  "execution_mode": "STATIC_WRITE",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+  "expected_target_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "allowed_paths": [
+    "src/relay/**",
+    "src/providers/**",
+    "tests/relay/**",
+    "docs/RELAY_STATIC_CHECKPOINT.md",
+    "RELAY_JULES_HANDOFF.md"
+  ],
+  "path_policy": [
+    {"path": "src/relay/**", "allowed_ops": ["ADD", "MODIFY"]},
+    {"path": "src/providers/**", "allowed_ops": ["ADD", "MODIFY"]},
+    {"path": "tests/relay/**", "allowed_ops": ["ADD", "MODIFY"]},
+    {"path": "docs/RELAY_STATIC_CHECKPOINT.md", "allowed_ops": ["MODIFY"]},
+    {"path": "RELAY_JULES_HANDOFF.md", "allowed_ops": ["MODIFY"]}
+  ],
+  "prohibited_paths": [
+    "main/**",
+    "phase0-runs/**",
+    "secrets/**",
+    ".github/**",
+    "settings/**",
+    "workflows/**",
+    "billing/**",
+    "auth/**",
+    "api-keys/**"
+  ],
+  "objective": "Using dependency-free Python unittest only, run TREE_IDENTITY_V1, baseline tests, implement RELAY_SAFETY_BATCH_V1 static/mock hardening, rerun tests, then create at most one fast-forward PR #4 commit with full remote readback.",
+  "test_commands": [
+    "PYTHONPATH=src python -m unittest discover -s tests -v",
+    "python -m compileall -q src tests",
+    "git diff --check"
+  ],
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "predecessor_receipt_id": "workspace-integrity-p0-validation-003/000001",
+  "required_evidence_refs": [
+    "automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json",
+    "automation/command_bus/evidence/workspace-integrity-p0-20260923.json",
+    "docs/EXECUTOR_WORKSPACE_INTEGRITY_P0_CHECKPOINT.md",
+    "automation/command_bus/receipts/relay-static-apply-003/000001.json"
+  ]
+}
