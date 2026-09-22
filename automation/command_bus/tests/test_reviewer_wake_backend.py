@@ -97,7 +97,7 @@ class DurableWakeBackendTests(unittest.TestCase):
         self.assertTrue(result.evidence["fresh_reservation"])
         self.assertEqual(result.evidence["attempt_id"], ATTEMPT)
         self.assertEqual(client.create_calls, 1)
-        path = wake_attempt_path(LOOP, ATTEMPT)
+        path = wake_attempt_path(LOOP, REQ)
         self.assertIn(path, client.files)
 
     def test_same_request_cannot_reserve_second_attempt(self):
@@ -113,6 +113,7 @@ class DurableWakeBackendTests(unittest.TestCase):
         )
         self.assertEqual(first.status, "RESERVED")
         self.assertEqual(second.status, "BLOCKED")
+        self.assertEqual(second.evidence["existing_attempt_id"], ATTEMPT)
         self.assertFalse(second.evidence["fresh_reservation"])
         self.assertEqual(client.create_calls, 1)
 
@@ -186,9 +187,9 @@ class DurableWakeBackendTests(unittest.TestCase):
             route="browser", created_at=CREATED,
         )
         self.assertEqual(reservation.status, "RESERVED")
-        correct = wake_attempt_path(LOOP, ATTEMPT)
+        correct = wake_attempt_path(LOOP, REQ)
         content = client.files.pop(correct)
-        wrong = f"review_wake_attempts/{LOOP}/wrong.json"
+        wrong = f"review_wake_attempts/{LOOP}/wrong-request.json"
         client.files[wrong] = WakeContent(wrong, content.text, content.sha)
         result = DurableWakeBackend(
             client, branch="feature/chat-work-command-bus"
