@@ -334,6 +334,8 @@ def _validate_request(r: dict[str, Any]) -> None:
             raise ValueError("invalid durable review v2 allowed decisions")
         if r["retry"] != 0 or r["fallback"] != "disabled":
             raise ValueError("unsafe durable review retry/fallback policy")
+        if _contains_session_identity(r):
+            raise ValueError("session identity is not a correctness input")
 
 
 def _validate_claim(c: dict[str, Any]) -> None:
@@ -372,9 +374,8 @@ def _validate_response(r: dict[str, Any]) -> None:
             raise ValueError("invalid next command proposal")
         if r["model_route_evidence"] is not None and not isinstance(r["model_route_evidence"], dict):
             raise ValueError("invalid model route evidence")
-        for value in (r["next_command_proposal"], r["model_route_evidence"]):
-            if _contains_session_identity(value):
-                raise ValueError("session identity is not a correctness input")
+        if _contains_session_identity(r):
+            raise ValueError("session identity is not a correctness input")
 
 
 def _contains_session_identity(value: Any) -> bool:
