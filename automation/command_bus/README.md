@@ -61,3 +61,49 @@ prohibited actions, and an explicit user-approval boundary. Request, claim,
 result, and receipt records include matching `execution_*_id` aliases. Prepared
 results prove that no model, external send, retry, fallback, or live start
 occurred. All execution records are append-only; only loop state is mutable.
+
+
+## Executor Workspace Integrity Gate — TREE_IDENTITY_V1
+
+Mutable executors share a provider-neutral pre-mutation invariant implemented
+in `workspace_integrity.py`. Correct HEAD identity alone is never sufficient.
+
+Before mutation, TREE_IDENTITY_V1 requires controller-provided
+`expected_target_head` and `expected_target_tree`, plus verified repository,
+remote, branch/worktree identity. The observed HEAD tree and index tree must
+both equal the expected target tree, tracked and cached diffs must be clean,
+unexpected untracked files must be absent, and skip-worktree /
+assume-unchanged / unsupported sparse-checkout or submodule state must fail
+closed.
+
+Persistent/shared workspace failures are quarantined. The gate never performs
+`reset --hard`, `git clean`, auto-stash, auto-commit, rebase, or hidden
+repair. A disposable workspace may return `RECREATE_REQUIRED`; the permitted
+recovery is creation of a new disposable workspace followed by a fresh full
+attestation, not repair of the suspect workspace.
+
+Mutation admission uses a path + operation policy. ADD/MODIFY/DELETE/RENAME
+are distinct capabilities; DELETE and RENAME are denied unless explicitly
+listed for the exact matching policy. Before commit, the target head/tree are
+revalidated and tests/compile/diff evidence must be PASS. Commit admission
+requires parent == expected target head and commit tree == the already-admitted
+candidate index tree. Push remains one normal fast-forward attempt only.
+Ambiguous push is never retried; remote readback determines PASS or UNKNOWN.
+
+The executor durable request can carry:
+
+- `expected_target_tree`
+- `requires_clean_workspace=true`
+- `workspace_integrity_profile=TREE_IDENTITY_V1`
+- `path_policy`
+- `mutation_lease_ttl_seconds`
+
+Claims may bind workspace attestation identity and observed HEAD/tree/index
+tree. Results may reference workspace/commit attestations and the mutation
+lease. Concrete target-tree identity is matched by the durable backend.
+Legacy PREPARE_ONLY records that used `expected_target_tree=UNKNOWN` remain
+recoverable, but a mutating executor must use a concrete target tree.
+
+Regression coverage includes the Jules incident shape: HEAD and HEAD tree are
+correct while tracked working-tree bytes are stale. That state is BLOCKED
+before a mutation lease can be issued.
