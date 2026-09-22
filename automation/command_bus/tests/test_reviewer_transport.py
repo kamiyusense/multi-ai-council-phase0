@@ -70,6 +70,13 @@ class ReviewerTransportTests(unittest.TestCase):
         self.assertNotIn("browser_session_id", serialized)
         self.assertNotIn("chat_id", serialized)
 
+    def test_v2_request_rejects_extra_session_identity(self):
+        req = request()
+        req["thread_id"] = "must-not-be-correctness"
+        ledger = ReviewerLedger()
+        with self.assertRaisesRegex(ValueError, "session identity"):
+            ledger.append_request(req)
+
     def test_duplicate_wake_is_blocked_without_second_send(self):
         req = request()
         transport = MockReviewerTransport("browser")
