@@ -210,6 +210,10 @@ def submit_response(ledger: ReviewerLedger, request_id: str, *, response_id: str
                     "decision": decision, "evidence_refs": evidence_refs,
                     "submitted_at": now.isoformat(), "status": "AVAILABLE"}
         if request.get("review_profile") == DURABLE_REVIEW_V2:
+            if decision not in request["allowed_decisions"]:
+                raise ValueError("review decision not allowed by request")
+            if not isinstance(evidence_refs, list) or not evidence_refs:
+                raise ValueError("durable review v2 response requires evidence")
             response.update({
                 "review_profile": DURABLE_REVIEW_V2,
                 "expected_target_tree": expected_target_tree,
