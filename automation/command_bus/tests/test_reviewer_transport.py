@@ -140,6 +140,17 @@ class ReviewerTransportTests(unittest.TestCase):
         self.assertEqual(result.status, "UNKNOWN")
         self.assertEqual(transport.sent, [])
 
+    def test_transport_revalidates_malformed_durable_request_before_send(self):
+        malformed = request()
+        malformed["retry"] = 1
+        transport = MockReviewerTransport("browser")
+        result = ReviewWakeCoordinator().dispatch(
+            malformed, request_ref=REF, transport=transport
+        )
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertEqual(result.evidence["retry_count"], 0)
+        self.assertEqual(transport.sent, [])
+
     def test_v2_happy_path_requires_tree_and_structured_response(self):
         ledger = ReviewerLedger()
         req = request()
