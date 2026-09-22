@@ -107,3 +107,27 @@ recoverable, but a mutating executor must use a concrete target tree.
 Regression coverage includes the Jules incident shape: HEAD and HEAD tree are
 correct while tracked working-tree bytes are stale. That state is BLOCKED
 before a mutation lease can be issued.
+
+
+## Bounded static validation scope
+
+`STATIC_VALIDATE_COMMAND_BUS` separates immutable-ish implementation material
+from the append-only operational ledger.
+
+Static blob verification/reconstruction includes only:
+
+- direct `automation/command_bus/*.py`
+- `automation/command_bus/README.md`
+- `automation/command_bus/tests/**`
+- `automation/command_bus/schema/**`
+
+Operational record families such as commands, events, evidence, receipts,
+states, reviewer records, reviewer wake reservations, and executor records are
+not all re-downloaded for every unit-test run. The active command/state/receipt
+and any required predecessor records are read and validated directly through
+their durable protocol.
+
+This keeps static validation bounded even when GitHub history grows. A new
+unclassified blob area under `automation/command_bus/**` is not silently
+ignored: `validation_scope.py` classifies it as UNKNOWN and validation fails
+closed until the area is explicitly assigned to the static or ledger scope.
