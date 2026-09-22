@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "static-validation-005-wake-001",
+  "loop_id": "static-validation-005",
+  "command_id": "static-validation-005-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Do not create or replay another command. Process the existing RUNNING command only if no terminal receipt exists."
+}
