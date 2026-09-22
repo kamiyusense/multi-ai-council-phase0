@@ -1,55 +1,51 @@
-from __future__ import annotations
-
-import hashlib
-import json
-from typing import Any
-
 from src.relay.bridge import RelayProviderAdapterBridge
 
-
 class DuplicateConflictGuard:
-    def __init__(self) -> None:
-        self.ledger: dict[str, str] = {}
+    def __init__(self):
+        self.ledger = {}
 
-    def check_intent(self, slot_id: str, payload_hash: str) -> str:
-        if slot_id not in self.ledger:
-            self.ledger[slot_id] = payload_hash
-            return "RESERVED"
-        return "SAME_REQUEST" if self.ledger[slot_id] == payload_hash else "CONFLICT"
-
+    def check_intent(self, slot_id, payload_hash):
+        if slot_id in self.ledger:
+            if self.ledger[slot_id] == payload_hash:
+                return True
+            else:
+                raise ValueError(f"Conflict: slot {slot_id} already dispatched.")
+        self.ledger[slot_id] = payload_hash
+        return False
 
 class RelayDispatcher:
     def __init__(self, adapter: RelayProviderAdapterBridge, guard: DuplicateConflictGuard):
         self.adapter = adapter
         self.guard = guard
 
-    def dispatch(self, slot_id: str, context: dict[str, Any], abort_signal: dict[str, Any] | None = None) -> dict[str, Any]:
+    def dispatch(self, slot_id, context, abort_signal=None):
         payload = context.get("payload", {})
-        blocked = {"model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
-                   "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
-                   "config", "base", "developer", "general instructions", "plugin disabling",
-                   "billing", "auth route"}
-        if blocked.intersection(payload):
-            raise ValueError("Request override fields rejected.")
-        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-        payload_hash = hashlib.sha256(canonical).hexdigest()
-        decision = self.guard.check_intent(slot_id, payload_hash)
-        base = {"live_ready": False, "live_turn_executed": False, "retry_count": 0,
-                "fallback_state": "disabled", "simulated": True}
-        if decision != "RESERVED":
-            return {**base, "state": "BLOCKED", "reason": decision}
+        blocked_fields = ["model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking", "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd", "config", "base", "developer", "general instructions", "plugin disabling", "billing", "auth route"]
+        for field in blocked_fields:
+            if field in payload:
+                raise ValueError("Request override fields rejected.")
+
+        payload_hash = hash(str(payload))
+        if self.guard.check_intent(slot_id, payload_hash):
+            return {"state": "DELIVERED"}
+
         if abort_signal and abort_signal.get("aborted"):
-            return {**base, "state": "BLOCKED", "reason": "aborted"}
+            return {"state": "BLOCKED"}
+
         try:
             prepared = self.adapter.prepare(context)
-            self.adapter.preflight(prepared)
+            preflight = self.adapter.preflight(prepared)
             handle = self.adapter.dispatch(prepared)
-            state = self.adapter.classify(self.adapter.collect(handle))
-            return {**base, "state": "SIMULATED" if state.get("success") else state["execution_state"],
-                    "provider_state": state}
-        except TimeoutError as exc:
-            return {**base, "state": "TIMEOUT", "error": str(exc)}
-        except RuntimeError as exc:
-            if str(exc) == "CLI unavailable":
+
+            # Action before execution flag check (mocked execution)
+            context["live_turn_executed"] = False
+
+            raw_res = self.adapter.collect(handle)
+            state = self.adapter.classify(raw_res)
+            return {"state": "DELIVERED", "provider_state": state}
+        except TimeoutError:
+            return {"state": "FAILED"} # no retry
+        except Exception as e:
+            if "CLI unavailable" in str(e):
                 raise
-            return {**base, "state": "UNKNOWN", "error": str(exc)}
+            return {"state": "FAILED"} # no fallback
