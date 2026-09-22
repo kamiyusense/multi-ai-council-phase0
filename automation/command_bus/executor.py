@@ -286,16 +286,29 @@ def submit_executor_result(
             "submitted_at": now.isoformat(),
             "status": "AVAILABLE",
         }
+        effective_target_tree = (
+            expected_target_tree
+            if expected_target_tree is not None
+            else request.get("expected_target_tree")
+        )
         integrity_result = {
-            "expected_target_tree": expected_target_tree,
+            "expected_target_tree": effective_target_tree,
             "workspace_attestation_ref": workspace_attestation_ref,
             "commit_attestation_ref": commit_attestation_ref,
             "mutation_lease_id": mutation_lease_id,
         }
         if any(value is not None for value in integrity_result.values()):
-            if any(not isinstance(value, str) or not value for value in integrity_result.values()):
-                raise ValueError("incomplete executor integrity result")
-            record.update(integrity_result)
+            if effective_target_tree is not None:
+                record["expected_target_tree"] = effective_target_tree
+            refs = {
+                "workspace_attestation_ref": workspace_attestation_ref,
+                "commit_attestation_ref": commit_attestation_ref,
+                "mutation_lease_id": mutation_lease_id,
+            }
+            if any(value is not None for value in refs.values()):
+                if any(not isinstance(value, str) or not value for value in refs.values()):
+                    raise ValueError("incomplete executor integrity result")
+                record.update(refs)
         record.update({
             "mutation_started": bool(mutation_started),
             "target_head_revalidated": bool(target_head_revalidated),
