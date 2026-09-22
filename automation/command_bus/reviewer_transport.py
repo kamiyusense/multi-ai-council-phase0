@@ -7,12 +7,14 @@ validated against its review_request.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Protocol
 
 from .reviewer import DURABLE_REVIEW_V2
 
 
 SUPPORTED_ROUTES = frozenset({"browser", "direct", "manual"})
+WAKE_ATTEMPT_PROFILE = "DURABLE_REVIEW_WAKE_ATTEMPT_V1"
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,61 @@ def build_review_wake(request: dict[str, Any], request_ref: str) -> dict[str, An
         "retry": 0,
         "fallback": "disabled",
     }
+
+
+def make_wake_attempt(
+    request: dict[str, Any],
+    *,
+    attempt_id: str,
+    request_ref: str,
+    route: str,
+    created_at: str,
+) -> dict[str, Any]:
+    wake = build_review_wake(request, request_ref)
+    if route not in SUPPORTED_ROUTES:
+        raise ValueError("unsupported reviewer transport route")
+    if not isinstance(attempt_id, str) or not attempt_id:
+        raise ValueError("wake attempt id required")
+    if not isinstance(created_at, str):
+        raise ValueError("wake attempt timestamp required")
+    parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("wake attempt timestamp must include timezone")
+    return {
+        "schema_version": 1,
+        "wake_profile": WAKE_ATTEMPT_PROFILE,
+        "attempt_id": attempt_id,
+        "request_id": wake["request_id"],
+        "loop_id": wake["loop_id"],
+        "round": wake["round"],
+        "correlation_id": wake["correlation_id"],
+        "expected_target_head": wake["expected_target_head"],
+        "expected_target_tree": wake["expected_target_tree"],
+        "request_ref": request_ref,
+        "route": route,
+        "state": "RESERVED",
+        "created_at": created_at,
+        "retry": 0,
+        "fallback": "disabled",
+    }
+
+
+def validate_wake_attempt(
+    request: dict[str, Any],
+    attempt: dict[str, Any],
+    *,
+    request_ref: str,
+    route: str,
+) -> None:
+    expected = make_wake_attempt(
+        request,
+        attempt_id=attempt.get("attempt_id"),
+        request_ref=request_ref,
+        route=route,
+        created_at=attempt.get("created_at"),
+    )
+    if attempt != expected:
+        raise ValueError("wake attempt does not match durable review request")
 
 
 class MockReviewerTransport:
@@ -171,3 +228,43 @@ class ReviewWakeCoordinator:
         if result.status not in {"SIMULATED", "SENT", "UNKNOWN"}:
             return TransportResult("UNKNOWN", "unsupported transport result", evidence)
         return TransportResult(result.status, result.reason, evidence)
+
+
+    def dispatch_reserved(
+        self,
+        request: dict[str, Any],
+        *,
+        request_ref: str,
+        transport: ReviewerTransport,
+        reservation: TransportResult,
+    ) -> TransportResult:
+        if reservation.status != "RESERVED":
+            return TransportResult(
+                "BLOCKED", "fresh durable wake reservation required",
+                {"retry_count": 0, "fallback_used": False},
+            )
+        if reservation.evidence.get("fresh_reservation") is not True:
+            return TransportResult(
+                "BLOCKED", "recovered wake reservation cannot be replayed",
+                {"retry_count": 0, "fallback_used": False},
+            )
+        attempt = reservation.evidence.get("attempt_record")
+        if not isinstance(attempt, dict):
+            return TransportResult(
+                "UNKNOWN", "durable wake attempt readback unavailable",
+                {"retry_count": 0, "fallback_used": False},
+            )
+        try:
+            validate_wake_attempt(
+                request, attempt,
+                request_ref=request_ref,
+                route=transport.route,
+            )
+        except (ValueError, TypeError, KeyError) as exc:
+            return TransportResult(
+                "UNKNOWN", str(exc),
+                {"retry_count": 0, "fallback_used": False},
+            )
+        return self.dispatch(
+            request, request_ref=request_ref, transport=transport
+        )
