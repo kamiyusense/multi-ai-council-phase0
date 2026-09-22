@@ -541,14 +541,18 @@ def _validate_result(r: dict[str, Any]) -> None:
         raise ValueError("unsafe executor result")
     if r["result_state"] not in {"PREPARED", "BLOCKED", "UNKNOWN"}:
         raise ValueError("invalid executor result state")
-    integrity_fields = {
-        "expected_target_tree", "workspace_attestation_ref",
-        "commit_attestation_ref", "mutation_lease_id",
+    if "expected_target_tree" in r:
+        if not isinstance(r["expected_target_tree"], str) or not r["expected_target_tree"]:
+            raise ValueError("invalid executor expected target tree")
+    attestation_fields = {
+        "workspace_attestation_ref", "commit_attestation_ref", "mutation_lease_id",
     }
-    present_integrity = integrity_fields & r.keys()
-    if present_integrity and present_integrity != integrity_fields:
+    present_attestation = attestation_fields & r.keys()
+    if present_attestation and present_attestation != attestation_fields:
         raise ValueError("incomplete executor integrity result")
-    if present_integrity and any(not isinstance(r[key], str) or not r[key] for key in integrity_fields):
+    if present_attestation and any(
+        not isinstance(r[key], str) or not r[key] for key in attestation_fields
+    ):
         raise ValueError("invalid executor integrity result")
     for key in (
         "mutation_started", "target_head_revalidated",
