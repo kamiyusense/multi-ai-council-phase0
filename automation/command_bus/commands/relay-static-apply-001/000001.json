@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "command_id": "relay-static-apply-001-000001",
+  "loop_id": "relay-static-apply-001",
+  "round": 1,
+  "correlation_id": "relay-static-apply-001-round-1",
+  "target": "work",
+  "action": "EXECUTE_RELAY_STATIC_BATCH",
+  "profile": "RELAY_SAFETY_BATCH_V1",
+  "execution_mode": "STATIC_WRITE",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "allowed_paths": [
+    "src/relay/**",
+    "src/providers/**",
+    "tests/relay/**",
+    "docs/RELAY_STATIC_CHECKPOINT.md",
+    "RELAY_JULES_HANDOFF.md"
+  ],
+  "prohibited_paths": [
+    "main/**",
+    "phase0-runs/**",
+    "secrets/**",
+    ".github/**",
+    "settings/**",
+    "workflows/**",
+    "billing/**",
+    "auth/**",
+    "api-keys/**"
+  ],
+  "objective": "Implement RELAY_SAFETY_BATCH_V1 static/mock Relay hardening only",
+  "test_commands": [
+    "PYTHONPATH=src python -m pytest -q tests",
+    "python -m compileall -q src tests",
+    "git diff --check"
+  ],
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "predecessor_receipt_id": "route-validation-007/000001"
+}
