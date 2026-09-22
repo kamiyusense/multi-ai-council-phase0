@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "static-validation-003-000001",
+  "loop_id": "static-validation-003",
+  "round": 1,
+  "correlation_id": "static-validation-003-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "carrier_head_tested": "38d3aae2c01da1a6ab422f7bb34c897c00492dc3",
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "observed_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "failure_stage": "WORKSPACE_ACQUISITION",
+  "failure_reason": "Exact-tree reconstruction verification stopped because the isolated orchestration runtime did not provide the required TextEncoder API. Per retry=0 and no-fallback policy, no alternative reconstruction attempt was made.",
+  "validation_results": {
+    "unittest": {"state": "NOT_RUN", "discovered_test_count": null, "exit_code": null},
+    "compileall": {"state": "NOT_RUN", "exit_code": null},
+    "diff_check": {"state": "NOT_RUN", "exit_code": null}
+  },
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/38d3aae2c01da1a6ab422f7bb34c897c00492dc3/automation/command_bus/commands/static-validation-003/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}
