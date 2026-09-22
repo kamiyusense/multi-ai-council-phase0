@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "reviewer-event-smoke-002",
+  "state": "RUNNING",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-23T23:00:00+09:00",
+  "stop_requested": false,
+  "last_command_id": null,
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0
+}
