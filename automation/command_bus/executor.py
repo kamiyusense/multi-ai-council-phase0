@@ -87,7 +87,8 @@ def make_executor_request(
     *, request_id: str, loop_id: str, round: int, correlation_id: str,
     executor_role: str, executor_kind: str, action: str,
     expected_repo: str, expected_pr: int, expected_target_head: str,
-    expires_at: str, execution_mode: str = "PREPARE_ONLY",
+    expires_at: str, expected_target_tree: str = "UNKNOWN",
+    execution_mode: str = "PREPARE_ONLY",
     requires_live_model: bool = False, requires_github_write: bool = False,
     target_role: str = "executor", capability: str = "prepare-only",
     objective: str = "prepare implementation artifact",
@@ -96,6 +97,10 @@ def make_executor_request(
     requires_user_approval: bool = False,
     approval_state: str = "NOT_REQUIRED",
     live_start_permitted: bool = False,
+    requires_clean_workspace: bool = True,
+    workspace_integrity_profile: str = "TREE_IDENTITY_V1",
+    path_policy: Any = None,
+    mutation_lease_ttl_seconds: int = 900,
 ) -> dict[str, Any]:
     record = {
         "schema_version": 1,
@@ -121,6 +126,11 @@ def make_executor_request(
         "expected_repo": expected_repo,
         "expected_pr": expected_pr,
         "expected_target_head": expected_target_head,
+        "expected_target_tree": expected_target_tree,
+        "requires_clean_workspace": requires_clean_workspace,
+        "workspace_integrity_profile": workspace_integrity_profile,
+        "path_policy": deepcopy(list(path_policy or [])),
+        "mutation_lease_ttl_seconds": mutation_lease_ttl_seconds,
         "requires_live_model": requires_live_model,
         "requires_github_write": requires_github_write,
         "retry": 0,
@@ -155,6 +165,11 @@ def claim_executor(
     capability: str, claimed_at: datetime | None = None,
     expires_at: str | None = None,
     state: dict[str, Any] | StateMachine | None = None,
+    workspace_attestation_id: str | None = None,
+    workspace_path_fingerprint: str | None = None,
+    observed_head: str | None = None,
+    observed_tree: str | None = None,
+    observed_index_tree: str | None = None,
 ) -> ExecutorResult:
     now = _utc(claimed_at)
     gate = _state_gate(state, now)
@@ -194,6 +209,17 @@ def claim_executor(
             "expires_at": claim_expiry.isoformat(),
             "status": "ACTIVE",
         }
+        integrity_values = {
+            "workspace_attestation_id": workspace_attestation_id,
+            "workspace_path_fingerprint": workspace_path_fingerprint,
+            "observed_head": observed_head,
+            "observed_tree": observed_tree,
+            "observed_index_tree": observed_index_tree,
+        }
+        if any(value is not None for value in integrity_values.values()):
+            if any(not isinstance(value, str) or not value for value in integrity_values.values()):
+                raise ValueError("incomplete workspace attestation claim")
+            record.update(integrity_values)
         ledger.append_claim(record)
     except (ValueError, TypeError, KeyError) as exc:
         return ExecutorResult("UNKNOWN", str(exc))
@@ -208,6 +234,14 @@ def submit_executor_result(
     expected_target_head: str, submitted_at: datetime | None = None,
     state: dict[str, Any] | StateMachine | None = None,
     artifact_refs: Any = None,
+    expected_target_tree: str | None = None,
+    workspace_attestation_ref: str | None = None,
+    commit_attestation_ref: str | None = None,
+    mutation_lease_id: str | None = None,
+    mutation_started: bool = False,
+    target_head_revalidated: bool = False,
+    push_attempted: bool = False,
+    remote_readback_verified: bool = False,
 ) -> ExecutorResult:
     now = _utc(submitted_at)
     gate = _state_gate(state, now)
@@ -252,6 +286,22 @@ def submit_executor_result(
             "submitted_at": now.isoformat(),
             "status": "AVAILABLE",
         }
+        integrity_result = {
+            "expected_target_tree": expected_target_tree,
+            "workspace_attestation_ref": workspace_attestation_ref,
+            "commit_attestation_ref": commit_attestation_ref,
+            "mutation_lease_id": mutation_lease_id,
+        }
+        if any(value is not None for value in integrity_result.values()):
+            if any(not isinstance(value, str) or not value for value in integrity_result.values()):
+                raise ValueError("incomplete executor integrity result")
+            record.update(integrity_result)
+        record.update({
+            "mutation_started": bool(mutation_started),
+            "target_head_revalidated": bool(target_head_revalidated),
+            "push_attempted": bool(push_attempted),
+            "remote_readback_verified": bool(remote_readback_verified),
+        })
         _validate_result(record)
         _match_request(request, record)
         ledger.append_result(record)
@@ -395,6 +445,29 @@ def _validate_request(r: dict[str, Any]) -> None:
             raise ValueError(f"invalid executor request {key}")
     if not r["allowed_actions"] or not r["prohibited_actions"]:
         raise ValueError("executor action boundaries are required")
+    integrity_fields = {
+        "expected_target_tree", "requires_clean_workspace",
+        "workspace_integrity_profile", "path_policy",
+        "mutation_lease_ttl_seconds",
+    }
+    present_integrity = integrity_fields & r.keys()
+    if present_integrity and present_integrity != integrity_fields:
+        raise ValueError("incomplete executor workspace integrity contract")
+    if present_integrity:
+        if not isinstance(r["expected_target_tree"], str) or not r["expected_target_tree"]:
+            raise ValueError("invalid expected target tree")
+        if r["requires_clean_workspace"] is not True:
+            raise ValueError("mutable executor requires clean workspace")
+        if r["workspace_integrity_profile"] != "TREE_IDENTITY_V1":
+            raise ValueError("unsupported workspace integrity profile")
+        if not isinstance(r["path_policy"], list):
+            raise ValueError("invalid executor path policy")
+        if (
+            isinstance(r["mutation_lease_ttl_seconds"], bool)
+            or not isinstance(r["mutation_lease_ttl_seconds"], int)
+            or r["mutation_lease_ttl_seconds"] <= 0
+        ):
+            raise ValueError("invalid mutation lease ttl")
     _parse(r["expires_at"])
 
 
@@ -416,6 +489,15 @@ def _validate_claim(c: dict[str, Any]) -> None:
             raise ValueError(f"invalid executor claim {key}")
     if isinstance(c["executor_generation"], bool) or not isinstance(c["executor_generation"], int) or c["executor_generation"] < 1:
         raise ValueError("invalid executor generation")
+    integrity_fields = {
+        "workspace_attestation_id", "workspace_path_fingerprint",
+        "observed_head", "observed_tree", "observed_index_tree",
+    }
+    present_integrity = integrity_fields & c.keys()
+    if present_integrity and present_integrity != integrity_fields:
+        raise ValueError("incomplete workspace attestation claim")
+    if present_integrity and any(not isinstance(c[key], str) or not c[key] for key in integrity_fields):
+        raise ValueError("invalid workspace attestation claim")
     _parse(c["claimed_at"])
     _parse(c["expires_at"])
 
@@ -446,6 +528,21 @@ def _validate_result(r: dict[str, Any]) -> None:
         raise ValueError("unsafe executor result")
     if r["result_state"] not in {"PREPARED", "BLOCKED", "UNKNOWN"}:
         raise ValueError("invalid executor result state")
+    integrity_fields = {
+        "expected_target_tree", "workspace_attestation_ref",
+        "commit_attestation_ref", "mutation_lease_id",
+    }
+    present_integrity = integrity_fields & r.keys()
+    if present_integrity and present_integrity != integrity_fields:
+        raise ValueError("incomplete executor integrity result")
+    if present_integrity and any(not isinstance(r[key], str) or not r[key] for key in integrity_fields):
+        raise ValueError("invalid executor integrity result")
+    for key in (
+        "mutation_started", "target_head_revalidated",
+        "push_attempted", "remote_readback_verified",
+    ):
+        if key in r and not isinstance(r[key], bool):
+            raise ValueError(f"invalid executor result {key}")
     if not isinstance(r["evidence_refs"], list) or any(
         not isinstance(ref, str) or not ref for ref in r["evidence_refs"]
     ):
@@ -490,6 +587,9 @@ def _match_request(request: dict[str, Any], result: dict[str, Any]) -> None:
         result, request["loop_id"], request["round"],
         request["correlation_id"], request["expected_target_head"],
     )
+    if "expected_target_tree" in request:
+        if result.get("expected_target_tree") != request["expected_target_tree"]:
+            raise ValueError("executor target tree mismatch")
 
 
 def _match_context(
