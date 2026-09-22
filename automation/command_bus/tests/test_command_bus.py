@@ -26,38 +26,38 @@ class CommandBusTests(unittest.TestCase):
         ledger=InMemoryLedger(state())
         results=[]
         for n in range(1,7):
-            ledger.add_command(command(n)); results.append(EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process(f"{n:06d}",now=NOW))
+            ledger.add_command(command(n)); results.append(EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process(f"{n:06d}",now=NOW))
             ledger.state["state"]="RUNNING"
         self.assertTrue(all(r.status == "PROCESSED" for r in results))
-        ledger.add_command(command(7)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process("000007",now=NOW)
+        ledger.add_command(command(7)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000007",now=NOW)
         self.assertEqual(result.status,"BLOCKED"); self.assertIn("max_rounds",result.reason)
 
     def test_stop_hard_stop(self):
         ledger=InMemoryLedger(state()); stop=command(1,"STOP"); ledger.add_command(stop)
-        result=EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process("000001",now=NOW)
+        result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW)
         self.assertEqual(result.receipt["state"],"CANCELLED"); self.assertEqual(ledger.state["state"],"HALTED")
 
     def test_expiry_hard_stop(self):
         ledger=InMemoryLedger(state(expires=NOW-timedelta(seconds=1))); ledger.add_command(command(1))
-        self.assertEqual(EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process("000001",now=NOW).reason,"expired")
+        self.assertEqual(EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW).reason,"expired")
 
     def test_duplicate_and_terminal_receipt_no_replay(self):
-        ledger=InMemoryLedger(state()); ledger.add_command(command(1)); p=EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD)
+        ledger=InMemoryLedger(state()); ledger.add_command(command(1)); p=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD)
         self.assertEqual(p.process("000001",now=NOW).status,"PROCESSED"); self.assertEqual(p.process("000001",now=NOW).status,"NO-OP")
         with self.assertRaises(ValueError): ledger.add_command(command(1))
 
     def test_receipt_only_event_noop(self):
-        ledger=InMemoryLedger(state()); self.assertEqual(EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process(now=NOW).status,"NO-OP")
+        ledger=InMemoryLedger(state()); self.assertEqual(EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process(now=NOW).status,"NO-OP")
 
     def test_target_head_and_correlation_blocks(self):
         for altered in ({"expected_target_head":"bad"},{"expected_pr":5},{"correlation_id":"wrong"}):
             ledger=InMemoryLedger(state()); ledger.add_command({**command(1),**altered})
-            result=EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process("000001",now=NOW)
+            result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW)
             self.assertEqual(result.status,"BLOCKED")
 
     def test_stale_executor_and_safety_defaults_block(self):
         ledger=InMemoryLedger(state()); ledger.add_command(command(1,target_head="af9c5517ed8678bdff3af60fd298dd586d5a6786"))
-        result=EventProcessor(ledger,repo=REPO,pr=4,observed_target_head=TARGET_HEAD).process("000001",now=NOW)
+        result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW)
         self.assertEqual(result.status,"BLOCKED"); self.assertEqual(result.receipt["retry_count"],0); self.assertFalse(result.receipt["fallback_used"])
 
     def test_carrier_head_change_does_not_affect_target_head_match(self):
