@@ -185,6 +185,8 @@ Current P1 implementation checkpoint:
 - Browser/Direct/Manual transport-neutral mock wake layer is implemented.
 - free-form browser output is not a correctness input.
 - live-capable reviewer transports are blocked by the static P1 coordinator.
+- durable wake reservation is append-only and keyed by review request identity,
+  so fresh Work sessions cannot replay an ambiguous Browser/Direct wake.
 - regression fixtures are added.
 - deterministic Work validation is pending; see
   `docs/HYBRID_WORK_CHAT_REVIEWER_P1_CHECKPOINT.md`.
