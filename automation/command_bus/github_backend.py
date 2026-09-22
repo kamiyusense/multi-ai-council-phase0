@@ -254,6 +254,10 @@ def _validate_receipt(loop_id: str, receipt: dict[str, Any]) -> None:
             raise ValueError(f"invalid receipt {field}")
     if isinstance(receipt["round"], bool) or not isinstance(receipt["round"], int) or receipt["round"] < 1:
         raise ValueError("invalid receipt round")
+    if receipt.get("review_profile") == "DURABLE_REVIEW_V2":
+        tree = receipt.get("expected_target_tree")
+        if not isinstance(tree, str) or not tree:
+            raise ValueError("invalid durable review receipt target tree")
 
 
 def _validate_state(loop_id: str, state: dict[str, Any]) -> None:
@@ -281,6 +285,9 @@ def _validate_references_for_append(
     request = _branch_read(backend, "request", loop_id, record["request_id"])
 
     if kind == "claim":
+        if request.get("review_profile") == "DURABLE_REVIEW_V2":
+            if record.get("role") != request.get("reviewer_role"):
+                raise ValueError("reviewer claim role mismatch")
         claimed_at = _time(record["claimed_at"])
         claim_expiry = _time(record["expires_at"])
         request_expiry = _time(request["expires_at"])
@@ -369,6 +376,11 @@ def _match_context(expected: dict[str, Any], actual: dict[str, Any]) -> None:
     keys = ("loop_id", "round", "correlation_id", "expected_target_head")
     if tuple(expected.get(key) for key in keys) != tuple(actual.get(key) for key in keys):
         raise ValueError("durable record context mismatch")
+    if expected.get("review_profile") == "DURABLE_REVIEW_V2":
+        if actual.get("review_profile") != "DURABLE_REVIEW_V2":
+            raise ValueError("durable review profile mismatch")
+        if actual.get("expected_target_tree") != expected.get("expected_target_tree"):
+            raise ValueError("durable review target tree mismatch")
 
 
 def _time(value: Any) -> datetime:
