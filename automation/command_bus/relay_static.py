@@ -39,6 +39,13 @@ REQUIRED_TEST_COMMANDS = (
     "python -m compileall -q src tests",
     "git diff --check",
 )
+REQUIRED_PATH_POLICY = (
+    {"path": "src/relay/**", "allowed_ops": ("ADD", "MODIFY")},
+    {"path": "src/providers/**", "allowed_ops": ("ADD", "MODIFY")},
+    {"path": "tests/relay/**", "allowed_ops": ("ADD", "MODIFY")},
+    {"path": "docs/RELAY_STATIC_CHECKPOINT.md", "allowed_ops": ("MODIFY",)},
+    {"path": "RELAY_JULES_HANDOFF.md", "allowed_ops": ("MODIFY",)},
+)
 TERMINAL_STATES = {"DONE", "BLOCKED", "FAILED", "UNKNOWN", "CANCELLED"}
 
 
@@ -96,6 +103,22 @@ def validate_relay_command(
     else:
         if command["execution_mode"] != "STATIC_WRITE" or command["requires_github_write"] is not True:
             raise ValueError("execute action must explicitly request bounded static write")
+        expected_tree = command.get("expected_target_tree")
+        if not isinstance(expected_tree, str) or not expected_tree:
+            raise ValueError("execute action requires expected target tree")
+        policy = command.get("path_policy")
+        if not isinstance(policy, list):
+            raise ValueError("execute action requires path policy")
+        normalized = tuple(
+            {
+                "path": item.get("path"),
+                "allowed_ops": tuple(item.get("allowed_ops", [])),
+            }
+            for item in policy
+            if isinstance(item, dict)
+        )
+        if normalized != REQUIRED_PATH_POLICY:
+            raise ValueError("execute action path policy mismatch")
 
     round_number = command["round"]
     loop_id = command["loop_id"]
@@ -177,6 +200,7 @@ def prepare_relay_batch(
         })
     return RelayBatchResult("PREPARED", "static batch validated", {
         "target_head": current_head,
+        "target_tree": command.get("expected_target_tree"),
         "action": command["action"],
         "execution_mode": command["execution_mode"],
         "profile": command["profile"],
