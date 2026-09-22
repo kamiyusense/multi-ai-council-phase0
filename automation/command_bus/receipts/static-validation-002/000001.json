@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "static-validation-002-000001",
+  "loop_id": "static-validation-002",
+  "round": 1,
+  "correlation_id": "static-validation-002-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "carrier_head_tested": "f3888a1eb22e9b7274f83aa746d24b86b9f103d8",
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "observed_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "failure_stage": "WORKSPACE_ACQUISITION",
+  "failure_reason": "Exact carrier workspace could not be fully verified because one GitHub file fetch returned no verifiable UTF-8 content. Per retry=0 and no-fallback policy, no retry was attempted.",
+  "validation_results": {
+    "unittest": {
+      "state": "NOT_RUN",
+      "discovered_test_count": null,
+      "exit_code": null
+    },
+    "compileall": {
+      "state": "NOT_RUN",
+      "exit_code": null
+    },
+    "diff_check": {
+      "state": "NOT_RUN",
+      "exit_code": null
+    }
+  },
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/f3888a1eb22e9b7274f83aa746d24b86b9f103d8/automation/command_bus/commands/static-validation-002/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}
