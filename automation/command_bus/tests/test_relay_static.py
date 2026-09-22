@@ -2,7 +2,10 @@ from datetime import datetime, timezone
 import unittest
 
 from automation.command_bus.relay_static import (
+    EXECUTE_ACTION,
+    PREPARE_ACTION,
     REQUIRED_PROHIBITED_PATHS,
+    REQUIRED_PROFILE,
     REQUIRED_TEST_COMMANDS,
     prepare_relay_batch,
     validate_relay_command,
@@ -45,7 +48,7 @@ def command(**changes):
         "round": 1,
         "correlation_id": f"{LOOP}-round-1",
         "target": "work",
-        "action": "APPLY_RELAY_STATIC_BATCH",
+        "action": PREPARE_ACTION,
         "expected_repo": REPO,
         "expected_pr": 4,
         "expected_target_head": HEAD,
@@ -58,7 +61,9 @@ def command(**changes):
         "retry": 0,
         "fallback": "disabled",
         "expires_at": "2026-09-24T23:59:00+09:00",
-        "predecessor_receipt_id": "route-validation-005/000001",
+        "predecessor_receipt_id": "route-validation-006/000001",
+        "execution_mode": "PREPARE_ONLY",
+        "profile": REQUIRED_PROFILE,
     }
     value.update(changes)
     return value
@@ -72,8 +77,42 @@ class RelayStaticContractTests(unittest.TestCase):
             target_pr=4, state=state(), now=NOW,
         )
         self.assertEqual(result.status, "PREPARED")
+        self.assertEqual(result.evidence["execution_mode"], "PREPARE_ONLY")
         self.assertFalse(result.evidence["target_pr_modified"])
         self.assertEqual(client.reads, [(REPO, 4)])
+
+    def test_execute_action_requires_explicit_static_write_mode(self):
+        execute = command(
+            action=EXECUTE_ACTION,
+            execution_mode="STATIC_WRITE",
+            requires_github_write=True,
+        )
+        result = prepare_relay_batch(
+            execute, client=FakeContents(), repository=REPO,
+            target_pr=4, state=state(), now=NOW,
+        )
+        self.assertEqual(result.status, "PREPARED")
+        self.assertEqual(result.evidence["action"], EXECUTE_ACTION)
+        self.assertEqual(result.evidence["execution_mode"], "STATIC_WRITE")
+
+        for bad in (
+            command(action=EXECUTE_ACTION, execution_mode="PREPARE_ONLY", requires_github_write=True),
+            command(action=EXECUTE_ACTION, execution_mode="STATIC_WRITE", requires_github_write=False),
+            command(action=PREPARE_ACTION, execution_mode="STATIC_WRITE", requires_github_write=False),
+            command(action=PREPARE_ACTION, execution_mode="PREPARE_ONLY", requires_github_write=True),
+        ):
+            with self.assertRaises(ValueError):
+                validate_relay_command(
+                    bad, current_target_head=HEAD, state=state(),
+                    terminal_receipt=None, now=NOW,
+                )
+
+    def test_profile_is_fixed(self):
+        with self.assertRaises(ValueError):
+            validate_relay_command(
+                command(profile="OTHER"), current_target_head=HEAD,
+                state=state(), terminal_receipt=None, now=NOW,
+            )
 
     def test_wrong_repo_or_pr_blocks_before_target_read(self):
         client = FakeContents()
