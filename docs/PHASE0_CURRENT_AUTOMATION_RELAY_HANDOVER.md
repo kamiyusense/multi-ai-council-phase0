@@ -515,3 +515,36 @@ Relay resume remains anchored to PR #4 head `62f341b04f9d6e19dd003b42304bb896e4d
 The repository still contains no exact `1.2.9` marker identified by the recovery inspection. Treat `1.2.9` as the user's human label, not a repository version identifier.
 
 Next safe Relay work remains static/mock only. The current PR #4 code already contains a Core `ProviderAdapter` bridge plus three-provider mock integration and the lower-level transport/envelope/lifecycle primitives. Before mutating PR #4 further, prefer an executor/test-capable environment that can run the existing suite and preserve exact test evidence. A new live Jules/provider start is not implied by this checkpoint.
+
+
+## 14. Prepared static Relay next batch
+
+Canonical target remains PR #4 head `62f341b04f9d6e19dd003b42304bb896e4db45ef`.
+
+The next implementation executor should start by proving it has exactly that target head and then run the existing repository tests before mutation. No live provider/model/Jules turn is required for the static batch itself.
+
+Prioritized static gaps from direct inspection of the current PR #4 code and `docs/RELAY_STATIC_BUILD_PLAN.md`:
+
+1. prove current suite on the exact PR #4 head before edits;
+2. add deterministic cancel/abort fixture coverage so cancellation targets only the intended provider/session and never causes a second prompt or restart;
+3. add one-provider-failure isolation coverage so one provider failure does not erase successful RAW/result material from another provider;
+4. harden provider-policy fixtures for non-subscription routes, including Codex API-key/gateway rejection and Claude dangerous-bypass reappearance rejection;
+5. preserve raw transport evidence before semantic classification and test malformed/UNKNOWN paths remain non-success;
+6. keep the three-provider Core `ProviderAdapter` mock integration and add stop/no-new-dispatch coverage;
+7. run full unit/fixture/regression suite, compileall, and diff check;
+8. update Relay checkpoint evidence with exact command output and resulting PR #4 head.
+
+Safety constraints for this batch:
+
+- static/mock only
+- retry = 0
+- fallback disabled
+- no API key route
+- no Billing/Credits/Overages/settings/permission changes
+- no live provider model turn
+- no live Jules start implied
+- no Merge
+- no force push
+- no branch deletion
+
+Because this Chat does not currently have an execution workspace/test runner attached, it must not mutate PR #4 code and then guess PASS. Preserve the verified PR #4 code head until an executor can run the tests and record evidence.
