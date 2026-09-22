@@ -64,6 +64,8 @@ _REQUIRED_OBSERVED = {
     "target_branch",
     "workspace_path",
     "git_toplevel",
+    "git_dir",
+    "git_common_dir",
     "remote_name",
     "remote_url",
     "observed_head",
@@ -103,11 +105,28 @@ def attest_workspace(
             _evidence(expected, observed, workspace_kind, "NO_MUTATION"),
         )
 
+    nullable_integrity_fields = (
+        "tracked_worktree_diff_empty", "cached_diff_empty", "untracked_paths",
+        "skip_worktree_paths", "assume_unchanged_paths", "unmerged_paths",
+        "observed_head", "observed_head_tree", "observed_index_tree",
+        "workspace_path", "git_toplevel", "git_dir", "git_common_dir",
+        "remote_name", "remote_url",
+    )
+    unknown_fields = [key for key in nullable_integrity_fields if observed.get(key) is None]
+    if unknown_fields:
+        return IntegrityResult(
+            "UNKNOWN",
+            tuple(f"{key} could not be verified" for key in unknown_fields),
+            _evidence(expected, observed, workspace_kind, "NO_MUTATION"),
+        )
+
     reasons: list[str] = []
     for key in ("repo_full_name", "target_pr", "target_branch", "remote_name", "remote_url"):
         if observed.get(key) != expected.get(key):
             reasons.append(f"{key} mismatch")
 
+    if expected.get("workspace_path") is not None and observed["workspace_path"] != expected["workspace_path"]:
+        reasons.append("workspace path mismatch")
     if observed["workspace_path"] != observed["git_toplevel"]:
         reasons.append("workspace path is not git toplevel")
     if observed["observed_head"] != expected["expected_target_head"]:
@@ -139,20 +158,10 @@ def attest_workspace(
     if observed["submodule_state"] not in {"ABSENT", None}:
         reasons.append("submodules are not supported by TREE_IDENTITY_V1")
 
-    for key in (
-        "tracked_worktree_diff_empty",
-        "cached_diff_empty",
-        "untracked_paths",
-        "skip_worktree_paths",
-        "assume_unchanged_paths",
-        "unmerged_paths",
-    ):
-        if observed.get(key) is None:
-            return IntegrityResult(
-                "UNKNOWN",
-                (f"{key} could not be verified",),
-                _evidence(expected, observed, workspace_kind, "NO_MUTATION"),
-            )
+    if not isinstance(observed["git_dir"], str) or not observed["git_dir"]:
+        reasons.append("git dir identity unavailable")
+    if not isinstance(observed["git_common_dir"], str) or not observed["git_common_dir"]:
+        reasons.append("git common dir identity unavailable")
 
     if reasons:
         status = "RECREATE_REQUIRED" if workspace_kind == "disposable" else "BLOCKED"
