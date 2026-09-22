@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "evidence_id": "reviewer-event-smoke-002",
+  "result": "PASS",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "loop_id": "reviewer-event-smoke-002",
+  "thread_or_conversation_id_used": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "live_provider_or_jules_used": false,
+  "stages": [
+    {
+      "stage": "request",
+      "commit": "2ee0e27a0cace3ee0def4e2bb69884b8653925cb"
+    },
+    {
+      "stage": "claim",
+      "commit": "25eceadca7602ee74ba6a1e6f32fe80cd24eae4e"
+    },
+    {
+      "stage": "controller_retrigger_marker",
+      "commit": "aae55afd360dce69cedfc41371b9e1f22371a2e0"
+    },
+    {
+      "stage": "response",
+      "commit": "dd6ec3529fcfa87b7e4e66f21e6de2d3ce476f97"
+    },
+    {
+      "stage": "receipt",
+      "commit": "67e643e52bf600291bac3485bf58ba5632a7db4e"
+    },
+    {
+      "stage": "finalize_state",
+      "commit": "de6da0c155dcde215a11c17c8217307692bce617"
+    }
+  ],
+  "final_state": {
+    "state": "COMPLETE",
+    "round": 1,
+    "last_receipt_id": "review-resp-001"
+  },
+  "final_followup_event": {
+    "automation_title": "Phase 0 PR6 Command Bus",
+    "last_run_time": "2026-09-22T12:34:36.906763Z",
+    "observed_carrier_head": "de6da0c155dcde215a11c17c8217307692bce617",
+    "new_write_observed": false,
+    "result": "NO-OP"
+  },
+  "notes": [
+    "GitHub commit update woke the event-triggered Work task.",
+    "Work reconstructed reviewer state from GitHub paths without Chat/thread identity.",
+    "Claim, response, receipt, and state finalization were persisted and read back.",
+    "A follow-up event after COMPLETE produced no additional carrier commit."
+  ]
+}
