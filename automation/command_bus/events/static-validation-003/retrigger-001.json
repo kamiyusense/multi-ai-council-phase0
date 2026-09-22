@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "event_id": "static-validation-003-retrigger-001",
+  "purpose": "carrier-only trigger after command-discovery/workspace-acquisition rule fix",
+  "command_loop_id": "static-validation-003",
+  "retry_of_command": false,
+  "retry_count": 0,
+  "fallback": "disabled"
+}
