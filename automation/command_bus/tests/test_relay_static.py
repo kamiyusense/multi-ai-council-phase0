@@ -70,6 +70,13 @@ class RelayStaticContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_relay_command(command(), current_target_head=HEAD, state=state(),
                                    terminal_receipt={"state": "DONE"}, now=NOW)
+        result = prepare_relay_batch(command(), client=FakeContents(), repository=REPO,
+                                     target_pr=4, state=state(), terminal_receipt={"state": "DONE"},
+                                     now=NOW)
+        self.assertEqual(result.status, "BLOCKED")
+        result = prepare_relay_batch(command(), client=FakeContents(), repository=REPO,
+                                     target_pr=4, state=state(), duplicate_command=True, now=NOW)
+        self.assertEqual(result.status, "BLOCKED")
 
     def test_retry_zero_fallback_disabled_and_live_false(self):
         validate_relay_command(command(), current_target_head=HEAD, state=state(),

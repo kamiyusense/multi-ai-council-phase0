@@ -59,6 +59,7 @@ def validate_relay_command(
     command: dict[str, Any], *, current_target_head: str,
     state: dict[str, Any], terminal_receipt: dict[str, Any] | None,
     now: datetime | None = None, predecessor_exists: bool = True,
+    duplicate_command: bool = False,
 ) -> None:
     required = {
         "schema_version", "command_id", "loop_id", "round", "correlation_id",
@@ -91,6 +92,8 @@ def validate_relay_command(
         raise ValueError("command expired")
     if terminal_receipt is not None and terminal_receipt.get("state") in TERMINAL_STATES:
         raise ValueError("terminal receipt replay")
+    if duplicate_command:
+        raise ValueError("duplicate command")
     if not predecessor_exists or not command["predecessor_receipt_id"]:
         raise ValueError("missing predecessor")
     if not isinstance(command["allowed_paths"], list) or not command["allowed_paths"]:
@@ -113,14 +116,15 @@ def prepare_relay_batch(
     command: dict[str, Any], *, client: GitHubContentsClient,
     repository: str, target_pr: int, state: dict[str, Any],
     predecessor_exists: bool = True, now: datetime | None = None,
+    terminal_receipt: dict[str, Any] | None = None,
+    duplicate_command: bool = False,
 ) -> RelayBatchResult:
     try:
         current_head = client.read_pr_head(repository, target_pr)
-        terminal = None
         validate_relay_command(
             command, current_target_head=current_head, state=state,
-            terminal_receipt=terminal, predecessor_exists=predecessor_exists,
-            now=now,
+            terminal_receipt=terminal_receipt, predecessor_exists=predecessor_exists,
+            duplicate_command=duplicate_command, now=now,
         )
         if command["expected_repo"] != repository or command["expected_pr"] != target_pr:
             raise ValueError("wrong target repository or PR")
