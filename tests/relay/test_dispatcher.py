@@ -8,6 +8,14 @@ def make(adapter=None):
     return RelayDispatcher(adapter or RelayProviderAdapterBridge(), DuplicateConflictGuard())
 
 
+class MutatingClassifierBridge(RelayProviderAdapterBridge):
+    def classify(self, raw_result):
+        state = super().classify(raw_result)
+        raw_result["stdout"] = "classifier-mutated"
+        raw_result["rawResponse"] = "classifier-mutated"
+        return state
+
+
 class RelayDispatcherTests(unittest.TestCase):
     def test_successful_dispatch_is_simulated(self):
         result = make().dispatch("slot1", {"case_id": "1", "payload": {"q": "test"}})
@@ -65,6 +73,21 @@ class RelayDispatcherTests(unittest.TestCase):
             "slot8", {"payload": {}}
         )
         self.assertEqual(result["state"], "UNKNOWN")
+
+    def test_raw_evidence_is_snapshotted_before_classifier_mutation(self):
+        result = make(MutatingClassifierBridge()).dispatch(
+            "slot-raw", {"payload": {"q": "test"}}
+        )
+        self.assertEqual(result["state"], "SIMULATED")
+        self.assertEqual(result["raw_evidence"]["stdout"], "mock")
+        self.assertEqual(
+            result["raw_evidence"]["rawResponse"],
+            '{"answer_state":"ANSWER"}',
+        )
+        self.assertEqual(
+            result["provider_state"]["rawResponse"],
+            '{"answer_state":"ANSWER"}',
+        )
 
     def test_no_cli_no_dummy_fallback(self):
         with self.assertRaisesRegex(RuntimeError, "CLI unavailable"):

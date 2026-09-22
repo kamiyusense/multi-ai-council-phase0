@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from typing import Any
 
 from src.relay.bridge import RelayProviderAdapterBridge
@@ -64,8 +65,9 @@ class RelayDispatcher:
                 self.adapter.abort(handle)
                 self.cancelled_slots.add(slot_id)
                 return {**base, "state": "BLOCKED", "reason": "cancelled"}
-            raw_evidence = self.adapter.collect(handle)
-            state = self.adapter.classify(raw_evidence)
+            raw_result = self.adapter.collect(handle)
+            raw_evidence = deepcopy(raw_result)
+            state = self.adapter.classify(raw_result)
             return {**base, "state": "SIMULATED" if state.get("success") else state["execution_state"],
                     "provider_state": state, "raw_evidence": raw_evidence}
         except TimeoutError as exc:

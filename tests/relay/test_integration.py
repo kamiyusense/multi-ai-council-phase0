@@ -22,6 +22,38 @@ class RelayIntegrationTests(unittest.TestCase):
         self.assertTrue(all(r["fallback_state"] == "disabled" for r in results))
         self.assertTrue(all(r["raw_evidence"]["rawResponse"] for r in results))
 
+    def test_provider_timeout_is_isolated_from_peer_success(self):
+        openai_adapter = RelayProviderAdapterBridge(simulate_timeout=True)
+        anthropic_adapter = RelayProviderAdapterBridge()
+
+        openai = RelayDispatcher(
+            openai_adapter, DuplicateConflictGuard()
+        ).dispatch(
+            "openai-slot",
+            {
+                "provider_id": "openai",
+                "session_id": "openai-session",
+                "payload": {"q": "test"},
+            },
+        )
+        anthropic = RelayDispatcher(
+            anthropic_adapter, DuplicateConflictGuard()
+        ).dispatch(
+            "anthropic-slot",
+            {
+                "provider_id": "anthropic",
+                "session_id": "anthropic-session",
+                "payload": {"q": "test"},
+            },
+        )
+
+        self.assertEqual(openai["state"], "TIMEOUT")
+        self.assertEqual(openai["retry_count"], 0)
+        self.assertEqual(openai_adapter.abort_calls, [("openai", "openai-session")])
+        self.assertEqual(anthropic["state"], "SIMULATED")
+        self.assertEqual(anthropic_adapter.abort_calls, [])
+        self.assertEqual(anthropic["raw_evidence"]["stdout"], "mock")
+
     def test_one_provider_failure_preserves_other_raw_success(self):
         openai = RelayDispatcher(
             RelayProviderAdapterBridge(), DuplicateConflictGuard()

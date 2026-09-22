@@ -24,6 +24,13 @@ class EnvelopeTests(unittest.TestCase):
             payload=payload or {"packet": "hello"},
         )
 
+    def test_payload_and_correlation_are_preserved(self):
+        payload = {"packet": "hello", "nested": {"x": 1}}
+        envelope = self.envelope(payload, correlation="corr-preserved")
+        self.assertEqual(envelope.payload, payload)
+        self.assertIsNot(envelope.payload, payload)
+        self.assertEqual(envelope.correlation_id, "corr-preserved")
+
     def test_hash_is_deterministic_across_key_order(self):
         a = self.envelope({"a": 1, "b": 2})
         b = self.envelope({"b": 2, "a": 1})
@@ -57,6 +64,8 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(result.raw, b'{"ok":true}')
         self.assertEqual(transport.prompt_counts["openai"], 1)
         self.assertFalse(transport.live_process_started)
+        self.assertEqual(result.correlation_id, "corr-openai-0")
+        self.assertEqual(result.provider_id, "openai")
 
     def test_duplicate_does_not_prompt_twice(self):
         transport = MockTransport(responses={"openai": b"{}"})
