@@ -199,6 +199,40 @@ Therefore:
 
 Do not promote any UNKNOWN to PASS from static inspection.
 
+## 5A. Bounded command-bus validation
+
+The no-receipt behavior exposed a separate scaling flaw in the old static
+validator: `automation/command_bus/**` had grown to 111 blobs while only 30
+were implementation/tests/schema/README at the time of diagnosis. The rest
+were append-only operational ledger records.
+
+Exact cause of the missing Work receipt remains UNKNOWN; blob growth alone is
+not treated as a proven causal diagnosis. However, re-downloading the entire
+historical ledger for every code test is intrinsically unbounded and has been
+removed.
+
+Implemented:
+
+- `automation/command_bus/validation_scope.py`
+- `automation/command_bus/tests/test_validation_scope.py`
+
+Static validation now SHA-verifies and reconstructs only:
+
+- direct `automation/command_bus/*.py`
+- `automation/command_bus/README.md`
+- `automation/command_bus/tests/**`
+- `automation/command_bus/schema/**`
+
+Dynamic commands/events/evidence/receipts/state/reviewer/executor records are
+classified as LEDGER. Only the active records required by the current command
+are fetched through the durable protocol.
+
+Any new unclassified blob area under `automation/command_bus/**` is UNKNOWN
+and fails closed rather than being silently excluded.
+
+The Work event-task prompt was read back after update and confirms this bounded
+scope is now its ACTION B behavior.
+
 ## 6. Safety state
 
 - PR #4 mutation after relay-static-apply-005: NO
