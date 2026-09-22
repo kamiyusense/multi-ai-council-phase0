@@ -148,6 +148,8 @@ def claim_request(ledger: ReviewerLedger, request_id: str, *, claim_id: str,
         request_expiry = _parse(request["expires_at"])
         if now >= request_expiry:
             return ReviewResult("UNKNOWN", "request expired")
+        if request.get("review_profile") == DURABLE_REVIEW_V2 and role != request["reviewer_role"]:
+            return ReviewResult("BLOCKED", "reviewer role does not match request")
         active = _active_claim(ledger, request_id, now)
         if active is not None:
             return ReviewResult("BLOCKED", "active claim already exists", active)
@@ -370,10 +372,20 @@ def _validate_response(r: dict[str, Any]) -> None:
             raise ValueError("invalid next command proposal")
         if r["model_route_evidence"] is not None and not isinstance(r["model_route_evidence"], dict):
             raise ValueError("invalid model route evidence")
-        forbidden_keys = {"thread_id", "conversation_id", "browser_session_id", "chat_id"}
         for value in (r["next_command_proposal"], r["model_route_evidence"]):
-            if isinstance(value, dict) and forbidden_keys.intersection(value):
+            if _contains_session_identity(value):
                 raise ValueError("session identity is not a correctness input")
+
+
+def _contains_session_identity(value: Any) -> bool:
+    forbidden = {"thread_id", "conversation_id", "browser_session_id", "chat_id"}
+    if isinstance(value, dict):
+        if forbidden.intersection(value):
+            return True
+        return any(_contains_session_identity(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_session_identity(item) for item in value)
+    return False
 
 
 def _validate_receipt(r: dict[str, Any]) -> None:
