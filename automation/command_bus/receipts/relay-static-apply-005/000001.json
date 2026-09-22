@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "relay-static-apply-005-000001",
+  "loop_id": "relay-static-apply-005",
+  "round": 1,
+  "correlation_id": "relay-static-apply-005-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_selected": "69a45fd0dc02730fc9224382e5d86d363441dd62",
+  "starting_target_head": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+  "ending_target_head": "f288ff552b9bdccecb614c84cdd2071b9e7db08f",
+  "target_commit": "f288ff552b9bdccecb614c84cdd2071b9e7db08f",
+  "target_commit_parent": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+  "expected_target_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "observed_starting_target_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "reconstructed_write_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "candidate_and_remote_tree": "7a03419c25ff1618a7d53724aa11b3de0e2eb995",
+  "recursive_tree": {
+    "truncated": false,
+    "entry_count": 46,
+    "blob_count": 39,
+    "supported_entries_only": true
+  },
+  "blob_verification": {
+    "fetched": 39,
+    "verified": 39,
+    "empty_blobs": 4,
+    "result": "PASS"
+  },
+  "workspace_verification": {
+    "profile": "TREE_IDENTITY_V1",
+    "disposable_workspace": true,
+    "write_tree_equality": "PASS",
+    "tracked_tree_clean": true,
+    "index_delta": false,
+    "unexpected_untracked": false,
+    "hidden_index_flags": false,
+    "sparse_checkout": false,
+    "result": "PASS"
+  },
+  "baseline": {
+    "unittest": {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
+      "result": "PASS",
+      "tests_run": 22,
+      "passed": 22,
+      "errors": 0,
+      "failures": 0
+    },
+    "compileall": {
+      "command": "python -m compileall -q src tests",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "PASS",
+      "exit_code": 0
+    }
+  },
+  "post_change": {
+    "unittest": {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
+      "result": "PASS",
+      "tests_run": 25,
+      "passed": 25,
+      "errors": 0,
+      "failures": 0
+    },
+    "compileall": {
+      "command": "python -m compileall -q src tests",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "PASS",
+      "exit_code": 0
+    }
+  },
+  "changed_files": [
+    "RELAY_JULES_HANDOFF.md",
+    "docs/RELAY_STATIC_CHECKPOINT.md",
+    "src/relay/bridge.py",
+    "src/relay/dispatcher.py",
+    "tests/relay/test_dispatcher.py",
+    "tests/relay/test_integration.py"
+  ],
+  "changed_operations": [
+    {
+      "path": "RELAY_JULES_HANDOFF.md",
+      "operation": "MODIFY"
+    },
+    {
+      "path": "docs/RELAY_STATIC_CHECKPOINT.md",
+      "operation": "MODIFY"
+    },
+    {
+      "path": "src/relay/bridge.py",
+      "operation": "MODIFY"
+    },
+    {
+      "path": "src/relay/dispatcher.py",
+      "operation": "MODIFY"
+    },
+    {
+      "path": "tests/relay/test_dispatcher.py",
+      "operation": "MODIFY"
+    },
+    {
+      "path": "tests/relay/test_integration.py",
+      "operation": "MODIFY"
+    }
+  ],
+  "path_policy_result": "PASS",
+  "remote_readback": {
+    "pr_head": "f288ff552b9bdccecb614c84cdd2071b9e7db08f",
+    "commit_parent": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+    "commit_tree": "7a03419c25ff1618a7d53724aa11b3de0e2eb995",
+    "ahead_by": 1,
+    "changed_paths_and_operations": "PASS",
+    "result": "PASS"
+  },
+  "safety_assertions": {
+    "static_mock_only": true,
+    "live_model_executed": false,
+    "provider_started": false,
+    "jules_started": false,
+    "api_key_used": false,
+    "billing_credits_overages_changed": false,
+    "settings_permissions_changed": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "branch_deleted": false,
+    "merge": false
+  },
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/relay-static-apply-005/000001.json",
+    "automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json",
+    "automation/command_bus/evidence/workspace-integrity-p0-20260923.json",
+    "docs/EXECUTOR_WORKSPACE_INTEGRITY_P0_CHECKPOINT.md",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/commit/f288ff552b9bdccecb614c84cdd2071b9e7db08f"
+  ]
+}
