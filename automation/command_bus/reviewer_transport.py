@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
 
-from .reviewer import DURABLE_REVIEW_V2
+from .reviewer import DURABLE_REVIEW_V2, validate_review_request
 
 
 SUPPORTED_ROUTES = frozenset({"browser", "direct", "manual"})
@@ -32,6 +32,7 @@ class ReviewerTransport(Protocol):
 
 
 def build_review_wake(request: dict[str, Any], request_ref: str) -> dict[str, Any]:
+    validate_review_request(request)
     if request.get("review_profile") != DURABLE_REVIEW_V2:
         raise ValueError("durable review v2 request required")
     required = (
