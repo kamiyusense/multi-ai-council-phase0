@@ -108,6 +108,28 @@ class ReviewerTransportTests(unittest.TestCase):
         self.assertFalse(result.evidence["external_send_attempted"])
         self.assertEqual(transport.sent, [])
 
+    def test_transport_exception_is_unknown_and_never_retried(self):
+        class BrokenTransport:
+            route = "browser"
+            live_transport = False
+
+            def __init__(self):
+                self.calls = 0
+
+            def send(self, wake):
+                self.calls += 1
+                raise RuntimeError("ambiguous browser failure")
+
+        transport = BrokenTransport()
+        coordinator = ReviewWakeCoordinator()
+        first = coordinator.dispatch(request(), request_ref=REF, transport=transport)
+        second = coordinator.dispatch(request(), request_ref=REF, transport=transport)
+        self.assertEqual(first.status, "UNKNOWN")
+        self.assertEqual(first.evidence["retry_count"], 0)
+        self.assertEqual(first.evidence["external_send_attempted"], "UNKNOWN")
+        self.assertEqual(second.status, "BLOCKED")
+        self.assertEqual(transport.calls, 1)
+
     def test_bad_durable_request_ref_fails_closed_before_transport(self):
         transport = MockReviewerTransport("browser")
         result = ReviewWakeCoordinator().dispatch(
@@ -196,7 +218,7 @@ class ReviewerTransportTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "BLOCKED")
 
-    def test_disallowed_decision_is_not_consumed(self):
+    def test_disallowed_decision_is_rejected_at_submission(self):
         ledger = ReviewerLedger()
         ledger.append_request(request(allowed_decisions=["APPROVE"]))
         claim_request(
@@ -206,7 +228,7 @@ class ReviewerTransportTests(unittest.TestCase):
             role="semantic-reviewer",
             claimed_at=NOW,
         )
-        self.assertEqual(submit_response(
+        result = submit_response(
             ledger, REQ,
             response_id="resp-001",
             reviewer_instance_id="sol-reviewer",
@@ -222,17 +244,9 @@ class ReviewerTransportTests(unittest.TestCase):
             next_command_proposal=None,
             model_route_evidence={"route": "browser"},
             submitted_at=NOW,
-        ).status, "ACCEPTED")
-        result = consume_response(
-            ledger, REQ,
-            loop_id=LOOP,
-            round=1,
-            correlation_id=f"{LOOP}-round-1",
-            expected_target_head=HEAD,
-            expected_target_tree=TREE,
-            now=NOW,
         )
-        self.assertEqual(result.status, "UNKNOWN")
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(ledger.responses, [])
 
     def test_nested_session_identity_in_response_is_rejected(self):
         ledger = ReviewerLedger()
