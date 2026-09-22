@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "command_id": "event-route-diagnostic-001-000001",
+  "loop_id": "event-route-diagnostic-001",
+  "round": 1,
+  "correlation_id": "event-route-diagnostic-001-round-1",
+  "target": "work",
+  "action": "ECHO_AND_RECEIPT",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "retry": 0,
+  "fallback": "disabled",
+  "requires_live_model": false,
+  "requires_github_write": true
+}
