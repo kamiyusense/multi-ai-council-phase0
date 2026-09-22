@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "evidence_id": "event-route-diagnostic-001-no-receipt",
+  "loop_id": "event-route-diagnostic-001",
+  "command_id": "event-route-diagnostic-001-000001",
+  "action": "ECHO_AND_RECEIPT",
+  "command_commit": "4f5dac5d6d1cfad6dbb40a7e017dc6a764f21002",
+  "command_commit_created_at": "2026-09-22T21:43:11Z",
+  "observed_work_run_after_command": "2026-09-22T21:43:23.919470Z",
+  "wake_only_commit": "1d5388a4a648a1f91d931cfc1040a011fb5cd630",
+  "wake_only_created_at": "2026-09-22T21:43:55Z",
+  "terminal_receipt_present": false,
+  "work_state_transition_present": false,
+  "final_state": "UNKNOWN",
+  "exact_root_cause": "UNKNOWN",
+  "diagnosis": "The no-receipt condition reproduces with minimal ECHO_AND_RECEIPT, so it is independent of pytest, Relay workspace reconstruction, and command-bus unit-test scope.",
+  "retry_count": 0,
+  "replay_permitted": false,
+  "pr4_modified": false
+}
