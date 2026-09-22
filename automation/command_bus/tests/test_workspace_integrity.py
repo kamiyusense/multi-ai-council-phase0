@@ -271,6 +271,14 @@ class WorkspaceIntegrityTests(unittest.TestCase):
         self.assertTrue(result.evidence["commit_permitted"])
         self.assertFalse(result.evidence["push_permitted"])
 
+    def test_normalized_lease_policy_remains_valid_for_precommit(self):
+        item = lease()
+        self.assertIsInstance(item.path_policy[0]["allowed_ops"], frozenset)
+        result = validate_precommit(
+            item, candidate(), {"head": HEAD, "tree": TREE}, now=NOW
+        )
+        self.assertEqual(result.status, "PASS")
+
     def test_commit_parent_mismatch_blocks(self):
         item = lease()
         admitted = candidate()
