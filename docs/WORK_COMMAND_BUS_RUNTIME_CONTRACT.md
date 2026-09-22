@@ -40,8 +40,8 @@ Never:
 - direct write to main
 - force push
 - branch deletion
-- Jules start
-- live provider/model start
+- Jules start except the single bounded `JULES_BOUNDED_STATIC_ROUNDTRIP` action defined below
+- live provider/model start other than that explicitly authorized single Jules action
 - live Browser reviewer POC
 - API key creation/use
 - package installation
@@ -70,7 +70,7 @@ Validate:
 - unexpired command/state
 - retry=0
 - fallback=disabled
-- requires_live_model=false
+- requires_live_model=false, except `JULES_BOUNDED_STATIC_ROUNDTRIP` which requires true
 - duplicate/replay guard
 
 ## 4. ECHO_AND_RECEIPT
@@ -116,6 +116,7 @@ LEDGER:
 - execution_claims/**
 - execution_results/**
 - execution_receipts/**
+- jules_launch_attempts/**
 
 Any unclassified blob under `automation/command_bus/**` is UNKNOWN.
 
@@ -233,6 +234,68 @@ If target commit succeeded but receipt/state writing was interrupted, a later
 run may only complete durable receipt/state after exact readback; it must never
 create a second target implementation commit.
 
+## 8. JULES_BOUNDED_STATIC_ROUNDTRIP
+
+This is the only Jules launch authorized by the current runtime contract.
+It is a one-task probationary round-trip. Larger Jules work is not permitted
+until this first round-trip reaches a verified terminal receipt.
+
+Require:
+- profile=`JULES_FRESH_STATIC_V1`
+- user_authorization=`EXPLICIT_NEXT_BATCH_JULES_2026-09-23`
+- target PR #4
+- concrete expected_target_head + expected_target_tree
+- workspace_integrity_profile=`TREE_IDENTITY_V1`
+- fresh_session_required=true
+- disposable_workspace_required=true
+- reuse_existing_jules_task=false
+- retry=0
+- fallback=disabled
+- requires_live_model=true
+- requires_github_write=true
+- exactly one allowed path: `tests/relay/test_dispatcher.py`
+- only operation: MODIFY
+- no implementation-file modification
+- fixed tests:
+  - `PYTHONPATH=src python -m unittest discover -s tests -t . -v`
+  - `python -m compileall -q src tests`
+  - `git diff --check`
+
+Before launch:
+1. Fresh-read PR #4 current head/tree and require exact command match.
+2. Reconstruct the target in a new disposable workspace.
+3. Enforce TREE_IDENTITY_V1: exact HEAD/tree/index/tracked worktree, no
+   unexpected untracked files, no hidden index flags.
+4. Run baseline tests.
+5. Append exactly one durable launch reservation at
+   `automation/command_bus/jules_launch_attempts/<loop>/<command_id>.json`
+   and read it back.
+6. Only the same Work run that created and verified that fresh reservation may
+   start Jules. A recovered reservation never authorizes a second launch.
+
+First Jules task:
+- fresh Jules session only
+- never reuse an old Jules task/workspace
+- add one unittest regression proving `abort_signal={"aborted": True}`
+  blocks before slot reservation and provider dispatch
+- modify only `tests/relay/test_dispatcher.py`
+- do not modify implementation code
+- do not Merge
+- do not write main
+- do not force push
+- do not change settings/permissions/billing/API keys
+- do not start any provider/model other than the Jules implementation session
+
+After Jules change:
+1. Verify changed path/operation is exactly the allowed MODIFY.
+2. Run the fixed post-change tests.
+3. Require commit parent == expected_target_head.
+4. Verify remote target head/tree/diff.
+5. Write one terminal receipt/state.
+
+Ambiguity => UNKNOWN. Never start Jules a second time. retry=0; fallback
+disabled.
+
 ## 8. Workspace failure policy
 
 Gate failure blocks only the affected executor mutation.
@@ -247,7 +310,7 @@ Continue:
 Persistent suspect workspaces are quarantined. Never repair them automatically
 with reset --hard, git clean, rebase, auto-stash, or auto-commit.
 
-## 9. Reviewer relay boundary
+## 10. Reviewer relay boundary
 
 `DURABLE_REVIEW_V2` and reviewer wake records may be statically/mock
 validated.
