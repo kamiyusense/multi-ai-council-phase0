@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "evidence_id": "current-safe-batch-isolated-validation-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "recorded_at": "2026-09-23T06:00:00+09:00",
+  "pr4": {
+    "branch": "feature/relay-transport-7070955470193506982",
+    "head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+    "recursive_tree_truncated": false,
+    "blob_count": 39,
+    "isolated_exact_blob_validation": {
+      "unittest_command": "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
+      "tests_run": 28,
+      "passed": 28,
+      "failed": 0,
+      "errors": 0,
+      "compileall": "PASS",
+      "staged_diff_check": "PASS"
+    },
+    "semantic_review": {
+      "commit": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+      "parent": "f288ff552b9bdccecb614c84cdd2071b9e7db08f",
+      "changed_paths": [
+        "src/relay/dispatcher.py",
+        "tests/relay/test_dispatcher.py",
+        "tests/relay/test_integration.py",
+        "tests/relay/test_relay_static.py"
+      ],
+      "result": "PASS",
+      "note": "The commit strengthens raw-evidence snapshot and provider-isolation regression coverage without enabling live behavior."
+    }
+  },
+  "pr6": {
+    "branch": "feature/chat-work-command-bus",
+    "exact_static_content_tested_at_head": "51d855cef6a358801d0e44c8723360b6b3ddb76a",
+    "current_head_after_event_state_close": "50f6d065120b9b4784267f7dca3a1997886c84ed",
+    "current_tree": "083826e2990db3e1e9b0078a2b5cdc0bb7448046",
+    "static_content_changed_after_test": false,
+    "post_test_change": "automation/command_bus/state/event-route-diagnostic-002.json only",
+    "bounded_scope": {
+      "command_bus_blob_count": 123,
+      "static_blob_count": 32,
+      "ledger_blob_count": 91,
+      "unknown_blob_count": 0
+    },
+    "isolated_exact_blob_validation": {
+      "new_p1_tests": {
+        "tests_run": 27,
+        "passed": 27,
+        "failed": 0
+      },
+      "existing_reviewer_backend_compatibility_tests": {
+        "tests_run": 31,
+        "passed": 31,
+        "failed": 0
+      },
+      "combined_relevant_tests": {
+        "tests_run": 58,
+        "passed": 58,
+        "failed": 0
+      },
+      "compileall_relevant_scope": "PASS",
+      "staged_diff_check_relevant_scope": "PASS"
+    },
+    "full_command_bus_suite": {
+      "state": "UNKNOWN",
+      "reason": "The Work event route did not return a durable validation receipt for the current batch. No full-suite PASS is inferred from static inspection."
+    }
+  },
+  "work_event_route": {
+    "event_route_diagnostic_001": "UNKNOWN_TERMINAL_NO_RECEIPT",
+    "event_route_diagnostic_002": "UNKNOWN_TERMINAL_NO_RECEIPT",
+    "hybrid_reviewer_p1_validation_001": "UNKNOWN_TERMINAL_NO_RECEIPT_OR_STALE",
+    "hybrid_reviewer_p1_validation_002": "UNKNOWN_TERMINAL_NO_RECEIPT",
+    "hybrid_reviewer_p1_validation_003": "UNKNOWN_TERMINAL_NO_RECEIPT",
+    "relay_static_regression_validation_006": "UNKNOWN_TERMINAL_NO_RECEIPT",
+    "retry_count": 0,
+    "fallback_used": false,
+    "note": "The control-plane event/receipt route is isolated as a separate blocker; these commands must not be replayed."
+  },
+  "safety": {
+    "jules_started": false,
+    "live_browser_poc_started": false,
+    "live_provider_or_model_executed": false,
+    "api_key_used": false,
+    "package_install": false,
+    "billing_credits_overages_changed": false,
+    "settings_permissions_changed": false,
+    "merge_performed": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "branch_deleted": false,
+    "retry_count": 0,
+    "fallback_used": false
+  }
+}
