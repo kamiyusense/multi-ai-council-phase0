@@ -25,3 +25,15 @@ and `review_receipts/<loop>/<receipt>.json`; mutable loop state is stored at
 writes, malformed or missing records, and invalid state readback.
 
 The runtime is intentionally limited to `automation/command_bus/**`; it does not execute Jules, providers, live models, API keys, or GitHub workflows.
+
+
+Durable-boundary hardening:
+- every append/state write requires an independent branch readback; unverifiable
+  writes return `UNKNOWN` and are not retried automatically;
+- persisted request/response/receipt context is checked against loop, round,
+  correlation, and target head, and claims/responses/receipts must reference
+  durable predecessors in the same loop;
+- the controller's connected GitHub capability is the production transport
+  implementing `GitHubContentsClient`; no API key or repository secret is
+  embedded in this package. The direct Chat thread remains an optional fast
+  path and is not part of correctness.

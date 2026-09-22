@@ -81,7 +81,8 @@ class GitHubBackendTests(unittest.TestCase):
     def test_append_and_read_all_record_types(self):
         self.persist_records()
         receipt = {"schema_version": 1, "receipt_id": "review-resp-1", "response_id": "resp-1",
-                   "request_id": "req-1", "state": "CONSUMED"}
+                   "request_id": "req-1", "state": "CONSUMED", "loop_id": "loop-1", "round": 1,
+                   "correlation_id": "loop-1-round-1", "expected_target_head": "head-a"}
         self.assertEqual(self.backend.append("receipt", "loop-1", receipt).status, "ACCEPTED")
         for kind, record_id in (("request", "req-1"), ("claim", "claim-1"),
                                 ("response", "resp-1"), ("receipt", "review-resp-1")):
@@ -103,7 +104,8 @@ class GitHubBackendTests(unittest.TestCase):
     def test_fresh_backend_session_recovers_all_records(self):
         self.persist_records()
         receipt = {"schema_version": 1, "receipt_id": "review-resp-1", "response_id": "resp-1",
-                   "request_id": "req-1", "state": "CONSUMED"}
+                   "request_id": "req-1", "state": "CONSUMED", "loop_id": "loop-1", "round": 1,
+                   "correlation_id": "loop-1-round-1", "expected_target_head": "head-a"}
         self.backend.append("receipt", "loop-1", receipt)
         recovered = GitHubRecordBackend(self.client, branch="feature/chat-work-command-bus").recover(
             "loop-1", expected_ids={"request": ["req-1"], "claim": ["claim-1"],
