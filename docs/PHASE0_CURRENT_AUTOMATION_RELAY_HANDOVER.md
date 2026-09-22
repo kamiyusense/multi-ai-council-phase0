@@ -470,3 +470,48 @@ fresh Chat
 The user should not be used as a progress checker or message courier.
 
 No Merge is authorized by this handover.
+
+
+## 13. Fresh reviewer takeover readback — 2026-09-22
+
+A fresh reviewer/planner Chat recovered from GitHub and direct task readback without relying on the old conversation.
+
+Current verified state after recovery:
+
+- PR #6 branch: `feature/chat-work-command-bus`
+- PR #6 current head: `b71370c46fe930dfd55e96f8c3eb73d05500074b`
+- PR #6 state: OPEN / unmerged
+- PR #4 branch: `feature/relay-transport-7070955470193506982`
+- PR #4 current head: `62f341b04f9d6e19dd003b42304bb896e4db45ef`
+- PR #4 state: OPEN / unmerged
+- event-trigger task `Phase 0 PR6 Command Bus`: enabled
+- carrier policy: PR #6 head is dynamic; no fixed carrier SHA
+- target policy: only PR #4 current head is compared with `expected_target_head`
+- retry = 0
+- fallback disabled
+
+Recovered reviewer record:
+
+`reviewer-github-smoke-001`
+
+Its request, claim, response, and terminal CONSUMED receipt were already present and mutually matched the current PR #4 target head, but the mutable state file was still `RUNNING` with round 0 and no last receipt.
+
+The fresh reviewer performed only the missing state finalization:
+
+- commit: `b71370c46fe930dfd55e96f8c3eb73d05500074b`
+- state: `COMPLETE`
+- round: 1
+- last_receipt_id: `review-resp-001`
+- no replayed review response
+- no PR #4 modification
+- no live provider/Jules execution
+- no retry/fallback
+- Merge: NO
+
+This is evidence that a fresh reviewer can recover an already-consumed durable review exchange and finish only the missing mutable state step without depending on Chat/thread identity.
+
+Relay resume remains anchored to PR #4 head `62f341b04f9d6e19dd003b42304bb896e4db45ef`.
+
+The repository still contains no exact `1.2.9` marker identified by the recovery inspection. Treat `1.2.9` as the user's human label, not a repository version identifier.
+
+Next safe Relay work remains static/mock only. The current PR #4 code already contains a Core `ProviderAdapter` bridge plus three-provider mock integration and the lower-level transport/envelope/lifecycle primitives. Before mutating PR #4 further, prefer an executor/test-capable environment that can run the existing suite and preserve exact test evidence. A new live Jules/provider start is not implied by this checkpoint.
