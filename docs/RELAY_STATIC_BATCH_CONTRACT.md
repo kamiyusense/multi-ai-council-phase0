@@ -38,7 +38,7 @@ The required prohibited scope includes main, `phase0-runs/**`, secrets,
 
 The only permitted test command sequence is fixed in code:
 
-1. `PYTHONPATH=src python -m pytest -q tests`
+1. `PYTHONPATH=src python -m unittest discover -s tests -t . -v`
 2. `python -m compileall -q src tests`
 3. `git diff --check`
 
