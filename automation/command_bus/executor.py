@@ -367,6 +367,9 @@ def consume_executor_result(
         "correlation_id": correlation_id,
         "expected_target_head": expected_target_head,
     }
+    target_tree = request.get("expected_target_tree")
+    if isinstance(target_tree, str) and target_tree and target_tree != "UNKNOWN":
+        receipt["expected_target_tree"] = target_tree
     if any(r.get("receipt_id") == receipt["receipt_id"] for r in ledger.receipts):
         return ExecutorResult("NO-OP", "terminal executor receipt already exists", receipt)
     ledger.receipts.append(receipt)
