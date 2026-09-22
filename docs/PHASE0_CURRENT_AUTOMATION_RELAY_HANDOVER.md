@@ -55,7 +55,7 @@ Command-bus PR:
 
 - PR: #6
 - branch: `feature/chat-work-command-bus`
-- current handover head: `849bb23fc9736f2e822fd098c07480a8a7d2cbf1`
+- current handover head: `9ee080b87383d646ef28adfefd2fdc7975ff588f`
 - base: `main`
 - state: OPEN / unmerged
 - PR #6 is the carrier; its head is dynamic and MUST NOT be compared to a stored expected carrier SHA.
@@ -67,7 +67,7 @@ Target PR:
 - state: OPEN / unmerged
 - `expected_target_head` compares only against PR #4 current head.
 
-Current pending command:
+Latest completed executor-contract command:
 
 ```text
 loop_id: executor-contract-001
@@ -77,38 +77,42 @@ automation/command_bus/commands/executor-contract-001/000001.json
 action:
 APPLY_PREPARE_EXECUTOR_CONTRACT
 
-state:
-automation/command_bus/state/executor-contract-001.json
-
-state = RUNNING
-round = 0
-max_rounds = 6
-retry_policy = 0
+implementation commit:
+ca89c9b92c1820a71aacfb0394a20aeb9ce71d0c
+message:
+feat: add prepare-only executor handoff contract
 
 receipt:
 automation/command_bus/receipts/executor-contract-001/000001.json
-currently absent at this handover checkpoint
+state = DONE
+executed_once = true
+retry_count = 0
+fallback_used = false
+external_send_attempted = false
+
+final loop state:
+automation/command_bus/state/executor-contract-001.json
+state = COMPLETE
+round = 1
+last_receipt_id = 000001
+
+final carrier head after state finalization:
+9ee080b87383d646ef28adfefd2fdc7975ff588f
 ```
 
-Command contract:
+Target validation remained:
 
 - expected repo: `kamiyusense/multi-ai-council-phase0`
 - expected PR: #4
 - expected target head: `62f341b04f9d6e19dd003b42304bb896e4db45ef`
+- observed target head: same
 - retry = 0
 - fallback = disabled
 - requires_live_model = false
-- requires_github_write = true
 
-At this handover checkpoint, GitHub backend readback proves command + RUNNING state exist and no terminal receipt exists.
+The previously queued UI event has now been resolved by backend evidence. The event-trigger Work task ran, wrote the implementation commit, persisted a terminal DONE receipt, and finalized state to COMPLETE. Follow-up processing must treat this command as terminal and NO-OP.
 
-A user-provided ChatGPT UI screenshot on 2026-09-22 showed:
-
-`1件のイベントが待機中`
-
-for the Phase 0 PR6 Command Bus task. Treat that as UI evidence that the event was queued, but do not call the Work run PASS until backend/run evidence and/or GitHub receipt/state proves it.
-
-Do not retrigger the same command merely because the Work run has not yet been observed. Read back first. Ambiguous delivery remains UNKNOWN.
+Do not replay `executor-contract-001-000001`.
 
 ## 3. Event-triggered Work task
 
@@ -234,21 +238,29 @@ Prepare-only result evidence must distinguish:
 - fallback_used = false
 - live_started = false
 
-The user/Work report immediately before this handover said a local prepare-only implementation reached:
+The prepare-only executor contract is now durably committed and verified by the event-trigger Work receipt.
 
-- 54 PASS / 0 FAIL
-- compileall PASS
-- git diff --check PASS
-- approval boundary PASS
-- live-start blocking PASS
-- fresh-session recovery PASS
-- exactly-once receipt recovery PASS
-- reviewer regression PASS
-- carrier-head change tolerance PASS
-- no thread/chat ID
-- PR #4 untouched
+Implementation evidence:
 
-However that specific 54-test local diff had not yet been durably pushed at the time the current GitHub command was created. Therefore GitHub/receipt evidence, not that old local report alone, determines completion.
+- implementation commit: `ca89c9b92c1820a71aacfb0394a20aeb9ce71d0c`
+- changed implementation files: exactly the five approved files
+- unittest: **55 PASS / 0 FAIL**
+- discovered test count: 55
+- compileall: PASS
+- git diff --check: PASS
+- approval boundary: covered
+- live-start blocking: covered
+- fresh-session recovery: covered
+- exactly-once receipt recovery: covered
+- reviewer regression: preserved
+- carrier-head changes do not replace target-head validation
+- no thread/chat ID correctness dependency
+- PR #4 head unchanged
+- live/Jules/provider execution: NO
+- retry: 0
+- fallback: disabled
+
+The earlier local 54-test report is now historical; use the GitHub-backed 55-test DONE receipt as the stronger current evidence.
 
 ## 6. Relay workbench — resume point
 
@@ -397,20 +409,18 @@ Use this exact logic:
 ```text
 read PR #6 current head
 -> read executor-contract-001 command/state/receipt
--> if terminal receipt/COMPLETE:
-     inspect evidence, verify changed files/tests/readback
-     continue to next safe integration step
-   else if RUNNING and no receipt:
-     inspect Work task/run status
-     do NOT duplicate/retrigger blindly
-     preserve UNKNOWN until delivery/execution can be verified
+-> verify terminal DONE + COMPLETE and implementation commit ca89c9b...
+-> verify 55-test receipt evidence and PR #4 target head
+-> do NOT replay the completed executor-contract command
+-> continue to the next safe integration step
 
 then
 
 read PR #4 current head
 -> verify Relay docs/tests/checkpoint
 -> compare against latest executor/automation state
--> prepare next static Relay/Jules step
+-> continue static Relay integration/recovery work
+-> treat the user's "1.2.9" as a human label unless a GitHub mapping is later found
 -> stop before unapproved live Jules/provider execution
 ```
 
