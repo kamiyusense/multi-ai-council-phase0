@@ -18,4 +18,10 @@ request expiry. Request, claim, and response operations reuse the shared
 progress. Records can be serialized and reconstructed in a fresh session
 without a thread binding.
 
+The GitHub-backed adapter maps records to `review_requests/<loop>/<request>.json`,
+`review_claims/<loop>/<claim>.json`, `review_responses/<loop>/<response>.json`,
+and `review_receipts/<loop>/<receipt>.json`; mutable loop state is stored at
+`state/<loop>.json`. It rejects unsafe path components, duplicate append
+writes, malformed or missing records, and invalid state readback.
+
 The runtime is intentionally limited to `automation/command_bus/**`; it does not execute Jules, providers, live models, API keys, or GitHub workflows.
