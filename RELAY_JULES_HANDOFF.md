@@ -9,6 +9,7 @@ Base/checkpoint commit: `230026f53f412cd52d8e2eac45457236c916b64d`
 
 Before changing code, read the following from the same repository/checkpoint:
 
+0. `AGENTS.md` — repository-wide user communication and operating rules
 1. `HANDOVER_CURRENT.md`
 2. `docs/ARCHITECTURE.md`
 3. `docs/PHASE0_IMPLEMENTATION_SPEC.md`
