@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "route-validation-007-000001",
+  "loop_id": "route-validation-007",
+  "round": 1,
+  "correlation_id": "route-validation-007-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_tested": "aa1f45d33d05919fdd83c74c48a7207f9f19d154",
+  "expected_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "observed_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "validation_results": {
+    "exact_tree_acquisition": {
+      "result": "PASS",
+      "verified_blob_count": 63,
+      "empty_blob_count": 1,
+      "method": "Git tree/blob SHA verified with Python stdlib Git blob hashing"
+    },
+    "unittest": {
+      "result": "PASS",
+      "test_count": 68,
+      "command": "python -m unittest discover -s automation/command_bus/tests -v"
+    },
+    "compileall": {
+      "result": "PASS",
+      "command": "python -m compileall -q automation/command_bus"
+    },
+    "diff_check": {
+      "result": "PASS",
+      "command": "git diff --cached --check",
+      "equivalent": "isolated scratch initialized as Git index; exact automation/command_bus tree staged and checked"
+    }
+  },
+  "workspace_verification": "PASS",
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "requires_live_model": false,
+  "live_provider_or_model_executed": false,
+  "jules_started": false,
+  "pr4_modified": false,
+  "merge_performed": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/aa1f45d33d05919fdd83c74c48a7207f9f19d154/automation/command_bus/commands/route-validation-007/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/6",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}
