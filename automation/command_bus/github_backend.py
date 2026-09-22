@@ -328,6 +328,9 @@ def _validate_record_graph(records: dict[str, list[dict[str, Any]]]) -> None:
         request = requests.get(claim["request_id"])
         if request is None:
             raise ValueError("claim references missing request")
+        if request.get("review_profile") == "DURABLE_REVIEW_V2":
+            if claim.get("role") != request.get("reviewer_role"):
+                raise ValueError("reviewer claim role mismatch")
         claimed_at = _time(claim["claimed_at"])
         claim_expiry = _time(claim["expires_at"])
         request_expiry = _time(request["expires_at"])
@@ -345,6 +348,13 @@ def _validate_record_graph(records: dict[str, list[dict[str, Any]]]) -> None:
         if request is None:
             raise ValueError("response references missing request")
         _match_context(request, response)
+        if request.get("review_profile") == "DURABLE_REVIEW_V2":
+            if response.get("reviewer_role") != request.get("reviewer_role"):
+                raise ValueError("reviewer role mismatch")
+            if response.get("review_kind") != request.get("review_kind"):
+                raise ValueError("review kind mismatch")
+            if response.get("decision") not in request.get("allowed_decisions", []):
+                raise ValueError("review decision not allowed by request")
         submitted_at = _time(response["submitted_at"])
         owners = [
             claim for claim in claims_by_request.get(response["request_id"], [])
@@ -381,6 +391,10 @@ def _match_context(expected: dict[str, Any], actual: dict[str, Any]) -> None:
             raise ValueError("durable review profile mismatch")
         if actual.get("expected_target_tree") != expected.get("expected_target_tree"):
             raise ValueError("durable review target tree mismatch")
+        if "reviewer_role" in actual and actual.get("reviewer_role") != expected.get("reviewer_role"):
+            raise ValueError("durable reviewer role mismatch")
+        if "review_kind" in actual and actual.get("review_kind") != expected.get("review_kind"):
+            raise ValueError("durable review kind mismatch")
 
 
 def _time(value: Any) -> datetime:
