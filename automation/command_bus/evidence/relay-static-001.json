@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "evidence_id": "relay-static-001",
+  "result": "PASS",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "carrier_head_dynamic": true,
+  "target_head_observed": "abac6f5aa955167c950d9cb15753ae14ac386317",
+  "implementation_commit": "1014c571b8e017fa3e986b8b53173c09042e80ce",
+  "guard_fix_commit": "8c9fa642c6adb04daebb483c021361704c09d100",
+  "fixture_tests": {
+    "command": "python -m unittest discover -s automation/command_bus/tests -v",
+    "local_scope": "new relay_static fixture only in this Work scratch",
+    "passed": 8,
+    "failed": 0
+  },
+  "compileall": {
+    "command": "python -m compileall -q automation/command_bus",
+    "result": "PASS"
+  },
+  "git_diff_check": "UNKNOWN: Work scratch was not a Git checkout; remote blob readback completed",
+  "target_pr_modified": false,
+  "model_executed": false,
+  "jules_started": false,
+  "provider_started": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge_performed": false,
+  "notes": [
+    "route-validation-005 already had terminal UNKNOWN receipt and was not replayed",
+    "PR #4 current head was read back before fixture creation",
+    "prepare-only contract performs target-head readback and never writes PR #4"
+  ]
+}
