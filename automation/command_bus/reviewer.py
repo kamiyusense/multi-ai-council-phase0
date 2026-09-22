@@ -118,6 +118,11 @@ def make_request_v2(
     return request
 
 
+def validate_review_request(request: dict[str, Any]) -> None:
+    """Validate a durable review request without mutating a ledger."""
+    _validate_request(request)
+
+
 def request_review(ledger: ReviewerLedger, request: dict[str, Any], *,
                    state: dict[str, Any] | StateMachine | None = None,
                    now: datetime | None = None) -> ReviewResult:
