@@ -1,7 +1,9 @@
-"""Fail-closed contract for bounded, prepare-only Relay static batches.
+"""Fail-closed contract for bounded Relay static batches.
 
-This module validates a future Work handoff. It never edits PR #4 and never
-starts Jules, a provider, or a live model.
+The module validates durable GitHub commands for either a PREPARE_ONLY batch or
+an explicitly bounded STATIC_WRITE batch. It never starts Jules, a provider,
+or a live model. Actual GitHub mutation remains an external Work responsibility
+after this validator passes all gates.
 """
 from __future__ import annotations
 
@@ -9,6 +11,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
+
+PREPARE_ACTION = "APPLY_RELAY_STATIC_BATCH"
+EXECUTE_ACTION = "EXECUTE_RELAY_STATIC_BATCH"
+REQUIRED_PROFILE = "RELAY_SAFETY_BATCH_V1"
 
 ALLOWED_PATH_SPECS = frozenset({
     "src/relay/**",
@@ -68,20 +74,28 @@ def validate_relay_command(
         "expected_target_head", "allowed_paths", "prohibited_paths",
         "objective", "test_commands", "requires_live_model",
         "requires_github_write", "retry", "fallback", "expires_at",
-        "predecessor_receipt_id",
+        "predecessor_receipt_id", "execution_mode", "profile",
     }
     missing = sorted(required - command.keys())
     if missing:
         raise ValueError("missing command fields: " + ", ".join(missing))
 
-    if command["schema_version"] != 1 or command["action"] != "APPLY_RELAY_STATIC_BATCH":
+    action = command["action"]
+    if command["schema_version"] != 1 or action not in {PREPARE_ACTION, EXECUTE_ACTION}:
         raise ValueError("unsupported relay command")
+    if command["profile"] != REQUIRED_PROFILE:
+        raise ValueError("unsupported relay batch profile")
     if command["target"] != "work" or command["retry"] != 0 or command["fallback"] != "disabled":
         raise ValueError("unsafe retry/fallback policy")
     if command["requires_live_model"] is not False:
         raise ValueError("live model execution is forbidden")
-    if command["requires_github_write"] is not False:
-        raise ValueError("target GitHub write is forbidden in prepare-only batch")
+
+    if action == PREPARE_ACTION:
+        if command["execution_mode"] != "PREPARE_ONLY" or command["requires_github_write"] is not False:
+            raise ValueError("prepare action must be non-writing")
+    else:
+        if command["execution_mode"] != "STATIC_WRITE" or command["requires_github_write"] is not True:
+            raise ValueError("execute action must explicitly request bounded static write")
 
     round_number = command["round"]
     loop_id = command["loop_id"]
@@ -103,9 +117,10 @@ def validate_relay_command(
     if state.get("round") != round_number - 1 or state.get("max_rounds") != 6:
         raise ValueError("round predecessor or max6 mismatch")
     state_expiry = state.get("expires_at")
-    if state_expiry is not None and _parse_time(state_expiry) <= (now or datetime.now(timezone.utc)):
+    current_time = now or datetime.now(timezone.utc)
+    if state_expiry is not None and _parse_time(state_expiry) <= current_time:
         raise ValueError("state expired")
-    if _parse_time(command["expires_at"]) <= (now or datetime.now(timezone.utc)):
+    if _parse_time(command["expires_at"]) <= current_time:
         raise ValueError("command expired")
 
     if terminal_receipt is not None and terminal_receipt.get("state") in TERMINAL_STATES:
@@ -161,8 +176,16 @@ def prepare_relay_batch(
             "retry_count": 0, "fallback_used": False,
         })
     return RelayBatchResult("PREPARED", "static batch validated", {
-        "target_head": current_head, "allowed_paths": command["allowed_paths"],
-        "test_commands": command["test_commands"], "target_pr_modified": False,
-        "model_executed": False, "jules_started": False,
-        "provider_started": False, "retry_count": 0, "fallback_used": False,
+        "target_head": current_head,
+        "action": command["action"],
+        "execution_mode": command["execution_mode"],
+        "profile": command["profile"],
+        "allowed_paths": command["allowed_paths"],
+        "test_commands": command["test_commands"],
+        "target_pr_modified": False,
+        "model_executed": False,
+        "jules_started": False,
+        "provider_started": False,
+        "retry_count": 0,
+        "fallback_used": False,
     })
