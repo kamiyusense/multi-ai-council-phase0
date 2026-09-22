@@ -145,7 +145,21 @@ class ReviewWakeCoordinator:
 
         # Mark before send so an ambiguous transport result cannot be replayed.
         self.dispatched_request_ids.add(request_id)
-        result = transport.send(wake)
+        try:
+            result = transport.send(wake)
+        except Exception as exc:
+            return TransportResult(
+                "UNKNOWN",
+                f"review transport result unavailable: {type(exc).__name__}",
+                {
+                    "request_id": request_id,
+                    "request_ref": request_ref,
+                    "external_send_attempted": "UNKNOWN",
+                    "retry_count": 0,
+                    "fallback_used": False,
+                    "second_send_attempted": False,
+                },
+            )
         evidence = dict(result.evidence)
         evidence.update({
             "request_id": request_id,
