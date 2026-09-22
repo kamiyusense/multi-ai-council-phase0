@@ -35,10 +35,11 @@ class WakeContentsClient(Protocol):
     def create(self, path: str, text: str, message: str, branch: str) -> WakeContent: ...
 
 
-def wake_attempt_path(loop_id: str, attempt_id: str) -> str:
+def wake_attempt_path(loop_id: str, request_id: str) -> str:
+    """One canonical append-only reservation path per review request."""
     _safe(loop_id, "loop_id")
-    _safe(attempt_id, "attempt_id")
-    return f"review_wake_attempts/{loop_id}/{attempt_id}.json"
+    _safe(request_id, "request_id")
+    return f"review_wake_attempts/{loop_id}/{request_id}.json"
 
 
 class DurableWakeBackend:
@@ -65,27 +66,16 @@ class DurableWakeBackend:
                 created_at=created_at,
             )
             loop_id = record["loop_id"]
-            existing = self._attempts_for_request(loop_id, record["request_id"], self.branch)
-            if existing:
+            path = wake_attempt_path(loop_id, record["request_id"])
+            existing_content = self.client.get(path, self.branch)
+            if existing_content is not None:
+                existing = self._decode(existing_content)
                 return TransportResult(
                     "BLOCKED",
-                    "durable wake attempt already exists for review request",
+                    "durable wake reservation already exists for review request",
                     {
                         "request_id": record["request_id"],
-                        "existing_attempt_ids": [x["attempt_id"] for x in existing],
-                        "fresh_reservation": False,
-                        "retry_count": 0,
-                        "fallback_used": False,
-                    },
-                )
-
-            path = wake_attempt_path(loop_id, attempt_id)
-            if self.client.get(path, self.branch) is not None:
-                return TransportResult(
-                    "BLOCKED",
-                    "durable wake attempt identity already exists",
-                    {
-                        "request_id": record["request_id"],
+                        "existing_attempt_id": existing["attempt_id"],
                         "fresh_reservation": False,
                         "retry_count": 0,
                         "fallback_used": False,
@@ -157,11 +147,12 @@ class DurableWakeBackend:
             request_id = request.get("request_id")
             _safe(loop_id, "loop_id")
             _safe(request_id, "request_id")
-            attempts = self._attempts_for_request(loop_id, request_id, self.ref)
-            if not attempts:
+            path = wake_attempt_path(loop_id, request_id)
+            content = self.client.get(path, self.ref)
+            if content is None:
                 return TransportResult(
                     "UNKNOWN",
-                    "durable wake attempt missing",
+                    "durable wake reservation missing",
                     {
                         "request_id": request_id,
                         "fresh_reservation": False,
@@ -169,18 +160,7 @@ class DurableWakeBackend:
                         "fallback_used": False,
                     },
                 )
-            if len(attempts) != 1:
-                return TransportResult(
-                    "UNKNOWN",
-                    "multiple durable wake attempts for one review request",
-                    {
-                        "request_id": request_id,
-                        "fresh_reservation": False,
-                        "retry_count": 0,
-                        "fallback_used": False,
-                    },
-                )
-            attempt = attempts[0]
+            attempt = self._decode(content)
             validate_wake_attempt(
                 request, attempt, request_ref=request_ref, route=route
             )
@@ -207,19 +187,6 @@ class DurableWakeBackend:
                 },
             )
 
-    def _attempts_for_request(
-        self, loop_id: str, request_id: str, ref: str
-    ) -> list[dict[str, Any]]:
-        prefix = f"review_wake_attempts/{loop_id}/"
-        result: list[dict[str, Any]] = []
-        for content in self.client.list(prefix, ref):
-            record = self._decode(content)
-            if record["loop_id"] != loop_id:
-                raise ValueError("wake attempt loop/path mismatch")
-            if record["request_id"] == request_id:
-                result.append(record)
-        return result
-
     def _decode(self, content: WakeContent) -> dict[str, Any]:
         record = json.loads(content.text)
         if not isinstance(record, dict):
@@ -236,7 +203,7 @@ class DurableWakeBackend:
             raise ValueError("unsupported wake attempt record")
         if record["state"] != "RESERVED" or record["retry"] != 0 or record["fallback"] != "disabled":
             raise ValueError("unsafe wake attempt state")
-        expected_path = wake_attempt_path(record["loop_id"], record["attempt_id"])
+        expected_path = wake_attempt_path(record["loop_id"], record["request_id"])
         if content.path != expected_path:
             raise ValueError("wake attempt path identity mismatch")
         _safe(record["request_id"], "request_id")
