@@ -8,9 +8,17 @@ Live Browser POC: NOT STARTED
 
 ## 1. Current canonical target
 
-PR #4:
-- head: `f288ff552b9bdccecb614c84cdd2071b9e7db08f`
-- tree: `7a03419c25ff1618a7d53724aa11b3de0e2eb995`
+PR #4 latest observed:
+- head: `2fc399ac7b415746763114c3951aa2e3b45adee7`
+- tree: `9e2d22b7caf001449d1a5aa4fd374fec81a415fe`
+
+The immediately preceding Relay implementation head
+`f288ff552b9bdccecb614c84cdd2071b9e7db08f` remains terminally validated by
+`relay-static-apply-005`. The newer `2fc399ac...` commit adds only static
+hardening/regression work for pre-classification raw-evidence snapshots,
+payload/correlation preservation, and provider-specific timeout isolation.
+Its deterministic Work validation is pending under
+`relay-static-regression-validation-006`.
 
 The Relay static batch `relay-static-apply-005` is terminal DONE and must not
 be replayed.
@@ -104,6 +112,23 @@ The static coordinator:
 - requires the eventual review_response to come from GitHub
 - blocks live-capable transports entirely in P1
 
+Durable cross-session no-replay support is also implemented:
+
+- `automation/command_bus/reviewer_wake_backend.py`
+- one canonical append-only reservation path per review request:
+  `review_wake_attempts/<loop>/<request_id>.json`
+- the record contains a unique attempt_id but the GitHub path is keyed by
+  request_id, so competing attempt IDs collide on the same durable create
+  point
+- only a reservation freshly created and independently read back by the
+  current execution is eligible for a transport send
+- a fresh Work/session that merely recovers an existing reservation receives
+  `fresh_reservation=false` and must not send again
+- an ambiguous reservation write/readback returns UNKNOWN and never triggers
+  an automatic second send
+- transport exceptions after reservation return UNKNOWN with retry=0
+- Browser/Direct/Manual remain mock-only; live-capable transports are blocked
+
 Therefore no live Browser/Chat/model POC is introduced by this checkpoint.
 
 ## 4. Regression fixtures
@@ -111,6 +136,7 @@ Therefore no live Browser/Chat/model POC is introduced by this checkpoint.
 Added:
 - `automation/command_bus/tests/test_reviewer_transport.py`
 - `automation/command_bus/tests/test_reviewer_v2_backend.py`
+- `automation/command_bus/tests/test_reviewer_wake_backend.py`
 
 Coverage includes:
 - Browser and Direct route contract equivalence
@@ -125,27 +151,48 @@ Coverage includes:
 - nested session identity => blocked
 - fresh durable recovery preserves tree identity
 - corrupted recovered target tree => UNKNOWN
+- one canonical wake reservation per review_request
+- ambiguous reservation write => UNKNOWN / no resend
+- recovered reservation => no transport authorization
+- fresh verified reservation => at most one mock wake
+- reservation path/route mismatch => UNKNOWN
 
 ## 5. Validation state
 
-A deterministic Work validation command exists:
+The first P1 command:
 
-`automation/command_bus/commands/hybrid-reviewer-p1-validation-001/000001.json`
+`hybrid-reviewer-p1-validation-001`
 
-Expected target:
-- PR #4 head `f288ff552b9bdccecb614c84cdd2071b9e7db08f`
+was never observed running. PR #4 subsequently advanced, making its
+expected_target_head stale. Its mutable state was closed as UNKNOWN/STale; the
+command must not be replayed.
 
-At this checkpoint the command state remains RUNNING and no terminal receipt
-exists. The connected event-trigger task's observed last-run timestamp predates
-the command commit. One wake-only PR comment was emitted; the logical command
-was not duplicated or replayed.
+A current read-only Relay regression validation now exists:
 
-Until a durable terminal receipt exists:
-- full command-bus unittest result: UNKNOWN
-- compileall result for the current P1 head: UNKNOWN
-- diff-check result for the current P1 head: UNKNOWN
+`automation/command_bus/commands/relay-static-regression-validation-006/000001.json`
 
-Do not promote these to PASS from static inspection.
+It binds:
+- PR #4 head `2fc399ac7b415746763114c3951aa2e3b45adee7`
+- PR #4 tree `9e2d22b7caf001449d1a5aa4fd374fec81a415fe`
+- blob count 39
+- unittest command `PYTHONPATH=src python -m unittest discover -s tests -t . -v`
+- compileall
+- diff check
+- retry=0 / fallback disabled / no live model
+
+At this checkpoint the command is RUNNING with no terminal receipt. Its command
+creation occurred after the last observed Work run, so one append-only
+wake-only event marker was created. The logical command itself was not
+duplicated or replayed.
+
+Until durable terminal receipts exist:
+- PR #4 regression commit `2fc399ac...` execution tests: UNKNOWN
+- latest full command-bus unittest result for the current P1 code: UNKNOWN
+- latest P1 compileall/diff-check: UNKNOWN
+
+Do not promote these to PASS from static inspection. After Relay validation is
+terminal, create a fresh P1 command-bus validation bound to the then-current
+PR #4 head; do not revive validation-001.
 
 ## 6. Safety state
 
