@@ -676,3 +676,106 @@ Do not create duplicate route-validation commands or replay 007 automatically.
 Because this project has a known Chat -> new Work handoff bug, the safe fallback is one manual Work prompt that tells Work to recover from GitHub, consume `route-validation-007`, and then exhaust the same bounded static Relay batch while preserving all receipt/readback rules.
 
 No Merge, main write, force push, branch deletion, live provider/model execution, API-key route, billing/settings/permission mutation, or Jules restart occurred.
+
+
+## 16. Relay static apply-001 UNKNOWN and exact target-workspace validation — 2026-09-23
+
+### Confirmed apply-001 terminal state
+
+Command:
+`relay-static-apply-001-000001`
+
+Durable receipt/state on PR #6 confirm:
+
+- state: `UNKNOWN`
+- round: `1`
+- starting target head: `ffcdff208d12620d423592df78af1fd1eb88950e`
+- ending target head: unchanged
+- PR #4 modified: `false`
+- baseline pytest: `UNKNOWN`
+- baseline compileall: `UNKNOWN`
+- baseline diff check: `UNKNOWN`
+- workspace verification: `UNKNOWN`
+- retry: `0`
+- fallback: disabled
+- Jules/provider/model/API-key/Merge: none
+
+The command is terminal and must not be replayed.
+
+### Predecessor validation was successful
+
+`route-validation-007-000001` completed `DONE` and proved the PR #6 command-bus workspace path itself works:
+
+- carrier head tested: `aa1f45d33d05919fdd83c74c48a7207f9f19d154`
+- target head observed: `ffcdff208d12620d423592df78af1fd1eb88950e`
+- exact command-bus blob verification: 63 blobs PASS
+- unittest: 68 tests PASS
+- compileall: PASS
+- deterministic staged diff check: PASS
+- retry: 0
+- fallback: disabled
+
+Therefore apply-001 did not fail because the command bus or target-head gate was generally broken. The unresolved step was exact PR #4 target workspace reconstruction/baseline execution.
+
+### Direct GitHub inspection after the UNKNOWN
+
+PR #4 current commit:
+`ffcdff208d12620d423592df78af1fd1eb88950e`
+
+Exact target tree:
+`62e681613be4de68ee5987634a075078f6bb522a`
+
+Git Trees recursive readback:
+
+- `truncated=false`
+- 46 total recursive entries
+- 39 blobs
+
+Therefore GitHub exposes enough exact tree/blob identity to reconstruct the target without relying on a stale Jules/local workspace.
+
+### New mandatory reconstruction proof
+
+A new command bus action is configured:
+
+`VALIDATE_RELAY_TARGET_WORKSPACE`
+
+It must:
+
+1. fresh-read PR #4 target head;
+2. fetch the exact commit tree SHA;
+3. read the recursive Git tree by tree SHA and require `truncated=false`;
+4. fetch every blob by blob SHA;
+5. verify every byte length and Git blob SHA;
+6. materialize only those verified blobs in an isolated Work scratch;
+7. initialize a verification-only local Git repository;
+8. stage exactly the reconstructed target files;
+9. run `git write-tree`;
+10. require reconstructed write-tree SHA == GitHub target tree SHA;
+11. only then run baseline pytest/compileall/diff-check;
+12. never modify PR #4 in this validation action.
+
+A correct commit/HEAD readback alone is explicitly insufficient after the Jules stale-workspace incident.
+
+### Current command
+
+Loop:
+`target-workspace-validation-001`
+
+Command:
+`target-workspace-validation-001-000001`
+
+Expected target:
+
+- PR #4 head: `ffcdff208d12620d423592df78af1fd1eb88950e`
+- tree: `62e681613be4de68ee5987634a075078f6bb522a`
+- expected blobs: 39
+
+At checkpoint time:
+
+- state: `RUNNING`
+- round: `0`
+- receipt: not present
+- PR #4 unchanged
+- no retry sent
+
+If this validation completes DONE with exact write-tree equality and baseline PASS, the event controller is configured to create a new distinct command `relay-static-apply-002` for a fresh run. It must not replay apply-001.
