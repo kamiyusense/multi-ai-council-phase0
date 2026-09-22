@@ -24,6 +24,7 @@ class TransportResult:
 
 class ReviewerTransport(Protocol):
     route: str
+    live_transport: bool
 
     def send(self, wake: dict[str, Any]) -> TransportResult: ...
 
@@ -75,6 +76,7 @@ class MockReviewerTransport:
         if route not in SUPPORTED_ROUTES:
             raise ValueError("unsupported reviewer transport route")
         self.route = route
+        self.live_transport = False
         self.sent: list[dict[str, Any]] = []
 
     def send(self, wake: dict[str, Any]) -> TransportResult:
@@ -112,6 +114,16 @@ class ReviewWakeCoordinator:
             return TransportResult(
                 "UNKNOWN", "review request identity unavailable",
                 {"retry_count": 0, "fallback_used": False},
+            )
+        if getattr(transport, "live_transport", True):
+            return TransportResult(
+                "BLOCKED", "live reviewer transport is not authorized by static P1",
+                {
+                    "request_id": request_id,
+                    "retry_count": 0,
+                    "fallback_used": False,
+                    "external_send_attempted": False,
+                },
             )
         if request_id in self.dispatched_request_ids:
             return TransportResult(
