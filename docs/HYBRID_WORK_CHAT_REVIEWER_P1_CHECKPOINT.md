@@ -180,19 +180,24 @@ It binds:
 - diff check
 - retry=0 / fallback disabled / no live model
 
-At this checkpoint the command is RUNNING with no terminal receipt. Its command
-creation occurred after the last observed Work run, so one append-only
-wake-only event marker was created. The logical command itself was not
-duplicated or replayed.
+One append-only wake-only event marker was emitted. Work activity was observed
+after that wake, but no durable receipt or state transition was produced.
+Because the exact execution result is unverifiable, the mutable state was
+closed as UNKNOWN with retry=0. The command must not be replayed.
 
-Until durable terminal receipts exist:
-- PR #4 regression commit `2fc399ac...` execution tests: UNKNOWN
-- latest full command-bus unittest result for the current P1 code: UNKNOWN
-- latest P1 compileall/diff-check: UNKNOWN
+Append-only evidence:
+`automation/command_bus/evidence/relay-static-regression-validation-006-no-receipt.json`
 
-Do not promote these to PASS from static inspection. After Relay validation is
-terminal, create a fresh P1 command-bus validation bound to the then-current
-PR #4 head; do not revive validation-001.
+Therefore:
+- PR #4 regression commit `2fc399ac...` execution tests remain UNKNOWN
+- no further PR #4 implementation mutation should build on that test result
+  until a fresh independent validation route succeeds
+- Hybrid P1 command-bus validation is an independent safe subtask and may
+  proceed against the current PR #4 identity
+- latest full command-bus unittest/compileall/diff-check remains UNKNOWN until
+  its own terminal receipt exists
+
+Do not promote any UNKNOWN to PASS from static inspection.
 
 ## 6. Safety state
 
