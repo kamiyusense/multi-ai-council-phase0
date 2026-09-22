@@ -548,3 +548,52 @@ Safety constraints for this batch:
 - no branch deletion
 
 Because this Chat does not currently have an execution workspace/test runner attached, it must not mutate PR #4 code and then guess PASS. Preserve the verified PR #4 code head until an executor can run the tests and record evidence.
+
+
+## 15. Jules stale-workspace incident and recovery — 2026-09-23
+
+### Incident
+
+PR #4 was at verified head `62f341b04f9d6e19dd003b42304bb896e4db45ef`.
+A bounded static Relay task was sent to Jules with an explicit requirement to prove workspace synchronization to that exact head before any mutation.
+
+Jules acknowledged the instruction, then created commit:
+
+- `abac6f5aa955167c950d9cb15753ae14ac386317`
+- message: `docs: add Jules continuity probe to checkpoint`
+- parent: exactly `62f341b04f9d6e19dd003b42304bb896e4db45ef`
+
+The commit tree nevertheless removed or regressed numerous files that existed at the parent, including `AGENTS.md`, Relay safety/design documents, provider policy, deterministic envelope/duplicate/lifecycle helpers, and existing static tests. It also replaced safer Relay behavior with older/simpler behavior (for example Python `hash()` instead of deterministic SHA-256 and an outer `DELIVERED` result around malformed provider output).
+
+The checkpoint written by that commit explicitly described reuse of existing Jules task `7070955470193506982` and the existing branch. The exact internal Jules failure mechanism is not directly observable, but the evidence is consistent with a stale/incomplete task workspace tree being committed on top of the correct current Git parent. This is therefore recorded as **likely stale workspace/task reuse**, not as a proven internal Jules bug.
+
+### Containment
+
+A GitHub `@jules STOP` instruction was issued. Jules explicitly acknowledged the stop and stated it would make no further commits or repairs.
+
+No Merge, force push, branch deletion, provider execution, API-key route, billing/settings/permission change, or main write occurred.
+
+### Recovery
+
+The verified pre-incident commit `62f341b04f9d6e19dd003b42304bb896e4db45ef` has Git tree:
+
+- `62e681613be4de68ee5987634a075078f6bb522a`
+
+A normal non-destructive recovery commit was created with parent `abac6f5...` and that exact verified tree:
+
+- recovery commit: `ffcdff208d12620d423592df78af1fd1eb88950e`
+- PR #4 branch updated fast-forward only
+- recovery tree: `62e681613be4de68ee5987634a075078f6bb522a`
+- compare `62f341b... -> ffcdff2...`: **0 changed files**
+
+Thus the Jules incident remains in history for evidence, while the current PR #4 content is byte/tree-equivalent to the verified pre-incident Relay state.
+
+### Durable lesson
+
+Do not use a long-lived Jules task/workspace as the source of truth.
+Before any Jules write, require both:
+
+1. current GitHub target head readback; and
+2. proof that the actual workspace tree is synchronized to that head.
+
+A correct commit parent alone is insufficient proof that the workspace contents were current.
