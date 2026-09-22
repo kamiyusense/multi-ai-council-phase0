@@ -296,7 +296,7 @@ After Jules change:
 Ambiguity => UNKNOWN. Never start Jules a second time. retry=0; fallback
 disabled.
 
-## 8. Workspace failure policy
+## 9. Workspace failure policy
 
 Gate failure blocks only the affected executor mutation.
 
