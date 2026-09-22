@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-stale-workspace-recovery-20260923",
+  "target_pr": 4,
+  "incident_commit": "abac6f5aa955167c950d9cb15753ae14ac386317",
+  "verified_preincident_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "verified_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "recovery_commit": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "recovery_compare_changed_files": 0,
+  "jules_stop_acknowledged": true,
+  "merge_performed": false,
+  "force_push_used": false,
+  "main_modified": false,
+  "live_provider_or_model_executed": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "note": "Evidence-only wake commit. It does not modify PR #4 or command-bus implementation."
+}
