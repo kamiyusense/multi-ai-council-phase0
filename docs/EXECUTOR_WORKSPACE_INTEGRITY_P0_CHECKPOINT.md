@@ -4,7 +4,7 @@ Updated: 2026-09-23
 Repository: `kamiyusense/multi-ai-council-phase0`
 Branch: `feature/chat-work-command-bus`
 Target PR for identity checks only: PR #4
-Status: IMPLEMENTED / TEST EXECUTION EVIDENCE UNKNOWN
+Status: IMPLEMENTED / VALIDATED
 
 ## Scope
 
@@ -169,33 +169,56 @@ head+tree binding and recovery rejection of a mismatched target tree.
 
 ## Validation evidence
 
-Two event-driven validation attempts were handled under retry=0:
+Earlier validation commands were handled fail-closed under retry=0:
 
 1. `workspace-integrity-p0-validation-001`
-   - event run observed but no durable receipt/state transition
-   - state closed as terminal UNKNOWN
-   - command was not replayed
+   - event run produced no durable terminal evidence
+   - state closed as UNKNOWN
+   - not replayed
 
 2. `workspace-integrity-p0-validation-002`
-   - current state at checkpoint preparation: RUNNING
-   - terminal receipt: not present
-   - event runner has not produced verifiable execution evidence yet
-   - no duplicate command was created
+   - event runner did not start before the implementation changed
+   - state closed as UNKNOWN to prevent delayed stale validation
+   - not replayed
 
-Repository GitHub Actions / commit status evidence for the P0 head was also
-checked and no workflow run/status was available.
+Fresh validation `workspace-integrity-p0-validation-003` then executed against
+carrier head `f1edb91c7bbcf9cd99409cc0eb0e1b1332b1f8cc`.
 
-Therefore the following must remain UNKNOWN until executable evidence exists:
+Durable terminal receipt:
 
-- full command-bus unittest result/count after P0 changes
-- compileall result after P0 changes
-- git diff --check result after P0 changes
+`automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json`
 
-Static remote readback confirms that the intended implementation/test files
-exist at the PR #6 branch and that the change set is limited to the P0
-implementation, tests, docs, and durable validation records.
+Results:
 
-Do not convert test execution to PASS from static inspection alone.
+- exact tree/blob acquisition: PASS
+- verified blobs: 79
+- empty blobs: 1
+- `python -m unittest discover -s automation/command_bus/tests -v`:
+  **104 PASS / 0 FAIL**
+- `python -m compileall -q automation/command_bus`: **PASS**
+- `git diff --check`: **PASS**
+- target head observed: `ffcdff208d12620d423592df78af1fd1eb88950e`
+- PR #4 modified: NO
+- live/Jules/external send: NO
+- retry: 0
+- fallback: disabled
+
+An independent isolated reconstruction of the exact P0-modified Git blobs also
+ran the focused regression set:
+
+- workspace integrity: 28 PASS
+- existing executor/backend + integrity contract: 27 PASS
+- Relay static contract: 14 PASS
+- total focused tests: **69 PASS / 0 FAIL**
+- compileall: PASS
+- staged `git diff --check`: PASS
+
+This independently confirms the Jules-incident regression fixture blocks the
+correct-HEAD / stale-tracked-worktree shape before a mutation lease is issued.
+
+Append-only evidence:
+
+`automation/command_bus/evidence/workspace-integrity-p0-20260923.json`
 
 ## Safety state
 
@@ -212,22 +235,19 @@ Do not convert test execution to PASS from static inspection alone.
 - retry: 0
 - fallback: disabled
 
-## Remaining blocker / next safe action
+## Remaining boundary / next safe action
 
-P0 code and regression fixtures are present, but the connected event-driven
-Work runner has not produced a durable test receipt for validation-002.
+P0 implementation and regression validation are PASS.
 
-Before this P0 gate is treated as executable PASS or before any new PR #4
-mutation command is authorized, obtain an actual runner result for:
+No PR #4 mutation is authorized by this checkpoint. Before a future mutating
+executor is allowed to write, its runtime path must consume a concrete
+`expected_target_tree`, run TREE_IDENTITY_V1 against the actual executor
+workspace, obtain a mutation lease, revalidate target head/tree immediately
+before commit, apply the path+operation policy, verify commit parent/tree/diff,
+and perform remote readback.
 
-```text
-python -m unittest discover -s automation/command_bus/tests -v
-python -m compileall -q automation/command_bus
-git diff --check
-```
-
-and persist/read back the terminal receipt/state. If the runner reports a
-deterministic failure caused by this P0 diff, fix only the PR #6 P0 scope and
-rerun within the authorized safe batch. Do not replay an ambiguous external
-write.
+A workspace Gate failure blocks only that executor's mutation. Read-only
+GitHub verification, evidence preservation, independent safe work, and
+authorized disposable-workspace recreation remain allowed. Persistent
+workspaces are quarantined rather than destructively repaired.
 
