@@ -94,7 +94,9 @@ class ExecutorBackendTests(unittest.TestCase):
         self.persist()
         receipt = {
             "schema_version": 1, "receipt_id": "executor-result-1",
+            "execution_receipt_id": "executor-result-1",
             "result_id": "result-1", "request_id": "req-1", "state": "CONSUMED",
+            "execution_result_id": "result-1", "execution_request_id": "req-1",
             "loop_id": "exec-loop", "round": 1,
             "correlation_id": "exec-loop-round-1", "expected_target_head": "head-a",
         }
@@ -104,6 +106,14 @@ class ExecutorBackendTests(unittest.TestCase):
         ).recover("exec-loop")
         self.assertEqual(recovered.status, "RECOVERED")
         self.assertEqual(len(recovered.record["ledger"].receipts), 1)
+
+    def test_execution_paths_and_identity_aliases(self):
+        self.assertEqual(
+            executor_record_path("request", "exec-loop", "req-1"),
+            "execution_requests/exec-loop/req-1.json",
+        )
+        request = self.ledger.requests[0]
+        self.assertEqual(request["execution_request_id"], request["request_id"])
 
     def test_duplicate_append_blocked(self):
         self.assertEqual(self.backend.append("request", "exec-loop", self.ledger.requests[0]).status, "ACCEPTED")
@@ -119,7 +129,7 @@ class ExecutorBackendTests(unittest.TestCase):
     def test_recovery_rejects_path_identity_mismatch(self):
         self.assertEqual(self.backend.write_state("exec-loop", state()).status, "ACCEPTED")
         req = self.ledger.requests[0]
-        path = "executor_requests/exec-loop/wrong.json"
+        path = "execution_requests/exec-loop/wrong.json"
         self.client.files[path] = ExecutorContent(path, json.dumps(req), "bad")
         self.assertEqual(self.backend.recover("exec-loop").status, "UNKNOWN")
 
@@ -128,6 +138,21 @@ class ExecutorBackendTests(unittest.TestCase):
         data = json.dumps({p: c.text for p, c in self.client.files.items()}).lower()
         self.assertNotIn("thread_id", data)
         self.assertNotIn("conversation_id", data)
+
+    def test_exactly_once_receipt_survives_fresh_recovery(self):
+        self.persist()
+        receipt = {
+            "schema_version": 1, "receipt_id": "executor-result-1",
+            "execution_receipt_id": "executor-result-1",
+            "result_id": "result-1", "execution_result_id": "result-1",
+            "request_id": "req-1", "execution_request_id": "req-1",
+            "state": "CONSUMED", "loop_id": "exec-loop", "round": 1,
+            "correlation_id": "exec-loop-round-1", "expected_target_head": "head-a",
+        }
+        self.assertEqual(self.backend.append("receipt", "exec-loop", receipt).status, "ACCEPTED")
+        fresh = GitHubExecutorBackend(self.client, branch="feature/chat-work-command-bus")
+        self.assertEqual(fresh.recover("exec-loop").status, "RECOVERED")
+        self.assertEqual(fresh.append("receipt", "exec-loop", receipt).status, "BLOCKED")
 
 
 if __name__ == "__main__":

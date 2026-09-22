@@ -66,9 +66,43 @@ class ExecutorProtocolTests(unittest.TestCase):
         self.assertEqual(self.result().status, "ACCEPTED")
         self.assertEqual(self.consume().status, "VALID")
 
+    def test_request_contract_is_provider_neutral_and_bounded(self):
+        item = request(executor_kind="generic")
+        self.assertEqual(item["target_role"], "executor")
+        self.assertEqual(item["execution_request_id"], item["request_id"])
+        self.assertEqual(item["execution_mode"], "PREPARE_ONLY")
+        self.assertFalse(item["live_start_permitted"])
+        self.assertFalse(item["requires_live_model"])
+        self.assertEqual(item["retry"], 0)
+        self.assertEqual(item["fallback"], "disabled")
+        self.assertIn("LIVE_START", item["prohibited_actions"])
+
+    def test_user_approval_boundary_fails_closed(self):
+        pending = request(requires_user_approval=True, approval_state="PENDING")
+        self.assertEqual(request_executor(ExecutorLedger(), pending).status, "BLOCKED")
+        ledger = ExecutorLedger()
+        ledger.append_request(pending)
+        self.assertEqual(claim_executor(
+            ledger, "exec-req-1", claim_id="approval-claim",
+            executor_instance_id="executor-a", executor_generation=1,
+            capability="prepare-only", claimed_at=NOW,
+        ).status, "BLOCKED")
+
+    def test_approved_request_can_be_claimed(self):
+        approved = request(requires_user_approval=True, approval_state="APPROVED")
+        ledger = ExecutorLedger()
+        self.assertEqual(request_executor(ledger, approved).status, "REQUESTED")
+        self.assertEqual(claim_executor(
+            ledger, "exec-req-1", claim_id="approved-claim",
+            executor_instance_id="executor-a", executor_generation=1,
+            capability="prepare-only", claimed_at=NOW,
+        ).status, "CLAIMED")
+
     def test_live_request_is_rejected(self):
         with self.assertRaises(ValueError):
             request(execution_mode="LIVE", requires_live_model=True)
+        with self.assertRaises(ValueError):
+            request(live_start_permitted=True)
 
     def test_claim_replacement_and_stale_generation(self):
         short = (NOW + timedelta(seconds=1)).isoformat()
@@ -89,6 +123,27 @@ class ExecutorProtocolTests(unittest.TestCase):
         self.assertEqual(self.result().status, "NO-OP")
         self.assertEqual(self.consume().status, "VALID")
         self.assertEqual(self.consume().status, "NO-OP")
+
+    def test_prepare_result_has_required_safety_fields_and_aliases(self):
+        self.claim()
+        accepted = self.result(artifact_refs=["artifact://patch"])
+        record = accepted.record
+        self.assertEqual(record["execution_result_id"], record["result_id"])
+        self.assertEqual(record["execution_request_id"], record["request_id"])
+        self.assertEqual(record["artifact_refs"], ["artifact://patch"])
+        self.assertFalse(record["model_executed"])
+        self.assertFalse(record["external_send_attempted"])
+        self.assertFalse(record["live_started"])
+        self.assertEqual(record["retry_count"], 0)
+        self.assertFalse(record["fallback_used"])
+
+    def test_unsafe_recovered_result_is_rejected(self):
+        self.claim()
+        self.result()
+        data = self.ledger.export_records()
+        data["results"][0]["live_started"] = True
+        with self.assertRaises(ValueError):
+            ExecutorLedger.from_records(data)
 
     def test_state_gates_apply(self):
         stopped = state(state="HALTED", stop_requested=True)

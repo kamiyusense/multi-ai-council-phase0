@@ -89,17 +89,35 @@ def make_executor_request(
     expected_repo: str, expected_pr: int, expected_target_head: str,
     expires_at: str, execution_mode: str = "PREPARE_ONLY",
     requires_live_model: bool = False, requires_github_write: bool = False,
+    target_role: str = "executor", capability: str = "prepare-only",
+    objective: str = "prepare implementation artifact",
+    input_refs: Any = None, evidence_refs: Any = None,
+    allowed_actions: Any = None, prohibited_actions: Any = None,
+    requires_user_approval: bool = False,
+    approval_state: str = "NOT_REQUIRED",
+    live_start_permitted: bool = False,
 ) -> dict[str, Any]:
     record = {
         "schema_version": 1,
         "request_id": request_id,
+        "execution_request_id": request_id,
         "loop_id": loop_id,
         "round": round,
         "correlation_id": correlation_id,
+        "target_role": target_role,
         "executor_role": executor_role,
         "executor_kind": executor_kind,
+        "capability": capability,
+        "objective": objective,
+        "input_refs": list(input_refs or []),
+        "evidence_refs": list(evidence_refs or []),
+        "allowed_actions": list(allowed_actions or ["PREPARE_ARTIFACT"]),
+        "prohibited_actions": list(prohibited_actions or ["LIVE_START", "EXTERNAL_SEND"]),
+        "requires_user_approval": requires_user_approval,
+        "approval_state": approval_state,
         "action": action,
         "execution_mode": execution_mode,
+        "live_start_permitted": live_start_permitted,
         "expected_repo": expected_repo,
         "expected_pr": expected_pr,
         "expected_target_head": expected_target_head,
@@ -123,6 +141,8 @@ def request_executor(
     if gate:
         return gate
     try:
+        if request.get("requires_user_approval") and request.get("approval_state") != "APPROVED":
+            return ExecutorResult("BLOCKED", "executor request requires user approval")
         ledger.append_request(request)
     except (ValueError, TypeError, KeyError) as exc:
         return ExecutorResult("UNKNOWN", str(exc))
@@ -144,6 +164,8 @@ def claim_executor(
     try:
         if request is None:
             return ExecutorResult("UNKNOWN", "executor request not found")
+        if request.get("requires_user_approval") and request.get("approval_state") != "APPROVED":
+            return ExecutorResult("BLOCKED", "executor request requires user approval")
         request_expiry = _parse(request["expires_at"])
         if now >= request_expiry:
             return ExecutorResult("UNKNOWN", "executor request expired")
@@ -161,7 +183,9 @@ def claim_executor(
         record = {
             "schema_version": 1,
             "claim_id": claim_id,
+            "execution_claim_id": claim_id,
             "request_id": request_id,
+            "execution_request_id": request_id,
             "executor_instance_id": executor_instance_id,
             "executor_generation": executor_generation,
             "executor_role": request["executor_role"],
@@ -183,6 +207,7 @@ def submit_executor_result(
     loop_id: str, round: int, correlation_id: str,
     expected_target_head: str, submitted_at: datetime | None = None,
     state: dict[str, Any] | StateMachine | None = None,
+    artifact_refs: Any = None,
 ) -> ExecutorResult:
     now = _utc(submitted_at)
     gate = _state_gate(state, now)
@@ -207,7 +232,9 @@ def submit_executor_result(
         record = {
             "schema_version": 1,
             "result_id": result_id,
+            "execution_result_id": result_id,
             "request_id": request_id,
+            "execution_request_id": request_id,
             "loop_id": loop_id,
             "round": round,
             "correlation_id": correlation_id,
@@ -215,7 +242,13 @@ def submit_executor_result(
             "executor_instance_id": executor_instance_id,
             "executor_generation": executor_generation,
             "result_state": result_state,
+            "artifact_refs": list(artifact_refs or []),
             "evidence_refs": evidence_refs,
+            "model_executed": False,
+            "external_send_attempted": False,
+            "retry_count": 0,
+            "fallback_used": False,
+            "live_started": False,
             "submitted_at": now.isoformat(),
             "status": "AVAILABLE",
         }
@@ -260,8 +293,11 @@ def consume_executor_result(
     receipt = {
         "schema_version": 1,
         "receipt_id": f"executor-{result['result_id']}",
+        "execution_receipt_id": f"executor-{result['result_id']}",
         "result_id": result["result_id"],
+        "execution_result_id": result["result_id"],
         "request_id": request_id,
+        "execution_request_id": request_id,
         "state": "CONSUMED",
         "loop_id": loop_id,
         "round": round,
@@ -311,7 +347,10 @@ def _active_claim(
 def _validate_request(r: dict[str, Any]) -> None:
     required = {
         "schema_version", "request_id", "loop_id", "round", "correlation_id",
-        "executor_role", "executor_kind", "action", "execution_mode",
+        "execution_request_id", "target_role", "executor_role", "executor_kind",
+        "capability", "objective", "input_refs", "evidence_refs",
+        "allowed_actions", "prohibited_actions", "requires_user_approval",
+        "approval_state", "action", "execution_mode", "live_start_permitted",
         "expected_repo", "expected_pr", "expected_target_head",
         "requires_live_model", "requires_github_write", "retry", "fallback",
         "expires_at", "status",
@@ -320,13 +359,28 @@ def _validate_request(r: dict[str, Any]) -> None:
         raise ValueError("invalid executor request")
     if r["schema_version"] != 1 or r["status"] != "OPEN":
         raise ValueError("invalid executor request")
-    if r["execution_mode"] != "PREPARE_ONLY" or r["requires_live_model"] is not False:
+    if (
+        r["execution_mode"] != "PREPARE_ONLY"
+        or r["requires_live_model"] is not False
+        or r["live_start_permitted"] is not False
+    ):
         raise ValueError("live executor request is not authorized")
+    if r["target_role"] != "executor" or r["execution_request_id"] != r["request_id"]:
+        raise ValueError("invalid executor target or request alias")
+    if not isinstance(r["requires_user_approval"], bool):
+        raise ValueError("invalid executor approval requirement")
+    if r["approval_state"] not in {"NOT_REQUIRED", "PENDING", "APPROVED", "DENIED"}:
+        raise ValueError("invalid executor approval state")
+    if not r["requires_user_approval"] and r["approval_state"] != "NOT_REQUIRED":
+        raise ValueError("executor approval state mismatch")
+    if r["requires_user_approval"] and r["approval_state"] == "NOT_REQUIRED":
+        raise ValueError("executor approval state mismatch")
     if r["retry"] != 0 or r["fallback"] != "disabled":
         raise ValueError("unsafe executor request policy")
     for key in (
         "request_id", "loop_id", "correlation_id", "executor_role",
-        "executor_kind", "action", "expected_repo", "expected_target_head",
+        "executor_kind", "capability", "objective", "action", "expected_repo",
+        "expected_target_head",
     ):
         if not isinstance(r[key], str) or not r[key]:
             raise ValueError(f"invalid executor request {key}")
@@ -336,12 +390,18 @@ def _validate_request(r: dict[str, Any]) -> None:
         raise ValueError("invalid executor target PR")
     if not isinstance(r["requires_github_write"], bool):
         raise ValueError("invalid github write flag")
+    for key in ("input_refs", "evidence_refs", "allowed_actions", "prohibited_actions"):
+        if not isinstance(r[key], list) or any(not isinstance(v, str) or not v for v in r[key]):
+            raise ValueError(f"invalid executor request {key}")
+    if not r["allowed_actions"] or not r["prohibited_actions"]:
+        raise ValueError("executor action boundaries are required")
     _parse(r["expires_at"])
 
 
 def _validate_claim(c: dict[str, Any]) -> None:
     required = {
-        "schema_version", "claim_id", "request_id", "executor_instance_id",
+        "schema_version", "claim_id", "execution_claim_id", "request_id",
+        "execution_request_id", "executor_instance_id",
         "executor_generation", "executor_role", "capability",
         "claimed_at", "expires_at", "status",
     }
@@ -349,6 +409,8 @@ def _validate_claim(c: dict[str, Any]) -> None:
         raise ValueError("invalid executor claim")
     if c["schema_version"] != 1 or c["status"] != "ACTIVE":
         raise ValueError("invalid executor claim")
+    if c["execution_claim_id"] != c["claim_id"] or c["execution_request_id"] != c["request_id"]:
+        raise ValueError("invalid executor claim alias")
     for key in ("claim_id", "request_id", "executor_instance_id", "executor_role", "capability"):
         if not isinstance(c[key], str) or not c[key]:
             raise ValueError(f"invalid executor claim {key}")
@@ -360,21 +422,38 @@ def _validate_claim(c: dict[str, Any]) -> None:
 
 def _validate_result(r: dict[str, Any]) -> None:
     required = {
-        "schema_version", "result_id", "request_id", "loop_id", "round",
+        "schema_version", "result_id", "execution_result_id", "request_id",
+        "execution_request_id", "loop_id", "round",
         "correlation_id", "expected_target_head", "executor_instance_id",
-        "executor_generation", "result_state", "evidence_refs",
+        "executor_generation", "result_state", "artifact_refs", "evidence_refs",
+        "model_executed", "external_send_attempted", "retry_count",
+        "fallback_used", "live_started",
         "submitted_at", "status",
     }
     if not isinstance(r, dict) or not required <= r.keys():
         raise ValueError("invalid executor result")
     if r["schema_version"] != 1 or r["status"] != "AVAILABLE":
         raise ValueError("invalid executor result")
+    if r["execution_result_id"] != r["result_id"] or r["execution_request_id"] != r["request_id"]:
+        raise ValueError("invalid executor result alias")
+    if (
+        r["model_executed"] is not False
+        or r["external_send_attempted"] is not False
+        or r["retry_count"] != 0
+        or r["fallback_used"] is not False
+        or r["live_started"] is not False
+    ):
+        raise ValueError("unsafe executor result")
     if r["result_state"] not in {"PREPARED", "BLOCKED", "UNKNOWN"}:
         raise ValueError("invalid executor result state")
     if not isinstance(r["evidence_refs"], list) or any(
         not isinstance(ref, str) or not ref for ref in r["evidence_refs"]
     ):
         raise ValueError("malformed executor evidence refs")
+    if not isinstance(r["artifact_refs"], list) or any(
+        not isinstance(ref, str) or not ref for ref in r["artifact_refs"]
+    ):
+        raise ValueError("malformed executor artifact refs")
     if isinstance(r["round"], bool) or not isinstance(r["round"], int) or r["round"] < 1:
         raise ValueError("invalid executor result round")
     if isinstance(r["executor_generation"], bool) or not isinstance(r["executor_generation"], int) or r["executor_generation"] < 1:
@@ -390,13 +469,20 @@ def _validate_result(r: dict[str, Any]) -> None:
 
 def _validate_receipt(r: dict[str, Any]) -> None:
     required = {
-        "schema_version", "receipt_id", "result_id", "request_id", "state",
+        "schema_version", "receipt_id", "execution_receipt_id", "result_id",
+        "execution_result_id", "request_id", "execution_request_id", "state",
         "loop_id", "round", "correlation_id", "expected_target_head",
     }
     if not isinstance(r, dict) or not required <= r.keys():
         raise ValueError("invalid executor receipt")
     if r["schema_version"] != 1 or r["state"] != "CONSUMED":
         raise ValueError("invalid executor receipt")
+    if (
+        r["execution_receipt_id"] != r["receipt_id"]
+        or r["execution_result_id"] != r["result_id"]
+        or r["execution_request_id"] != r["request_id"]
+    ):
+        raise ValueError("invalid executor receipt alias")
 
 
 def _match_request(request: dict[str, Any], result: dict[str, Any]) -> None:

@@ -42,10 +42,10 @@ Durable-boundary hardening:
 ## Exchangeable executor handoff
 
 Implementation work is represented by durable executor-role records:
-`executor_requests/<loop>/<request>.json`,
-`executor_claims/<loop>/<claim>.json`,
-`executor_results/<loop>/<result>.json`, and
-`executor_receipts/<loop>/<receipt>.json`, sharing mutable `state/<loop>.json`.
+`execution_requests/<loop>/<request>.json`,
+`execution_claims/<loop>/<claim>.json`,
+`execution_results/<loop>/<result>.json`, and
+`execution_receipts/<loop>/<receipt>.json`, sharing mutable `state/<loop>.json`.
 
 The protocol is independent of Chat/thread/browser session identity. It supports
 fresh-session recovery, generation-based executor replacement, exact
@@ -54,3 +54,10 @@ protection. The current executable policy is intentionally `PREPARE_ONLY`:
 `requires_live_model=true` or `execution_mode=LIVE` is rejected. A future
 Jules/browser/ACP adapter must be separately authorized before it can perform a
 live execution. Carrier PR head is not part of correctness; target PR head is.
+
+Every request declares durable `target_role="executor"`, a provider-neutral
+`executor_kind`, capability, objective, input/evidence references, allowed and
+prohibited actions, and an explicit user-approval boundary. Request, claim,
+result, and receipt records include matching `execution_*_id` aliases. Prepared
+results prove that no model, external send, retry, fallback, or live start
+occurred. All execution records are append-only; only loop state is mutable.

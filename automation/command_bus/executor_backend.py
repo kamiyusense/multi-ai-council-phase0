@@ -14,10 +14,10 @@ from .state_machine import StateMachine
 
 _COMPONENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _PREFIXES = {
-    "request": "executor_requests",
-    "claim": "executor_claims",
-    "result": "executor_results",
-    "receipt": "executor_receipts",
+    "request": "execution_requests",
+    "claim": "execution_claims",
+    "result": "execution_results",
+    "receipt": "execution_receipts",
 }
 _IDS = {
     "request": "request_id",
@@ -169,7 +169,7 @@ def _validate_predecessors(
         _match(request, record)
         submitted = _time(record["submitted_at"])
         owners = []
-        for item in backend.client.list(f"executor_claims/{loop_id}/", backend.branch):
+        for item in backend.client.list(f"execution_claims/{loop_id}/", backend.branch):
             claim = json.loads(item.text)
             _validate("claim", loop_id, claim)
             if (
