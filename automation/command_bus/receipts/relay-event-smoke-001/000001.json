@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "000001",
+  "loop_id": "relay-event-smoke-001",
+  "correlation_id": "relay-event-smoke-001-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "github_head_before": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "github_head_after": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "external_send_attempted": false,
+  "external_send_readback_verified": "NO",
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/411507d660538f99a2955338f6171048004bc1c5/automation/command_bus/commands/relay-event-smoke-001/000001.json"
+  ]
+}
