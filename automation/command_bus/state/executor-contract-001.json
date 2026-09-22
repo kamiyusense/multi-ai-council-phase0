@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "executor-contract-001",
+  "state": "RUNNING",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": null,
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0
+}

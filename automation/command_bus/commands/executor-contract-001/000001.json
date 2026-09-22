@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "command_id": "executor-contract-001-000001",
+  "loop_id": "executor-contract-001",
+  "round": 1,
+  "correlation_id": "executor-contract-001-round-1",
+  "target": "work",
+  "action": "APPLY_PREPARE_EXECUTOR_CONTRACT",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "retry": 0,
+  "fallback": "disabled",
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "expires_at": "2026-09-24T23:59:00+09:00"
+}
