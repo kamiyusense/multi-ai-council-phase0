@@ -1,17 +1,53 @@
 # Relay static batch contract
 
-`APPLY_RELAY_STATIC_BATCH` is a prepare-only command for a future Work
-executor.  It reads the current head of target PR #4 and compares it with
-`expected_target_head`; the dynamic carrier PR #6 head is never a correctness
-input.  The fixture is intentionally non-writing: `requires_github_write` is
-false and the fake contents client exposes no target write through the batch.
+The command bus has two distinct Relay static actions under the fixed profile
+`RELAY_SAFETY_BATCH_V1`.
 
-Before preparation, Work must reject malformed or duplicate commands, missing
-predecessors, terminal receipts, STOP/HALTED/EXPIRED state, rounds above six,
-expired commands, target-head mismatch, and any path outside the allow-list.
-Unknown conditions fail closed with retry `0` and fallback `disabled`.
+## Prepare-only action
 
-The candidate scope is limited to `src/relay/**`, `src/providers/**`,
-`tests/relay/**`, `docs/RELAY_STATIC_CHECKPOINT.md`, and
-`RELAY_JULES_HANDOFF.md`.  `main`, `phase0-runs`, secrets, settings, workflow,
-billing, auth, API-key, and live-provider paths are prohibited.
+`APPLY_RELAY_STATIC_BATCH`
+
+- `execution_mode=PREPARE_ONLY`
+- `requires_github_write=false`
+- validates a future Work handoff
+- never modifies PR #4
+
+## Bounded static-write action
+
+`EXECUTE_RELAY_STATIC_BATCH`
+
+- `execution_mode=STATIC_WRITE`
+- `requires_github_write=true`
+- only authorizes Work to modify the exact target PR after all target-head,
+  state, correlation, path, predecessor, expiry and replay gates pass
+- never authorizes Jules or a live provider/model
+
+Both actions compare only `expected_target_head` with current PR #4 head.
+PR #6 is a dynamic carrier and its head is never a correctness input.
+
+The allowed path specification is limited to:
+
+- `src/relay/**`
+- `src/providers/**`
+- `tests/relay/**`
+- `docs/RELAY_STATIC_CHECKPOINT.md`
+- `RELAY_JULES_HANDOFF.md`
+
+The required prohibited scope includes main, `phase0-runs/**`, secrets,
+`.github/**`, settings, workflows, billing, auth and API-key paths.
+
+The only permitted test command sequence is fixed in code:
+
+1. `PYTHONPATH=src python -m pytest -q tests`
+2. `python -m compileall -q src tests`
+3. `git diff --check`
+
+A command-supplied arbitrary shell command is rejected. Missing or mismatched
+loop/round/correlation IDs, duplicate commands, terminal receipts, STOP,
+HALTED/EXPIRED state, missing predecessor, target-head mismatch, unsafe path
+scope, retry other than zero, enabled fallback, unsupported profile or live
+model execution all fail closed.
+
+The code-level validator does not itself write GitHub. A Work event handler must
+independently enforce this contract before any `EXECUTE_RELAY_STATIC_BATCH`
+target write and must produce durable receipt/state evidence afterward.
