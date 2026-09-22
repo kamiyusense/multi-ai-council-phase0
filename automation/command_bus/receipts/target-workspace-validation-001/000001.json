@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "target-workspace-validation-001-000001",
+  "loop_id": "target-workspace-validation-001",
+  "round": 1,
+  "correlation_id": "target-workspace-validation-001-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "carrier_head_observed": "ae5dc7ac9aefd70db7445e951c778177d6f6e0c0",
+  "target_commit": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "target_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "observed_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "recursive_tree": {
+    "result": "PASS",
+    "truncated": false,
+    "entry_count": 46,
+    "blob_count": 39,
+    "unsupported_entries": 0
+  },
+  "blob_acquisition": {
+    "requested": 39,
+    "responses_received": 39,
+    "verified_count": 0,
+    "result": "UNKNOWN",
+    "reason": "isolated materialization input was corrupted by PTY control processing before per-blob byte-length and Git SHA verification completed"
+  },
+  "reconstructed_write_tree_sha": null,
+  "write_tree_equality": "UNKNOWN",
+  "workspace_verification": "UNKNOWN",
+  "baseline": {
+    "pytest": {
+      "result": "NOT_RUN",
+      "command": "PYTHONPATH=src python -m pytest -q tests",
+      "count": null
+    },
+    "compileall": {
+      "result": "NOT_RUN",
+      "command": "python -m compileall -q src tests"
+    },
+    "diff_check": {
+      "result": "NOT_RUN",
+      "command": "git diff --check"
+    }
+  },
+  "blocker": "UNKNOWN: exact all-blob materialization and git write-tree equality were not proven; fail closed with no retry",
+  "pr4_modified": false,
+  "external_send_attempted": false,
+  "live_provider_or_model_executed": false,
+  "provider_started": false,
+  "jules_started": false,
+  "api_key_used": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge_performed": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/6",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/ae5dc7ac9aefd70db7445e951c778177d6f6e0c0/automation/command_bus/commands/target-workspace-validation-001/000001.json"
+  ]
+}
