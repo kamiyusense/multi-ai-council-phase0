@@ -40,6 +40,7 @@ class ValidationScopeTests(unittest.TestCase):
             "automation/command_bus/execution_claims/loop/claim.json",
             "automation/command_bus/execution_results/loop/result.json",
             "automation/command_bus/execution_receipts/loop/receipt.json",
+            "automation/command_bus/jules_launch_attempts/loop/command.json",
         ):
             with self.subTest(path=path):
                 self.assertEqual(classify_command_bus_path(path), ScopeKind.LEDGER)
