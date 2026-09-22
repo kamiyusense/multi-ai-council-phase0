@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "evidence_id": "hybrid-reviewer-p1-validation-002-no-receipt",
+  "loop_id": "hybrid-reviewer-p1-validation-002",
+  "command_id": "hybrid-reviewer-p1-validation-002-000001",
+  "atomic_command_state_commit": "2ce6f7e6a4fceacc0568f7f0ca194ab1452532d2",
+  "command_commit_created_at": "2026-09-22T21:34:03Z",
+  "observed_work_run_after_commit": "2026-09-22T21:34:12.180002Z",
+  "terminal_receipt_present": false,
+  "final_state": "UNKNOWN",
+  "retry_count": 0,
+  "replay_permitted": false,
+  "scaling_observation": {
+    "current_command_bus_blob_count": 111,
+    "bounded_static_blob_count_before_scope_module": 30,
+    "remaining_blobs_are_operational_ledger_or_records": 81,
+    "conclusion": "Exact no-receipt root cause remains UNKNOWN. Full-ledger reconstruction is nevertheless an unbounded validation design and is replaced by deterministic bounded static scope."
+  }
+}
