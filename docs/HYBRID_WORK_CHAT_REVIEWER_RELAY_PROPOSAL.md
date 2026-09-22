@@ -187,6 +187,9 @@ Current P1 implementation checkpoint:
 - live-capable reviewer transports are blocked by the static P1 coordinator.
 - durable wake reservation is append-only and keyed by review request identity,
   so fresh Work sessions cannot replay an ambiguous Browser/Direct wake.
+- static command-bus validation is bounded to code/tests/schema/README; the
+  append-only operational ledger is validated through its durable record
+  protocol rather than re-materialized in full on every run.
 - regression fixtures are added.
 - deterministic Work validation is pending; see
   `docs/HYBRID_WORK_CHAT_REVIEWER_P1_CHECKPOINT.md`.
