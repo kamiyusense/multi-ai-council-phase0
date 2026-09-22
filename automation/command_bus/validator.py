@@ -5,7 +5,7 @@ from typing import Any
 
 STATES = {"PREPARED", "RUNNING", "WAITING_FOR_EVIDENCE", "COMPLETE", "HALTED", "FAILED", "UNKNOWN", "EXPIRED"}
 TERMINAL_RECEIPTS = {"DONE", "BLOCKED", "FAILED", "UNKNOWN", "CANCELLED"}
-REQUIRED_COMMAND = {"schema_version", "command_id", "loop_id", "round", "correlation_id", "target", "action", "expected_repo", "expected_pr", "expected_head", "retry", "fallback", "requires_live_model", "requires_github_write"}
+REQUIRED_COMMAND = {"schema_version", "command_id", "loop_id", "round", "correlation_id", "target", "action", "expected_repo", "expected_pr", "expected_target_head", "retry", "fallback", "requires_live_model", "requires_github_write"}
 REQUIRED_STATE = {"schema_version", "loop_id", "state", "round", "max_rounds", "expires_at", "stop_requested", "last_command_id", "last_receipt_id", "expected_target", "retry_policy"}
 REQUIRED_RECEIPT = {"schema_version", "receipt_id", "command_id", "loop_id", "correlation_id", "state", "executed_once", "retry_count", "fallback_used", "evidence_refs"}
 
@@ -22,7 +22,7 @@ def validate_command(obj: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("round must be a positive integer")
     if obj["target"] != "work" or obj["retry"] != 0 or obj["fallback"] != "disabled":
         raise ValueError("unsafe command policy")
-    if not isinstance(obj["expected_pr"], int) or not isinstance(obj["expected_head"], str):
+    if not isinstance(obj["expected_pr"], int) or not isinstance(obj["expected_target_head"], str):
         raise ValueError("invalid expected GitHub target")
     return obj
 

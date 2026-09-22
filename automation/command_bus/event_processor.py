@@ -35,8 +35,8 @@ class EventProcessor:
             validate_command(command)
             if command["expected_repo"] != self.repo or command["expected_pr"] != self.pr or command["target"] != "work":
                 raise ValueError("wrong repository or PR")
-            if command["expected_head"] != self.observed_head:
-                raise ValueError("expected head mismatch")
+            if command["expected_target_head"] != self.observed_head:
+                raise ValueError("expected target PR head mismatch")
             if command["loop_id"] != self.ledger.state["loop_id"] or command["round"] != self.ledger.state["round"] + 1:
                 raise ValueError("round or loop correlation mismatch")
             if command["correlation_id"] != f"{command['loop_id']}-round-{command['round']}" and command["action"] != "STOP":
