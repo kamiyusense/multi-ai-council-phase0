@@ -15,6 +15,9 @@ from typing import Any
 from .state_machine import StateMachine
 
 
+DURABLE_REVIEW_V2 = "DURABLE_REVIEW_V2"
+
+
 def _utc(value: datetime | None) -> datetime:
     return value or datetime.now(timezone.utc)
 
@@ -90,6 +93,31 @@ def make_request(*, request_id: str, loop_id: str, round: int,
     return request
 
 
+def make_request_v2(
+    *, request_id: str, loop_id: str, round: int, correlation_id: str,
+    expected_target_head: str, expected_target_tree: str,
+    reviewer_role: str, review_kind: str, evidence_refs: list[str],
+    allowed_decisions: list[str], expires_at: str,
+) -> dict[str, Any]:
+    request = make_request(
+        request_id=request_id, loop_id=loop_id, round=round,
+        correlation_id=correlation_id,
+        expected_target_head=expected_target_head, expires_at=expires_at,
+    )
+    request.update({
+        "review_profile": DURABLE_REVIEW_V2,
+        "expected_target_tree": expected_target_tree,
+        "reviewer_role": reviewer_role,
+        "review_kind": review_kind,
+        "evidence_refs": list(evidence_refs),
+        "allowed_decisions": list(allowed_decisions),
+        "retry": 0,
+        "fallback": "disabled",
+    })
+    _validate_request(request)
+    return request
+
+
 def request_review(ledger: ReviewerLedger, request: dict[str, Any], *,
                    state: dict[str, Any] | StateMachine | None = None,
                    now: datetime | None = None) -> ReviewResult:
@@ -148,7 +176,11 @@ def submit_response(ledger: ReviewerLedger, request_id: str, *, response_id: str
                     loop_id: str, round: int, correlation_id: str,
                     expected_target_head: str,
                     submitted_at: datetime | None = None,
-                    state: dict[str, Any] | StateMachine | None = None) -> ReviewResult:
+                    state: dict[str, Any] | StateMachine | None = None,
+                    expected_target_tree: str | None = None,
+                    rationale_summary: str | None = None,
+                    next_command_proposal: dict[str, Any] | None = None,
+                    model_route_evidence: dict[str, Any] | None = None) -> ReviewResult:
     now = _utc(submitted_at)
     gate = _state_gate(state, now)
     if gate:
@@ -175,6 +207,16 @@ def submit_response(ledger: ReviewerLedger, request_id: str, *, response_id: str
                     "reviewer_generation": reviewer_generation,
                     "decision": decision, "evidence_refs": evidence_refs,
                     "submitted_at": now.isoformat(), "status": "AVAILABLE"}
+        if request.get("review_profile") == DURABLE_REVIEW_V2:
+            response.update({
+                "review_profile": DURABLE_REVIEW_V2,
+                "expected_target_tree": expected_target_tree,
+                "reviewer_role": request["reviewer_role"],
+                "review_kind": request["review_kind"],
+                "rationale_summary": rationale_summary,
+                "next_command_proposal": next_command_proposal,
+                "model_route_evidence": model_route_evidence,
+            })
         _validate_response(response)
         _match_request(request, response)
         ledger.append_response(response)
@@ -187,7 +229,8 @@ def consume_response(ledger: ReviewerLedger, request_id: str, *, loop_id: str,
                      round: int, correlation_id: str,
                      expected_target_head: str,
                      now: datetime | None = None,
-                     state: dict[str, Any] | StateMachine | None = None) -> ReviewResult:
+                     state: dict[str, Any] | StateMachine | None = None,
+                     expected_target_tree: str | None = None) -> ReviewResult:
     at = _utc(now)
     gate = _state_gate(state, at)
     if gate:
@@ -205,6 +248,12 @@ def consume_response(ledger: ReviewerLedger, request_id: str, *, loop_id: str,
             return ReviewResult("NO-OP", "response receipt already consumed")
         _validate_response(response)
         _match_response(response, loop_id, round, correlation_id, expected_target_head)
+        _match_request(request, response)
+        if request.get("review_profile") == DURABLE_REVIEW_V2:
+            if expected_target_tree != request["expected_target_tree"]:
+                raise ValueError("review consume target tree mismatch")
+            if response["decision"] not in request["allowed_decisions"]:
+                raise ValueError("review decision not allowed by request")
         if not response["decision"].strip() or not response["evidence_refs"]:
             raise ValueError("empty or unverifiable response")
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
@@ -214,6 +263,9 @@ def consume_response(ledger: ReviewerLedger, request_id: str, *, loop_id: str,
                "state": "CONSUMED", "loop_id": loop_id, "round": round,
                "correlation_id": correlation_id,
                "expected_target_head": expected_target_head}
+    if request.get("review_profile") == DURABLE_REVIEW_V2:
+        receipt["review_profile"] = DURABLE_REVIEW_V2
+        receipt["expected_target_tree"] = request["expected_target_tree"]
     if any(isinstance(r, dict) and r.get("receipt_id") == receipt["receipt_id"] for r in ledger.receipts):
         return ReviewResult("NO-OP", "terminal receipt already exists", receipt)
     ledger.receipts.append(receipt)
@@ -257,6 +309,29 @@ def _validate_request(r: dict[str, Any]) -> None:
     if isinstance(r["round"], bool) or not isinstance(r["round"], int) or r["round"] < 1:
         raise ValueError("invalid review request round")
     _parse(r["expires_at"])
+    if r.get("review_profile") == DURABLE_REVIEW_V2:
+        required_v2 = {
+            "expected_target_tree", "reviewer_role", "review_kind",
+            "evidence_refs", "allowed_decisions", "retry", "fallback",
+        }
+        if not required_v2 <= r.keys():
+            raise ValueError("incomplete durable review v2 request")
+        for key in ("expected_target_tree", "reviewer_role", "review_kind"):
+            if not isinstance(r[key], str) or not r[key]:
+                raise ValueError(f"invalid durable review v2 {key}")
+        if (
+            not isinstance(r["evidence_refs"], list) or not r["evidence_refs"]
+            or any(not isinstance(x, str) or not x for x in r["evidence_refs"])
+        ):
+            raise ValueError("invalid durable review v2 evidence refs")
+        if (
+            not isinstance(r["allowed_decisions"], list) or not r["allowed_decisions"]
+            or len(r["allowed_decisions"]) != len(set(r["allowed_decisions"]))
+            or any(not isinstance(x, str) or not x for x in r["allowed_decisions"])
+        ):
+            raise ValueError("invalid durable review v2 allowed decisions")
+        if r["retry"] != 0 or r["fallback"] != "disabled":
+            raise ValueError("unsafe durable review retry/fallback policy")
 
 
 def _validate_claim(c: dict[str, Any]) -> None:
@@ -281,6 +356,24 @@ def _validate_response(r: dict[str, Any]) -> None:
     if isinstance(r["reviewer_generation"], bool) or not isinstance(r["reviewer_generation"], int) or r["reviewer_generation"] < 1:
         raise ValueError("invalid response reviewer generation")
     _parse(r["submitted_at"])
+    if r.get("review_profile") == DURABLE_REVIEW_V2:
+        required_v2 = {
+            "expected_target_tree", "reviewer_role", "review_kind",
+            "rationale_summary", "next_command_proposal", "model_route_evidence",
+        }
+        if not required_v2 <= r.keys():
+            raise ValueError("incomplete durable review v2 response")
+        for key in ("expected_target_tree", "reviewer_role", "review_kind", "rationale_summary"):
+            if not isinstance(r[key], str) or not r[key]:
+                raise ValueError(f"invalid durable review v2 response {key}")
+        if r["next_command_proposal"] is not None and not isinstance(r["next_command_proposal"], dict):
+            raise ValueError("invalid next command proposal")
+        if r["model_route_evidence"] is not None and not isinstance(r["model_route_evidence"], dict):
+            raise ValueError("invalid model route evidence")
+        forbidden_keys = {"thread_id", "conversation_id", "browser_session_id", "chat_id"}
+        for value in (r["next_command_proposal"], r["model_route_evidence"]):
+            if isinstance(value, dict) and forbidden_keys.intersection(value):
+                raise ValueError("session identity is not a correctness input")
 
 
 def _validate_receipt(r: dict[str, Any]) -> None:
@@ -291,6 +384,15 @@ def _validate_receipt(r: dict[str, Any]) -> None:
 
 def _match_request(request: dict[str, Any], response: dict[str, Any]) -> None:
     _match_response(response, request["loop_id"], request["round"], request["correlation_id"], request["expected_target_head"])
+    if request.get("review_profile") == DURABLE_REVIEW_V2:
+        if response.get("review_profile") != DURABLE_REVIEW_V2:
+            raise ValueError("review profile mismatch")
+        if response.get("expected_target_tree") != request.get("expected_target_tree"):
+            raise ValueError("review response target tree mismatch")
+        if response.get("reviewer_role") != request.get("reviewer_role"):
+            raise ValueError("reviewer role mismatch")
+        if response.get("review_kind") != request.get("review_kind"):
+            raise ValueError("review kind mismatch")
 
 
 def _match_response(response: dict[str, Any], loop_id: str, round: int,
