@@ -297,6 +297,13 @@ def _validate_references_for_append(
 
     if kind == "response":
         _match_context(request, record)
+        if request.get("review_profile") == "DURABLE_REVIEW_V2":
+            if record.get("reviewer_role") != request.get("reviewer_role"):
+                raise ValueError("reviewer role mismatch")
+            if record.get("review_kind") != request.get("review_kind"):
+                raise ValueError("review kind mismatch")
+            if record.get("decision") not in request.get("allowed_decisions", []):
+                raise ValueError("review decision not allowed by request")
         submitted_at = _time(record["submitted_at"])
         matches = []
         for content in backend.client.list(f"{_PREFIXES['claim']}/{loop_id}/", backend.branch):
