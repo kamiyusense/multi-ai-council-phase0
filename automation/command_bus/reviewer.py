@@ -392,6 +392,10 @@ def _validate_receipt(r: dict[str, Any]) -> None:
     required = {"schema_version", "receipt_id", "response_id", "request_id", "state"}
     if not isinstance(r, dict) or not required <= r.keys() or r["schema_version"] != 1 or r["state"] != "CONSUMED":
         raise ValueError("invalid review receipt")
+    if r.get("review_profile") == DURABLE_REVIEW_V2:
+        tree = r.get("expected_target_tree")
+        if not isinstance(tree, str) or not tree:
+            raise ValueError("invalid durable review v2 receipt target tree")
 
 
 def _match_request(request: dict[str, Any], response: dict[str, Any]) -> None:
