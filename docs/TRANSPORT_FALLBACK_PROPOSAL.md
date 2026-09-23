@@ -1,6 +1,6 @@
-# Transport fallback proposal (read-only design conclusion)
+# Transport fallback proposal (static contract implemented)
 
-Status: proposal only. This document does not authorize live browser use, Google sign-in, Jules task submission, provider execution, settings changes, or permissions changes.
+Status: **STATIC IMPLEMENTED / LIVE PREFLIGHT PENDING**. This document still does not authorize live browser use, Google sign-in, Jules task submission, provider execution, settings changes, or permissions changes.
 
 ## Conclusion
 

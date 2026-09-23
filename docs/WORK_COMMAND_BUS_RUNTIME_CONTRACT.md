@@ -411,3 +411,55 @@ Wake attempts use one append-only canonical reservation per request:
 `review_wake_attempts/<loop>/<request_id>.json`.
 
 A recovered reservation never authorizes a second external wake.
+
+## 7B. DUAL_BROWSER_TRANSPORT_STATIC_V1
+
+Status: **STATIC IMPLEMENTED / LIVE PREFLIGHT PENDING**.
+
+This section adds a transport-level dual-browser contract for Jules UI access.
+It does not authorize a browser launch, Google sign-in, Jules submission, or
+model execution.
+
+Logical transport identities:
+- `WORK_CLOUD_BROWSER_JULES_UI`
+- `WORK_COMPUTER_USE_JULES_UI`
+
+The second identity is a protocol identity only. Current runtime capability for
+Computer Use is `UNKNOWN` until a Work runtime exposes/verifies that capability.
+
+Invariants:
+- transport replacement is not provider/model fallback;
+- a command binds exactly one `transport_id`;
+- the same `command_id` must never switch transport;
+- a secondary transport requires a new command identity, correlation,
+  generation, expiry, durable request/evidence record, and wake/attempt record;
+- the new command may reference the old command only through
+  `predecessor_command_id`;
+- `retry=0` and `fallback=disabled` remain unchanged;
+- a recovered/terminal command never authorizes a new external send;
+- stale generation or wrong transport results are rejected;
+- browser UI is transport evidence only, never the final correctness source;
+- authentication remains a human-controlled boundary and credentials/tokens/
+  cookies/password/MFA data must not be persisted.
+
+A successor transport is eligible only when durable evidence proves all of:
+- predecessor command is terminal;
+- terminal receipt is present and bound to the predecessor;
+- `task_submitted == false`;
+- `jules_task_started == false`;
+- `model_started == false`;
+- `external_action_uncertainty == false`;
+- `github_mutation_possible == false`;
+- fresh PR #4 head/tree equal the predecessor expectations and observations.
+
+If any external action, task start, model start, GitHub mutation, target identity,
+receipt, or terminality is UNKNOWN, the result is `MUST_NOT_REDISPATCH`.
+
+Static implementation:
+- `automation/command_bus/browser_transport.py`
+- `automation/command_bus/tests/test_browser_transport.py`
+- `automation/command_bus/schema/browser_transport_evidence.schema.json`
+
+The static adapters never open a browser and never submit/start Jules. A live
+preflight remains a separate fresh command.
+
