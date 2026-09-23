@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "command_id": "jules-branch-selector-preflight-001-000001",
+  "loop_id": "jules-branch-selector-preflight-001",
+  "action": "JULES_BRANCH_SELECTOR_PREFLIGHT",
+  "result": "BLOCKED",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "observed_repo": "UNKNOWN_NOT_OPENED",
+  "expected_branch": "feature/relay-transport-7070955470193506982",
+  "observed_branch": "UNKNOWN_NOT_OPENED",
+  "branch_selection_explicit": false,
+  "task_submitted": false,
+  "model_started": false,
+  "jules_task_started": false,
+  "browser_started": false,
+  "pr4_mutated": false,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "auth_ui_blocker": "This Work automation runtime exposes connected GitHub operations but no Cloud Browser/computer-use action capable of opening the normal Jules web UI. Plugin discovery also exposed no Jules/browser connector action. Per fail-closed contract, the UI branch selector was not approximated through another route and no Jules task was submitted.",
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/jules-branch-selector-preflight-001/000001.json",
+    "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+    "automation/command_bus/state/jules-branch-selector-preflight-001.json"
+  ]
+}
