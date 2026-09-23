@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-reintroduction-roundtrip-001-terminal-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "command_id": "jules-first-roundtrip-001-000001",
+  "command_commit": "3c3d9dc8a3deb43766f5f4cbb7fd5cd195a7588b",
+  "work_task_last_run_after_command": "2026-09-23T00:01:20.579718Z",
+  "target_before_and_after": {
+    "head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+    "changed": false
+  },
+  "durable_records": {
+    "command": "PRESENT",
+    "state": "UNKNOWN_TERMINAL",
+    "receipt": "ABSENT",
+    "jules_launch_reservation": "ABSENT"
+  },
+  "static_contract": {
+    "profile": "JULES_FRESH_STATIC_V1",
+    "isolated_contract_checks": {
+      "passed": 14,
+      "failed": 0
+    },
+    "fresh_session_required": true,
+    "disposable_workspace_required": true,
+    "old_task_reuse_forbidden": true,
+    "tree_identity_required": "TREE_IDENTITY_V1",
+    "first_task_allowed_path": "tests/relay/test_dispatcher.py",
+    "first_task_allowed_operation": "MODIFY",
+    "retry_count": 0,
+    "fallback": "disabled"
+  },
+  "runtime_result": {
+    "authorized_jules_launch_established": false,
+    "actual_live_jules_start": "UNKNOWN",
+    "reason": "Work ran but produced neither the mandatory pre-launch reservation nor a terminal receipt/state transition. No target write occurred. Under retry=0 this command is closed and must not be replayed."
+  },
+  "state_sweep": {
+    "state_files_checked": 27,
+    "running_states": 0,
+    "note": "No legacy RUNNING command remains eligible for accidental fallback selection."
+  },
+  "safety": {
+    "pr4_modified_by_roundtrip": false,
+    "merge": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "branch_delete": false,
+    "api_key_change": false,
+    "billing_settings_permissions_change": false,
+    "retry_count": 0,
+    "fallback_used": false
+  }
+}
