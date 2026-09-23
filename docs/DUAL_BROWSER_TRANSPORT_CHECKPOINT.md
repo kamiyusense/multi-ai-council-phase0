@@ -80,3 +80,20 @@ Sol review found and fixed three narrow gaps before live browser preflight:
 
 These checks supplement, not replace, the common runtime state expiry gate.
 No browser/Jules/model execution occurred during this hardening.
+
+## 2026-09-24 exact selector / publication update
+
+Static contracts added:
+- exact full-string repository selection with post-selection readback;
+- exact full-string starting-branch selection with post-selection readback;
+- first()/substring/default fallback explicitly rejected;
+- distinct desktop/cloud/chrome transport session identities documented;
+- Jules publication validation requires exact parent/base/path/test evidence;
+- preferred accepted result application is a non-force PR #4 fast-forward,
+  not merge/cherry-pick/rebase/file transplantation.
+
+Browser B historical command remains terminal UNKNOWN and is not reused.
+Cloud Browser authentication remains the current human boundary for live exact
+selector verification. No live browser/Jules/model action was started by this
+static update.
+

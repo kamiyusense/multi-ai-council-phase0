@@ -517,3 +517,75 @@ Secondary transport requires a new logical command and may be created only
 after predecessor terminal proof and `secondary_transport_eligibility()`
 returns ALLOWED_NEW_COMMAND. UNKNOWN external action/task/model/GitHub mutation
 means MUST_NOT_REDISPATCH.
+
+## 7D. EXACT_REPOSITORY_BRANCH_SELECTION_GATE
+
+Status: **STATIC CONTRACT IMPLEMENTED / LIVE AUTH GATE PENDING**.
+
+Before any Jules task submit, browser automation must use exact full-string
+selection for both repository and starting branch.
+
+Required repository:
+`kamiyusense/multi-ai-council-phase0`
+
+Required starting branch:
+`feature/relay-transport-7070955470193506982`
+
+Algorithm:
+1. open repository selector and obtain/search candidates;
+2. choose exactly one candidate whose full repository name equals the required
+   repository; never choose first(), substring, inferred, or default fallback;
+3. read back the selected repository and require exact equality;
+4. open branch selector and obtain/search candidates;
+5. choose exactly one candidate whose full branch name equals the required
+   branch; never choose first(), substring, inferred, or default fallback;
+6. read back selected branch and require exact equality;
+7. until both exact readbacks pass, task submission remains forbidden.
+
+Static implementation:
+- `automation/command_bus/exact_selector.py`
+- `automation/command_bus/tests/test_exact_selector.py`
+
+Transport/session identities are distinct protocol identities:
+- `WORK_CLOUD_BROWSER_JULES_UI`
+- `DESKTOP_BUILTIN_BROWSER_JULES_UI`
+- `CHROME_EXISTING_SESSION_JULES_UI`
+
+Existing `WORK_COMPUTER_USE_JULES_UI` records remain valid historical records.
+Desktop/Chrome runtime availability is UNKNOWN until a real authorized Work
+runtime proves it; UNKNOWN must never be promoted to AVAILABLE.
+
+Google authentication remains a human boundary. No password/MFA/cookie/token/
+credential extraction or persistence is authorized.
+
+## 8A. JULES_PUBLICATION_FAST_FORWARD_V1
+
+The preferred publication path is Jules disposable branch -> GitHub readback ->
+validated fast-forward of PR #4. Work must not copy files between branches when
+a valid descendant commit already exists.
+
+Before moving PR #4, require durable/readback proof:
+- resulting commit SHA is concrete;
+- its only parent is the frozen `expected_target_head` for the first smoke task;
+- PR/comparison base is exact PR #4 branch;
+- PR #4 current head is still the frozen expected head;
+- changed paths are allowlisted and operations are ADD/MODIFY only;
+- no unexpected delete/rename/symlink;
+- required tests, compileall and diff-check PASS;
+- retry_count=0 and fallback_used=false;
+- task submission/Jules/model start evidence is consistent and proven;
+- no main/default direct write;
+- no unresolved GitHub mutation uncertainty.
+
+Only when all gates PASS and ancestry is fast-forward may PR #4 be moved to the
+Jules resulting commit with a non-force ref update. No merge commit, rebase,
+cherry-pick, or patch/file transplantation is part of the preferred route.
+
+After ref update, remote readback must verify new head, parent ancestry, tree,
+changed paths, base=main unchanged, and no unexpected mutation. Ambiguous write
+must be read back, never resent.
+
+Static implementation:
+- `automation/command_bus/jules_publication.py`
+- `automation/command_bus/tests/test_jules_publication.py`
+
