@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "loop_id": "jules-human-auth-bootstrap-001",
-  "state": "RUNNING",
-  "round": 0,
+  "state": "WAITING_FOR_HUMAN_AUTH",
+  "round": 1,
   "max_rounds": 6,
   "expires_at": "2026-09-24T23:30:00+09:00",
   "stop_requested": false,
