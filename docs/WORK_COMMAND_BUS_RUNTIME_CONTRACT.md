@@ -249,6 +249,49 @@ If target commit succeeded but receipt/state writing was interrupted, a later
 run may only complete durable receipt/state after exact readback; it must never
 create a second target implementation commit.
 
+## 7A. JULES_BRANCH_SELECTOR_PREFLIGHT
+
+No Jules task submission and no model execution.
+
+Purpose:
+prove that Work Cloud Browser can open the Jules web UI and explicitly select
+the exact non-default Relay target before any live Jules task is attempted.
+
+Require:
+- target=work
+- action=`JULES_BRANCH_SELECTOR_PREFLIGHT`
+- expected repo = `kamiyusense/multi-ai-council-phase0`
+- expected PR = 4
+- concrete expected target head/tree
+- launch_route=`WORK_CLOUD_BROWSER_JULES_UI`
+- starting_branch=`feature/relay-transport-7070955470193506982`
+- issue_label_launch=false
+- requires_live_model=false
+- requires_github_write=true
+- retry=0
+- fallback=disabled
+
+Execution:
+1. Fresh-read PR #4 head/tree and require exact command match.
+2. Open Jules only through Work Cloud Browser.
+3. Navigate to the normal Jules task creation UI.
+4. Select repository `kamiyusense/multi-ai-council-phase0`.
+5. Select exact branch
+   `feature/relay-transport-7070955470193506982`.
+6. Verify the selected repository and branch are visibly reflected in the task
+   creation UI before any prompt is submitted.
+7. Do **not** submit/start the task.
+8. Write durable evidence with the observed repository, observed branch,
+   whether the selector was explicit, whether any task was submitted, and
+   whether any model/Jules task started.
+9. PASS only when repo+branch are exact and no task was submitted.
+10. Any auth problem, missing branch, ambiguous selector state, or UI
+    uncertainty => terminal BLOCKED/UNKNOWN; no task submission.
+
+This preflight proves only UI branch-selection capability. It does not prove a
+future Jules commit will have the correct parent. Final correctness still
+requires the post-publication ancestry/tree checks in section 8.
+
 ## 8. JULES_BOUNDED_STATIC_ROUNDTRIP
 
 This is the only Jules launch authorized by the current runtime contract.
