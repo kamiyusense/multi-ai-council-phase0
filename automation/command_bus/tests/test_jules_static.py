@@ -3,7 +3,7 @@ import json
 import unittest
 
 from automation.command_bus.jules_static import (
-    ACTION, FIXED_TESTS, FIRST_TASK_PATH, PROFILE,
+    ACTION, FIXED_TESTS, FIRST_TASK_PATH, LAUNCH_ROUTE, PROFILE, TARGET_BRANCH,
     first_task_objective, make_launch_attempt,
     validate_first_jules_command, validate_jules_diff,
 )
@@ -45,6 +45,10 @@ def command(**changes):
         "requires_live_model": True,
         "requires_github_write": True,
         "user_authorization": "EXPLICIT_NEXT_BATCH_JULES_2026-09-23",
+        "launch_route": LAUNCH_ROUTE,
+        "starting_branch": TARGET_BRANCH,
+        "issue_label_launch": False,
+        "branch_selection_evidence_required": True,
         "retry": 0,
         "fallback": "disabled",
         "expires_at": EXP,
@@ -108,6 +112,22 @@ class JulesStaticContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "target tree"):
             validate_first_jules_command(command(expected_target_tree="UNKNOWN"))
 
+    def test_issue_label_route_is_forbidden_for_non_default_target(self):
+        with self.assertRaisesRegex(ValueError, "issue-label"):
+            validate_first_jules_command(command(issue_label_launch=True))
+
+    def test_starting_branch_must_be_exact_target_branch(self):
+        with self.assertRaisesRegex(ValueError, "starting branch"):
+            validate_first_jules_command(command(starting_branch="main"))
+
+    def test_launch_route_must_be_work_cloud_browser_jules_ui(self):
+        with self.assertRaisesRegex(ValueError, "Cloud Browser"):
+            validate_first_jules_command(command(launch_route="GITHUB_ISSUE_LABEL"))
+
+    def test_branch_selection_evidence_is_required(self):
+        with self.assertRaisesRegex(ValueError, "branch-selection evidence"):
+            validate_first_jules_command(command(branch_selection_evidence_required=False))
+
     def test_extra_path_or_delete_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "exactly one test file"):
             validate_first_jules_command(command(
@@ -138,6 +158,8 @@ class JulesStaticContractTests(unittest.TestCase):
         )
         self.assertEqual(attempt["expected_target_head"], HEAD)
         self.assertEqual(attempt["expected_target_tree"], TREE)
+        self.assertEqual(attempt["launch_route"], LAUNCH_ROUTE)
+        self.assertEqual(attempt["starting_branch"], TARGET_BRANCH)
         self.assertEqual(attempt["retry"], 0)
         self.assertEqual(attempt["fallback"], "disabled")
         self.assertTrue(attempt["fresh_session_required"])
