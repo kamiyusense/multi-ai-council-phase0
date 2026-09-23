@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-browser-preflight-b-001",
+  "state": "RUNNING",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:30:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "jules-browser-preflight-b-001-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0
+}
