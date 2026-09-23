@@ -463,3 +463,57 @@ Static implementation:
 The static adapters never open a browser and never submit/start Jules. A live
 preflight remains a separate fresh command.
 
+
+## 7C. JULES_BROWSER_TRANSPORT_PREFLIGHT
+
+Status: **USER-AUTHORIZED NO-SUBMIT LIVE PREFLIGHT (2026-09-24)**.
+
+Purpose:
+prove browser transport capability and exact non-default branch selection before
+any Jules task/model start. This authorizes browser navigation only, not task
+submission, Jules/model start, credential handling, settings/permission
+changes, retry, or fallback.
+
+Supported transport identities:
+- `WORK_CLOUD_BROWSER_JULES_UI`
+- `WORK_COMPUTER_USE_JULES_UI`
+
+Require:
+- action=`JULES_BROWSER_TRANSPORT_PREFLIGHT`
+- immutable `transport_id`
+- fresh command_id/correlation_id/generation/expiry
+- timezone-aware unexpired expiry
+- exact PR #4 expected head/tree, repository and starting branch
+- requires_live_model=false
+- requires_github_write=true
+- task_submit=false
+- retry=0
+- fallback=disabled
+
+Execution:
+1. Fresh-read PR #4 head/tree and require exact match.
+2. Verify requested browser capability; UNKNOWN remains UNKNOWN.
+3. Open Jules UI only through the named transport.
+4. Never automate Google password/MFA/account selection or read/store
+   credentials, cookies, tokens, or secrets.
+5. Authentication required => terminal BLOCKED/UNKNOWN before task submission.
+6. If reachable, explicitly select repository
+   `kamiyusense/multi-ai-council-phase0`.
+7. Explicitly select branch
+   `feature/relay-transport-7070955470193506982`.
+8. Verify repo/branch selection as transport evidence only.
+9. Do not submit prompt/task and do not start Jules/model.
+10. Fresh-read PR #4 head/tree after observation.
+11. Persist append-only evidence plus terminal receipt/state.
+
+Evidence must bind command/correlation/generation/transport and record repo/
+branch expected+observed, explicit selection flags, auth/browser state,
+task_submitted, jules_task_started, model_started, target head/tree,
+external-action uncertainty, GitHub mutation possibility, retry_count=0,
+fallback_used=false, blocker and evidence refs. Sensitive auth material is
+forbidden.
+
+Secondary transport requires a new logical command and may be created only
+after predecessor terminal proof and `secondary_transport_eligibility()`
+returns ALLOWED_NEW_COMMAND. UNKNOWN external action/task/model/GitHub mutation
+means MUST_NOT_REDISPATCH.
