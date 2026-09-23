@@ -1,1 +1,57 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":true,"required":["schema_version","handoff_id","triggering_command_id","correlation_id","transport_id","auth_origin","handoff_method","handoff_surface","handoff_state","requested_at","completed_at","takeover_url_persisted","credentials_persisted","task_submitted","jules_task_started","model_started","session_identity_is_correctness_input"],"properties":{"schema_version":{"const":1},"transport_id":{"const":"WORK_CLOUD_BROWSER_JULES_UI"},"auth_origin":{"const":"jules.google.com"},"handoff_method":{"const":"CHATGPT_NATIVE_CLOUD_BROWSER_TAKEOVER"},"handoff_surface":{"const":"VISIBLE_WORK"},"handoff_state":{"enum":["REQUESTED","WAITING_FOR_HUMAN","HUMAN_COMPLETED_UNVERIFIED","AUTHENTICATED_OBSERVED","BLOCKED","FAILED"]},"takeover_url_persisted":{"const":false},"credentials_persisted":{"const":false},"task_submitted":{"const":false},"jules_task_started":{"const":false},"model_started":{"const":false},"session_identity_is_correctness_input":{"const":false}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "triggering_command_id",
+    "correlation_id",
+    "transport_id",
+    "auth_origin",
+    "handoff_method",
+    "handoff_surface",
+    "handoff_state",
+    "requested_at",
+    "completed_at",
+    "takeover_url_persisted",
+    "credentials_persisted",
+    "task_submitted",
+    "jules_task_started",
+    "model_started",
+    "session_identity_is_correctness_input"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "handoff_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "triggering_command_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "correlation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "transport_id": {"const": "WORK_CLOUD_BROWSER_JULES_UI"},
+    "auth_origin": {"const": "jules.google.com"},
+    "handoff_method": {"const": "CHATGPT_NATIVE_CLOUD_BROWSER_TAKEOVER"},
+    "handoff_surface": {"const": "VISIBLE_WORK"},
+    "handoff_state": {
+      "enum": [
+        "REQUESTED",
+        "WAITING_FOR_HUMAN",
+        "HUMAN_COMPLETED_UNVERIFIED",
+        "AUTHENTICATED_OBSERVED",
+        "BLOCKED",
+        "FAILED"
+      ]
+    },
+    "requested_at": {"type": "string", "format": "date-time"},
+    "completed_at": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "takeover_url_persisted": {"const": false},
+    "credentials_persisted": {"const": false},
+    "task_submitted": {"const": false},
+    "jules_task_started": {"const": false},
+    "model_started": {"const": false},
+    "session_identity_is_correctness_input": {"const": false}
+  }
+}
