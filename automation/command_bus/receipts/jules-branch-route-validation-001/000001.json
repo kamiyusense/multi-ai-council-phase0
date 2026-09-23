@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "jules-branch-route-validation-001-000001",
+  "loop_id": "jules-branch-route-validation-001",
+  "round": 1,
+  "correlation_id": "jules-branch-route-validation-001-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "carrier_head_tested": "2e7d7f81927f126d7f0f317d2dcd89e4303c3c04",
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "workspace_verification": {
+    "scope": "automation/command_bus/**",
+    "state": "UNKNOWN",
+    "tree_enumeration": "PASS_PARTIAL",
+    "command_bus_tree_truncated": false,
+    "tests_tree_truncated": false,
+    "reason": "The execution runtime could fresh-read GitHub through the connected GitHub transport, but its local container could not resolve github.com, so the required exact-blob reconstruction and local unittest/compileall/diff-check could not be completed without substituting a weaker validation route. Fail closed per runtime contract."
+  },
+  "validation_results": {
+    "unittest": {"state": "NOT_RUN", "reason": "exact STATIC workspace not reconstructed"},
+    "compileall": {"state": "NOT_RUN", "reason": "exact STATIC workspace not reconstructed"},
+    "diff_check": {"state": "NOT_RUN", "reason": "exact STATIC workspace not reconstructed"}
+  },
+  "external_send_attempted": false,
+  "jules_started": false,
+  "browser_started": false,
+  "pr4_mutated": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/jules-branch-route-validation-001/000001.json",
+    "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+    "automation/command_bus/state/jules-branch-route-validation-001.json"
+  ]
+}
