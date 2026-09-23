@@ -14,6 +14,8 @@ PROFILE = "JULES_FRESH_STATIC_V1"
 ACTION = "JULES_BOUNDED_STATIC_ROUNDTRIP"
 LAUNCH_PROFILE = "JULES_LAUNCH_ATTEMPT_V1"
 FIRST_TASK_PATH = "tests/relay/test_dispatcher.py"
+TARGET_BRANCH = "feature/relay-transport-7070955470193506982"
+LAUNCH_ROUTE = "WORK_CLOUD_BROWSER_JULES_UI"
 FIXED_TESTS = (
     "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
     "python -m compileall -q src tests",
@@ -30,7 +32,9 @@ def validate_first_jules_command(command: dict[str, Any]) -> dict[str, Any]:
         "disposable_workspace_required", "reuse_existing_jules_task",
         "allowed_paths", "path_policy", "test_commands",
         "requires_live_model", "requires_github_write",
-        "user_authorization", "retry", "fallback", "expires_at",
+        "user_authorization", "launch_route", "starting_branch",
+        "issue_label_launch", "branch_selection_evidence_required",
+        "retry", "fallback", "expires_at",
     }
     if not isinstance(command, dict) or not required <= command.keys():
         raise ValueError("incomplete first Jules command")
@@ -44,6 +48,14 @@ def validate_first_jules_command(command: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("wrong Jules target repository")
     if command["expected_pr"] != 4:
         raise ValueError("wrong Jules target PR")
+    if command["launch_route"] != LAUNCH_ROUTE:
+        raise ValueError("Jules must launch through Work Cloud Browser UI")
+    if command["starting_branch"] != TARGET_BRANCH:
+        raise ValueError("Jules starting branch mismatch")
+    if command["issue_label_launch"] is not False:
+        raise ValueError("GitHub issue-label Jules launch is forbidden for non-default target")
+    if command["branch_selection_evidence_required"] is not True:
+        raise ValueError("Jules branch-selection evidence is required")
     for key in (
         "command_id", "loop_id", "correlation_id",
         "expected_target_head", "expected_target_tree",
@@ -108,6 +120,8 @@ def make_launch_attempt(
         "correlation_id": command["correlation_id"],
         "expected_target_head": command["expected_target_head"],
         "expected_target_tree": command["expected_target_tree"],
+        "launch_route": command["launch_route"],
+        "starting_branch": command["starting_branch"],
         "state": "RESERVED",
         "fresh_session_required": True,
         "disposable_workspace_required": True,
