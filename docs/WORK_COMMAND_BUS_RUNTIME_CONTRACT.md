@@ -589,3 +589,65 @@ Static implementation:
 - `automation/command_bus/jules_publication.py`
 - `automation/command_bus/tests/test_jules_publication.py`
 
+
+
+## 7E. JULES_HUMAN_AUTH_BOOTSTRAP
+
+Status: **USER-AUTHORIZED HUMAN-BOUNDARY BOOTSTRAP / NO JULES SUBMIT**.
+
+Purpose:
+create a fresh GitHub-triggered Work run whose only live browser goal is to
+reach the Jules Google authentication boundary and surface ChatGPT's native
+Cloud Browser sign-in/takeover flow to the human. This is a prerequisite
+bootstrap, not a retry of any closed selector preflight.
+
+Require:
+- action=`JULES_HUMAN_AUTH_BOOTSTRAP`
+- target=work
+- exact repository `kamiyusense/multi-ai-council-phase0`
+- expected PR = 4
+- fresh concrete expected target head/tree
+- starting_branch=`feature/relay-transport-7070955470193506982`
+- transport_id=`WORK_CLOUD_BROWSER_JULES_UI`
+- auth_origin=`jules.google.com`
+- fresh command/loop/correlation identity
+- requires_live_model=false
+- requires_github_write=true
+- retry=0
+- fallback=disabled
+- no terminal receipt for the new command
+
+Execution:
+1. Fresh-read PR #4 head/tree and require exact command match.
+2. Open Jules through native Work Cloud Browser only.
+3. Do not select a repository/branch, submit a Jules task, start Jules/model,
+   or mutate PR #4 while authentication is unresolved.
+4. If Google authentication is required, create/read back append-only
+   non-secret auth handoff metadata and set the loop state to
+   `WAITING_FOR_HUMAN_AUTH`.
+5. Surface only ChatGPT's native secure sign-in/takeover UI to the human.
+   Never store or echo the takeover URL, password, MFA, cookie, credential,
+   browser-control token, or authentication token.
+6. If a user-visible native sign-in/takeover entry cannot be surfaced or its
+   availability is unverifiable, close BLOCKED/UNKNOWN; do not guess which
+   Work/browser the user should find and do not retry.
+7. Human interaction may mark the handoff
+   `HUMAN_COMPLETED_UNVERIFIED`; this is not authentication PASS.
+8. After human completion, discard all pre-auth DOM/selector/page assumptions.
+9. Fresh-read PR #4 again and create a NEW exact-selector preflight with a new
+   logical identity.
+10. Only that fresh preflight may produce `AUTHENTICATED_OBSERVED`, and only
+    after it freshly reaches the Jules task-creation UI without an auth gate.
+11. Repo and branch must then be selected from fresh observations using the
+    exact full-string gate in section 7D; task_submit remains false.
+
+Correctness never depends on a Work/chat/browser session identifier or on
+same-run resume. Cloud Browser authentication persistence is convenience only.
+A persisted authenticated session still requires a fresh target readback and
+fresh exact-selector evidence.
+
+Static implementation:
+- `automation/command_bus/auth_handoff.py`
+- `automation/command_bus/schema/auth_handoff.schema.json`
+- `automation/command_bus/tests/test_auth_handoff.py`
+- `docs/JULES_HUMAN_AUTH_BOOTSTRAP.md`
