@@ -288,6 +288,18 @@ Execution:
 10. Any auth problem, missing branch, ambiguous selector state, or UI
     uncertainty => terminal BLOCKED/UNKNOWN; no task submission.
 
+Authentication gate rule:
+- a Google account chooser / sign-in requirement is a human-auth gate, not an
+  executor retry;
+- close the current preflight terminal BLOCKED/UNKNOWN and never replay it;
+- do not create a replacement command until the user completes sign-in;
+- after sign-in, fresh-read PR #4 head/tree and create a new logical command
+  identity bound to that fresh target;
+- browser/session identity and remembered login state are transport context,
+  never correctness inputs;
+- even with a persisted login, exact repo + branch selection evidence is still
+  required before task submission.
+
 This preflight proves only UI branch-selection capability. It does not prove a
 future Jules commit will have the correct parent. Final correctness still
 requires the post-publication ancestry/tree checks in section 8.
