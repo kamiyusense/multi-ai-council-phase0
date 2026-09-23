@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-human-auth-bootstrap-001-wake-001",
+  "loop_id": "jules-human-auth-bootstrap-001",
+  "command_id": "jules-human-auth-bootstrap-001-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Process this fresh auth-bootstrap command only while RUNNING and without a terminal receipt. No Jules task submission or model start."
+}
