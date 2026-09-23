@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-browser-preflight-b-001-20260924",
+  "command_id": "jules-browser-preflight-b-001-000001",
+  "loop_id": "jules-browser-preflight-b-001",
+  "correlation_id": "jules-browser-preflight-b-001-round-1",
+  "generation": 2,
+  "predecessor_command_id": "jules-browser-preflight-a-001-000001",
+  "transport_id": "WORK_COMPUTER_USE_JULES_UI",
+  "repository_expected": "kamiyusense/multi-ai-council-phase0",
+  "repository_observed": null,
+  "branch_expected": "feature/relay-transport-7070955470193506982",
+  "branch_observed": null,
+  "repo_selection_explicit": false,
+  "branch_selection_explicit": false,
+  "browser_capability_state": "UNKNOWN",
+  "browser_opened": false,
+  "jules_page_reached": false,
+  "auth_state": "NOT_ATTEMPTED",
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "target_head_expected": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_head_observed": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_tree_expected": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "target_tree_observed": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "retry_count": 0,
+  "fallback_used": false,
+  "terminal_state": "UNKNOWN",
+  "blocker": "SECONDARY_TRANSPORT_ELIGIBILITY_UNKNOWN_AND_COMPUTER_USE_CAPABILITY_UNVERIFIED",
+  "external_action_uncertainty": false,
+  "github_mutation_possible": false,
+  "credentials_or_sensitive_auth_material_accessed": false,
+  "eligibility_state": "UNKNOWN",
+  "eligibility_reason": "predecessor evidence does not satisfy current validate_browser_preflight_evidence required field names; requested Computer Use browser capability is not exposed or independently verifiable",
+  "available_browser_observation": [
+    {
+      "id": "1",
+      "name": "Chrome",
+      "type": "cdp",
+      "classified_transport": "WORK_CLOUD_BROWSER_JULES_UI"
+    }
+  ],
+  "evidence_refs": [
+    "automation/command_bus/commands/jules-browser-preflight-b-001/000001.json",
+    "automation/command_bus/receipts/jules-browser-preflight-a-001/000001.json",
+    "automation/command_bus/evidence/jules-browser-preflight-a-001-20260924.json",
+    "automation/command_bus/state/jules-browser-preflight-a-001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ],
+  "created_at": "2026-09-23T20:05:16Z"
+}
