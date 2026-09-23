@@ -1,6 +1,6 @@
 # Jules Branch Smoke 002 Plan
 
-Status: PREPARED ONLY — DO NOT LAUNCH UNTIL CONNECTOR VALIDATION PASSES
+Status: PREPARED ONLY — WAITING FOR USER AUTH GATE
 Updated: 2026-09-23
 
 ## Purpose
@@ -45,6 +45,20 @@ Work must select:
 
 If exact branch selection cannot be confirmed before submit:
 BLOCKED/UNKNOWN, no Jules task.
+
+Current Cloud Browser preflight result:
+- Jules UI reached: YES
+- Google account chooser encountered: YES
+- repo selected: NO
+- branch selected: NO
+- task submitted: NO
+- Jules/model started: NO
+- PR #4 changed: NO
+
+Therefore the next required step is user sign-in/account selection in the
+Cloud Browser. Do not replay the closed preflight command. After authentication,
+fresh-read PR #4 and create a new logical preflight identity before any Jules
+task is submitted.
 
 ## One bounded implementation task
 
@@ -97,11 +111,14 @@ No Merge. No automatic cherry-pick/rebase.
 
 ## Predecessor gate
 
-Do not create/execute the live command until:
-`jules-branch-route-validation-002`
+Do not create/execute a live Jules implementation command until all of these
+are true:
+- user authentication/account selection in Cloud Browser is complete;
+- a new branch-selector preflight (new command identity) verifies exact repo
+  and exact non-default branch with task_submit=false;
+- current PR #4 head/tree are freshly rebound;
+- the static Jules safety contract remains valid;
+- retry=0 and fallback disabled remain unchanged.
 
-has a terminal DONE/COMPLETE receipt proving the current PR #6 static contract
-and tests pass.
-
-If validation-002 is UNKNOWN/BLOCKED/FAIL:
-do not launch Jules; isolate and repair under a new validation logical command.
+Closed commands, including prior branch-route/selector validation attempts,
+must not be replayed.
