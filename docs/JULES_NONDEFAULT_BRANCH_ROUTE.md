@@ -1,7 +1,7 @@
 # Jules Non-Default Branch Launch Route
 
 Updated: 2026-09-23
-Status: STATIC CONTRACT READY / WORK VALIDATION PENDING
+Status: AUTH GATE IDENTIFIED / BRANCH SELECTOR NOT YET VERIFIED
 
 ## Finding
 
@@ -62,6 +62,19 @@ The command must require:
 
 Before task submission, Work must verify the exact branch is selected in the
 Jules web UI and preserve branch-selection transport evidence.
+
+Cloud Browser authentication is a separate human-auth gate. If Jules redirects
+to a Google account chooser or sign-in page:
+- do not submit a task;
+- close that preflight terminal BLOCKED/UNKNOWN;
+- never replay the same command;
+- user sign-in is a separate authorization/input step, not an executor retry;
+- after sign-in, fresh-read the target and issue a new preflight command;
+- do not rely on browser/session identity for correctness.
+
+OpenAI Cloud Browser may retain the authenticated site session for later tasks
+until it expires. That convenience never replaces fresh target readback or
+branch-selection evidence.
 
 That UI evidence is not sufficient for final correctness. After Jules
 publishes, the resulting commit must still satisfy:
