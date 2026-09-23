@@ -253,6 +253,10 @@ Require:
 - fallback=disabled
 - requires_live_model=true
 - requires_github_write=true
+- launch_route=`WORK_CLOUD_BROWSER_JULES_UI`
+- starting_branch=`feature/relay-transport-7070955470193506982`
+- issue_label_launch=false
+- branch_selection_evidence_required=true
 - exactly one allowed path: `tests/relay/test_dispatcher.py`
 - only operation: MODIFY
 - no implementation-file modification
@@ -270,11 +274,23 @@ Before launch:
 5. Append exactly one durable launch reservation at
    `automation/command_bus/jules_launch_attempts/<loop>/<command_id>.json`
    and read it back.
-6. Only the same Work run that created and verified that fresh reservation may
-   start Jules. A recovered reservation never authorizes a second launch.
+6. Open Jules only through Work Cloud Browser. Do not use a GitHub Issue
+   `jules` label for this non-default target.
+7. In the Jules repo/branch selector, choose repository
+   `kamiyusense/multi-ai-council-phase0` and exact starting branch
+   `feature/relay-transport-7070955470193506982`.
+8. Before submitting the task, capture durable evidence that the exact branch
+   was selected. UI text alone is transport evidence, not final correctness;
+   the resulting commit parent/tree must still be verified after publication.
+9. Only the same Work run that created and verified the fresh launch
+   reservation may start Jules. A recovered reservation never authorizes a
+   second launch.
 
 First Jules task:
 - fresh Jules session only
+- source must be the exact non-default branch selected in Jules UI
+- never fall back to `main`; if exact branch selection is unavailable or
+  unverifiable, stop BLOCKED/UNKNOWN before task submission
 - never reuse an old Jules task/workspace
 - add one unittest regression proving `abort_signal={"aborted": True}`
   blocks before slot reservation and provider dispatch
