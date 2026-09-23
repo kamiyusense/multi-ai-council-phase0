@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-cloud-browser-auth-gate-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "source_command": "jules-branch-selector-preflight-002-000001",
+  "source_receipt": "automation/command_bus/receipts/jules-branch-selector-preflight-002/000001.json",
+  "source_result": "BLOCKED",
+  "observed": {
+    "cloud_browser_started": true,
+    "jules_ui_opened": true,
+    "authentication_state": "BLOCKED_ACCOUNT_SELECTION_REQUIRED",
+    "repository_selected": false,
+    "branch_selected": false,
+    "task_submitted": false,
+    "model_started": false,
+    "jules_started": false,
+    "pr4_mutated": false
+  },
+  "policy": {
+    "human_auth_is_not_command_retry": true,
+    "same_command_replay_forbidden": true,
+    "after_auth_requires_new_command_identity": true,
+    "fresh_target_head_tree_required_after_auth": true,
+    "browser_session_identity_not_correctness_input": true,
+    "branch_selection_evidence_still_required": true,
+    "issue_label_launch_forbidden": true,
+    "jules_rest_api_forbidden": true,
+    "api_key_forbidden": true,
+    "retry_count": 0,
+    "fallback": "disabled"
+  },
+  "external_product_findings": {
+    "openai_cloud_browser": "Cloud Browser pauses when user sign-in/input is required; after sign-in the authenticated session may persist for future tasks until expiry.",
+    "jules": "Jules task creation supports explicit repository and starting-branch selection after login."
+  },
+  "next_safe_state": "WAIT_FOR_USER_AUTH_ONLY",
+  "next_command": "NOT_CREATED_UNTIL_AFTER_AUTH_AND_FRESH_TARGET_READBACK"
+}
