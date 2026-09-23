@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "command_id": "jules-first-roundtrip-001-000001",
+  "loop_id": "jules-first-roundtrip-001",
+  "round": 1,
+  "correlation_id": "jules-first-roundtrip-001-round-1",
+  "target": "work",
+  "action": "JULES_BOUNDED_STATIC_ROUNDTRIP",
+  "profile": "JULES_FRESH_STATIC_V1",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "workspace_integrity_profile": "TREE_IDENTITY_V1",
+  "fresh_session_required": true,
+  "disposable_workspace_required": true,
+  "reuse_existing_jules_task": false,
+  "allowed_paths": [
+    "tests/relay/test_dispatcher.py"
+  ],
+  "path_policy": [
+    {
+      "path": "tests/relay/test_dispatcher.py",
+      "allowed_ops": [
+        "MODIFY"
+      ]
+    }
+  ],
+  "test_commands": [
+    "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
+    "python -m compileall -q src tests",
+    "git diff --check"
+  ],
+  "requires_live_model": true,
+  "requires_github_write": true,
+  "user_authorization": "EXPLICIT_NEXT_BATCH_JULES_2026-09-23",
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "objective": "Add one unittest regression proving abort_signal={'aborted': True} blocks before slot reservation and before provider dispatch. Do not modify implementation code.",
+  "evidence_refs": [
+    "docs/CURRENT_SAFE_BATCH_TERMINAL_CHECKPOINT_20260923.md",
+    "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+    "automation/command_bus/evidence/jules-first-roundtrip-static-preflight-20260923.json"
+  ]
+}
