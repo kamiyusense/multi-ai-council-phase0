@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timezone
 
 from automation.command_bus.browser_transport import (
     ACTION, CapabilityState, EligibilityState, StaticBrowserTransportAdapter,
@@ -20,7 +21,8 @@ def command(**changes):
         "transport_id": TRANSPORT_CLOUD, "expected_repo": TARGET_REPO,
         "expected_pr": 4, "expected_target_head": HEAD,
         "expected_target_tree": TREE, "starting_branch": TARGET_BRANCH,
-        "requires_live_model": False, "retry": 0, "fallback": "disabled",
+        "requires_live_model": False, "requires_github_write": True,
+        "retry": 0, "fallback": "disabled",
         "expires_at": "2026-09-24T00:00:00+00:00",
     }
     value.update(changes)
@@ -77,7 +79,7 @@ class DualBrowserTransportTests(unittest.TestCase):
 
     def test_same_command_cannot_switch_transport(self):
         with self.assertRaisesRegex(ValueError, "same command_id"):
-            validate_successor_command(command(), command(transport_id=TRANSPORT_COMPUTER_USE))
+            validate_successor_command(command(), command(transport_id=TRANSPORT_COMPUTER_USE),now=datetime(2026,9,23,0,0,tzinfo=timezone.utc))
 
     def test_terminal_auth_block_can_allow_fresh_secondary_command(self):
         old=command()
@@ -131,13 +133,13 @@ class DualBrowserTransportTests(unittest.TestCase):
     def test_fresh_successor_requires_new_identity_generation_and_expiry(self):
         old=command()
         new=command(command_id="browser-b-000001",loop_id="browser-b",correlation_id="corr-b",generation=2,predecessor_command_id=old["command_id"],transport_id=TRANSPORT_COMPUTER_USE,expires_at="2026-09-25T00:00:00+00:00")
-        validate_successor_command(old,new)
+        validate_successor_command(old,new,now=datetime(2026,9,23,0,0,tzinfo=timezone.utc))
         self.assertNotEqual(old["command_id"],new["command_id"]); self.assertNotEqual(old["correlation_id"],new["correlation_id"])
 
     def test_correlation_reuse_is_rejected(self):
         old=command()
         new=command(command_id="browser-b-000001",loop_id="browser-b",generation=2,predecessor_command_id=old["command_id"],transport_id=TRANSPORT_COMPUTER_USE,expires_at="2026-09-25T00:00:00+00:00")
-        with self.assertRaisesRegex(ValueError,"fresh correlation"): validate_successor_command(old,new)
+        with self.assertRaisesRegex(ValueError,"fresh correlation"): validate_successor_command(old,new,now=datetime(2026,9,23,0,0,tzinfo=timezone.utc))
 
     def test_predecessor_evidence_binding_is_required(self):
         old=command()
@@ -164,12 +166,31 @@ class DualBrowserTransportTests(unittest.TestCase):
     def test_successor_generation_must_advance(self):
         old=command()
         new=command(command_id="browser-b-000001",loop_id="browser-b",correlation_id="corr-b",generation=1,predecessor_command_id=old["command_id"],transport_id=TRANSPORT_COMPUTER_USE,expires_at="2026-09-25T00:00:00+00:00")
-        with self.assertRaisesRegex(ValueError,"generation"): validate_successor_command(old,new)
+        with self.assertRaisesRegex(ValueError,"generation"): validate_successor_command(old,new,now=datetime(2026,9,23,0,0,tzinfo=timezone.utc))
 
     def test_successor_expiry_must_be_fresh(self):
         old=command()
         new=command(command_id="browser-b-000001",loop_id="browser-b",correlation_id="corr-b",generation=2,predecessor_command_id=old["command_id"],transport_id=TRANSPORT_COMPUTER_USE)
-        with self.assertRaisesRegex(ValueError,"fresh expiry"): validate_successor_command(old,new)
+        with self.assertRaisesRegex(ValueError,"fresh expiry"): validate_successor_command(old,new,now=datetime(2026,9,23,0,0,tzinfo=timezone.utc))
+
+    def test_requires_github_write_is_mandatory(self):
+        with self.assertRaisesRegex(ValueError, "durable GitHub write"):
+            validate_browser_transport_command(command(requires_github_write=False))
+
+    def test_evidence_predecessor_is_bound_to_command(self):
+        old=command(predecessor_command_id="prior-command")
+        with self.assertRaisesRegex(ValueError, "predecessor_command_id"):
+            validate_browser_preflight_evidence(old,evidence(old,predecessor_command_id="other-command"))
+
+    def test_successor_expiry_must_be_future_at_validation_time(self):
+        old=command()
+        new=command(command_id="browser-b-000001",loop_id="browser-b",correlation_id="corr-b",generation=2,predecessor_command_id=old["command_id"],transport_id=TRANSPORT_COMPUTER_USE,expires_at="2026-09-22T00:00:00+00:00")
+        with self.assertRaisesRegex(ValueError, "future"):
+            validate_successor_command(old,new,now=datetime(2026,9,23,0,0,tzinfo=timezone.utc))
+
+    def test_expiry_requires_timezone(self):
+        with self.assertRaisesRegex(ValueError, "timezone"):
+            validate_browser_transport_command(command(expires_at="2026-09-24T00:00:00"))
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ Repository: `kamiyusense/multi-ai-council-phase0`
 Carrier: PR #6 / `feature/chat-work-command-bus`
 Target: PR #4 / `feature/relay-transport-7070955470193506982`
 
-Status: **STATIC IMPLEMENTED / LIVE PREFLIGHT PENDING**
+Status: **STATIC HARDENED / LIVE PREFLIGHT PENDING**
 
 ## Scope completed
 
@@ -68,3 +68,15 @@ This does not block the static architecture/tests.
 Run exact-current-head deterministic command-bus validation. After that, a
 separate fresh live preflight may be designed only under the current durable
 runtime contract; it must not reuse any prior browser/Jules command.
+
+
+## 2026-09-24 semantic hardening
+
+Sol review found and fixed three narrow gaps before live browser preflight:
+- browser preflight commands now require `requires_github_write=true`;
+- evidence `predecessor_command_id` is strictly bound to the command;
+- successor expiry must parse as timezone-aware and be strictly future relative
+  to the explicit validation time.
+
+These checks supplement, not replace, the common runtime state expiry gate.
+No browser/Jules/model execution occurred during this hardening.

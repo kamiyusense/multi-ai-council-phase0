@@ -11,6 +11,7 @@ predecessor is terminal with no ambiguous external side effect.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -52,8 +53,8 @@ def validate_browser_transport_command(command: dict[str, Any]) -> dict[str, Any
         "schema_version", "command_id", "loop_id", "round", "correlation_id",
         "generation", "target", "action", "transport_id", "expected_repo",
         "expected_pr", "expected_target_head", "expected_target_tree",
-        "starting_branch", "requires_live_model", "retry", "fallback",
-        "expires_at",
+        "starting_branch", "requires_live_model", "requires_github_write",
+        "retry", "fallback", "expires_at",
     }
     if not isinstance(command, dict) or not required <= command.keys():
         raise ValueError("incomplete browser transport command")
@@ -71,6 +72,8 @@ def validate_browser_transport_command(command: dict[str, Any]) -> dict[str, Any
         raise ValueError("retry/fallback policy violation")
     if command["requires_live_model"] is not False:
         raise ValueError("browser preflight must not start a live model")
+    if command["requires_github_write"] is not True:
+        raise ValueError("browser preflight requires durable GitHub write")
     if isinstance(command["generation"], bool) or not isinstance(command["generation"], int) or command["generation"] < 1:
         raise ValueError("invalid transport generation")
     if isinstance(command["round"], bool) or not isinstance(command["round"], int) or command["round"] < 1:
@@ -79,6 +82,9 @@ def validate_browser_transport_command(command: dict[str, Any]) -> dict[str, Any
                 "expected_target_tree", "expires_at"):
         if not isinstance(command[key], str) or not command[key]:
             raise ValueError(f"invalid browser transport {key}")
+    expiry = datetime.fromisoformat(command["expires_at"].replace("Z", "+00:00"))
+    if expiry.tzinfo is None or expiry.utcoffset() is None:
+        raise ValueError("browser transport expiry must include timezone")
     return command
 
 
@@ -108,6 +114,7 @@ def validate_browser_preflight_evidence(command: dict[str, Any], evidence: dict[
         "branch_expected": command["starting_branch"],
         "target_head_expected": command["expected_target_head"],
         "target_tree_expected": command["expected_target_tree"],
+        "predecessor_command_id": command.get("predecessor_command_id"),
     }
     for key, expected in binding.items():
         if evidence.get(key) != expected:
@@ -198,6 +205,8 @@ def secondary_transport_eligibility(
 def validate_successor_command(
     previous_command: dict[str, Any],
     successor: dict[str, Any],
+    *,
+    now: datetime,
 ) -> dict[str, Any]:
     validate_browser_transport_command(previous_command)
     validate_browser_transport_command(successor)
@@ -213,6 +222,11 @@ def validate_successor_command(
         raise ValueError("successor predecessor_command_id mismatch")
     if successor["expires_at"] == previous_command["expires_at"]:
         raise ValueError("successor must use a fresh expiry")
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("successor validation time must include timezone")
+    successor_expiry = datetime.fromisoformat(successor["expires_at"].replace("Z", "+00:00"))
+    if successor_expiry <= now:
+        raise ValueError("successor expiry must be in the future")
     if successor["expected_target_head"] != previous_command["expected_target_head"]:
         raise ValueError("successor target head changed during handoff")
     if successor["expected_target_tree"] != previous_command["expected_target_tree"]:
