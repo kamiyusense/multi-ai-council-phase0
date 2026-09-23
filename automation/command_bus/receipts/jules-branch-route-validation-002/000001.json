@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "jules-branch-route-validation-002-000001",
+  "loop_id": "jules-branch-route-validation-002",
+  "round": 1,
+  "correlation_id": "jules-branch-route-validation-002-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "carrier_head_tested": "ade7183a19af7db4a782e0de7894c159c4ff8a38",
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "workspace_verification": {
+    "scope": "automation/command_bus/**",
+    "state": "UNKNOWN",
+    "recursive_tree_truncated": false,
+    "reason": "The connected GitHub transport successfully returned the current recursive PR #6 tree and individual blob content, but this automation runtime has no supported bridge that can materialize those connector-returned blob bytes into the local scratch filesystem. Completing the required exact connector_reconstruction.py materialization, byte-for-byte SHA/size verification for every STATIC blob, and local unittest/compileall/diff-check would therefore require substituting a weaker or manually transcribed route. Fail closed per runtime contract."
+  },
+  "blob_evidence": {
+    "total_command_bus_blob_count": "UNKNOWN_NOT_PROGRAMMATICALLY_MATERIALIZED",
+    "static_blob_count": "UNKNOWN_NOT_PROGRAMMATICALLY_MATERIALIZED",
+    "ledger_blob_count": "UNKNOWN_NOT_PROGRAMMATICALLY_MATERIALIZED",
+    "unknown_blob_count": "UNKNOWN_NOT_PROGRAMMATICALLY_MATERIALIZED",
+    "verified_static_blob_count": 0,
+    "zero_size_static_blob_count": "UNKNOWN_NOT_PROGRAMMATICALLY_MATERIALIZED"
+  },
+  "validation_results": {
+    "unittest": {"state": "NOT_RUN", "reason": "exact verified STATIC workspace not materialized"},
+    "compileall": {"state": "NOT_RUN", "reason": "exact verified STATIC workspace not materialized"},
+    "diff_check": {"state": "NOT_RUN", "reason": "exact verified STATIC workspace not materialized"}
+  },
+  "external_send_attempted": false,
+  "jules_started": false,
+  "browser_started": false,
+  "pr4_mutated": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/jules-branch-route-validation-002/000001.json",
+    "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+    "automation/command_bus/state/jules-branch-route-validation-002.json"
+  ]
+}
