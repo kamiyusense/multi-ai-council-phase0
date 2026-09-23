@@ -120,9 +120,24 @@ LEDGER:
 
 Any unclassified blob under `automation/command_bus/**` is UNKNOWN.
 
-Fetch and verify every STATIC blob by exact Git blob SHA, including zero-byte
-files. Reconstruct only STATIC paths in an isolated scratch directory. Do not
-materialize the full historical ledger.
+Fetch every STATIC blob through the connected GitHub transport. Do not require
+the local container to clone/fetch from github.com.
+
+For every STATIC blob:
+- require the connector-returned blob SHA to match the recursive tree entry
+- recompute the Git blob SHA from the returned bytes
+- require byte length to match the tree entry size
+- preserve supported file mode
+- include zero-byte blobs
+- reject path traversal, duplicate paths, symlinks, or unsupported modes
+
+Use `automation/command_bus/connector_reconstruction.py` as the deterministic
+verification helper.
+
+Materialize only the verified STATIC paths into a new isolated local scratch
+directory. A local `git init` is allowed solely for deterministic local
+diff-check/write-tree style verification; it must not add a remote or contact
+the network. Do not materialize the full historical ledger.
 
 Read only the active command/state, terminal receipt if present, and explicit
 predecessor records needed for the current operation.
