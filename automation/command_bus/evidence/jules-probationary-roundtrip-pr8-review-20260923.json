@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-probationary-roundtrip-pr8-review-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "issue": 7,
+  "pull_request": 8,
+  "review_state": "BLOCKED",
+  "reason": "PR #8 content relative to PR #4 is exactly one allowed MODIFY, but the Jules commit is based on main instead of the required PR #4 target head/tree. Required test execution is also unverifiable from durable GitHub evidence.",
+  "canonical_target": {
+    "pr": 4,
+    "branch": "feature/relay-transport-7070955470193506982",
+    "head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe"
+  },
+  "jules_pr": {
+    "number": 8,
+    "state": "OPEN",
+    "base_branch": "main",
+    "base_sha": "230026f53f412cd52d8e2eac45457236c916b64d",
+    "head_branch": "feature/relay-transport-7070955470193506982-14627861104139180894",
+    "head_sha": "2c768f805e31066db62adc1ded321da1ef224c40",
+    "head_tree": "9420d8ce42f48ec56a955951e980f2cbbaaea40f",
+    "commit_parents": [
+      "230026f53f412cd52d8e2eac45457236c916b64d"
+    ],
+    "mergeable": true,
+    "merged": false
+  },
+  "pr_display_diff": {
+    "changed_files": 30,
+    "interpretation": "NOT authoritative for Jules task scope because PR base is main and the target Relay work exists on PR #4 branch."
+  },
+  "target_relative_tree_diff": {
+    "target_blob_count": 39,
+    "jules_blob_count": 39,
+    "different_blob_count": 1,
+    "changes": [
+      {
+        "path": "tests/relay/test_dispatcher.py",
+        "operation": "MODIFY",
+        "target_blob": "bf4e0d255889ce62ff89c9b62ff349ca7904c56e",
+        "jules_blob": "a0e6197b98208823a102641787ebfe4eac0032b3",
+        "mode": "100644"
+      }
+    ]
+  },
+  "target_relative_content_delta": {
+    "removed_lines": 0,
+    "added_lines": 13,
+    "test_name": "test_pre_dispatch_abort_blocks_reservation_and_provider_dispatch",
+    "assertions_verified_by_direct_inspection": [
+      "abort_signal={\"aborted\": True}",
+      "result state == BLOCKED",
+      "reason == aborted",
+      "adapter.dispatch_count == 0",
+      "slot-abort not present in dispatcher.guard.ledger"
+    ],
+    "semantic_scope_match": "PASS"
+  },
+  "required_gate_review": {
+    "fresh_jules_task": "PASS_EVIDENCE_FROM_NEW_JULES_TASK_ID",
+    "target_head_tree_binding": "FAIL",
+    "commit_parent_equals_expected_target_head": "FAIL",
+    "pr_base_corresponds_to_target_branch": "FAIL",
+    "exactly_one_target_relative_changed_path": "PASS",
+    "operation_modify_only": "PASS",
+    "implementation_files_unchanged_relative_to_target": "PASS",
+    "required_tests_executed": "UNKNOWN",
+    "github_commit_status_count": 0,
+    "github_check_run_count": 0,
+    "github_check_suite_count": 0
+  },
+  "test_evidence": {
+    "required_commands": [
+      "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
+      "python -m compileall -q src tests",
+      "git diff --check"
+    ],
+    "durable_execution_evidence_found": false,
+    "state": "UNKNOWN"
+  },
+  "decision": {
+    "merge_pr8": false,
+    "apply_to_pr4": false,
+    "cherry_pick_or_rebase_automatically": false,
+    "retry_same_jules_task": false,
+    "fallback": false,
+    "terminal_replay": false
+  }
+}
