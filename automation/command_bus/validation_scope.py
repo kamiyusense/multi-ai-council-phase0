@@ -33,6 +33,7 @@ LEDGER_PREFIXES = (
     ROOT + "execution_results/",
     ROOT + "execution_receipts/",
     ROOT + "jules_launch_attempts/",
+    ROOT + "auth_handoffs/",
 )
 
 
@@ -63,14 +64,10 @@ def classify_command_bus_path(path: str) -> ScopeKind:
     rest = path[len(ROOT):]
     if not rest:
         return ScopeKind.UNKNOWN
-
-    # Direct module files are static code. README is documentation bound to the
-    # implementation contract. Other direct files are fail-closed UNKNOWN.
     if "/" not in rest:
         if rest.endswith(".py") or rest == "README.md":
             return ScopeKind.STATIC
         return ScopeKind.UNKNOWN
-
     if any(path.startswith(prefix) for prefix in STATIC_PREFIXES):
         return ScopeKind.STATIC
     if any(path.startswith(prefix) for prefix in LEDGER_PREFIXES):
@@ -92,13 +89,8 @@ def partition_command_bus_blobs(entries: Iterable[dict[str, Any]]) -> Validation
         kind = classify_command_bus_path(path)
         target = static if kind is ScopeKind.STATIC else ledger if kind is ScopeKind.LEDGER else unknown
         target.append(dict(raw))
-
     key = lambda item: str(item.get("path"))
-    return ValidationScope(
-        tuple(sorted(static, key=key)),
-        tuple(sorted(ledger, key=key)),
-        tuple(sorted(unknown, key=key)),
-    )
+    return ValidationScope(tuple(sorted(static, key=key)), tuple(sorted(ledger, key=key)), tuple(sorted(unknown, key=key)))
 
 
 def require_bounded_static_scope(entries: Iterable[dict[str, Any]]) -> ValidationScope:
