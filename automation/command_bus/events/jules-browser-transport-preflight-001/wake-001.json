@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-browser-transport-preflight-001-wake-001",
+  "loop_id": "jules-browser-transport-preflight-001",
+  "command_id": "jules-browser-transport-preflight-001-000001",
+  "generation": 1,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh user-authorized transport capability diagnostic under section 7C. Use WORK_CLOUD_BROWSER_JULES_UI only. If callable, open Jules and observe auth/capability; if auth is required, stop terminal BLOCKED/UNKNOWN. Do not automate authentication, submit Jules, start a model, mutate PR #4, merge, or change settings/permissions."
+}
