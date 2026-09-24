@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-first-roundtrip-002/000001",
+  "command_id": "jules-first-roundtrip-002-000001",
+  "loop_id": "jules-first-roundtrip-002",
+  "correlation_id": "jules-first-roundtrip-002-round-1",
+  "generation": 2,
+  "action": "JULES_BOUNDED_STATIC_ROUNDTRIP",
+  "classification": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE",
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "launch_reservation_created": false,
+  "browser_started": false,
+  "authentication_attempted": false,
+  "repository_selected": false,
+  "branch_selected": false,
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "github_target_mutated": false,
+  "blocker": "Current Work runtime exposes no callable native Work Cloud Browser or equivalent Jules browser capability. No submit was attempted.",
+  "concrete_failure_observed": "Existing Jules PR #8 commit 2c768f805e31066db62adc1ded321da1ef224c40 has parent 230026f53f412cd52d8e2eac45457236c916b64d (main), not frozen PR #4 head 2fc399ac7b415746763114c3951aa2e3b45adee7; therefore issue-label launch is not an acceptable substitute for exact-branch launch.",
+  "evidence_refs": [
+    "pull/4",
+    "pull/8",
+    "issues/7"
+  ]
+}
