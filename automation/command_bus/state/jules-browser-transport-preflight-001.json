@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "jules-browser-transport-preflight-001",
-  "state": "RUNNING",
-  "round": 0,
+  "state": "UNKNOWN",
+  "round": 1,
   "max_rounds": 6,
   "expires_at": "2026-09-25T03:30:00+09:00",
-  "stop_requested": false,
+  "stop_requested": true,
   "last_command_id": "jules-browser-transport-preflight-001-000001",
-  "last_receipt_id": null,
+  "last_receipt_id": "jules-browser-transport-preflight-001/000001",
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "Named Work Cloud Browser reached Jules but only a splash state was observable; authentication state, task-creation UI, and exact repository/branch selection could not be verified. Closed fail-safe without task submission or Jules/model start."
 }
