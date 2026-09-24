@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-STATES = {"PREPARED", "RUNNING", "WAITING_FOR_EVIDENCE", "WAITING_FOR_HUMAN_AUTH", "BLOCKED", "COMPLETE", "HALTED", "FAILED", "UNKNOWN", "EXPIRED"}
+STATES = {"PREPARED", "RUNNING", "WAITING_FOR_EVIDENCE", "WAITING_FOR_HUMAN_AUTH", "HUMAN_COMPLETED_UNVERIFIED", "VERIFYING_POST_AUTH", "BLOCKED", "COMPLETE", "HALTED", "FAILED", "UNKNOWN", "EXPIRED"}
 TERMINAL_RECEIPTS = {"DONE", "BLOCKED", "FAILED", "UNKNOWN", "CANCELLED"}
 REQUIRED_COMMAND = {"schema_version", "command_id", "loop_id", "round", "correlation_id", "target", "action", "expected_repo", "expected_pr", "expected_target_head", "retry", "fallback", "requires_live_model", "requires_github_write"}
 REQUIRED_STATE = {"schema_version", "loop_id", "state", "round", "max_rounds", "expires_at", "stop_requested", "last_command_id", "last_receipt_id", "expected_target", "retry_policy"}
