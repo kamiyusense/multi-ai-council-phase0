@@ -622,6 +622,7 @@ Require:
 - transport_id=`WORK_CLOUD_BROWSER_JULES_UI`
 - auth_origin=`jules.google.com`
 - fresh command/loop/correlation identity
+- positive `generation` for newly-created commands (historical v1 records without it remain readable)
 - requires_live_model=false
 - requires_github_write=true
 - retry=0
