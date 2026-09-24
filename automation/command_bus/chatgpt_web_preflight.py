@@ -5,6 +5,7 @@ start a target model turn, start human auth, or start Jules.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -49,6 +50,9 @@ def validate_command(command: dict[str, Any]) -> dict[str, Any]:
         value = command[key]
         if not isinstance(value, str) or len(value) != 40 or any(c not in "0123456789abcdef" for c in value):
             raise ValueError(f"invalid {key}")
+    expiry = datetime.fromisoformat(command["expires_at"].replace("Z", "+00:00"))
+    if expiry.tzinfo is None or expiry.utcoffset() is None:
+        raise ValueError("expires_at must include timezone")
     return command
 
 
@@ -79,6 +83,13 @@ def validate_evidence(command: dict[str, Any], evidence: dict[str, Any]) -> dict
     for key, expected in bindings.items():
         if evidence.get(key) != expected:
             raise ValueError(f"evidence binding mismatch: {key}")
+    if evidence["target_head_observed"] != command["expected_target_head"]:
+        raise ValueError("observed target head mismatch")
+    if evidence["target_tree_observed"] != command["expected_target_tree"]:
+        raise ValueError("observed target tree mismatch")
+    created_at = datetime.fromisoformat(evidence["created_at"].replace("Z", "+00:00"))
+    if created_at.tzinfo is None or created_at.utcoffset() is None:
+        raise ValueError("created_at must include timezone")
     for key in (
         "chatgpt_web_reachable", "chatgpt_ui_visible", "work_ui_visible",
         "existing_work_list_visible", "preferred_work_title_found",
