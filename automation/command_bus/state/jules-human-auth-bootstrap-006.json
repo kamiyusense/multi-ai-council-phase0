@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "jules-human-auth-bootstrap-006",
-  "state": "PREPARED",
-  "round": 0,
+  "state": "UNKNOWN",
+  "round": 1,
   "max_rounds": 6,
   "expires_at": "2026-09-25T03:00:00+09:00",
-  "stop_requested": false,
+  "stop_requested": true,
   "last_command_id": "jules-human-auth-bootstrap-006-000001",
-  "last_receipt_id": null,
+  "last_receipt_id": "jules-human-auth-bootstrap-006/000001",
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "Native Work Cloud Browser capability unavailable, so the user-visible human-auth boundary could not be verified. Fresh readback found state PREPARED rather than RUNNING; terminalized fail-closed without browser/auth/Jules/model action."
 }
