@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "receipt_id": "jules-first-roundtrip-002/000001",
+  "command_id": "jules-first-roundtrip-002-000001",
+  "loop_id": "jules-first-roundtrip-002",
+  "correlation_id": "jules-first-roundtrip-002-round-1",
+  "generation": 2,
+  "round": 1,
+  "action": "JULES_BOUNDED_STATIC_ROUNDTRIP",
+  "result": "BLOCKED",
+  "state": "BLOCKED",
+  "executed_once": true,
+  "classification": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE",
+  "launch_reservation_created": false,
+  "browser_started": false,
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "target_mutated": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "evidence_refs": [
+    "automation/command_bus/evidence/jules-first-roundtrip-002/000001.json",
+    "pull/4",
+    "pull/8"
+  ],
+  "completion_reason": "Current Work runtime exposes no callable native Work Cloud Browser or equivalent Jules browser capability. No submit was attempted."
+}
