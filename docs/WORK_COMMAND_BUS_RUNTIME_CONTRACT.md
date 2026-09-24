@@ -747,3 +747,69 @@ If Priority 1 is not usable and Priority 2 is AVAILABLE, route decision is
 If Priority 2 is UNAVAILABLE or UNKNOWN, route decision is
 `NEEDS_CHATGPT_WEB_PREFLIGHT`. A separate fresh command is then required for
 any read-only ChatGPT Web browser preflight.
+
+
+## 7G. CHATGPT_WEB_EXISTING_WORK_PREFLIGHT
+
+Status: **USER-AUTHORIZED READ-ONLY / NO-SEND CLOUD BROWSER PREFLIGHT**.
+
+Purpose:
+test priority-3 routing only after this exact Scheduled Task's associated chat
+is not proved usable and native existing-thread delegation remains unavailable
+or UNKNOWN.
+
+Require:
+- action=`CHATGPT_WEB_EXISTING_WORK_PREFLIGHT`
+- target=work
+- expected repo `kamiyusense/multi-ai-council-phase0`
+- expected PR=4
+- concrete fresh expected_target_head + expected_target_tree
+- preferred_work_title=`Phase 0 Jules Operator`
+- requires_live_model=false
+- requires_github_write=true
+- retry=0
+- fallback=disabled
+
+Execution:
+1. Fresh-read PR #4 head/tree and require exact command match.
+2. Open `https://chatgpt.com` using Work Cloud Browser.
+3. Navigation/observation only. Do not type or send a message.
+4. Observe whether ChatGPT Web is reachable and whether the remote browser is
+   already authenticated to the same account context. If authentication is
+   required, classify BLOCKED_AUTH/UNKNOWN; do not start sign-in.
+5. If authenticated, inspect whether ChatGPT UI, Work UI, and the existing Work
+   list are visible.
+6. Look only for the exact command-provided preferred title
+   `Phase 0 Jules Operator`. Do not persist unrelated conversation titles.
+7. If the preferred Work exists, open it read-only and verify that the Work
+   surface is openable. Do not type, send, submit, or trigger a model turn.
+8. Do not create a new Work.
+9. Do not start human auth or Jules.
+10. Persist no chat/thread/conversation/session/browser-control identifier.
+11. Fresh-read PR #4 head/tree again and require unchanged exact identity.
+12. Persist one non-secret evidence record, one terminal receipt and matching
+    terminal state; read back all writes.
+
+PASS requires all of:
+- chatgpt_web_reachable=true
+- chatgpt_auth_state=AUTHENTICATED
+- chatgpt_ui_visible=true
+- work_ui_visible=true
+- existing_work_list_visible=true
+- preferred_work_title_found=true
+- existing_work_openable=true
+- same_account_context_verified=true
+- message_sent=false
+- target_model_turn_started=false
+- new_work_created=false
+- human_auth_started=false
+- jules_started=false
+- credential_material_persisted=false
+- chat_or_session_identifier_persisted=false
+
+If the list is visible but the exact preferred fixed Work does not exist,
+classify `NO_SUITABLE_EXISTING_WORK` and route decision
+`NEEDS_FIXED_WORK_PREPARE`. This does not authorize creating the Work.
+
+A PASS proves only UI reachability. It does not authorize a future UI relay
+send; any such send is a separately authorized live POC.
