@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-human-auth-bootstrap-002-wake-003",
+  "loop_id": "jules-human-auth-bootstrap-002",
+  "command_id": "jules-human-auth-bootstrap-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "reason": "Fresh readback still shows the command RUNNING with no receipt/evidence and the Scheduled task last_run_time has not advanced since 2026-09-24T09:46:58Z. Prior wake markers did not produce an observable task run. This is a wake-only marker for the same logical command after the observed non-delivery interval.",
+  "do_not_replay_if_terminal_receipt_exists": true
+}
