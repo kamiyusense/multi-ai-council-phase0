@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "chatgpt-web-existing-work-preflight-002",
-  "state": "RUNNING",
+  "state": "UNKNOWN",
   "round": 0,
   "max_rounds": 6,
   "expires_at": "2026-09-24T22:50:00+09:00",
   "stop_requested": false,
-  "last_command_id": null,
-  "last_receipt_id": null,
+  "last_command_id": "chatgpt-web-existing-work-preflight-002-000001",
+  "last_receipt_id": "000001",
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "ChatGPT Web was reachable, but the Work Cloud Browser required ChatGPT authentication. Sign-in was not started, so the preferred existing Work and same-account context could not be verified."
 }
