@@ -31,7 +31,8 @@ Always:
 - retry = 0
 - fallback = disabled
 - process at most one logical command per run
-- never replay a command with a terminal receipt
+- never replay a command with a terminal receipt; terminal receipt is a permanent NO-OP fence
+- a closed state without a terminal receipt does not prove the old Work run is dead
 - terminal/closed states are NO-OP
 - ambiguity or unverifiable readback is UNKNOWN, not PASS
 
@@ -72,6 +73,51 @@ Validate:
 - fallback=disabled
 - requires_live_model=false, except `JULES_BOUNDED_STATIC_ROUNDTRIP` which requires true
 - duplicate/replay guard
+
+## 3A. LATE_TERMINAL_RECEIPT_RECONCILIATION
+
+A closed mutable state without a durable terminal receipt does **not** prove that
+the old event-triggered Work run has stopped. A delayed terminal result may
+arrive after UNKNOWN/HALTED/BLOCKED/FAILED/EXPIRED.
+
+Pre-dispatch reconciliation is mandatory before any logical successor:
+
+1. Fresh-read old command, mutable state, terminal receipt path, prior
+   no-result/timeout evidence, and any already-issued successor.
+2. A terminal receipt bound to the old command is a permanent replay fence.
+   The old command is NO-OP forever, regardless of stale mutable state.
+3. If a terminal receipt appears after a closed state, never delete or rewrite
+   the old UNKNOWN/timeout/no-result evidence. Append a new
+   late-receipt reconciliation evidence record.
+4. Update only the mutable state to `RECONCILED_LATE_RESULT`, bind
+   `last_receipt_id`, and record the prior state and whether a successor had
+   already been issued. Git history plus the append-only reconciliation record
+   must expose the full transition:
+   `UNKNOWN/no-result -> late terminal receipt -> reconciled`.
+5. If a successor already exists, do not replay the old command and do not
+   silently erase the successor. Record `SUCCESSOR_ALREADY_ISSUED` semantics
+   in reconciliation evidence and inspect both logical identities separately.
+6. Successor/replacement issuance is fail-closed. Require:
+   - old terminal receipt present and identity-bound;
+   - mutable state COMPLETE or `RECONCILED_LATE_RESULT` (or another terminal
+     state explicitly bound to that receipt);
+   - old-run completion durably established, not inferred from elapsed time;
+   - write ambiguity proven false;
+   - external side-effect possibility proven NONE;
+   - Jules task/model/external action states proven false, never UNKNOWN;
+   - fresh command_id/correlation_id;
+   - generation strictly advanced when generation is present;
+   - fresh future expiry;
+   - retry=0 and fallback=disabled.
+7. Missing receipt, unreconciled late receipt, ambiguous write, UNKNOWN external
+   action/Jules/model state, or uncertain old-run completion => DEFERRED/UNKNOWN,
+   never PASS and never automatic successor dispatch.
+8. Time alone must never be used to conclude that an old Work run is dead.
+
+Static implementation:
+- `automation/command_bus/late_receipt.py`
+- `automation/command_bus/schema/late_receipt_reconciliation.schema.json`
+- `automation/command_bus/tests/test_late_receipt.py`
 
 ## 4. ECHO_AND_RECEIPT
 

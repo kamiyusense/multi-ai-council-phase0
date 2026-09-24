@@ -34,6 +34,7 @@
         "WAITING_FOR_HUMAN_AUTH",
         "HUMAN_COMPLETED_UNVERIFIED",
         "VERIFYING_POST_AUTH",
+        "RECONCILED_LATE_RESULT",
         "BLOCKED",
         "COMPLETE",
         "HALTED",
