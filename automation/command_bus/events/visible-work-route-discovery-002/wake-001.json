@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "visible-work-route-discovery-002-wake-001",
+  "loop_id": "visible-work-route-discovery-002",
+  "command_id": "visible-work-route-discovery-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Process only this RUNNING command under runtime contract 7F. Inspection only: no cross-thread send, no browser, no Work creation, no auth, no Jules/model."
+}
