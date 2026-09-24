@@ -654,3 +654,96 @@ Static implementation:
 - `automation/command_bus/schema/auth_handoff.schema.json`
 - `automation/command_bus/tests/test_auth_handoff.py`
 - `docs/JULES_HUMAN_AUTH_BOOTSTRAP.md`
+
+
+## 7F. VISIBLE_WORK_ROUTE_DISCOVERY
+
+Status: **READ-ONLY DISCOVERY / NO CROSS-THREAD SEND / NO BROWSER**.
+
+Purpose:
+remove the requirement that a human manually searches for the hidden
+GitHub-event-triggered Work execution.
+
+Require:
+- action=`VISIBLE_WORK_ROUTE_DISCOVERY`
+- target=work
+- expected repo `kamiyusense/multi-ai-council-phase0`
+- expected PR=4
+- concrete fresh expected_target_head + expected_target_tree
+- requires_live_model=false
+- requires_github_write=true
+- retry=0
+- fallback=disabled
+
+Execution order is strict.
+
+### Priority 1: Scheduled Task associated chat
+
+Inspect only metadata/capabilities already exposed to the current event-triggered
+Work runtime for the exact Scheduled Task `Phase 0 PR6 Command Bus`.
+
+Classify exactly one:
+- `ASSOCIATED_CHAT_USABLE`
+- `ASSOCIATED_CHAT_PRESENT_BUT_UNVERIFIED`
+- `ASSOCIATED_CHAT_NOT_USER_VISIBLE`
+- `ASSOCIATED_CHAT_UNAVAILABLE`
+- `UNKNOWN`
+
+`ASSOCIATED_CHAT_USABLE` requires direct proof for this exact task that the
+associated chat is both stable across event runs and user-visible/openable. The
+generic product concept "a task has a conversation" is insufficient.
+
+Do not persist chat/thread/conversation/session identifiers. If Priority 1 is
+`ASSOCIATED_CHAT_USABLE`, record the result and STOP; lower-priority routes
+must not be inspected.
+
+### Priority 2: native existing-thread delegation capability
+
+Only when Priority 1 is not usable, inspect the callable tool/action catalog
+exposed to this current event-triggered Work runtime.
+
+Inspect presence only for:
+- `send_message_to_thread`
+- `read_thread`
+- `list_threads`
+- `create_thread`
+- `thread_resume`
+- an equivalent existing-Work/thread delegation primitive
+
+Do not call any effectful delegation tool. Do not start a target model turn.
+Record `native_thread_delegation_live_tested=false` and
+`external_send_attempted=false`.
+
+Capability classification:
+- `AVAILABLE`: a callable existing-thread delegation primitive is exposed and
+  a stable target locator plus readback primitive are both identifiable.
+- `UNAVAILABLE`: the relevant callable family is definitively absent.
+- `UNKNOWN`: exposure/target/readback semantics cannot be verified.
+- `SKIPPED_HIGHER_PRIORITY`: Priority 1 already passed.
+
+An error from any future live send must never cause automatic resend. Future
+live testing, if separately authorized, must first read back the target.
+
+### Output and safety
+
+Fresh-read PR #4 before evidence write and require exact head/tree match.
+Persist one non-secret evidence record validated by
+`visible_work_routing.py` and
+`schema/visible_work_route_evidence.schema.json`, then one terminal receipt
+and matching terminal state.
+
+This action MUST keep all of the following false:
+- native_thread_delegation_live_tested
+- external_send_attempted
+- browser_started
+- new_work_creation_tested
+- human_auth_started
+- jules_started
+- model_started
+- credential_material_persisted
+
+If Priority 1 is not usable and Priority 2 is AVAILABLE, route decision is
+`NATIVE_DELEGATION_CANDIDATE` and stop before Cloud Browser.
+If Priority 2 is UNAVAILABLE or UNKNOWN, route decision is
+`NEEDS_CHATGPT_WEB_PREFLIGHT`. A separate fresh command is then required for
+any read-only ChatGPT Web browser preflight.
