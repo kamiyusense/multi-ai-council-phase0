@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-human-auth-bootstrap-003-wake-001",
+  "loop_id": "jules-human-auth-bootstrap-003",
+  "command_id": "jules-human-auth-bootstrap-003-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "User-authorized fresh retest. Surface only ChatGPT's native secure sign-in/takeover human boundary. Do not enter credentials/MFA, complete authentication, submit Jules, start a model, modify PR #4, merge, or change settings/billing/permissions."
+}
