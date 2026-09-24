@@ -15,7 +15,7 @@ EXPECTED_REPO = "kamiyusense/multi-ai-council-phase0"
 EXPECTED_PR = 4
 EXPECTED_BRANCH = "feature/relay-transport-7070955470193506982"
 
-_ALLOWED_SECRET_BOOLEAN_KEYS = {"takeover_url_persisted", "credentials_persisted"}
+_ALLOWED_SECRET_BOOLEAN_KEYS = {"takeover_url_persisted", "credentials_persisted", "credential_material_persisted", "session_identifier_persisted"}
 _FORBIDDEN_KEY_FRAGMENTS = (
     "password",
     "passwd",
