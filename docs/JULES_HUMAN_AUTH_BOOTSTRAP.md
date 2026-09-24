@@ -114,6 +114,7 @@ Never perform during this flow:
 Static implementation:
 - `automation/command_bus/auth_handoff.py`
 - `automation/command_bus/schema/auth_handoff.schema.json`
+- `automation/command_bus/schema/same_work_post_auth_evidence.schema.json`
 - `automation/command_bus/schema/state.schema.json`
 - `automation/command_bus/tests/test_auth_handoff.py`
 - `docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md`
