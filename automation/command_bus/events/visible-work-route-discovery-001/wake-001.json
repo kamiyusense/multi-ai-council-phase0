@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "visible-work-route-discovery-001-wake-001",
+  "loop_id": "visible-work-route-discovery-001",
+  "command_id": "visible-work-route-discovery-001-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Process only this RUNNING command if no terminal receipt exists. Follow runtime contract 7F. Do not send cross-thread messages, open browser, create Work, start human auth, Jules, or any model."
+}
