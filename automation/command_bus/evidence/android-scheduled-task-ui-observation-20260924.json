@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "evidence_id": "android-scheduled-task-ui-observation-20260924",
+  "observed_surface": "ChatGPT Android native app",
+  "observed_path": "Settings > Notifications",
+  "observed_result": "MANAGE_TASKS_ENTRY_NOT_PRESENT",
+  "direct_user_visual_evidence": true,
+  "screenshot_secret_material_present": false,
+  "conclusion": {
+    "android_native_settings_notifications_manage_tasks_available": false,
+    "scheduled_task_management_via_this_android_settings_path": "UNAVAILABLE_IN_OBSERVED_APP_STATE",
+    "associated_chat_user_visible_from_this_path": false
+  },
+  "limitations": [
+    "This observation does not prove that every Android version/account lacks Scheduled.",
+    "It does not prove web Scheduled is unavailable.",
+    "It does not prove the task has no associated chat; only that this Android settings path does not expose task management."
+  ],
+  "official_product_context": {
+    "availability_varies_by_account_app_and_app_version": true,
+    "web_scheduled_route_documented": true
+  },
+  "credential_material_persisted": false,
+  "retry_count": 0,
+  "fallback_used": false
+}
