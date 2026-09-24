@@ -89,6 +89,17 @@ class ChatGPTWebPreflightTests(unittest.TestCase):
     def test_target_binding_mismatch_rejected(self):
         cmd=command()
         with self.assertRaises(ValueError): validate_evidence(cmd,evidence(cmd,target_tree_expected="c"*40))
+        with self.assertRaisesRegex(ValueError,"observed target head"):
+            validate_evidence(cmd,evidence(cmd,target_head_observed="c"*40))
+        with self.assertRaisesRegex(ValueError,"observed target tree"):
+            validate_evidence(cmd,evidence(cmd,target_tree_observed="c"*40))
+
+    def test_timezone_aware_command_and_evidence_timestamps_required(self):
+        with self.assertRaisesRegex(ValueError,"expires_at"):
+            validate_command(command(expires_at="2026-09-25T00:00:00"))
+        cmd=command()
+        with self.assertRaisesRegex(ValueError,"created_at"):
+            validate_evidence(cmd,evidence(cmd,created_at="2026-09-24T06:00:00"))
 
     def test_browser_must_have_started_for_live_probe(self):
         cmd=command()
