@@ -630,6 +630,11 @@ Require:
 - no terminal receipt for the new command
 
 Execution:
+0. Fresh-read the matching mutable state. Execute only when state is exactly `RUNNING`,
+   stop_requested=false, and no terminal receipt exists. `PREPARED`,
+   `WAITING_FOR_HUMAN_AUTH`, `HUMAN_COMPLETED_UNVERIFIED`,
+   `VERIFYING_POST_AUTH`, and all terminal states are non-dispatchable from a
+   new event. A PREPARED command must be a NO-OP, not terminalized.
 1. Fresh-read PR #4 head/tree and require exact command match.
 2. Open Jules through native Work Cloud Browser only.
 3. While authentication is unresolved, do not select repo/branch, submit a
