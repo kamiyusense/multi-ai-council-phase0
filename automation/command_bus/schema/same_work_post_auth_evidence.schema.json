@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command_id",
+    "loop_id",
+    "correlation_id",
+    "generation",
+    "transport_id",
+    "fresh_target_head",
+    "fresh_target_tree",
+    "associated_work_user_visible",
+    "same_browser_context_open",
+    "executor_resumed_same_work",
+    "fresh_observation",
+    "auth_gate_present",
+    "jules_task_creation_ui_reached",
+    "observed_repo",
+    "observed_branch",
+    "repo_selection_explicit",
+    "branch_selection_explicit",
+    "task_submitted",
+    "jules_task_started",
+    "model_started",
+    "retry_count",
+    "fallback_used",
+    "session_identifier_persisted",
+    "credential_material_persisted",
+    "classification",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "command_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "loop_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "transport_id": {
+      "const": "WORK_CLOUD_BROWSER_JULES_UI"
+    },
+    "fresh_target_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "fresh_target_tree": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "associated_work_user_visible": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "same_browser_context_open": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "executor_resumed_same_work": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "fresh_observation": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "auth_gate_present": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "jules_task_creation_ui_reached": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "observed_repo": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "observed_branch": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "repo_selection_explicit": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "branch_selection_explicit": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "task_submitted": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "jules_task_started": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "model_started": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "retry_count": {
+      "const": 0
+    },
+    "fallback_used": {
+      "const": false
+    },
+    "session_identifier_persisted": {
+      "const": false
+    },
+    "credential_material_persisted": {
+      "const": false
+    },
+    "classification": {
+      "enum": [
+        "AUTHENTICATED_OBSERVED",
+        "BLOCKED",
+        "UNKNOWN"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
