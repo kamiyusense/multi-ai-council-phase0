@@ -244,6 +244,24 @@ def new_exact_preflight_eligibility(
     )
 
 
+
+def bootstrap_visibility_decision(
+    *,
+    auth_required: bool | None,
+    surface_availability_verified: bool | None,
+    user_visible_entry_surfaced: bool | None,
+) -> tuple[str, str]:
+    """Fail closed unless the native human sign-in entry is proven visible."""
+    if auth_required is False:
+        return "NO_HANDOFF_NEEDED", "fresh browser observation does not require human authentication"
+    if auth_required is not True:
+        return "UNKNOWN", "authentication requirement is unverified"
+    if surface_availability_verified is not True:
+        return "UNKNOWN", "native user-visible sign-in/takeover availability is unverified"
+    if user_visible_entry_surfaced is not True:
+        return "BLOCKED", "native user-visible sign-in/takeover entry was not surfaced to the human"
+    return "WAITING_FOR_HUMAN_AUTH", "native user-visible sign-in/takeover entry is verified visible"
+
 def authenticated_observation(
     *,
     browser_opened: bool | None,

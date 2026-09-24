@@ -10,6 +10,7 @@ from automation.command_bus.auth_handoff import (
     HANDOFF_SURFACE,
     TRANSPORT_ID,
     auth_handoff_path,
+    bootstrap_visibility_decision,
     authenticated_observation,
     new_exact_preflight_eligibility,
     validate_auth_bootstrap_command,
@@ -198,6 +199,38 @@ class AuthHandoffTests(unittest.TestCase):
                     fresh_target_tree=tree,
                 )
                 self.assertEqual(status, "UNKNOWN")
+
+    def test_waiting_requires_verified_user_visible_entry(self):
+        status, _ = bootstrap_visibility_decision(
+            auth_required=True,
+            surface_availability_verified=True,
+            user_visible_entry_surfaced=True,
+        )
+        self.assertEqual(status, "WAITING_FOR_HUMAN_AUTH")
+
+        status, _ = bootstrap_visibility_decision(
+            auth_required=True,
+            surface_availability_verified=True,
+            user_visible_entry_surfaced=False,
+        )
+        self.assertEqual(status, "BLOCKED")
+
+        for availability, surfaced in ((None, None), (False, None), (False, False)):
+            with self.subTest(availability=availability, surfaced=surfaced):
+                status, _ = bootstrap_visibility_decision(
+                    auth_required=True,
+                    surface_availability_verified=availability,
+                    user_visible_entry_surfaced=surfaced,
+                )
+                self.assertEqual(status, "UNKNOWN")
+
+    def test_no_handoff_needed_when_fresh_observation_is_already_authenticated(self):
+        status, _ = bootstrap_visibility_decision(
+            auth_required=False,
+            surface_availability_verified=None,
+            user_visible_entry_surfaced=None,
+        )
+        self.assertEqual(status, "NO_HANDOFF_NEEDED")
 
     def test_authentication_requires_fresh_explicit_observation(self):
         status, _ = authenticated_observation(

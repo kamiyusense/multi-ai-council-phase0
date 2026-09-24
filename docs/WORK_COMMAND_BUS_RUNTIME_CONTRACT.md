@@ -622,15 +622,18 @@ Execution:
 2. Open Jules through native Work Cloud Browser only.
 3. Do not select a repository/branch, submit a Jules task, start Jules/model,
    or mutate PR #4 while authentication is unresolved.
-4. If Google authentication is required, create/read back append-only
-   non-secret auth handoff metadata and set the loop state to
-   `WAITING_FOR_HUMAN_AUTH`.
-5. Surface only ChatGPT's native secure sign-in/takeover UI to the human.
-   Never store or echo the takeover URL, password, MFA, cookie, credential,
+4. If Google authentication is required, first prove that ChatGPT's native
+   secure sign-in/takeover entry is actually surfaced on a user-visible
+   surface. Merely naming the intended surface `VISIBLE_WORK` is not proof.
+5. Only after the user-visible entry is verified visible may append-only
+   non-secret auth handoff metadata be created/read back and the loop state be
+   set to `WAITING_FOR_HUMAN_AUTH`.
+6. Never store or echo the takeover URL, password, MFA, cookie, credential,
    browser-control token, or authentication token.
-6. If a user-visible native sign-in/takeover entry cannot be surfaced or its
-   availability is unverifiable, close BLOCKED/UNKNOWN; do not guess which
-   Work/browser the user should find and do not retry.
+7. If a user-visible native sign-in/takeover entry is not visible to the human,
+   cannot be surfaced, or its availability is unverifiable, close
+   BLOCKED/UNKNOWN; do not guess which Work/browser the user should find and do
+   not retry.
 7. Human interaction may mark the handoff
    `HUMAN_COMPLETED_UNVERIFIED`; this is not authentication PASS.
 8. After human completion, discard all pre-auth DOM/selector/page assumptions.

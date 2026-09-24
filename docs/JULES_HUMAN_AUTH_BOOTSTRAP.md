@@ -11,12 +11,16 @@ Canonical route:
    correctness requirement.
 3. Work fresh-reads PR #4 head/tree and requires exact command binding.
 4. Work opens `jules.google.com` with native Cloud Browser only.
-5. If sign-in is required, Work must surface ChatGPT's native secure
-   sign-in/takeover flow to the human.
-6. Password, MFA, cookie, token, takeover URL, browser-control token, or other
+5. If sign-in is required, Work must first prove that ChatGPT's native secure
+   sign-in/takeover entry is actually visible to the human. The configured
+   surface name `VISIBLE_WORK` is intent, not visibility evidence.
+6. Only after that visibility gate passes may state become
+   `WAITING_FOR_HUMAN_AUTH`. If the entry is not visible or visibility is
+   unverifiable, terminalize BLOCKED/UNKNOWN instead.
+7. Password, MFA, cookie, token, takeover URL, browser-control token, or other
    credentials are never persisted in GitHub or chat.
-7. While authentication is unresolved, state is
-   `WAITING_FOR_HUMAN_AUTH`; no Jules task is submitted and no model starts.
+8. No Jules task is submitted and no model starts while authentication is
+   unresolved.
 8. Human completion is recorded only as `HUMAN_COMPLETED_UNVERIFIED`, never
    authentication PASS.
 9. All pre-auth DOM/selector/page assumptions are discarded.

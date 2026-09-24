@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-human-auth-bootstrap-001-user-visible-entry",
+  "command_id": "jules-human-auth-bootstrap-001-000001",
+  "loop_id": "jules-human-auth-bootstrap-001",
+  "correlation_id": "jules-human-auth-bootstrap-001-round-1",
+  "transport_id": "WORK_CLOUD_BROWSER_JULES_UI",
+  "handoff_id": "jules-cloud-auth-bootstrap-001",
+  "intended_handoff_surface": "VISIBLE_WORK",
+  "user_visible_entry_state": "NOT_VISIBLE_TO_USER",
+  "human_reported_not_visible": true,
+  "surface_visibility_independently_verified": false,
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "target_pr_modified": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "classification": "BLOCKED",
+  "blocker": "USER_VISIBLE_AUTH_ENTRY_NOT_SURFACED"
+}
