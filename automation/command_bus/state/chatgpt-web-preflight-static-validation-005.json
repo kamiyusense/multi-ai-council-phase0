@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "chatgpt-web-preflight-static-validation-005",
-  "state": "RUNNING",
+  "state": "UNKNOWN",
   "round": 0,
   "max_rounds": 6,
   "expires_at": "2026-09-24T22:45:00+09:00",
   "stop_requested": false,
-  "last_command_id": null,
+  "last_command_id": "chatgpt-web-preflight-static-validation-005-000001",
   "last_receipt_id": null,
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "No event-task run was observed for this validation command, and the static code was subsequently hardened. Close this stale validation without replay; validate the new static version under a fresh logical command."
 }
