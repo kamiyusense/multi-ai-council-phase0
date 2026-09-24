@@ -764,7 +764,7 @@ Require:
 - expected repo `kamiyusense/multi-ai-council-phase0`
 - expected PR=4
 - concrete fresh expected_target_head + expected_target_tree
-- preferred_work_title=`Phase 0 Jules Operator`
+- `preferred_work_title` = an exact known pre-existing user-visible Work title supplied by the command
 - requires_live_model=false
 - requires_github_write=true
 - retry=0
@@ -779,8 +779,7 @@ Execution:
    required, classify BLOCKED_AUTH/UNKNOWN; do not start sign-in.
 5. If authenticated, inspect whether ChatGPT UI, Work UI, and the existing Work
    list are visible.
-6. Look only for the exact command-provided preferred title
-   `Phase 0 Jules Operator`. Do not persist unrelated conversation titles.
+6. Look only for the exact command-provided `preferred_work_title`. The first probe may use an already-known existing visible Work such as `WORK【クラウド】`; do not persist unrelated conversation titles.
 7. If the preferred Work exists, open it read-only and verify that the Work
    surface is openable. Do not type, send, submit, or trigger a model turn.
 8. Do not create a new Work.
