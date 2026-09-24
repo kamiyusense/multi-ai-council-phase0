@@ -52,6 +52,7 @@ def bootstrap_command(**changes):
         "loop_id": "jules-human-auth-bootstrap-001",
         "round": 1,
         "correlation_id": "jules-human-auth-bootstrap-001-round-1",
+        "generation": 1,
         "target": "work",
         "action": BOOTSTRAP_ACTION,
         "expected_repo": EXPECTED_REPO,
@@ -91,6 +92,7 @@ class AuthHandoffTests(unittest.TestCase):
             {"retry": 1},
             {"fallback": "enabled"},
             {"expected_target_head": "not-a-sha"},
+            {"generation": 0},
         ):
             with self.subTest(change=change):
                 with self.assertRaises(ValueError):
