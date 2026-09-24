@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "chatgpt-web-user-visible-auth-probe-001",
-  "state": "RUNNING",
+  "state": "HALTED",
   "round": 0,
   "max_rounds": 6,
   "expires_at": "2026-09-24T23:30:00+09:00",
-  "stop_requested": false,
+  "stop_requested": true,
   "last_command_id": "chatgpt-web-user-visible-auth-probe-001-000001",
   "last_receipt_id": null,
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "Action was not dispatched by the active Phase 0 PR6 task contract; closed without replay so a supported human-auth bootstrap can be used instead."
 }
