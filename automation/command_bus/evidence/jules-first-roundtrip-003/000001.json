@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "command_id": "jules-first-roundtrip-003-000001",
+  "loop_id": "jules-first-roundtrip-003",
+  "correlation_id": "jules-first-roundtrip-003-round-1",
+  "generation": 3,
+  "result": "BLOCKED",
+  "classification": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE",
+  "concrete_failure": "This execution runtime exposes no callable native Work Cloud Browser / Computer Use capability, so https://jules.google.com cannot be opened from this run.",
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "ambiguous_submit": false,
+  "target_repository": "kamiyusense/multi-ai-council-phase0",
+  "starting_branch": "feature/relay-transport-7070955470193506982",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "existing_launch_reservation": "RESERVED",
+  "retry_count": 0,
+  "successor_created": false
+}
