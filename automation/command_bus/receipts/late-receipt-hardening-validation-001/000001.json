@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "late-receipt-hardening-validation-001-000001",
+  "loop_id": "late-receipt-hardening-validation-001",
+  "round": 1,
+  "correlation_id": "late-receipt-hardening-validation-001-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_tested": "cb89b1ae1a9da240f639ab04c3cf01b0950117fd",
+  "carrier_tree_tested": "06e80e4a93918c27c0993a283eb9b211be7c0c88",
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "validation_results": {
+    "bounded_static_partition": {
+      "result": "PASS",
+      "verified_blob_count": 61,
+      "method": "GitHub connector tree reconstruction with exact path, Git blob SHA, byte size, and mode verification"
+    },
+    "unittest": {
+      "result": "PASS",
+      "test_count": 267,
+      "command": "python -m unittest discover -s automation/command_bus/tests -v"
+    },
+    "compileall": {
+      "result": "PASS",
+      "command": "python -m compileall -q automation/command_bus"
+    },
+    "diff_check": {
+      "result": "PASS",
+      "command": "deterministic no-index per-file equivalent",
+      "equivalent": "connector-reconstructed bounded static partition; 61/61 paths matched expected Git blob SHA, byte size, and mode"
+    }
+  },
+  "workspace_verification": "PASS",
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "requires_live_model": false,
+  "live_provider_or_model_executed": false,
+  "provider_started": false,
+  "jules_started": false,
+  "api_key_used": false,
+  "pr4_modified": false,
+  "merge_performed": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/a4c7b4f746409961dc8d8d460caa0b80d013e052/automation/command_bus/commands/late-receipt-hardening-validation-001/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/a4c7b4f746409961dc8d8d460caa0b80d013e052/docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/commit/cb89b1ae1a9da240f639ab04c3cf01b0950117fd",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/6",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}
