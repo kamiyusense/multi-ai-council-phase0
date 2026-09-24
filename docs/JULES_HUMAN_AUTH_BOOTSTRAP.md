@@ -20,7 +20,7 @@ This is transport evidence only:
 
 ## Preferred bounded flow
 
-1. A NEW durable `JULES_HUMAN_AUTH_BOOTSTRAP` command is written on PR #6.
+1. A NEW durable `JULES_HUMAN_AUTH_BOOTSTRAP` command is written on PR #6 with a fresh command/loop/correlation identity and an explicit positive `generation` for new records.
 2. A matching GitHub event wakes the associated `WORK【クラウド】`.
 3. Work fresh-reads PR #4 head/tree and requires exact command binding.
 4. Work opens `jules.google.com` in native Cloud Browser.
@@ -59,7 +59,9 @@ WAITING_FOR_HUMAN_AUTH
 ```
 
 A separate fresh event-triggered selector run is no longer the first-choice
-continuation after human authentication. Cross-run session persistence is not a
+continuation after human authentication. New live generations should be prepared
+before wake, but the human-auth generation itself remains the bounded
+continuation unit across WAITING/HUMAN_COMPLETED/VERIFYING states. Cross-run session persistence is not a
 correctness requirement.
 
 ## Same-Work continuity fail-closed rule
