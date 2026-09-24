@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "evidence_id": "bootstrap-005-stream-failure-analysis-20260925",
+  "command_id": "jules-human-auth-bootstrap-005-000001",
+  "durable_state_after_recovery": "HALTED",
+  "terminal_receipt_present": false,
+  "observed": {
+    "jules_session_page_reached": "USER_VISIBLE_WORK_TEXT",
+    "message_stream_error": "USER_SCREENSHOT",
+    "call_tool_communication_interrupted": "USER_SCREENSHOT",
+    "durable_terminal_write_landed": false,
+    "pr4_mutated": false
+  },
+  "root_cause_matrix": {
+    "work_runtime_timeout": "UNKNOWN",
+    "human_wait_ended_runtime": "UNKNOWN",
+    "browser_takeover_executor_resume_failed": "UNKNOWN",
+    "turn_or_tool_stream_interrupted_before_durable_write": "OBSERVED_COMPATIBLE_BUT_EXACT_SUBCAUSE_UNKNOWN"
+  },
+  "conclusion": "A stream/tool communication failure before durable completion is evidenced. The platform-level subcause cannot be distinguished from available records; timeout, human-wait termination, and resume failure remain UNKNOWN."
+}
