@@ -18,6 +18,7 @@ from automation.command_bus.auth_handoff import (
     validate_auth_bootstrap_command,
     validate_auth_handoff,
     validate_handoff_successor,
+    validate_same_work_post_auth_evidence,
 )
 
 
@@ -369,6 +370,95 @@ class AuthHandoffTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             validate_handoff_successor(completed, observed)
+
+    def test_same_work_durable_evidence_requires_exact_binding_and_fresh_pass(self):
+        command = bootstrap_command()
+        evidence = {
+            "schema_version": 1,
+            "command_id": command["command_id"],
+            "loop_id": command["loop_id"],
+            "correlation_id": command["correlation_id"],
+            "generation": command["generation"],
+            "transport_id": command["transport_id"],
+            "fresh_target_head": command["expected_target_head"],
+            "fresh_target_tree": command["expected_target_tree"],
+            "associated_work_user_visible": True,
+            "same_browser_context_open": True,
+            "executor_resumed_same_work": True,
+            "fresh_observation": True,
+            "auth_gate_present": False,
+            "jules_task_creation_ui_reached": True,
+            "observed_repo": EXPECTED_REPO,
+            "observed_branch": EXPECTED_BRANCH,
+            "repo_selection_explicit": True,
+            "branch_selection_explicit": True,
+            "task_submitted": False,
+            "jules_task_started": False,
+            "model_started": False,
+            "retry_count": 0,
+            "fallback_used": False,
+            "session_identifier_persisted": False,
+            "credential_material_persisted": False,
+            "classification": "AUTHENTICATED_OBSERVED",
+            "created_at": "2026-09-25T01:30:00+09:00",
+        }
+        validate_same_work_post_auth_evidence(command, evidence)
+
+        bad = dict(evidence)
+        bad["observed_branch"] = "main"
+        with self.assertRaises(ValueError):
+            validate_same_work_post_auth_evidence(command, bad)
+
+        unknown = dict(evidence)
+        unknown["executor_resumed_same_work"] = None
+        unknown["classification"] = "UNKNOWN"
+        validate_same_work_post_auth_evidence(command, unknown)
+
+        unsafe = dict(evidence)
+        unsafe["task_submitted"] = True
+        unsafe["classification"] = "BLOCKED"
+        validate_same_work_post_auth_evidence(command, unsafe)
+
+    def test_same_work_durable_evidence_rejects_binding_and_secret_fields(self):
+        command = bootstrap_command()
+        evidence = {
+            "schema_version": 1,
+            "command_id": command["command_id"],
+            "loop_id": command["loop_id"],
+            "correlation_id": command["correlation_id"],
+            "generation": command["generation"],
+            "transport_id": command["transport_id"],
+            "fresh_target_head": command["expected_target_head"],
+            "fresh_target_tree": command["expected_target_tree"],
+            "associated_work_user_visible": True,
+            "same_browser_context_open": True,
+            "executor_resumed_same_work": True,
+            "fresh_observation": True,
+            "auth_gate_present": False,
+            "jules_task_creation_ui_reached": True,
+            "observed_repo": EXPECTED_REPO,
+            "observed_branch": EXPECTED_BRANCH,
+            "repo_selection_explicit": True,
+            "branch_selection_explicit": True,
+            "task_submitted": False,
+            "jules_task_started": False,
+            "model_started": False,
+            "retry_count": 0,
+            "fallback_used": False,
+            "session_identifier_persisted": False,
+            "credential_material_persisted": False,
+            "classification": "AUTHENTICATED_OBSERVED",
+            "created_at": "2026-09-25T01:30:00+09:00",
+        }
+        wrong = dict(evidence)
+        wrong["generation"] = 2
+        with self.assertRaises(ValueError):
+            validate_same_work_post_auth_evidence(command, wrong)
+
+        secret = dict(evidence)
+        secret["access_token"] = "forbidden"
+        with self.assertRaises(ValueError):
+            validate_same_work_post_auth_evidence(command, secret)
 
     def test_completion_time_must_be_aware_and_ordered(self):
         with self.assertRaises(ValueError):
