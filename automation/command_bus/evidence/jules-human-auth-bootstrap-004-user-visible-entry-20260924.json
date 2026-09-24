@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-human-auth-bootstrap-004",
+  "command_id": "jules-human-auth-bootstrap-004-000001",
+  "user_visible_entry_state": "VISIBLE_TO_USER",
+  "independently_verified_by_user_observation": true,
+  "observed_clients": [
+    "smartphone_web",
+    "android_app",
+    "desktop_web",
+    "desktop_app",
+    "desktop_app_embedded_web"
+  ],
+  "observed_surface": "Google sign-in / account selection boundary surfaced from the Work Cloud Browser flow",
+  "credentials_entered": false,
+  "authentication_completed": false,
+  "jules_submitted": false,
+  "model_started": false,
+  "pr4_mutated": false,
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "User supplied screenshots and explicitly confirmed the login boundary is visible across the tested clients. No secret URL, credential, MFA, cookie, token, or browser-control data is stored."
+}
