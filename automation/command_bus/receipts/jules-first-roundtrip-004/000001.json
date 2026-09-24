@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "receipt_id": "jules-first-roundtrip-004/000001",
+  "command_id": "jules-first-roundtrip-004-000001",
+  "loop_id": "jules-first-roundtrip-004",
+  "correlation_id": "jules-first-roundtrip-004-round-1",
+  "generation": 4,
+  "round": 1,
+  "action": "JULES_BOUNDED_STATIC_ROUNDTRIP",
+  "result": "BLOCKED",
+  "state": "BLOCKED",
+  "executed_once": true,
+  "classification": "BLOCKED_COMMAND_CONTRACT_MISMATCH",
+  "launch_reservation_created": false,
+  "browser_started": false,
+  "external_send_attempted": false,
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "ambiguous_submit": false,
+  "target_mutated": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "evidence_refs": [
+    "automation/command_bus/evidence/jules-first-roundtrip-004/000001.json",
+    "pull/4"
+  ],
+  "completion_reason": "Pre-dispatch validation failed because the command user_authorization does not equal the canonical Section 8 required value. No delegation, browser, reservation, submit, model, or target mutation occurred."
+}
