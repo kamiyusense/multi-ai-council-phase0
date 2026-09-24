@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-human-auth-bootstrap-003",
+  "command_id": "jules-human-auth-bootstrap-003-000001",
+  "observed_state": "RUNNING",
+  "observed_round": 0,
+  "terminal_receipt_present": false,
+  "scheduled_task_last_run_time": "2026-09-24T10:27:06.768652Z",
+  "scheduled_task_enabled": true,
+  "browser_action_dispatch_diagnosis": "TASK_WOKE_BUT_CURRENT_TASK_PROMPT_DOES_NOT_EXPLICITLY_AUTHORIZE_JULES_HUMAN_AUTH_BOOTSTRAP_BROWSER_EXECUTION",
+  "contract_section_7e_present": true,
+  "current_task_prompt_explicit_live_browser_action": "CHATGPT_WEB_EXISTING_WORK_PREFLIGHT",
+  "current_task_prompt_phrase": "This is the only additional live browser action authorized here.",
+  "user_observation": {
+    "smartphone_web": "NO_APPROVAL_SURFACE",
+    "android_app": "NO_APPROVAL_SURFACE",
+    "desktop_web": "NO_APPROVAL_SURFACE",
+    "desktop_app": "NO_APPROVAL_SURFACE",
+    "desktop_app_embedded_web": "NO_APPROVAL_SURFACE"
+  },
+  "conclusion_state": "UNKNOWN",
+  "note": "The GitHub event task woke, but no evidence/receipt/state transition occurred and no user-visible approval/takeover surface appeared. No retry was issued."
+}
