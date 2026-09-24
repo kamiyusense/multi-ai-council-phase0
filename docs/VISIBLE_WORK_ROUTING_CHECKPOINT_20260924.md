@@ -87,3 +87,75 @@ Blocked until a reliable human-visible route is proved.
 The previous Jules human-auth bootstrap is terminal BLOCKED with durable
 evidence that its intended user-visible entry was not actually visible to the
 human. It must not be replayed.
+
+
+## Update — Priority 1/2 direct Work evidence
+
+A command-id-suffixed durable evidence record was later discovered for
+`visible-work-route-discovery-002-000001`.
+
+Direct runtime observation:
+
+- `associated_chat_state = ASSOCIATED_CHAT_PRESENT_BUT_UNVERIFIED`
+- `associated_chat_metadata_exposed = true`
+- `associated_chat_user_visible = UNKNOWN`
+- `associated_chat_stable = UNKNOWN`
+- `scheduled_entry_available = true`
+- `send_message_to_thread = false`
+- `read_thread = false`
+- `list_threads = false`
+- `create_thread = false`
+- `thread_resume = false`
+- equivalent existing-Work delegation = UNKNOWN
+- native delegation live tested = false
+- external send attempted = false
+- route decision = `NEEDS_CHATGPT_WEB_PREFLIGHT`
+
+An append-only reconciliation record preserves this correction without
+rewriting the historical terminal receipt.
+
+## Update — Priority 3 static gate
+
+Full bounded command-bus validation completed against carrier head
+`f927f7df695747bd3ad44ee1421366554961b6e7`:
+
+- recursive tree truncated = false
+- total command-bus blobs = 232
+- static blobs = 57
+- ledger blobs = 175
+- unknown blobs = 0
+- verified static blobs = 57
+- mismatched static blobs = 0
+- unittest = PASS, 248 tests
+- compileall = PASS
+- diff-check = PASS
+- browser/model/Jules = not started
+- external send = false
+- target PR modified = false
+- retry = 0
+- fallback = false
+
+The temporary stale/unexecuted observation for validation 005 was superseded by
+the Work-written DONE receipt and final COMPLETE state; no terminal receipt was
+rewritten.
+
+## Update — Priority 3 live no-send preflight
+
+Current live logical command:
+`chatgpt-web-existing-work-preflight-002-000001`
+
+Target:
+- PR #4 head `2fc399ac7b415746763114c3951aa2e3b45adee7`
+- tree `9e2d22b7caf001449d1a5aa4fd374fec81a415fe`
+
+Preferred known existing visible Work locator:
+`WORK【クラウド】`
+
+The command is read-only/navigation-only. It forbids typing/sending, Work
+creation, ChatGPT sign-in flow, target model turn, human auth, Jules, and
+chat/session identifier persistence.
+
+At this checkpoint the command is RUNNING and no terminal receipt/evidence has
+yet been observed. One wake-only marker was added only after confirming the
+previous Work run predated the command commit. The logical command itself has
+not been retried.
