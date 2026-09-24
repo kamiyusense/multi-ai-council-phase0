@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "purpose": "Jules launch fallback assessment after repeated concrete browser-capability failure",
+  "observed_failures": [
+    {
+      "command_id": "jules-first-roundtrip-002-000001",
+      "classification": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE",
+      "task_submitted": false,
+      "jules_task_started": false,
+      "model_started": false
+    },
+    {
+      "command_id": "jules-first-roundtrip-003-000001",
+      "classification": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE",
+      "task_submitted": false,
+      "jules_task_started": false,
+      "model_started": false,
+      "ambiguous_submit": false
+    }
+  ],
+  "custom_work_cloud_browser_route": "FROZEN_AFTER_REPEATED_SAME_FAILURE",
+  "target_repository": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "fallback_candidates": [
+    {
+      "project": "google-labs-code/jules-action",
+      "source_public": true,
+      "license": "MIT",
+      "exact_starting_branch": true,
+      "auth": "JULES_API_KEY_REQUIRED",
+      "disposition": "BLOCKED_BY_USER_NO_API_KEY_POLICY"
+    },
+    {
+      "project": "gemini-cli-extensions/jules",
+      "source_public": true,
+      "license": "Apache-2.0",
+      "auth": "Google OAuth via official Jules CLI",
+      "exact_starting_branch": "NOT_SUPPORTED_BY_DOCUMENTED remote new interface",
+      "disposition": "REJECTED_FOR_CURRENT_EXACT_BRANCH_KERNEL"
+    },
+    {
+      "project": "samihalawa/google-jules-mcp",
+      "source_public": true,
+      "license_claim": "MIT in package metadata/README; repository LICENSE file absent in inspected tree",
+      "auth_modes": [
+        "fresh browser",
+        "chrome profile",
+        "cookies",
+        "browserbase"
+      ],
+      "branch_argument_exposed": true,
+      "source_behavior": "createTask ignores requested branch value and selects first branch option",
+      "disposition": "REJECTED_UNMODIFIED_FOR_EXACT_BRANCH_KERNEL"
+    }
+  ],
+  "conclusion": "No inspected public no-API-key implementation simultaneously provides a verified exact starting-branch selection and a runnable non-credential-persisting automation route in the current execution environment. Official API/action provides exact startingBranch but requires an API key. No API key/Billing/settings change was made.",
+  "api_key_created": false,
+  "billing_changed": false,
+  "settings_or_permissions_changed": false
+}
