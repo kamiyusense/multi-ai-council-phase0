@@ -349,6 +349,89 @@ def same_work_post_auth_observation(
     )
 
 
+def validate_same_work_post_auth_evidence(
+    command: dict[str, Any],
+    evidence: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate durable, secret-free same-Work post-auth evidence."""
+    validate_auth_bootstrap_command(command)
+    required = {
+        "schema_version",
+        "command_id",
+        "loop_id",
+        "correlation_id",
+        "generation",
+        "transport_id",
+        "fresh_target_head",
+        "fresh_target_tree",
+        "associated_work_user_visible",
+        "same_browser_context_open",
+        "executor_resumed_same_work",
+        "fresh_observation",
+        "auth_gate_present",
+        "jules_task_creation_ui_reached",
+        "observed_repo",
+        "observed_branch",
+        "repo_selection_explicit",
+        "branch_selection_explicit",
+        "task_submitted",
+        "jules_task_started",
+        "model_started",
+        "retry_count",
+        "fallback_used",
+        "session_identifier_persisted",
+        "credential_material_persisted",
+        "classification",
+        "created_at",
+    }
+    if not isinstance(evidence, dict) or not required <= evidence.keys():
+        raise ValueError("incomplete same-Work post-auth evidence")
+    _reject_secret_material(evidence)
+    if evidence["schema_version"] != 1:
+        raise ValueError("unsupported same-Work evidence schema")
+    for key in ("command_id", "loop_id", "correlation_id", "transport_id"):
+        if evidence[key] != command[key]:
+            raise ValueError(f"same-Work evidence binding mismatch: {key}")
+    expected_generation = command.get("generation")
+    if expected_generation is None or evidence["generation"] != expected_generation:
+        raise ValueError("same-Work evidence generation mismatch")
+    if evidence["fresh_target_head"] != command["expected_target_head"]:
+        raise ValueError("same-Work evidence target head mismatch")
+    if evidence["fresh_target_tree"] != command["expected_target_tree"]:
+        raise ValueError("same-Work evidence target tree mismatch")
+    if evidence["retry_count"] != 0 or evidence["fallback_used"] is not False:
+        raise ValueError("same-Work evidence retry/fallback policy violation")
+    if evidence["session_identifier_persisted"] is not False:
+        raise ValueError("session identifier persistence forbidden")
+    if evidence["credential_material_persisted"] is not False:
+        raise ValueError("credential material persistence forbidden")
+    _time(evidence["created_at"], "created_at")
+    status, _ = same_work_post_auth_observation(
+        associated_work_user_visible=evidence["associated_work_user_visible"],
+        same_browser_context_open=evidence["same_browser_context_open"],
+        fresh_observation=evidence["fresh_observation"],
+        jules_task_creation_ui_reached=evidence["jules_task_creation_ui_reached"],
+        auth_gate_present=evidence["auth_gate_present"],
+        observed_repo=evidence["observed_repo"],
+        observed_branch=evidence["observed_branch"],
+        repo_selection_explicit=evidence["repo_selection_explicit"],
+        branch_selection_explicit=evidence["branch_selection_explicit"],
+        task_submitted=evidence["task_submitted"],
+        jules_task_started=evidence["jules_task_started"],
+        model_started=evidence["model_started"],
+    )
+    if evidence["executor_resumed_same_work"] is not True:
+        if evidence["executor_resumed_same_work"] is None:
+            status = "UNKNOWN"
+        else:
+            status = "BLOCKED"
+    if evidence["classification"] != status:
+        raise ValueError(
+            f"same-Work evidence classification mismatch: expected {status}"
+        )
+    return evidence
+
+
 def bootstrap_visibility_decision(
     *,
     auth_required: bool | None,
