@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "late-receipt-hardening-validation-001-wake-001",
+  "loop_id": "late-receipt-hardening-validation-001",
+  "command_id": "late-receipt-hardening-validation-001-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Validate exact current PR6 static command-bus scope after late terminal receipt hardening. Run full unittest discovery, compileall, deterministic diff-check, schema/state/receipt/evidence consistency. No browser, Jules, model, or PR4 mutation."
+}
