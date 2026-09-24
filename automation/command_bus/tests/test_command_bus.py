@@ -39,6 +39,10 @@ class CommandBusTests(unittest.TestCase):
         sm=StateMachine(state()); self.assertIsNone(sm.blocked_reason(NOW)); sm.request_stop(); self.assertIsNotNone(sm.blocked_reason(NOW))
     def test_blocked_state_is_valid_and_not_dispatchable(self):
         value=state(status="BLOCKED"); validate_state(value); self.assertIn("BLOCKED",StateMachine(value).blocked_reason(NOW))
+    def test_human_completed_unverified_is_valid_and_not_dispatchable(self):
+        value=state(status="HUMAN_COMPLETED_UNVERIFIED"); validate_state(value); ledger=InMemoryLedger(value); ledger.add_command(command(1)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW); self.assertEqual(result.status,"BLOCKED"); self.assertIn("HUMAN_COMPLETED_UNVERIFIED",result.reason); self.assertEqual(len(ledger.receipts),0)
+    def test_verifying_post_auth_is_valid_and_not_dispatchable(self):
+        value=state(status="VERIFYING_POST_AUTH"); validate_state(value); ledger=InMemoryLedger(value); ledger.add_command(command(1)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW); self.assertEqual(result.status,"BLOCKED"); self.assertIn("VERIFYING_POST_AUTH",result.reason); self.assertEqual(len(ledger.receipts),0)
     def test_waiting_for_human_auth_is_valid_and_not_dispatchable(self):
         value=state(status="WAITING_FOR_HUMAN_AUTH"); validate_state(value); ledger=InMemoryLedger(value); ledger.add_command(command(1)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW); self.assertEqual(result.status,"BLOCKED"); self.assertIn("WAITING_FOR_HUMAN_AUTH",result.reason); self.assertEqual(len(ledger.receipts),0)
 
