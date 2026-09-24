@@ -707,6 +707,7 @@ browser-control token, authentication token, or session identity.
 Static implementation:
 - `automation/command_bus/auth_handoff.py`
 - `automation/command_bus/schema/auth_handoff.schema.json`
+- `automation/command_bus/schema/same_work_post_auth_evidence.schema.json`
 - `automation/command_bus/schema/state.schema.json`
 - `automation/command_bus/tests/test_auth_handoff.py`
 - `docs/JULES_HUMAN_AUTH_BOOTSTRAP.md`
