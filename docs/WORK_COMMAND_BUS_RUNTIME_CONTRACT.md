@@ -291,14 +291,16 @@ Execution:
 Authentication gate rule:
 - a Google account chooser / sign-in requirement is a human-auth gate, not an
   executor retry;
-- close the current preflight terminal BLOCKED/UNKNOWN and never replay it;
-- do not create a replacement command until the user completes sign-in;
-- after sign-in, fresh-read PR #4 head/tree and create a new logical command
-  identity bound to that fresh target;
-- browser/session identity and remembered login state are transport context,
-  never correctness inputs;
-- even with a persisted login, exact repo + branch selection evidence is still
-  required before task submission.
+- close the selector preflight terminal BLOCKED/UNKNOWN and never replay it;
+- create a fresh JULES_HUMAN_AUTH_BOOTSTRAP identity for the human boundary;
+- after human completion, the preferred continuation is the same associated
+  Work / same still-open Cloud Browser context defined in section 7E;
+- do not require authentication persistence into a different event-triggered
+  Work run as a correctness condition;
+- browser/session identifiers remain transport context and are never persisted
+  or used as correctness inputs;
+- exact repo + branch selection evidence is still mandatory before any task
+  submission.
 
 This preflight proves only UI branch-selection capability. It does not prove a
 future Jules commit will have the correct parent. Final correctness still
@@ -593,13 +595,22 @@ Static implementation:
 
 ## 7E. JULES_HUMAN_AUTH_BOOTSTRAP
 
-Status: **USER-AUTHORIZED HUMAN-BOUNDARY BOOTSTRAP / NO JULES SUBMIT**.
+Status: **USER-AUTHORIZED SAME-ASSOCIATED-WORK HUMAN BOUNDARY / NO JULES SUBMIT**.
 
 Purpose:
-create a fresh GitHub-triggered Work run whose only live browser goal is to
-reach the Jules Google authentication boundary and surface ChatGPT's native
-Cloud Browser sign-in/takeover flow to the human. This is a prerequisite
-bootstrap, not a retry of any closed selector preflight.
+create a fresh GitHub-triggered associated Work run, reach the Jules Google
+human-auth boundary, and—if the platform actually resumes the same associated
+Work/browser after human interaction—continue fresh post-auth observation in
+that same bounded flow. Cross-run authentication persistence is not a
+correctness requirement.
+
+Observed operator surface:
+- Scheduled Task: `Phase 0 PR6 Command Bus`
+- user-visible associated Work label: `WORK【クラウド】`
+- direct user observation has shown the task result, native Cloud Browser, and
+  Google/Jules auth boundary on that associated Work surface.
+- this is transport/operator evidence only; GitHub remains canonical.
+- never persist or depend on chat/thread/conversation/browser/session IDs.
 
 Require:
 - action=`JULES_HUMAN_AUTH_BOOTSTRAP`
@@ -620,38 +631,82 @@ Require:
 Execution:
 1. Fresh-read PR #4 head/tree and require exact command match.
 2. Open Jules through native Work Cloud Browser only.
-3. Do not select a repository/branch, submit a Jules task, start Jules/model,
-   or mutate PR #4 while authentication is unresolved.
-4. If Google authentication is required, first prove that ChatGPT's native
-   secure sign-in/takeover entry is actually surfaced on a user-visible
-   surface. Merely naming the intended surface `VISIBLE_WORK` is not proof.
-5. Only after the user-visible entry is verified visible may append-only
-   non-secret auth handoff metadata be created/read back and the loop state be
-   set to `WAITING_FOR_HUMAN_AUTH`.
-6. Never store or echo the takeover URL, password, MFA, cookie, credential,
-   browser-control token, or authentication token.
-7. If a user-visible native sign-in/takeover entry is not visible to the human,
-   cannot be surfaced, or its availability is unverifiable, close
-   BLOCKED/UNKNOWN; do not guess which Work/browser the user should find and do
-   not retry.
-7. Human interaction may mark the handoff
-   `HUMAN_COMPLETED_UNVERIFIED`; this is not authentication PASS.
-8. After human completion, discard all pre-auth DOM/selector/page assumptions.
-9. Fresh-read PR #4 again and create a NEW exact-selector preflight with a new
-   logical identity.
-10. Only that fresh preflight may produce `AUTHENTICATED_OBSERVED`, and only
-    after it freshly reaches the Jules task-creation UI without an auth gate.
-11. Repo and branch must then be selected from fresh observations using the
-    exact full-string gate in section 7D; task_submit remains false.
+3. While authentication is unresolved, do not select repo/branch, submit a
+   Jules task, start Jules/model, or mutate PR #4.
+4. If Google authentication is required, prove the native secure
+   sign-in/takeover entry is actually visible on the associated user-visible
+   Work. A configured surface name is not proof.
+5. After visibility proof, write/read back non-secret handoff evidence and set
+   `WAITING_FOR_HUMAN_AUTH`.
+6. Human interaction may advance only to
+   `HUMAN_COMPLETED_UNVERIFIED`; this is never authentication PASS.
+7. Keep the associated Work/browser context open. A human-auth continuation is
+   not an external-action retry and does not increment retry.
+8. Continue to `VERIFYING_POST_AUTH` only after directly verifying all of:
+   - the associated Work is still user-visible;
+   - the same browser context is still open;
+   - the executor actually resumed in that same Work;
+   - fresh PR #4 head/tree still match the command.
+9. Discard all pre-auth DOM/selector/page assumptions.
+10. Freshly observe the current Jules page.
+11. AUTHENTICATED_OBSERVED requires direct fresh proof of all:
+    - auth gate absent;
+    - Jules task-creation UI reached;
+    - exact repository explicitly selected/read back;
+    - exact branch explicitly selected/read back;
+    - task_submitted=false;
+    - jules_task_started=false;
+    - model_started=false.
+12. Do not submit/start Jules in this flow.
+13. If same-Work/browser continuity or executor resume is unavailable or
+    unverifiable, terminalize BLOCKED/UNKNOWN. Do not infer auth persistence
+    into another event-triggered Work.
+14. A later separate Work may be a new diagnostic/preflight only with fresh
+    logical identity; it cannot retroactively prove the prior auth context.
 
-Correctness never depends on a Work/chat/browser session identifier or on
-same-run resume. Cloud Browser authentication persistence is convenience only.
-A persisted authenticated session still requires a fresh target readback and
-fresh exact-selector evidence.
+State progression:
+```text
+WAITING_FOR_HUMAN_AUTH
+  -> HUMAN_COMPLETED_UNVERIFIED
+  -> VERIFYING_POST_AUTH
+  -> AUTHENTICATED_OBSERVED | BLOCKED | UNKNOWN
+```
+
+Durable post-auth evidence must record, without secrets/session IDs:
+- associated Work visibility observation;
+- same-browser-context-open observation;
+- executor-resumed-same-Work observation;
+- fresh target head/tree;
+- fresh-observation=true;
+- auth gate present/absent;
+- Jules task-creation UI reached;
+- expected/observed repo and exact-selection flag;
+- expected/observed branch and exact-selection flag;
+- task_submitted=false;
+- jules_task_started=false;
+- model_started=false;
+- retry_count=0;
+- fallback_used=false.
+
+Execution-stream failure classification:
+- record message-stream error and call_tool interruption independently;
+- record whether a terminal durable write landed;
+- classify runtime timeout, human-wait runtime termination, and post-takeover
+  executor-resume failure separately as proven/absent/UNKNOWN;
+- do not infer a platform root cause from a stale UI spinner or missing receipt.
+
+Bootstrap-005 currently proves a user-visible message-stream/call_tool
+interruption before durable completion. It does not prove whether the
+platform-level subcause was timeout, human-wait termination, or executor-resume
+failure; those remain UNKNOWN.
+
+Never store or echo takeover URL, password, MFA, cookie, credential,
+browser-control token, authentication token, or session identity.
 
 Static implementation:
 - `automation/command_bus/auth_handoff.py`
 - `automation/command_bus/schema/auth_handoff.schema.json`
+- `automation/command_bus/schema/state.schema.json`
 - `automation/command_bus/tests/test_auth_handoff.py`
 - `docs/JULES_HUMAN_AUTH_BOOTSTRAP.md`
 

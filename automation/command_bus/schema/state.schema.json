@@ -1,1 +1,46 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["schema_version","loop_id","state","round","max_rounds","expires_at","stop_requested","last_command_id","last_receipt_id","expected_target","retry_policy"],"properties":{"schema_version":{"const":1},"max_rounds":{"type":"integer","minimum":1,"maximum":6},"retry_policy":{"const":0},"state":{"enum":["PREPARED","RUNNING","WAITING_FOR_EVIDENCE","WAITING_FOR_HUMAN_AUTH","BLOCKED","COMPLETE","HALTED","FAILED","UNKNOWN","EXPIRED"]}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "loop_id",
+    "state",
+    "round",
+    "max_rounds",
+    "expires_at",
+    "stop_requested",
+    "last_command_id",
+    "last_receipt_id",
+    "expected_target",
+    "retry_policy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "max_rounds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "retry_policy": {
+      "const": 0
+    },
+    "state": {
+      "enum": [
+        "PREPARED",
+        "RUNNING",
+        "WAITING_FOR_EVIDENCE",
+        "WAITING_FOR_HUMAN_AUTH",
+        "HUMAN_COMPLETED_UNVERIFIED",
+        "VERIFYING_POST_AUTH",
+        "BLOCKED",
+        "COMPLETE",
+        "HALTED",
+        "FAILED",
+        "UNKNOWN",
+        "EXPIRED"
+      ]
+    }
+  }
+}

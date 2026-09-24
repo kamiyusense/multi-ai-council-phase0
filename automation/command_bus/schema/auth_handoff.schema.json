@@ -22,36 +22,76 @@
     "session_identity_is_correctness_input"
   ],
   "properties": {
-    "schema_version": {"const": 1},
-    "handoff_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
-    "triggering_command_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
-    "correlation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
-    "transport_id": {"const": "WORK_CLOUD_BROWSER_JULES_UI"},
-    "auth_origin": {"const": "jules.google.com"},
-    "handoff_method": {"const": "CHATGPT_NATIVE_CLOUD_BROWSER_TAKEOVER"},
-    "handoff_surface": {"const": "VISIBLE_WORK"},
+    "schema_version": {
+      "const": 1
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "triggering_command_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "transport_id": {
+      "const": "WORK_CLOUD_BROWSER_JULES_UI"
+    },
+    "auth_origin": {
+      "const": "jules.google.com"
+    },
+    "handoff_method": {
+      "const": "CHATGPT_NATIVE_CLOUD_BROWSER_TAKEOVER"
+    },
+    "handoff_surface": {
+      "const": "VISIBLE_WORK"
+    },
     "handoff_state": {
       "enum": [
         "REQUESTED",
         "WAITING_FOR_HUMAN",
         "HUMAN_COMPLETED_UNVERIFIED",
+        "VERIFYING_POST_AUTH",
         "AUTHENTICATED_OBSERVED",
         "BLOCKED",
         "FAILED"
       ]
     },
-    "requested_at": {"type": "string", "format": "date-time"},
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "completed_at": {
       "oneOf": [
-        {"type": "null"},
-        {"type": "string", "format": "date-time"}
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
       ]
     },
-    "takeover_url_persisted": {"const": false},
-    "credentials_persisted": {"const": false},
-    "task_submitted": {"const": false},
-    "jules_task_started": {"const": false},
-    "model_started": {"const": false},
-    "session_identity_is_correctness_input": {"const": false}
+    "takeover_url_persisted": {
+      "const": false
+    },
+    "credentials_persisted": {
+      "const": false
+    },
+    "task_submitted": {
+      "const": false
+    },
+    "jules_task_started": {
+      "const": false
+    },
+    "model_started": {
+      "const": false
+    },
+    "session_identity_is_correctness_input": {
+      "const": false
+    }
   }
 }

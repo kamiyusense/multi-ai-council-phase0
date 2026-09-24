@@ -56,6 +56,7 @@ class HandoffState(StrEnum):
     REQUESTED = "REQUESTED"
     WAITING_FOR_HUMAN = "WAITING_FOR_HUMAN"
     HUMAN_COMPLETED_UNVERIFIED = "HUMAN_COMPLETED_UNVERIFIED"
+    VERIFYING_POST_AUTH = "VERIFYING_POST_AUTH"
     AUTHENTICATED_OBSERVED = "AUTHENTICATED_OBSERVED"
     BLOCKED = "BLOCKED"
     FAILED = "FAILED"
@@ -78,6 +79,13 @@ _ALLOWED_TRANSITIONS = {
         }
     ),
     HandoffState.HUMAN_COMPLETED_UNVERIFIED: frozenset(
+        {
+            HandoffState.VERIFYING_POST_AUTH,
+            HandoffState.BLOCKED,
+            HandoffState.FAILED,
+        }
+    ),
+    HandoffState.VERIFYING_POST_AUTH: frozenset(
         {
             HandoffState.AUTHENTICATED_OBSERVED,
             HandoffState.BLOCKED,
@@ -172,7 +180,11 @@ def validate_auth_handoff(record: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("completed_at precedes requested_at")
     if state in {HandoffState.REQUESTED, HandoffState.WAITING_FOR_HUMAN} and completed is not None:
         raise ValueError("incomplete handoff must not have completed_at")
-    if state in {HandoffState.HUMAN_COMPLETED_UNVERIFIED, HandoffState.AUTHENTICATED_OBSERVED} and completed is None:
+    if state in {
+        HandoffState.HUMAN_COMPLETED_UNVERIFIED,
+        HandoffState.VERIFYING_POST_AUTH,
+        HandoffState.AUTHENTICATED_OBSERVED,
+    } and completed is None:
         raise ValueError("completed handoff requires completed_at")
     for field in (
         "takeover_url_persisted",
@@ -243,6 +255,95 @@ def new_exact_preflight_eligibility(
         "human prerequisite complete; fresh Cloud Browser observation still required",
     )
 
+
+
+def same_work_continuation_eligibility(
+    handoff: dict[str, Any],
+    *,
+    associated_work_user_visible: bool | None,
+    same_browser_context_open: bool | None,
+    executor_resumed_same_work: bool | None,
+    fresh_target_head: str | None,
+    fresh_target_tree: str | None,
+) -> tuple[str, str]:
+    """Decide whether the bounded human-auth flow may continue in the same Work.
+
+    This function never uses a chat/thread/browser/session identifier as a
+    correctness input.  It only accepts direct boolean observations about the
+    already-associated operator surface and browser continuity.
+    """
+    validate_auth_handoff(handoff)
+    if handoff["handoff_state"] != HandoffState.HUMAN_COMPLETED_UNVERIFIED.value:
+        return "BLOCKED", "handoff has not reached human-completed-unverified state"
+    for value, label in (
+        (associated_work_user_visible, "associated Work visibility"),
+        (same_browser_context_open, "same browser context continuity"),
+        (executor_resumed_same_work, "same Work executor resume"),
+    ):
+        if value is None:
+            return "UNKNOWN", f"{label} is unverified"
+        if value is False:
+            return "BLOCKED", f"{label} is unavailable"
+    if not _is_sha40(fresh_target_head) or not _is_sha40(fresh_target_tree):
+        return "UNKNOWN", "fresh target head/tree unavailable or invalid"
+    return (
+        "VERIFYING_POST_AUTH",
+        "same associated Work/browser context is directly observed; fresh post-auth observation required",
+    )
+
+
+def same_work_post_auth_observation(
+    *,
+    associated_work_user_visible: bool | None,
+    same_browser_context_open: bool | None,
+    fresh_observation: bool | None,
+    jules_task_creation_ui_reached: bool | None,
+    auth_gate_present: bool | None,
+    observed_repo: str | None,
+    observed_branch: str | None,
+    repo_selection_explicit: bool | None,
+    branch_selection_explicit: bool | None,
+    task_submitted: bool | None,
+    jules_task_started: bool | None,
+    model_started: bool | None,
+) -> tuple[str, str]:
+    """Validate a fresh post-auth observation without submitting a Jules task."""
+    values = (
+        associated_work_user_visible,
+        same_browser_context_open,
+        fresh_observation,
+        jules_task_creation_ui_reached,
+        auth_gate_present,
+        observed_repo,
+        observed_branch,
+        repo_selection_explicit,
+        branch_selection_explicit,
+        task_submitted,
+        jules_task_started,
+        model_started,
+    )
+    if any(value is None for value in values):
+        return "UNKNOWN", "same-Work post-auth observation incomplete"
+    if task_submitted or jules_task_started or model_started:
+        return "BLOCKED", "post-auth verification must not submit/start Jules"
+    if associated_work_user_visible is not True:
+        return "BLOCKED", "associated Work is not user-visible"
+    if same_browser_context_open is not True:
+        return "BLOCKED", "same browser context is not open"
+    if fresh_observation is not True:
+        return "BLOCKED", "pre-auth DOM/selector assumptions were not discarded"
+    if auth_gate_present is True:
+        return "BLOCKED", "authentication gate is still present"
+    if jules_task_creation_ui_reached is not True:
+        return "BLOCKED", "Jules task creation UI not reached"
+    if repo_selection_explicit is not True or observed_repo != EXPECTED_REPO:
+        return "BLOCKED", "exact repository selection not freshly verified"
+    if branch_selection_explicit is not True or observed_branch != EXPECTED_BRANCH:
+        return "BLOCKED", "exact branch selection not freshly verified"
+    return (
+        "AUTHENTICATED_OBSERVED",
+        "same associated Work freshly reached Jules task creation UI with exact repo/branch and no auth gate",
+    )
 
 
 def bootstrap_visibility_decision(

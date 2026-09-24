@@ -13,6 +13,8 @@ from automation.command_bus.auth_handoff import (
     bootstrap_visibility_decision,
     authenticated_observation,
     new_exact_preflight_eligibility,
+    same_work_continuation_eligibility,
+    same_work_post_auth_observation,
     validate_auth_bootstrap_command,
     validate_auth_handoff,
     validate_handoff_successor,
@@ -136,13 +138,18 @@ class AuthHandoffTests(unittest.TestCase):
             handoff_state="HUMAN_COMPLETED_UNVERIFIED",
             completed_at="2026-09-24T06:20:00+09:00",
         )
+        verifying = handoff(
+            handoff_state="VERIFYING_POST_AUTH",
+            completed_at="2026-09-24T06:20:00+09:00",
+        )
         observed = handoff(
             handoff_state="AUTHENTICATED_OBSERVED",
             completed_at="2026-09-24T06:20:00+09:00",
         )
         validate_handoff_successor(requested, waiting)
         validate_handoff_successor(waiting, completed)
-        validate_handoff_successor(completed, observed)
+        validate_handoff_successor(completed, verifying)
+        validate_handoff_successor(verifying, observed)
 
     def test_handoff_replay_and_terminal_successor_are_rejected(self):
         requested = handoff()
@@ -264,6 +271,102 @@ class AuthHandoffTests(unittest.TestCase):
                     model_started=False,
                 )
                 self.assertEqual(status, "UNKNOWN")
+
+    def test_same_work_continuation_requires_direct_context_observation(self):
+        completed = handoff(
+            handoff_state="HUMAN_COMPLETED_UNVERIFIED",
+            completed_at="2026-09-24T06:20:00+09:00",
+        )
+        status, _ = same_work_continuation_eligibility(
+            completed,
+            associated_work_user_visible=True,
+            same_browser_context_open=True,
+            executor_resumed_same_work=True,
+            fresh_target_head="a" * 40,
+            fresh_target_tree="b" * 40,
+        )
+        self.assertEqual(status, "VERIFYING_POST_AUTH")
+
+        status, _ = same_work_continuation_eligibility(
+            completed,
+            associated_work_user_visible=True,
+            same_browser_context_open=None,
+            executor_resumed_same_work=True,
+            fresh_target_head="a" * 40,
+            fresh_target_tree="b" * 40,
+        )
+        self.assertEqual(status, "UNKNOWN")
+
+        status, _ = same_work_continuation_eligibility(
+            completed,
+            associated_work_user_visible=True,
+            same_browser_context_open=False,
+            executor_resumed_same_work=True,
+            fresh_target_head="a" * 40,
+            fresh_target_tree="b" * 40,
+        )
+        self.assertEqual(status, "BLOCKED")
+
+    def test_same_work_post_auth_requires_fresh_exact_repo_and_branch(self):
+        status, _ = same_work_post_auth_observation(
+            associated_work_user_visible=True,
+            same_browser_context_open=True,
+            fresh_observation=True,
+            jules_task_creation_ui_reached=True,
+            auth_gate_present=False,
+            observed_repo=EXPECTED_REPO,
+            observed_branch=EXPECTED_BRANCH,
+            repo_selection_explicit=True,
+            branch_selection_explicit=True,
+            task_submitted=False,
+            jules_task_started=False,
+            model_started=False,
+        )
+        self.assertEqual(status, "AUTHENTICATED_OBSERVED")
+
+        status, _ = same_work_post_auth_observation(
+            associated_work_user_visible=True,
+            same_browser_context_open=True,
+            fresh_observation=True,
+            jules_task_creation_ui_reached=True,
+            auth_gate_present=True,
+            observed_repo=EXPECTED_REPO,
+            observed_branch=EXPECTED_BRANCH,
+            repo_selection_explicit=True,
+            branch_selection_explicit=True,
+            task_submitted=False,
+            jules_task_started=False,
+            model_started=False,
+        )
+        self.assertEqual(status, "BLOCKED")
+
+        status, _ = same_work_post_auth_observation(
+            associated_work_user_visible=True,
+            same_browser_context_open=True,
+            fresh_observation=True,
+            jules_task_creation_ui_reached=True,
+            auth_gate_present=False,
+            observed_repo=EXPECTED_REPO,
+            observed_branch="main",
+            repo_selection_explicit=True,
+            branch_selection_explicit=True,
+            task_submitted=False,
+            jules_task_started=False,
+            model_started=False,
+        )
+        self.assertEqual(status, "BLOCKED")
+
+    def test_completed_handoff_cannot_skip_verifying_post_auth(self):
+        completed = handoff(
+            handoff_state="HUMAN_COMPLETED_UNVERIFIED",
+            completed_at="2026-09-24T06:20:00+09:00",
+        )
+        observed = handoff(
+            handoff_state="AUTHENTICATED_OBSERVED",
+            completed_at="2026-09-24T06:20:00+09:00",
+        )
+        with self.assertRaises(ValueError):
+            validate_handoff_successor(completed, observed)
 
     def test_completion_time_must_be_aware_and_ordered(self):
         with self.assertRaises(ValueError):
