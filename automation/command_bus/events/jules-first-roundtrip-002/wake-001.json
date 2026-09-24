@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-first-roundtrip-002-wake-001",
+  "loop_id": "jules-first-roundtrip-002",
+  "command_id": "jules-first-roundtrip-002-000001",
+  "generation": 2,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "User explicitly authorized the existing Section 8 first JULES_BOUNDED_STATIC_ROUNDTRIP to actually start Jules. Isolate stale read-only human-auth bootstrap 007; do not replay 007 or create 008. Follow Section 8 exactly. Use the same associated WORK【クラウド】 Cloud Browser. If Google auth is required, surface the native human takeover and wait for the user without handling credentials/MFA/tokens/cookies; keep the same Work/browser context open. After human completion, fresh-observe, require exact repository kamiyusense/multi-ai-council-phase0 and exact branch feature/relay-transport-7070955470193506982 before submit. Then create/read back the one launch reservation and start exactly one fresh Jules session. No Merge/main write/force/rebase/cherry-pick/file copy/settings/Billing/API key changes."
+}
