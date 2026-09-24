@@ -1,14 +1,22 @@
 {
   "schema_version": 1,
   "loop_id": "jules-splash-settle-diagnostic-001",
-  "state": "UNKNOWN",
-  "round": 0,
+  "state": "RECONCILED_LATE_RESULT",
+  "round": 1,
   "max_rounds": 6,
   "expires_at": "2026-09-25T05:30:00+09:00",
   "stop_requested": true,
   "last_command_id": "jules-splash-settle-diagnostic-001-000001",
-  "last_receipt_id": null,
+  "last_receipt_id": "jules-splash-settle-diagnostic-001/000001",
   "expected_target": "work",
   "retry_policy": 0,
-  "failure_reason": "Hook woke, but JULES_SPLASH_SETTLE_DIAGNOSTIC was not observably dispatched; no receipt/evidence after bounded observation. Task prompt does not explicitly authorize 7H. No retry."
+  "failure_reason": "Hook woke, but JULES_SPLASH_SETTLE_DIAGNOSTIC was not observably dispatched; no receipt/evidence after bounded observation. Task prompt does not explicitly authorize 7H. No retry.",
+  "reconciled_from_state": "UNKNOWN",
+  "late_terminal_receipt_observed": true,
+  "late_receipt_state": "DONE",
+  "successor_already_issued": true,
+  "successor_command_id": "jules-splash-settle-diagnostic-002-000001",
+  "reconciliation_observed_at": "2026-09-24T19:15:57Z",
+  "reconciliation_evidence_ref": "automation/command_bus/evidence/jules-splash-settle-diagnostic-001/late-terminal-reconciliation-001.json",
+  "reconciliation_note": "Prior UNKNOWN/no-result history remains preserved; late DONE is reconciled without replay."
 }
