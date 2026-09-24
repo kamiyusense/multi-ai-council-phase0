@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-branch-selector-preflight-002-collision-repair-20260924",
+  "finding": "COMMAND_ID_COLLISION_DETECTED",
+  "affected_command_id": "jules-branch-selector-preflight-002-000001",
+  "existing_terminal_receipt": "000001",
+  "repair_action": "Restored the pre-existing terminal command/state exactly and abandoned the accidental reuse. No terminal receipt/evidence was deleted or rewritten.",
+  "new_successor_command_id": "jules-branch-selector-preflight-003-000001",
+  "retry": 0,
+  "fallback": "disabled"
+}

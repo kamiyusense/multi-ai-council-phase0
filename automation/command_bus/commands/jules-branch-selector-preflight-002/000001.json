@@ -13,6 +13,8 @@
   "launch_route": "WORK_CLOUD_BROWSER_JULES_UI",
   "starting_branch": "feature/relay-transport-7070955470193506982",
   "issue_label_launch": false,
+  "branch_selection_evidence_required": true,
+  "task_submit": false,
   "requires_live_model": false,
   "requires_github_write": true,
   "retry": 0,

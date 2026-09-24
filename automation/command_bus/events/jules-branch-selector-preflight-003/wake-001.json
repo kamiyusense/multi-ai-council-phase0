@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-branch-selector-preflight-003-wake-001",
+  "loop_id": "jules-branch-selector-preflight-003",
+  "command_id": "jules-branch-selector-preflight-003-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh post-human-auth selector preflight using a never-before-used logical identity. Freshly determine authentication; if authenticated, select/read back exact repo and branch. No task submit/model/Jules start/PR4 mutation/Merge."
+}
