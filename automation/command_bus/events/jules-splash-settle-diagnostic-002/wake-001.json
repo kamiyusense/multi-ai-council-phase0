@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-splash-settle-diagnostic-002-wake-001",
+  "loop_id": "jules-splash-settle-diagnostic-002",
+  "command_id": "jules-splash-settle-diagnostic-002-000001",
+  "generation": 2,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh 7H diagnostic after explicit Scheduled Task prompt authorization. Observe Jules settling for up to 60 seconds; at most one ordinary reload. No auth/account choice/credentials/repo/branch selection/task submission/Jules or model start/PR4 mutation."
+}
