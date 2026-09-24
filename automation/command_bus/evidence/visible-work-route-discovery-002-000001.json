@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "command_id": "visible-work-route-discovery-002-000001",
+  "correlation_id": "visible-work-route-discovery-002-round-1",
+  "target_head_expected": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_head_observed": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_tree_expected": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "target_tree_observed": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "scheduled_task_title": "Phase 0 PR6 Command Bus",
+  "associated_chat_state": "ASSOCIATED_CHAT_PRESENT_BUT_UNVERIFIED",
+  "associated_chat_metadata_exposed": true,
+  "associated_chat_user_visible": "UNKNOWN",
+  "associated_chat_stable": "UNKNOWN",
+  "scheduled_entry_available": true,
+  "associated_chat_identifier_persisted": false,
+  "native_thread_delegation_capability": "UNKNOWN",
+  "native_tool_presence": {
+    "send_message_to_thread": false,
+    "read_thread": false,
+    "list_threads": false,
+    "create_thread": false,
+    "thread_resume": false,
+    "equivalent_existing_work_delegation": "UNKNOWN"
+  },
+  "native_thread_delegation_live_tested": false,
+  "external_send_attempted": false,
+  "browser_started": false,
+  "new_work_creation_tested": false,
+  "human_auth_started": false,
+  "jules_started": false,
+  "model_started": false,
+  "credential_material_persisted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "route_decision": "NEEDS_CHATGPT_WEB_PREFLIGHT",
+  "evidence_refs": [
+    "runtime:exact-scheduled-task-metadata",
+    "runtime:callable-tool-catalog-presence-only"
+  ],
+  "created_at": "2026-09-24T06:23:44.746Z"
+}
