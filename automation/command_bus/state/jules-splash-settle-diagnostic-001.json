@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "jules-splash-settle-diagnostic-001",
-  "state": "RUNNING",
+  "state": "UNKNOWN",
   "round": 0,
   "max_rounds": 6,
   "expires_at": "2026-09-25T05:30:00+09:00",
-  "stop_requested": false,
+  "stop_requested": true,
   "last_command_id": "jules-splash-settle-diagnostic-001-000001",
   "last_receipt_id": null,
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "Hook woke, but JULES_SPLASH_SETTLE_DIAGNOSTIC was not observably dispatched; no receipt/evidence after bounded observation. Task prompt does not explicitly authorize 7H. No retry."
 }
