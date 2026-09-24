@@ -37,6 +37,8 @@ class CommandBusTests(unittest.TestCase):
             self.assertNotEqual(carrier_head,TARGET_HEAD); ledger=InMemoryLedger(state()); ledger.add_command(command(1)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW); self.assertEqual(result.status,"PROCESSED"); self.assertEqual(result.receipt["state"],"DONE")
     def test_state_machine_stop_and_expiry(self):
         sm=StateMachine(state()); self.assertIsNone(sm.blocked_reason(NOW)); sm.request_stop(); self.assertIsNotNone(sm.blocked_reason(NOW))
+    def test_prepared_state_is_valid_and_not_dispatchable_without_receipt(self):
+        value=state(status="PREPARED"); validate_state(value); ledger=InMemoryLedger(value); ledger.add_command(command(1)); result=EventProcessor(ledger,repo=REPO,pr=4,observed_head=TARGET_HEAD).process("000001",now=NOW); self.assertEqual(result.status,"BLOCKED"); self.assertIn("PREPARED",result.reason); self.assertEqual(len(ledger.receipts),0)
     def test_blocked_state_is_valid_and_not_dispatchable(self):
         value=state(status="BLOCKED"); validate_state(value); self.assertIn("BLOCKED",StateMachine(value).blocked_reason(NOW))
     def test_human_completed_unverified_is_valid_and_not_dispatchable(self):
