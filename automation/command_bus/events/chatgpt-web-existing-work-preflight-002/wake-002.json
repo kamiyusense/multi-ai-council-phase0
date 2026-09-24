@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "chatgpt-web-existing-work-preflight-002-wake-002",
+  "loop_id": "chatgpt-web-existing-work-preflight-002",
+  "command_id": "chatgpt-web-existing-work-preflight-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "reason": "The previously observed event-task run occurred before this command commit. This marker only wakes the existing RUNNING command and does not create or retry a logical command.",
+  "do_not_replay_if_terminal_receipt_exists": true
+}
