@@ -306,6 +306,56 @@ This preflight proves only UI branch-selection capability. It does not prove a
 future Jules commit will have the correct parent. Final correctness still
 requires the post-publication ancestry/tree checks in section 8.
 
+
+## 7H. JULES_SPLASH_SETTLE_DIAGNOSTIC
+
+Status: **USER-AUTHORIZED READ-ONLY CLOUD-BROWSER DIAGNOSTIC / NO AUTH / NO JULES SUBMIT**.
+
+Purpose:
+distinguish a real Jules splash/loading stall from an authentication gate,
+task-creation UI, or unavailable Cloud Browser without replaying any prior
+terminal command.
+
+Require:
+- action=`JULES_SPLASH_SETTLE_DIAGNOSTIC`
+- target=work
+- transport_id=`WORK_CLOUD_BROWSER_JULES_UI`
+- fresh command_id/correlation_id/generation/expiry
+- exact PR #4 expected head/tree
+- observation_budget_seconds <= 60
+- max_reload_count <= 1
+- requires_live_model=false
+- requires_github_write=true
+- retry=0
+- fallback=disabled
+
+Execution:
+1. Fresh-read PR #4 head/tree and require exact command match.
+2. Open `https://jules.google.com` only through native Work Cloud Browser.
+3. Do not authenticate, choose an account, type credentials, select repository
+   or branch, submit a prompt/task, start Jules/model, or mutate PR #4.
+4. Observe the initial page state.
+5. If the page is splash-only, wait within the bounded observation budget.
+6. If still splash-only and safe browser reload is available, perform at most
+   one ordinary page reload, then observe again within the remaining budget.
+7. Classify exactly one:
+   - `AUTH_GATE_VISIBLE`
+   - `TASK_CREATION_UI_VISIBLE`
+   - `SPLASH_STALLED`
+   - `BROWSER_UNAVAILABLE`
+   - `PAGE_ERROR_VISIBLE`
+   - `UNKNOWN`
+8. Fresh-read PR #4 head/tree again and require unchanged identity.
+9. Persist only non-secret diagnostic evidence plus one terminal receipt/state.
+10. A completed diagnostic may use receipt state DONE even when classification
+    is `SPLASH_STALLED`; the diagnostic result is not authorization to submit
+    Jules or perform authentication.
+
+Evidence must record observation timings/counts, whether reload occurred,
+visible classification, browser capability, task_submitted=false,
+jules_task_started=false, model_started=false, PR #4 unchanged, retry_count=0,
+fallback_used=false, and no credential/session material.
+
 ## 8. JULES_BOUNDED_STATIC_ROUNDTRIP
 
 This is the only Jules launch authorized by the current runtime contract.
