@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "loop_id": "jules-first-roundtrip-005",
-  "state": "RUNNING",
-  "round": 0,
+  "state": "BLOCKED",
+  "round": 1,
   "max_rounds": 6,
   "expires_at": "2026-09-25T08:45:00+09:00",
-  "stop_requested": false,
+  "stop_requested": true,
   "last_command_id": "jules-first-roundtrip-005-000001",
-  "last_receipt_id": null,
+  "last_receipt_id": "jules-first-roundtrip-005/000001",
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "completion_reason": "BLOCKED_CROSS_WORK_LAUNCH_CONTRACT_MISMATCH; canonical Section 8 requires the reservation-creating Work run itself to launch Jules; no external send/browser/Jules/model/target mutation."
 }
