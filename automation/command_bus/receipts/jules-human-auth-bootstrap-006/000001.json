@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "receipt_id": "jules-human-auth-bootstrap-006/000001",
+  "command_id": "jules-human-auth-bootstrap-006-000001",
+  "loop_id": "jules-human-auth-bootstrap-006",
+  "correlation_id": "jules-human-auth-bootstrap-006-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/jules-human-auth-bootstrap-006/000001.json",
+    "automation/command_bus/events/jules-human-auth-bootstrap-006/wake-001.json",
+    "automation/command_bus/state/jules-human-auth-bootstrap-006.json",
+    "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+    "PR4:feature/relay-transport-7070955470193506982@2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "Cloud Browser callable capability unavailable in this runtime; user-visible auth boundary not verified"
+  ],
+  "target_head_observed": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_tree_observed": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "auth_boundary_visible": false,
+  "auth_state": "UNKNOWN",
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "credential_material_persisted": false,
+  "session_identity_persisted": false,
+  "blocker": "Native Work Cloud Browser capability unavailable; cannot prove the human-auth entry visible on the associated Work."
+}
