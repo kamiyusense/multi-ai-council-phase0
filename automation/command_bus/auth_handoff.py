@@ -133,6 +133,9 @@ def validate_auth_bootstrap_command(command: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("unsupported auth bootstrap schema")
     for field in ("command_id", "loop_id", "correlation_id", "handoff_id"):
         _safe_component(command[field], field)
+    if "generation" in command:
+        if isinstance(command["generation"], bool) or not isinstance(command["generation"], int) or command["generation"] < 1:
+            raise ValueError("invalid auth bootstrap generation")
     if command["target"] != "work" or command["action"] != BOOTSTRAP_ACTION:
         raise ValueError("wrong auth bootstrap target/action")
     if command["expected_repo"] != EXPECTED_REPO or command["expected_pr"] != EXPECTED_PR:
