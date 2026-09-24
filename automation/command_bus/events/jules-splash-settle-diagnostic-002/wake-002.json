@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-splash-settle-diagnostic-002-wake-002",
+  "loop_id": "jules-splash-settle-diagnostic-002",
+  "command_id": "jules-splash-settle-diagnostic-002-000001",
+  "generation": 2,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "reason": "Task prompt was updated to authorize 7H, but the initial command/event commit and one PR comment produced no observed Scheduled Task last_run advance and no receipt/evidence. This is one append-only wake marker after verified non-delivery; do not replay if terminal receipt exists.",
+  "note": "Process only the existing RUNNING 7H diagnostic. No auth/account choice/credentials/repo/branch selection/task submit/Jules or model start/PR4 mutation."
+}
