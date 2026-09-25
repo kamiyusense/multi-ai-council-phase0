@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .duplicate_guard import DuplicateDecision, DuplicateGuard
 from .envelope import DispatchEnvelope
@@ -12,8 +12,20 @@ from .transport import RelayTransport
 class RelayLifecycle:
     transport: RelayTransport
     duplicate_guard: DuplicateGuard
+    _stop_requested: bool = field(default=False, init=False)
+
+    def request_stop(self) -> None:
+        self._stop_requested = True
 
     def dispatch_mock(self, envelope: DispatchEnvelope, *, cwd: str) -> RelayResult:
+        if self._stop_requested:
+            return RelayResult(
+                provider_id=envelope.slot.provider_id,
+                correlation_id=envelope.correlation_id,
+                state=RelayState.BLOCKED,
+                error="stop requested",
+            )
+
         decision = self.duplicate_guard.reserve(envelope)
         if decision is DuplicateDecision.CONFLICT:
             return RelayResult(

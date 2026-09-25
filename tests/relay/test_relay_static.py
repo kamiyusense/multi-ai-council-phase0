@@ -121,6 +121,26 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(len(transport.closed), 1)
         self.assertEqual(transport.closed[0][0], "openai")
 
+    def test_request_stop_blocks_new_dispatch_without_reserving_slot(self):
+        transport = MockTransport(responses={"openai": b"{}"})
+        guard = DuplicateGuard()
+        relay = RelayLifecycle(transport, guard)
+        relay.request_stop()
+
+        envelope = self.envelope()
+        result = relay.dispatch_mock(envelope, cwd="snapshot")
+        self.assertEqual(result.state, RelayState.BLOCKED)
+        self.assertEqual(result.error, "stop requested")
+
+        # Verify no transport activity occurred
+        self.assertEqual(transport.prompt_counts.get("openai", 0), 0)
+        self.assertFalse(transport.live_process_started)
+
+        # Verify duplicate slot was not reserved by doing fresh dispatch
+        fresh_relay = RelayLifecycle(MockTransport(responses={"openai": b"{}"}), guard)
+        fresh_result = fresh_relay.dispatch_mock(envelope, cwd="snapshot")
+        self.assertEqual(fresh_result.state, RelayState.SIMULATED)
+
 
 class ProviderPolicyTests(unittest.TestCase):
     def test_all_policies_are_subscription_only_and_live_blocked(self):
