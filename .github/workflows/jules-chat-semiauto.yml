@@ -127,7 +127,7 @@ jobs:
         id: invoke
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          EXPECTED_BRANCH: ${{ steps.validate.outputs.expected_target_branch }}
+          EXPECTED_BRANCH: ${{ steps.validate.outputs.target_branch }}
         shell: bash
         run: |
           set -euo pipefail
