@@ -1,0 +1,39 @@
+name: Phase 0 Jules API smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  jules-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke Jules from exact Phase 0 target branch
+        uses: google-labs-code/jules-action@bff7875eaa123cac6742b7cfc51005b95ba4d566
+        with:
+          starting_branch: feature/relay-transport-7070955470193506982
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
+          prompt: |
+            Multi-AI Council Phase 0 bounded Jules API smoke.
+
+            Work only from the exact starting branch supplied by this workflow.
+
+            Modify exactly one file:
+            tests/relay/test_dispatcher.py
+
+            Add exactly one unittest regression proving that:
+            abort_signal={"aborted": True}
+            blocks before slot reservation and before provider dispatch.
+
+            Do not modify implementation files.
+            Do not modify any other file.
+            Do not merge anything.
+
+            Run:
+            PYTHONPATH=src python -m unittest discover -s tests -t . -v
+            python -m compileall -q src tests
+            git diff --check
+
+            Create the normal Jules pull request when complete.
