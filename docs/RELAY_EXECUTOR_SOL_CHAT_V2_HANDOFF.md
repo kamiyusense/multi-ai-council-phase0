@@ -1,5 +1,20 @@
 # Relay Executor Sol Chat V2 Handover
 
+
+> ## 2026-09-25 current Jules route update
+>
+> The user has now authorized the Jules API route. The previous BrowserHook /
+> Work Cloud Browser launch route is frozen. The current selected predecessor is
+> `google-labs-code/jules-action`, pinned for the first smoke to
+> `bff7875eaa123cac6742b7cfc51005b95ba4d566`.
+>
+> The updated decision, executor handoff, advisor handoff, and bounded smoke
+> workflow are prepared in PR #9 (`docs/jules-api-route-20260925`). This scoped
+> Jules API authorization supersedes older Jules-specific "no API-key route"
+> language in this handoff, but does not authorize other provider API keys or
+> Billing/Credits/Overages changes. BrowserHook retries/006+ are not the next
+> step.
+>
 Updated: 2026-09-23
 Repository: `kamiyusense/multi-ai-council-phase0`
 Role: second-generation execution Sol Chat
