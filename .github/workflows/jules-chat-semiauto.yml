@@ -100,12 +100,64 @@ jobs:
             exit 1
           fi
 
-      - name: Invoke Jules exactly once
-        uses: google-labs-code/jules-action@bff7875eaa123cac6742b7cfc51005b95ba4d566
-        with:
-          starting_branch: ${{ steps.validate.outputs.target_branch }}
-          jules_api_key: ${{ secrets.JULES_API_KEY }}
-          prompt: ${{ steps.validate.outputs.prompt }}
+      - name: Build Jules REST payload
+        id: payload
+        env:
+          REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          PROMPT: ${{ steps.validate.outputs.prompt }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg prompt "${PROMPT}" \
+            --arg source "sources/github/${REPOSITORY}" \
+            --arg starting_branch "${TARGET_BRANCH}" \
+            '{
+              prompt: $prompt,
+              sourceContext: {
+                source: $source,
+                githubRepoContext: {startingBranch: $starting_branch}
+              },
+              requirePlanApproval: false,
+              automationMode: "AUTO_CREATE_PR"
+            }' > jules_payload.json
+
+      - name: Invoke Jules REST exactly once
+        id: invoke
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          EXPECTED_BRANCH: ${{ steps.validate.outputs.expected_target_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="${RUNNER_TEMP}/jules-response.json"
+          http_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${response_file}" \
+            --write-out '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            --data-binary @jules_payload.json \
+            'https://jules.googleapis.com/v1alpha/sessions')"
+          if [[ ! "${http_code}" =~ ^2[0-9][0-9]$ ]]; then
+            echo "Unexpected Jules HTTP status ${http_code}." >&2
+            exit 1
+          fi
+          session_name="$(jq -er '.name' "${response_file}")"
+          returned_branch="$(jq -er '.sourceContext.githubRepoContext.startingBranch' "${response_file}")"
+          if [[ ! "${session_name}" =~ ^sessions/[0-9]+$ ]]; then
+            echo "Malformed Jules session name." >&2
+            exit 1
+          fi
+          if [[ "${returned_branch}" != "${EXPECTED_BRANCH}" ]]; then
+            echo "Jules returned starting branch mismatch." >&2
+            exit 1
+          fi
+          session_id="${session_name#sessions/}"
+          echo "session_id=${session_id}" >> "${GITHUB_OUTPUT}"
+          echo "session_name=${session_name}" >> "${GITHUB_OUTPUT}"
+          echo "Jules session accepted: ${session_name}"
 
       - name: Record dispatch boundary in job summary
         if: always()
@@ -114,6 +166,7 @@ jobs:
           TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
+          SESSION_ID: ${{ steps.invoke.outputs.session_id }}
         shell: bash
         run: |
           {
@@ -122,9 +175,10 @@ jobs:
             echo "- target_branch: \`${TARGET_BRANCH:-UNKNOWN}\`"
             echo "- expected_target_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
             echo "- expected_target_tree: \`${EXPECTED_TREE:-UNKNOWN}\`"
+            echo "- jules_session_id: \`${SESSION_ID:-UNKNOWN}\`"
             echo "- retry: \`0\`"
             echo "- fallback: \`disabled\`"
             echo "- merge: \`human-only\`"
             echo ""
-            echo "A green job is transport evidence only. Verify the Jules-created PR, ancestry, diff, and tests by GitHub readback."
+            echo "Session creation is transport evidence only. Verify the Jules-created PR, ancestry, diff, and tests by GitHub readback."
           } >> "${GITHUB_STEP_SUMMARY}"
