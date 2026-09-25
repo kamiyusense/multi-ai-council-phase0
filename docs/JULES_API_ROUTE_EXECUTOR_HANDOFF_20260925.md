@@ -19,6 +19,8 @@ Before doing anything mutable, fresh-read:
 
 GitHub current state wins over SHAs in this document.
 
+- Do not offload handover-time reading and inspection wholesale to Work.
+
 ## 2. Current route decision
 
 The BrowserHook / Work Cloud Browser Jules route is frozen.
