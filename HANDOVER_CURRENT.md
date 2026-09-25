@@ -1,6 +1,42 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-21
+Updated: 2026-09-25
+
+## 0. 2026-09-25 current override — Jules API route adopted
+
+This section supersedes older Jules-launch / API-key statements below when they
+conflict.
+
+Current durable direction:
+
+- custom BrowserHook / Work Cloud Browser Jules launch route: **FROZEN**
+- Jules API route: **USER AUTHORIZED**
+- primary predecessor: `google-labs-code/jules-action`
+- first smoke pin:
+  `bff7875eaa123cac6742b7cfc51005b95ba4d566`
+- exact non-default starting branch is mandatory
+- API key must stay in an approved secret store; never commit or paste it
+- retry = 0 / fallback disabled / ambiguous submit => readback, not resend
+- no automatic Merge / no direct main write / no force push / no branch deletion
+- GitHub Actions green alone is not proof; verify Jules session/PR/ancestry/diff
+
+Read first:
+
+1. `docs/JULES_API_ROUTE_DECISION_20260925.md`
+2. executor role:
+   `docs/JULES_API_ROUTE_EXECUTOR_HANDOFF_20260925.md`
+3. advisor role:
+   `docs/JULES_API_ROUTE_ADVISOR_HANDOFF_20260925.md`
+
+The scoped Jules API authorization does **not** authorize other provider API
+keys, general metered API fallback, Billing/Credits/Overages changes, or secret
+exposure.
+
+The first prepared workflow is:
+`.github/workflows/jules-phase0-smoke.yml`
+
+It is preparation only until it exists on the default branch and the user has
+completed the remaining secret/key approval steps.
 
 ## 1. Purpose
 
@@ -75,7 +111,7 @@ Do not silently weaken these:
 - automatic retry = 0
 - no automatic model fallback
 - no paid fallback
-- no API-key route
+- no general provider API-key route; scoped Jules API exception is defined in section 0
 - unknown billing / permission / auth safety boundary => fail closed
 - runtime GitHub write prohibited
 - arbitrary shell construction prohibited
@@ -266,6 +302,6 @@ A new chat should:
 6. inspect the current open PR / branch before changing files
 7. preserve all fixed safety decisions
 8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
-9. continue static implementation without live provider calls
+9. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
 10. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
 11. keep GitHub writes within this private repository and authorized feature branches/PR scope
