@@ -131,6 +131,16 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(other["state"], "SIMULATED")
         self.assertEqual(second.abort_calls, [])
 
+    def test_abort_signal_blocks_before_reservation_and_dispatch(self):
+        adapter = RelayProviderAdapterBridge()
+        dispatcher = make(adapter)
+        result = dispatcher.dispatch(
+            "slot-abort", {"payload": {"q": "test"}}, abort_signal={"aborted": True}
+        )
+        self.assertEqual(result["state"], "BLOCKED")
+        self.assertEqual(result["reason"], "aborted")
+        self.assertEqual(adapter.dispatch_count, 0)
+        self.assertNotIn("slot-abort", dispatcher.guard.ledger)
 
 if __name__ == "__main__":
     unittest.main()
