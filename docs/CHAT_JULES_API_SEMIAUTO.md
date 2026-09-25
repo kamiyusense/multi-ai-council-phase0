@@ -12,7 +12,7 @@ human asks Chat to inspect/continue
   -> Chat fresh-reads GitHub and reviews the current result
   -> Chat creates exactly one durable Jules command JSON on PR #6 branch
   -> GitHub push workflow validates command + target HEAD/tree
-  -> pinned jules-action submits exactly once to Jules API
+  -> bounded GitHub workflow submits exactly one direct Jules REST request
   -> Jules works from the exact non-default branch and creates its normal PR
   -> Chat fresh-reads workflow/Jules PR/ancestry/diff/tests
   -> Chat reports PASS / FAIL / UNKNOWN to the human
@@ -84,8 +84,8 @@ Chat should then:
 
 ## Evidence boundary
 
-GitHub Actions green alone is not PASS. The pinned Jules action does not expose a
-formal session ID/PR URL and may not fail on every backend HTTP error.
+GitHub Actions green alone is not PASS. The hardened workflow captures and validates the
+Jules session ID and starting branch, but session creation still proves transport only.
 
 After dispatch, Chat must verify as available:
 
