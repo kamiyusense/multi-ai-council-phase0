@@ -23,3 +23,6 @@ class RelayResult:
     raw: bytes | None = None
     error: str | None = None
     simulated: bool = True
+    packet_sha256: str = ""
+    session_id: str | None = None
+    prompt_attempts: int = 0

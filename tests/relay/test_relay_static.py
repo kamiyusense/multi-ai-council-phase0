@@ -66,6 +66,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertFalse(transport.live_process_started)
         self.assertEqual(result.correlation_id, "corr-openai-0")
         self.assertEqual(result.provider_id, "openai")
+        self.assertEqual(result.packet_sha256, self.envelope().packet_sha256)
+        self.assertIsNotNone(result.session_id)
+        self.assertEqual(result.prompt_attempts, 1)
 
     def test_duplicate_does_not_prompt_twice(self):
         transport = MockTransport(responses={"openai": b"{}"})
@@ -77,7 +80,10 @@ class LifecycleTests(unittest.TestCase):
             payload=first.payload,
         )
         self.assertEqual(relay.dispatch_mock(first, cwd="snapshot").state, RelayState.SIMULATED)
-        self.assertEqual(relay.dispatch_mock(second, cwd="snapshot").state, RelayState.BLOCKED)
+        second_result = relay.dispatch_mock(second, cwd="snapshot")
+        self.assertEqual(second_result.state, RelayState.BLOCKED)
+        self.assertEqual(second_result.prompt_attempts, 0)
+        self.assertEqual(second_result.packet_sha256, second.packet_sha256)
         self.assertEqual(transport.prompt_counts["openai"], 1)
 
     def test_conflict_does_not_prompt_again(self):
@@ -89,7 +95,10 @@ class LifecycleTests(unittest.TestCase):
             correlation_id="corr-conflict",
             payload={"packet": "changed"},
         )
-        self.assertEqual(relay.dispatch_mock(conflict, cwd="snapshot").state, RelayState.BLOCKED)
+        conflict_result = relay.dispatch_mock(conflict, cwd="snapshot")
+        self.assertEqual(conflict_result.state, RelayState.BLOCKED)
+        self.assertEqual(conflict_result.prompt_attempts, 0)
+        self.assertEqual(conflict_result.packet_sha256, conflict.packet_sha256)
         self.assertEqual(transport.prompt_counts["openai"], 1)
 
     def test_provider_identity_isolated(self):
@@ -120,6 +129,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(transport.cancelled[0][0], "openai")
         self.assertEqual(len(transport.closed), 1)
         self.assertEqual(transport.closed[0][0], "openai")
+        self.assertEqual(result.packet_sha256, self.envelope().packet_sha256)
+        self.assertIsNotNone(result.session_id)
+        self.assertEqual(result.prompt_attempts, 1)
 
     def test_request_stop_blocks_new_dispatch_without_reserving_slot(self):
         transport = MockTransport(responses={"openai": b"{}"})
@@ -131,6 +143,9 @@ class LifecycleTests(unittest.TestCase):
         result = relay.dispatch_mock(envelope, cwd="snapshot")
         self.assertEqual(result.state, RelayState.BLOCKED)
         self.assertEqual(result.error, "stop requested")
+        self.assertEqual(result.packet_sha256, envelope.packet_sha256)
+        self.assertIsNone(result.session_id)
+        self.assertEqual(result.prompt_attempts, 0)
 
         # Verify no transport activity occurred
         self.assertEqual(transport.prompt_counts.get("openai", 0), 0)
