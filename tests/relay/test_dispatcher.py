@@ -142,5 +142,29 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(adapter.dispatch_count, 0)
         self.assertNotIn("slot-abort", dispatcher.guard.ledger)
 
+    def test_abort_signal_blocks_second_dispatch_attempt_on_same_slot(self):
+        adapter = RelayProviderAdapterBridge()
+        dispatcher = make(adapter)
+
+        # First dispatch blocked by abort_signal
+        first_result = dispatcher.dispatch(
+            "slot-abort-twice", {"payload": {"q": "test1"}}, abort_signal={"aborted": True}
+        )
+        self.assertEqual(first_result["state"], "BLOCKED")
+        self.assertEqual(first_result["reason"], "aborted")
+        self.assertEqual(adapter.dispatch_count, 0)
+
+        # Second dispatch attempt on the same slot without abort_signal
+        second_result = dispatcher.dispatch(
+            "slot-abort-twice", {"payload": {"q": "test2"}}
+        )
+
+        # Should still be BLOCKED
+        self.assertEqual(second_result["state"], "BLOCKED")
+        self.assertEqual(second_result["reason"], "cancelled")
+
+        # Dispatch count should remain 0
+        self.assertEqual(adapter.dispatch_count, 0)
+
 if __name__ == "__main__":
     unittest.main()
