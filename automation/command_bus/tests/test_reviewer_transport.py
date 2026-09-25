@@ -43,14 +43,14 @@ def request(**changes):
 
 
 class ReviewerTransportTests(unittest.TestCase):
-    def test_browser_and_direct_routes_share_same_durable_wake_contract(self):
+    def test_supported_static_routes_share_same_durable_wake_contract(self):
         req = request()
         wake = build_review_wake(req, REF)
         self.assertEqual(wake["expected_target_head"], HEAD)
         self.assertEqual(wake["expected_target_tree"], TREE)
         self.assertEqual(wake["response_channel"], "GITHUB_DURABLE_ONLY")
         self.assertFalse(wake["parse_browser_output"])
-        for route in ("browser", "direct"):
+        for route in ("browser", "direct", "manual", "scheduled"):
             transport = MockReviewerTransport(route)
             result = ReviewWakeCoordinator().dispatch(
                 req, request_ref=REF, transport=transport

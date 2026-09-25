@@ -13,7 +13,7 @@ from typing import Any, Protocol
 from .reviewer import DURABLE_REVIEW_V2, validate_review_request
 
 
-SUPPORTED_ROUTES = frozenset({"browser", "direct", "manual"})
+SUPPORTED_ROUTES = frozenset({"browser", "direct", "manual", "scheduled"})
 WAKE_ATTEMPT_PROFILE = "DURABLE_REVIEW_WAKE_ATTEMPT_V1"
 
 

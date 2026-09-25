@@ -109,7 +109,24 @@ human opens any suitable Chat
 -> Chat writes review_response
 -> Work continues from GitHub
 
-All three routes produce the same durable response schema.
+D. Connector-bound Scheduled Chat reviewer
+A time-based ChatGPT Scheduled Task may be used as another wake transport when
+the task is created in a Chat where the required GitHub plugin is actually
+selected/bound by the host UI:
+GitHub review_request
+-> connector-bound Scheduled Task wakes
+-> reviewer reads the exact durable request/head/tree/evidence
+-> reviewer writes one structured review_response to GitHub
+-> Work validates the GitHub response
+
+The route is transport-only. A textual `@GitHub` string is not proof that the
+host attached the GitHub plugin. Local one-shot tests created through the bare
+task API did not produce GitHub writes, while public prior art shows scheduled
+GitHub-writing reviewers in operation. Until a local structured-plugin binding
+is directly proven, this route remains static-only and MUST NOT replace the
+existing Browser/Direct/Manual routes or weaken retry=0/fallback-disabled gates.
+
+All four routes produce the same durable response schema.
 
 ## 4. Chat replacement policy
 
@@ -182,7 +199,9 @@ Current P1 implementation checkpoint:
 - `DURABLE_REVIEW_V2` request/response contract is implemented on PR #6.
 - target head + target tree binding is implemented.
 - reviewer role/kind/allowed-decision validation is implemented.
-- Browser/Direct/Manual transport-neutral mock wake layer is implemented.
+- Browser/Direct/Manual/Scheduled transport-neutral mock wake layer is implemented.
+- Scheduled is a static transport contract only; no live task/plugin binding is
+  authorized or inferred from a textual connector mention.
 - free-form browser output is not a correctness input.
 - live-capable reviewer transports are blocked by the static P1 coordinator.
 - durable wake reservation is append-only and keyed by review request identity,
