@@ -1,5 +1,30 @@
 # Work Command Bus Runtime Contract
 
+
+> ## 2026-09-25 Jules API route override
+>
+> This override supersedes older BrowserHook/API-key prohibitions in this file
+> **only for Jules orchestration** where they conflict.
+>
+> - user authorized the Jules API route on 2026-09-25
+> - BrowserHook / Work Cloud Browser Jules launch route is frozen
+> - selected predecessor: `google-labs-code/jules-action`
+> - first smoke pin: `bff7875eaa123cac6742b7cfc51005b95ba4d566`
+> - prepared integration/update is in PR #9, branch
+>   `docs/jules-api-route-20260925`
+> - exact non-default `starting_branch` is mandatory
+> - retry=0 / fallback disabled / ambiguous submit => readback, never resend
+> - API key must remain in an approved secret store and must never be persisted
+>   in command/evidence/chat/repository content
+> - this does not authorize other provider API keys, Billing/Credits/Overages
+>   changes, direct main writes, automatic Merge, force push, or branch deletion
+> - GitHub Actions success alone is not PASS; post-run Jules/GitHub readback,
+>   ancestry, base, changed-path and test evidence are required
+>
+> Read PR #9 / `docs/JULES_API_ROUTE_DECISION_20260925.md` as the current route
+> decision after that PR is merged. Until then, PR #9 itself is the durable
+> pending record of the new decision.
+>
 Status: canonical runtime contract for the Phase 0 GitHub -> Work/Luna event worker.
 
 Repository: `kamiyusense/multi-ai-council-phase0`
