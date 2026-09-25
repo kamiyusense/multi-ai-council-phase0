@@ -10,6 +10,7 @@ class MockTransport:
     prompt_counts: dict[str, int] = field(default_factory=dict)
     cancelled: list[tuple[str, str]] = field(default_factory=list)
     closed: list[tuple[str, str]] = field(default_factory=list)
+    timeout_providers: set[str] = field(default_factory=set)
     live_process_started: bool = False
 
     def initialize(self, provider_id: str) -> dict[str, Any]:
@@ -25,6 +26,8 @@ class MockTransport:
 
     def prompt(self, provider_id: str, session_id: str, payload: dict[str, Any]) -> bytes:
         self.prompt_counts[provider_id] = self.prompt_counts.get(provider_id, 0) + 1
+        if provider_id in self.timeout_providers:
+            raise TimeoutError("mock prompt timeout")
         return self.responses.get(provider_id, b"{}")
 
     def cancel(self, provider_id: str, session_id: str) -> None:

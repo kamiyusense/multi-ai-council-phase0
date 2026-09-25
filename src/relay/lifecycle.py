@@ -50,6 +50,8 @@ class RelayLifecycle:
                 raw=raw,
             )
         except TimeoutError as exc:
+            if session_id is not None:
+                self.transport.cancel(provider_id, session_id)
             return RelayResult(
                 provider_id=provider_id,
                 correlation_id=envelope.correlation_id,

@@ -110,6 +110,17 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(len(transport.closed), 1)
         self.assertEqual(transport.prompt_counts["openai"], 1)
 
+    def test_timeout_cancels_and_closes_session(self):
+        transport = MockTransport(timeout_providers={"openai"})
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        result = relay.dispatch_mock(self.envelope(), cwd="snapshot")
+        self.assertEqual(result.state, RelayState.TIMEOUT)
+        self.assertEqual(transport.prompt_counts["openai"], 1)
+        self.assertEqual(len(transport.cancelled), 1)
+        self.assertEqual(transport.cancelled[0][0], "openai")
+        self.assertEqual(len(transport.closed), 1)
+        self.assertEqual(transport.closed[0][0], "openai")
+
 
 class ProviderPolicyTests(unittest.TestCase):
     def test_all_policies_are_subscription_only_and_live_blocked(self):
