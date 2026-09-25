@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-001-timeout-cancel",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "b8b7bb16f65039e6bf4c9425753a496abf70bea9",
+  "expected_target_tree": "fccb1b57d31e98d4feac5e90e3d4e7e01edfce33",
+  "allowed_paths": [
+    "src/relay/lifecycle.py",
+    "src/relay/mock_transport.py",
+    "tests/relay/test_relay_static.py"
+  ],
+  "prompt": "Continue the actual Relay implementation with one bounded improvement. In RelayLifecycle.dispatch_mock, when transport.prompt raises TimeoutError after a session has been opened, explicitly call transport.cancel(provider_id, session_id) exactly once before the existing close in finally. Preserve retry=0 and do not add fallback/restart behavior. Extend MockTransport only as needed to deterministically simulate a prompt timeout and to provide test evidence. Add regression coverage proving TIMEOUT, exactly one cancel, exactly one close, and exactly one prompt attempt. Do not change behavior outside this scope. Run the relevant relay unit tests, then PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-25T22:59:01+00:00",
+  "expires_at": "2026-09-25T23:59:01+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
