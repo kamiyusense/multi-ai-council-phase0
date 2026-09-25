@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "fixture_kind": "HISTORICAL_JULES_API_SMOKE",
+  "runtime_fixed_values": false,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "target_pr": 4,
+  "default_branch": "main",
+  "starting_branch": "feature/relay-transport-7070955470193506982",
+  "workflow": {
+    "run_id": 36123668456,
+    "run_number": 1,
+    "run_attempt": 1,
+    "conclusion": "success",
+    "pinned_action": "google-labs-code/jules-action@bff7875eaa123cac6742b7cfc51005b95ba4d566"
+  },
+  "jules": {
+    "session_id": "17562850663336120727",
+    "task_submitted": true,
+    "jules_task_started": true,
+    "model_started": true
+  },
+  "target_before": {
+    "head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe"
+  },
+  "publication": {
+    "pr_number": 10,
+    "pr_base_branch": "feature/relay-transport-7070955470193506982",
+    "resulting_commit": "b8b7bb16f65039e6bf4c9425753a496abf70bea9",
+    "result_tree": "fccb1b57d31e98d4feac5e90e3d4e7e01edfce33",
+    "parent_shas": ["2fc399ac7b415746763114c3951aa2e3b45adee7"],
+    "merge_base": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "ahead_by": 1,
+    "behind_by": 0,
+    "changed_paths": [
+      {
+        "path": "tests/relay/test_dispatcher.py",
+        "operation": "MODIFY",
+        "symlink": false
+      }
+    ],
+    "tests_passed": true,
+    "unittest_count": 29,
+    "compileall_passed": true,
+    "diff_check_passed": true,
+    "retry_count": 0,
+    "fallback_used": false,
+    "github_mutation_uncertainty": false,
+    "main_direct_write": false
+  },
+  "target_after": {
+    "head": "b8b7bb16f65039e6bf4c9425753a496abf70bea9"
+  }
+}
