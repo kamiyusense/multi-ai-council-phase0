@@ -1,0 +1,41 @@
+{
+  "services": {
+    "claude": {
+      "image": "phase0-claude-runtime:UNBUILT",
+      "profiles": ["human-approval-required"],
+      "entrypoint": ["/bin/false"],
+      "privileged": false,
+      "ports": [],
+      "networks": ["internal"],
+      "environment": {
+        "ANTHROPIC_BASE_URL": "http://gate:8080",
+        "CLAUDE_CODE_MAX_RETRIES": "0"
+      }
+    },
+    "gate": {
+      "image": "phase0-claude-gate:UNBUILT",
+      "profiles": ["human-approval-required"],
+      "entrypoint": ["/bin/false"],
+      "privileged": false,
+      "ports": [],
+      "networks": {
+        "internal": {"ipv4_address": "172.29.247.2"},
+        "egress": {}
+      },
+      "environment": {
+        "PHASE0_GATE_BIND": "172.29.247.2",
+        "PHASE0_GATE_PORT": "8080"
+      },
+      "volumes": ["gate-state:/var/lib/phase0/claude-gate"]
+    }
+  },
+  "networks": {
+    "internal": {
+      "driver": "bridge",
+      "internal": true,
+      "ipam": {"config": [{"subnet": "172.29.247.0/24"}]}
+    },
+    "egress": {"driver": "bridge"}
+  },
+  "volumes": {"gate-state": {}}
+}

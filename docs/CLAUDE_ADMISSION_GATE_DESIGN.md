@@ -66,21 +66,79 @@ replay protection, loopback binding, duplicate registration, and static-only
 loop integration. All provider servers in these tests bind to `127.0.0.1` and
 use synthetic payloads and fake credentials.
 
+## URL and production upstream boundaries
+
+The Claude-facing `ANTHROPIC_BASE_URL` preflight accepts only plain HTTP to a
+literal loopback IP with an explicit nonzero port (`127.0.0.1` or `[::1]`). It
+rejects hostnames, including `localhost` (name resolution can vary), remote or
+private-network addresses, user-info, query, fragment, and non-root paths.
+
+The production transport accepts only `https://api.anthropic.com` on default
+port 443, with no URL credentials, path prefix, query, or fragment. The fake
+provider path is a separate `test_only_upstream_factory` argument and accepts
+only plain HTTP to an explicit loopback IP and port. It is forbidden in
+container mode.
+
+## Docker network contract (static; never started here)
+
+`automation/command_bus/claude_gate_compose.yaml` is a JSON-form Compose
+manifest template with placeholder `UNBUILT` images, a
+`human-approval-required` profile, and `/bin/false` entrypoints. It is not a
+runnable deployment. The deterministic validator requires:
+
+* Claude service: internal network only, no `ports`, no `network_mode`,
+  `privileged: false`, and no `extra_hosts`/`links` overrides.
+* Gate service: internal and egress bridge networks, no published ports,
+  `privileged: false`, binds only to internal address `172.29.247.2:8080`
+  (never `0.0.0.0`), production store and production upstream. It cannot use
+  the fake upstream factory in container mode.
+* Internal network: bridge with `internal: true`; Claude is not attached to
+  the separate egress network. Gate alone joins both.
+
+This follows Docker's documented Compose networking ([networking guide](https://docs.docker.com/compose/how-tos/networking/),
+[network reference](https://docs.docker.com/reference/compose-file/networks/)).
+It is static intent, not proof of daemon routes, host firewall, subnet
+availability, or running-container membership. Docker was not invoked. A
+human must resolve subnet conflicts and verify effective egress before live
+use.
+
+## Dispatch lifecycle and command-bus receipt linkage
+
+`ClaudeDispatchLifecycle.prepare()` creates a UUID and records loop ID,
+correlation ID, `CLAUDE_BACKEND`, generation, expiry, and exact target head,
+then returns the local gate environment as `PREPARED`. It never invokes a
+process launcher. Invalid transport after registration terminalizes/burns the
+dispatch; it must not be reused. `complete_fake()` models a terminal result
+with a fake-only outcome and writes an append-only local terminal receipt.
+Mismatched/repeated terminal transitions fail closed.
+
+The lifecycle consumes the existing command-bus executor receipt shape:
+`state=CONSUMED`, loop/correlation, `round` mapped to gate `generation`, and
+`expected_target_head`. A matching receipt is NO-OP; a conflicting generation,
+head, or state for the same correlation blocks. This is a static in-process
+adapter, not a GitHub poller: the caller must supply freshly read receipts.
+The gate request path never writes to GitHub.
+
 ## Durability and limitations
 
 SQLite gives a durable write-ahead claim across normal process restarts when
-the same database file is retained. It does not protect against database
-deletion, rollback to an old backup, storage corruption, multiple hosts using
-different DB files, or an operator bypassing the gate. Production must place
-the database under host-controlled durable storage, back it up without rollback
-semantics, and enforce egress so the Claude process can reach only the gate
-while only the gate can reach the approved Anthropic destination. This code
-does not configure that network policy.
+the same database file is retained. Production open requires an existing
+`dispatches.sqlite3` directly under the supplied fixed state directory and an
+externally expected store UUID. It refuses to create a fresh production DB on
+startup. POSIX ownership/mode checks are required; ACL verification is UNKNOWN
+on Windows, where production open refuses. The expected ID detects replacement
+by a newly initialized DB, but not rollback to an older copy with the same ID.
 
-The server is loopback-only and does not provide TLS or dispatch-registration
-authentication; its registration API is a local in-process host API. Upstream
-destination authorization, proxy egress policy, lifecycle/terminal receipt
-integration, OS-specific process isolation, and actual Claude compatibility
+Deletion, old-backup rollback, corruption, separate per-host DBs, and operator
+bypass remain possible. The host must protect the DB and directory (0700/0600
+or stricter), keep them outside untrusted container mounts, and compare against
+monotonic external receipts. Complete anti-rollback remains unresolved.
+
+The host server is loopback-only and does not provide TLS or
+dispatch-registration authentication; registration is an in-process host API.
+The separate container contract binds only to a fixed internal-network IP.
+Host firewall/Docker route enforcement, crash consistency with external
+receipts, OS-specific process isolation, and actual Claude compatibility
 remain unproven. A request failure after upstream bytes have started cannot be
 converted into a fresh JSON error response; the consumed slot still prevents
 a second upstream attempt. The implementation must not be exposed to an
@@ -89,6 +147,17 @@ untrusted local user/process.
 `CLAUDE_CODE_MAX_RETRIES=0`, `x-should-retry`, and `retry-after` are additional
 client-side hints only. Safety does not infer that they stop every Claude
 continuation. The gate denies all later generation requests independently.
+
+`POST /v1/messages/count_tokens` remains `DENY_LOCAL` and
+`DOES_NOT_CONSUME_GENERATION_BUDGET`. If future live compatibility testing
+shows it is required, that result is UNKNOWN and the live proof must stop;
+there is no automatic forwarding. `HEAD /api/hello` remains local, and
+unknown endpoints remain denied.
+
+Current `JULES_BACKEND` prepares the existing Jules durable request and does
+not start a Claude reviewer process, so it is unchanged. Any future Claude
+reviewer/planner process within that backend must use this same Admission Gate,
+dispatch metadata, one-generation budget, local gate URL, and egress isolation.
 
 ## Prior art, attribution, and licenses
 

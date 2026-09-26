@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,7 +11,10 @@ import time
 import unittest
 import uuid
 
-from automation.command_bus.claude_admission_gate import DispatchStore, make_server, prepare_transport
+from automation.command_bus.claude_admission_gate import (
+    ClaudeDispatchLifecycle, DispatchStore, load_container_manifest, make_server,
+    prepare_transport, validate_container_topology,
+)
 
 
 class FakeProvider:
@@ -71,7 +75,8 @@ class AdmissionGateTests(unittest.TestCase):
         self.db = str(Path(self.temp.name) / "gate.sqlite3")
         self.store = DispatchStore(self.db)
         self.provider = FakeProvider()
-        self.gate = make_server(store=self.store, upstream_url=self.provider.url, connect_timeout=2.5)
+        self.gate = make_server(store=self.store, upstream_url=self.provider.url,
+                                connect_timeout=2.5, test_only_upstream_factory=HTTPConnection)
         self.gate_thread = __import__("threading").Thread(target=self.gate.serve_forever, daemon=True)
         self.provider_thread = __import__("threading").Thread(target=self.provider.server.serve_forever, daemon=True)
         self.gate_thread.start()
@@ -87,8 +92,19 @@ class AdmissionGateTests(unittest.TestCase):
         self.temp.cleanup()
 
     def register(self, dispatch=None, expires=None):
-        self.store.register(dispatch or self.dispatch,
-                            expires or (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat())
+        actual = dispatch or self.dispatch
+        self.store.register(actual,
+                            expires or (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                            loop_id="test-loop", correlation_id=f"test-correlation-{actual}",
+                            backend="CLAUDE_BACKEND", target_head="a" * 40, generation=1)
+
+    def matching_receipt(self, dispatch=None):
+        actual = dispatch or self.dispatch
+        record = self.store.dispatch_record(actual)
+        return {"dispatch_id": actual, "loop_id": record["loop_id"],
+                "correlation_id": record["correlation_id"], "backend": record["backend"],
+                "expected_target_head": record["target_head"], "generation": record["generation"],
+                "terminal": True, "state": "FAILED", "retry": 0, "fallback": "disabled"}
 
     def request(self, *, path="/v1/messages", method="POST", dispatch=None, body=b'{"prompt":"fake"}', headers=None):
         conn = HTTPConnection("127.0.0.1", self.gate.server_port, timeout=4)
@@ -118,6 +134,7 @@ class AdmissionGateTests(unittest.TestCase):
         self.assertEqual(results.count(200), 1)
         self.assertEqual(results.count(429), 9)
         self.assertEqual(self.provider.hits, 1)
+        self.assertEqual([item["ordinal"] for item in self.store.evidence(self.dispatch)], list(range(1, 11)))
 
     def test_04_missing_dispatch_denied(self):
         self.assertEqual(self.request()[0], 429)
@@ -132,7 +149,7 @@ class AdmissionGateTests(unittest.TestCase):
         self.assertEqual(self.provider.hits, 0)
 
     def test_07_terminal_dispatch_denied(self):
-        self.store.mark_terminal(self.dispatch)
+        self.assertTrue(self.store.mark_terminal(self.dispatch, self.matching_receipt()))
         self.assertEqual(self.request(dispatch=self.dispatch)[0], 429)
         self.assertEqual(self.provider.hits, 0)
 
@@ -282,7 +299,8 @@ class AdmissionGateTests(unittest.TestCase):
 
     def test_26_non_loopback_bind_is_rejected(self):
         with self.assertRaises(ValueError):
-            make_server(store=self.store, upstream_url=self.provider.url, bind_host="0.0.0.0")
+            make_server(store=self.store, upstream_url=self.provider.url, bind_host="0.0.0.0",
+                        test_only_upstream_factory=HTTPConnection)
 
     def test_27_duplicate_registration_is_rejected(self):
         with self.assertRaises(ValueError):
@@ -303,6 +321,133 @@ class AdmissionGateTests(unittest.TestCase):
         self.assertEqual(self.provider.hits, 1)
         self.assertEqual(self.request(dispatch=self.dispatch)[0], 429)
         self.assertEqual(self.provider.hits, 1)
+
+    def test_gate_url_accepts_literal_loopback_only(self):
+        for url in ("http://127.0.0.1:8080", "http://[::1]:8080/"):
+            with self.subTest(url=url):
+                self.assertEqual(prepare_transport(dispatch_id=self.dispatch, gate_base_url=url)["status"], "PREPARED")
+        for url in ("https://example.com", "http://10.0.0.1:8080", "http://192.168.1.4:8080",
+                    "http://public-host:8080", "http://localhost:8080", "http://user@127.0.0.1:8080",
+                    "http://127.0.0.1:8080/path", "http://127.0.0.1:8080/?q=x",
+                    "http://127.0.0.1:8080/#fragment", "http://127.0.0.1:0",
+                    "http://[::1]:8080/%2e%2e"):
+            with self.subTest(url=url):
+                self.assertEqual(prepare_transport(dispatch_id=self.dispatch, gate_base_url=url)["status"], "BLOCKED")
+
+    def test_production_upstream_is_exact_anthropic_https_origin(self):
+        for url in ("http://api.anthropic.com", "https://example.com", "https://api.anthropic.com:444",
+                    "https://user@api.anthropic.com", "https://api.anthropic.com/v1",
+                    "https://api.anthropic.com/?q=1", "https://api.anthropic.com/#frag"):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                make_server(store=self.store, upstream_url=url)
+        with self.assertRaises(ValueError):
+            make_server(store=self.store, upstream_url="https://api.anthropic.com")
+
+    def test_fake_upstream_requires_explicit_test_factory_and_loopback(self):
+        server = make_server(store=self.store, upstream_url=self.provider.url,
+                             test_only_upstream_factory=HTTPConnection)
+        server.server_close()
+        for url in ("http://10.1.2.3:8080", "http://localhost:8080", "http://127.0.0.1:8080/prefix",
+                    "http://127.0.0.1:8080/?q=1", "http://user@127.0.0.1:8080"):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                make_server(store=self.store, upstream_url=url,
+                            test_only_upstream_factory=HTTPConnection)
+
+    def test_docker_manifest_is_valid_and_mutations_fail_closed(self):
+        manifest = load_container_manifest()
+        self.assertEqual(validate_container_topology(manifest)["status"], "PASS")
+        cases = []
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["networks"].append("egress")
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["networks"]["internal"]["internal"] = False
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["ports"] = ["8080:8080"]
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["networks"].pop("internal")
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["network_mode"] = "host"
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["privileged"] = True
+        cases.append(bad)
+        for item in cases:
+            with self.subTest(item=item):
+                self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
+
+    def test_lifecycle_prepares_then_fake_terminal_receipt_blocks_replay(self):
+        lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
+        prepared = lifecycle.prepare(loop_id="loop-a", correlation_id="corr-a", generation=4,
+                                     expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                     target_head="c" * 40, gate_base_url="http://127.0.0.1:8080")
+        self.assertEqual(prepared.status, "PREPARED")
+        self.assertFalse(prepared.transport["launch"])
+        record = self.store.dispatch_record(prepared.dispatch_id)
+        self.assertEqual((record["loop_id"], record["correlation_id"], record["generation"], record["target_head"]),
+                         ("loop-a", "corr-a", 4, "c" * 40))
+        receipt = lifecycle.complete_fake(prepared.dispatch_id, "FAILED")
+        self.assertEqual(self.store.terminal_receipt(prepared.dispatch_id), receipt)
+        self.assertEqual(self.store.claim(prepared.dispatch_id, b"{}", {}).decision, "DENIED_BEFORE_UPSTREAM")
+        local_duplicate = lifecycle.prepare(loop_id="loop-a", correlation_id="corr-a", generation=4,
+                                            expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                            target_head="c" * 40, gate_base_url="http://127.0.0.1:8080")
+        self.assertEqual(local_duplicate.status, "NO-OP")
+        replay = lifecycle.prepare(loop_id="loop-a", correlation_id="corr-a", generation=4,
+                                   expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                   target_head="c" * 40, gate_base_url="http://127.0.0.1:8080",
+                                   terminal_receipts=[receipt])
+        self.assertEqual(replay.status, "NO-OP")
+
+    def test_lifecycle_consumes_existing_executor_terminal_receipt_shape(self):
+        lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
+        existing_receipt = {"schema_version": 1, "receipt_id": "executor-result-9",
+                            "execution_receipt_id": "executor-result-9", "result_id": "result-9",
+                            "execution_result_id": "result-9", "request_id": "request-9",
+                            "execution_request_id": "request-9", "state": "CONSUMED",
+                            "loop_id": "loop-existing", "round": 3,
+                            "correlation_id": "corr-existing", "expected_target_head": "f" * 40}
+        result = lifecycle.prepare(loop_id="loop-existing", correlation_id="corr-existing", generation=3,
+                                   expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                   target_head="f" * 40, gate_base_url="http://127.0.0.1:8080",
+                                   terminal_receipts=[existing_receipt])
+        self.assertEqual(result.status, "NO-OP")
+
+    def test_lifecycle_failed_preflight_burns_dispatch_and_bad_receipt_blocks(self):
+        lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
+        result = lifecycle.prepare(loop_id="loop-b", correlation_id="corr-b", generation=1,
+                                   expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                   target_head="d" * 40, gate_base_url="https://remote.invalid")
+        self.assertEqual(result.status, "BLOCKED")
+        record = self.store.dispatch_record(result.dispatch_id)
+        self.assertTrue(record["terminal"])
+        self.assertIsNotNone(self.store.terminal_receipt(result.dispatch_id))
+        self.assertEqual(lifecycle.prepare(loop_id="loop-b", correlation_id="corr-b", generation=1,
+                                           expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                           target_head="d" * 40, gate_base_url="http://127.0.0.1:8080",
+                                           terminal_receipts=[{"loop_id": "loop-b", "correlation_id": "corr-b",
+                                                               "generation": 1, "expected_target_head": "x" * 40,
+                                                               "terminal": True}]).status, "BLOCKED")
+        self.assertFalse(self.store.mark_terminal(result.dispatch_id, {"state": "SUCCEEDED"}))
+
+    def test_lifecycle_store_identity_mismatch_blocks(self):
+        lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=str(uuid.uuid4()))
+        result = lifecycle.prepare(loop_id="loop-c", correlation_id="corr-c", generation=1,
+                                   expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                   target_head="e" * 40, gate_base_url="http://127.0.0.1:8080")
+        self.assertEqual(result.status, "BLOCKED")
+
+    def test_production_database_refuses_missing_or_temporary_path(self):
+        missing = str(Path(self.temp.name) / "dispatches.sqlite3")
+        with self.assertRaises(ValueError):
+            DispatchStore.open_production(missing, state_dir=self.temp.name,
+                                          expected_store_id=self.store.store_id)
+        with self.assertRaises(ValueError):
+            DispatchStore.open_production(self.db, state_dir=self.temp.name,
+                                          expected_store_id=self.store.store_id)
 
 
 if __name__ == "__main__":

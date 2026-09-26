@@ -150,6 +150,13 @@ all later attempts are denied before upstream connect. The optional loop
 integration `claude_loop.prepare_claude_transport()` is a preflight description
 only and cannot launch a process. Count-token requests are denied locally,
 health checks are local, and unknown routes fail closed. Validation used only
-loopback fake providers. Egress isolation, backup rollback protection, and
-actual Claude compatibility remain unproven. See
+loopback fake providers. Production upstream is pinned to the exact Anthropic
+HTTPS origin and requires a separately identified production state store;
+fake upstreams require an explicit test-only connector. The Compose manifest is
+only a validated, non-runnable topology contract (no image is built or started):
+Claude has internal-only network access, while the gate alone has a separately
+controlled egress network and no published host port. Egress isolation,
+effective host firewall behavior, production store ACL verification on Windows,
+backup rollback protection, and actual Claude compatibility remain unproven.
+This gate remains prepare/static-only and does not launch Claude. See
 `docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.
