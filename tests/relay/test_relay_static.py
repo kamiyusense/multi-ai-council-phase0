@@ -17,12 +17,15 @@ from relay.result import RelayState
 
 
 class EnvelopeTests(unittest.TestCase):
-    def envelope(self, payload=None, correlation="corr-1"):
-        return DispatchEnvelope.build(
-            slot=DispatchSlot("case-1", "openai", 0),
-            correlation_id=correlation,
-            payload=payload or {"packet": "hello"},
-        )
+    def envelope(self, payload=None, correlation="corr-1", timeout_seconds=None, include_timeout=False):
+        kwargs = {
+            "slot": DispatchSlot("case-1", "openai", 0),
+            "correlation_id": correlation,
+            "payload": payload or {"packet": "hello"},
+        }
+        if timeout_seconds is not None or include_timeout:
+            kwargs["timeout_seconds"] = timeout_seconds
+        return DispatchEnvelope.build(**kwargs)
 
     def test_payload_and_correlation_are_preserved(self):
         payload = {"packet": "hello", "nested": {"x": 1}}
@@ -55,6 +58,31 @@ class EnvelopeTests(unittest.TestCase):
         # Envelope payload should remain unchanged
         self.assertEqual(envelope.payload, {"packet": "hello", "nested": {"x": 1}, "list": [1, 2]})
         self.assertEqual(envelope.packet_sha256, expected_sha256)
+
+    def test_omitted_timeout_and_explicit_none_are_same_request(self):
+        guard = DuplicateGuard()
+        a = self.envelope()
+        b = self.envelope(include_timeout=True, timeout_seconds=None)
+        self.assertEqual(a.packet_sha256, b.packet_sha256)
+        self.assertEqual(guard.reserve(a), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(b), DuplicateDecision.SAME_REQUEST)
+
+    def test_same_slot_same_payload_same_finite_timeout_are_same_request(self):
+        guard = DuplicateGuard()
+        a = self.envelope(timeout_seconds=30.0)
+        b = self.envelope(timeout_seconds=30.0)
+        self.assertEqual(guard.reserve(a), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(b), DuplicateDecision.SAME_REQUEST)
+
+    def test_same_slot_same_payload_different_timeout_are_conflict(self):
+        guard = DuplicateGuard()
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30.0)), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=60.0)), DuplicateDecision.CONFLICT)
+
+    def test_omitted_or_none_versus_finite_timeout_are_conflict(self):
+        guard = DuplicateGuard()
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=None)), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30.0)), DuplicateDecision.CONFLICT)
 
     def test_same_slot_same_hash_is_same_request(self):
         guard = DuplicateGuard()
