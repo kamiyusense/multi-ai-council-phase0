@@ -1,0 +1,211 @@
+name: Phase 0 loop status signal
+
+on:
+  workflow_dispatch:
+    inputs:
+      loop_id:
+        description: Durable command-bus loop id
+        required: true
+        type: string
+      state_ref:
+        description: Git ref containing automation/command_bus/state/<loop_id>.json
+        required: true
+        default: main
+        type: string
+      owner:
+        description: Durable owner projection
+        required: true
+        default: NONE
+        type: choice
+        options:
+          - NONE
+          - SEMI_AUTO
+          - AUTO
+      provider_state:
+        description: Provider status summary for display only
+        required: false
+        default: UNKNOWN
+        type: string
+      last_durable_progress:
+        description: Durable progress timestamp/summary for display only
+        required: false
+        default: UNKNOWN
+        type: string
+      event_id:
+        description: Optional durable receipt/event id override for terminal notification dedupe
+        required: false
+        default: ""
+        type: string
+  workflow_call:
+    inputs:
+      loop_id:
+        required: true
+        type: string
+      state_ref:
+        required: true
+        type: string
+      owner:
+        required: true
+        type: string
+      provider_state:
+        required: false
+        default: UNKNOWN
+        type: string
+      last_durable_progress:
+        required: false
+        default: UNKNOWN
+        type: string
+      event_id:
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: phase0-loop-status-${{ inputs.loop_id }}
+  queue: max
+
+jobs:
+  project-status:
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted status renderer
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+
+      - name: Fetch durable command-bus state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          LOOP_ID: ${{ inputs.loop_id }}
+          STATE_REF: ${{ inputs.state_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${LOOP_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || {
+            echo "Unsafe loop_id." >&2
+            exit 1
+          }
+          encoded_ref="$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["STATE_REF"], safe=""))')"
+          url="https://api.github.com/repos/${REPOSITORY}/contents/automation/command_bus/state/${LOOP_ID}.json?ref=${encoded_ref}"
+          curl --silent --show-error --fail-with-body --retry 0             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             "${url}" > "${RUNNER_TEMP}/state-content.json"
+          jq -er '.content' "${RUNNER_TEMP}/state-content.json"             | tr -d '\n'             | base64 --decode > "${RUNNER_TEMP}/loop-state.json"
+
+      - name: Render status and terminal notification
+        id: render
+        env:
+          OWNER: ${{ inputs.owner }}
+          PROVIDER_STATE: ${{ inputs.provider_state }}
+          LAST_DURABLE_PROGRESS: ${{ inputs.last_durable_progress }}
+          EVENT_ID: ${{ inputs.event_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            "${RUNNER_TEMP}/loop-state.json"
+            --owner "${OWNER}"
+            --provider-state "${PROVIDER_STATE}"
+            --last-durable-progress "${LAST_DURABLE_PROGRESS}"
+            --body-out "${RUNNER_TEMP}/status-body.md"
+            --notification-out "${RUNNER_TEMP}/notification.md"
+            --github-output "${GITHUB_OUTPUT}"
+          )
+          if [[ -n "${EVENT_ID}" ]]; then
+            args+=(--event-id "${EVENT_ID}")
+          fi
+          python -m automation.command_bus.loop_status_issue "${args[@]}"
+
+      - name: Update display Issue exactly once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          STATUS_ISSUE: "33"
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -Rs '{body: .}' "${RUNNER_TEMP}/status-body.md" > "${RUNNER_TEMP}/issue-patch.json"
+          curl --silent --show-error --fail-with-body --retry 0             -X PATCH             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             --data-binary @"${RUNNER_TEMP}/issue-patch.json"             "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}"             > "${RUNNER_TEMP}/issue-write.json"
+
+          curl --silent --show-error --fail-with-body --retry 0             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}"             > "${RUNNER_TEMP}/issue-readback.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))["body"]
+          if actual != expected:
+              raise SystemExit("status Issue body readback mismatch")
+          PY
+
+      - name: Emit terminal notification once
+        if: steps.render.outputs.notification_kind != 'NONE'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          STATUS_ISSUE: "33"
+          MARKER: ${{ steps.render.outputs.notification_marker }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          page=1
+          while (( page <= 100 )); do
+            curl --silent --show-error --fail-with-body --retry 0               -H "Accept: application/vnd.github+json"               -H "Authorization: Bearer ${GH_TOKEN}"               -H "X-GitHub-Api-Version: 2022-11-28"               "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}/comments?per_page=100&page=${page}"               > "${RUNNER_TEMP}/comments.json"
+            if jq -e --arg marker "${MARKER}" 'any(.[]; (.body // "") | contains($marker))' "${RUNNER_TEMP}/comments.json" >/dev/null; then
+              found=1
+              break
+            fi
+            count="$(jq 'length' "${RUNNER_TEMP}/comments.json")"
+            if (( count < 100 )); then
+              break
+            fi
+            page=$((page + 1))
+          done
+          if (( page > 100 )); then
+            echo "Notification ledger exceeded bounded scan." >&2
+            exit 1
+          fi
+          if (( found == 1 )); then
+            echo "Terminal notification already exists; NO-OP."
+            exit 0
+          fi
+
+          jq -Rs '{body: .}' "${RUNNER_TEMP}/notification.md" > "${RUNNER_TEMP}/comment-payload.json"
+          curl --silent --show-error --fail-with-body --retry 0             -X POST             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             --data-binary @"${RUNNER_TEMP}/comment-payload.json"             "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}/comments"             > "${RUNNER_TEMP}/comment-write.json"
+
+          comment_id="$(jq -er '.id' "${RUNNER_TEMP}/comment-write.json")"
+          curl --silent --show-error --fail-with-body --retry 0             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${REPOSITORY}/issues/comments/${comment_id}"             > "${RUNNER_TEMP}/comment-readback.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected = Path(os.environ["RUNNER_TEMP"], "notification.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "comment-readback.json").read_text(encoding="utf-8"))["body"]
+          if actual != expected:
+              raise SystemExit("notification comment readback mismatch")
+          PY
+
+      - name: Record status projection
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Phase 0 Loop Status"
+            echo "- Issue: #33"
+            echo "- display_state: \`${{ steps.render.outputs.display_state || 'UNKNOWN' }}\`"
+            echo "- notification: \`${{ steps.render.outputs.notification_kind || 'UNKNOWN' }}\`"
+            echo "- retry: \`0\`"
+            echo "- fallback: \`disabled\`"
+            echo "- provider/model dispatch: \`none\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
