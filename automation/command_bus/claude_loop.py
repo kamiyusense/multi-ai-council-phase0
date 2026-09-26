@@ -190,7 +190,7 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
         "expected_target_head", "expected_target_tree", "terminal", "retry",
         "fallback", "execution_mode", "model_executed", "external_send_attempted",
     }
-    if not isinstance(verdict, dict) or not required <= verdict.keys():
+    if not isinstance(verdict, dict) or set(verdict) != required:
         raise ValueError("invalid structured verdict")
     if verdict["schema_version"] != 1:
         raise ValueError("unsupported verdict schema")
@@ -210,10 +210,16 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
     for key in ("reasons", "evidence_refs"):
         if not isinstance(verdict[key], list) or any(not isinstance(item, str) or not item for item in verdict[key]):
             raise ValueError(f"invalid verdict {key}")
-    if verdict["decision"] == VerdictDecision.CONTINUE.value and not isinstance(verdict["next_prompt"], str):
-        raise ValueError("continue verdict requires next_prompt")
-    if verdict["decision"] != VerdictDecision.CONTINUE.value and verdict["terminal"] is not True:
-        raise ValueError("non-continue verdict must be terminal")
+    if verdict["decision"] == VerdictDecision.CONTINUE.value:
+        if not isinstance(verdict["next_prompt"], str) or not verdict["next_prompt"].strip():
+            raise ValueError("continue verdict requires non-empty next_prompt")
+        if verdict["terminal"] is not False:
+            raise ValueError("continue verdict must be non-terminal")
+    else:
+        if verdict["next_prompt"] is not None:
+            raise ValueError("terminal verdict must not carry next_prompt")
+        if verdict["terminal"] is not True:
+            raise ValueError("non-continue verdict must be terminal")
     if verdict["retry"] != 0 or verdict["fallback"] != "disabled":
         raise ValueError("unsafe verdict policy")
     if verdict["execution_mode"] != "PREPARE_ONLY" or verdict["model_executed"] is not False or verdict["external_send_attempted"] is not False:
