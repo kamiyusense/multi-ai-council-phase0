@@ -80,6 +80,7 @@ def classify_case(case: dict[str, Any]) -> str:
         and case.get("process_observation_complete") is True
         and case.get("retry_or_continuation_indication") is False
         and case.get("fallback_indication") is False
+        and (case.get("id") != "H" or case.get("post_interrupt_observation_complete") is True)
     ):
         return "PASS"
     return "UNKNOWN"
@@ -375,58 +376,6 @@ def run_command(args: list[str], env: dict[str, str], timeout: int) -> dict[str,
         }
 
 
-def classify_parser_preflight(positive: dict[str, Any], negative: dict[str, Any], request_count: int) -> str:
-    if request_count:
-        return "FAIL"
-    if positive.get("timed_out") or negative.get("timed_out"):
-        return "UNKNOWN"
-    diagnostic = (negative.get("stdout", "") + "\n" + negative.get("stderr", "")).lower()
-    invalid_flag_seen = "--codex-probe-definitely-invalid-flag-20260927" in diagnostic
-    diagnostic_is_parser_error = any(word in diagnostic for word in ("unknown option", "unknown argument", "unrecognized option", "invalid option"))
-    if positive.get("exit_status") == 0 and negative.get("exit_status", 0) != 0 and invalid_flag_seen and diagnostic_is_parser_error:
-        return "PASS"
-    if positive.get("exit_status") is not None and negative.get("exit_status") is not None:
-        return "FAIL"
-    return "UNKNOWN"
-
-
-def parser_preflight(claude: Path, root: Path) -> dict[str, Any]:
-    state = ProviderState("PREFLIGHT")
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(state))
-    server.daemon_threads = True
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    dirs = [root / name for name in ("preflight-home", "preflight-config", "preflight-tmp", "preflight-cwd")]
-    for directory in dirs:
-        directory.mkdir(parents=True, exist_ok=True)
-    env = make_base_env(dirs[0], dirs[1], dirs[2])
-    env.update({"ANTHROPIC_API_KEY": FAKE_KEY, "ANTHROPIC_BASE_URL": f"http://127.0.0.1:{server.server_port}"})
-    bundle = [str(claude), "--restricted", "--safe-mode", "-p", "Reply with one short word.",
-              "--max-turns", "1", "--tools", "", "--no-session-persistence",
-              "--permission-prompts", "none", "--output-format", "stream-json", "--help"]
-    try:
-        positive = run_command(bundle, env, 15)
-        negative = run_command(bundle[:-1] + ["--codex-probe-definitely-invalid-flag-20260927", "--help"], env, 15)
-        time.sleep(0.2)
-        with state.lock:
-            requests = list(state.requests)
-        return {
-            "status": classify_parser_preflight(positive, negative, len(requests)),
-            "controller_dispatch_count": 0,
-            "fake_provider_request_count": len(requests),
-            "requests": requests,
-            "positive": positive,
-            "negative_control": negative,
-            "model_session_started": False,
-            "provider_docs": "https://code.claude.com/docs/en/cli-usage",
-            "required_flags_documented": ["--restricted", "--safe-mode", "--max-turns", "--tools", "--no-session-persistence", "--permission-prompts"],
-        }
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=2)
-
-
 def redact_text(value: str) -> str:
     return value.replace(FAKE_KEY, "<fake-credential-redacted>")
 
@@ -513,9 +462,25 @@ def run_case(case_id: str, claude: Path, out: Path, root: Path) -> dict[str, Any
             stdout, stderr = process.communicate(timeout=5)
             case.update({"exit_status": process.returncode, "timed_out": True, "process_observation_complete": False,
                          "process_elapsed_seconds": round(time.monotonic() - process_started, 3)})
-        time.sleep(3)
-        case["stdout"] = redact_text(stdout[-6000:])
-        case["stderr"] = redact_text(stderr[-6000:])
+        with state.lock:
+            count_at_process_exit = len(state.requests)
+        observation_window = 10 if case_id == "H" else 3
+        observation_started = time.monotonic()
+        time.sleep(observation_window)
+        case["post_process_observation_seconds"] = round(time.monotonic() - observation_started, 3)
+        with state.lock:
+            count_after_observation = len(state.requests)
+        case["post_process_provider_request_count"] = count_after_observation
+        case["post_process_request_count_stable"] = count_at_process_exit == count_after_observation
+        if case_id == "H":
+            case["post_interrupt_observation_complete"] = bool(
+                case.get("interrupt_sent") is True
+                and case.get("process_observation_complete") is True
+                and case["post_process_observation_seconds"] >= observation_window
+                and case["post_process_request_count_stable"] is True
+            )
+        case["stdout"] = redact_text(stdout)
+        case["stderr"] = redact_text(stderr)
     except Exception as exc:
         case["launch_error"] = f"{type(exc).__name__}: {exc}"
         case["process_observation_complete"] = False
@@ -590,27 +555,12 @@ def main() -> int:
     for name in ("home", "config", "tmp"):
         (root / name).mkdir(parents=True, exist_ok=True)
     version = run_command([str(claude), "--version"], preflight_env, 15)
-    help_result = run_command([str(claude), "--help"], preflight_env, 15)
     version_text = (version.get("stdout", "") + version.get("stderr", "")).strip()
     version_ok = version.get("exit_status") == 0 and EXPECTED_VERSION in version_text
-    evidence["runtime_identity"].update({"version_stdout": version_text, "version_exit_status": version.get("exit_status"), "help_exit_status": help_result.get("exit_status"), "executable_sha256_verified": True})
-    help_text = help_result.get("stdout", "") + help_result.get("stderr", "")
-    (out / "runtime-help.txt").write_text(redact_text(help_text), encoding="utf-8")
-    if not version_ok or help_result.get("exit_status") != 0:
+    evidence["runtime_identity"].update({"version_stdout": version_text, "version_exit_status": version.get("exit_status"), "executable_sha256_verified": True})
+    if not version_ok:
         evidence["runtime_probe_status"] = "PREFLIGHT_BLOCKED"
-        evidence["blocker"] = "version verification or complete help invocation failed"
-        evidence["runtime_help_bytes"] = len(help_text.encode("utf-8"))
-        (out / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
-        return 5
-    parser = parser_preflight(claude, root)
-    evidence["parser_preflight"] = parser
-    evidence["runtime_identity"]["help_exit_status"] = help_result.get("exit_status")
-    evidence["runtime_help_bytes"] = len(help_text.encode("utf-8"))
-    if parser["status"] != "PASS":
-        evidence["runtime_probe_status"] = "PARSER_PREFLIGHT_BLOCKED"
-        evidence["blocker"] = "actual-binary parser acceptance and invalid-option negative control were not both proven without provider requests"
-        evidence["literal_retry_zero"] = "UNKNOWN" if parser["status"] == "UNKNOWN" else "FAIL"
-        (out / "parser-preflight.json").write_text(json.dumps(parser, indent=2) + "\n", encoding="utf-8")
+        evidence["blocker"] = "Claude version verification failed"
         (out / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
         return 5
     evidence["runtime_settings"] = {
@@ -625,8 +575,11 @@ def main() -> int:
         "DISABLE_UPDATES": "1",
         "API_TIMEOUT_MS": "4000",
         "official_cli_reference": "https://code.claude.com/docs/en/cli-usage",
-        "settings_verified_from_runtime_help": False,
-        "settings_parser_preflight": "PASS",
+        "official_environment_reference": "https://code.claude.com/docs/en/env-vars",
+        "runtime_flags_verified_from_official_reference": ["-p", "--restricted", "--safe-mode", "--max-turns", "--tools", "--no-session-persistence", "--permission-prompts", "--output-format"],
+        "minimum_versions_documented": {"--restricted": "2.1.248", "--permission-prompts": "2.1.259"},
+        "officially_documented_environment_variables": ["CLAUDE_CODE_MAX_RETRIES", "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK", "CLAUDE_ENABLE_STREAM_WATCHDOG", "CLAUDE_ENABLE_BYTE_WATCHDOG", "CLAUDE_CODE_RESUME_INTERRUPTED_TURN", "CLAUDE_CODE_SAFE_MODE", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", "CLAUDE_CODE_DISABLE_FAST_MODE", "CLAUDE_CODE_SKIP_PROMPT_HISTORY", "CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS", "DISABLE_AUTOUPDATER", "DISABLE_UPDATES", "API_TIMEOUT_MS"],
+        "environment_effectiveness_claimed_without_runtime_observation": False,
         "session_persistence_disabled": "--no-session-persistence + CLAUDE_CODE_SKIP_PROMPT_HISTORY=1",
         "tools_disabled": "--tools empty string",
         "fallback_model_configured": False,
@@ -637,8 +590,6 @@ def main() -> int:
         "resume_or_continue_flags_used": False,
     }
     evidence["runtime_probe_status"] = "RUNNING_FAKE_PROVIDER_MATRIX"
-    (out / "parser-preflight.json").write_text(json.dumps(parser, indent=2) + "\n", encoding="utf-8")
-
     for case_id in CASES:
         case = run_case(case_id, claude, out, root)
         evidence["cases"].append(case)

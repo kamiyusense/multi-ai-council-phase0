@@ -190,3 +190,10 @@ Therefore the next gate sequence is:
 Do not use `--help` or `--version` as an option-parser acceptance oracle.
 `--version` remains useful only for runtime identity. No additional Actions
 run is authorized by this documentation update.
+# Direct A-H matrix authorization and design (2026-09-27)
+
+A new user authorization covers exactly one additional GitHub-hosted Ubuntu workflow run and one additional download of Anthropic's official Claude Code v2.1.283 Linux x64 release asset. It does not authorize a rerun, retry, fallback, credential, live Anthropic/Jules request, or merge.
+
+The invalid-option `--help` parser preflight has been removed. `claude --version` is used only to verify runtime identity. A-H each start one fresh process and a loopback-only fake Messages API in Docker `--network none`; the network namespace gate is independent and must pass before any case. Each case receives its own HOME, config directory, TMPDIR, cwd, server, and fake credential. A command-line error before the fake provider receives a request is UNKNOWN, not FAIL. A request count above one is FAIL irrespective of process exit status; zero is UNKNOWN; exactly one is PASS only with complete process observation and no retry/continuation/fallback evidence. Case H additionally needs a 10-second post-process observation with stable provider request count after SIGINT.
+
+Complete stdout/stderr are retained after exact fake-key redaction. Request bodies and credential values are never recorded. The pinned CLI flags and runtime settings were checked against Anthropic's current official [CLI reference](https://code.claude.com/docs/en/cli-usage) and [environment-variable reference](https://code.claude.com/docs/en/env-vars); documented minimums for `--restricted` (2.1.248) and `--permission-prompts none` (2.1.259) are below v2.1.283. Runtime request counts, not environment-variable claims, determine retry behavior.

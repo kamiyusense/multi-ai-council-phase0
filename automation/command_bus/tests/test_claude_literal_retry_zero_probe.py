@@ -11,7 +11,6 @@ from automation.command_bus.probes.claude_literal_retry_zero.probe import (
     FAKE_KEY,
     ProviderState,
     classify_case,
-    classify_parser_preflight,
     make_base_env,
     make_handler,
     safe_headers,
@@ -19,21 +18,17 @@ from automation.command_bus.probes.claude_literal_retry_zero.probe import (
 
 
 class ClaudeRetryProbeHarnessTests(unittest.TestCase):
-    def test_parser_preflight_requires_positive_and_invalid_flag_negative_control(self):
-        positive = {"exit_status": 0, "timed_out": False}
-        negative = {"exit_status": 2, "timed_out": False,
-                    "stderr": "error: unknown option '--codex-probe-definitely-invalid-flag-20260927'"}
-        self.assertEqual(classify_parser_preflight(positive, negative, 0), "PASS")
+    def test_zero_requests_are_unknown_even_when_cli_exits_with_error(self):
+        self.assertEqual(classify_case({"fake_provider_request_count": 0, "exit_status": 2}), "UNKNOWN")
 
-    def test_parser_preflight_fails_closed_on_any_provider_request(self):
-        positive = {"exit_status": 0, "timed_out": False}
-        negative = {"exit_status": 2, "timed_out": False,
-                    "stderr": "unknown option --codex-probe-definitely-invalid-flag-20260927"}
-        self.assertEqual(classify_parser_preflight(positive, negative, 1), "FAIL")
+    def test_duplicate_request_is_fail_even_if_process_observation_is_incomplete(self):
+        self.assertEqual(classify_case({"fake_provider_request_count": 2, "process_observation_complete": False}), "FAIL")
 
-    def test_parser_preflight_is_unknown_without_complete_observation(self):
-        self.assertEqual(classify_parser_preflight({"timed_out": True}, {"exit_status": 2}, 0), "UNKNOWN")
-        self.assertEqual(classify_parser_preflight({"exit_status": 0}, {"exit_status": 0, "stderr": ""}, 0), "FAIL")
+    def test_single_request_with_incomplete_observation_is_unknown(self):
+        self.assertEqual(classify_case({"controller_dispatch_count": 1, "fake_provider_request_count": 1,
+                                        "process_observation_complete": False,
+                                        "retry_or_continuation_indication": False,
+                                        "fallback_indication": False}), "UNKNOWN")
 
     def test_duplicate_provider_request_is_fail(self):
         self.assertEqual(classify_case({"fake_provider_request_count": 2}), "FAIL")
@@ -183,6 +178,15 @@ class ClaudeRetryProbeHarnessTests(unittest.TestCase):
         self.assertNotIn("contents: write", workflow)
         self.assertNotIn("workflow_dispatch:", workflow)
         self.assertNotIn("GITHUB_TOKEN=", workflow)
+
+    def test_probe_runs_matrix_without_help_parser_gate_and_keeps_complete_output(self):
+        root = Path(__file__).resolve().parents[3]
+        probe = (root / "automation/command_bus/probes/claude_literal_retry_zero/probe.py").read_text(encoding="utf-8")
+        self.assertNotIn("parser_preflight", probe)
+        self.assertNotIn('"--help"', probe)
+        self.assertIn("redact_text(stdout)", probe)
+        self.assertIn("redact_text(stderr)", probe)
+        self.assertIn('"FAIL"', probe)
 
 
 if __name__ == "__main__":

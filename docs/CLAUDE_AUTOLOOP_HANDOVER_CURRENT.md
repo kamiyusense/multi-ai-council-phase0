@@ -219,3 +219,8 @@ requests instead of relying on parser assumptions.
 No workflow/probe/test path was changed in this checkpoint, so no Actions run
 or release re-download was triggered. A/B remain not live-green and
 takeover/orchestration remains deferred.
+# 2026-09-27 direct A-H matrix continuation
+
+The prior run `36258801058` remains UNKNOWN and its artifact showed why the parser-only `--help` test is invalid. A new user message authorizes exactly one further isolated Ubuntu Actions run and one official v2.1.283 asset download. The probe/test change removes parser preflight and starts A-H directly only after release identity and Docker `--network none` are verified. Cases are adjudicated strictly by fake-provider request count: >1 FAIL, 0 UNKNOWN, exactly 1 plus complete observation/no retry-continuation-fallback PASS. CLI startup/option errors with zero requests remain UNKNOWN. H has an explicit 10-second post-SIGINT observation and stable-count check. Full output is preserved with fake-key redaction.
+
+Official CLI and env-var references have been freshly checked. Local validation after the code/test changes: probe 14/14 PASS; command_bus 317/317 PASS; compileall and `git diff --check` PASS. This evidence does not claim runtime behavior. The upcoming single push must be the only push that touches the workflow trigger paths; no repair push or Actions rerun is permitted afterward. Issue #23 can carry the post-run result checkpoint.
