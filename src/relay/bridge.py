@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
 from src.phase0_core.adapter import CoreProviderAdapter
@@ -25,8 +26,9 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         return {"case_id": case_context.get("case_id"),
                 "provider_id": case_context.get("provider_id"),
                 "session_id": case_context.get("session_id"),
+                "correlation_id": case_context.get("correlation_id"),
                 "timeout_seconds": case_context.get("timeout_seconds"),
-                "payload": case_context.get("payload", {})}
+                "payload": deepcopy(case_context.get("payload", {}))}
 
     def preflight(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
         if self.simulate_no_cli:
@@ -41,6 +43,7 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
             "process_id": "mock_id",
             "provider_id": prepared_context.get("provider_id"),
             "session_id": prepared_context.get("session_id"),
+            "correlation_id": prepared_context.get("correlation_id"),
             "live_process_started": False,
         }
 
@@ -51,10 +54,10 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         if self.simulate_error_in_collect:
             raise RuntimeError("Mock collect error")
         if self.simulate_malformed:
-            return {"stdout": "malformed", "rawResponse": "{}"}
+            return {"stdout": "malformed", "rawResponse": "{}", "correlation_id": process_handle.get("correlation_id")}
         if self.simulate_unknown:
-            return {"stdout": "unknown", "rawResponse": None}
-        return {"stdout": "mock", "rawResponse": '{"answer_state":"ANSWER"}'}
+            return {"stdout": "unknown", "rawResponse": None, "correlation_id": process_handle.get("correlation_id")}
+        return {"stdout": "mock", "rawResponse": '{"answer_state":"ANSWER"}', "correlation_id": process_handle.get("correlation_id")}
 
     def abort(self, process_handle: dict[str, Any]) -> dict[str, bool]:
         self.abort_calls.append(

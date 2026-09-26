@@ -72,6 +72,61 @@ class RelayIntegrationTests(unittest.TestCase):
         self.assertEqual(openai["raw_evidence"]["stdout"], "mock")
         self.assertEqual(google["raw_evidence"]["stdout"], "mock")
 
+    def test_prepared_payload_snapshot(self):
+        caller_payload = {"messages": [{"role": "user", "content": "hi"}]}
+        adapter = RelayProviderAdapterBridge()
+        prepared = adapter.prepare({"payload": caller_payload})
+        self.assertEqual(prepared["payload"], caller_payload)
+
+        caller_payload["messages"].append({"role": "assistant", "content": "hello"})
+        self.assertNotEqual(prepared["payload"], caller_payload)
+        self.assertEqual(len(prepared["payload"]["messages"]), 1)
+
+    def test_correlation_id_survives_dispatch_collect(self):
+        adapter = RelayProviderAdapterBridge()
+        dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+
+        result = dispatcher.dispatch(
+            "slot-1",
+            {
+                "provider_id": "test-provider",
+                "correlation_id": "corr-12345",
+                "payload": {"q": "test"},
+            }
+        )
+
+        self.assertEqual(result["state"], "SIMULATED")
+        self.assertEqual(result["raw_evidence"]["correlation_id"], "corr-12345")
+        self.assertNotIn("correlation_id", result["provider_state"])
+
+    def test_provider_isolation(self):
+        adapter_a = RelayProviderAdapterBridge()
+        adapter_b = RelayProviderAdapterBridge()
+
+        dispatcher_a = RelayDispatcher(adapter_a, DuplicateConflictGuard())
+        dispatcher_b = RelayDispatcher(adapter_b, DuplicateConflictGuard())
+
+        result_a = dispatcher_a.dispatch(
+            "slot-a",
+            {
+                "provider_id": "provider-a",
+                "correlation_id": "corr-a",
+                "payload": {"data": "A"},
+            }
+        )
+
+        result_b = dispatcher_b.dispatch(
+            "slot-b",
+            {
+                "provider_id": "provider-b",
+                "correlation_id": "corr-b",
+                "payload": {"data": "B"},
+            }
+        )
+
+        self.assertEqual(result_a["raw_evidence"]["correlation_id"], "corr-a")
+        self.assertEqual(result_b["raw_evidence"]["correlation_id"], "corr-b")
+
 
 if __name__ == "__main__":
     unittest.main()
