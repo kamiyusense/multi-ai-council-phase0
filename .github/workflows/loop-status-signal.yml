@@ -139,14 +139,14 @@ jobs:
             > "${RUNNER_TEMP}/issue-before.json"
 
           if python - <<'PY'
-import json
-import os
-from pathlib import Path
+          import json
+          import os
+          from pathlib import Path
 
-expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
-actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))["body"]
-raise SystemExit(0 if actual == expected else 1)
-PY
+          expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))["body"]
+          raise SystemExit(0 if actual == expected else 1)
+          PY
           then
             echo "Status Issue already matches; NO-OP."
           else
@@ -169,15 +169,15 @@ PY
             > "${RUNNER_TEMP}/issue-readback.json"
 
           python - <<'PY'
-import json
-import os
-from pathlib import Path
+          import json
+          import os
+          from pathlib import Path
 
-expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
-actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))["body"]
-if actual != expected:
-    raise SystemExit("status Issue body readback mismatch")
-PY
+          expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))["body"]
+          if actual != expected:
+              raise SystemExit("status Issue body readback mismatch")
+          PY
       - name: Emit terminal notification once
         if: steps.render.outputs.notification_kind != 'NONE'
         env:
