@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "reconciliation_id": "jules-splash-settle-diagnostic-001/late-terminal-000001",
+  "command_id": "jules-splash-settle-diagnostic-001-000001",
+  "loop_id": "jules-splash-settle-diagnostic-001",
+  "correlation_id": "jules-splash-settle-diagnostic-001-round-1",
+  "generation": 1,
+  "prior_state": "UNKNOWN",
+  "prior_last_receipt_id": null,
+  "late_receipt_id": "jules-splash-settle-diagnostic-001/000001",
+  "late_receipt_state": "DONE",
+  "late_terminal_receipt_observed": true,
+  "successor_already_issued": true,
+  "successor_command_id": "jules-splash-settle-diagnostic-002-000001",
+  "prior_evidence_refs": [
+    "automation/command_bus/evidence/jules-splash-settle-diagnostic-001-dispatch-20260925.json",
+    "automation/command_bus/evidence/jules-splash-settle-diagnostic-001/000001.json"
+  ],
+  "history_transition": "UNKNOWN due prior durable observation -> late DONE receipt observed -> RECONCILED_LATE_RESULT",
+  "replay_disposition": "PERMANENT_NO_OP",
+  "run_completion_state": "TERMINAL_DURABLE",
+  "write_ambiguity": false,
+  "external_action_state": "NONE",
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "observed_at": "2026-09-24T19:15:57Z"
+}

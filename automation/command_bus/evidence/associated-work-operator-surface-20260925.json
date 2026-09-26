@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "evidence_id": "associated-work-operator-surface-20260925",
+  "scheduled_task_title": "Phase 0 PR6 Command Bus",
+  "operator_surface_label": "WORK【クラウド】",
+  "operator_surface_state": "USER_OBSERVED_USABLE",
+  "correctness_source": "GITHUB_DURABLE_STATE",
+  "transport_role": "HUMAN_AUTH_OPERATOR_SURFACE_ONLY",
+  "user_observations": [
+    "Scheduled task execution is user-visible from the associated Work surface.",
+    "Cloud Browser UI and Google/Jules sign-in boundary were visible from the associated Work flow.",
+    "User interaction with the Google account chooser was possible from the visible Work flow."
+  ],
+  "metadata_limitations": [
+    "No stable chat/thread/browser/session identifier is persisted or used as a correctness input.",
+    "Available task metadata does not independently expose a stable associated-Work identifier."
+  ],
+  "conclusion": "The associated WORK【クラウド】 surface is usable as a human-auth operator surface by direct user observation, while GitHub remains canonical for correctness and durable state."
+}

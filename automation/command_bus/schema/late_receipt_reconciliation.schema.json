@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "reconciliation_id",
+    "command_id",
+    "loop_id",
+    "correlation_id",
+    "generation",
+    "prior_state",
+    "prior_last_receipt_id",
+    "late_receipt_id",
+    "late_receipt_state",
+    "late_terminal_receipt_observed",
+    "successor_already_issued",
+    "successor_command_id",
+    "prior_evidence_refs",
+    "history_transition",
+    "replay_disposition",
+    "run_completion_state",
+    "write_ambiguity",
+    "external_action_state",
+    "task_submitted",
+    "jules_task_started",
+    "model_started",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "reconciliation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "loop_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generation": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "prior_state": {
+      "enum": [
+        "UNKNOWN",
+        "HALTED",
+        "BLOCKED",
+        "FAILED",
+        "EXPIRED"
+      ]
+    },
+    "prior_last_receipt_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "late_receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "late_receipt_state": {
+      "enum": [
+        "DONE",
+        "BLOCKED",
+        "FAILED",
+        "UNKNOWN",
+        "CANCELLED"
+      ]
+    },
+    "late_terminal_receipt_observed": {
+      "const": true
+    },
+    "successor_already_issued": {
+      "type": "boolean"
+    },
+    "successor_command_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "prior_evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "history_transition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replay_disposition": {
+      "const": "PERMANENT_NO_OP"
+    },
+    "run_completion_state": {
+      "const": "TERMINAL_DURABLE"
+    },
+    "write_ambiguity": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "external_action_state": {
+      "enum": [
+        "NONE",
+        "OCCURRED",
+        "UNKNOWN"
+      ]
+    },
+    "task_submitted": {
+      "enum": [
+        true,
+        false,
+        "UNKNOWN"
+      ]
+    },
+    "jules_task_started": {
+      "enum": [
+        true,
+        false,
+        "UNKNOWN"
+      ]
+    },
+    "model_started": {
+      "enum": [
+        true,
+        false,
+        "UNKNOWN"
+      ]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

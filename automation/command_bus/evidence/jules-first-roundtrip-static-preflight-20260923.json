@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-first-roundtrip-static-preflight-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "profile": "JULES_FRESH_STATIC_V1",
+  "contract_checks": {
+    "passed": 14,
+    "failed": 0
+  },
+  "invariants": {
+    "fresh_session_required": true,
+    "disposable_workspace_required": true,
+    "reuse_existing_jules_task": false,
+    "workspace_integrity_profile": "TREE_IDENTITY_V1",
+    "one_allowed_path": "tests/relay/test_dispatcher.py",
+    "only_operation": "MODIFY",
+    "implementation_change_allowed": false,
+    "durable_launch_reservation_required": true,
+    "recovered_reservation_may_launch": false,
+    "retry_count": 0,
+    "fallback": "disabled"
+  },
+  "live_execution": {
+    "jules_started": false,
+    "provider_or_other_model_started": false
+  },
+  "note": "Static contract/preflight evidence only. This does not claim a live Jules round-trip or full command-bus suite PASS."
+}

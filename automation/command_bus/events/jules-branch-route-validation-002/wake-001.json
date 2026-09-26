@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-branch-route-validation-002-wake-001",
+  "loop_id": "jules-branch-route-validation-002",
+  "command_id": "jules-branch-route-validation-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Process only the existing RUNNING connector-backed STATIC_VALIDATE_COMMAND_BUS command if no terminal receipt exists."
+}

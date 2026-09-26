@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-first-roundtrip-003-wake-001",
+  "loop_id": "jules-first-roundtrip-003",
+  "command_id": "jules-first-roundtrip-003-000001",
+  "generation": 3,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh live Jules roundtrip after concrete failure of 002: one-time Work runtime lacked browser capability and performed no launch reservation/browser/auth/submit/model/target mutation. Use existing Phase 0 PR6 Command Bus associated Work route. No extra preflight or safety layer. If this Work has Cloud Browser, open Jules, human auth if needed, require exact repo/branch, create/read back one launch reservation, and submit exactly once. No main fallback."
+}

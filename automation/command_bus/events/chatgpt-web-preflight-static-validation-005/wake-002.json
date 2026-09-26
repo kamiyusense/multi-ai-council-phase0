@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "chatgpt-web-preflight-static-validation-005-wake-002",
+  "loop_id": "chatgpt-web-preflight-static-validation-005",
+  "command_id": "chatgpt-web-preflight-static-validation-005-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "reason": "No event-task run was observed after wake-001/command commit; this marker only wakes the existing RUNNING command and does not create or retry a logical command.",
+  "do_not_replay_if_terminal_receipt_exists": true
+}

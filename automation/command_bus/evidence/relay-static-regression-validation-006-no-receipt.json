@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "evidence_id": "relay-static-regression-validation-006-no-receipt",
+  "loop_id": "relay-static-regression-validation-006",
+  "command_id": "relay-static-regression-validation-006-000001",
+  "target_pr": 4,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "wake_event_commit": "f6cd355a0f2b04fb1eac0b02c95b7817e7e74e57",
+  "wake_event_created_at": "2026-09-22T21:27:17Z",
+  "observed_automation_runs_after_wake": [
+    "2026-09-22T21:28:09.603687Z",
+    "2026-09-22T21:32:11.165217Z"
+  ],
+  "terminal_receipt_present": false,
+  "state_transition_produced_by_work": false,
+  "final_state": "UNKNOWN",
+  "reason": "Work activity was observed after the wake event but no durable receipt/state transition was produced. Exact execution failure is unverifiable.",
+  "retry_count": 0,
+  "replay_permitted": false,
+  "pr4_modified_by_validation": false
+}

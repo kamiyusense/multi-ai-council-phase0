@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "visible-work-routing-static-validation-004-wake-001",
+  "loop_id": "visible-work-routing-static-validation-004",
+  "command_id": "visible-work-routing-static-validation-004-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Do not create or replay another command. Process the existing RUNNING command only if no terminal receipt exists."
+}

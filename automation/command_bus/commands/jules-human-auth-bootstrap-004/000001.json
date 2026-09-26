@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "command_id": "jules-human-auth-bootstrap-004-000001",
+  "loop_id": "jules-human-auth-bootstrap-004",
+  "round": 1,
+  "correlation_id": "jules-human-auth-bootstrap-004-round-1",
+  "target": "work",
+  "action": "JULES_HUMAN_AUTH_BOOTSTRAP",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "starting_branch": "feature/relay-transport-7070955470193506982",
+  "transport_id": "WORK_CLOUD_BROWSER_JULES_UI",
+  "auth_origin": "jules.google.com",
+  "handoff_id": "jules-cloud-auth-bootstrap-004",
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T21:30:00+09:00"
+}

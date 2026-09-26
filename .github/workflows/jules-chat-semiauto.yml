@@ -1,0 +1,184 @@
+name: Phase 0 Chat to Jules semi-auto
+
+on:
+  push:
+    branches:
+      - feature/chat-work-command-bus
+    paths:
+      - automation/command_bus/jules_api_requests/*.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase0-chat-jules-semiauto
+  cancel-in-progress: false
+
+jobs:
+  dispatch-jules:
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact carrier commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Require one newly-added command file
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit_json="$(curl --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
+          total="$(jq '.files | length' <<<"${commit_json}")"
+          if [[ "${total}" != "1" ]]; then
+            echo "Expected exactly one changed file in the command commit; got ${total}." >&2
+            exit 1
+          fi
+          status="$(jq -r '.files[0].status' <<<"${commit_json}")"
+          path="$(jq -r '.files[0].filename' <<<"${commit_json}")"
+          if [[ "${status}" != "added" ]]; then
+            echo "Command file must be append-only (status=added)." >&2
+            exit 1
+          fi
+          if [[ ! "${path}" =~ ^automation/command_bus/jules_api_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]]; then
+            echo "Unexpected command path: ${path}" >&2
+            exit 1
+          fi
+          echo "path=${path}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate durable Jules command
+        id: validate
+        env:
+          COMMAND_PATH: ${{ steps.locate.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m automation.command_bus.jules_api_request \
+            "${COMMAND_PATH}" \
+            --github-output "${GITHUB_OUTPUT}"
+
+      - name: Verify exact target branch head and tree
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
+          EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          encoded_branch="$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["TARGET_BRANCH"], safe=""))')"
+          branch_json="$(curl --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/branches/${encoded_branch}")"
+          actual_head="$(jq -r '.commit.sha' <<<"${branch_json}")"
+          if [[ "${actual_head}" != "${EXPECTED_HEAD}" ]]; then
+            echo "Target head mismatch: expected ${EXPECTED_HEAD}, observed ${actual_head}." >&2
+            exit 1
+          fi
+          commit_json="$(curl --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/git/commits/${actual_head}")"
+          actual_tree="$(jq -r '.tree.sha' <<<"${commit_json}")"
+          if [[ "${actual_tree}" != "${EXPECTED_TREE}" ]]; then
+            echo "Target tree mismatch: expected ${EXPECTED_TREE}, observed ${actual_tree}." >&2
+            exit 1
+          fi
+
+      - name: Build Jules REST payload
+        id: payload
+        env:
+          REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          PROMPT: ${{ steps.validate.outputs.prompt }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg prompt "${PROMPT}" \
+            --arg source "sources/github/${REPOSITORY}" \
+            --arg starting_branch "${TARGET_BRANCH}" \
+            '{
+              prompt: $prompt,
+              sourceContext: {
+                source: $source,
+                githubRepoContext: {startingBranch: $starting_branch}
+              },
+              requirePlanApproval: false,
+              automationMode: "AUTO_CREATE_PR"
+            }' > jules_payload.json
+
+      - name: Invoke Jules REST exactly once
+        id: invoke
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          EXPECTED_BRANCH: ${{ steps.validate.outputs.target_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="${RUNNER_TEMP}/jules-response.json"
+          http_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${response_file}" \
+            --write-out '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            --data-binary @jules_payload.json \
+            'https://jules.googleapis.com/v1alpha/sessions')"
+          if [[ ! "${http_code}" =~ ^2[0-9][0-9]$ ]]; then
+            echo "Unexpected Jules HTTP status ${http_code}." >&2
+            exit 1
+          fi
+          session_name="$(jq -er '.name' "${response_file}")"
+          returned_branch="$(jq -er '.sourceContext.githubRepoContext.startingBranch' "${response_file}")"
+          if [[ ! "${session_name}" =~ ^sessions/[0-9]+$ ]]; then
+            echo "Malformed Jules session name." >&2
+            exit 1
+          fi
+          if [[ "${returned_branch}" != "${EXPECTED_BRANCH}" ]]; then
+            echo "Jules returned starting branch mismatch." >&2
+            exit 1
+          fi
+          session_id="${session_name#sessions/}"
+          echo "session_id=${session_id}" >> "${GITHUB_OUTPUT}"
+          echo "session_name=${session_name}" >> "${GITHUB_OUTPUT}"
+          echo "Jules session accepted: ${session_name}"
+
+      - name: Record dispatch boundary in job summary
+        if: always()
+        env:
+          COMMAND_ID: ${{ steps.validate.outputs.command_id }}
+          TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
+          EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
+          SESSION_ID: ${{ steps.invoke.outputs.session_id }}
+        shell: bash
+        run: |
+          {
+            echo "## Phase 0 Chat -> Jules semi-auto dispatch"
+            echo "- command_id: \`${COMMAND_ID:-UNKNOWN}\`"
+            echo "- target_branch: \`${TARGET_BRANCH:-UNKNOWN}\`"
+            echo "- expected_target_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
+            echo "- expected_target_tree: \`${EXPECTED_TREE:-UNKNOWN}\`"
+            echo "- jules_session_id: \`${SESSION_ID:-UNKNOWN}\`"
+            echo "- retry: \`0\`"
+            echo "- fallback: \`disabled\`"
+            echo "- merge: \`human-only\`"
+            echo ""
+            echo "Session creation is transport evidence only. Verify the Jules-created PR, ancestry, diff, and tests by GitHub readback."
+          } >> "${GITHUB_STEP_SUMMARY}"

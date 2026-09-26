@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command_id",
+    "handoff_id",
+    "transport_id",
+    "auth_required",
+    "surface_availability_verified",
+    "user_visible_entry_surfaced",
+    "task_submitted",
+    "jules_task_started",
+    "model_started",
+    "retry_count",
+    "fallback_used"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "command_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "handoff_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "transport_id": {"const": "WORK_CLOUD_BROWSER_JULES_UI"},
+    "auth_required": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+    "surface_availability_verified": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+    "user_visible_entry_surfaced": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+    "task_submitted": {"const": false},
+    "jules_task_started": {"const": false},
+    "model_started": {"const": false},
+    "retry_count": {"const": 0},
+    "fallback_used": {"const": false}
+  }
+}

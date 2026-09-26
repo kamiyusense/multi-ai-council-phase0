@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "chatgpt-web-existing-work-preflight-002-wake-001",
+  "loop_id": "chatgpt-web-existing-work-preflight-002",
+  "command_id": "chatgpt-web-existing-work-preflight-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Priority-3 read-only Cloud Browser preflight. Open chatgpt.com; inspect exact preferred_work_title only. No typing/sending, no Work creation, no sign-in/auth flow, no target model turn, no Jules."
+}

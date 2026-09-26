@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "evidence_id": "auth-bootstrap-006-prepared-dispatch-violation-20260925",
+  "command_id": "jules-human-auth-bootstrap-006-000001",
+  "observed_pre_execution_state": "PREPARED",
+  "terminal_result": "UNKNOWN",
+  "terminal_receipt_created": true,
+  "expected_prepared_disposition": "NO_EXECUTION",
+  "classification": "PREPARED_DISPATCH_GUARD_VIOLATION",
+  "browser_capability_observed": "UNAVAILABLE_IN_RUNTIME",
+  "auth_boundary_visible": false,
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "pr4_mutated": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "note": "Fresh durable readback shows bootstrap-006 was deliberately held PREPARED before static validation, yet a later event-triggered Work run terminalized it UNKNOWN. Generic state-machine semantics block non-RUNNING states, so the live executor path did not honor the PREPARED dispatch guard. No replay is authorized."
+}

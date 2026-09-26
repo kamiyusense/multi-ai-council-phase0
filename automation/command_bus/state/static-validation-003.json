@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "static-validation-003",
+  "state": "UNKNOWN",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T00:30:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "static-validation-003-000001",
+  "last_receipt_id": "000001",
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "Exact-tree reconstruction verification stopped because the isolated orchestration runtime did not provide the required TextEncoder API. Per retry=0 and no-fallback policy, no alternative reconstruction attempt was made."
+}

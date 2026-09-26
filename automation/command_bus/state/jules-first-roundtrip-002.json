@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-first-roundtrip-002",
+  "state": "BLOCKED",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-25T09:30:00+09:00",
+  "stop_requested": true,
+  "last_command_id": "jules-first-roundtrip-002-000001",
+  "last_receipt_id": "jules-first-roundtrip-002/000001",
+  "expected_target": "work",
+  "retry_policy": 0,
+  "completion_reason": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE; no launch reservation, browser start, auth attempt, Jules submit/model start, or PR #4 mutation occurred."
+}

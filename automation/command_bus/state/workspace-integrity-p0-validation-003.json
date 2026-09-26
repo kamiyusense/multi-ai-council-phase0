@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "workspace-integrity-p0-validation-003",
+  "state": "COMPLETE",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "workspace-integrity-p0-validation-003-000001",
+  "last_receipt_id": "000001",
+  "expected_target": "work",
+  "retry_policy": 0
+}

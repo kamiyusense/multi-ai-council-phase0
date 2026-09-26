@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-branch-selector-preflight-002-wake-001",
+  "loop_id": "jules-branch-selector-preflight-002",
+  "command_id": "jules-branch-selector-preflight-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh post-human-auth exact-selector preflight. Determine authentication from fresh Jules UI only; if authenticated, select and read back exact repository and exact non-default branch. Do not submit Jules, start a model, mutate PR #4, merge, or persist credentials/tokens."
+}

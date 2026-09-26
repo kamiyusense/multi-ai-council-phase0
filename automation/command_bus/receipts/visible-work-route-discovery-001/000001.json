@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "visible-work-route-discovery-001-000001",
+  "loop_id": "visible-work-route-discovery-001",
+  "round": 1,
+  "correlation_id": "visible-work-route-discovery-001-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "external_send_attempted": false,
+  "browser_started": false,
+  "human_auth_started": false,
+  "jules_started": false,
+  "model_started": false,
+  "target_pr_modified": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge": false,
+  "reason": "Event-triggered Work run was observed after command creation, but it produced no durable receipt or route evidence. Under retry=0 this command is closed and must not be replayed.",
+  "evidence_refs": [
+    "automation/command_bus/evidence/visible-work-route-discovery-001-no-durable-result.json"
+  ]
+}

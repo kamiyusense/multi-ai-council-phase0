@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "visible-work-route-discovery-001",
+  "state": "UNKNOWN",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T22:30:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "visible-work-route-discovery-001-000001",
+  "last_receipt_id": "000001",
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "Event-triggered Work run was observed after command creation, but it produced no durable receipt or route evidence. Under retry=0 this command is closed and must not be replayed."
+}

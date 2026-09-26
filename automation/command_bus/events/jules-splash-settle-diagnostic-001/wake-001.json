@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-splash-settle-diagnostic-001-wake-001",
+  "loop_id": "jules-splash-settle-diagnostic-001",
+  "command_id": "jules-splash-settle-diagnostic-001-000001",
+  "generation": 1,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh bounded diagnostic under section 7H. Observe Jules page settle behavior for up to 60 seconds with at most one safe reload. No auth/account selection/credentials/repo/branch selection/task submit/Jules/model/PR4 mutation."
+}

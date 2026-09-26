@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "command_id": "target-workspace-validation-001-000001",
+  "loop_id": "target-workspace-validation-001",
+  "round": 1,
+  "correlation_id": "target-workspace-validation-001-round-1",
+  "target": "work",
+  "action": "VALIDATE_RELAY_TARGET_WORKSPACE",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "expected_target_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "expected_blob_count": 39,
+  "test_commands": [
+    "PYTHONPATH=src python -m pytest -q tests",
+    "python -m compileall -q src tests",
+    "git diff --check"
+  ],
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:59:00+09:00"
+}

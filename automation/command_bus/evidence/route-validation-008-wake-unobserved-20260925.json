@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "loop_id": "route-validation-008",
+  "command_id": "route-validation-008-000001",
+  "validation_scope": "STATIC_VALIDATE_COMMAND_BUS",
+  "full_suite_result": "UNKNOWN",
+  "reason": "GitHub command/state plus one PR comment wake and one append-only wake marker were written, but the Scheduled Task last_run_time did not advance and no receipt appeared. The command never obtained an observable executor run.",
+  "targeted_local_checks": {
+    "auth_handoff_new_flow_tests": "PASS_3_OF_3",
+    "auth_handoff_compileall": "PASS",
+    "changed_commit_added_line_trailing_whitespace": "PASS"
+  },
+  "full_unittest": "UNKNOWN_NOT_EXECUTED",
+  "full_compileall": "UNKNOWN_NOT_EXECUTED",
+  "full_diff_check": "UNKNOWN_NOT_EXECUTED",
+  "retry": 0,
+  "fallback": "disabled",
+  "browser_started": false,
+  "jules_started": false,
+  "model_started": false,
+  "pr4_mutated": false
+}

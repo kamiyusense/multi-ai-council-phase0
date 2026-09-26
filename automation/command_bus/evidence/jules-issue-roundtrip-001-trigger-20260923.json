@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-issue-roundtrip-001-trigger-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "transport": "JULES_GITHUB_ISSUE_LABEL",
+  "issue_number": 7,
+  "issue_title": "[Jules probationary round-trip] pre-dispatch abort regression only",
+  "trigger": {
+    "label": "jules",
+    "applied_once": true,
+    "trigger_replayed": false
+  },
+  "jules_acknowledgement": {
+    "comment_id": 5786593223,
+    "actor": "google-labs-jules[bot]",
+    "created_at": "2026-09-23T00:07:41Z",
+    "state": "ACKNOWLEDGED",
+    "task_url_observational_only": "https://jules.google.com/task/14627861104139180894",
+    "task_id_is_correctness_input": false
+  },
+  "target": {
+    "pr": 4,
+    "branch": "feature/relay-transport-7070955470193506982",
+    "expected_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "expected_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+    "observed_head_after_trigger": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "observed_tree_after_trigger": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+    "changed_after_trigger": false
+  },
+  "result_at_record_time": {
+    "jules_pr_present": false,
+    "completion_comment_present": false,
+    "jules_branch_visible": false,
+    "state": "IN_PROGRESS"
+  },
+  "safety": {
+    "retry_count": 0,
+    "fallback_used": false,
+    "merge": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "branch_delete": false,
+    "api_key_used": false
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "evidence_id": "relay-static-apply-005-sol-review-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "reviewer_role": "sol-semantic-reviewer",
+  "target_pr": 4,
+  "target_head": "f288ff552b9bdccecb614c84cdd2071b9e7db08f",
+  "target_tree": "7a03419c25ff1618a7d53724aa11b3de0e2eb995",
+  "parent_head": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+  "work_receipt": "automation/command_bus/receipts/relay-static-apply-005/000001.json",
+  "semantic_review": {
+    "state": "PASS",
+    "findings": [
+      "STOP blocks future dispatch before duplicate-slot reservation and before provider dispatch.",
+      "Pre-dispatch abort marks only the intended slot cancelled and starts no provider dispatch.",
+      "Post-dispatch cancel calls adapter.abort for the intended provider/session, performs no collect, and blocks replay without a second dispatch.",
+      "Timeout aborts the active provider/session, keeps retry_count=0, and blocks same-slot restart.",
+      "Raw provider evidence is retained in the returned result before classification output is consumed.",
+      "Malformed and UNKNOWN provider states remain non-success.",
+      "One provider failure does not erase successful peer raw evidence and does not enable fallback.",
+      "Mock/static bridge keeps live_ready=false and live_turn_executed=false."
+    ],
+    "changed_paths_reviewed": [
+      "RELAY_JULES_HANDOFF.md",
+      "docs/RELAY_STATIC_CHECKPOINT.md",
+      "src/relay/bridge.py",
+      "src/relay/dispatcher.py",
+      "tests/relay/test_dispatcher.py",
+      "tests/relay/test_integration.py"
+    ],
+    "operation_policy": "PASS",
+    "unexpected_safety_weakening_found": false
+  },
+  "deterministic_evidence": {
+    "tree_identity": "PASS",
+    "baseline_unittest": "22/22 PASS",
+    "post_change_unittest": "25/25 PASS",
+    "compileall": "PASS",
+    "diff_check": "PASS",
+    "remote_readback": "PASS"
+  },
+  "boundaries": {
+    "live_provider_or_model_executed": false,
+    "jules_started": false,
+    "api_key_used": false,
+    "merge_performed": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "retry_count": 0,
+    "fallback_used": false
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "event-route-diagnostic-002",
+  "state": "UNKNOWN",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "event-route-diagnostic-002-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "UNKNOWN: wake-only carrier event was committed at 2026-09-22T21:47:19Z and the Work command-bus task ran at 2026-09-22T21:48:20.322285Z, but no durable receipt or matching state transition was produced. The logical command is terminally closed under retry=0 and must not be replayed."
+}

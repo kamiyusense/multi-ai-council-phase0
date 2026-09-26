@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-branch-route-validation-001",
+  "state": "UNKNOWN",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": true,
+  "last_command_id": "jules-branch-route-validation-001-000001",
+  "last_receipt_id": "000001",
+  "expected_target": "work",
+  "retry_policy": 0
+}

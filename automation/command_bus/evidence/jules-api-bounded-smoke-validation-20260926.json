@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "evidence_id": "jules-api-bounded-smoke-validation-20260926",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "result": "PASS",
+  "validation_purpose": "Independent validation of the single already-executed Jules API smoke and safe non-force fast-forward publication to PR #4 target branch.",
+  "workflow": {
+    "name": "Phase 0 Jules API smoke",
+    "run_id": 36123668456,
+    "run_number": 1,
+    "run_attempt": 1,
+    "conclusion": "success",
+    "pinned_action": "google-labs-code/jules-action@bff7875eaa123cac6742b7cfc51005b95ba4d566",
+    "total_repository_actions_runs_after_publication": 1,
+    "redispatched": false
+  },
+  "jules": {
+    "session_id": "17562850663336120727",
+    "api_resubmitted": false,
+    "starting_branch": "feature/relay-transport-7070955470193506982",
+    "source_repository": "kamiyusense/multi-ai-council-phase0",
+    "automation_mode": "AUTO_CREATE_PR",
+    "pull_request": 10,
+    "result_commit": "b8b7bb16f65039e6bf4c9425753a496abf70bea9",
+    "result_tree": "fccb1b57d31e98d4feac5e90e3d4e7e01edfce33"
+  },
+  "ancestry": {
+    "expected_target_head_before_publication": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "direct_parent": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "parent_exact": true,
+    "compare_ahead_by": 1,
+    "compare_behind_by": 0,
+    "merge_base": "2fc399ac7b415746763114c3951aa2e3b45adee7"
+  },
+  "diff": {
+    "changed_paths": [
+      {
+        "path": "tests/relay/test_dispatcher.py",
+        "operation": "MODIFY",
+        "additions": 10,
+        "deletions": 0
+      }
+    ],
+    "exactly_one_path": true,
+    "implementation_files_changed": false,
+    "semantic_scope": {
+      "test_name": "test_abort_signal_blocks_before_reservation_and_dispatch",
+      "abort_signal": "{\"aborted\": True}",
+      "proves_block_before_slot_reservation": "PASS via assertion slot-abort not in dispatcher.guard.ledger",
+      "proves_block_before_provider_dispatch": "PASS via assertion adapter.dispatch_count == 0",
+      "blocked_state_and_reason": "PASS"
+    }
+  },
+  "independent_validation": {
+    "workspace": "clean disposable local reconstruction from exact PR #10 GitHub src/tests blobs; no package install",
+    "unittest_command": "PYTHONPATH=src python -m unittest discover -s tests -t . -v",
+    "unittest_result": "PASS",
+    "unittest_count": 29,
+    "unittest_exit_code": 0,
+    "compileall_command": "python -m compileall -q src tests",
+    "compileall_result": "PASS",
+    "compileall_exit_code": 0,
+    "diff_check_command": "git diff --check",
+    "diff_check_result": "PASS",
+    "diff_check_exit_code": 0,
+    "note": "Python environment emitted an unrelated artifact_tool spreadsheet warmup warning on startup; requested commands still exited 0 and unittest reported Ran 29 tests / OK."
+  },
+  "publication": {
+    "target_pr": 4,
+    "target_branch": "feature/relay-transport-7070955470193506982",
+    "method": "normal non-force ref fast-forward",
+    "merge_button_or_merge_api_used": false,
+    "direct_main_write": false,
+    "force_push": false,
+    "final_pr4_head": "b8b7bb16f65039e6bf4c9425753a496abf70bea9",
+    "final_pr4_state": "OPEN",
+    "main_before": "1b162818411d82f33f3eb2ff9cbc0a421da038a1",
+    "main_after": "1b162818411d82f33f3eb2ff9cbc0a421da038a1",
+    "pr10_post_publication_note": "GitHub automatically closed/marked PR #10 merged when its head commit became reachable from its base branch via the fast-forward; no merge button/API operation was invoked."
+  },
+  "controls": {
+    "retry_count": 0,
+    "fallback_used": false,
+    "browserhook_route": "FROZEN",
+    "legacy_commands_replayed": false
+  }
+}

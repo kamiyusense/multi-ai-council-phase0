@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "evidence_id": "chatgpt-web-preflight-static-validation-005-stale-unexecuted",
+  "loop_id": "chatgpt-web-preflight-static-validation-005",
+  "command_id": "chatgpt-web-preflight-static-validation-005-000001",
+  "classification": "UNKNOWN",
+  "command_created_before_later_static_changes": true,
+  "later_static_commits": [
+    "e859f22c184e9964b90b7ba8721f8f3a3d04de84",
+    "15786b8b3c68e0430a921fb7b88a90b0f80e3d69"
+  ],
+  "event_run_observed_after_command": false,
+  "terminal_receipt_observed": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "external_send_attempted": false,
+  "browser_started": false,
+  "model_started": false,
+  "jules_started": false,
+  "reason": "No event-task run was observed for this validation command, and the static code was subsequently hardened. Close this stale validation without replay; validate the new static version under a fresh logical command."
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "relay-static-apply-003",
+  "state": "UNKNOWN",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "relay-static-apply-003-000001",
+  "last_receipt_id": "000001",
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "Required pytest runtime dependency unavailable; package installation prohibited; baseline gate UNKNOWN and no PR #4 mutation performed."
+}

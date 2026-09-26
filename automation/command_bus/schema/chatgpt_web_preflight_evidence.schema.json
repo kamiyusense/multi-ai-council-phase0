@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","command_id","correlation_id","target_head_expected","target_head_observed","target_tree_expected","target_tree_observed","chatgpt_web_reachable","chatgpt_auth_state","chatgpt_ui_visible","work_ui_visible","existing_work_list_visible","preferred_work_title_found","existing_work_openable","same_account_context_verified","message_sent","target_model_turn_started","new_work_created","browser_started","human_auth_started","jules_started","credential_material_persisted","chat_or_session_identifier_persisted","retry_count","fallback_used","classification","route_decision","evidence_refs","created_at"],
+  "properties":{
+    "schema_version":{"const":1},"command_id":{"type":"string","minLength":1},"correlation_id":{"type":"string","minLength":1},
+    "target_head_expected":{"type":"string","pattern":"^[0-9a-f]{40}$"},"target_head_observed":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "target_tree_expected":{"type":"string","pattern":"^[0-9a-f]{40}$"},"target_tree_observed":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "chatgpt_web_reachable":{"enum":[true,false,"UNKNOWN"]},"chatgpt_auth_state":{"enum":["AUTHENTICATED","AUTH_REQUIRED","BLOCKED","UNKNOWN"]},
+    "chatgpt_ui_visible":{"enum":[true,false,"UNKNOWN"]},"work_ui_visible":{"enum":[true,false,"UNKNOWN"]},
+    "existing_work_list_visible":{"enum":[true,false,"UNKNOWN"]},"preferred_work_title_found":{"enum":[true,false,"UNKNOWN"]},
+    "existing_work_openable":{"enum":[true,false,"UNKNOWN"]},"same_account_context_verified":{"enum":[true,false,"UNKNOWN"]},
+    "message_sent":{"const":false},"target_model_turn_started":{"const":false},"new_work_created":{"const":false},"browser_started":{"const":true},
+    "human_auth_started":{"const":false},"jules_started":{"const":false},"credential_material_persisted":{"const":false},
+    "chat_or_session_identifier_persisted":{"const":false},"retry_count":{"const":0},"fallback_used":{"const":false},
+    "classification":{"enum":["PASS","NO_SUITABLE_EXISTING_WORK","BLOCKED_AUTH","BLOCKED","UNKNOWN"]},
+    "route_decision":{"enum":["EXISTING_WORK_UI_RELAY_CANDIDATE","NEEDS_FIXED_WORK_PREPARE","UNKNOWN"]},
+    "evidence_refs":{"type":"array","items":{"type":"string"}},"created_at":{"type":"string","minLength":1}
+  }
+}

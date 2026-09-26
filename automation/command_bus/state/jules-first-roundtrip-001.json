@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-first-roundtrip-001",
+  "state": "UNKNOWN",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "jules-first-roundtrip-001-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "UNKNOWN: the Work command-bus task ran after the atomic Jules command/state commit, but no durable Jules launch reservation, terminal receipt, or matching state transition was produced. PR #4 remained unchanged. Under retry=0 the logical command is closed and must not be replayed. An authorized Jules launch cannot be established because the mandatory pre-launch reservation is absent; actual live Jules start is therefore UNKNOWN rather than inferred."
+}

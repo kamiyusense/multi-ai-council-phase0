@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-human-auth-bootstrap-005",
+  "state": "HALTED",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-25T02:00:00+09:00",
+  "stop_requested": true,
+  "last_command_id": "jules-human-auth-bootstrap-005-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "Execution stream ended before durable completion; no replay. A fresh logical test is required."
+}

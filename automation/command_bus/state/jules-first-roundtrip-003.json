@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-first-roundtrip-003",
+  "state": "BLOCKED",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-25T10:30:00+09:00",
+  "stop_requested": true,
+  "last_command_id": "jules-first-roundtrip-003-000001",
+  "last_receipt_id": "jules-first-roundtrip-003/000001",
+  "expected_target": "work",
+  "retry_policy": 0,
+  "completion_reason": "BLOCKED_BROWSER_CAPABILITY_UNAVAILABLE; durable launch reservation exists; no submit/model/target mutation; recovered reservation forbids relaunch."
+}

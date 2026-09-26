@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "human-auth-bootstrap-static-validation-002-000001",
+  "loop_id": "human-auth-bootstrap-static-validation-002",
+  "round": 1,
+  "correlation_id": "human-auth-bootstrap-static-validation-002-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_tested": "d53667e97d7b396fe59cec712eb111457324ea70",
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "workspace_verification": {
+    "scope": "bounded STATIC partition of automation/command_bus/**",
+    "method": "Git recursive tree enumeration through connected GitHub transport; validation_scope.py semantics; connector SHA/size verification; local Git blob SHA recomputation",
+    "recursive_tree_truncated": false,
+    "total_command_bus_blob_count": 193,
+    "static_blob_count": 50,
+    "ledger_blob_count": 143,
+    "unknown_blob_count": 0,
+    "verified_static_blob_count": 50,
+    "mismatched_static_blob_count": 0,
+    "zero_size_static_blob_count": 1,
+    "supported_modes": [
+      "100644",
+      "100755"
+    ],
+    "path_traversal_detected": false,
+    "duplicate_paths_detected": false,
+    "symlink_or_unsupported_mode_detected": false
+  },
+  "validation_results": {
+    "unittest": {
+      "state": "PASS",
+      "command": "python -m unittest discover -s automation/command_bus/tests -v",
+      "discovered_test_count": 227,
+      "exit_code": 0,
+      "summary": "Ran 227 tests in 0.028s; OK"
+    },
+    "compileall": {
+      "state": "PASS",
+      "command": "python -m compileall -q automation/command_bus",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "state": "PASS",
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "output": "",
+      "interpretation": "deterministic staged equivalent against byte-verified reconstructed STATIC files"
+    }
+  },
+  "external_send_attempted": false,
+  "live_model_used": false,
+  "provider_started": false,
+  "jules_started": false,
+  "browser_started": false,
+  "api_key_used": false,
+  "target_pr_modified": false,
+  "merge": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/d53667e97d7b396fe59cec712eb111457324ea70/automation/command_bus/commands/human-auth-bootstrap-static-validation-002/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/tree/d53667e97d7b396fe59cec712eb111457324ea70/automation/command_bus",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}

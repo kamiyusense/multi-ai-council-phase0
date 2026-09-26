@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "handoff_id": "jules-cloud-auth-bootstrap-004",
+  "triggering_command_id": "jules-human-auth-bootstrap-004-000001",
+  "correlation_id": "jules-human-auth-bootstrap-004-round-1",
+  "transport_id": "WORK_CLOUD_BROWSER_JULES_UI",
+  "auth_origin": "jules.google.com",
+  "handoff_method": "CHATGPT_NATIVE_CLOUD_BROWSER_TAKEOVER",
+  "handoff_surface": "VISIBLE_WORK",
+  "handoff_state": "HUMAN_COMPLETED_UNVERIFIED",
+  "requested_at": "2026-09-24T10:51:09.599586Z",
+  "completed_at": "2026-09-24T11:21:16.255Z",
+  "takeover_url_persisted": false,
+  "credentials_persisted": false,
+  "task_submitted": false,
+  "jules_task_started": false,
+  "model_started": false,
+  "session_identity_is_correctness_input": false
+}

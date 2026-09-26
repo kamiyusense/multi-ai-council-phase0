@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-first-roundtrip-004-delegated-wake-001",
+  "loop_id": "jules-first-roundtrip-004",
+  "command_id": "jules-first-roundtrip-004-000001",
+  "generation": 4,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "FINAL BrowserHook trial explicitly authorized by user. Hook Work A MUST NOT open Jules itself. Use any already-callable existing-Work delegation/send_message_to_thread/equivalent to deliver ONE instruction to an already-existing Work B that has Cloud Browser. Do not create a new Work. The delivered instruction: open https://jules.google.com; if Google auth required surface human takeover and keep that Work/browser open; then exact repo kamiyusense/multi-ai-council-phase0 and exact branch feature/relay-transport-7070955470193506982; submit exactly ONE Jules task to modify only tests/relay/test_dispatcher.py adding a regression that abort_signal={\"aborted\": True} stops before slot reservation and provider dispatch. No implementation changes. If Work B cannot be identified, delegation capability is absent, delivery fails, Work B has no Cloud Browser, exact branch cannot be selected, or submit cannot be reached, terminalize 004 with that single concrete failure and task_submitted=false/ambiguous_submit=false when directly known. Never resend an ambiguous submit. No new diagnostics/preflights/safety architecture. No Merge/main write/force/Billing/API key/settings/permissions changes."
+}

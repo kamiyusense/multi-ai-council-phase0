@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-splash-settle-diagnostic-001",
+  "command_id": "jules-splash-settle-diagnostic-001-000001",
+  "classification": "UNKNOWN",
+  "hook_last_run_observed": "2026-09-24T16:28:02.215881Z",
+  "state_after_observation": "RUNNING",
+  "terminal_receipt_present": false,
+  "evidence_present": false,
+  "observation_interval_seconds": 70,
+  "task_prompt_explicit_action_authorization": "ABSENT_FOR_JULES_SPLASH_SETTLE_DIAGNOSTIC",
+  "pr4_mutated": false,
+  "jules_started": false,
+  "model_started": false,
+  "retry": 0,
+  "fallback": "disabled",
+  "reason": "GitHub event wake was observed, but the new 7H action did not produce command execution evidence/receipt within the bounded observation interval. Scheduled Task prompt does not explicitly authorize this action. Closed without retry."
+}

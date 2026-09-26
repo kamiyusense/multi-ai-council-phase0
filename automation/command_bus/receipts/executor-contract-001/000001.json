@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "executor-contract-001-000001",
+  "loop_id": "executor-contract-001",
+  "round": 1,
+  "correlation_id": "executor-contract-001-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_before": "849bb23fc9736f2e822fd098c07480a8a7d2cbf1",
+  "carrier_head_after": "ca89c9b92c1820a71aacfb0394a20aeb9ce71d0c",
+  "implementation_commit_sha": "ca89c9b92c1820a71aacfb0394a20aeb9ce71d0c",
+  "implementation_commit_message": "feat: add prepare-only executor handoff contract",
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "observed_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "changed_files": [
+    "automation/command_bus/README.md",
+    "automation/command_bus/executor.py",
+    "automation/command_bus/executor_backend.py",
+    "automation/command_bus/tests/test_executor.py",
+    "automation/command_bus/tests/test_executor_backend.py"
+  ],
+  "validation_results": {
+    "unittest": {
+      "result": "PASS",
+      "command": "python -m unittest discover -s automation/command_bus/tests -v",
+      "discovered_test_count": 55,
+      "exit_code": 0
+    },
+    "compileall": {
+      "result": "PASS",
+      "command": "python -m compileall -q automation/command_bus",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "result": "PASS",
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  },
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/849bb23fc9736f2e822fd098c07480a8a7d2cbf1/automation/command_bus/commands/executor-contract-001/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/commit/ca89c9b92c1820a71aacfb0394a20aeb9ce71d0c",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}

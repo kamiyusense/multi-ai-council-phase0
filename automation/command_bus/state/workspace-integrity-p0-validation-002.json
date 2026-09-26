@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "workspace-integrity-p0-validation-002",
+  "state": "UNKNOWN",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "workspace-integrity-p0-validation-002-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "The event-trigger task did not run after this command was created, and the P0 implementation changed afterward. The stale validation command is closed to prevent delayed execution against an ambiguous code version."
+}

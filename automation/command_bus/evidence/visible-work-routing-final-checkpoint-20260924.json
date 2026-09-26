@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "evidence_id": "visible-work-routing-final-checkpoint-20260924",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "target_pr": 4,
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "scheduled_task_title": "Phase 0 PR6 Command Bus",
+  "priority_1": {
+    "classification": "ASSOCIATED_CHAT_PRESENT_BUT_UNVERIFIED",
+    "associated_chat_metadata_exposed": true,
+    "associated_chat_user_visible": "UNKNOWN",
+    "associated_chat_stable": "UNKNOWN",
+    "scheduled_entry_available": true,
+    "chat_or_session_identifier_persisted": false
+  },
+  "priority_2": {
+    "classification": "UNKNOWN",
+    "send_message_to_thread": false,
+    "read_thread": false,
+    "list_threads": false,
+    "create_thread": false,
+    "thread_resume": false,
+    "equivalent_existing_work_delegation": "UNKNOWN",
+    "native_thread_delegation_live_tested": false,
+    "external_send_attempted": false
+  },
+  "priority_3": {
+    "classification": "BLOCKED_AUTH",
+    "chatgpt_web_reachable": true,
+    "chatgpt_auth_state": "AUTH_REQUIRED",
+    "chatgpt_ui_visible": true,
+    "work_ui_visible": false,
+    "existing_work_list_visible": false,
+    "preferred_work_title_found": "UNKNOWN",
+    "existing_work_openable": "UNKNOWN",
+    "same_account_context_verified": "UNKNOWN",
+    "message_sent": false,
+    "target_model_turn_started": false,
+    "browser_started": true,
+    "human_auth_started": false
+  },
+  "priority_4": {
+    "classification": "NOT_TESTED_DUE_UPSTREAM_AUTH_GATE",
+    "fixed_visible_work_created": false,
+    "new_work_creation_tested": false,
+    "reason": "Existing Work visibility could not be checked because ChatGPT Web authentication blocked Priority 3; creating a new fixed Work would violate the priority rule while an existing suitable Work remains UNKNOWN."
+  },
+  "priority_5": {
+    "human_google_auth_started": false,
+    "jules_started": false
+  },
+  "recommended_next_human_check": {
+    "action": "Open Scheduled -> Phase 0 PR6 Command Bus and verify whether its associated task conversation/chat is directly openable from that task surface.",
+    "why": "This is the only remaining way to prove Priority 1 user visibility without asking the user to hunt a hidden Work or starting a new model turn.",
+    "correctness_dependency": false
+  },
+  "official_product_facts": {
+    "scheduled_page_manages_event_triggered_tasks": true,
+    "scheduled_task_has_associated_chat": true,
+    "cloud_work_chats_sync_across_web_mobile_desktop": true,
+    "sources": [
+      "https://help.openai.com/ja-jp/articles/10291617-chatgpt-%E3%81%AE%E3%82%BF%E3%82%B9%E3%82%AF",
+      "https://help.openai.com/en/articles/20001275/chatgpt-work-and-codex"
+    ]
+  },
+  "credential_material_persisted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge": false,
+  "main_direct_write": false,
+  "force_push": false
+}

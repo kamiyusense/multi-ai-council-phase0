@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "command_id": "relay-static-001-000001",
+  "loop_id": "relay-static-001",
+  "round": 1,
+  "correlation_id": "relay-static-001-round-1",
+  "target": "work",
+  "action": "APPLY_RELAY_STATIC_BATCH",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "abac6f5aa955167c950d9cb15753ae14ac386317",
+  "allowed_paths": [
+    "src/relay/**",
+    "src/providers/**",
+    "tests/relay/**",
+    "docs/RELAY_STATIC_CHECKPOINT.md",
+    "RELAY_JULES_HANDOFF.md"
+  ],
+  "prohibited_paths": [
+    "main/**",
+    "phase0-runs/**",
+    "secrets/**",
+    ".github/**",
+    "billing/**",
+    "auth/**",
+    "api-keys/**"
+  ],
+  "objective": "Prepare a bounded static Relay validation batch without writing PR #4.",
+  "test_commands": [
+    "python -m unittest discover -s tests/relay -v",
+    "python -m compileall -q src/relay src/providers"
+  ],
+  "requires_live_model": false,
+  "requires_github_write": false,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "predecessor_receipt_id": "route-validation-005/000001"
+}

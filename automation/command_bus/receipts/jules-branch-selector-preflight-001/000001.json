@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "jules-branch-selector-preflight-001-000001",
+  "loop_id": "jules-branch-selector-preflight-001",
+  "round": 1,
+  "correlation_id": "jules-branch-selector-preflight-001-round-1",
+  "state": "BLOCKED",
+  "executed_once": true,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "observed_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "observed_repo": "UNKNOWN_NOT_OPENED",
+  "observed_branch": "UNKNOWN_NOT_OPENED",
+  "branch_selection_explicit": false,
+  "task_submitted": false,
+  "model_started": false,
+  "jules_started": false,
+  "browser_started": false,
+  "pr4_mutated": false,
+  "reason": "Cloud Browser/computer-use capability required by JULES_BRANCH_SELECTOR_PREFLIGHT is not exposed in this automation runtime; fail closed without Jules submission.",
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "automation/command_bus/evidence/jules-branch-selector-preflight-001-20260923.json",
+    "automation/command_bus/commands/jules-branch-selector-preflight-001/000001.json",
+    "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md"
+  ]
+}

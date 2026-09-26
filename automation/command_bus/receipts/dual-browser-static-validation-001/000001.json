@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "dual-browser-static-validation-001-000001",
+  "loop_id": "dual-browser-static-validation-001",
+  "round": 1,
+  "correlation_id": "dual-browser-static-validation-001-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_tested": "a27265b2e274cac502b2e0fbe656e31fc8939383",
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "observed_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "workspace_verification": {
+    "scope": "bounded STATIC partition of automation/command_bus/**",
+    "method": "Git recursive tree enumeration through connected GitHub transport; connector SHA/size verification; local Git blob SHA recomputation",
+    "recursive_tree_truncated": false,
+    "total_command_bus_blob_count": 157,
+    "static_blob_count": 40,
+    "ledger_blob_count": 117,
+    "unknown_blob_count": 0,
+    "verified_static_blob_count": 40,
+    "mismatched_static_blob_count": 0,
+    "zero_size_static_blob_count": 1,
+    "supported_modes": [
+      "100644",
+      "100755"
+    ],
+    "path_traversal_detected": false,
+    "duplicate_paths_detected": false,
+    "symlink_or_unsupported_mode_detected": false
+  },
+  "validation_results": {
+    "unittest": {
+      "state": "PASS",
+      "command": "python -m unittest discover -s automation/command_bus/tests -v",
+      "discovered_test_count": 182,
+      "exit_code": 0,
+      "summary": "Ran 182 tests in 0.025s; OK"
+    },
+    "compileall": {
+      "state": "PASS",
+      "command": "python -m compileall -q automation/command_bus",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "state": "PASS",
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "output": "",
+      "interpretation": "deterministic staged equivalent against reconstructed STATIC files"
+    }
+  },
+  "external_send_attempted": false,
+  "live_model_used": false,
+  "provider_started": false,
+  "jules_started": false,
+  "browser_started": false,
+  "api_key_used": false,
+  "target_pr_modified": false,
+  "merge": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/a27265b2e274cac502b2e0fbe656e31fc8939383/automation/command_bus/commands/dual-browser-static-validation-001/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/tree/a27265b2e274cac502b2e0fbe656e31fc8939383/automation/command_bus",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "hybrid-reviewer-p1-validation-002",
+  "state": "UNKNOWN",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "hybrid-reviewer-p1-validation-002-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "UNKNOWN: Work run was observed after the atomic command/state commit, but no durable receipt or state transition was produced. Command is closed under retry=0. Current command-bus tree has grown to 111 blobs while static code/tests/schema are 30 blobs; full-ledger blob reconstruction is being replaced by bounded static scope validation."
+}

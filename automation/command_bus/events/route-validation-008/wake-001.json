@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "route-validation-008-wake-001",
+  "loop_id": "route-validation-008",
+  "command_id": "route-validation-008-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Single append-only wake marker after fresh readback showed the command still RUNNING with no receipt and the prior PR comment produced no observed task run. STATIC validation only."
+}

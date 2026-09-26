@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "command_id": "relay-static-apply-003-000001",
+  "loop_id": "relay-static-apply-003",
+  "round": 1,
+  "correlation_id": "relay-static-apply-003-round-1",
+  "target": "work",
+  "action": "EXECUTE_RELAY_STATIC_BATCH",
+  "profile": "RELAY_SAFETY_BATCH_V1",
+  "workspace_integrity_profile": "TREE_IDENTITY_V1",
+  "execution_mode": "STATIC_WRITE",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "expected_target_tree": "62e681613be4de68ee5987634a075078f6bb522a",
+  "allowed_paths": [
+    "src/relay/**",
+    "src/providers/**",
+    "tests/relay/**",
+    "docs/RELAY_STATIC_CHECKPOINT.md",
+    "RELAY_JULES_HANDOFF.md"
+  ],
+  "path_policy": [
+    {"path": "src/relay/**", "allowed_ops": ["ADD", "MODIFY"]},
+    {"path": "src/providers/**", "allowed_ops": ["ADD", "MODIFY"]},
+    {"path": "tests/relay/**", "allowed_ops": ["ADD", "MODIFY"]},
+    {"path": "docs/RELAY_STATIC_CHECKPOINT.md", "allowed_ops": ["MODIFY"]},
+    {"path": "RELAY_JULES_HANDOFF.md", "allowed_ops": ["MODIFY"]}
+  ],
+  "prohibited_paths": [
+    "main/**",
+    "phase0-runs/**",
+    "secrets/**",
+    ".github/**",
+    "settings/**",
+    "workflows/**",
+    "billing/**",
+    "auth/**",
+    "api-keys/**"
+  ],
+  "objective": "Read and enforce TREE_IDENTITY_V1 and the Executor Workspace Integrity P0 checkpoint/evidence before mutation, then implement RELAY_SAFETY_BATCH_V1 static/mock Relay hardening only. Gate failure blocks only this executor mutation; preserve read-only evidence and independently safe work.",
+  "test_commands": [
+    "PYTHONPATH=src python -m pytest -q tests",
+    "python -m compileall -q src tests",
+    "git diff --check"
+  ],
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:59:00+09:00",
+  "predecessor_receipt_id": "workspace-integrity-p0-validation-003/000001",
+  "required_evidence_refs": [
+    "automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json",
+    "automation/command_bus/evidence/workspace-integrity-p0-20260923.json",
+    "docs/EXECUTOR_WORKSPACE_INTEGRITY_P0_CHECKPOINT.md"
+  ]
+}

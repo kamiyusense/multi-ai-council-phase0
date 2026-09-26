@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-human-auth-bootstrap-005",
+  "command_id": "jules-human-auth-bootstrap-005-000001",
+  "observation": "USER_VISIBLE_WORK_UI_STALE_OR_HUNG_AFTER_DURABLE_HALT",
+  "user_visible_text": [
+    "call_tool と通信中"
+  ],
+  "durable_state_at_readback": "HALTED",
+  "terminal_receipt_present": false,
+  "pr4_mutated": false,
+  "note": "User reported the associated Cloud Work UI still showing an in-progress call_tool communication state after the durable GitHub state had been HALTED. Treat UI spinner/progress text as non-authoritative for completion; GitHub durable state remains canonical."
+}

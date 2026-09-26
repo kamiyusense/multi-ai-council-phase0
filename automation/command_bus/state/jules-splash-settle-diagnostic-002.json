@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-splash-settle-diagnostic-002",
+  "state": "COMPLETE",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-25T05:45:00+09:00",
+  "stop_requested": true,
+  "last_command_id": "jules-splash-settle-diagnostic-002-000001",
+  "last_receipt_id": "jules-splash-settle-diagnostic-002/000001",
+  "expected_target": "work",
+  "retry_policy": 0,
+  "completion_reason": "AUTH_GATE_VISIBLE; bounded diagnostic completed without authentication, repository or branch selection, Jules task submission, or model start."
+}

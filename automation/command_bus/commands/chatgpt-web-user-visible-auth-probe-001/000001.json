@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "command_id": "chatgpt-web-user-visible-auth-probe-001-000001",
+  "loop_id": "chatgpt-web-user-visible-auth-probe-001",
+  "round": 1,
+  "correlation_id": "chatgpt-web-user-visible-auth-probe-001-round-1",
+  "target": "work",
+  "action": "CHATGPT_WEB_USER_VISIBLE_AUTH_PROBE",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+  "expected_target_tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+  "objective": "From the event-triggered Work, open ChatGPT Web with the native Work Cloud Browser. If authentication is required, request the native user-visible secure sign-in/takeover surface and stop there. The purpose is only to test whether the hidden/event-triggered Work can surface a human-interaction entry to the user.",
+  "allowed_actions": [
+    "fresh-read PR #4 head/tree",
+    "open https://chatgpt.com in native Work Cloud Browser",
+    "observe authentication-required state",
+    "request native secure sign-in/takeover UI if available",
+    "record non-secret evidence/state/receipt on PR #6 branch"
+  ],
+  "prohibited_actions": [
+    "enter credentials or MFA",
+    "complete authentication",
+    "send any ChatGPT message",
+    "create or modify any Work",
+    "start any target model turn",
+    "start Jules or any external provider/model",
+    "merge any PR",
+    "write to main",
+    "modify PR #4",
+    "change billing/settings/permissions",
+    "persist takeover URLs, cookies, tokens, passwords, MFA codes, session IDs, chat IDs, browser-control tokens, or other credential/session material"
+  ],
+  "success_state": "WAITING_FOR_HUMAN_AUTH",
+  "success_condition": "A native secure sign-in/takeover entry is actually surfaced to a user-visible ChatGPT surface. Do not infer visibility from intent alone.",
+  "blocked_condition": "If the native user-visible entry cannot be requested, is not surfaced, or visibility cannot be verified from the executor side, record BLOCKED or UNKNOWN; do not retry.",
+  "human_observation_needed": "User should only report whether a new visible approval/sign-in/takeover entry appeared; no credential entry is requested by this probe.",
+  "requires_live_model": false,
+  "requires_github_write": true,
+  "retry": 0,
+  "fallback": "disabled",
+  "expires_at": "2026-09-24T23:30:00+09:00"
+}

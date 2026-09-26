@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "loop_id": "jules-human-auth-bootstrap-004",
+  "state": "HALTED",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T21:30:00+09:00",
+  "stop_requested": true,
+  "last_command_id": "jules-human-auth-bootstrap-004-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "waiting_reason": "User-visible native sign-in/takeover boundary verified visible; awaiting explicit human authentication action.",
+  "failure_reason": "Human interaction was reported after the visible Google account chooser, but authentication completion was not independently verified. Recorded HUMAN_COMPLETED_UNVERIFIED and moved to a fresh exact-selector preflight; this is not authentication PASS."
+}

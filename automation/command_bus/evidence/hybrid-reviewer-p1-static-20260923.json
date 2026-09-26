@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "evidence_id": "hybrid-reviewer-p1-static-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "profile": "DURABLE_REVIEW_V2",
+  "static_implementation": {
+    "target_head_and_tree_binding": true,
+    "reviewer_role_binding": true,
+    "review_kind_binding": true,
+    "allowed_decisions_binding": true,
+    "evidence_refs_required": true,
+    "structured_rationale": true,
+    "next_command_proposal_field": true,
+    "browser_direct_transport_exchangeable": true,
+    "browser_output_is_correctness_input": false,
+    "durable_response_source": "GITHUB_DURABLE_ONLY",
+    "live_transport_blocked": true,
+    "wake_reservation_profile": "DURABLE_REVIEW_WAKE_ATTEMPT_V1",
+    "wake_reservation_path": "review_wake_attempts/<loop>/<request_id>.json",
+    "fresh_session_replay_permitted": false,
+    "ambiguous_transport_retry": 0,
+    "fallback": "disabled"
+  },
+  "test_execution": {
+    "state": "UNKNOWN",
+    "reason": "Latest P1 code has not yet received a durable terminal Work validation receipt."
+  },
+  "relay_target": {
+    "head": "2fc399ac7b415746763114c3951aa2e3b45adee7",
+    "tree": "9e2d22b7caf001449d1a5aa4fd374fec81a415fe",
+    "validation_loop": "relay-static-regression-validation-006",
+    "validation_state_at_record_creation": "RUNNING"
+  },
+  "safety": {
+    "live_browser_poc_started": false,
+    "live_provider_or_model_executed": false,
+    "jules_started": false,
+    "api_key_used": false,
+    "package_install": false,
+    "merge_performed": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "retry_count": 0,
+    "fallback_used": false
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "route-validation-005-000001",
+  "loop_id": "route-validation-005",
+  "round": 1,
+  "correlation_id": "route-validation-005-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "failure_stage": "target_head_readback",
+  "reason": "PR #4 head changed during validation; expected_target_head no longer matches current observed target head.",
+  "carrier_head_tested": "a409889b8e05eb684ac7aa6c5c160921215b57a0",
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "observed_target_head": "abac6f5aa955167c950d9cb15753ae14ac386317",
+  "validation_results": {
+    "exact_tree_acquisition": {
+      "result": "PASS",
+      "verified_blob_count": 53,
+      "method": "Git tree path/blob SHA/size plus Python stdlib Git blob SHA-1"
+    },
+    "unittest": {
+      "result": "PASS",
+      "command": "python -m unittest discover -s automation/command_bus/tests -v",
+      "discovered_test_count": 55,
+      "exit_code": 0
+    },
+    "compileall": {
+      "result": "PASS",
+      "command": "python -m compileall -q automation/command_bus",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "result": "PASS",
+      "command": "per-file git diff --no-index --check /dev/null <file> over automation/command_bus",
+      "exit_code": 0
+    }
+  },
+  "workspace_verification": "53/53 materialized blobs matched exact carrier Git tree SHA and size; zero-size tests/__init__.py verified and materialized empty",
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/a409889b8e05eb684ac7aa6c5c160921215b57a0/automation/command_bus/commands/route-validation-005/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/6"
+  ]
+}

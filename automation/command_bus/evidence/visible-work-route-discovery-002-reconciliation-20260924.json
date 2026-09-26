@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "evidence_id": "visible-work-route-discovery-002-reconciliation-20260924",
+  "command_id": "visible-work-route-discovery-002-000001",
+  "correlation_id": "visible-work-route-discovery-002-round-1",
+  "reconciliation_of": [
+    "automation/command_bus/evidence/visible-work-route-discovery-002-000001.json",
+    "automation/command_bus/evidence/visible-work-route-discovery-002-no-durable-result.json",
+    "automation/command_bus/receipts/visible-work-route-discovery-002/000001.json"
+  ],
+  "authoritative_observation": {
+    "associated_chat_state": "ASSOCIATED_CHAT_PRESENT_BUT_UNVERIFIED",
+    "associated_chat_metadata_exposed": true,
+    "associated_chat_user_visible": "UNKNOWN",
+    "associated_chat_stable": "UNKNOWN",
+    "scheduled_entry_available": true,
+    "native_thread_delegation_capability": "UNKNOWN",
+    "native_tool_presence": {
+      "send_message_to_thread": false,
+      "read_thread": false,
+      "list_threads": false,
+      "create_thread": false,
+      "thread_resume": false,
+      "equivalent_existing_work_delegation": "UNKNOWN"
+    },
+    "native_thread_delegation_live_tested": false,
+    "external_send_attempted": false,
+    "browser_started": false,
+    "new_work_creation_tested": false,
+    "human_auth_started": false,
+    "jules_started": false,
+    "model_started": false,
+    "credential_material_persisted": false,
+    "retry_count": 0,
+    "fallback_used": false,
+    "route_decision": "NEEDS_CHATGPT_WEB_PREFLIGHT"
+  },
+  "reconciliation_note": "A valid durable route-evidence record existed under a command-id-suffixed filename and was discovered after the separate no-durable-result closure was written. The immutable historical receipt is not rewritten. This append-only reconciliation establishes the observed Priority-1/2 facts without promoting the terminal command state above UNKNOWN.",
+  "chat_or_session_identifier_persisted": false
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "evidence_id": "workspace-integrity-p0-20260923",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "carrier_pr": 6,
+  "target_pr": 4,
+  "p0_starting_carrier_head": "49c77a8d34561caa6172644a2bfdbcdf9f963619",
+  "tested_carrier_head": "f1edb91c7bbcf9cd99409cc0eb0e1b1332b1f8cc",
+  "validation_receipt_commit": "606b8c243a0715f88a7db6c67f7a263587c419b9",
+  "target_head_observed": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "target_tree_reference": "62e681613be4de68ee5987634a075078f6bb522a",
+  "proposal": "docs/EXECUTOR_WORKSPACE_INTEGRITY_GATE_PROPOSAL.md",
+  "profile": "TREE_IDENTITY_V1",
+  "full_command_bus_validation": {
+    "receipt": "automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json",
+    "state": "DONE",
+    "verified_blob_count": 79,
+    "empty_blob_count": 1,
+    "unittest": {
+      "command": "python -m unittest discover -s automation/command_bus/tests -v",
+      "passed": 104,
+      "failed": 0
+    },
+    "compileall": {
+      "command": "python -m compileall -q automation/command_bus",
+      "result": "PASS"
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  },
+  "independent_targeted_validation": {
+    "scope": [
+      "test_workspace_integrity",
+      "test_executor",
+      "test_executor_backend",
+      "test_executor_workspace_contract",
+      "test_relay_static"
+    ],
+    "passed": 69,
+    "failed": 0,
+    "compileall": "PASS",
+    "staged_diff_check": "PASS",
+    "note": "Reconstructed from exact current Git blob contents for the P0-modified modules and regression tests."
+  },
+  "incident_regression": {
+    "case": "correct HEAD and canonical HEAD/index tree with stale tracked working-tree bytes",
+    "expected": "BLOCK before mutation lease",
+    "result": "PASS"
+  },
+  "safety": {
+    "pr4_modified": false,
+    "jules_started": false,
+    "live_provider_or_model_executed": false,
+    "api_key_used": false,
+    "billing_credits_overages_changed": false,
+    "settings_or_permissions_changed": false,
+    "merge_performed": false,
+    "main_direct_write": false,
+    "force_push": false,
+    "branch_deleted": false,
+    "retry_count": 0,
+    "fallback_used": false
+  }
+}

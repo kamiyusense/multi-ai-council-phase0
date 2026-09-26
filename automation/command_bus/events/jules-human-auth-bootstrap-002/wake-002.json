@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-human-auth-bootstrap-002-wake-002",
+  "loop_id": "jules-human-auth-bootstrap-002",
+  "command_id": "jules-human-auth-bootstrap-002-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "reason": "wake-001 produced no observable task run: the task last_run_time remained unchanged and command state remained RUNNING with no receipt/evidence after readback. This marker only wakes the same existing command; do not replay if a terminal receipt appears.",
+  "do_not_replay_if_terminal_receipt_exists": true
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "relay-static-apply-001-000001",
+  "loop_id": "relay-static-apply-001",
+  "round": 1,
+  "correlation_id": "relay-static-apply-001-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "starting_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "ending_target_head": "ffcdff208d12620d423592df78af1fd1eb88950e",
+  "target_commit": null,
+  "target_tree": null,
+  "changed_files": [],
+  "blocker": "UNKNOWN: exact PR #4 tree/blob workspace reconstruction and baseline execution of the fixed three commands could not be proven through the available GitHub read/write path in this run",
+  "baseline": {
+    "pytest": {
+      "result": "UNKNOWN",
+      "command": "PYTHONPATH=src python -m pytest -q tests"
+    },
+    "compileall": {
+      "result": "UNKNOWN",
+      "command": "python -m compileall -q src tests"
+    },
+    "diff_check": {
+      "result": "UNKNOWN",
+      "command": "git diff --check"
+    }
+  },
+  "post_change": null,
+  "workspace_verification": "UNKNOWN",
+  "live_provider_or_model_executed": false,
+  "provider_started": false,
+  "jules_started": false,
+  "api_key_used": false,
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge_performed": false,
+  "pr4_modified": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/6",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/cef45c1c65533777015657f5b553f25b851617d9/automation/command_bus/commands/relay-static-apply-001/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/cef45c1c65533777015657f5b553f25b851617d9/automation/command_bus/receipts/route-validation-007/000001.json"
+  ]
+}

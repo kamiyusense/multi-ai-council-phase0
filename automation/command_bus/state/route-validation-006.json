@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "loop_id": "route-validation-006",
+  "state": "UNKNOWN",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-24T23:00:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "route-validation-006-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0,
+  "failure_reason": "Event task ran after the command event but produced no durable receipt or state transition; execution result is unverifiable and must not be replayed."
+}

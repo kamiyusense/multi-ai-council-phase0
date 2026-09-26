@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "event_id": "relay-static-apply-004-wake-001",
+  "loop_id": "relay-static-apply-004",
+  "command_id": "relay-static-apply-004-000001",
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Process only the existing RUNNING command if no terminal receipt exists; do not create or replay another command."
+}

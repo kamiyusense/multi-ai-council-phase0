@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "static-validation-004-000001",
+  "loop_id": "static-validation-004",
+  "round": 1,
+  "correlation_id": "static-validation-004-round-1",
+  "state": "DONE",
+  "executed_once": true,
+  "carrier_head_tested": "f6023deda92ee03e99f9e74f30fe926002849dfb",
+  "expected_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "observed_target_head": "62f341b04f9d6e19dd003b42304bb896e4db45ef",
+  "workspace_verification": {
+    "scope": "automation/command_bus/**",
+    "method": "Git tree enumeration plus git hash-object comparison",
+    "verified_blob_count": 47,
+    "mismatched_blob_count": 0,
+    "zero_size_blobs_materialized": 1
+  },
+  "validation_results": {
+    "unittest": {
+      "state": "PASS",
+      "discovered_test_count": 48,
+      "exit_code": 0,
+      "summary": "Ran 48 tests; OK"
+    },
+    "compileall": {
+      "state": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "state": "PASS",
+      "command": "git diff --no-index --check -- /workspace/scratch/3e98fa496801/diff-empty-f6023d automation/command_bus",
+      "exit_code": 1,
+      "output": "",
+      "interpretation": "no whitespace errors; exit 1 reflects non-empty tree versus empty comparison directory"
+    }
+  },
+  "external_send_attempted": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "evidence_refs": [
+    "https://github.com/kamiyusense/multi-ai-council-phase0/blob/f6023deda92ee03e99f9e74f30fe926002849dfb/automation/command_bus/commands/static-validation-004/000001.json",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/tree/f6023deda92ee03e99f9e74f30fe926002849dfb/automation/command_bus",
+    "https://github.com/kamiyusense/multi-ai-council-phase0/pull/4"
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command_id",
+    "loop_id",
+    "round",
+    "correlation_id",
+    "target",
+    "action",
+    "expected_repo",
+    "expected_pr",
+    "expected_target_head",
+    "expected_target_tree",
+    "starting_branch",
+    "transport_id",
+    "auth_origin",
+    "handoff_id",
+    "requires_live_model",
+    "requires_github_write",
+    "retry",
+    "fallback",
+    "expires_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "command_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "loop_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "target": {
+      "const": "work"
+    },
+    "action": {
+      "const": "JULES_HUMAN_AUTH_BOOTSTRAP"
+    },
+    "expected_repo": {
+      "const": "kamiyusense/multi-ai-council-phase0"
+    },
+    "expected_pr": {
+      "const": 4
+    },
+    "expected_target_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "expected_target_tree": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "starting_branch": {
+      "const": "feature/relay-transport-7070955470193506982"
+    },
+    "transport_id": {
+      "const": "WORK_CLOUD_BROWSER_JULES_UI"
+    },
+    "auth_origin": {
+      "const": "jules.google.com"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "requires_live_model": {
+      "const": false
+    },
+    "requires_github_write": {
+      "const": true
+    },
+    "retry": {
+      "const": 0
+    },
+    "fallback": {
+      "const": "disabled"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

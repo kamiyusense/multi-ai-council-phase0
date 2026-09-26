@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "chat-jules-semiauto-smoke-001",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "b8b7bb16f65039e6bf4c9425753a496abf70bea9",
+  "expected_target_tree": "fccb1b57d31e98d4feac5e90e3d4e7e01edfce33",
+  "allowed_paths": [
+    "tests/relay/test_dispatcher.py"
+  ],
+  "prompt": "Add exactly one unittest regression proving that after dispatch is blocked by abort_signal={\"aborted\": True} for a slot, a second dispatch attempt using the same slot remains BLOCKED and the provider adapter dispatch_count remains 0. Modify only tests/relay/test_dispatcher.py. Run: PYTHONPATH=src python -m unittest discover -s tests -t . -v ; python -m compileall -q src tests ; git diff --check.",
+  "created_at": "2026-09-25T22:42:10+00:00",
+  "expires_at": "2026-09-25T23:42:10+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

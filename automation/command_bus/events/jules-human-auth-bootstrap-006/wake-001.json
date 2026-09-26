@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "jules-human-auth-bootstrap-006-wake-001",
+  "loop_id": "jules-human-auth-bootstrap-006",
+  "command_id": "jules-human-auth-bootstrap-006-000001",
+  "generation": 1,
+  "purpose": "wake-only",
+  "retry": 0,
+  "fallback": "disabled",
+  "note": "Fresh user-authorized same-associated-Work human-auth continuity test. Follow current section 7E. Surface the human auth boundary if needed; after human completion, prefer continuation in the same associated Work / still-open Cloud Browser context. Fresh-read PR #4 before post-auth observation. Do not submit Jules, start any model, mutate PR #4, merge, or persist credentials/session identifiers."
+}

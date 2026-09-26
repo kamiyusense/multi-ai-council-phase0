@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "receipt_id": "000001",
+  "command_id": "relay-static-apply-004-000001",
+  "loop_id": "relay-static-apply-004",
+  "round": 1,
+  "correlation_id": "relay-static-apply-004-round-1",
+  "state": "UNKNOWN",
+  "executed_once": true,
+  "starting_target_head": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+  "ending_target_head": "fbe21cc2f3936f058dac5f55e2a91248ca6d4853",
+  "expected_target_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "observed_target_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "reconstructed_write_tree": "40b5f65b4e0eb8d855c6dd67ad509b51d92ebab6",
+  "recursive_tree": {
+    "truncated": false,
+    "entry_count": 46,
+    "blob_count": 39,
+    "supported_entries_only": true
+  },
+  "blob_verification": {
+    "fetched": 39,
+    "verified": 39,
+    "empty_blobs": 4,
+    "result": "PASS"
+  },
+  "workspace_verification": {
+    "profile": "TREE_IDENTITY_V1",
+    "write_tree_equality": "PASS",
+    "tracked_tree_clean": true,
+    "index_delta": false,
+    "unexpected_untracked": false,
+    "hidden_index_flags": false,
+    "result": "PASS"
+  },
+  "changed_files": [],
+  "changed_operations": [],
+  "mutation_started": false,
+  "target_commit_created": false,
+  "baseline": {
+    "unittest": {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -v",
+      "result": "FAIL",
+      "tests_run": 11,
+      "passed": 10,
+      "errors": 1,
+      "failures": 0,
+      "error": "ModuleNotFoundError: No module named 'relay.duplicate_guard' while importing tests/relay/test_relay_static.py; tests/relay package shadows src/relay under the required discovery command."
+    },
+    "compileall": {
+      "command": "python -m compileall -q src tests",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "PASS",
+      "exit_code": 0
+    }
+  },
+  "post_change": {
+    "unittest": "NOT_RUN",
+    "compileall": "NOT_RUN",
+    "diff_check": "NOT_RUN",
+    "reason": "Baseline unittest gate failed before mutation."
+  },
+  "blocker": "Required baseline unittest command fails deterministically on the exact target tree because tests/relay shadows src/relay during discovery. No PR #4 mutation permitted.",
+  "model_executed": false,
+  "provider_started": false,
+  "jules_started": false,
+  "api_key_used": false,
+  "billing_credits_overages_changed": false,
+  "settings_permissions_changed": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "merge_performed": false,
+  "pr4_modified": false,
+  "evidence_refs": [
+    "automation/command_bus/commands/relay-static-apply-004/000001.json",
+    "automation/command_bus/receipts/workspace-integrity-p0-validation-003/000001.json",
+    "automation/command_bus/evidence/workspace-integrity-p0-20260923.json",
+    "docs/EXECUTOR_WORKSPACE_INTEGRITY_P0_CHECKPOINT.md"
+  ]
+}

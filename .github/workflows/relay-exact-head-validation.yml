@@ -1,0 +1,67 @@
+name: Phase 0 Relay exact-head validation
+
+on:
+  push:
+    branches:
+      - feature/chat-work-command-bus
+    paths:
+      - automation/command_bus/relay_validation_requests/*.json
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout carrier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Locate one append-only validation request
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit_json="$(curl --fail-with-body --retry 0 -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
+          [[ "$(jq '.files | length' <<<"${commit_json}")" == "1" ]] || { echo "Expected exactly one file." >&2; exit 1; }
+          [[ "$(jq -r '.files[0].status' <<<"${commit_json}")" == "added" ]] || { echo "Request must be append-only." >&2; exit 1; }
+          path="$(jq -r '.files[0].filename' <<<"${commit_json}")"
+          [[ "${path}" =~ ^automation/command_bus/relay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]] || { echo "Unexpected request path." >&2; exit 1; }
+          target_sha="$(jq -er '.target_sha' "${path}")"
+          [[ "${target_sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid target_sha." >&2; exit 1; }
+          echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout exact Relay head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.locate.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Run full repository unit suite
+        shell: bash
+        run: PYTHONPATH=src python -m unittest discover -s tests -t . -v
+
+      - name: Compile Python
+        shell: bash
+        run: python -m compileall -q src tests
+
+      - name: Diff check
+        shell: bash
+        run: git diff --check
+
+      - name: Record exact validation head
+        shell: bash
+        run: |
+          echo "## Relay exact-head validation" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- target_sha: \`${{ steps.locate.outputs.target_sha }}\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- unittest: PASS if job green" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- compileall: PASS if job green" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- diff-check: PASS if job green" >> "${GITHUB_STEP_SUMMARY}"

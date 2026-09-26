@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "evidence_id": "chatgpt-web-preflight-local-static-20260924",
+  "scope": "PRIORITY3_NEW_STATIC_FILES_ONLY",
+  "source_branch": "feature/chat-work-command-bus",
+  "source_blobs": {
+    "automation/command_bus/chatgpt_web_preflight.py": "6d4e379ec53441eb5f97366d3d044f41e141b834",
+    "automation/command_bus/tests/test_chatgpt_web_preflight.py": "0612a8f47bf4202f9313fe06abd9aafb1f0031c1"
+  },
+  "isolated_unittest": {
+    "command": "python -m unittest automation.command_bus.tests.test_chatgpt_web_preflight -v",
+    "discovered_test_count": 9,
+    "state": "PASS",
+    "exit_code": 0
+  },
+  "compileall": {
+    "command": "python -m compileall -q automation/command_bus",
+    "state": "PASS",
+    "exit_code": 0
+  },
+  "diff_check": {
+    "command": "git diff --cached --check",
+    "state": "PASS",
+    "exit_code": 0
+  },
+  "full_command_bus_static_validation": "PENDING",
+  "live_browser_started": false,
+  "external_send_attempted": false,
+  "target_model_turn_started": false,
+  "new_work_created": false,
+  "human_auth_started": false,
+  "jules_started": false,
+  "retry_count": 0,
+  "fallback_used": false,
+  "credential_material_persisted": false,
+  "note": "This evidence validates only the newly added Priority-3 module/test in an isolated local reconstruction from the recorded GitHub blobs. It does not promote the full command-bus static validation to PASS."
+}
