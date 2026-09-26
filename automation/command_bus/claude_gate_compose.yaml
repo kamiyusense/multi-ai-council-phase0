@@ -24,7 +24,10 @@
       },
       "environment": {
         "PHASE0_GATE_BIND": "172.29.247.2",
-        "PHASE0_GATE_PORT": "8080"
+        "PHASE0_GATE_PORT": "8080",
+        "PHASE0_GATE_STATE_DIR": "/var/lib/phase0/claude-gate",
+        "PHASE0_GATE_EXPECTED_STORE_ID": "${PHASE0_GATE_EXPECTED_STORE_ID:?must be externally provisioned}",
+        "PHASE0_GATE_UPSTREAM_URL": "https://api.anthropic.com"
       },
       "volumes": ["gate-state:/var/lib/phase0/claude-gate"]
     }

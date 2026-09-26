@@ -68,10 +68,17 @@ use synthetic payloads and fake credentials.
 
 ## URL and production upstream boundaries
 
-The Claude-facing `ANTHROPIC_BASE_URL` preflight accepts only plain HTTP to a
-literal loopback IP with an explicit nonzero port (`127.0.0.1` or `[::1]`). It
-rejects hostnames, including `localhost` (name resolution can vary), remote or
+The Claude-facing `ANTHROPIC_BASE_URL` preflight has explicit transport modes.
+`HOST_LOOPBACK` is the safe default and accepts only plain HTTP to a literal
+loopback IP with an explicit nonzero port (`127.0.0.1` or `[::1]`). It rejects
+hostnames, including `localhost` (name resolution can vary), remote or
 private-network addresses, user-info, query, fragment, and non-root paths.
+`CONTAINER_INTERNAL` is opt-in and restricted to exact `http://gate:8080`; it
+freshly loads the static manifest and requires the topology validator to return
+PASS, including network membership, the Claude URL and gate bind address/port,
+and unpublished-port checks. Other service names and all direct IP addresses
+remain denied. PREPARED output records mode, validated endpoint, and topology
+state.
 
 The production transport accepts only `https://api.anthropic.com` on default
 port 443, with no URL credentials, path prefix, query, or fragment. The fake
@@ -104,7 +111,8 @@ use.
 
 ## Dispatch lifecycle and command-bus receipt linkage
 
-`ClaudeDispatchLifecycle.prepare()` creates a UUID and records loop ID,
+`ClaudeDispatchLifecycle.prepare()` accepts an explicit transport mode (safe
+default `HOST_LOOPBACK`), creates a UUID, and records loop ID,
 correlation ID, `CLAUDE_BACKEND`, generation, expiry, and exact target head,
 then returns the local gate environment as `PREPARED`. It never invokes a
 process launcher. Invalid transport after registration terminalizes/burns the
@@ -125,9 +133,17 @@ SQLite gives a durable write-ahead claim across normal process restarts when
 the same database file is retained. Production open requires an existing
 `dispatches.sqlite3` directly under the supplied fixed state directory and an
 externally expected store UUID. It refuses to create a fresh production DB on
-startup. POSIX ownership/mode checks are required; ACL verification is UNKNOWN
-on Windows, where production open refuses. The expected ID detects replacement
-by a newly initialized DB, but not rollback to an older copy with the same ID.
+startup. The Compose contract mounts named volume `gate-state` at that fixed
+directory and requires the expected UUID to be injected from host/control-plane
+environment `PHASE0_GATE_EXPECTED_STORE_ID`; the gate must not generate its own
+expected identity. Startup compares the existing database identity with that
+external value. Empty volume, missing database, missing/unknown/replaced ID, or
+mismatch must block startup and never auto-create a trusted production store.
+Container recreation may reuse the volume only after rechecking the same
+external expected ID. POSIX ownership/mode checks are required; ACL verification
+is UNKNOWN on Windows, where production open refuses. The expected ID detects
+replacement by a newly initialized DB, but not rollback to an older copy with
+the same ID.
 
 Deletion, old-backup rollback, corruption, separate per-host DBs, and operator
 bypass remain possible. The host must protect the DB and directory (0700/0600

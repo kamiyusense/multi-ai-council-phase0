@@ -10,9 +10,11 @@ from threading import Event, Lock
 import time
 import unittest
 import uuid
+from unittest.mock import patch
 
 from automation.command_bus.claude_admission_gate import (
-    ClaudeDispatchLifecycle, DispatchStore, load_container_manifest, make_server,
+    CONTAINER_INTERNAL, HOST_LOOPBACK, ClaudeDispatchLifecycle, DispatchStore,
+    load_container_manifest, make_server,
     prepare_transport, validate_container_topology,
 )
 
@@ -325,7 +327,12 @@ class AdmissionGateTests(unittest.TestCase):
     def test_gate_url_accepts_literal_loopback_only(self):
         for url in ("http://127.0.0.1:8080", "http://[::1]:8080/"):
             with self.subTest(url=url):
-                self.assertEqual(prepare_transport(dispatch_id=self.dispatch, gate_base_url=url)["status"], "PREPARED")
+                result = prepare_transport(dispatch_id=self.dispatch, gate_base_url=url,
+                                           transport_mode=HOST_LOOPBACK)
+                self.assertEqual(result["status"], "PREPARED")
+                self.assertEqual(result["transport_mode"], HOST_LOOPBACK)
+                self.assertEqual(result["validated_gate_endpoint"], url)
+                self.assertEqual(result["topology_validation_state"], "NOT_APPLICABLE")
         for url in ("https://example.com", "http://10.0.0.1:8080", "http://192.168.1.4:8080",
                     "http://public-host:8080", "http://localhost:8080", "http://user@127.0.0.1:8080",
                     "http://127.0.0.1:8080/path", "http://127.0.0.1:8080/?q=x",
@@ -333,6 +340,40 @@ class AdmissionGateTests(unittest.TestCase):
                     "http://[::1]:8080/%2e%2e"):
             with self.subTest(url=url):
                 self.assertEqual(prepare_transport(dispatch_id=self.dispatch, gate_base_url=url)["status"], "BLOCKED")
+
+    def test_container_transport_requires_exact_manifest_endpoint_and_pass(self):
+        result = prepare_transport(dispatch_id=self.dispatch, gate_base_url="http://gate:8080",
+                                   transport_mode=CONTAINER_INTERNAL)
+        self.assertEqual(result["status"], "PREPARED")
+        self.assertEqual(result["transport_mode"], CONTAINER_INTERNAL)
+        self.assertEqual(result["validated_gate_endpoint"], "http://gate:8080")
+        self.assertEqual(result["topology_validation_state"], "PASS")
+        self.assertFalse(result["live_model"])
+        self.assertFalse(result["external_send"])
+        for url in ("http://gate:8081", "http://other-service:8080", "http://10.0.0.2:8080",
+                    "http://192.168.1.2:8080", "http://8.8.8.8:8080", "http://user@gate:8080",
+                    "http://gate:8080/path", "http://gate:8080/?q=x"):
+            with self.subTest(url=url):
+                self.assertEqual(prepare_transport(dispatch_id=self.dispatch, gate_base_url=url,
+                                                   transport_mode=CONTAINER_INTERNAL)["status"], "BLOCKED")
+
+    def test_transport_mode_unknown_blocks_and_default_is_host_loopback(self):
+        self.assertEqual(prepare_transport(dispatch_id=self.dispatch,
+                                           gate_base_url="http://127.0.0.1:8080")["transport_mode"], HOST_LOOPBACK)
+        for mode in (None, "UNKNOWN", "container_internal"):
+            if mode is None:
+                continue  # omitted mode intentionally retains safe HOST_LOOPBACK default
+            self.assertEqual(prepare_transport(dispatch_id=self.dispatch, gate_base_url="http://gate:8080",
+                                               transport_mode=mode)["status"], "BLOCKED")
+
+    def test_container_transport_fails_when_fresh_manifest_drifted(self):
+        bad = load_container_manifest()
+        bad["services"]["claude"]["environment"]["ANTHROPIC_BASE_URL"] = "http://other:8080"
+        with patch("automation.command_bus.claude_admission_gate.load_container_manifest", return_value=bad):
+            result = prepare_transport(dispatch_id=self.dispatch, gate_base_url="http://gate:8080",
+                                       transport_mode=CONTAINER_INTERNAL)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["topology_validation_state"], "BLOCKED")
 
     def test_production_upstream_is_exact_anthropic_https_origin(self):
         for url in ("http://api.anthropic.com", "https://example.com", "https://api.anthropic.com:444",
@@ -370,10 +411,25 @@ class AdmissionGateTests(unittest.TestCase):
         bad["services"]["gate"]["networks"].pop("internal")
         cases.append(bad)
         bad = deepcopy(manifest)
+        bad["services"]["gate"]["networks"].pop("egress")
+        cases.append(bad)
+        bad = deepcopy(manifest)
         bad["services"]["claude"]["network_mode"] = "host"
         cases.append(bad)
         bad = deepcopy(manifest)
         bad["services"]["claude"]["privileged"] = True
+        cases.append(bad)
+        for path, value in (("ANTHROPIC_BASE_URL", "http://other-service:8080"),
+                            ("PHASE0_GATE_BIND", "0.0.0.0"), ("PHASE0_GATE_PORT", "8081")):
+            bad = deepcopy(manifest)
+            service = "claude" if path == "ANTHROPIC_BASE_URL" else "gate"
+            bad["services"][service]["environment"][path] = value
+            cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["environment"]["PHASE0_GATE_EXPECTED_STORE_ID"] = "self-generated"
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["volumes"] = ["gate-state:/other/path"]
         cases.append(bad)
         for item in cases:
             with self.subTest(item=item):
@@ -401,6 +457,29 @@ class AdmissionGateTests(unittest.TestCase):
                                    target_head="c" * 40, gate_base_url="http://127.0.0.1:8080",
                                    terminal_receipts=[receipt])
         self.assertEqual(replay.status, "NO-OP")
+
+    def test_lifecycle_transport_mode_change_cannot_create_replay_escape(self):
+        lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
+        kwargs = dict(loop_id="mode-loop", correlation_id="mode-corr", generation=1,
+                      expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                      target_head="a" * 40)
+        first = lifecycle.prepare(**kwargs, gate_base_url="http://127.0.0.1:8080",
+                                  transport_mode=HOST_LOOPBACK)
+        self.assertEqual(first.status, "PREPARED")
+        replay = lifecycle.prepare(**kwargs, gate_base_url="http://gate:8080",
+                                   transport_mode=CONTAINER_INTERNAL)
+        self.assertEqual(replay.status, "BLOCKED")
+        self.assertEqual(replay.dispatch_id, first.dispatch_id)
+
+    def test_lifecycle_container_mode_uses_same_static_gate_contract(self):
+        lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
+        result = lifecycle.prepare(loop_id="container-loop", correlation_id="container-corr", generation=1,
+                                   expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                   target_head="b" * 40, gate_base_url="http://gate:8080",
+                                   transport_mode=CONTAINER_INTERNAL)
+        self.assertEqual(result.status, "PREPARED")
+        self.assertEqual(result.transport["topology_validation_state"], "PASS")
+        self.assertEqual(result.transport["env"]["ANTHROPIC_BASE_URL"], "http://gate:8080")
 
     def test_lifecycle_consumes_existing_executor_terminal_receipt_shape(self):
         lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
@@ -445,9 +524,13 @@ class AdmissionGateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             DispatchStore.open_production(missing, state_dir=self.temp.name,
                                           expected_store_id=self.store.store_id)
+        self.assertFalse(Path(missing).exists())
         with self.assertRaises(ValueError):
             DispatchStore.open_production(self.db, state_dir=self.temp.name,
                                           expected_store_id=self.store.store_id)
+        with self.assertRaises(ValueError):
+            DispatchStore.open_production(self.db, state_dir=self.temp.name,
+                                          expected_store_id=str(uuid.uuid4()))
 
 
 if __name__ == "__main__":

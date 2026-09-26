@@ -30,6 +30,10 @@ MAX_REQUEST_BYTES = 16 * 1024 * 1024
 CHUNK_BYTES = 16 * 1024
 PRODUCTION_UPSTREAM_HOST = "api.anthropic.com"
 CONTAINER_GATE_BIND_IP = "172.29.247.2"
+CONTAINER_GATE_SERVICE = "gate"
+CONTAINER_GATE_PORT = 8080
+HOST_LOOPBACK = "HOST_LOOPBACK"
+CONTAINER_INTERNAL = "CONTAINER_INTERNAL"
 COMPOSE_MANIFEST = Path(__file__).with_name("claude_gate_compose.yaml")
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
 _HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"}
@@ -241,16 +245,35 @@ class DispatchStore:
         return [dict(zip(fields, row)) for row in rows]
 
 
-def prepare_transport(*, dispatch_id: str, gate_base_url: str, retry: int = 0,
+def prepare_transport(*, dispatch_id: str, gate_base_url: str, transport_mode: str = HOST_LOOPBACK, retry: int = 0,
                       fallback: str = "disabled", live_model: bool = False,
                       external_send: bool = False) -> dict:
     """Return a non-launching env contract for future host integration."""
     if retry != 0 or fallback != "disabled" or live_model or external_send:
         return {"status": "BLOCKED", "reason": "live/retry/fallback request rejected"}
-    if not _UUID.fullmatch(dispatch_id) or not _is_local_gate_url(gate_base_url):
-        return {"status": "BLOCKED", "reason": "invalid dispatch ID or gateway URL"}
+    if not _UUID.fullmatch(dispatch_id):
+        return {"status": "BLOCKED", "reason": "invalid dispatch ID"}
+    topology_state = "NOT_APPLICABLE"
+    if transport_mode == HOST_LOOPBACK:
+        valid_endpoint = _is_local_gate_url(gate_base_url)
+    elif transport_mode == CONTAINER_INTERNAL:
+        topology = validate_container_topology(load_container_manifest())
+        topology_state = topology["status"]
+        valid_endpoint = (topology_state == "PASS" and
+                          gate_base_url == "http://gate:8080" and
+                          _is_container_gate_url(gate_base_url))
+    else:
+        return {"status": "BLOCKED", "reason": "transport mode must be explicit and recognized",
+                "transport_mode": transport_mode, "topology_validation_state": "NOT_RUN"}
+    if not valid_endpoint:
+        return {"status": "BLOCKED", "reason": "gateway URL or transport topology rejected",
+                "transport_mode": transport_mode, "topology_validation_state": topology_state}
     return {"status": "PREPARED", "launch": False, "retry": 0, "fallback": "disabled",
-            "env": {"ANTHROPIC_BASE_URL": gate_base_url.rstrip("/"),
+            "live_model": False, "external_send": False,
+            "transport_mode": transport_mode,
+            "validated_gate_endpoint": gate_base_url,
+            "topology_validation_state": topology_state,
+            "env": {"ANTHROPIC_BASE_URL": gate_base_url,
                     "ANTHROPIC_CUSTOM_HEADERS": f"{DISPATCH_HEADER}: {str(uuid.UUID(dispatch_id))}",
                     "CLAUDE_CODE_GATEWAY_HINT_HEADERS": "1",
                     "CLAUDE_CODE_MAX_RETRIES": "0"}}
@@ -398,6 +421,17 @@ def _is_local_gate_url(value: str) -> bool:
             and parsed.path in {"", "/"} and not parsed.query and not parsed.fragment)
 
 
+def _is_container_gate_url(value: str) -> bool:
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+    return (parsed.scheme == "http" and parsed.hostname == CONTAINER_GATE_SERVICE
+            and port == CONTAINER_GATE_PORT and parsed.username is None and parsed.password is None
+            and parsed.path in {"", "/"} and not parsed.query and not parsed.fragment)
+
+
 def validate_production_store_path(path: str, *, state_dir: str) -> dict:
     """Check a fixed existing host store; do not silently create/reset production state."""
     if os.name == "nt":
@@ -433,6 +467,11 @@ def validate_container_topology(manifest: dict) -> dict:
         internal, egress = networks["internal"], networks["egress"]
         internal_subnet = internal["ipam"]["config"][0]["subnet"]
         gate_bind = gate["environment"]["PHASE0_GATE_BIND"]
+        gate_port = gate["environment"]["PHASE0_GATE_PORT"]
+        expected_store_id = gate["environment"]["PHASE0_GATE_EXPECTED_STORE_ID"]
+        state_dir = gate["environment"]["PHASE0_GATE_STATE_DIR"]
+        upstream_url = gate["environment"]["PHASE0_GATE_UPSTREAM_URL"]
+        claude_gateway = claude["environment"]["ANTHROPIC_BASE_URL"]
         gate_ip = gate["networks"]["internal"]["ipv4_address"]
         internal_network = ipaddress.ip_network(internal_subnet, strict=True)
         gate_ip_obj = ipaddress.ip_address(gate_ip)
@@ -453,6 +492,12 @@ def validate_container_topology(manifest: dict) -> dict:
         "not_privileged": all(service.get("privileged") is False for service in (claude, gate)),
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
+        "claude_gateway_exact": claude_gateway == "http://gate:8080",
+        "gate_port_exact": gate_port == str(CONTAINER_GATE_PORT),
+        "production_upstream_exact": upstream_url == "https://api.anthropic.com",
+        "fixed_state_directory": state_dir == "/var/lib/phase0/claude-gate",
+        "store_id_externally_supplied": expected_store_id == "${PHASE0_GATE_EXPECTED_STORE_ID:?must be externally provisioned}",
+        "named_volume_mounted_at_fixed_state": gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"],
         "no_extra_networks": set(networks) == {"internal", "egress"},
     }
     failed = [key for key, passed in checks.items() if not passed]
@@ -478,7 +523,7 @@ class ClaudeDispatchLifecycle:
 
     def prepare(self, *, loop_id: str, correlation_id: str, generation: int,
                 expires_at: str, target_head: str, gate_base_url: str,
-                terminal_receipts=()) -> LifecycleResult:
+                transport_mode: str = HOST_LOOPBACK, terminal_receipts=()) -> LifecycleResult:
         if self.store.store_id != self.expected_store_id:
             return LifecycleResult("BLOCKED", "store identity mismatch")
         if not re.fullmatch(r"[0-9a-f]{40}", target_head or ""):
@@ -506,7 +551,8 @@ class ClaudeDispatchLifecycle:
                                 target_head=target_head, generation=generation)
         except (ValueError, sqlite3.Error) as exc:
             return LifecycleResult("UNKNOWN", f"registration unconfirmed: {type(exc).__name__}")
-        transport = prepare_transport(dispatch_id=dispatch_id, gate_base_url=gate_base_url)
+        transport = prepare_transport(dispatch_id=dispatch_id, gate_base_url=gate_base_url,
+                                      transport_mode=transport_mode)
         if transport["status"] != "PREPARED":
             receipt = _terminal_record(self.store.dispatch_record(dispatch_id), dispatch_id, "FAILED_PREPARE")
             if not self.store.mark_terminal(dispatch_id, receipt):

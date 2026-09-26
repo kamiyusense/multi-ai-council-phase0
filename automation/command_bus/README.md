@@ -158,5 +158,9 @@ Claude has internal-only network access, while the gate alone has a separately
 controlled egress network and no published host port. Egress isolation,
 effective host firewall behavior, production store ACL verification on Windows,
 backup rollback protection, and actual Claude compatibility remain unproven.
-This gate remains prepare/static-only and does not launch Claude. See
+`prepare_transport` separates strict `HOST_LOOPBACK` from opt-in
+`CONTAINER_INTERNAL`, which accepts only the freshly validated Compose endpoint
+`http://gate:8080`. The container contract requires an externally supplied
+expected store UUID; an empty/replaced volume must fail closed. This gate
+remains prepare/static-only and does not launch Claude. See
 `docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.
