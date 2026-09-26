@@ -69,20 +69,20 @@ class EnvelopeTests(unittest.TestCase):
 
     def test_same_slot_same_payload_same_finite_timeout_are_same_request(self):
         guard = DuplicateGuard()
-        a = self.envelope(timeout_seconds=30.0)
-        b = self.envelope(timeout_seconds=30.0)
+        a = self.envelope(timeout_seconds=30)
+        b = self.envelope(timeout_seconds=30)
         self.assertEqual(guard.reserve(a), DuplicateDecision.RESERVED)
         self.assertEqual(guard.reserve(b), DuplicateDecision.SAME_REQUEST)
 
     def test_same_slot_same_payload_different_timeout_are_conflict(self):
         guard = DuplicateGuard()
-        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30.0)), DuplicateDecision.RESERVED)
-        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=60.0)), DuplicateDecision.CONFLICT)
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30)), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=60)), DuplicateDecision.CONFLICT)
 
     def test_omitted_or_none_versus_finite_timeout_are_conflict(self):
         guard = DuplicateGuard()
         self.assertEqual(guard.reserve(self.envelope(timeout_seconds=None)), DuplicateDecision.RESERVED)
-        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30.0)), DuplicateDecision.CONFLICT)
+        self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30)), DuplicateDecision.CONFLICT)
 
     def test_same_slot_same_hash_is_same_request(self):
         guard = DuplicateGuard()
@@ -108,7 +108,7 @@ class IntentHashTests(unittest.TestCase):
 
     def test_timeout_differences(self):
         a = compute_intent_hash({}, None)
-        b = compute_intent_hash({}, 10.0)
+        b = compute_intent_hash({}, 10)
         self.assertNotEqual(a, b)
 
 
@@ -219,10 +219,10 @@ class LifecycleTests(unittest.TestCase):
             slot=DispatchSlot("case-1", "openai", 0),
             correlation_id="corr-to",
             payload={"packet": "hello"},
-            timeout_seconds=42.5,
+            timeout_seconds=42,
         )
         relay.dispatch_mock(envelope, cwd="snapshot")
-        self.assertEqual(transport.prompt_timeouts["openai"], 42.5)
+        self.assertEqual(transport.prompt_timeouts["openai"], 42)
 
     def test_omitted_or_none_timeout_remains_deterministic_and_accepted(self):
         transport = MockTransport(responses={"openai": b"{}"})
@@ -239,12 +239,12 @@ class LifecycleTests(unittest.TestCase):
             slot=DispatchSlot("case-1", "openai", 0),
             correlation_id="corr-to-fail",
             payload={"packet": "hello"},
-            timeout_seconds=10.0,
+            timeout_seconds=10,
         )
         result = relay.dispatch_mock(envelope, cwd="snapshot")
         self.assertEqual(result.state, RelayState.TIMEOUT)
         self.assertEqual(transport.prompt_counts["openai"], 1)
-        self.assertEqual(transport.prompt_timeouts["openai"], 10.0)
+        self.assertEqual(transport.prompt_timeouts["openai"], 10)
         self.assertEqual(len(transport.cancelled), 1)
         self.assertEqual(transport.cancelled[0][0], "openai")
         self.assertEqual(len(transport.closed), 1)
@@ -260,20 +260,20 @@ class LifecycleTests(unittest.TestCase):
             slot=DispatchSlot("case-1", "openai", 0),
             correlation_id="corr-openai",
             payload={"packet": "hello"},
-            timeout_seconds=15.0,
+            timeout_seconds=15,
         )
         env_anthropic = DispatchEnvelope.build(
             slot=DispatchSlot("case-1", "anthropic", 0),
             correlation_id="corr-anthropic",
             payload={"packet": "hello"},
-            timeout_seconds=30.0,
+            timeout_seconds=30,
         )
 
         relay.dispatch_mock(env_openai, cwd="openai-snapshot")
         relay.dispatch_mock(env_anthropic, cwd="anthropic-snapshot")
 
-        self.assertEqual(transport.prompt_timeouts["openai"], 15.0)
-        self.assertEqual(transport.prompt_timeouts["anthropic"], 30.0)
+        self.assertEqual(transport.prompt_timeouts["openai"], 15)
+        self.assertEqual(transport.prompt_timeouts["anthropic"], 30)
 
     def test_duplicate_after_error_does_not_prompt(self):
         transport = MockTransport(error_providers={"openai"})

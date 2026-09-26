@@ -52,8 +52,8 @@ class RelayDispatcherTests(unittest.TestCase):
 
     def test_invalid_timeout_seconds_raises_value_error(self):
         # We test validate_timeout directly because dispatch() might skip validation if UNSET for mock purposes.
-        from src.relay.dispatcher import validate_timeout
-        invalid_timeouts = [None, 0, -1, 3.14, True, False, "10", [], {}]
+        from src.relay.envelope import validate_timeout
+        invalid_timeouts = [0, -1, 3.14, True, False, "10", [], {}]
         for t in invalid_timeouts:
             with self.subTest(timeout=t):
                 with self.assertRaisesRegex(ValueError, "Invalid timeout_seconds"):
@@ -74,7 +74,7 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(result2["state"], "SIMULATED")
 
     def test_valid_timeout_seconds_passes(self):
-        from src.relay.dispatcher import validate_timeout
+        from src.relay.envelope import validate_timeout
         validate_timeout(10) # Should not raise
 
     def test_provider_timeout_isolated(self):
