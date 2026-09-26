@@ -22,7 +22,27 @@ class CliUnavailableDuringCollectBridge(RelayProviderAdapterBridge):
         raise RuntimeError("CLI unavailable")
 
 
+class StubAdapter(RelayProviderAdapterBridge):
+    def __init__(self):
+        super().__init__()
+        self.prepared_context = None
+
+    def prepare(self, context):
+        self.prepared_context = super().prepare(context)
+        return self.prepared_context
+
+
 class RelayDispatcherTests(unittest.TestCase):
+    def test_payload_timeout_seconds_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Request override fields rejected."):
+            make().dispatch("slot_override", {"timeout_seconds": 10, "payload": {"timeout_seconds": 20}})
+
+    def test_top_level_timeout_reaches_prepared_context(self):
+        adapter = StubAdapter()
+        dispatcher = make(adapter)
+        dispatcher.dispatch("slot_prepare", {"timeout_seconds": 42, "payload": {}})
+        self.assertEqual(adapter.prepared_context["timeout_seconds"], 42)
+
     def test_successful_dispatch_is_simulated(self):
         result = make().dispatch("slot1", {"timeout_seconds": 10, "case_id": "1", "payload": {"q": "test"}})
         self.assertEqual(result["state"], "SIMULATED")

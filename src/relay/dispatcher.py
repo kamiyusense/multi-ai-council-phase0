@@ -43,7 +43,7 @@ class RelayDispatcher:
         blocked = {"model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
                    "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
                    "config", "base", "developer", "general instructions", "plugin disabling",
-                   "billing", "auth route"}
+                   "billing", "auth route", "timeout_seconds"}
         if blocked.intersection(payload):
             raise ValueError("Request override fields rejected.")
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
