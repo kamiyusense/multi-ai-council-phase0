@@ -65,7 +65,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: phase0-loop-status-${{ inputs.loop_id }}
+  group: phase0-loop-status-signal
   queue: max
 
 jobs:
@@ -77,7 +77,7 @@ jobs:
       - name: Checkout trusted status renderer
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.workflow_sha }}
+          ref: main
           persist-credentials: false
 
       - name: Fetch durable command-bus state
@@ -110,7 +110,7 @@ jobs:
           set -euo pipefail
           args=(
             "${RUNNER_TEMP}/loop-state.json"
-            --owner "${OWNER}"
+            --owner "${OWNER}"\n            --expected-loop-id "${{ inputs.loop_id }}"
             --provider-state "${PROVIDER_STATE}"
             --last-durable-progress "${LAST_DURABLE_PROGRESS}"
             --body-out "${RUNNER_TEMP}/status-body.md"
