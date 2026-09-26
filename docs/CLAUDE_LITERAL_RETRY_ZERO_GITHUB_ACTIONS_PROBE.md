@@ -127,3 +127,15 @@ without weakening fail-closed behavior:
 
 No second Actions run or second Claude release download is authorized by this
 documentation correction.
+# Root-cause correction and one authorized follow-up run (2026-09-27)
+
+The earlier run stopped because it treated flag presence in captured `claude --help` output as proof of support. That was an invalid gate: Anthropic's official CLI reference says help omits some supported flags. The harness now stores the complete help stdout/stderr as an artifact and does not use help text to infer flag support.
+
+Before A-H, the isolated executable is now given two parser-only invocations with a fresh disposable home/config and fake local credential/base URL, inside the same Docker `--network none` namespace:
+
+1. The exact probe option bundle plus `--help` must exit 0.
+2. The same bundle plus a deliberately nonexistent flag and `--help` must exit nonzero with a parser diagnostic naming that flag.
+
+Both are accepted as a parser preflight only when the local fake endpoint has observed exactly zero requests. Any request, timeout, ambiguous error, or missing evidence fails closed and prevents A-H. These are not provider/model sessions. The required options are cross-referenced with Anthropic's current official [CLI reference](https://code.claude.com/docs/en/cli-usage), which explicitly notes that `--help` does not list every flag. This documentation is not itself proof of v2.1.283 binary acceptance; that is the purpose of the two isolated parser invocations.
+
+The next push is authorized for exactly one GitHub Actions run and one additional download of the exact official v2.1.283 Linux x64 asset. No rerun, retry, or second download is authorized. If the preflight does not pass, A-H must remain unstarted. No real Anthropic/Jules request, credentials, provider session, merge, default-branch write, or settings/billing change is permitted.

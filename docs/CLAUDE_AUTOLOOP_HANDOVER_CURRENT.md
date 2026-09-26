@@ -174,3 +174,8 @@ No workflow/probe/test path was changed in this checkpoint, because those paths
 currently trigger the Actions probe on push. No second Actions run or second
 release download was authorized or performed. A/B remain not live-green and
 takeover/orchestration remains deferred.
+# 2026-09-27 Claude literal retry-zero probe continuation
+
+The last isolated GitHub Actions run stopped before A-H due to an unsound `--help`-text option gate. Anthropic's official CLI reference states that `claude --help` omits some supported options. The harness has been changed to preserve full help output and perform a positive/invalid-option parser preflight against the exact required bundle, with a loopback fake endpoint monitoring that both invocations produce zero requests. A-H execute only if this gate passes.
+
+Pre-push local validation on the current PR #25 line: Claude probe harness 13/13 PASS; all command_bus tests 316/316 PASS; targeted compileall PASS; `git diff --check` PASS. These tests do not establish Claude binary behavior. The newly authorized GitHub-hosted isolated run is still required; do not claim literal retry-zero PASS unless that run's evidence proves each A-H case. Exactly one workflow run and one additional official v2.1.283 archive download are authorized; do not rerun or retry. No live provider/Jules execution or real credentials are authorized.
