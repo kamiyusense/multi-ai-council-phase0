@@ -52,8 +52,8 @@ class RelayDispatcherTests(unittest.TestCase):
 
     def test_invalid_timeout_seconds_raises_value_error(self):
         # We test validate_timeout directly because dispatch() might skip validation if UNSET for mock purposes.
-        from src.relay.dispatcher import validate_timeout
-        invalid_timeouts = [None, 0, -1, 3.14, True, False, "10", [], {}]
+        from src.relay.envelope import validate_timeout
+        invalid_timeouts = [0, -1, 3.14, True, False, "10", [], {}]
         for t in invalid_timeouts:
             with self.subTest(timeout=t):
                 with self.assertRaisesRegex(ValueError, "Invalid timeout_seconds"):
@@ -100,6 +100,18 @@ class RelayDispatcherTests(unittest.TestCase):
         d = make()
         d.dispatch("slot4", {"timeout_seconds": 10, "payload": {"a": 1}})
         self.assertEqual(d.dispatch("slot4", {"timeout_seconds": 10, "payload": {"a": 2}})["state"], "BLOCKED")
+
+    def test_dispatcher_rejects_invalid_timeouts(self):
+        d = make()
+        invalid_timeouts = [False, True, 3.14, 0, -1, "10", [10], {"t": 10}]
+        for invalid_val in invalid_timeouts:
+            with self.assertRaises(ValueError):
+                d.dispatch("slot_invalid_to", {"timeout_seconds": invalid_val, "payload": {}})
+
+    def test_dispatcher_accepts_none_timeout(self):
+        d = make()
+        result = d.dispatch("slot_none_to", {"timeout_seconds": None, "payload": {}})
+        self.assertEqual(result["state"], "SIMULATED")
 
     def test_timeout_no_retry(self):
         adapter = RelayProviderAdapterBridge(simulate_timeout=True)
