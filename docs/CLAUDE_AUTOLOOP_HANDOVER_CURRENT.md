@@ -7,7 +7,7 @@
 
 ## Current snapshot (2026-09-26)
 - Repo: `kamiyusense/multi-ai-council-phase0`
-- PR #25: OPEN / mergeable, branch `feature/claude-night-loop-prepare`, head `a2ca46bf0121184c519df3dbf5c7601adba2ba95`
+- PR #25: OPEN / mergeable, branch `feature/claude-night-loop-prepare`; **fresh-read its current head before work**.
 - PR #25: 303 command_bus tests PASS, compileall PASS, diff-check PASS, exact-head Actions run `36236630904` SUCCESS.
 - JSON Schema fail-closed hardening completed; evidence is in PR #25 and Issue #23.
 - PR #6: MERGED. Reuse its durable executor/Jules dispatch machinery.
