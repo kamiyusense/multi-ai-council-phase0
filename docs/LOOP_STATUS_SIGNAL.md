@@ -52,15 +52,18 @@ exists, replay is a NO-OP.
 - `workflow_call` so an existing trusted loop workflow can refresh status after a
   durable state transition.
 
-The workflow uses one concurrency group per loop with `queue: max` so status mutations
-are serialized without replacing older pending terminal notifications.
+The workflow uses one global status concurrency group with `queue: max` because every
+loop projects onto the same Issue. Status mutations are serialized without replacing
+older pending terminal notifications.
 
 The requested state file is fetched as data from:
 
 `automation/command_bus/state/<loop_id>.json`
 
-The workflow code itself is checked out from the workflow commit, not from the requested
-state ref. This prevents an arbitrary state branch from supplying executable status code.
+The workflow code itself is checked out from trusted `main`, not from the requested state
+ref. The requested state ref is fetched strictly as data. The renderer also requires the
+durable state's `loop_id` to match the requested loop id. This prevents an arbitrary state
+branch from supplying executable status code or projecting a different loop identity.
 
 All GitHub REST calls use `curl --retry 0`. Issue body writes and notification comments
 receive an independent readback. Ambiguous writes are not resent inside the workflow.
