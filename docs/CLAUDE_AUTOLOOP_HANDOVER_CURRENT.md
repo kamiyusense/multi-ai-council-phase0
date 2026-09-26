@@ -97,3 +97,33 @@ run. Runtime version and literal provider-request retry behavior remain
 firewall/system settings, or package installation were used or changed. The
 disposable archive/executable remain under the recorded temporary path and were
 not added to Git.
+
+
+## Isolated GitHub Actions probe prepared (2026-09-27)
+
+To address the local Windows egress blocker without changing `main`, a
+purpose-scoped workflow and fake-provider harness have been prepared for
+`ubuntu-24.04`. The runner downloads only the official Linux x64 v2.1.283
+release, verifies the fresh release metadata/tag and SHA-256, and never executes
+Claude on the runner host. Claude and the loopback-only fake provider run in the
+same Docker `--network none` container. The harness checks the `none` driver,
+loopback-only interfaces, empty routes, and failed external IPv4/DNS probes
+before any Claude command.
+
+The workflow's token is limited to `contents: read`, checkout credentials are
+not persisted, and its path-filter prevents a later docs/evidence-only commit
+from launching another matrix. A push to the PR branch is required to trigger
+the workflow because `workflow_dispatch` is only accepted when the workflow is
+on the default branch; `main` is not changed. The workflow, fake provider, and
+design are in `.github/workflows/claude-literal-retry-zero-probe.yml`,
+`automation/command_bus/probes/claude_literal_retry_zero/probe.py`, and
+`docs/CLAUDE_LITERAL_RETRY_ZERO_GITHUB_ACTIONS_PROBE.md`.
+
+Local static validation currently covers the fake-server fixtures, redaction,
+the result classifier, and read-only/network-none workflow constraints. It does
+not establish the actual runtime behavior. No GitHub runner has been started
+from this prepared version yet; the A-H result remains `UNKNOWN` until an
+isolated run artifact is read back and inspected. This repository is private,
+so the explicitly requested GitHub-hosted runner may consume the account's
+included Actions minutes or incur usage if that allowance is exhausted; no
+billing setting or limit is changed by this workflow.

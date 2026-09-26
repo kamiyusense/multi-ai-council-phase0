@@ -1,0 +1,135 @@
+name: Claude literal retry-zero isolated probe
+
+on:
+  push:
+    branches:
+      - feature/claude-night-loop-prepare
+    paths:
+      - .github/workflows/claude-literal-retry-zero-probe.yml
+      - automation/command_bus/probes/claude_literal_retry_zero/**
+      - automation/command_bus/tests/test_claude_literal_retry_zero_probe.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claude-literal-retry-zero-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  isolated-fake-provider-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout probe source without retaining credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify and unpack the exact official Claude Code release (host does not execute it)
+        shell: bash
+        env:
+          RELEASE_TAG: v2.1.283
+          ASSET_NAME: claude-linux-x64.tar.gz
+          EXPECTED_ASSET_SHA256: db404a91bec8baffb53463166fdc8bf579208a527d60afc2d984d7507dc0c2f9
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/claude-literal-retry-zero"
+          runtime="$root/runtime"
+          output="$root/output"
+          mkdir -p "$runtime" "$output"
+          printf '{"stage":"FETCHING_OFFICIAL_RELEASE_METADATA","claude_started":false}\n' > "$output/workflow-preflight.json"
+          metadata="$root/release.json"
+          tag_ref="$root/source-tag-ref.json"
+          archive="$root/$ASSET_NAME"
+          curl --fail --silent --show-error --retry 0 \
+            --connect-timeout 20 --max-time 180 \
+            https://api.github.com/repos/anthropics/claude-code/releases/tags/v2.1.283 \
+            --output "$metadata"
+          jq -e --arg tag "$RELEASE_TAG" --arg asset "$ASSET_NAME" \
+            --arg digest "sha256:$EXPECTED_ASSET_SHA256" \
+            --arg url "https://github.com/anthropics/claude-code/releases/download/v2.1.283/claude-linux-x64.tar.gz" \
+            '.tag_name == $tag and .name == $tag and
+             ([.assets[] | select(.name == $asset and .digest == $digest and .browser_download_url == $url)] | length == 1)' \
+            "$metadata" >/dev/null
+          curl --fail --silent --show-error --retry 0 \
+            --connect-timeout 20 --max-time 180 \
+            https://api.github.com/repos/anthropics/claude-code/git/ref/tags/v2.1.283 \
+            --output "$tag_ref"
+          jq -e '.ref == "refs/tags/v2.1.283" and .object.type == "commit" and .object.sha == "7779afb12e3635f46f56ec823979d68350ae000b"' \
+            "$tag_ref" >/dev/null
+          asset_size="$(jq -r --arg asset "$ASSET_NAME" '.assets[] | select(.name == $asset) | .size' "$metadata")"
+          test "$asset_size" = "107232692"
+          curl --fail --location --silent --show-error --retry 0 \
+            --connect-timeout 20 --max-time 600 \
+            "https://github.com/anthropics/claude-code/releases/download/v2.1.283/claude-linux-x64.tar.gz" \
+            --output "$archive"
+          printf '%s  %s\n' "$EXPECTED_ASSET_SHA256" "$archive" | sha256sum --check --status
+          tar -xzf "$archive" -C "$runtime"
+          mapfile -t binaries < <(find "$runtime" -type f -name claude -perm /111 -print)
+          test "${#binaries[@]}" -eq 1
+          binary="${binaries[0]}"
+          executable_sha256="$(sha256sum "$binary" | awk '{print toupper($1)}')"
+          runtime_metadata="$output/runner-identity.json"
+          jq -n --slurpfile rel "$metadata" --slurpfile tag "$tag_ref" \
+             --arg zip_sha "$(sha256sum "$archive" | awk '{print toupper($1)}')" \
+             --arg executable_sha "$executable_sha256" \
+             --arg binary_relative "${binary#"$runtime"/}" \
+             --arg runner_image "ubuntu-24.04" \
+             '{repository:"anthropics/claude-code",release_tag:$rel[0].tag_name,source_tag_commit:$tag[0].object.sha,asset_name:"claude-linux-x64.tar.gz",asset_url:"https://github.com/anthropics/claude-code/releases/download/v2.1.283/claude-linux-x64.tar.gz",asset_size_bytes:107232692,official_asset_digest:($rel[0].assets[]|select(.name=="claude-linux-x64.tar.gz")|.digest),downloaded_archive_sha256:$zip_sha,executable_relative_path:$binary_relative,executable_sha256:$executable_sha,runner_image:$runner_image,host_executed_claude:false}' \
+             > "$runtime_metadata"
+          printf '{"stage":"OFFICIAL_ASSET_VERIFIED_AND_UNPACKED","claude_started":false}\n' > "$output/workflow-preflight.json"
+          printf 'CLAUDE_EXECUTABLE_SHA256=%s\n' "$executable_sha256" >> "$GITHUB_ENV"
+          printf 'CLAUDE_EXECUTABLE_PATH=%s\n' "$binary" >> "$GITHUB_ENV"
+          printf 'CLAUDE_RUNTIME_DIR=%s\n' "$runtime" >> "$GITHUB_ENV"
+          printf 'CLAUDE_PROBE_OUTPUT=%s\n' "$output" >> "$GITHUB_ENV"
+          printf 'RELEASE_METADATA=%s\n' "$metadata" >> "$GITHUB_ENV"
+          printf 'Verified official archive and executable hashes; Claude binary has not been executed on the runner host.\n'
+
+      - name: Build isolation container image without package installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull python:3.12-slim-bookworm
+          image_id="$(docker image inspect python:3.12-slim-bookworm --format '{{.Id}}')"
+          repo_digests="$(docker image inspect python:3.12-slim-bookworm --format '{{json .RepoDigests}}')"
+          driver="$(docker network inspect none --format '{{.Driver}}')"
+          test "$driver" = "null"
+          jq -n --arg id "$image_id" --argjson repo_digests "$repo_digests" --arg driver "$driver" \
+            '{container_image_id:$id,container_image_repo_digests:$repo_digests,docker_none_network_driver:$driver}' \
+            > "$CLAUDE_PROBE_OUTPUT/container-identity.json"
+
+      - name: Run A-H only inside network-none container
+        id: probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          driver="$(docker network inspect none --format '{{.Driver}}')"
+          test "$driver" = "null"
+          printf '{"stage":"ENTERING_NETWORK_NONE_CONTAINER","docker_network_driver":"%s","claude_started":false}\n' "$driver" > "$CLAUDE_PROBE_OUTPUT/workflow-preflight.json"
+          uid="$(id -u)"
+          gid="$(id -g)"
+          binary_in_container="/runtime/${CLAUDE_EXECUTABLE_PATH#"$CLAUDE_RUNTIME_DIR"/}"
+          set +e
+          docker run --rm --network none --user "$uid:$gid" \
+            --mount "type=bind,src=$CLAUDE_RUNTIME_DIR,dst=/runtime,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/automation/command_bus/probes/claude_literal_retry_zero/probe.py,dst=/probe.py,readonly" \
+            --mount "type=bind,src=$CLAUDE_PROBE_OUTPUT,dst=/out" \
+            --env "EXPECTED_CLAUDE_SHA256=$CLAUDE_EXECUTABLE_SHA256" \
+            --env "PROBE_DOCKER_NETWORK_DRIVER=$driver" \
+            python:3.12-slim-bookworm python3 /probe.py "$binary_in_container" /out
+          status=$?
+          set -e
+          printf '%s\n' "$status" > "$CLAUDE_PROBE_OUTPUT/container_exit_status.txt"
+          exit "$status"
+
+      - name: Upload compact probe evidence (never upload the Claude binary/archive)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-literal-retry-zero-${{ github.run_id }}
+          path: ${{ runner.temp }}/claude-literal-retry-zero/output/
+          if-no-files-found: error
+          retention-days: 14
