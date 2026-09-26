@@ -72,6 +72,24 @@ class RelayIntegrationTests(unittest.TestCase):
         self.assertEqual(openai["raw_evidence"]["stdout"], "mock")
         self.assertEqual(google["raw_evidence"]["stdout"], "mock")
 
+    def test_bridge_prepare_timeout_validation(self):
+        adapter = RelayProviderAdapterBridge()
+        for bad_timeout in [False, True, 0, -1, 3.14, "5", [], {}]:
+            with self.subTest(timeout=bad_timeout):
+                with self.assertRaises(ValueError):
+                    adapter.prepare({"timeout_seconds": bad_timeout, "payload": {}})
+
+        # Check valid cases and correct return dict
+        prepared_none = adapter.prepare({"timeout_seconds": None, "payload": {"k": "v"}, "correlation_id": "c1"})
+        self.assertIsNone(prepared_none["timeout_seconds"])
+        self.assertEqual(prepared_none["payload"], {"k": "v"})
+        self.assertEqual(prepared_none["correlation_id"], "c1")
+
+        prepared_int = adapter.prepare({"timeout_seconds": 10, "payload": {"k": "v"}, "correlation_id": "c2"})
+        self.assertEqual(prepared_int["timeout_seconds"], 10)
+        self.assertEqual(prepared_int["payload"], {"k": "v"})
+        self.assertEqual(prepared_int["correlation_id"], "c2")
+
     def test_prepared_payload_snapshot(self):
         caller_payload = {"messages": [{"role": "user", "content": "hi"}]}
         adapter = RelayProviderAdapterBridge()

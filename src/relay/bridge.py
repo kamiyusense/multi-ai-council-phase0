@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from src.phase0_core.adapter import CoreProviderAdapter
+from src.relay.envelope import validate_timeout
 
 
 class RelayProviderAdapterBridge(CoreProviderAdapter):
@@ -23,6 +24,7 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         self.abort_calls: list[tuple[str, str]] = []
 
     def prepare(self, case_context: dict[str, Any]) -> dict[str, Any]:
+        validate_timeout(case_context.get("timeout_seconds"))
         return {"case_id": case_context.get("case_id"),
                 "provider_id": case_context.get("provider_id"),
                 "session_id": case_context.get("session_id"),
