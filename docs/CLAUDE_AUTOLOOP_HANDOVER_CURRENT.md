@@ -33,3 +33,21 @@ Semi-auto GPT loop is primary; preserve its quota. Auto loop is a helper.
 
 ## Safety
 `retry=0`; `fallback=disabled`; max 6 rounds; fresh target HEAD/tree; terminal-receipt replay prevention; no merge/default-branch direct write/force-push/destructive delete. Do not change Secrets/permissions/billing or create/display credentials without explicit user action/approval.
+
+
+## Fresh continuation checkpoint (2026-09-26)
+
+Fresh GitHub readback confirmed that the current PR #25 code remains the previously validated PREPARE_ONLY implementation; commits after the validated code head changed only this handover document. The current `claude_loop.py` deliberately rejects live-model/external-send requests, so neither standalone backend is live-green yet.
+
+A pre-existing repository audit, `docs/CLAUDE_PHASE0_AUDIT_V1_1.md`, records a live-Claude blocker: literal provider-request `retry=0` was not proven because Claude Code has multiple implicit retry/continuation paths outside a simple controller retry counter. A fresh public check did not find authoritative evidence that this invariant is now guaranteed. A recent public Claude Code issue also reports more than one provider request despite `CLAUDE_CODE_MAX_RETRIES=0` and a one-turn configuration; treat that issue as supporting evidence, not as an official guarantee.
+
+Therefore the fail-closed status is:
+- A `JULES_BACKEND`: STATIC/PREPARE_ONLY green; LIVE = BLOCKED pending Claude runtime invariant closure and explicit live authorization.
+- B `CLAUDE_BACKEND`: STATIC/PREPARE_ONLY green; LIVE = BLOCKED pending the same Claude runtime invariant closure and explicit live authorization.
+- takeover/orchestration research and implementation remain deferred until both A/B are individually live-green.
+- do not create the Claude/Gemini takeover-research prompts yet.
+- exact current Claude Code release/runtime behavior is UNKNOWN unless freshly verified from the executable/source used for the test.
+
+Next safe closure step requires a disposable local/runtime test of the actual Claude Code executable against a fake local provider endpoint, with no real Anthropic/Jules call and no real credential. Test whether one controller dispatch can cause more than one provider request under success, truncation, no-response, disconnect, retryable error, auth-recovery, and continuation cases. If the executable or required source is unavailable, record BLOCKED/UNKNOWN; do not install/upgrade or use live credentials automatically.
+
+Safe default until that evidence exists: keep literal `retry=0` unchanged and do not live-start Claude.
