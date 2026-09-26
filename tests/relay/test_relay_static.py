@@ -17,11 +17,12 @@ from relay.result import RelayState
 
 
 class EnvelopeTests(unittest.TestCase):
-    def envelope(self, payload=None, correlation="corr-1"):
+    def envelope(self, payload=None, correlation="corr-1", timeout_seconds=None):
         return DispatchEnvelope.build(
             slot=DispatchSlot("case-1", "openai", 0),
             correlation_id=correlation,
             payload=payload or {"packet": "hello"},
+            timeout_seconds=timeout_seconds,
         )
 
     def test_payload_and_correlation_are_preserved(self):
@@ -65,6 +66,17 @@ class EnvelopeTests(unittest.TestCase):
         guard = DuplicateGuard()
         self.assertEqual(guard.reserve(self.envelope({"x": 1})), DuplicateDecision.RESERVED)
         self.assertEqual(guard.reserve(self.envelope({"x": 2})), DuplicateDecision.CONFLICT)
+
+    def test_same_slot_same_payload_same_timeout_is_same_request(self):
+        guard = DuplicateGuard()
+        self.assertEqual(guard.reserve(self.envelope(correlation="corr-a", timeout_seconds=30.0)), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(self.envelope(correlation="corr-b", timeout_seconds=30.0)), DuplicateDecision.SAME_REQUEST)
+
+    def test_same_slot_same_payload_different_timeout_is_conflict(self):
+        guard = DuplicateGuard()
+        self.assertEqual(guard.reserve(self.envelope(correlation="corr-a", timeout_seconds=30.0)), DuplicateDecision.RESERVED)
+        self.assertEqual(guard.reserve(self.envelope(correlation="corr-b", timeout_seconds=60.0)), DuplicateDecision.CONFLICT)
+        self.assertEqual(guard.reserve(self.envelope(correlation="corr-c")), DuplicateDecision.CONFLICT)
 
 
 class LifecycleTests(unittest.TestCase):
