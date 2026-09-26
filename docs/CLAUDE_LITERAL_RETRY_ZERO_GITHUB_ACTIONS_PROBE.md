@@ -197,3 +197,87 @@ A new user authorization covers exactly one additional GitHub-hosted Ubuntu work
 The invalid-option `--help` parser preflight has been removed. `claude --version` is used only to verify runtime identity. A-H each start one fresh process and a loopback-only fake Messages API in Docker `--network none`; the network namespace gate is independent and must pass before any case. Each case receives its own HOME, config directory, TMPDIR, cwd, server, and fake credential. A command-line error before the fake provider receives a request is UNKNOWN, not FAIL. A request count above one is FAIL irrespective of process exit status; zero is UNKNOWN; exactly one is PASS only with complete process observation and no retry/continuation/fallback evidence. Case H additionally needs a 10-second post-process observation with stable provider request count after SIGINT.
 
 Complete stdout/stderr are retained after exact fake-key redaction. Request bodies and credential values are never recorded. The pinned CLI flags and runtime settings were checked against Anthropic's current official [CLI reference](https://code.claude.com/docs/en/cli-usage) and [environment-variable reference](https://code.claude.com/docs/en/env-vars); documented minimums for `--restricted` (2.1.248) and `--permission-prompts none` (2.1.259) are below v2.1.283. Runtime request counts, not environment-variable claims, determine retry behavior.
+
+
+## Prior-art review before any further run (2026-09-27)
+
+Do not treat the next change as merely adding `--verbose`. A fresh review of
+existing Claude Code reproductions found two directly relevant upstream
+patterns that change the harness design.
+
+### 1. Native output-limit recovery reproduction
+
+Anthropic issue `anthropics/claude-code#92936` documents an unmodified native
+Claude Code reproduction using a localhost synthetic Anthropic Messages peer.
+For Claude Code 2.1.258 and 2.1.263, with `max-turns=1`,
+`CLAUDE_CODE_MAX_RETRIES=0`, tools disabled, session persistence disabled,
+and compaction disabled, the recorded `/v1/messages` generation counts were:
+
+- normal `end_turn`: 1
+- one `max_tokens`, then `end_turn`: 2
+- repeated `max_tokens`: 4 before the native output-limit error
+
+The portable reproducer is pinned at
+`100yenadmin/hermes-claude-agent-sdk@e611437f7a97a67eacee95c3fb7ff0f2f3fe6d5f`.
+Its maintained peer supports both `/v1/messages` and
+`/v1/messages/count_tokens`, but counts only actual Messages generation
+requests for the single-generation invariant.
+
+Its native command also uses `--verbose` with stream-json output and pins an
+explicit model. Its environment explicitly sets
+`CLAUDE_CODE_MAX_RETRIES=0`, `DISABLE_AUTO_COMPACT=1`, and
+`DISABLE_COMPACT=1`.
+
+### 2. Mid-stream disconnect reproduction
+
+Anthropic issue `anthropics/claude-code#68362` contains a self-contained
+localhost mock-provider reproduction in which an older Claude Code build
+repeatedly reissued provider requests after a streamed tool call was followed by
+a connection close. The reported reproduction reached 1201 provider requests
+before timeout.
+
+This means the Phase 0 harness must not rely only on a process timeout to bound
+a pathological duplicate-request path.
+
+### Required harness corrections before another authorized run
+
+1. Add the v2.1.283 runtime-required `--verbose` flag to the direct A-H
+   command.
+2. Pin the model explicitly (use the official documented
+   `--model claude-sonnet-5` shape) so model selection is not an unrelated
+   startup variable.
+3. Add the officially documented `DISABLE_AUTO_COMPACT=1` and
+   `DISABLE_COMPACT=1` controls so output-limit recovery is not mixed with
+   compaction behavior.
+4. Split fake-peer traffic into:
+   - `generation_requests`: exact `/v1/messages` requests;
+   - `auxiliary_requests`: `/v1/messages/count_tokens`, GETs, and any other
+     local endpoint.
+   The literal generation retry verdict must use only
+   `generation_request_count`; all auxiliary traffic remains recorded.
+5. Implement `/v1/messages/count_tokens` with a deterministic local response
+   compatible with the maintained upstream reproduction.
+6. Add a duplicate-generation hard stop. The second `/v1/messages` request is
+   already sufficient to prove literal single-generation failure. As soon as
+   generation request #2 is observed, record FAIL and terminate the Claude
+   process group promptly rather than allowing an unbounded loop.
+7. For adverse cases, make the first generation response the intended fixture.
+   A second generation request is the evidence being tested; no case needs to
+   permit dozens or hundreds of additional requests.
+8. Keep Docker `--network none`, disposable HOME/config/tmp/cwd, fake
+   credentials, no real provider, no Jules, no fallback model, and exact
+   release/hash/version gates unchanged.
+
+### Verdict semantics after correction
+
+- `generation_request_count > 1` => FAIL immediately.
+- `generation_request_count == 0` => UNKNOWN.
+- exactly one generation request with incomplete process/post-event observation
+  => UNKNOWN.
+- exactly one generation request with complete observation and no
+  retry/continuation/fallback indication => PASS for that case.
+- auxiliary requests are reported separately and never silently discarded, but
+  they do not masquerade as additional model generations.
+
+No new Actions run or release download is authorized by this documentation
+review.
