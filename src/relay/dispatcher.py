@@ -46,7 +46,8 @@ class RelayDispatcher:
                    "billing", "auth route", "timeout_seconds"}
         if blocked.intersection(payload):
             raise ValueError("Request override fields rejected.")
-        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        intent_obj = {"payload": payload, "timeout_seconds": timeout_seconds}
+        canonical = json.dumps(intent_obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
         payload_hash = hashlib.sha256(canonical).hexdigest()
         base = {"live_ready": False, "live_turn_executed": False, "retry_count": 0,
                 "fallback_state": "disabled", "simulated": True}

@@ -256,5 +256,43 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(second_result["reason"], "cancelled")
         self.assertEqual(adapter.dispatch_count, 0)
 
+
+    def test_timeout_intent_hash_duplicates_and_conflicts(self):
+        d = make()
+        payload = {"a": 1}
+        # First request sets intent
+        self.assertEqual(d.dispatch("slot_timeout_1", {"timeout_seconds": 10, "payload": payload})["state"], "SIMULATED")
+        # Exact same slot, payload, and timeout -> SAME_REQUEST/BLOCKED
+        self.assertEqual(d.dispatch("slot_timeout_1", {"timeout_seconds": 10, "payload": payload})["state"], "BLOCKED")
+
+        # Same slot, same payload, but different timeout -> CONFLICT/BLOCKED
+        self.assertEqual(d.dispatch("slot_timeout_1", {"timeout_seconds": 20, "payload": payload})["state"], "BLOCKED")
+        self.assertEqual(d.dispatch("slot_timeout_1", {"timeout_seconds": 20, "payload": payload})["reason"], "CONFLICT")
+
+        # Different slot, same payload, same timeout -> New intent, allowed
+        self.assertEqual(d.dispatch("slot_timeout_2", {"timeout_seconds": 10, "payload": payload})["state"], "SIMULATED")
+
+    def test_deterministic_key_order_with_timeout(self):
+        d = make()
+        payload1 = {"b": 2, "a": 1}
+        payload2 = {"a": 1, "b": 2}
+        self.assertEqual(d.dispatch("slot_timeout_order", {"timeout_seconds": 10, "payload": payload1})["state"], "SIMULATED")
+        # Ensure it's treated as duplicate if dict order is different but semantics match
+        self.assertEqual(d.dispatch("slot_timeout_order", {"timeout_seconds": 10, "payload": payload2})["state"], "BLOCKED")
+        self.assertEqual(d.dispatch("slot_timeout_order", {"timeout_seconds": 10, "payload": payload2})["reason"], "SAME_REQUEST")
+
+    def test_no_extra_adapter_dispatch_on_duplicate_or_conflict(self):
+        adapter = RelayProviderAdapterBridge()
+        d = make(adapter)
+        payload = {"a": 1}
+        d.dispatch("slot_no_extra_dispatch", {"timeout_seconds": 10, "payload": payload})
+        self.assertEqual(adapter.dispatch_count, 1)
+
+        d.dispatch("slot_no_extra_dispatch", {"timeout_seconds": 10, "payload": payload})
+        self.assertEqual(adapter.dispatch_count, 1) # Unchanged for SAME_REQUEST
+
+        d.dispatch("slot_no_extra_dispatch", {"timeout_seconds": 20, "payload": payload})
+        self.assertEqual(adapter.dispatch_count, 1) # Unchanged for CONFLICT
+
 if __name__ == "__main__":
     unittest.main()
