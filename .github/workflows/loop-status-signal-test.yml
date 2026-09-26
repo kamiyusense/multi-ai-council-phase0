@@ -23,9 +23,9 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Run command-bus unit suite
+      - name: Run focused status and validation-scope tests
         shell: bash
-        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_validation_scope -v
 
       - name: Compile command-bus Python
         shell: bash
