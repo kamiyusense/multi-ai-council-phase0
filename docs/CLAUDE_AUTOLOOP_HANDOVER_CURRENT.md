@@ -143,3 +143,34 @@ Issue #23. No workflow rerun or second asset download was attempted: the
 one-time download permission was consumed, `retry=0` remains in force, and the
 ephemeral runner did not retain the binary. `CLAUDE_LITERAL_RETRY_ZERO` remains
 `UNKNOWN`; live model/provider/Jules requests remain zero.
+
+
+## GitHub Actions preflight root-cause correction (2026-09-27)
+
+Run `36256718479` remains a valid `UNKNOWN / blocked before A-H` result.
+Fresh review found that the next fix must be stronger than merely increasing the
+saved help length: Anthropic's official CLI reference explicitly states that
+`claude --help` does not list every supported flag.
+
+Therefore:
+- absence of a flag string from `--help` must not fail the runtime gate by itself;
+- complete help output should still be retained as evidence;
+- the required v2.1.283 flags are documented in the current official CLI
+  reference, including `--restricted`, `--safe-mode`, `--max-turns`,
+  `--tools`, `--no-session-persistence`, and
+  `--permission-prompts none`;
+- a future separately authorized run must use an isolated no-provider
+  parser-acceptance preflight for the exact option bundle after Docker
+  `--network none` is proven;
+- if parser acceptance cannot be proven without beginning a provider turn, stop
+  UNKNOWN.
+
+The repository was fresh-read as private. Standard GitHub-hosted Actions usage
+therefore consumes the repository owner's included Actions minutes and may be
+billable after the included allowance is exhausted. No billing/settings change
+was made.
+
+No workflow/probe/test path was changed in this checkpoint, because those paths
+currently trigger the Actions probe on push. No second Actions run or second
+release download was authorized or performed. A/B remain not live-green and
+takeover/orchestration remains deferred.
