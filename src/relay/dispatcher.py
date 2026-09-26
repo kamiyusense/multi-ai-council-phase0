@@ -76,7 +76,7 @@ class RelayDispatcher:
                 self.cancelled_slots.add(slot_id)
             return {**base, "state": "TIMEOUT", "error": str(exc)}
         except Exception as exc:
-            if isinstance(exc, RuntimeError) and str(exc) == "CLI unavailable":
+            if handle is None and isinstance(exc, RuntimeError) and str(exc) == "CLI unavailable":
                 raise
             if handle is not None:
                 self.adapter.abort(handle)
