@@ -184,3 +184,38 @@ Pre-push local validation on the current PR #25 line: Claude probe harness 13/13
 The single newly authorized isolated workflow run `36258801058` completed but stopped at parser preflight. Runtime identity and network-none checks passed. The positive option bundle plus `--help` exited 0; the invalid-flag negative control also exited 0 and printed help, so option parsing was not proven. The loopback fake endpoint saw 0 requests; controller dispatches=0; provider sessions=0. A-H remain not started. Correct overall classification: `CLAUDE_LITERAL_RETRY_ZERO=UNKNOWN`, not FAIL—the harness's nonzero exit means its safety gate stopped, not that a second provider request occurred.
 
 Artifact `claude-literal-retry-zero-36258801058` (ID 10911871171) was read back and hashed in `docs/CLAUDE_LITERAL_RETRY_ZERO_GITHUB_ACTIONS_RESULT_2026-09-27.json`. Static validation: probe tests 13/13, command_bus 316/316, compileall and diff check PASS. Exact official v2.1.283 asset and executable hashes are recorded there. No provider/Jules requests or real credentials were used. The one authorized runner run and additional binary download are consumed; no rerun/retry. The follow-up commit is docs-only to avoid retriggering the path-filtered workflow.
+
+
+## Parser gate removed from the next safe probe design (2026-09-27)
+
+Run `36258801058` remains `UNKNOWN`: its help-based negative control could
+not prove option parsing because `--help` exits successfully before rejecting
+the intentionally invalid option.
+
+Fresh official-document review resolves the design issue without needing a
+separate parser-only mechanism. Anthropic's CLI reference states that
+`claude --help` does not list every flag, and directly documents all options
+the probe intends to use. In particular, `--restricted` requires v2.1.248+
+and `--permission-prompts none` requires v2.1.259+; the pinned runtime is
+v2.1.283. The reference also documents `--safe-mode`, `--max-turns`,
+`--tools`, `--no-session-persistence`, `--output-format`, and
+`-p/--print`.
+
+A parser-only proof is not a safety prerequisite because external-egress safety
+is enforced independently by Docker `--network none`. The next separately
+authorized run should therefore remove the parser-preflight gate and execute
+A-H directly against the loopback fake provider:
+
+- unsupported/invalid option with zero provider requests => case UNKNOWN;
+- more than one fake-provider request => FAIL;
+- exactly one request but incomplete process observation => UNKNOWN;
+- exactly one request with complete observation and no retry/continuation/
+  fallback indication => PASS for that case.
+
+This directly tests the invariant of interest. If a retry-control environment
+variable is silently ignored, the fake provider will expose that as additional
+requests instead of relying on parser assumptions.
+
+No workflow/probe/test path was changed in this checkpoint, so no Actions run
+or release re-download was triggered. A/B remain not live-green and
+takeover/orchestration remains deferred.
