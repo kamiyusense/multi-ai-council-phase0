@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+import json
+from pathlib import Path
 import unittest
 
 from automation.command_bus.claude_loop import (
@@ -16,7 +18,10 @@ def verdict(mode=BackendMode.JULES_BACKEND.value, decision=VerdictDecision.CONTI
         correlation_id="claude-night-001-r1", mode=mode, decision=decision,
         expected_target_head="a" * 40, expected_target_tree="b" * 40,
         reasons=["fresh readback"], evidence_refs=["evidence://review"],
-        next_prompt=extra.pop("next_prompt", "prepare the next bounded task"),
+        next_prompt=extra.pop(
+            "next_prompt",
+            "prepare the next bounded task" if decision == VerdictDecision.CONTINUE.value else None,
+        ),
         terminal=extra.pop("terminal", decision != VerdictDecision.CONTINUE.value),
     )
 
@@ -72,6 +77,57 @@ class ClaudeLoopTests(unittest.TestCase):
                                      expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
                                      path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}])
         self.assertEqual(result.status, "NO-OP")
+
+    def test_structured_verdict_contract_fails_closed(self):
+        value = verdict()
+        value["unexpected"] = "x"
+        self.assertEqual(
+            prepare_next_action(
+                value, expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+                path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}],
+            ).status,
+            "UNKNOWN",
+        )
+
+        value = verdict()
+        value["terminal"] = True
+        self.assertEqual(
+            prepare_next_action(
+                value, expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+                path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}],
+            ).status,
+            "UNKNOWN",
+        )
+
+        value = verdict()
+        value["next_prompt"] = "   "
+        self.assertEqual(
+            prepare_next_action(
+                value, expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+                path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}],
+            ).status,
+            "UNKNOWN",
+        )
+
+        value = verdict(decision=VerdictDecision.COMPLETE.value)
+        value["next_prompt"] = "must not be carried by a terminal verdict"
+        self.assertEqual(
+            prepare_next_action(
+                value, expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+                path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}],
+            ).status,
+            "UNKNOWN",
+        )
+
+    def test_verdict_schema_has_fail_closed_contract(self):
+        schema_path = Path(__file__).parents[1] / "schema" / "claude_verdict.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertIs(schema["additionalProperties"], False)
+        self.assertEqual(schema["properties"]["verdict_id"]["minLength"], 1)
+        self.assertEqual(schema["properties"]["reasons"]["type"], "array")
+        self.assertEqual(schema["properties"]["next_prompt"]["type"], ["string", "null"])
+        self.assertEqual(schema["properties"]["terminal"]["type"], "boolean")
+        self.assertEqual(len(schema["allOf"]), 1)
 
     def test_verdict_rejects_live_flags(self):
         value = verdict()
