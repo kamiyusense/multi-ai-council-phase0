@@ -67,7 +67,12 @@ class JulesApiRequestTests(unittest.TestCase):
             validate_request(bad, now=NOW)
 
     def test_prompt_binds_head_tree_and_allowlist(self):
-        rendered = build_jules_prompt(request())
+        now = datetime.now(timezone.utc)
+        prompt_request = request(
+            created_at=now.isoformat(),
+            expires_at=(now + timedelta(hours=1)).isoformat(),
+        )
+        rendered = build_jules_prompt(prompt_request)
         self.assertIn("Expected starting HEAD: " + "a" * 40, rendered)
         self.assertIn("Expected starting tree: " + "b" * 40, rendered)
         self.assertIn("tests/relay/test_dispatcher.py", rendered)
