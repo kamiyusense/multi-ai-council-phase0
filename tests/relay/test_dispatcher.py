@@ -244,7 +244,7 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(result["state"], "BLOCKED")
         self.assertEqual(result["reason"], "stop_requested")
         self.assertEqual(adapter.dispatch_count, 0)
-        self.assertNotIn("slot-stop", dispatcher.guard.ledger)
+        self.assertNotIn(("slot-stop", "slot-stop"), dispatcher.guard.ledger)
 
     def test_cancel_is_scoped_and_never_restarts(self):
         first = RelayProviderAdapterBridge()
@@ -261,7 +261,7 @@ class RelayDispatcherTests(unittest.TestCase):
             "anthropic-slot",
             {"timeout_seconds": 10, "provider_id": "anthropic", "session_id": "anthropic-session", "payload": {}},
         )
-        replay = first_dispatcher.dispatch("openai-slot", {"timeout_seconds": 10, "payload": {}})
+        replay = first_dispatcher.dispatch("openai-slot", {"timeout_seconds": 10, "provider_id": "openai", "payload": {}})
 
         self.assertEqual(cancelled["state"], "BLOCKED")
         self.assertEqual(first.abort_calls, [("openai", "openai-session")])
@@ -281,7 +281,7 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(result["state"], "BLOCKED")
         self.assertEqual(result["reason"], "aborted")
         self.assertEqual(adapter.dispatch_count, 0)
-        self.assertNotIn("slot-abort", dispatcher.guard.ledger)
+        self.assertNotIn(("slot-abort", "slot-abort"), dispatcher.guard.ledger)
 
 
     def test_abort_signal_blocks_second_dispatch_attempt_on_same_slot(self):
@@ -351,6 +351,48 @@ class RelayDispatcherTests(unittest.TestCase):
 
         d.dispatch("slot_no_extra_dispatch", {"timeout_seconds": 20, "payload": payload})
         self.assertEqual(adapter.dispatch_count, 1) # Unchanged for CONFLICT
+
+    def test_provider_isolation_same_slot(self):
+        d = make()
+        payload = {"a": 1}
+        # provider A
+        res_a = d.dispatch("shared_slot", {"provider_id": "provider_a", "timeout_seconds": 10, "payload": payload})
+        self.assertEqual(res_a["state"], "SIMULATED")
+        # provider B on same raw slot id
+        res_b = d.dispatch("shared_slot", {"provider_id": "provider_b", "timeout_seconds": 10, "payload": payload})
+        self.assertEqual(res_b["state"], "SIMULATED")
+
+        # cancelling provider A does not block B
+        d.dispatch("shared_slot", {"provider_id": "provider_a", "timeout_seconds": 10, "payload": payload}, abort_signal={"aborted": True})
+
+        # replay provider A is blocked
+        res_a2 = d.dispatch("shared_slot", {"provider_id": "provider_a", "timeout_seconds": 10, "payload": payload})
+        self.assertEqual(res_a2["state"], "BLOCKED")
+        self.assertEqual(res_a2["reason"], "cancelled")
+
+        # B on same shared slot is unaffected and conflict behavior remains scoped to B
+        res_b2 = d.dispatch("shared_slot", {"provider_id": "provider_b", "timeout_seconds": 10, "payload": payload})
+        self.assertEqual(res_b2["state"], "BLOCKED")
+        self.assertEqual(res_b2["reason"], "SAME_REQUEST")
+
+    def test_legacy_provider_id_fallback(self):
+        d = make()
+        payload = {"a": 1}
+        res_no_provider = d.dispatch("legacy_slot", {"timeout_seconds": 10, "payload": payload})
+        self.assertEqual(res_no_provider["state"], "SIMULATED")
+
+        # using the implicit slot as explicit provider id should hit duplicate guard
+        res_explicit = d.dispatch("legacy_slot", {"provider_id": "legacy_slot", "timeout_seconds": 10, "payload": payload})
+        self.assertEqual(res_explicit["state"], "BLOCKED")
+        self.assertEqual(res_explicit["reason"], "SAME_REQUEST")
+
+    def test_invalid_explicit_provider_id_rejected(self):
+        d = make()
+        invalid_providers = [None, "", 123, False, [], {}]
+        for provider_id in invalid_providers:
+            with self.subTest(provider_id=provider_id):
+                with self.assertRaisesRegex(ValueError, "Invalid provider_id"):
+                    d.dispatch("slot", {"provider_id": provider_id, "payload": {}})
 
 if __name__ == "__main__":
     unittest.main()

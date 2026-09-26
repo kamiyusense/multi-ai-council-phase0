@@ -11,13 +11,13 @@ from src.relay.envelope import compute_intent_hash, validate_timeout
 
 class DuplicateConflictGuard:
     def __init__(self) -> None:
-        self.ledger: dict[str, str] = {}
+        self.ledger: dict[tuple[str, str], str] = {}
 
-    def check_intent(self, slot_id: str, payload_hash: str) -> str:
-        if slot_id not in self.ledger:
-            self.ledger[slot_id] = payload_hash
+    def check_intent(self, reservation_key: tuple[str, str], payload_hash: str) -> str:
+        if reservation_key not in self.ledger:
+            self.ledger[reservation_key] = payload_hash
             return "RESERVED"
-        return "SAME_REQUEST" if self.ledger[slot_id] == payload_hash else "CONFLICT"
+        return "SAME_REQUEST" if self.ledger[reservation_key] == payload_hash else "CONFLICT"
 
 
 class RelayDispatcher:
@@ -25,13 +25,22 @@ class RelayDispatcher:
         self.adapter = adapter
         self.guard = guard
         self.stop_requested = False
-        self.cancelled_slots: set[str] = set()
+        self.cancelled_slots: set[tuple[str, str]] = set()
 
     def request_stop(self) -> None:
         """Prevent every future dispatch without touching an active provider."""
         self.stop_requested = True
 
     def dispatch(self, slot_id: str, context: dict[str, Any], abort_signal: dict[str, Any] | None = None) -> dict[str, Any]:
+        if "provider_id" in context:
+            provider_id = context["provider_id"]
+            if not isinstance(provider_id, str) or not provider_id:
+                raise ValueError("Invalid provider_id")
+        else:
+            provider_id = slot_id
+
+        reservation_key = (provider_id, slot_id)
+
         timeout_seconds = context.get("timeout_seconds")
         validate_timeout(timeout_seconds)
         payload = context.get("payload", {})
@@ -46,19 +55,19 @@ class RelayDispatcher:
                 "fallback_state": "disabled", "simulated": True}
         if self.stop_requested:
             return {**base, "state": "BLOCKED", "reason": "stop_requested"}
-        if slot_id in self.cancelled_slots:
+        if reservation_key in self.cancelled_slots:
             return {**base, "state": "BLOCKED", "reason": "cancelled"}
         if abort_signal and abort_signal.get("aborted"):
-            self.cancelled_slots.add(slot_id)
+            self.cancelled_slots.add(reservation_key)
             return {**base, "state": "BLOCKED", "reason": "aborted"}
-        decision = self.guard.check_intent(slot_id, payload_hash)
+        decision = self.guard.check_intent(reservation_key, payload_hash)
         if decision != "RESERVED":
             return {**base, "state": "BLOCKED", "reason": decision}
         handle: dict[str, Any] | None = None
         try:
             prepared = self.adapter.prepare({
                 **context,
-                "provider_id": context.get("provider_id", slot_id),
+                "provider_id": provider_id,
                 "session_id": context.get("session_id", slot_id),
                 "timeout_seconds": timeout_seconds,
             })
@@ -72,7 +81,7 @@ class RelayDispatcher:
             handle = self.adapter.dispatch(prepared)
             if abort_signal and abort_signal.get("abort_after_dispatch"):
                 self.adapter.abort(handle)
-                self.cancelled_slots.add(slot_id)
+                self.cancelled_slots.add(reservation_key)
                 return {**base, "state": "BLOCKED", "reason": "cancelled"}
             raw_result = self.adapter.collect(handle)
             raw_evidence = deepcopy(raw_result)
@@ -82,12 +91,12 @@ class RelayDispatcher:
         except TimeoutError as exc:
             if handle is not None:
                 self.adapter.abort(handle)
-                self.cancelled_slots.add(slot_id)
+                self.cancelled_slots.add(reservation_key)
             return {**base, "state": "TIMEOUT", "error": str(exc)}
         except Exception as exc:
             if handle is None and isinstance(exc, RuntimeError) and str(exc) == "CLI unavailable":
                 raise
             if handle is not None:
                 self.adapter.abort(handle)
-                self.cancelled_slots.add(slot_id)
+                self.cancelled_slots.add(reservation_key)
             return {**base, "state": "UNKNOWN", "error": str(exc)}
