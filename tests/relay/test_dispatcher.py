@@ -16,6 +16,12 @@ class MutatingClassifierBridge(RelayProviderAdapterBridge):
         return state
 
 
+class CliUnavailableDuringCollectBridge(RelayProviderAdapterBridge):
+    def collect(self, process_handle):
+        self.collect_count += 1
+        raise RuntimeError("CLI unavailable")
+
+
 class RelayDispatcherTests(unittest.TestCase):
     def test_successful_dispatch_is_simulated(self):
         result = make().dispatch("slot1", {"case_id": "1", "payload": {"q": "test"}})
@@ -72,6 +78,24 @@ class RelayDispatcherTests(unittest.TestCase):
 
         # Second dispatch should be blocked
         second_result = dispatcher.dispatch("slot_err", {"payload": {}})
+        self.assertEqual(second_result["state"], "BLOCKED")
+        self.assertEqual(second_result["reason"], "cancelled")
+        self.assertEqual(adapter.dispatch_count, 1)
+
+    def test_post_dispatch_cli_unavailable_aborts_and_blocks_retry(self):
+        adapter = CliUnavailableDuringCollectBridge()
+        dispatcher = make(adapter)
+        result = dispatcher.dispatch("slot_cli_after_handle", {"payload": {}})
+        self.assertEqual(result["state"], "UNKNOWN")
+        self.assertEqual(result["retry_count"], 0)
+        self.assertEqual(adapter.dispatch_count, 1)
+        self.assertEqual(adapter.collect_count, 1)
+        self.assertEqual(
+            adapter.abort_calls,
+            [("slot_cli_after_handle", "slot_cli_after_handle")],
+        )
+
+        second_result = dispatcher.dispatch("slot_cli_after_handle", {"payload": {}})
         self.assertEqual(second_result["state"], "BLOCKED")
         self.assertEqual(second_result["reason"], "cancelled")
         self.assertEqual(adapter.dispatch_count, 1)
