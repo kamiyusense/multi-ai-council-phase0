@@ -6,12 +6,8 @@ from copy import deepcopy
 from typing import Any
 
 from src.relay.bridge import RelayProviderAdapterBridge
-from src.relay.envelope import compute_intent_hash
+from src.relay.envelope import compute_intent_hash, validate_timeout
 
-
-def validate_timeout(timeout_seconds: Any) -> None:
-    if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, int) or timeout_seconds <= 0:
-        raise ValueError("Invalid timeout_seconds")
 
 
 class DuplicateConflictGuard:
@@ -38,8 +34,7 @@ class RelayDispatcher:
 
     def dispatch(self, slot_id: str, context: dict[str, Any], abort_signal: dict[str, Any] | None = None) -> dict[str, Any]:
         timeout_seconds = context.get("timeout_seconds")
-        if timeout_seconds is not None:
-            validate_timeout(timeout_seconds)
+        validate_timeout(timeout_seconds)
         payload = context.get("payload", {})
         blocked = {"model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
                    "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
