@@ -224,3 +224,46 @@ takeover/orchestration remains deferred.
 The prior run `36258801058` remains UNKNOWN and its artifact showed why the parser-only `--help` test is invalid. A new user message authorizes exactly one further isolated Ubuntu Actions run and one official v2.1.283 asset download. The probe/test change removes parser preflight and starts A-H directly only after release identity and Docker `--network none` are verified. Cases are adjudicated strictly by fake-provider request count: >1 FAIL, 0 UNKNOWN, exactly 1 plus complete observation/no retry-continuation-fallback PASS. CLI startup/option errors with zero requests remain UNKNOWN. H has an explicit 10-second post-SIGINT observation and stable-count check. Full output is preserved with fake-key redaction.
 
 Official CLI and env-var references have been freshly checked. Local validation after the code/test changes: probe 14/14 PASS; command_bus 317/317 PASS; compileall and `git diff --check` PASS. This evidence does not claim runtime behavior. The upcoming single push must be the only push that touches the workflow trigger paths; no repair push or Actions rerun is permitted afterward. Issue #23 can carry the post-run result checkpoint.
+
+
+## Upstream reproducer review completed before another run (2026-09-27)
+
+The next probe must not be a simple “add `--verbose` and try again”.
+
+Fresh prior-art review found two directly relevant public Claude Code
+reproductions:
+
+- `anthropics/claude-code#92936`: localhost synthetic Messages peer with native
+  Claude Code. With `max-turns=1`, `CLAUDE_CODE_MAX_RETRIES=0`, tools off,
+  session persistence off, and compaction off, Claude Code 2.1.258/2.1.263
+  produced 1 generation for normal end_turn, 2 generations after one
+  `max_tokens` recovery, and 4 generations when `max_tokens` persisted.
+- `anthropics/claude-code#68362`: localhost mock-provider reproducer of a
+  mid-stream disconnect path that reported 1201 provider requests before
+  timeout on an older build.
+
+Review of the pinned #92936 portable reproduction also found two concrete gaps
+in the current Phase 0 harness:
+
+1. its peer supports `/v1/messages/count_tokens` separately, while our current
+   handler records all local GET/POST traffic in one request list. That can
+   falsely make auxiliary traffic look like extra model generations;
+2. a process timeout alone is not a sufficient safety bound if an internal
+   recovery loop emits requests rapidly.
+
+Required correction before any future authorized Actions run:
+- add the observed-required `--verbose`;
+- pin `--model claude-sonnet-5`;
+- add `DISABLE_AUTO_COMPACT=1` and `DISABLE_COMPACT=1`;
+- count exact `/v1/messages` generations separately from token-count/other
+  auxiliary traffic;
+- implement deterministic local `/v1/messages/count_tokens`;
+- treat the second generation request as immediate FAIL and terminate the
+  Claude process group promptly to prevent a runaway loop.
+
+The direct localhost synthetic-provider strategy itself is validated by these
+upstream reproductions; the problem was the incompleteness of our harness, not
+the basic experimental approach.
+
+No workflow/probe/test path was changed in this checkpoint, therefore no new
+Actions run or release download was triggered. A/B remain not live-green.
