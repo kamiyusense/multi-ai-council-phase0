@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-013-prepare-snapshot-correlation",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "b845c6b0dbeab133d714d7f8156f43e1b0ddaf21",
+  "expected_target_tree": "cbe2cbb23cebbf410ba63c7d127d583b7670cd88",
+  "allowed_paths": [
+    "src/relay/bridge.py",
+    "tests/relay/test_integration.py",
+    "tests/relay/test_relay_static.py"
+  ],
+  "prompt": "Bounded static/mock Relay task only. Close a concrete handoff gap without adding new architecture. RelayProviderAdapterBridge.prepare currently keeps the caller payload object by reference and drops correlation_id. Make prepare snapshot/copy the approved payload so caller mutation after prepare cannot alter the prepared dispatch content, and preserve correlation_id (and existing case/provider/session/timeout identifiers) through the mock adapter path. Keep transport/provider evidence distinct: do not invent a real provider receipt or claim delivery. Preserve current retry=0, fallback-disabled, live_process_started=false behavior and all stop/cancel/timeout/error semantics. Add focused deterministic tests proving: (1) prepared payload equals the approved payload at prepare time, (2) mutating the caller payload after prepare cannot mutate prepared payload, (3) correlation_id survives prepare -> dispatch handle -> collect/mock result or equivalent existing mock path without being mistaken for provider success evidence, and (4) different providers remain isolated. Do not touch live/provider/network/auth/API/billing/settings/persistence behavior. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-26T18:11:00+00:00",
+  "expires_at": "2026-09-26T20:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
