@@ -212,6 +212,69 @@ class LifecycleTests(unittest.TestCase):
         self.assertIsNotNone(result.session_id)
         self.assertEqual(result.prompt_attempts, 1)
 
+    def test_finite_timeout_reaches_mock_prompt_unchanged(self):
+        transport = MockTransport(responses={"openai": b"{}"})
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        envelope = DispatchEnvelope.build(
+            slot=DispatchSlot("case-1", "openai", 0),
+            correlation_id="corr-to",
+            payload={"packet": "hello"},
+            timeout_seconds=42.5,
+        )
+        relay.dispatch_mock(envelope, cwd="snapshot")
+        self.assertEqual(transport.prompt_timeouts["openai"], 42.5)
+
+    def test_omitted_or_none_timeout_remains_deterministic_and_accepted(self):
+        transport = MockTransport(responses={"openai": b"{}"})
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        envelope = self.envelope()
+        relay.dispatch_mock(envelope, cwd="snapshot")
+        self.assertIn("openai", transport.prompt_timeouts)
+        self.assertIsNone(transport.prompt_timeouts["openai"])
+
+    def test_timeout_failure_still_causes_exactly_one_prompt_attempt_then_cancel_and_close(self):
+        transport = MockTransport(timeout_providers={"openai"})
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        envelope = DispatchEnvelope.build(
+            slot=DispatchSlot("case-1", "openai", 0),
+            correlation_id="corr-to-fail",
+            payload={"packet": "hello"},
+            timeout_seconds=10.0,
+        )
+        result = relay.dispatch_mock(envelope, cwd="snapshot")
+        self.assertEqual(result.state, RelayState.TIMEOUT)
+        self.assertEqual(transport.prompt_counts["openai"], 1)
+        self.assertEqual(transport.prompt_timeouts["openai"], 10.0)
+        self.assertEqual(len(transport.cancelled), 1)
+        self.assertEqual(transport.cancelled[0][0], "openai")
+        self.assertEqual(len(transport.closed), 1)
+        self.assertEqual(transport.closed[0][0], "openai")
+        self.assertEqual(result.prompt_attempts, 1)
+
+    def test_different_providers_different_timeouts_no_cross_contamination(self):
+        transport = MockTransport(
+            responses={"openai": b"openai", "anthropic": b"anthropic"}
+        )
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        env_openai = DispatchEnvelope.build(
+            slot=DispatchSlot("case-1", "openai", 0),
+            correlation_id="corr-openai",
+            payload={"packet": "hello"},
+            timeout_seconds=15.0,
+        )
+        env_anthropic = DispatchEnvelope.build(
+            slot=DispatchSlot("case-1", "anthropic", 0),
+            correlation_id="corr-anthropic",
+            payload={"packet": "hello"},
+            timeout_seconds=30.0,
+        )
+
+        relay.dispatch_mock(env_openai, cwd="openai-snapshot")
+        relay.dispatch_mock(env_anthropic, cwd="anthropic-snapshot")
+
+        self.assertEqual(transport.prompt_timeouts["openai"], 15.0)
+        self.assertEqual(transport.prompt_timeouts["anthropic"], 30.0)
+
     def test_duplicate_after_error_does_not_prompt(self):
         transport = MockTransport(error_providers={"openai"})
         relay = RelayLifecycle(transport, DuplicateGuard())

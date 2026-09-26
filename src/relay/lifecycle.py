@@ -60,7 +60,12 @@ class RelayLifecycle:
                 )
             session_id = self.transport.open_session(provider_id, cwd=cwd)
             prompt_attempts = 1
-            raw = self.transport.prompt(provider_id, session_id, envelope.payload)
+            raw = self.transport.prompt(
+                provider_id,
+                session_id,
+                envelope.payload,
+                timeout_seconds=envelope.timeout_seconds,
+            )
             return RelayResult(
                 provider_id=provider_id,
                 correlation_id=envelope.correlation_id,
