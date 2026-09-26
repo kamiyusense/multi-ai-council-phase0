@@ -36,6 +36,26 @@ class EnvelopeTests(unittest.TestCase):
         b = self.envelope({"b": 2, "a": 1})
         self.assertEqual(a.packet_sha256, b.packet_sha256)
 
+    def test_hash_is_deterministic_across_equivalent_nested_payloads(self):
+        a = self.envelope({"nested": {"x": 1, "y": 2}, "list": [1, 2]})
+        b = self.envelope({"list": [1, 2], "nested": {"y": 2, "x": 1}})
+        self.assertEqual(a.packet_sha256, b.packet_sha256)
+
+    def test_payload_mutation_after_build_does_not_affect_envelope(self):
+        payload = {"packet": "hello", "nested": {"x": 1}, "list": [1, 2]}
+        envelope = self.envelope(payload, correlation="corr-mutation")
+
+        expected_sha256 = envelope.packet_sha256
+
+        # Mutate caller payload
+        payload["packet"] = "mutated"
+        payload["nested"]["x"] = 99
+        payload["list"].append(3)
+
+        # Envelope payload should remain unchanged
+        self.assertEqual(envelope.payload, {"packet": "hello", "nested": {"x": 1}, "list": [1, 2]})
+        self.assertEqual(envelope.packet_sha256, expected_sha256)
+
     def test_same_slot_same_hash_is_same_request(self):
         guard = DuplicateGuard()
         self.assertEqual(guard.reserve(self.envelope(correlation="corr-a")), DuplicateDecision.RESERVED)
