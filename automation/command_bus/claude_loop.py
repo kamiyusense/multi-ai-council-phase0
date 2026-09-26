@@ -15,6 +15,7 @@ import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
+from .claude_admission_gate import prepare_transport as prepare_admission_transport
 
 
 class BackendMode(str, Enum):
@@ -181,6 +182,20 @@ def prepare_next_action(
         return LoopResult("PREPARED", "single prepare-only action created", request)
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
+
+
+def prepare_claude_transport(*, mode: str, dispatch_id: str, gate_base_url: str,
+                             live_model: bool = False, external_send: bool = False) -> dict[str, Any]:
+    """Attach a static gate environment contract to a Claude-role preparation.
+
+    This is only a preflight description. It cannot start a process or contact
+    either the gate or a model provider.
+    """
+    if mode != BackendMode.CLAUDE_BACKEND.value:
+        return {"status": "BLOCKED", "reason": "Claude gate transport requires CLAUDE_BACKEND"}
+    return prepare_admission_transport(dispatch_id=dispatch_id, gate_base_url=gate_base_url,
+                                       retry=0, fallback="disabled", live_model=live_model,
+                                       external_send=external_send)
 
 
 def _validate_verdict(verdict: dict[str, Any]) -> None:

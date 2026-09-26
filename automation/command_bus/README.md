@@ -141,3 +141,15 @@ This keeps static validation bounded even when GitHub history grows. A new
 unclassified blob area under `automation/command_bus/**` is not silently
 ignored: `validation_scope.py` classifies it as UNKNOWN and validation fails
 closed until the area is explicitly assigned to the static or ledger scope.
+
+## Claude admission gate (static only)
+
+`claude_admission_gate.py` provides a host-owned atomic SQLite claim that
+admits at most one generation POST per in-process host-registered dispatch;
+all later attempts are denied before upstream connect. The optional loop
+integration `claude_loop.prepare_claude_transport()` is a preflight description
+only and cannot launch a process. Count-token requests are denied locally,
+health checks are local, and unknown routes fail closed. Validation used only
+loopback fake providers. Egress isolation, backup rollback protection, and
+actual Claude compatibility remain unproven. See
+`docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.

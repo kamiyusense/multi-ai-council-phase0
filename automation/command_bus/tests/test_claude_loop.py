@@ -5,7 +5,7 @@ import unittest
 
 from automation.command_bus.claude_loop import (
     BackendMode, VerdictDecision, make_structured_verdict,
-    prepare_next_action, validate_machine_gate,
+    prepare_claude_transport, prepare_next_action, validate_machine_gate,
 )
 
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
@@ -135,6 +135,23 @@ class ClaudeLoopTests(unittest.TestCase):
         result = prepare_next_action(value, expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
                                      path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}])
         self.assertEqual(result.status, "UNKNOWN")
+
+    def test_claude_transport_is_static_preflight_only(self):
+        import uuid
+        result = prepare_claude_transport(mode=BackendMode.CLAUDE_BACKEND.value,
+                                          dispatch_id=str(uuid.uuid4()),
+                                          gate_base_url="http://127.0.0.1:8080")
+        self.assertEqual(result["status"], "PREPARED")
+        self.assertFalse(result["launch"])
+        self.assertEqual(result["retry"], 0)
+        self.assertEqual(result["fallback"], "disabled")
+        self.assertEqual(prepare_claude_transport(mode=BackendMode.JULES_BACKEND.value,
+                                                  dispatch_id=str(uuid.uuid4()),
+                                                  gate_base_url="http://127.0.0.1:8080")["status"], "BLOCKED")
+        self.assertEqual(prepare_claude_transport(mode=BackendMode.CLAUDE_BACKEND.value,
+                                                  dispatch_id=str(uuid.uuid4()),
+                                                  gate_base_url="http://127.0.0.1:8080",
+                                                  live_model=True)["status"], "BLOCKED")
 
 
 if __name__ == "__main__":
