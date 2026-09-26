@@ -127,3 +127,19 @@ isolated run artifact is read back and inspected. This repository is private,
 so the explicitly requested GitHub-hosted runner may consume the account's
 included Actions minutes or incur usage if that allowance is exhausted; no
 billing setting or limit is changed by this workflow.
+
+The one authorized run completed as `PREFLIGHT_BLOCKED_BEFORE_A_H` (run
+`36256718479`). Docker `none` was verified from inside the container: only `lo`,
+no route entries, external IPv4 unreachable, and DNS resolution failed. The
+official Linux archive and executable hashes matched, and isolated
+`claude --version` returned `2.1.283`. `claude --help` exited successfully,
+but the harness retained only the last 6,000 characters; therefore required
+flags were not verifiably checked and the fail-closed gate prevented all A-H
+case processes and the fake-provider server. The saved artifact itself confirms
+the help capture was truncated, so the missing flags must not be interpreted as
+absent from the binary. The evidence and exact artifact hashes are recorded in
+`docs/CLAUDE_LITERAL_RETRY_ZERO_GITHUB_ACTIONS_RESULT_2026-09-26.json` and
+Issue #23. No workflow rerun or second asset download was attempted: the
+one-time download permission was consumed, `retry=0` remains in force, and the
+ephemeral runner did not retain the binary. `CLAUDE_LITERAL_RETRY_ZERO` remains
+`UNKNOWN`; live model/provider/Jules requests remain zero.
