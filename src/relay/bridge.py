@@ -25,6 +25,7 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         return {"case_id": case_context.get("case_id"),
                 "provider_id": case_context.get("provider_id"),
                 "session_id": case_context.get("session_id"),
+                "timeout_seconds": case_context.get("timeout_seconds"),
                 "payload": case_context.get("payload", {})}
 
     def preflight(self, prepared_context: dict[str, Any]) -> dict[str, Any]:

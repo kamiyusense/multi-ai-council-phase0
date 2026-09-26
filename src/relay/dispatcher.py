@@ -8,6 +8,11 @@ from typing import Any
 from src.relay.bridge import RelayProviderAdapterBridge
 
 
+def validate_timeout(timeout_seconds: Any) -> None:
+    if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, int) or timeout_seconds <= 0:
+        raise ValueError("Invalid timeout_seconds")
+
+
 class DuplicateConflictGuard:
     def __init__(self) -> None:
         self.ledger: dict[str, str] = {}
@@ -31,6 +36,9 @@ class RelayDispatcher:
         self.stop_requested = True
 
     def dispatch(self, slot_id: str, context: dict[str, Any], abort_signal: dict[str, Any] | None = None) -> dict[str, Any]:
+        timeout_seconds = context.get("timeout_seconds")
+        if timeout_seconds is not None:
+            validate_timeout(timeout_seconds)
         payload = context.get("payload", {})
         blocked = {"model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
                    "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
@@ -58,6 +66,7 @@ class RelayDispatcher:
                 **context,
                 "provider_id": context.get("provider_id", slot_id),
                 "session_id": context.get("session_id", slot_id),
+                "timeout_seconds": timeout_seconds,
             })
             self.adapter.preflight(prepared)
             handle = self.adapter.dispatch(prepared)

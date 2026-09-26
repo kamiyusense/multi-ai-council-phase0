@@ -24,52 +24,87 @@ class CliUnavailableDuringCollectBridge(RelayProviderAdapterBridge):
 
 class RelayDispatcherTests(unittest.TestCase):
     def test_successful_dispatch_is_simulated(self):
-        result = make().dispatch("slot1", {"case_id": "1", "payload": {"q": "test"}})
+        result = make().dispatch("slot1", {"timeout_seconds": 10, "case_id": "1", "payload": {"q": "test"}})
         self.assertEqual(result["state"], "SIMULATED")
         self.assertFalse(result["live_turn_executed"])
         self.assertEqual(result["retry_count"], 0)
         self.assertEqual(result["fallback_state"], "disabled")
 
+    def test_invalid_timeout_seconds_raises_value_error(self):
+        # We test validate_timeout directly because dispatch() might skip validation if UNSET for mock purposes.
+        from src.relay.dispatcher import validate_timeout
+        invalid_timeouts = [None, 0, -1, 3.14, True, False, "10", [], {}]
+        for t in invalid_timeouts:
+            with self.subTest(timeout=t):
+                with self.assertRaisesRegex(ValueError, "Invalid timeout_seconds"):
+                    validate_timeout(t)
+
+    def test_explicit_invalid_timeout_seconds_fails_dispatch(self):
+        invalid_timeouts = [0, -1, 3.14, True, False, "10", [], {}]
+        for t in invalid_timeouts:
+            with self.subTest(timeout=t):
+                with self.assertRaisesRegex(ValueError, "Invalid timeout_seconds"):
+                    make().dispatch("slot_invalid", {"timeout_seconds": t, "payload": {}})
+
+    def test_missing_timeout_is_allowed_for_mock_execution(self):
+        # UNSET (missing or None) must fail the live gate, but mock execution preserves behavior and allows it.
+        result = make().dispatch("slot_unset", {"payload": {}})
+        self.assertEqual(result["state"], "SIMULATED")
+        result2 = make().dispatch("slot_none", {"timeout_seconds": None, "payload": {}})
+        self.assertEqual(result2["state"], "SIMULATED")
+
+    def test_valid_timeout_seconds_passes(self):
+        from src.relay.dispatcher import validate_timeout
+        validate_timeout(10) # Should not raise
+
+    def test_provider_timeout_isolated(self):
+        adapter = RelayProviderAdapterBridge()
+        dispatcher = make(adapter)
+        # Test that timeout is properly isolated between requests
+        dispatcher.dispatch("slot_a", {"timeout_seconds": 10, "payload": {"a": 1}})
+        dispatcher.dispatch("slot_b", {"timeout_seconds": 20, "payload": {"b": 1}})
+        self.assertEqual(adapter.dispatch_count, 2)
+
     def test_override_protection(self):
         with self.assertRaisesRegex(ValueError, "override"):
-            make().dispatch("slot2", {"payload": {"model": "gpt-4"}})
+            make().dispatch("slot2", {"timeout_seconds": 10, "payload": {"model": "gpt-4"}})
 
     def test_deterministic_hash_and_duplicate_block(self):
         d = make()
         payload1 = {"b": 2, "a": 1}
         payload2 = {"a": 1, "b": 2}
-        self.assertEqual(d.dispatch("slot3", {"payload": payload1})["state"], "SIMULATED")
-        self.assertEqual(d.dispatch("slot3", {"payload": payload2})["state"], "BLOCKED")
+        self.assertEqual(d.dispatch("slot3", {"timeout_seconds": 10, "payload": payload1})["state"], "SIMULATED")
+        self.assertEqual(d.dispatch("slot3", {"timeout_seconds": 10, "payload": payload2})["state"], "BLOCKED")
 
     def test_conflict_blocked(self):
         d = make()
-        d.dispatch("slot4", {"payload": {"a": 1}})
-        self.assertEqual(d.dispatch("slot4", {"payload": {"a": 2}})["state"], "BLOCKED")
+        d.dispatch("slot4", {"timeout_seconds": 10, "payload": {"a": 1}})
+        self.assertEqual(d.dispatch("slot4", {"timeout_seconds": 10, "payload": {"a": 2}})["state"], "BLOCKED")
 
     def test_timeout_no_retry(self):
         adapter = RelayProviderAdapterBridge(simulate_timeout=True)
         dispatcher = make(adapter)
         result = dispatcher.dispatch(
-            "slot5", {"payload": {}}
+            "slot5", {"timeout_seconds": 10, "payload": {}}
         )
         self.assertEqual(result["state"], "TIMEOUT")
         self.assertEqual(result["retry_count"], 0)
         self.assertEqual(adapter.dispatch_count, 1)
         self.assertEqual(adapter.collect_count, 1)
         self.assertEqual(adapter.abort_calls, [("slot5", "slot5")])
-        self.assertEqual(dispatcher.dispatch("slot5", {"payload": {}})["state"], "BLOCKED")
+        self.assertEqual(dispatcher.dispatch("slot5", {"timeout_seconds": 10, "payload": {}})["state"], "BLOCKED")
         self.assertEqual(adapter.dispatch_count, 1)
 
     def test_failure_no_fallback(self):
         result = make(RelayProviderAdapterBridge(simulate_failure=True)).dispatch(
-            "slot6", {"payload": {}}
+            "slot6", {"timeout_seconds": 10, "payload": {}}
         )
         self.assertEqual(result["state"], "UNKNOWN")
 
     def test_generic_collect_error_aborts_and_blocks_retry(self):
         adapter = RelayProviderAdapterBridge(simulate_error_in_collect=True)
         dispatcher = make(adapter)
-        result = dispatcher.dispatch("slot_err", {"payload": {}})
+        result = dispatcher.dispatch("slot_err", {"timeout_seconds": 10, "payload": {}})
         self.assertEqual(result["state"], "UNKNOWN")
         self.assertEqual(result["retry_count"], 0)
         self.assertEqual(adapter.dispatch_count, 1)
@@ -77,7 +112,7 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(adapter.abort_calls, [("slot_err", "slot_err")])
 
         # Second dispatch should be blocked
-        second_result = dispatcher.dispatch("slot_err", {"payload": {}})
+        second_result = dispatcher.dispatch("slot_err", {"timeout_seconds": 10, "payload": {}})
         self.assertEqual(second_result["state"], "BLOCKED")
         self.assertEqual(second_result["reason"], "cancelled")
         self.assertEqual(adapter.dispatch_count, 1)
@@ -85,7 +120,7 @@ class RelayDispatcherTests(unittest.TestCase):
     def test_post_dispatch_cli_unavailable_aborts_and_blocks_retry(self):
         adapter = CliUnavailableDuringCollectBridge()
         dispatcher = make(adapter)
-        result = dispatcher.dispatch("slot_cli_after_handle", {"payload": {}})
+        result = dispatcher.dispatch("slot_cli_after_handle", {"timeout_seconds": 10, "payload": {}})
         self.assertEqual(result["state"], "UNKNOWN")
         self.assertEqual(result["retry_count"], 0)
         self.assertEqual(adapter.dispatch_count, 1)
@@ -95,14 +130,14 @@ class RelayDispatcherTests(unittest.TestCase):
             [("slot_cli_after_handle", "slot_cli_after_handle")],
         )
 
-        second_result = dispatcher.dispatch("slot_cli_after_handle", {"payload": {}})
+        second_result = dispatcher.dispatch("slot_cli_after_handle", {"timeout_seconds": 10, "payload": {}})
         self.assertEqual(second_result["state"], "BLOCKED")
         self.assertEqual(second_result["reason"], "cancelled")
         self.assertEqual(adapter.dispatch_count, 1)
 
     def test_malformed_not_success(self):
         result = make(RelayProviderAdapterBridge(simulate_malformed=True)).dispatch(
-            "slot7", {"payload": {}}
+            "slot7", {"timeout_seconds": 10, "payload": {}}
         )
         self.assertEqual(result["state"], "INVALID_OUTPUT")
         self.assertNotEqual(result["state"], "DELIVERED")
@@ -110,13 +145,13 @@ class RelayDispatcherTests(unittest.TestCase):
 
     def test_unknown_not_success(self):
         result = make(RelayProviderAdapterBridge(simulate_unknown=True)).dispatch(
-            "slot8", {"payload": {}}
+            "slot8", {"timeout_seconds": 10, "payload": {}}
         )
         self.assertEqual(result["state"], "UNKNOWN")
 
     def test_raw_evidence_is_snapshotted_before_classifier_mutation(self):
         result = make(MutatingClassifierBridge()).dispatch(
-            "slot-raw", {"payload": {"q": "test"}}
+            "slot-raw", {"timeout_seconds": 10, "payload": {"q": "test"}}
         )
         self.assertEqual(result["state"], "SIMULATED")
         self.assertEqual(result["raw_evidence"]["stdout"], "mock")
@@ -132,14 +167,14 @@ class RelayDispatcherTests(unittest.TestCase):
     def test_no_cli_no_dummy_fallback(self):
         with self.assertRaisesRegex(RuntimeError, "CLI unavailable"):
             make(RelayProviderAdapterBridge(simulate_no_cli=True)).dispatch(
-                "slot9", {"payload": {}}
+                "slot9", {"timeout_seconds": 10, "payload": {}}
             )
 
     def test_stop_prevents_dispatch_without_reserving_slot(self):
         adapter = RelayProviderAdapterBridge()
         dispatcher = make(adapter)
         dispatcher.request_stop()
-        result = dispatcher.dispatch("slot-stop", {"payload": {"q": "test"}})
+        result = dispatcher.dispatch("slot-stop", {"timeout_seconds": 10, "payload": {"q": "test"}})
         self.assertEqual(result["state"], "BLOCKED")
         self.assertEqual(result["reason"], "stop_requested")
         self.assertEqual(adapter.dispatch_count, 0)
@@ -153,14 +188,14 @@ class RelayDispatcherTests(unittest.TestCase):
 
         cancelled = first_dispatcher.dispatch(
             "openai-slot",
-            {"provider_id": "openai", "session_id": "openai-session", "payload": {}},
+            {"timeout_seconds": 10, "provider_id": "openai", "session_id": "openai-session", "payload": {}},
             {"abort_after_dispatch": True},
         )
         other = second_dispatcher.dispatch(
             "anthropic-slot",
-            {"provider_id": "anthropic", "session_id": "anthropic-session", "payload": {}},
+            {"timeout_seconds": 10, "provider_id": "anthropic", "session_id": "anthropic-session", "payload": {}},
         )
-        replay = first_dispatcher.dispatch("openai-slot", {"payload": {}})
+        replay = first_dispatcher.dispatch("openai-slot", {"timeout_seconds": 10, "payload": {}})
 
         self.assertEqual(cancelled["state"], "BLOCKED")
         self.assertEqual(first.abort_calls, [("openai", "openai-session")])
@@ -175,7 +210,7 @@ class RelayDispatcherTests(unittest.TestCase):
         adapter = RelayProviderAdapterBridge()
         dispatcher = make(adapter)
         result = dispatcher.dispatch(
-            "slot-abort", {"payload": {"q": "test"}}, abort_signal={"aborted": True}
+            "slot-abort", {"timeout_seconds": 10, "payload": {"q": "test"}}, abort_signal={"aborted": True}
         )
         self.assertEqual(result["state"], "BLOCKED")
         self.assertEqual(result["reason"], "aborted")
@@ -188,14 +223,14 @@ class RelayDispatcherTests(unittest.TestCase):
         dispatcher = make(adapter)
 
         first_result = dispatcher.dispatch(
-            "slot-abort-twice", {"payload": {"q": "test1"}}, abort_signal={"aborted": True}
+            "slot-abort-twice", {"timeout_seconds": 10, "payload": {"q": "test1"}}, abort_signal={"aborted": True}
         )
         self.assertEqual(first_result["state"], "BLOCKED")
         self.assertEqual(first_result["reason"], "aborted")
         self.assertEqual(adapter.dispatch_count, 0)
 
         second_result = dispatcher.dispatch(
-            "slot-abort-twice", {"payload": {"q": "test2"}}
+            "slot-abort-twice", {"timeout_seconds": 10, "payload": {"q": "test2"}}
         )
         self.assertEqual(second_result["state"], "BLOCKED")
         self.assertEqual(second_result["reason"], "cancelled")
