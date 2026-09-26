@@ -1,0 +1,54 @@
+# Claude夜間自動ループ設計（Phase 0）
+
+## 判定
+
+静的実装・mock・dry-run・unit/regression/static testまでを対象とする。
+Claude OAuth/token、Secrets、permissions、billing、live Claude/Jules起動、
+PR merge、default branch直接write、force push、destructive deleteは対象外で、
+この設計から実行できない。
+
+## 2つの独立backend
+
+```text
+Claude structured verdict
+  -> common machine gate
+     -> JULES_BACKEND  -> existing executor PREPARE_ONLY request
+                          -> existing Jules API request/closed-loop route
+     -> CLAUDE_BACKEND  -> existing executor PREPARE_ONLY request
+                          + TREE_IDENTITY_V1 + path_policy
+```
+
+`JULES_BACKEND` と `CLAUDE_BACKEND` は明示指定する。`AUTO`、残量判定による
+自動切替、fallback、重複dispatchは存在しない。既存PR #6のdispatch実装を
+再実装せず、今回のコードは既存executor durable requestを1件準備するだけである。
+実送信は行わず、Aは既存のJules API request/closed-loop routeへ渡すPREPARE_ONLY
+記録を作る。Bは既存executor request schemaが要求する具体的tree identityと
+path policyを必須にする。
+
+## 共通machine gate
+
+- `round <= max_rounds <= 6`
+- `retry=0`, `fallback=disabled`
+- expected target head と fresh observed head が一致
+- expected target tree と fresh observed tree が一致
+- merge / default-branch write / force-push / destructive deleteを拒否
+- live model / external sendを拒否
+- structured verdictの `execution_mode=PREPARE_ONLY`
+- `model_executed=false`, `external_send_attempted=false`
+- 既存executor receiptとloop/round/correlation/head/treeが一致すればNO-OP
+
+carrier PR headは判定対象にせず、target PRのhead/treeだけを比較する。
+`COMPLETE` / `BLOCKED` / `UNKNOWN` verdictはterminalとして記録可能だが、
+次のexecutor requestを作らない。missing/empty/不一致のevidenceはfail-closed。
+
+## 既存資料から採用しないもの
+
+旧 `/next`、GPT予約タスク、BrowserHookによるJules launch、重複Jules
+dispatch実装は再利用しない。Claudeのstructured reviewer/plannerという役割と、
+GitHubをdurable stateにする考え方だけを採用する。
+
+## 検証範囲
+
+`automation/command_bus/tests/test_claude_loop.py` がA/B双方、明示mode、fresh
+head/tree、loop cap、安全拒否、terminal replay prevention、live flag拒否を検証する。
+本変更だけではlive providerの可用性や契約枠残量を証明しない。

@@ -26,6 +26,16 @@ writes, malformed or missing records, and invalid state readback.
 
 The runtime is intentionally limited to `automation/command_bus/**`; it does not execute Jules, providers, live models, API keys, or GitHub workflows.
 
+## Claude night-loop preparation
+
+`claude_loop.py` defines explicit `JULES_BACKEND` and `CLAUDE_BACKEND` modes.
+Both prepare records through the existing executor contract. Requests bind the
+fresh target head and tree, `TREE_IDENTITY_V1`, and an explicit path policy;
+the existing Jules API closed loop remains the only Jules dispatch route.
+The module does not start either model or dispatch externally. It requires
+`retry=0`, `fallback=disabled`, and rejects unsafe actions and rounds above six.
+Terminal receipt matching reuses the executor receipt fields.
+
 
 Durable-boundary hardening:
 - every append/state write requires an independent branch readback; unverifiable
