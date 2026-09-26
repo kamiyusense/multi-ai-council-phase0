@@ -87,14 +87,23 @@ class LoopStatusIssueTests(unittest.TestCase):
         self.assertEqual(projection.display_state, "BLOCKED")
         self.assertEqual(projection.human_action, "REVIEW REQUIRED")
 
-    def test_provider_text_is_single_line_and_bounded(self):
+    def test_provider_text_is_single_line_bounded_and_markdown_safe(self):
         projection = project_state(
             state(),
             owner="AUTO",
-            provider_state="Jules\nIN_PROGRESS " + ("x" * 500),
+            provider_state="Jules\nIN_PROGRESS `unsafe` " + ("x" * 500),
         )
         self.assertNotIn("\n", projection.provider_state)
+        self.assertNotIn("`", projection.provider_state)
         self.assertLessEqual(len(projection.provider_state), 200)
+
+    def test_requested_loop_id_must_match_durable_state(self):
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            project_state(state(), owner="AUTO", expected_loop_id="other-loop")
+
+    def test_durable_loop_id_must_be_safe(self):
+        with self.assertRaisesRegex(ValueError, "invalid durable loop_id"):
+            project_state(state(loop_id="../bad"), owner="AUTO")
 
     def test_render_body_marks_issue_as_display_only(self):
         projection = project_state(state(), owner="SEMI_AUTO")
