@@ -30,6 +30,7 @@ _BLOCKED_SOURCE_STATES = {
 }
 _STOPPED_SOURCE_STATES = {"HALTED", "EXPIRED"}
 
+_LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MENTION = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 
@@ -60,7 +61,7 @@ class Notification:
 def _single_line(value: Any, *, fallback: str = "UNKNOWN", max_len: int = 200) -> str:
     if value is None:
         return fallback
-    text = " ".join(str(value).split())
+    text = " ".join(str(value).split()).replace(chr(96), "'")
     if not text:
         return fallback
     return text[:max_len]
@@ -72,8 +73,14 @@ def project_state(
     owner: str,
     provider_state: str = "UNKNOWN",
     last_durable_progress: str = "UNKNOWN",
+    expected_loop_id: str | None = None,
 ) -> StatusProjection:
     validate_state(state)
+    loop_id = state.get("loop_id")
+    if not isinstance(loop_id, str) or not _LOOP_ID.fullmatch(loop_id):
+        raise ValueError("invalid durable loop_id")
+    if expected_loop_id is not None and loop_id != expected_loop_id:
+        raise ValueError("durable loop_id does not match requested loop_id")
     if owner not in OWNERS:
         raise ValueError("owner must be SEMI_AUTO, AUTO, or NONE")
 
@@ -106,7 +113,7 @@ def project_state(
         display_state=display,
         source_state=source,
         owner=owner,
-        loop_id=state["loop_id"],
+        loop_id=loop_id,
         round=state["round"],
         max_rounds=state["max_rounds"],
         provider_state=_single_line(provider_state),
@@ -195,6 +202,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("state_file")
     parser.add_argument("--owner", required=True, choices=sorted(OWNERS))
+    parser.add_argument("--expected-loop-id")
     parser.add_argument("--provider-state", default="UNKNOWN")
     parser.add_argument("--last-durable-progress", default="UNKNOWN")
     parser.add_argument("--event-id")
@@ -210,6 +218,7 @@ def main() -> int:
         owner=args.owner,
         provider_state=args.provider_state,
         last_durable_progress=args.last_durable_progress,
+        expected_loop_id=args.expected_loop_id,
     )
     body = render_issue_body(projection)
     notification = notification_for_state(
