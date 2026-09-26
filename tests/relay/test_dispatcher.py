@@ -32,7 +32,41 @@ class StubAdapter(RelayProviderAdapterBridge):
         return self.prepared_context
 
 
+class PreflightFailClosedBridge(RelayProviderAdapterBridge):
+    def __init__(self, preflight_return):
+        super().__init__()
+        self.preflight_return = preflight_return
+    def preflight(self, prepared_context):
+        return self.preflight_return
+
+
 class RelayDispatcherTests(unittest.TestCase):
+    def test_preflight_ok_true_continues(self):
+        adapter = PreflightFailClosedBridge({"ok": True})
+        result = make(adapter).dispatch("slot_pf1", {"timeout_seconds": 10, "payload": {}})
+        self.assertEqual(result["state"], "SIMULATED")
+        self.assertEqual(adapter.dispatch_count, 1)
+
+    def test_preflight_ok_false_blocks(self):
+        adapter = PreflightFailClosedBridge({"ok": False})
+        result = make(adapter).dispatch("slot_pf2", {"timeout_seconds": 10, "payload": {}})
+        self.assertEqual(result["state"], "BLOCKED")
+        self.assertEqual(result["reason"], "preflight_not_ok")
+        self.assertEqual(adapter.dispatch_count, 0)
+        self.assertEqual(adapter.collect_count, 0)
+        self.assertEqual(adapter.abort_calls, [])
+
+    def test_preflight_malformed_unknown(self):
+        for bad_ret in [None, "yes", {"ok": "yes"}, {"status": "ready"}]:
+            with self.subTest(bad_ret=bad_ret):
+                adapter = PreflightFailClosedBridge(bad_ret)
+                result = make(adapter).dispatch("slot_pf3", {"timeout_seconds": 10, "payload": {}})
+                self.assertEqual(result["state"], "UNKNOWN")
+                self.assertEqual(result["reason"], "preflight_unverified")
+                self.assertEqual(adapter.dispatch_count, 0)
+                self.assertEqual(adapter.collect_count, 0)
+                self.assertEqual(adapter.abort_calls, [])
+
     def test_payload_timeout_seconds_rejected(self):
         with self.assertRaisesRegex(ValueError, "Request override fields rejected."):
             make().dispatch("slot_override", {"timeout_seconds": 10, "payload": {"timeout_seconds": 20}})

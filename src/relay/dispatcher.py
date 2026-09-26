@@ -62,7 +62,13 @@ class RelayDispatcher:
                 "session_id": context.get("session_id", slot_id),
                 "timeout_seconds": timeout_seconds,
             })
-            self.adapter.preflight(prepared)
+            preflight_result = self.adapter.preflight(prepared)
+            if isinstance(preflight_result, dict) and preflight_result.get("ok") is True:
+                pass
+            elif isinstance(preflight_result, dict) and preflight_result.get("ok") is False:
+                return {**base, "state": "BLOCKED", "reason": "preflight_not_ok"}
+            else:
+                return {**base, "state": "UNKNOWN", "reason": "preflight_unverified"}
             handle = self.adapter.dispatch(prepared)
             if abort_signal and abort_signal.get("abort_after_dispatch"):
                 self.adapter.abort(handle)
