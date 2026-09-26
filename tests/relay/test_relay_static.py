@@ -133,6 +133,41 @@ class LifecycleTests(unittest.TestCase):
         self.assertIsNotNone(result.session_id)
         self.assertEqual(result.prompt_attempts, 1)
 
+    def test_error_cancels_and_closes_session(self):
+        transport = MockTransport(error_providers={"openai"})
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        result = relay.dispatch_mock(self.envelope(), cwd="snapshot")
+        self.assertEqual(result.state, RelayState.UNKNOWN)
+        self.assertEqual(transport.prompt_counts["openai"], 1)
+        self.assertEqual(len(transport.cancelled), 1)
+        self.assertEqual(transport.cancelled[0][0], "openai")
+        self.assertEqual(len(transport.closed), 1)
+        self.assertEqual(transport.closed[0][0], "openai")
+        self.assertEqual(result.packet_sha256, self.envelope().packet_sha256)
+        self.assertIsNotNone(result.session_id)
+        self.assertEqual(result.prompt_attempts, 1)
+
+    def test_duplicate_after_error_does_not_prompt(self):
+        transport = MockTransport(error_providers={"openai"})
+        relay = RelayLifecycle(transport, DuplicateGuard())
+        first_envelope = self.envelope()
+
+        # First dispatch produces error
+        first_result = relay.dispatch_mock(first_envelope, cwd="snapshot")
+        self.assertEqual(first_result.state, RelayState.UNKNOWN)
+        self.assertEqual(transport.prompt_counts["openai"], 1)
+
+        # Second dispatch is identical
+        second_envelope = DispatchEnvelope.build(
+            slot=first_envelope.slot,
+            correlation_id="corr-dup",
+            payload=first_envelope.payload,
+        )
+        second_result = relay.dispatch_mock(second_envelope, cwd="snapshot")
+        self.assertEqual(second_result.state, RelayState.BLOCKED)
+        self.assertEqual(second_result.prompt_attempts, 0)
+        self.assertEqual(transport.prompt_counts["openai"], 1)
+
     def test_request_stop_blocks_new_dispatch_without_reserving_slot(self):
         transport = MockTransport(responses={"openai": b"{}"})
         guard = DuplicateGuard()
