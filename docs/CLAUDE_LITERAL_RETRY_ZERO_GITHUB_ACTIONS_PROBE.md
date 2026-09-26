@@ -142,3 +142,51 @@ The next push is authorized for exactly one GitHub Actions run and one additiona
 # Result of the single follow-up run
 
 Run `36258801058` established that both the intended parser-only command and its invalid-option negative control print help and exit 0. The fake local endpoint observed zero requests. Consequently this invocation cannot prove that the flags were parsed, and A-H were not started. The literal provider-request retry-zero result is UNKNOWN (not FAIL). The harness exit code 5 records a fail-closed gate, not duplicate provider traffic. See `CLAUDE_LITERAL_RETRY_ZERO_GITHUB_ACTIONS_RESULT_2026-09-27.json` for the artifact hashes and full evidence summary. No further runner run or download is authorized by the one-time allowance.
+
+
+## Parser-preflight removal after run 36258801058
+
+The second isolated run showed that `--help` short-circuits unknown-option
+validation, so a help-based positive/negative parser test cannot prove the
+runtime option bundle. A separate parser-only proof is also not required for
+the safety objective.
+
+The external-egress safety boundary is independent and already has a direct
+fail-closed gate: Claude runs only after Docker `--network none` is verified
+from both host and container views, with loopback-only interfaces, no routes,
+and failed external IPv4/DNS probes. The fake Messages API is loopback-only.
+
+For the next separately authorized run, remove the parser-preflight gate and
+attempt each A-H case directly with the exact option bundle. This is safe and
+more informative:
+
+- if an option is unsupported, the Claude process can exit before sending a
+  provider request; classify that case `UNKNOWN`, preserving stderr as
+  evidence;
+- if a retry/fallback control is silently ignored, the fake provider observes
+  the resulting extra request(s); any request count greater than one is
+  `FAIL`;
+- if exactly one request is observed but process observation is incomplete,
+  classify `UNKNOWN`, not PASS;
+- only a complete case with exactly one request and no retry/continuation/
+  fallback indication can PASS.
+
+Anthropic's current official CLI reference documents the exact flags used by
+the probe. It also states that `claude --help` does not list every flag.
+Version requirements shown by the official reference are compatible with the
+pinned runtime: `--restricted` requires v2.1.248+ and
+`--permission-prompts` requires v2.1.259+; the probe pins v2.1.283. The same
+reference documents `--safe-mode`, `--max-turns`, `--tools`,
+`--no-session-persistence`, `--output-format`, and `-p/--print`.
+
+Therefore the next gate sequence is:
+1. exact release/hash/version verification;
+2. Docker `--network none` verification;
+3. start the loopback fake provider for the case;
+4. launch Claude once with the exact case command;
+5. observe request count and full process result;
+6. classify PASS/FAIL/UNKNOWN from observed behavior.
+
+Do not use `--help` or `--version` as an option-parser acceptance oracle.
+`--version` remains useful only for runtime identity. No additional Actions
+run is authorized by this documentation update.
