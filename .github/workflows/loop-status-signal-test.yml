@@ -1,0 +1,36 @@
+name: Phase 0 loop status signal tests
+
+on:
+  pull_request:
+    paths:
+      - automation/command_bus/loop_status_issue.py
+      - automation/command_bus/tests/test_loop_status_issue.py
+      - .github/workflows/loop-status-signal.yml
+      - .github/workflows/loop-status-signal-test.yml
+      - docs/LOOP_STATUS_SIGNAL.md
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Run command-bus unit suite
+        shell: bash
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+
+      - name: Compile command-bus Python
+        shell: bash
+        run: python -m compileall -q automation/command_bus
+
+      - name: Diff check
+        shell: bash
+        run: git diff --check
