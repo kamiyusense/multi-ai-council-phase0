@@ -267,3 +267,34 @@ the basic experimental approach.
 
 No workflow/probe/test path was changed in this checkpoint, therefore no new
 Actions run or release download was triggered. A/B remain not live-green.
+
+
+## Admission-gate direction selected after prior-art research (2026-09-27)
+
+The previous full A-H rerun prompt is superseded and should not be sent.
+
+Fresh research is now durable in:
+`docs/CLAUDE_ADMISSION_GATE_PRIOR_ART_RESEARCH.md`.
+
+Key conclusion:
+- do not require Claude Code itself to guarantee one provider request;
+- enforce the invariant at a host-owned gateway before upstream transmission;
+- one Phase 0 dispatch owns exactly one upstream `POST /v1/messages` budget;
+- any later generation attempt for that dispatch is denied locally before an
+  Anthropic connection is opened.
+
+Current official Claude gateway docs explicitly support routing a saved
+claude.ai subscription through a gateway by setting only `ANTHROPIC_BASE_URL`
+without replacing the credential. Subscription limits/billing remain active;
+the gateway must preserve the OAuth capability in `anthropic-beta`.
+
+The best current code-reuse base is Terok's Apache-2.0 reverse-proxy/broker
+architecture. Prefer a minimal adaptation of its transport/streaming/header
+plumbing, not its full credential vault. Hermes prior-art repos are MIT and are
+useful for fixture/endpoint behavior. Anthropic PR #5490 must not be copied
+wholesale because it scrapes host OAuth credentials and contains its own retry
+path.
+
+Next task is static/mock/unit implementation of the Phase 0 admission gate only.
+No live Claude/provider/Jules call, real credential read, new API key, billing
+route, or takeover work is authorized by this checkpoint.
