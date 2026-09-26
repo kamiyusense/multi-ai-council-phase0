@@ -110,7 +110,8 @@ jobs:
           set -euo pipefail
           args=(
             "${RUNNER_TEMP}/loop-state.json"
-            --owner "${OWNER}"\n            --expected-loop-id "${{ inputs.loop_id }}"
+            --owner "${OWNER}"
+            --expected-loop-id "${{ inputs.loop_id }}"
             --provider-state "${PROVIDER_STATE}"
             --last-durable-progress "${LAST_DURABLE_PROGRESS}"
             --body-out "${RUNNER_TEMP}/status-body.md"
@@ -122,7 +123,7 @@ jobs:
           fi
           python -m automation.command_bus.loop_status_issue "${args[@]}"
 
-      - name: Update display Issue exactly once
+      - name: Update display Issue only when changed
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -130,22 +131,53 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          jq -Rs '{body: .}' "${RUNNER_TEMP}/status-body.md" > "${RUNNER_TEMP}/issue-patch.json"
-          curl --silent --show-error --fail-with-body --retry 0             -X PATCH             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             --data-binary @"${RUNNER_TEMP}/issue-patch.json"             "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}"             > "${RUNNER_TEMP}/issue-write.json"
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+            > "${RUNNER_TEMP}/issue-before.json"
 
-          curl --silent --show-error --fail-with-body --retry 0             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}"             > "${RUNNER_TEMP}/issue-readback.json"
+          if python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))["body"]
+raise SystemExit(0 if actual == expected else 1)
+PY
+          then
+            echo "Status Issue already matches; NO-OP."
+          else
+            jq -Rs '{body: .}' "${RUNNER_TEMP}/status-body.md" > "${RUNNER_TEMP}/issue-patch.json"
+            curl --silent --show-error --fail-with-body --retry 0 \
+              -X PATCH \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              --data-binary @"${RUNNER_TEMP}/issue-patch.json" \
+              "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+              > "${RUNNER_TEMP}/issue-write.json"
+          fi
+
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+            > "${RUNNER_TEMP}/issue-readback.json"
 
           python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
+import json
+import os
+from pathlib import Path
 
-          expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
-          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))["body"]
-          if actual != expected:
-              raise SystemExit("status Issue body readback mismatch")
-          PY
-
+expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))["body"]
+if actual != expected:
+    raise SystemExit("status Issue body readback mismatch")
+PY
       - name: Emit terminal notification once
         if: steps.render.outputs.notification_kind != 'NONE'
         env:
