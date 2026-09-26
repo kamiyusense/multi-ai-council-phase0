@@ -60,6 +60,22 @@ class RelayDispatcherTests(unittest.TestCase):
         )
         self.assertEqual(result["state"], "UNKNOWN")
 
+    def test_generic_collect_error_aborts_and_blocks_retry(self):
+        adapter = RelayProviderAdapterBridge(simulate_error_in_collect=True)
+        dispatcher = make(adapter)
+        result = dispatcher.dispatch("slot_err", {"payload": {}})
+        self.assertEqual(result["state"], "UNKNOWN")
+        self.assertEqual(result["retry_count"], 0)
+        self.assertEqual(adapter.dispatch_count, 1)
+        self.assertEqual(adapter.collect_count, 1)
+        self.assertEqual(adapter.abort_calls, [("slot_err", "slot_err")])
+
+        # Second dispatch should be blocked
+        second_result = dispatcher.dispatch("slot_err", {"payload": {}})
+        self.assertEqual(second_result["state"], "BLOCKED")
+        self.assertEqual(second_result["reason"], "cancelled")
+        self.assertEqual(adapter.dispatch_count, 1)
+
     def test_malformed_not_success(self):
         result = make(RelayProviderAdapterBridge(simulate_malformed=True)).dispatch(
             "slot7", {"payload": {}}

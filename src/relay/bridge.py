@@ -10,12 +10,13 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
 
     def __init__(self, *, simulate_timeout=False, simulate_failure=False,
                  simulate_malformed=False, simulate_unknown=False,
-                 simulate_no_cli=False):
+                 simulate_no_cli=False, simulate_error_in_collect=False):
         self.simulate_timeout = simulate_timeout
         self.simulate_failure = simulate_failure
         self.simulate_malformed = simulate_malformed
         self.simulate_unknown = simulate_unknown
         self.simulate_no_cli = simulate_no_cli
+        self.simulate_error_in_collect = simulate_error_in_collect
         self.dispatch_count = 0
         self.collect_count = 0
         self.abort_calls: list[tuple[str, str]] = []
@@ -46,6 +47,8 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         self.collect_count += 1
         if self.simulate_timeout:
             raise TimeoutError("Timeout")
+        if self.simulate_error_in_collect:
+            raise RuntimeError("Mock collect error")
         if self.simulate_malformed:
             return {"stdout": "malformed", "rawResponse": "{}"}
         if self.simulate_unknown:
