@@ -91,3 +91,39 @@ construction, and PASS/FAIL/UNKNOWN classifier without launching Claude. Full
 command_bus regression tests and Python compile checks run before the workflow
 is pushed. Actual network isolation and Claude runtime behavior are only
 measured in the GitHub-hosted Docker `none` network job.
+
+
+## Preflight correction after run 36256718479
+
+The first isolated run proved Docker `--network none` isolation and the official
+v2.1.283 Linux runtime identity, but stopped before A-H because the harness used
+membership in captured `claude --help` text as the runtime flag gate.
+
+That gate is not sufficient. Anthropic's current official CLI reference
+explicitly says that `claude --help` does not list every flag, so absence from
+help output must not be treated as absence from the executable. The prior
+6,000-character capture truncation made the problem visible, but simply saving
+more help text would not fully fix the gate.
+
+Before any separately authorized second Actions run, the probe must be changed
+without weakening fail-closed behavior:
+
+1. Preserve complete `--help` output for evidence; do not truncate it for the
+   preflight decision.
+2. Do **not** require every needed flag to appear in `--help`.
+3. Pin the required flags against Anthropic's current official CLI reference for
+   the exact probe version. At the time of this checkpoint the official
+   reference documents `--restricted`, `--safe-mode`, `--max-turns`,
+   `--tools`, `--no-session-persistence`, and
+   `--permission-prompts none`.
+4. Add an isolated, no-provider parser-acceptance preflight for the exact
+   command-line option bundle. It must run only after `--network none` is
+   proven and must not count as an A-H model/provider dispatch.
+5. If parser acceptance cannot be proven without starting a provider turn, stop
+   UNKNOWN rather than guessing.
+6. Keep the official runtime version/hash gate, network isolation gate,
+   retry=0, fallback-disabled settings, fake-only credential, and localhost
+   fake-provider requirements unchanged.
+
+No second Actions run or second Claude release download is authorized by this
+documentation correction.
