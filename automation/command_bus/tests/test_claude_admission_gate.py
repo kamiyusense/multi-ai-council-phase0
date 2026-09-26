@@ -1,10 +1,13 @@
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
+import sqlite3
 import tempfile
 from threading import Event, Lock
 import time
@@ -14,7 +17,8 @@ from unittest.mock import patch
 
 from automation.command_bus.claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK, ClaudeDispatchLifecycle, DispatchStore,
-    load_container_manifest, make_server,
+    initialize_production_store_once, load_container_manifest, make_server,
+    prepare_production_store_bootstrap,
     prepare_transport, validate_container_topology,
 )
 
@@ -531,6 +535,133 @@ class AdmissionGateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             DispatchStore.open_production(self.db, state_dir=self.temp.name,
                                           expected_store_id=str(uuid.uuid4()))
+
+
+class ProductionStoreBootstrapTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.state = self.root / "claude-gate"
+        self.state.mkdir()
+        os.chmod(self.state, 0o700)
+        self.receipt = self.root / "claude-gate-bootstrap-receipt.json"
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def initialize(self):
+        return initialize_production_store_once(state_dir=str(self.state), receipt_path=str(self.receipt),
+                                                explicit_bootstrap=True, retry=0, fallback="disabled",
+                                                _test_only_temp_fixture=os.name == "nt")
+
+    def test_empty_state_bootstraps_once_with_external_receipt_and_uuid(self):
+        plan = prepare_production_store_bootstrap(state_dir=str(self.state), receipt_path=str(self.receipt),
+                                                  explicit_bootstrap=True,
+                                                  _test_only_temp_fixture=os.name == "nt")
+        self.assertEqual(plan["status"], "READY")
+        result = self.initialize()
+        self.assertEqual(result["status"], "COMPLETE")
+        self.assertEqual(result["retry"], 0)
+        self.assertEqual(result["fallback"], "disabled")
+        self.assertTrue(result["bootstrap_once"])
+        self.assertEqual(str(uuid.UUID(result["store_id"])), result["store_id"])
+        self.assertEqual(len(result["database_sha256"]), 64)
+        stored_receipt = json.loads(self.receipt.read_text(encoding="utf-8"))
+        self.assertEqual(stored_receipt, result)
+        with closing(sqlite3.connect(self.state / "dispatches.sqlite3")) as db:
+            self.assertEqual(db.execute("SELECT value FROM store_meta WHERE key='store_id'").fetchone()[0],
+                             result["store_id"])
+
+    def test_open_existing_only_accepts_expected_id_or_blocks_on_windows_acl(self):
+        result = self.initialize()
+        path = str(self.state / "dispatches.sqlite3")
+        if os.name == "nt":
+            with self.assertRaisesRegex(ValueError, "ACL verification"):
+                DispatchStore.open_production(path, state_dir=str(self.state), expected_store_id=result["store_id"])
+        else:
+            opened = DispatchStore.open_production(path, state_dir=str(self.state), expected_store_id=result["store_id"])
+            self.assertEqual(opened.store_id, result["store_id"])
+        with self.assertRaises(ValueError):
+            DispatchStore.open_production(path, state_dir=str(self.state), expected_store_id=str(uuid.uuid4()))
+
+    def test_second_bootstrap_and_db_deletion_after_receipt_are_refused(self):
+        self.initialize()
+        with self.assertRaises(ValueError):
+            self.initialize()
+        (self.state / "dispatches.sqlite3").unlink()
+        with self.assertRaises(ValueError):
+            self.initialize()
+        self.assertFalse((self.state / "dispatches.sqlite3").exists())
+
+    def test_existing_db_or_unknown_state_content_is_refused(self):
+        (self.state / "unrecognized.bin").write_bytes(b"existing")
+        self.assertEqual(prepare_production_store_bootstrap(state_dir=str(self.state),
+                                                            receipt_path=str(self.receipt),
+                                                            explicit_bootstrap=True)["status"], "BLOCKED")
+        self.assertFalse(self.receipt.exists())
+        (self.state / "unrecognized.bin").unlink()
+        DispatchStore(str(self.state / "dispatches.sqlite3"))
+        with self.assertRaises(ValueError):
+            self.initialize()
+
+    def test_missing_db_with_existing_receipt_and_normal_open_never_bootstrap(self):
+        self.receipt.write_text('{"status":"INITIALIZING"}', encoding="utf-8")
+        with self.assertRaises(ValueError):
+            self.initialize()
+        missing = self.state / "dispatches.sqlite3"
+        with self.assertRaises(ValueError):
+            DispatchStore.open_production(str(missing), state_dir=str(self.state),
+                                          expected_store_id=str(uuid.uuid4()))
+        self.assertFalse(missing.exists())
+
+    @unittest.skipUnless(os.name != "nt", "POSIX-only read-only production schema check")
+    def test_normal_production_open_refuses_incomplete_schema_without_migration(self):
+        path = self.state / "dispatches.sqlite3"
+        store_id = str(uuid.uuid4())
+        with closing(sqlite3.connect(path)) as db:
+            db.execute("CREATE TABLE store_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+            db.execute("INSERT INTO store_meta VALUES('store_id',?)", (store_id,))
+        os.chmod(path, 0o600)
+        before = path.read_bytes()
+        with self.assertRaisesRegex(ValueError, "schema incomplete"):
+            DispatchStore.open_production(str(path), state_dir=str(self.state), expected_store_id=store_id)
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_intent_retry_and_fallback_guards_refuse_without_side_effects(self):
+        for kwargs in ({"explicit_bootstrap": False}, {"explicit_bootstrap": True, "retry": 1},
+                       {"explicit_bootstrap": True, "fallback": "enabled"},
+                       {"explicit_bootstrap": True, "expected_store_id": str(uuid.uuid4())}):
+            result = prepare_production_store_bootstrap(state_dir=str(self.state), receipt_path=str(self.receipt),
+                                                        **kwargs)
+            self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(list(self.state.iterdir()), [])
+        self.assertFalse(self.receipt.exists())
+
+    def test_interrupted_bootstrap_marker_burns_attempt_without_retry(self):
+        with patch("automation.command_bus.claude_admission_gate.DispatchStore",
+                   side_effect=RuntimeError("simulated init failure")):
+            with self.assertRaises(RuntimeError):
+                self.initialize()
+        self.assertTrue(self.receipt.exists())
+        self.assertEqual(json.loads(self.receipt.read_text(encoding="utf-8"))["status"], "INITIALIZING")
+        with self.assertRaises(ValueError):
+            self.initialize()
+
+    @unittest.skipUnless(os.name == "nt", "Windows-only production bootstrap ACL boundary")
+    def test_windows_production_path_bootstrap_is_blocked(self):
+        result = prepare_production_store_bootstrap(state_dir=str(self.state), receipt_path=str(self.receipt),
+                                                    explicit_bootstrap=True)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertFalse(self.receipt.exists())
+        self.assertEqual(list(self.state.iterdir()), [])
+
+    def test_bootstrap_receipt_path_is_fixed_sibling_not_caller_selectable(self):
+        alternate = self.root / "other-control" / "claude-gate-bootstrap-receipt.json"
+        alternate.parent.mkdir()
+        result = prepare_production_store_bootstrap(state_dir=str(self.state), receipt_path=str(alternate),
+                                                    explicit_bootstrap=True,
+                                                    _test_only_temp_fixture=os.name == "nt")
+        self.assertEqual(result["status"], "BLOCKED")
 
 
 if __name__ == "__main__":

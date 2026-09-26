@@ -127,6 +127,64 @@ head, or state for the same correlation blocks. This is a static in-process
 adapter, not a GitHub poller: the caller must supply freshly read receipts.
 The gate request path never writes to GitHub.
 
+## First-store bootstrap (separate from normal startup)
+
+Normal startup is `OPEN_EXISTING_ONLY`: `DispatchStore.open_production()` only
+accepts an already-existing DB after validating the fixed path, platform access
+policy, externally supplied `expected_store_id`, and complete existing schema.
+Identity/schema validation is read-only; production open refuses schema repair
+or migration and never calls bootstrap.
+On Windows, production open remains BLOCKED because ACL verification is not
+implemented.
+
+The explicit `prepare_production_store_bootstrap()` is read-only and requires
+`explicit_bootstrap=True`, an existing empty private `claude-gate` state
+directory, an absent external receipt at
+the fixed host-control-plane sibling path `claude-gate-bootstrap-receipt.json`,
+no externally retained expected store ID, `retry=0`, and fallback disabled. It
+refuses any file in the state directory, an existing DB, an existing receipt,
+or unknown state. On POSIX, both state and external receipt directories must be
+host-owned and private. Windows production bootstrap is blocked; the narrow
+Windows test-fixture exception accepts only OS temporary directories.
+`initialize_production_store_once()` revalidates, then
+atomically claims the one-time attempt by creating the external receipt with
+status `INITIALIZING` using exclusive-create semantics before creating the
+fixed `dispatches.sqlite3`. It generates the store UUID, finalizes the receipt
+with status, timestamps, state-directory identity hash, DB filename and SHA-256,
+and returns that record for the host/control plane to retain. The receipt does
+not contain credentials or the raw state path. Retry is never attempted.
+
+An interrupted attempt leaves its receipt marker behind and is burned; a
+partial marker or missing DB is UNKNOWN/BLOCKED for manual recovery, not a
+reason to bootstrap again. After a successful bootstrap, deleting the DB while
+the host receipt remains is treated as deletion/corruption and a second
+bootstrap is refused. This distinguishes first initialization from known
+disappearance. If the external receipt itself is lost, this local mechanism
+cannot prove whether the state is new; that condition is UNKNOWN and must not
+be auto-reinitialized. The bootstrap API also blocks if the host supplies an
+already-retained expected store ID, even when the DB or receipt is missing.
+
+Future named-volume initialization order is fixed:
+
+1. Host/control-plane one-time bootstrap into an empty, privately owned volume
+   (or a separately designed one-shot bootstrap container that is not the Gate
+   runtime and is never part of normal startup).
+2. Capture the returned store ID and receipt in host/control-plane durable
+   storage outside the volume.
+3. Supply that retained ID as `PHASE0_GATE_EXPECTED_STORE_ID`.
+4. Start the ordinary Gate only in `OPEN_EXISTING_ONLY` mode and compare the
+   existing DB ID with the external value. Missing DB, missing input, or any
+   mismatch blocks startup; there is no bootstrap fallback.
+
+This batch does not create a real production volume or run a bootstrap. The
+Windows-only test-fixture exception is constrained to OS temporary directories;
+it does not enable Windows production bootstrap. Full anti-rollback remains a
+known limitation: an older DB copy can carry the same store ID. A later design
+may compare a GitHub durable receipt, monotonic generation, or external store
+epoch. Whether complete anti-rollback is mandatory before a narrowly scoped
+single live proof is a separate decision; it must be reassessed before any
+unattended overnight operation.
+
 ## Durability and limitations
 
 SQLite gives a durable write-ahead claim across normal process restarts when

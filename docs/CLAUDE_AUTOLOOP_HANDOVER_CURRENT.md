@@ -1,5 +1,12 @@
 # Claude auto-loop current handover
 
+## Latest static contract direction (2026-09-27)
+
+- `prepare_claude_transport()` uses the shared Admission Gate transport constants. `HOST_LOOPBACK` remains the safe default; `CONTAINER_INTERNAL` is explicit and only accepts `http://gate:8080` when the freshly loaded Compose contract validates.
+- Production Gate startup is existing-store-only and requires a host/control-plane-retained expected store ID. First initialization is a separate explicit one-time bootstrap with an external receipt; interrupted or repeated bootstrap is blocked, and normal startup never falls back to bootstrap.
+- The named volume is not created or initialized in this work. Live use remains blocked until actual Claude compatibility, network egress enforcement, durable external receipt operation, Windows ACL limitations, and anti-rollback scope are addressed.
+- Fresh GitHub state is canonical; consult PR #25 and Issue #23 for current commit and test evidence before continuing.
+
 ## Handoff rule
 - Continue in **Chat**, not Work. Never auto-handoff to Work.
 - If a task truly requires Work, tell the user: **「これはCHATでは不可能です。WORKに投げてください」** and provide the prompt. The destination Chat follows the same rule.

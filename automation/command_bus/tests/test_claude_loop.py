@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 from automation.command_bus.claude_loop import (
-    BackendMode, VerdictDecision, make_structured_verdict,
+    BackendMode, CONTAINER_INTERNAL, HOST_LOOPBACK, VerdictDecision, make_structured_verdict,
     prepare_claude_transport, prepare_next_action, validate_machine_gate,
 )
 
@@ -145,6 +145,9 @@ class ClaudeLoopTests(unittest.TestCase):
         self.assertFalse(result["launch"])
         self.assertEqual(result["retry"], 0)
         self.assertEqual(result["fallback"], "disabled")
+        self.assertEqual(result["transport_mode"], HOST_LOOPBACK)
+        self.assertEqual(result["validated_gate_endpoint"], "http://127.0.0.1:8080")
+        self.assertEqual(result["topology_validation_state"], "NOT_APPLICABLE")
         self.assertEqual(prepare_claude_transport(mode=BackendMode.JULES_BACKEND.value,
                                                   dispatch_id=str(uuid.uuid4()),
                                                   gate_base_url="http://127.0.0.1:8080")["status"], "BLOCKED")
@@ -152,6 +155,24 @@ class ClaudeLoopTests(unittest.TestCase):
                                                   dispatch_id=str(uuid.uuid4()),
                                                   gate_base_url="http://127.0.0.1:8080",
                                                   live_model=True)["status"], "BLOCKED")
+        self.assertEqual(prepare_claude_transport(mode=BackendMode.CLAUDE_BACKEND.value,
+                                                  dispatch_id=str(uuid.uuid4()),
+                                                  gate_base_url="http://gate:8080",
+                                                  transport_mode=CONTAINER_INTERNAL)["status"], "PREPARED")
+        for url, transport_mode in (("http://gate:8081", CONTAINER_INTERNAL),
+                                    ("http://not-loopback:8080", HOST_LOOPBACK)):
+            self.assertEqual(prepare_claude_transport(mode=BackendMode.CLAUDE_BACKEND.value,
+                                                      dispatch_id=str(uuid.uuid4()),
+                                                      gate_base_url=url,
+                                                      transport_mode=transport_mode)["status"], "BLOCKED")
+        self.assertEqual(prepare_claude_transport(mode=BackendMode.CLAUDE_BACKEND.value,
+                                                  dispatch_id=str(uuid.uuid4()),
+                                                  gate_base_url="http://gate:8080",
+                                                  transport_mode="UNKNOWN")["status"], "BLOCKED")
+        self.assertEqual(prepare_claude_transport(mode=BackendMode.CLAUDE_BACKEND.value,
+                                                  dispatch_id=str(uuid.uuid4()),
+                                                  gate_base_url="http://127.0.0.1:8080",
+                                                  external_send=True)["status"], "BLOCKED")
 
 
 if __name__ == "__main__":

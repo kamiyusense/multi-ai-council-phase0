@@ -17,6 +17,7 @@ import re
 import os
 import sqlite3
 import stat
+import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable
 from urllib.parse import urlsplit
@@ -50,9 +51,24 @@ class Admission:
 class DispatchStore:
     """SQLite-backed write-ahead slot claim; use a private, durable local file."""
 
-    def __init__(self, path: str, *, _production_open: bool = False):
+    def __init__(self, path: str, *, _production_open: bool = False,
+                 _initialize_schema: bool = True):
         self.path = path
         self.production = _production_open
+        if not _initialize_schema:
+            uri = Path(path).resolve().as_uri() + "?mode=ro"
+            with closing(sqlite3.connect(uri, uri=True)) as db:
+                row = db.execute("SELECT value FROM store_meta WHERE key='store_id'").fetchone()
+                required = {"dispatches", "evidence", "store_meta", "terminal_receipts"}
+                tables = {item[0] for item in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                if row is None or not required.issubset(tables):
+                    raise ValueError("production database schema/identity incomplete; refuse repair")
+                columns = {item[1] for item in db.execute("PRAGMA table_info(dispatches)")}
+                if not {"dispatch_id", "expires_at", "terminal", "claimed", "loop_id",
+                        "correlation_id", "backend", "target_head", "generation"}.issubset(columns):
+                    raise ValueError("production dispatch schema incomplete; refuse migration")
+                self.store_id = row[0]
+            return
         with self._db() as db:
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("""CREATE TABLE IF NOT EXISTS dispatches (
@@ -96,10 +112,11 @@ class DispatchStore:
             raise ValueError("existing store identity is unreadable; refuse new store") from exc
         if row is None or row[0] != expected_store_id:
             raise ValueError("store identity mismatch; possible replacement or rollback")
-        store = cls(path, _production_open=True)
+        store = cls(path, _production_open=True, _initialize_schema=False)
         if store.store_id != expected_store_id:
             raise ValueError("store identity changed during open")
         return store
+
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
@@ -243,6 +260,119 @@ class DispatchStore:
         fields = ("ordinal", "decision", "timestamp", "body_sha256", "body_bytes",
                   "prompt_id", "session_id", "request_class", "upstream_status")
         return [dict(zip(fields, row)) for row in rows]
+
+
+def prepare_production_store_bootstrap(*, state_dir: str, receipt_path: str,
+                                      explicit_bootstrap: bool, retry: int = 0,
+                                      fallback: str = "disabled",
+                                      expected_store_id: str | None = None,
+                                      _test_only_temp_fixture: bool = False) -> dict:
+    """Validate a one-time bootstrap plan without creating any files."""
+    if (explicit_bootstrap is not True or retry != 0 or fallback != "disabled"
+            or expected_store_id is not None):
+        return {"status": "BLOCKED", "reason": "explicit one-time bootstrap with retry=0/fallback=disabled required"}
+    try:
+        root = Path(state_dir)
+        receipt = Path(receipt_path)
+        if not root.is_absolute() or not receipt.is_absolute():
+            raise ValueError("absolute state and external receipt paths are required")
+        resolved_root = root.resolve(strict=True)
+        resolved_receipt_parent = receipt.parent.resolve(strict=True)
+        if (not resolved_root.is_dir() or resolved_root.name != "claude-gate"
+                or receipt.name != "claude-gate-bootstrap-receipt.json"):
+            raise ValueError("fixed state directory and bootstrap receipt filename required")
+        if resolved_receipt_parent != resolved_root.parent:
+            raise ValueError("bootstrap receipt must use the fixed host-control-plane sibling path")
+        if receipt.is_symlink() or receipt.exists():
+            raise ValueError("bootstrap receipt already exists or is a symlink")
+        if list(resolved_root.iterdir()):
+            raise ValueError("state directory is not empty; refuse bootstrap")
+        if os.name == "nt":
+            temp_root = Path(tempfile.gettempdir()).resolve(strict=True)
+            if (not _test_only_temp_fixture or not resolved_root.is_relative_to(temp_root)
+                    or not resolved_receipt_parent.is_relative_to(temp_root)):
+                raise ValueError("Windows production bootstrap is BLOCKED; test fixtures must remain in the OS temp root")
+        else:
+            st = resolved_root.stat()
+            receipt_st = resolved_receipt_parent.stat()
+            if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or stat.S_IMODE(st.st_mode) & 0o077:
+                raise ValueError("state directory must be host-owned and private")
+            if (not stat.S_ISDIR(receipt_st.st_mode) or receipt_st.st_uid != os.getuid()
+                    or stat.S_IMODE(receipt_st.st_mode) & 0o077):
+                raise ValueError("external receipt directory must be host-owned and private")
+        return {"status": "READY", "state_dir": str(resolved_root),
+                "database_path": str(resolved_root / "dispatches.sqlite3"),
+                "receipt_path": str(resolved_receipt_parent / receipt.name),
+                "retry": 0, "fallback": "disabled", "bootstrap_once": True}
+    except (OSError, TypeError, ValueError) as exc:
+        return {"status": "BLOCKED", "reason": str(exc)}
+
+
+def initialize_production_store_once(*, state_dir: str, receipt_path: str,
+                                     explicit_bootstrap: bool, retry: int = 0,
+                                     fallback: str = "disabled",
+                                     expected_store_id: str | None = None,
+                                     _test_only_temp_fixture: bool = False) -> dict:
+    """Create a production store only once, with an external durable replay marker.
+
+    Any interrupted attempt leaves its exclusive receipt marker behind and must
+    be resolved manually; this function never retries or repairs partial state.
+    """
+    plan = prepare_production_store_bootstrap(state_dir=state_dir, receipt_path=receipt_path,
+                                              explicit_bootstrap=explicit_bootstrap,
+                                              retry=retry, fallback=fallback,
+                                              expected_store_id=expected_store_id,
+                                              _test_only_temp_fixture=_test_only_temp_fixture)
+    if plan["status"] != "READY":
+        raise ValueError(plan["reason"])
+    marker = {"schema_version": 1, "status": "INITIALIZING", "created_at": _now(),
+              "state_dir_identity_sha256": sha256(plan["state_dir"].encode("utf-8")).hexdigest(),
+              "database_filename": "dispatches.sqlite3", "retry": 0,
+              "fallback": "disabled", "bootstrap_once": True}
+    receipt_bytes = json.dumps(marker, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    try:
+        fd = os.open(plan["receipt_path"], os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise ValueError("bootstrap receipt appeared concurrently; refuse") from exc
+    try:
+        os.write(fd, receipt_bytes)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    _fsync_directory(Path(plan["receipt_path"]).parent)
+    try:
+        db_fd = os.open(plan["database_path"], os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(db_fd)
+        _fsync_directory(Path(plan["database_path"]).parent)
+        store = DispatchStore(plan["database_path"])
+        if not _UUID.fullmatch(store.store_id):
+            raise ValueError("initialized store returned invalid identity")
+        db_hash = sha256(Path(plan["database_path"]).read_bytes()).hexdigest()
+        marker.update({"status": "COMPLETE", "store_id": store.store_id,
+                       "completed_at": _now(), "database_sha256": db_hash})
+        completed = json.dumps(marker, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        receipt_fd = os.open(plan["receipt_path"], os.O_WRONLY)
+        try:
+            os.ftruncate(receipt_fd, 0)
+            os.write(receipt_fd, completed)
+            os.fsync(receipt_fd)
+        finally:
+            os.close(receipt_fd)
+        _fsync_directory(Path(plan["receipt_path"]).parent)
+        return marker
+    except Exception:
+        # The external INITIALIZING marker permanently burns this bootstrap attempt.
+        raise
+
+
+def _fsync_directory(path: Path) -> None:
+    if os.name == "nt":
+        return
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def prepare_transport(*, dispatch_id: str, gate_base_url: str, transport_mode: str = HOST_LOOPBACK, retry: int = 0,

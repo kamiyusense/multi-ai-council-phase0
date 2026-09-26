@@ -161,6 +161,9 @@ backup rollback protection, and actual Claude compatibility remain unproven.
 `prepare_transport` separates strict `HOST_LOOPBACK` from opt-in
 `CONTAINER_INTERNAL`, which accepts only the freshly validated Compose endpoint
 `http://gate:8080`. The container contract requires an externally supplied
-expected store UUID; an empty/replaced volume must fail closed. This gate
-remains prepare/static-only and does not launch Claude. See
+expected store UUID; an empty/replaced volume must fail closed. Production
+store creation is a separate explicit one-time operation with an external
+receipt; normal production open never bootstraps. Windows production ACL
+verification remains blocked. This gate remains prepare/static-only and does
+not launch Claude. See
 `docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.
