@@ -25,6 +25,7 @@ class DispatchEnvelope:
     correlation_id: str
     packet_sha256: str
     payload: dict[str, Any]
+    timeout_seconds: float | None = None
 
     @classmethod
     def build(
@@ -33,14 +34,20 @@ class DispatchEnvelope:
         slot: DispatchSlot,
         correlation_id: str,
         payload: dict[str, Any],
+        timeout_seconds: float | None = None,
     ) -> "DispatchEnvelope":
         if not correlation_id:
             raise ValueError("correlation_id is required")
         snapshot = copy.deepcopy(payload)
-        encoded = json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        if timeout_seconds is not None:
+            intent: Any = {"payload": snapshot, "timeout_seconds": timeout_seconds}
+        else:
+            intent = snapshot
+        encoded = json.dumps(intent, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return cls(
             slot=slot,
             correlation_id=correlation_id,
             packet_sha256=hashlib.sha256(encoded).hexdigest(),
             payload=snapshot,
+            timeout_seconds=timeout_seconds,
         )
