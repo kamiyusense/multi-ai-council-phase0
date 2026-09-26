@@ -10,7 +10,7 @@ from providers.policy import (
     claude_session_meta,
 )
 from relay.duplicate_guard import DuplicateDecision, DuplicateGuard
-from relay.envelope import DispatchEnvelope, DispatchSlot
+from relay.envelope import DispatchEnvelope, DispatchSlot, compute_intent_hash
 from relay.lifecycle import RelayLifecycle
 from relay.mock_transport import MockTransport
 from relay.result import RelayState
@@ -93,6 +93,23 @@ class EnvelopeTests(unittest.TestCase):
         guard = DuplicateGuard()
         self.assertEqual(guard.reserve(self.envelope({"x": 1})), DuplicateDecision.RESERVED)
         self.assertEqual(guard.reserve(self.envelope({"x": 2})), DuplicateDecision.CONFLICT)
+
+
+class IntentHashTests(unittest.TestCase):
+    def test_key_order_determinism(self):
+        a = compute_intent_hash({"a": 1, "b": 2}, None)
+        b = compute_intent_hash({"b": 2, "a": 1}, None)
+        self.assertEqual(a, b)
+
+    def test_nested_key_order_determinism(self):
+        a = compute_intent_hash({"x": {"a": 1, "b": 2}}, None)
+        b = compute_intent_hash({"x": {"b": 2, "a": 1}}, None)
+        self.assertEqual(a, b)
+
+    def test_timeout_differences(self):
+        a = compute_intent_hash({}, None)
+        b = compute_intent_hash({}, 10.0)
+        self.assertNotEqual(a, b)
 
 
 class LifecycleTests(unittest.TestCase):

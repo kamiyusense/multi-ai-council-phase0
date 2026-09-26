@@ -257,6 +257,18 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(adapter.dispatch_count, 0)
 
 
+    def test_timeout_intent_hash_duplicates_and_conflicts_with_none(self):
+        d = make()
+        payload = {"a": 1}
+        # First request with None timeout sets intent
+        self.assertEqual(d.dispatch("slot_timeout_none", {"timeout_seconds": None, "payload": payload})["state"], "SIMULATED")
+        # Exact same slot, payload, and None timeout -> SAME_REQUEST/BLOCKED
+        self.assertEqual(d.dispatch("slot_timeout_none", {"timeout_seconds": None, "payload": payload})["state"], "BLOCKED")
+
+        # Same slot, same payload, but finite timeout -> CONFLICT/BLOCKED
+        self.assertEqual(d.dispatch("slot_timeout_none", {"timeout_seconds": 10, "payload": payload})["state"], "BLOCKED")
+        self.assertEqual(d.dispatch("slot_timeout_none", {"timeout_seconds": 10, "payload": payload})["reason"], "CONFLICT")
+
     def test_timeout_intent_hash_duplicates_and_conflicts(self):
         d = make()
         payload = {"a": 1}
