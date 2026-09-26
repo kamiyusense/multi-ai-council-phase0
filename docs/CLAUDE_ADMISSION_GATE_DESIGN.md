@@ -233,6 +233,47 @@ not start a Claude reviewer process, so it is unchanged. Any future Claude
 reviewer/planner process within that backend must use this same Admission Gate,
 dispatch metadata, one-generation budget, local gate URL, and egress isolation.
 
+## Static subscription-auth container contract (not runnable)
+
+The Compose manifest now distinguishes `auth-bootstrap` from runtime `claude`.
+Both are deliberately left with the placeholder image and `/bin/false` entrypoint;
+this repository does not run Docker, invoke `claude`, or perform an interactive
+login. The bootstrap service is assigned only the `human-auth-bootstrap` Compose
+profile, only the egress network, no workspace mount, no Gate state, and the
+separate named volume `claude-auth:/home/node/.claude`. Runtime Claude sees the
+same dedicated volume but only the `internal` network and `ANTHROPIC_BASE_URL`
+for the local Gate. Gate state remains on a different volume and the Gate never
+mounts `claude-auth`. The validator rejects credential environment injection,
+unexpected mounts, profile/network changes, volume sharing, and unpinned config
+directory changes. It does not inspect volume contents or prove authentication.
+
+Anthropic's dev-container documentation says that authentication and settings
+are under `~/.claude`, while OAuth account and project trust also use
+`~/.claude.json`; setting `CLAUDE_CONFIG_DIR` to the mounted path puts both
+under the dedicated volume. Accordingly, both services use
+`CLAUDE_CONFIG_DIR=/home/node/.claude`, with a fixed non-root UID/GID. The
+bootstrap profile is a human-only future boundary; this static change does not
+grant permission to start it or to handle real credentials. A real project
+workspace is not mounted in either service in this contract.
+
+The manifest records only currently documented client controls: retry count
+zero, one maximum turn, no saved prompt history/session persistence,
+interrupted-turn resume off, background task/agent-view controls off, built-in
+SDK subagents off, fast mode off, subprocess credential scrubbing on,
+nonessential traffic disabled, and updates disabled. Future runtime argv
+metadata includes `-p --no-session-persistence --max-turns 1 --tools ""`, plus
+an explicitly empty MCP server set with strict MCP configuration. This is
+metadata only, not a command executed by this manifest. The gate remains the
+independent one-generation request guard.
+
+Fallback-model suppression has not been proven by this static contract. The
+manifest explicitly records that it is not claimed disabled. A future
+admission decision must remain UNKNOWN until the supported Claude Code version
+and actual fallback/continuation behavior are separately evidenced. Disabling
+the built-in tool set is documented; complete agent/subagent suppression beyond
+the listed SDK and background controls is also not inferred from those flags.
+No authentication state is inferred from a named volume's existence.
+
 ## Prior art, attribution, and licenses
 
 The implementation in this repository is original Python using only the

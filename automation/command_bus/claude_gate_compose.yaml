@@ -1,4 +1,10 @@
 {
+  "x-phase0-runtime-contract": {
+    "mode": "static-contract-only",
+    "argv": ["-p", "--no-session-persistence", "--max-turns", "1", "--tools", "", "--mcp-config", "{\"mcpServers\":{}}", "--strict-mcp-config"],
+    "automatic_model_fallback": "not_configured_and_not_claimed_disabled",
+    "tool_scope": "all_builtin_tools_disabled; MCP denied by separate config requirement"
+  },
   "services": {
     "claude": {
       "image": "phase0-claude-runtime:UNBUILT",
@@ -9,8 +15,36 @@
       "networks": ["internal"],
       "environment": {
         "ANTHROPIC_BASE_URL": "http://gate:8080",
-        "CLAUDE_CODE_MAX_RETRIES": "0"
-      }
+        "CLAUDE_CODE_MAX_RETRIES": "0",
+        "CLAUDE_CODE_MAX_TURNS": "1",
+        "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+        "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1",
+        "CLAUDE_CODE_RESUME_INTERRUPTED_TURN": "0",
+        "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+        "CLAUDE_CODE_DISABLE_AGENT_VIEW": "1",
+        "CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS": "1",
+        "CLAUDE_CODE_DISABLE_FAST_MODE": "1",
+        "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_UPDATES": "1"
+      },
+      "user": "1000:1000",
+      "volumes": ["claude-auth:/home/node/.claude"]
+    },
+    "auth-bootstrap": {
+      "image": "phase0-claude-runtime:UNBUILT",
+      "profiles": ["human-auth-bootstrap"],
+      "entrypoint": ["/bin/false"],
+      "privileged": false,
+      "ports": [],
+      "networks": ["egress"],
+      "user": "1000:1000",
+      "environment": {
+        "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_UPDATES": "1"
+      },
+      "volumes": ["claude-auth:/home/node/.claude"]
     },
     "gate": {
       "image": "phase0-claude-gate:UNBUILT",
@@ -40,5 +74,5 @@
     },
     "egress": {"driver": "bridge"}
   },
-  "volumes": {"gate-state": {}}
+  "volumes": {"gate-state": {}, "claude-auth": {}}
 }

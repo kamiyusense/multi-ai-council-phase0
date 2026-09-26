@@ -590,10 +590,11 @@ def load_container_manifest() -> dict:
 
 
 def validate_container_topology(manifest: dict) -> dict:
-    """Fail-closed validator for Claude-isolated/Gate-egress Compose topology."""
+    """Fail-closed static Compose topology and isolated auth-volume contract."""
     try:
         services, networks = manifest["services"], manifest["networks"]
         claude, gate = services["claude"], services["gate"]
+        auth = services["auth-bootstrap"]
         internal, egress = networks["internal"], networks["egress"]
         internal_subnet = internal["ipam"]["config"][0]["subnet"]
         gate_bind = gate["environment"]["PHASE0_GATE_BIND"]
@@ -608,19 +609,49 @@ def validate_container_topology(manifest: dict) -> dict:
     except (KeyError, TypeError, IndexError, ValueError):
         return {"status": "BLOCKED", "reason": "missing or malformed topology fields"}
     claude_networks = set(claude.get("networks", []))
+    auth_networks = set(auth.get("networks", []))
     gate_networks = set(gate.get("networks", {}))
+    claude_env = claude.get("environment", {})
+    auth_env = auth.get("environment", {})
+    forbidden_env_names = {
+        "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
+        "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "ANTHROPIC_AWS_API_KEY",
+        "ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_AUTH_TOKEN",
+        "ANTHROPIC_CUSTOM_HEADERS", "AWS_BEARER_TOKEN_BEDROCK",
+    }
+    env_maps = [service.get("environment", {}) for service in services.values()]
+    env_keys = {str(key).upper() for env in env_maps if isinstance(env, dict) for key in env}
+    runtime_contract = manifest.get("x-phase0-runtime-contract", {})
+    auth_volume = "claude-auth:/home/node/.claude"
+    runtime_vars = {
+        "CLAUDE_CODE_MAX_RETRIES": "0",
+        "CLAUDE_CODE_MAX_TURNS": "1",
+        "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+        "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1",
+        "CLAUDE_CODE_RESUME_INTERRUPTED_TURN": "0",
+        "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+        "CLAUDE_CODE_DISABLE_AGENT_VIEW": "1",
+        "CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS": "1",
+        "CLAUDE_CODE_DISABLE_FAST_MODE": "1",
+        "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_UPDATES": "1",
+    }
     checks = {
-        "exact_services": set(services) == {"claude", "gate"},
+        "exact_services": set(services) == {"claude", "gate", "auth-bootstrap"},
         "claude_internal_only": claude_networks == {"internal"},
+        "auth_bootstrap_egress_only": auth_networks == {"egress"},
         "gate_internal_and_egress": gate_networks == {"internal", "egress"},
         "internal_true": internal.get("internal") is True,
         "internal_bridge": internal.get("driver") == "bridge",
         "egress_is_external_bridge": egress.get("driver") == "bridge" and egress.get("internal") is not True,
         "claude_no_ports": not claude.get("ports"),
+        "auth_bootstrap_no_ports": not auth.get("ports"),
         "gate_no_published_ports": not gate.get("ports"),
-        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate)),
-        "not_privileged": all(service.get("privileged") is False for service in (claude, gate)),
+        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth)),
+        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth)),
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
+        "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
         "claude_gateway_exact": claude_gateway == "http://gate:8080",
         "gate_port_exact": gate_port == str(CONTAINER_GATE_PORT),
@@ -628,6 +659,30 @@ def validate_container_topology(manifest: dict) -> dict:
         "fixed_state_directory": state_dir == "/var/lib/phase0/claude-gate",
         "store_id_externally_supplied": expected_store_id == "${PHASE0_GATE_EXPECTED_STORE_ID:?must be externally provisioned}",
         "named_volume_mounted_at_fixed_state": gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"],
+        "auth_volume_declared_separately": manifest.get("volumes") == {"gate-state": {}, "claude-auth": {}},
+        "auth_and_runtime_share_only_fixed_auth_volume": claude.get("volumes") == [auth_volume] and auth.get("volumes") == [auth_volume],
+        "auth_bootstrap_is_human_gated_non_runnable": auth.get("profiles") == ["human-auth-bootstrap"] and auth.get("entrypoint") == ["/bin/false"],
+        "runtime_is_human_gated_non_runnable": claude.get("profiles") == ["human-approval-required"] and claude.get("entrypoint") == ["/bin/false"],
+        "images_remain_unbuilt_placeholders": claude.get("image") == auth.get("image") == "phase0-claude-runtime:UNBUILT" and gate.get("image") == "phase0-claude-gate:UNBUILT",
+        "fixed_nonroot_identity": claude.get("user") == auth.get("user") == "1000:1000",
+        "auth_config_dir_same_as_volume": claude_env.get("CLAUDE_CONFIG_DIR") == auth_env.get("CLAUDE_CONFIG_DIR") == "/home/node/.claude",
+        "bootstrap_environment_allowlist_exact": auth_env == {
+            "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+            "DISABLE_UPDATES": "1",
+        },
+        "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", **runtime_vars},
+        "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth) for v in service.get("volumes", [])),
+        "bootstrap_has_no_workspace_or_gate_state": auth.get("volumes") == [auth_volume],
+        "gate_cannot_read_auth_volume": auth_volume not in gate.get("volumes", []),
+        "runtime_retry_and_resume_contract": all(claude_env.get(k) == v for k, v in runtime_vars.items()),
+        "bootstrap_has_no_injected_credentials": not (set(auth_env) & forbidden_env_names),
+        "runtime_cli_contract_explicit": runtime_contract == {
+            "mode": "static-contract-only",
+            "argv": ["-p", "--no-session-persistence", "--max-turns", "1", "--tools", "", "--mcp-config", "{\"mcpServers\":{}}", "--strict-mcp-config"],
+            "automatic_model_fallback": "not_configured_and_not_claimed_disabled",
+            "tool_scope": "all_builtin_tools_disabled; MCP denied by separate config requirement",
+        },
         "no_extra_networks": set(networks) == {"internal", "egress"},
     }
     failed = [key for key, passed in checks.items() if not passed]

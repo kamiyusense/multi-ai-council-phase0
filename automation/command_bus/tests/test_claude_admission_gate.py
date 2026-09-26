@@ -435,6 +435,25 @@ class AdmissionGateTests(unittest.TestCase):
         bad = deepcopy(manifest)
         bad["services"]["gate"]["volumes"] = ["gate-state:/other/path"]
         cases.append(bad)
+        mutations = [
+            lambda m: m["services"]["auth-bootstrap"].update(profiles=["default"]),
+            lambda m: m["services"]["auth-bootstrap"].update(image="user-image:latest"),
+            lambda m: m["services"]["auth-bootstrap"].update(networks=["internal", "egress"]),
+            lambda m: m["services"]["auth-bootstrap"].update(volumes=["claude-auth:/home/node/.claude", ".:/workspace"]),
+            lambda m: m["services"]["auth-bootstrap"]["environment"].update(CLAUDE_CODE_OAUTH_TOKEN="fake-only"),
+            lambda m: m["services"]["claude"]["environment"].update(ANTHROPIC_API_KEY="fake-only"),
+            lambda m: m["services"]["claude"]["environment"].update(ANTHROPIC_DEFAULT_MODEL="fallback-candidate"),
+            lambda m: m["services"]["claude"]["environment"].update(CLAUDE_CONFIG_DIR="/root/.claude"),
+            lambda m: m["services"]["claude"].update(volumes=["claude-auth:/home/node/.claude", "gate-state:/var/lib/phase0/claude-gate"]),
+            lambda m: m["services"]["gate"].update(volumes=["gate-state:/var/lib/phase0/claude-gate", "claude-auth:/home/node/.claude"]),
+            lambda m: m["volumes"].update({"claude-auth": {"external": True}}),
+            lambda m: m["services"]["claude"]["environment"].update(CLAUDE_CODE_MAX_RETRIES="1"),
+            lambda m: m["x-phase0-runtime-contract"].update(argv=["-p", "--resume"]),
+        ]
+        for mutate in mutations:
+            bad = deepcopy(manifest)
+            mutate(bad)
+            cases.append(bad)
         for item in cases:
             with self.subTest(item=item):
                 self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
