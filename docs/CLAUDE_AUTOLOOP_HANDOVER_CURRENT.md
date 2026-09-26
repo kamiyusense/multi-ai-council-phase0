@@ -76,3 +76,24 @@ Proposed next probe, only after explicit user authorization:
 7. Delete only the disposable probe directory/artifacts after hashes/evidence are durably recorded if cleanup is explicitly allowed; otherwise leave it for human cleanup.
 
 Until that one-time download authorization is given and the matrix passes, A/B remain not live-green and takeover/orchestration remains deferred.
+
+
+## Portable runtime probe checkpoint (2026-09-27)
+
+The user authorized one download of the official Anthropic `v2.1.283` Windows x64
+ZIP to a disposable temporary directory. Fresh release metadata matched the
+requested asset and SHA-256. The downloaded ZIP hash matched; the extracted
+`claude.exe` hash and valid Authenticode signature from `Anthropic, PBC` are
+recorded in `docs/CLAUDE_LITERAL_RETRY_ZERO_PORTABLE_RUNTIME_V2_1_283.json`.
+
+The executable was **not started**. This host had no available Docker, Podman,
+or Windows Sandbox executable. Windows Firewall profiles were enabled but their
+default outbound action was `NotConfigured`, and no process-specific outbound
+block was verified. Since localhost routing alone cannot prove that the process
+cannot contact an external provider, the egress safety gate failed closed. No
+`--version` invocation, fake endpoint, controller dispatch, or A-H scenario was
+run. Runtime version and literal provider-request retry behavior remain
+`UNKNOWN`; A and B remain `STATIC/PREPARE_ONLY`, not live-green. No credentials,
+firewall/system settings, or package installation were used or changed. The
+disposable archive/executable remain under the recorded temporary path and were
+not added to Git.

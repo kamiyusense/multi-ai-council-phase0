@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pr": 25,
+  "probe_date": "2026-09-27",
+  "source_pr_head": "bfb5722c6ccb6a0a43df3794103792c4af97dbc6",
+  "overall": {
+    "runtime_probe_status": "BLOCKED_BEFORE_EXECUTION",
+    "literal_provider_request_retry_zero": "UNKNOWN",
+    "reason": "No available OS-level environment could be verified to block all non-local egress from claude.exe. The executable was not started.",
+    "live_anthropic_request_count": 0,
+    "live_jules_request_count": 0,
+    "real_credential_use_count": 0,
+    "controller_dispatch_count": 0,
+    "fake_provider_observed_request_count": 0,
+    "fake_endpoint_started": false,
+    "binary_executed": false,
+    "installation_performed": false
+  },
+  "official_release_identity": {
+    "repository": "anthropics/claude-code",
+    "release_tag": "v2.1.283",
+    "release_name": "v2.1.283",
+    "asset_name": "claude-win32-x64.zip",
+    "asset_url": "https://github.com/anthropics/claude-code/releases/download/v2.1.283/claude-win32-x64.zip",
+    "asset_size_bytes": 109890783,
+    "github_release_digest": "sha256:07c23b91ee6596914d683ed8bd97b4ed2c002ae5f997859cf4b8d11d7b62fb9c",
+    "downloaded_zip_sha256": "07C23B91EE6596914D683ED8BD97B4ED2C002AE5F997859CF4B8D11D7B62FB9C",
+    "source_tag_commit": "7779afb12e3635f46f56ec823979d68350ae000b",
+    "metadata_verified_before_download": true
+  },
+  "runtime_identity": {
+    "executable_name": "claude.exe",
+    "absolute_path": "C:/Users/yuuki/AppData/Local/Temp/claude-retry0-v2.1.283-99eabe8c84af466cbe48a5364f690ce2/unpacked/claude.exe",
+    "executable_size_bytes": 244960928,
+    "executable_sha256": "9DBE16DAFED59DA5CDABBFE11AD0335738C753FAD794989B47F9446ACCD6DE3A",
+    "authenticode_status": "Valid",
+    "authenticode_message": "Signature verified.",
+    "signer": "CN=Anthropic, PBC, O=Anthropic, PBC, L=San Francisco, S=California, C=US",
+    "signer_thumbprint": "0D7581D2C51C59DF686C3000C70BF543F9F6C6CB",
+    "claude_version_command": "NOT_RUN_SAFETY_GATE",
+    "reported_version": "UNKNOWN",
+    "existing_user_config_or_credentials_read": false,
+    "fake_credential_created_or_used": false,
+    "package_install_or_update": false
+  },
+  "egress_safety": {
+    "docker_available": false,
+    "podman_available": false,
+    "windows_sandbox_executable_available": false,
+    "windows_firewall_service": "Running",
+    "firewall_profiles_enabled": ["Domain", "Private", "Public"],
+    "firewall_default_outbound_action": "NotConfigured",
+    "process_specific_outbound_block_verified": false,
+    "network_isolation_verdict": "UNKNOWN_FAIL_CLOSED",
+    "firewall_or_system_settings_changed": false
+  },
+  "runtime_options": {
+    "CLAUDE_CONFIG_DIR": "NOT_SET_PROCESS_NOT_STARTED",
+    "CLAUDE_CODE_MAX_RETRIES": "NOT_SET_PROCESS_NOT_STARTED",
+    "fallback_disabled": "NOT_SET_PROCESS_NOT_STARTED",
+    "session_resume_or_persistence": "NOT_TESTED",
+    "max_turns": "NOT_TESTED",
+    "tools_disabled": "NOT_TESTED",
+    "automatic_continuation_control": "UNKNOWN"
+  },
+  "cases": [
+    {"id":"A","scenario":"single successful response","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"B","scenario":"max_tokens/output truncation","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"C","scenario":"no response/timeout","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"D","scenario":"stream disconnect","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"E","scenario":"retryable 5xx","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"F","scenario":"429","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"G","scenario":"auth failure/recovery","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."},
+    {"id":"H","scenario":"interrupted/continuation","status":"BLOCKED_BEFORE_EXECUTION","controller_dispatch_count":0,"fake_provider_request_count":0,"interpretation":"No request was expected because the case did not start; not evidence of retry=0."}
+  ],
+  "test_evidence": {
+    "runtime_matrix": "NOT_RUN",
+    "stdout_stderr": "NOT_APPLICABLE_PROCESS_NOT_STARTED",
+    "retry_or_continuation_events": "NOT_OBSERVED_PROCESS_NOT_STARTED",
+    "model_or_fallback_indication": "NOT_OBSERVED_PROCESS_NOT_STARTED",
+    "claude_loop_unit_tests": "PASS (9 tests)",
+    "command_bus_regression_tests": "PASS (303 tests)",
+    "python_compileall_automation_command_bus": "PASS",
+    "evidence_json_parse": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "temporary_artifacts": {
+    "directory": "C:/Users/yuuki/AppData/Local/Temp/claude-retry0-v2.1.283-99eabe8c84af466cbe48a5364f690ce2",
+    "contains_official_zip_and_extracted_executable": true,
+    "repository_contains_binary": false,
+    "automatic_cleanup_performed": false
+  },
+  "conclusion": "The official release archive identity and executable Authenticode signature were verified. The executable was not run because process-level non-local egress blocking could not be proven. CLAUDE_LITERAL_RETRY_ZERO remains UNKNOWN; A-H remain untested. No live model/provider or Jules execution and no real credentials were used."
+}
