@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-09-27",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pull_request": 25,
+  "branch": "feature/claude-night-loop-prepare",
+  "commit": "95dfe3fc83569cb1e8c306ead7aa5bc5ff9b4400",
+  "workflow_run": {
+    "id": 36258801058,
+    "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36258801058",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "job": "isolated-fake-provider-probe",
+    "artifact_id": 10911871171,
+    "artifact_name": "claude-literal-retry-zero-36258801058",
+    "artifact_size_bytes": 19182
+  },
+  "runtime": {
+    "publisher": "anthropics/claude-code",
+    "release_tag": "v2.1.283",
+    "source_tag_commit": "7779afb12e3635f46f56ec823979d68350ae000b",
+    "asset_name": "claude-linux-x64.tar.gz",
+    "asset_size_bytes": 107232692,
+    "official_asset_sha256": "db404a91bec8baffb53463166fdc8bf579208a527d60afc2d984d7507dc0c2f9",
+    "downloaded_archive_sha256": "DB404A91BEC8BAFFB53463166FDC8BF579208A527D60AFC2D984D7507DC0C2F9",
+    "executable_sha256": "1859583CE32920595C61EF868BEE52E1B1594F7486DB209935E01F1E5E804AE2",
+    "version_stdout": "2.1.283 (Claude Code)",
+    "runner": "ubuntu-24.04",
+    "host_executed_claude": false
+  },
+  "network_isolation": {
+    "docker_network_driver": "null",
+    "interfaces": ["lo"],
+    "route_entries": 0,
+    "external_ipv4": "blocked: Network is unreachable",
+    "external_dns": "blocked: Temporary failure in name resolution",
+    "verdict": "PASS"
+  },
+  "parser_preflight": {
+    "positive_help_exit_status": 0,
+    "negative_control_exit_status": 0,
+    "negative_control_invalid_flag_diagnostic": false,
+    "fake_provider_requests": 0,
+    "controller_dispatches": 0,
+    "provider_model_sessions": 0,
+    "verdict": "UNKNOWN",
+    "reason": "The runtime processes --help and exits successfully even with an intentionally invalid option, so this invocation cannot establish that the required option bundle is parsed. Both calls displayed help; no provider request was made."
+  },
+  "cases_A_to_H": {
+    "status": "NOT_STARTED_PARSER_PREFLIGHT_UNVERIFIED",
+    "controller_dispatches": 0,
+    "fake_provider_requests": 0
+  },
+  "literal_retry_zero": "UNKNOWN",
+  "classification_correction": "The harness process exit was nonzero because its parser preflight gate correctly stopped, but that does not demonstrate multiple provider requests. Therefore the literal retry-zero verdict is UNKNOWN, not FAIL.",
+  "artifact_files": {
+    "container-identity.json": {"bytes": 268, "sha256": "2BEA33D0807E6AB45BE1167D84975F723D1EE912ADBB6F6AA15DE7491E7F7F0D"},
+    "container_exit_status.txt": {"bytes": 2, "sha256": "F0B5C2C2211C8D67ED15E75E656C7862D086E9245420892A7DE62CD9EC582A06"},
+    "evidence.json": {"bytes": 41686, "sha256": "D20F73628D9CA9441972C9628275BACAE8635EFCAB364E9F39A583696D2A6340"},
+    "parser-preflight.json": {"bytes": 39623, "sha256": "58E25972928DBFE497EBEBFA8510BF3DDC038E1FB2CDC888CE49AAA47084E434"},
+    "runner-identity.json": {"bytes": 727, "sha256": "FD5EC17B71984ECFB488D49D154DD75BBB81B116F8CEC3A2147AFD034C926EE7"},
+    "runtime-help.txt": {"bytes": 22178, "sha256": "6BC118C7B92EEF0A4A59240BF5F26E26C58BBF1B5EEDF7BB2DF9C8889475D6F4"},
+    "workflow-preflight.json": {"bytes": 98, "sha256": "61AD05316509F7D642A0E1D9EC52D1F5A89EE502FBAB750189CB185DAD93DB78"}
+  },
+  "local_static_validation": {
+    "claude_probe_tests": "13/13 PASS",
+    "command_bus_tests": "316/316 PASS",
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "safety": {
+    "real_anthropic_requests": 0,
+    "real_jules_requests": 0,
+    "real_credentials_used": 0,
+    "package_install_or_upgrade": 0,
+    "workflow_runs_authorized_and_used": 1,
+    "additional_official_asset_downloads_authorized_and_used": 1,
+    "reruns_or_retries": 0,
+    "merge": false,
+    "default_branch_write": false,
+    "settings_permissions_or_billing_changes": false
+  },
+  "blocker": "The v2.1.283 CLI help path short-circuits validation of an unknown argument. This run cannot prove parser acceptance without a provider-turn invocation, and the authorized single run/download is consumed. Do not rerun, alter retry=0 semantics, or start A-H absent separate authorization and a safe, independently validated parser-only method."
+}
