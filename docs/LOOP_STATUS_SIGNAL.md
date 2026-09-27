@@ -26,6 +26,29 @@ separately below it.
 The renderer maps existing command-bus states onto those five display states.
 Unknown/malformed state fails closed before the Issue is updated.
 
+### Runtime owner wiring status
+
+**BLOCKED / NOT YET WIRED:** the current loop state schema has no durable
+`SEMI_AUTO` / `AUTO` owner field or loop-level owner lease. Executor and reviewer
+claims identify a bounded executor/reviewer for a request; they do not establish
+the owner of the whole runtime loop. The status workflow therefore supplies
+`owner=NONE` internally. An active loop state projects to `BLOCKED`; a caller
+cannot choose an owner through manual dispatch or reusable workflow inputs.
+
+The workflow may display `SEMI_AUTO` or `AUTO` only after a future durable owner
+record defines a unique holder, role, generation/fencing token, expiry, and loop
+identity, and the projection validates that record against the current state,
+target head, receipt, and provider evidence. Missing, stale, expired, competing,
+or mismatched ownership must remain `UNKNOWN`/`BLOCKED`. PR activity and provider
+commit timestamps are not ownership evidence.
+
+No durable transition currently invokes the status workflow automatically.
+`workflow_call` is the prepared adapter boundary; a caller must first persist and
+read back the state and required evidence, then call it with the state ref and
+durable event id. Until the owner record and transition caller exist, runtime
+automation is **NOT YET WIRED** and the Issue remains `STOPPED` when no active
+durable loop is being projected.
+
 For mobile/Issue-list visibility, the runtime workflow also mirrors the projected state
 into the Issue title (for example `🚦 Phase 0 Loop Status — ⚫ STOPPED`). The title and
 body are written/read back together; development-only refreshes do not change the title.
