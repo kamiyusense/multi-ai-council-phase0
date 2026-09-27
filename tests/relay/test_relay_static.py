@@ -84,6 +84,36 @@ class EnvelopeTests(unittest.TestCase):
         self.assertEqual(guard.reserve(self.envelope(timeout_seconds=None)), DuplicateDecision.RESERVED)
         self.assertEqual(guard.reserve(self.envelope(timeout_seconds=30)), DuplicateDecision.CONFLICT)
 
+    def test_dispatch_slot_invalid_types(self):
+        invalid_strings = [None, "", False, True, 123, [], {}]
+        for val in invalid_strings:
+            with self.assertRaises(ValueError):
+                DispatchSlot(val, "prov", 1).key()
+            with self.assertRaises(ValueError):
+                DispatchSlot("case", val, 1).key()
+
+    def test_dispatch_slot_invalid_sequences(self):
+        invalid_seqs = [None, False, True, -1, -99, 1.5, "1", [], {}]
+        for val in invalid_seqs:
+            with self.assertRaises(ValueError):
+                DispatchSlot("case", "prov", val).key()
+
+    def test_dispatch_slot_valid_sequence_0(self):
+        slot = DispatchSlot("case", "prov", 0)
+        self.assertEqual(slot.key(), "case:prov:0")
+
+    def test_dispatch_envelope_build_invalid_correlation_ids(self):
+        invalid_corrs = [None, "", False, True, 123, [], {}]
+        slot = DispatchSlot("case", "prov", 1)
+        for val in invalid_corrs:
+            with self.assertRaises(ValueError):
+                DispatchEnvelope.build(slot=slot, correlation_id=val, payload={})
+
+    def test_dispatch_envelope_build_invalid_slot(self):
+        invalid_slot = DispatchSlot("", "prov", 1)
+        with self.assertRaises(ValueError):
+            DispatchEnvelope.build(slot=invalid_slot, correlation_id="c", payload={})
+
     def test_dispatch_envelope_build_invalid_timeouts(self):
         invalid_timeouts = [False, True, 3.14, 0, -1, "10", [10], {"t": 10}]
         slot = DispatchSlot("case", "prov", 1)

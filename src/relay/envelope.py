@@ -27,7 +27,11 @@ class DispatchSlot:
     sequence: int
 
     def key(self) -> str:
-        if not self.case_id or not self.provider_id or self.sequence < 0:
+        if not isinstance(self.case_id, str) or not self.case_id:
+            raise ValueError("invalid dispatch slot")
+        if not isinstance(self.provider_id, str) or not self.provider_id:
+            raise ValueError("invalid dispatch slot")
+        if isinstance(self.sequence, bool) or not isinstance(self.sequence, int) or self.sequence < 0:
             raise ValueError("invalid dispatch slot")
         return f"{self.case_id}:{self.provider_id}:{self.sequence}"
 
@@ -49,7 +53,8 @@ class DispatchEnvelope:
         payload: dict[str, Any],
         timeout_seconds: int | None = None,
     ) -> "DispatchEnvelope":
-        if not correlation_id:
+        slot.key()
+        if not isinstance(correlation_id, str) or not correlation_id:
             raise ValueError("correlation_id is required")
         validate_timeout(timeout_seconds)
         snapshot = copy.deepcopy(payload)
