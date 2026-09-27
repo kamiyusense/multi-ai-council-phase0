@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-029-core-compatible-roundtrip",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "9806d53e4b6980d65378aab0ed2cb1979d3963ec",
+  "expected_target_tree": "bf76e4d5f9b33c770e1e4a439412e3037a4b998a",
+  "allowed_paths": [
+    "src/relay/bridge.py",
+    "src/relay/core_adapter.py",
+    "tests/relay/test_core_adapter.py",
+    "tests/relay/test_integration.py",
+    "fixtures/relay/valid_provider_response.json",
+    "fixtures/relay/invalid_provider_response_missing_field.json",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Bounded static/mock medium-long Relay batch. Start only from the exact target head/tree above. Goal: prove the accepted RelayCoreAdapter through a deterministic three-provider mock round-trip while preserving retry=0, fallback disabled, live_turn_executed=false, duplicate protection, timeout isolation, and no live provider execution.\n\nExtend RelayProviderAdapterBridge with an optional mock_raw_response string input whose default preserves existing behavior. When supplied, normal collect() must return that exact string as rawResponse while preserving stdout and correlation_id behavior. Invalid explicit non-string configuration must fail closed. Existing timeout/failure/malformed/unknown simulation behavior must remain unchanged.\n\nAdd exactly two small fixtures at the allowlisted fixture paths: one complete Provider Response-shaped JSON object accepted by RelayCoreAdapter.classify and one missing a required field.\n\nAdd tests proving RelayDispatcher can use RelayCoreAdapter(provider_id, bridge) by duck typing for openai, anthropic, and google. The complete fixture path must produce SIMULATED with COMPLETE/PARTICIPANT/success true, raw_evidence bytes exactly matching the fixture bytes, one dispatch and one collect only, retry_count=0, fallback disabled, live_turn_executed=false, and no abort. Add failure coverage: incomplete fixture -> UNKNOWN/non-success with raw bytes retained; timeout after dispatch -> exactly one abort and TIMEOUT; duplicate same intent -> no second bridge dispatch or collect. Preserve provider and correlation isolation and prove wrapper JSON is never substituted for Provider Response bytes.\n\nPrefer leaving core_adapter.py unchanged unless a new regression test demonstrates a real defect. Update docs/RELAY_STATIC_CHECKPOINT.md with this static/mock round-trip checkpoint and state that independent Chat validation is required before acceptance.\n\nRun focused new tests first, then once: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, and `git diff --check`. Create the normal Jules pull request when complete. Do not merge or force-push.",
+  "created_at": "2026-09-27T15:38:00+00:00",
+  "expires_at": "2026-09-27T17:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
