@@ -22,6 +22,10 @@ projects already-durable state.
 The renderer maps existing command-bus states onto those five display states.
 Unknown/malformed state fails closed before the Issue is updated.
 
+For mobile/Issue-list visibility, the runtime workflow also mirrors the projected state
+into the Issue title (for example `🚦 Phase 0 Loop Status — ⚫ STOPPED`). The title and
+body are written/read back together; development-only refreshes do not change the title.
+
 
 ## Development progress lane
 
