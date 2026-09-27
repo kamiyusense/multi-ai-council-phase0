@@ -145,9 +145,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           STATUS_ISSUE: "33"
+          DISPLAY_STATE: ${{ steps.render.outputs.display_state }}
         shell: bash
         run: |
           set -euo pipefail
+          case "${DISPLAY_STATE}" in
+            SEMI_AUTO) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🟢 SEMI_AUTO" ;;
+            AUTO) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🟣 AUTO" ;;
+            IDLE) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🟡 IDLE" ;;
+            BLOCKED) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🔴 BLOCKED" ;;
+            STOPPED) EXPECTED_TITLE="🚦 Phase 0 Loop Status — ⚫ STOPPED" ;;
+            *) echo "Unexpected display state." >&2; exit 1 ;;
+          esac
+          export EXPECTED_TITLE
+
           curl --silent --show-error --fail-with-body --retry 0 \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -160,9 +171,9 @@ jobs:
           import os
           from pathlib import Path
 
-          base = Path(os.environ["RUNNER_TEMP"], "issue-base-body.md").read_text(encoding="utf-8")
-          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))["body"]
-          if actual != base:
+          base_doc = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-base.json").read_text(encoding="utf-8"))
+          current_doc = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))
+          if current_doc["body"] != base_doc["body"] or current_doc["title"] != base_doc["title"]:
               raise SystemExit("status Issue changed after render base; refusing overwrite")
           PY
 
@@ -171,14 +182,16 @@ jobs:
           import os
           from pathlib import Path
 
-          expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
-          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))["body"]
-          raise SystemExit(0 if actual == expected else 1)
+          expected_body = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          current = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))
+          expected_title = os.environ["EXPECTED_TITLE"]
+          raise SystemExit(0 if current["body"] == expected_body and current["title"] == expected_title else 1)
           PY
           then
             echo "Status Issue already matches; NO-OP."
           else
-            jq -Rs '{body: .}' "${RUNNER_TEMP}/status-body.md" > "${RUNNER_TEMP}/issue-patch.json"
+            jq -n --arg title "${EXPECTED_TITLE}" --rawfile body "${RUNNER_TEMP}/status-body.md" \
+              '{title: $title, body: $body}' > "${RUNNER_TEMP}/issue-patch.json"
             curl --silent --show-error --fail-with-body --retry 0 \
               -X PATCH \
               -H "Accept: application/vnd.github+json" \
@@ -201,11 +214,13 @@ jobs:
           import os
           from pathlib import Path
 
-          expected = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
-          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))["body"]
-          if actual != expected:
-              raise SystemExit("status Issue body readback mismatch")
+          expected_body = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))
+          expected_title = os.environ["EXPECTED_TITLE"]
+          if actual["body"] != expected_body or actual["title"] != expected_title:
+              raise SystemExit("status Issue title/body readback mismatch")
           PY
+
       - name: Emit terminal notification once
         if: steps.render.outputs.notification_kind != 'NONE'
         env:
