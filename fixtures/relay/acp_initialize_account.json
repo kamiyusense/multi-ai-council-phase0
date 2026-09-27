@@ -1,0 +1,10 @@
+{
+    "protocol_version": 1,
+    "provider_id": "mock_provider",
+    "auth_kind": "account",
+    "capabilities": {
+        "prompts": {},
+        "resources": {},
+        "tools": {}
+    }
+}
