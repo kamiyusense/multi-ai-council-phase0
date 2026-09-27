@@ -240,12 +240,12 @@ def notification_for_state(
 
     marker = f"loop-status-receipt:{kind}:{resolved}"
     details = (
-        f"- Loop: \`{projection.loop_id}\`\n"
-        f"- Round: \`{projection.round}/{projection.max_rounds}\`\n"
-        f"- Owner: \`{projection.owner}\`\n"
-        f"- Runtime state: \`{projection.display_state}\`\n"
-        f"- Command-bus state: \`{projection.source_state}\`\n"
-        f"- Provider: \`{projection.provider_state}\`\n"
+        f"- Loop: `{projection.loop_id}`\n"
+        f"- Round: `{projection.round}/{projection.max_rounds}`\n"
+        f"- Owner: `{projection.owner}`\n"
+        f"- Runtime state: `{projection.display_state}`\n"
+        f"- Command-bus state: `{projection.source_state}`\n"
+        f"- Provider: `{projection.provider_state}`\n"
     )
     body = (
         f"{title}\n\n{message}\n\n{details}\n"
