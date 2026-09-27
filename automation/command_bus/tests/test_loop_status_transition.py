@@ -45,6 +45,17 @@ class LoopStatusTransitionTests(unittest.TestCase):
         self.assertEqual(result.status, "UNKNOWN")
         self.assertIn("last_command_id", result.reason)
 
+    def test_state_expected_target_must_match_latest_owner_generation(self):
+        values = inputs()
+        values["state"] = state(
+            last_command_id=values["owner_events"][-1]["command_id"],
+            last_receipt_id=values["owner_events"][-1]["source_receipt_id"],
+            expected_target={**values["target"], "head": "b" * 40},
+        )
+        result = project_durable_transition(**values)
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertIn("expected_target", result.reason)
+
     def test_receipt_locator_mismatch_fails_before_projection(self):
         values = inputs()
         values["receipt_ref"] = "automation/command_bus/receipts/other-loop/000001.json"
