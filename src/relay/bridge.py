@@ -3,11 +3,10 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from src.phase0_core.adapter import CoreProviderAdapter
 from src.relay.envelope import validate_timeout, validate_payload
 
 
-class RelayProviderAdapterBridge(CoreProviderAdapter):
+class RelayProviderAdapterBridge:
     """Static/mock bridge; never starts a live provider."""
 
     def __init__(self, *, simulate_timeout=False, simulate_failure=False,
