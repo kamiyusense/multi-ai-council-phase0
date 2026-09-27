@@ -48,6 +48,10 @@ def project_durable_transition(
         latest = chain[-1]
         if latest["loop_id"] != state["loop_id"]:
             raise ValueError("owner/state loop mismatch")
+        if state.get("last_command_id") != latest["command_id"]:
+            raise ValueError("state last_command_id does not match owner event")
+        if state.get("last_receipt_id") != latest["source_receipt_id"]:
+            raise ValueError("state last_receipt_id does not match owner event")
         if receipt_ref is None or receipt is None:
             raise ValueError("durable receipt readback is missing")
         if receipt_ref != latest["source_receipt_ref"]:
