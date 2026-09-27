@@ -65,10 +65,10 @@ class LoopStatusIssueTests(unittest.TestCase):
         self.assertEqual(notice.event_id, "receipt-015")
         self.assertIn("loop-status-receipt:TURN_COMPLETE:receipt-015", notice.body)
         self.assertIn("@kamiyusense", notice.body)
-        self.assertIn("Loop: \`loop-015\`", notice.body)
-        self.assertIn("Round: \`2/6\`", notice.body)
-        self.assertIn("Owner: \`NONE\`", notice.body)
-        self.assertIn("Runtime state: \`IDLE\`", notice.body)
+        self.assertIn("Loop: `loop-015`", notice.body)
+        self.assertIn("Round: `2/6`", notice.body)
+        self.assertIn("Owner: `NONE`", notice.body)
+        self.assertIn("Runtime state: `IDLE`", notice.body)
 
     def test_blocked_notifies_once_per_durable_event_identity(self):
         raw = state(state="BLOCKED", last_receipt_id=None, last_command_id="cmd-blocked")
