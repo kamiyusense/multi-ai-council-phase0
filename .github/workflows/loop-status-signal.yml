@@ -98,6 +98,22 @@ jobs:
           curl --silent --show-error --fail-with-body --retry 0             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer ${GH_TOKEN}"             -H "X-GitHub-Api-Version: 2022-11-28"             "${url}" > "${RUNNER_TEMP}/state-content.json"
           jq -er '.content' "${RUNNER_TEMP}/state-content.json"             | tr -d '\n'             | base64 --decode > "${RUNNER_TEMP}/loop-state.json"
 
+      - name: Fetch current display Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          STATUS_ISSUE: "33"
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --fail-with-body --retry 0 \\
+            -H "Accept: application/vnd.github+json" \\
+            -H "Authorization: Bearer ${GH_TOKEN}" \\
+            -H "X-GitHub-Api-Version: 2022-11-28" \\
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \\
+            > "${RUNNER_TEMP}/issue-base.json"
+          jq -r '.body // ""' "${RUNNER_TEMP}/issue-base.json" > "${RUNNER_TEMP}/issue-base-body.md"
+
       - name: Render status and terminal notification
         id: render
         env:
@@ -117,6 +133,7 @@ jobs:
             --body-out "${RUNNER_TEMP}/status-body.md"
             --notification-out "${RUNNER_TEMP}/notification.md"
             --github-output "${GITHUB_OUTPUT}"
+            --existing-body-file "${RUNNER_TEMP}/issue-base-body.md"
           )
           if [[ -n "${EVENT_ID}" ]]; then
             args+=(--event-id "${EVENT_ID}")
@@ -137,6 +154,17 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
             > "${RUNNER_TEMP}/issue-before.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          base = Path(os.environ["RUNNER_TEMP"], "issue-base-body.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))["body"]
+          if actual != base:
+              raise SystemExit("status Issue changed after render base; refusing overwrite")
+          PY
 
           if python - <<'PY'
           import json
