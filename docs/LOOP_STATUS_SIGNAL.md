@@ -167,10 +167,11 @@ It does not:
 ## Deployment state
 
 The original status synchronizer was merged through PR #34 and is deployed on `main`.
-Issue #33 therefore remains the canonical human-facing signal surface, while durable
-command-bus state/receipts remain the correctness source of truth.
+The development-lane enhancement was merged through PR #46 and is also deployed on
+`main`. Issue #33 therefore shows Runtime and Development as separate managed sections.
 
-The development-lane enhancement is prepared separately on a non-default branch/PR and
-must not be treated as deployed until that follow-up PR is explicitly merged by the user.
+Durable command-bus state/receipts remain the correctness source of truth. Runtime
+owner automation is still **BLOCKED / NOT YET WIRED** until a validated durable loop-owner
+record and transition caller are implemented.
 
 Repository pinning is optional presentation only. It is not required for correctness.
