@@ -86,6 +86,53 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         raise ValueError("terminal event requires terminal_receipt_id")
 
 
+def validate_owner_chain(
+    events: Iterable[dict[str, Any]] | None,
+    *,
+    evidence_refs: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Validate append-only owner chain structure.
+
+    evidence_refs is optional so a writer can validate chain structure before
+    independently verified evidence is available. Projection callers pass the
+    verified evidence set and therefore enforce structure plus evidence membership.
+    """
+    if not events:
+        raise ValueError("owner ledger is absent")
+    chain = list(events)
+    seen_ids: set[str] = set()
+    previous: dict[str, Any] | None = None
+    for index, event in enumerate(chain, 1):
+        validate_owner_event(event)
+        if event["event_id"] in seen_ids:
+            raise ValueError("duplicate owner event")
+        seen_ids.add(event["event_id"])
+        if event["generation"] != index or event["previous_generation"] != (index - 1 if index > 1 else None):
+            raise ValueError("stale, skipped, or reordered generation")
+        if previous:
+            for key in ("loop_id", "expected_repo", "expected_pr", "expected_target_head", "command_id", "correlation_id"):
+                if event[key] != previous[key]:
+                    raise ValueError(f"owner chain binding changed: {key}")
+            if event["source_receipt_id"] != previous["source_receipt_id"] or event["evidence_refs"] != previous["evidence_refs"]:
+                raise ValueError("owner chain receipt/evidence binding changed")
+            if previous["event_type"] in {"RELEASE", "TERMINAL"}:
+                raise ValueError("owner chain continued after release or terminal")
+            if event["event_type"] == "ACQUIRE":
+                raise ValueError("competing or duplicate active acquisition")
+            if event["event_type"] == "RENEW" and (event["owner_role"], event["holder_id"]) != (previous["owner_role"], previous["holder_id"]):
+                raise ValueError("renewal changed owner without handoff")
+            if event["event_type"] == "HANDOFF":
+                if (event.get("previous_owner_role"), event.get("previous_holder_id")) != (previous["owner_role"], previous["holder_id"]):
+                    raise ValueError("handoff does not fence the previous owner")
+                if (event["owner_role"], event["holder_id"]) == (previous["owner_role"], previous["holder_id"]):
+                    raise ValueError("handoff must transfer to a different owner")
+        elif event["event_type"] != "ACQUIRE":
+            raise ValueError("owner chain must start with ACQUIRE")
+        if evidence_refs is not None and not set(event["evidence_refs"]).issubset(evidence_refs):
+            raise ValueError("owner event evidence is absent from verified evidence")
+        previous = event
+    return chain
+
 def decide_owner(
     events: Iterable[dict[str, Any]] | None,
     state: dict[str, Any],
@@ -99,46 +146,11 @@ def decide_owner(
     """Validate a complete ordered chain and its independently read evidence."""
     try:
         validate_state(state)
-        if not events:
-            raise ValueError("owner ledger is absent")
-        chain = list(events)
         if target is None or receipt is None or evidence_refs is None or provider_observation is None:
             raise ValueError("target, receipt, evidence, or provider observation readback is missing")
-        seen_ids: set[str] = set()
-        previous: dict[str, Any] | None = None
-        terminal = False
-        for index, event in enumerate(chain, 1):
-            validate_owner_event(event)
-            if event["event_id"] in seen_ids:
-                raise ValueError("duplicate owner event")
-            seen_ids.add(event["event_id"])
-            if event["generation"] != index or event["previous_generation"] != (index - 1 if index > 1 else None):
-                raise ValueError("stale, skipped, or reordered generation")
-            if previous:
-                for key in ("loop_id", "expected_repo", "expected_pr", "expected_target_head", "command_id", "correlation_id"):
-                    if event[key] != previous[key]:
-                        raise ValueError(f"owner chain binding changed: {key}")
-                if event["source_receipt_id"] != previous["source_receipt_id"] or event["evidence_refs"] != previous["evidence_refs"]:
-                    raise ValueError("owner chain receipt/evidence binding changed")
-                if previous["event_type"] in {"RELEASE", "TERMINAL"}:
-                    raise ValueError("owner chain continued after release or terminal")
-                if event["event_type"] == "ACQUIRE":
-                    raise ValueError("competing or duplicate active acquisition")
-                if event["event_type"] == "RENEW" and (event["owner_role"], event["holder_id"]) != (previous["owner_role"], previous["holder_id"]):
-                    raise ValueError("renewal changed owner without handoff")
-                if event["event_type"] == "HANDOFF":
-                    if (event.get("previous_owner_role"), event.get("previous_holder_id")) != (previous["owner_role"], previous["holder_id"]):
-                        raise ValueError("handoff does not fence the previous owner")
-                    if (event["owner_role"], event["holder_id"]) == (previous["owner_role"], previous["holder_id"]):
-                        raise ValueError("handoff must transfer to a different owner")
-            elif event["event_type"] != "ACQUIRE":
-                raise ValueError("owner chain must start with ACQUIRE")
-            if not set(event["evidence_refs"]).issubset(evidence_refs):
-                raise ValueError("owner event evidence is absent from verified evidence")
-            previous = event
-        assert previous is not None
+        chain = validate_owner_chain(events, evidence_refs=evidence_refs)
+        previous = chain[-1]
         if previous["event_type"] in {"RELEASE", "TERMINAL"}:
-            terminal = previous["event_type"] == "TERMINAL"
             return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], "owner was released or loop is terminal")
         if previous["loop_id"] != state["loop_id"]:
             raise ValueError("loop_id mismatch")
