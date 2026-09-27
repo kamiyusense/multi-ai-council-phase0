@@ -55,6 +55,18 @@ def _validate_lane(lane: dict[str, Any]) -> dict[str, Any]:
     return lane
 
 
+def _lane_signal(lane: dict[str, Any]) -> str:
+    if lane["merged"]:
+        return "✅ MERGED"
+    if lane["state"] == "closed":
+        return "⚫ CLOSED"
+    if lane["mergeable"] is False:
+        return "🟡 CHECK"
+    if lane["mergeable"] is None:
+        return "⚪ UNKNOWN"
+    return "🟢 OPEN"
+
+
 def render_development_section(snapshot: dict[str, Any]) -> str:
     if not isinstance(snapshot, dict):
         raise ValueError("development snapshot must be an object")
@@ -81,8 +93,9 @@ def render_development_section(snapshot: dict[str, Any]) -> str:
         )
         head = lane["head_sha"][:12]
         updated_at = _single_line(lane.get("updated_at"))
+        signal = _lane_signal(lane)
         rows.append(
-            f"| {label} | #{pr} | {state} | {mergeable} | {lane['commits']} | "
+            f"| {label} | {signal} | #{pr} | {state} | {mergeable} | {lane['commits']} | "
             f"`{head}` | {updated_at} |"
         )
 
@@ -90,8 +103,8 @@ def render_development_section(snapshot: dict[str, Any]) -> str:
         "## 🛠 Development progress — GitHub evidence\n\n"
         "この欄はPR/commitのGitHub readbackだけを表示します。"
         "**Claude/Jules/モデルが今この瞬間に実行中だという証明には使いません。**\n\n"
-        "| Lane | PR | PR state | Mergeable | Commits | Head | GitHub updated |\n"
-        "| --- | ---: | --- | --- | ---: | --- | --- |\n"
+        "| Lane | Signal | PR | PR state | Mergeable | Commits | Head | GitHub updated |\n"
+        "| --- | --- | ---: | --- | --- | ---: | --- | --- |\n"
         + "\n".join(rows)
         + "\n\n"
         f"- main: `{main_sha[:12]}`\n"
