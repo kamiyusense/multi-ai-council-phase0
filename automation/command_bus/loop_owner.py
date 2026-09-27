@@ -20,7 +20,7 @@ OWNER_ROLES = {"SEMI_AUTO", "AUTO"}
 EVENT_TYPES = {"ACQUIRE", "RENEW", "HANDOFF", "RELEASE", "TERMINAL"}
 _LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
-_RECEIPT_REF = re.compile(r"^automation/command_bus/(?:receipts|execution_receipts)/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.json$")
+_RECEIPT_REF = re.compile(r"^automation/command_bus/receipts/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.json$")
 _OWNER_EVENT_KEYS = {
     "schema_version", "event_id", "event_type", "loop_id", "owner_role",
     "holder_id", "generation", "fencing_token", "previous_generation",
