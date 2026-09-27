@@ -24,9 +24,9 @@ def records():
         "expected_target_head": HEAD, "command_id": "cmd-015", "correlation_id": "corr-015",
         "source_receipt_id": "receipt-owner-1", "source_receipt_ref": "automation/command_bus/receipts/loop-015/000001.json", "evidence_refs": [EVIDENCE],
     }
-    receipt = {"receipt_id": "receipt-owner-1", "loop_id": "loop-015", "command_id": "cmd-015", "correlation_id": "corr-015", "state": "DONE", "executed_once": True, "retry_count": 0, "fallback_used": False, "evidence_refs": ["evidence-owner-1"]}
+    receipt = {"receipt_id": "receipt-owner-1", "loop_id": "loop-015", "command_id": "cmd-015", "correlation_id": "corr-015", "state": "DONE", "executed_once": True, "retry_count": 0, "fallback_used": False, "evidence_refs": [EVIDENCE]}
     target = {"repo": event["expected_repo"], "pr": 4, "head": HEAD}
-    observation = {"schema_version": 1, "observation_id": "provider-observation-1", "verified": True, "loop_id": "loop-015", "owner_role": "SEMI_AUTO", "holder_id": "controller-1", "generation": 1, "fencing_token": 1, "expected_repo": event["expected_repo"], "expected_pr": 4, "expected_target_head": HEAD, "state": "RUNNING", "evidence_ref": "evidence-owner-1", "observed_at": "2026-09-27T09:30:00+00:00", "expires_at": "2026-09-27T10:30:00+00:00"}
+    observation = {"schema_version": 1, "observation_id": "provider-observation-1", "verified": True, "loop_id": "loop-015", "owner_role": "SEMI_AUTO", "holder_id": "controller-1", "generation": 1, "fencing_token": 1, "expected_repo": event["expected_repo"], "expected_pr": 4, "expected_target_head": HEAD, "state": "RUNNING", "evidence_ref": EVIDENCE, "observed_at": "2026-09-27T09:30:00+00:00", "expires_at": "2026-09-27T10:30:00+00:00"}
     return [event], receipt, target, observation
 
 
@@ -124,7 +124,7 @@ class LoopOwnerTests(unittest.TestCase):
 
     def test_provider_observation_must_be_fresh_and_generation_bound(self):
         events, receipt, target, observation = records()
-        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=None, now=NOW).status, "UNKNOWN")
+        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={EVIDENCE}, provider_observation=None, now=NOW).status, "UNKNOWN")
         stale = {**observation, "expires_at": "2026-09-27T09:59:00+00:00"}
         self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=stale, now=NOW).status, "UNKNOWN")
         mismatch = {**observation, "generation": 2}
