@@ -19,11 +19,12 @@ OWNER_ROLES = {"SEMI_AUTO", "AUTO"}
 EVENT_TYPES = {"ACQUIRE", "RENEW", "HANDOFF", "RELEASE", "TERMINAL"}
 _LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
+_RECEIPT_REF = re.compile(r"^automation/command_bus/(?:receipts|execution_receipts)/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$")
 _OWNER_EVENT_KEYS = {
     "schema_version", "event_id", "event_type", "loop_id", "owner_role",
     "holder_id", "generation", "fencing_token", "previous_generation",
     "claimed_at", "expires_at", "expected_repo", "expected_pr",
-    "expected_target_head", "command_id", "correlation_id", "source_receipt_id",
+    "expected_target_head", "command_id", "correlation_id", "source_receipt_id", "source_receipt_ref",
     "evidence_refs", "previous_owner_role", "previous_holder_id", "terminal_receipt_id",
 }
 
@@ -51,18 +52,20 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         "schema_version", "event_id", "event_type", "loop_id", "owner_role",
         "holder_id", "generation", "fencing_token", "previous_generation",
         "claimed_at", "expires_at", "expected_repo", "expected_pr",
-        "expected_target_head", "command_id", "correlation_id", "source_receipt_id",
+        "expected_target_head", "command_id", "correlation_id", "source_receipt_id", "source_receipt_ref",
         "evidence_refs",
     }
     if not isinstance(event, dict) or not required.issubset(event) or not set(event).issubset(_OWNER_EVENT_KEYS):
         raise ValueError("owner event is malformed or incomplete")
     if isinstance(event["schema_version"], bool) or event["schema_version"] != 1 or event["event_type"] not in EVENT_TYPES:
         raise ValueError("unsupported owner event schema or type")
-    for key in ("event_id", "loop_id", "holder_id", "expected_repo", "command_id", "correlation_id", "source_receipt_id"):
+    for key in ("event_id", "loop_id", "holder_id", "expected_repo", "command_id", "correlation_id", "source_receipt_id", "source_receipt_ref"):
         if not isinstance(event[key], str) or not event[key].strip():
             raise ValueError(f"{key} must be a non-empty string")
     if not _LOOP_ID.fullmatch(event["loop_id"]):
         raise ValueError("loop_id must be a safe durable path component")
+    if not _RECEIPT_REF.fullmatch(event["source_receipt_ref"]):
+        raise ValueError("source_receipt_ref must be a safe durable receipt path")
     if event["owner_role"] not in OWNER_ROLES:
         raise ValueError("owner role must be SEMI_AUTO or AUTO")
     if isinstance(event["expected_pr"], bool) or not isinstance(event["expected_pr"], int) or event["expected_pr"] <= 0:
@@ -114,7 +117,7 @@ def validate_owner_chain(
             for key in ("loop_id", "expected_repo", "expected_pr", "expected_target_head", "command_id", "correlation_id"):
                 if event[key] != previous[key]:
                     raise ValueError(f"owner chain binding changed: {key}")
-            if event["source_receipt_id"] != previous["source_receipt_id"] or event["evidence_refs"] != previous["evidence_refs"]:
+            if event["source_receipt_id"] != previous["source_receipt_id"] or event["source_receipt_ref"] != previous["source_receipt_ref"] or event["evidence_refs"] != previous["evidence_refs"]:
                 raise ValueError("owner chain receipt/evidence binding changed")
             if previous["event_type"] in {"RELEASE", "TERMINAL"}:
                 raise ValueError("owner chain continued after release or terminal")
