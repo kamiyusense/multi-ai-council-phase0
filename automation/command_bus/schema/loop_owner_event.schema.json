@@ -129,7 +129,7 @@
     },
     "source_receipt_ref": {
       "type": "string",
-      "pattern": "^automation/command_bus/(?:receipts|execution_receipts)/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
+      "pattern": "^automation/command_bus/receipts/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
     }
   },
   "allOf": [
