@@ -21,7 +21,7 @@ def records():
         "claimed_at": "2026-09-27T09:00:00+00:00", "expires_at": "2026-09-27T11:00:00+00:00",
         "expected_repo": "kamiyusense/multi-ai-council-phase0", "expected_pr": 4,
         "expected_target_head": HEAD, "command_id": "cmd-015", "correlation_id": "corr-015",
-        "source_receipt_id": "receipt-owner-1", "evidence_refs": ["evidence-owner-1"],
+        "source_receipt_id": "receipt-owner-1", "source_receipt_ref": "automation/command_bus/receipts/loop-015/000001.json", "evidence_refs": ["evidence-owner-1"],
     }
     receipt = {"receipt_id": "receipt-owner-1", "loop_id": "loop-015", "command_id": "cmd-015", "correlation_id": "corr-015", "state": "DONE", "executed_once": True, "retry_count": 0, "fallback_used": False, "evidence_refs": ["evidence-owner-1"]}
     target = {"repo": event["expected_repo"], "pr": 4, "head": HEAD}
@@ -62,6 +62,15 @@ class LoopOwnerTests(unittest.TestCase):
         bad_head[0]["expected_target_head"] = "z" * 40
         self.assertEqual(self.decide(events=bad_head).status, "UNKNOWN")
 
+    def test_source_receipt_ref_must_be_safe_and_explicit(self):
+        events, _, _, _ = records()
+        bad = copy.deepcopy(events)
+        bad[0]["source_receipt_ref"] = "../receipt.json"
+        self.assertEqual(self.decide(events=bad).status, "UNKNOWN")
+        bad = copy.deepcopy(events)
+        bad[0]["source_receipt_ref"] = "automation/command_bus/evidence/loop-015/000001.json"
+        self.assertEqual(self.decide(events=bad).status, "UNKNOWN")
+
     def test_expired_stale_generation_target_and_receipt_are_rejected(self):
         events, receipt, target, _ = records()
         expired = copy.deepcopy(events); expired[0]["expires_at"] = "2026-09-27T09:59:00+00:00"
@@ -93,7 +102,7 @@ class LoopOwnerTests(unittest.TestCase):
 
     def test_owner_chain_bindings_and_active_state_are_immutable(self):
         events, _, _, _ = records()
-        for key, value in (("expected_repo", "elsewhere/repo"), ("expected_pr", 25), ("expected_target_head", "b" * 40), ("command_id", "other-command"), ("correlation_id", "other-correlation"), ("source_receipt_id", "other-receipt"), ("evidence_refs", ["other-evidence"])):
+        for key, value in (("expected_repo", "elsewhere/repo"), ("expected_pr", 25), ("expected_target_head", "b" * 40), ("command_id", "other-command"), ("correlation_id", "other-correlation"), ("source_receipt_id", "other-receipt"), ("source_receipt_ref", "automation/command_bus/receipts/other-loop/000001.json"), ("evidence_refs", ["other-evidence"])):
             renewed = copy.deepcopy(events[0]); renewed.update(event_id="owner-event-2", event_type="RENEW", generation=2, previous_generation=1, fencing_token=2); renewed[key] = value
             self.assertEqual(self.decide(events=[events[0], renewed]).status, "UNKNOWN", key)
         inactive_state = state(state="COMPLETE")
