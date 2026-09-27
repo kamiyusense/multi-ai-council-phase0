@@ -39,6 +39,25 @@ jobs:
         shell: bash
         run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_validation_scope -v
 
+      - name: Run full command-bus suite with exact known-fixture allowance
+        shell: bash
+        run: |
+          python - <<'PY'
+          import unittest
+
+          allowed = {
+              "automation.command_bus.tests.test_jules_api_request.JulesApiRequestTests.test_prompt_binds_head_tree_and_allowlist"
+          }
+          suite = unittest.defaultTestLoader.discover("automation/command_bus/tests", top_level_dir=".")
+          result = unittest.TextTestRunner(verbosity=1).run(suite)
+          failed = {test.id() for test, _ in result.failures + result.errors}
+          unexpected = failed - allowed
+          if unexpected:
+              raise SystemExit(f"unexpected command_bus failures: {sorted(unexpected)}")
+          if len(failed) > 1:
+              raise SystemExit(f"more than the single known fixture failed: {sorted(failed)}")
+          print(f"command_bus testsRun={result.testsRun} failed={sorted(failed)}")
+          PY
       - name: Compile command-bus Python
         shell: bash
         run: python -m compileall -q automation/command_bus
