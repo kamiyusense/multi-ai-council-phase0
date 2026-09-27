@@ -6,7 +6,7 @@ observation independently before calling this adapter.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Iterable
 
 from .loop_owner import OwnerDecision, decide_owner, project_with_durable_owner, validate_owner_chain
@@ -57,13 +57,24 @@ def project_durable_transition(
         if receipt_ref != latest["source_receipt_ref"]:
             raise ValueError("receipt locator does not match owner event")
         validate_receipt(receipt)
-        if provider_observation_ref is None or provider_observation is None:
-            raise ValueError("provider observation readback is missing")
-        expected_observation_ref = provider_observation_path(latest["loop_id"], latest["generation"])
-        if provider_observation_ref != expected_observation_ref:
-            raise ValueError("provider observation locator mismatch")
-        validate_provider_observation(provider_observation)
         verified_evidence_refs = verify_evidence_readbacks(latest["evidence_refs"], evidence_readbacks)
+
+        close_event = latest["event_type"] in {"RELEASE", "TERMINAL"}
+        if close_event:
+            if (provider_observation_ref is None) != (provider_observation is None):
+                raise ValueError("partial provider observation supplied for close event")
+            if provider_observation is not None:
+                expected_observation_ref = provider_observation_path(latest["loop_id"], latest["generation"])
+                if provider_observation_ref != expected_observation_ref:
+                    raise ValueError("provider observation locator mismatch")
+                validate_provider_observation(provider_observation)
+        else:
+            if provider_observation_ref is None or provider_observation is None:
+                raise ValueError("provider observation readback is missing for active owner")
+            expected_observation_ref = provider_observation_path(latest["loop_id"], latest["generation"])
+            if provider_observation_ref != expected_observation_ref:
+                raise ValueError("provider observation locator mismatch")
+            validate_provider_observation(provider_observation)
 
         decision = decide_owner(
             chain,
@@ -74,22 +85,33 @@ def project_durable_transition(
             provider_observation=provider_observation,
             now=now,
         )
+        provider_state = provider_observation["state"] if provider_observation is not None else latest["event_type"]
         projection = project_with_durable_owner(
             state,
             decision,
-            provider_state=provider_observation["state"],
+            provider_state=provider_state,
             last_durable_progress=last_durable_progress,
             expected_loop_id=expected_loop_id,
         )
         if decision.status == "VALID":
             status = "VALID"
             reason = "durable transition and owner evidence verified"
-        elif projection.display_state in {"IDLE", "STOPPED"}:
-            status = "TERMINAL"
-            reason = f"non-active runtime projected {projection.display_state}; owner is not active"
+        elif close_event:
+            if projection.display_state in {"IDLE", "STOPPED"}:
+                status = "TERMINAL"
+                reason = f"verified owner close event projected {projection.display_state}"
+            else:
+                status = "BLOCKED"
+                reason = f"verified owner close event conflicts with source state {projection.source_state}"
         else:
-            status = "BLOCKED"
             reason = f"owner verification failed closed: {decision.reason}"
+            projection = replace(
+                projection,
+                display_state="BLOCKED",
+                human_action="REVIEW REQUIRED",
+                reason=reason,
+            )
+            status = "BLOCKED"
         event_id = state.get("last_receipt_id") or state.get("last_command_id")
         return TransitionProjectionResult(status, reason, projection, decision, event_id)
     except (ValueError, TypeError, KeyError, AssertionError) as exc:
