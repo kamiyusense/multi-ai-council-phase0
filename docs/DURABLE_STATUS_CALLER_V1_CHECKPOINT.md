@@ -31,12 +31,24 @@
 - No default-branch direct write, force push, branch deletion, billing/settings/permissions mutation or credential storage occurred.
 - Merge is not performed in this batch.
 
-## Verification target
+## Exact-head verification
 
-Exact-head GitHub Actions must prove:
-- focused Status/owner/writer/observation/evidence/transition/CLI/scope tests PASS;
-- full command-bus suite has no failures beyond the exact known expired Jules fixture;
-- compileall PASS;
-- git diff --check PASS.
+- Exact tested code head: `2303676938134a9d3b34e779bea2f2980bc32d9d`.
+- GitHub Actions run: `36341275078` — SUCCESS.
+- Focused Status/owner/writer/observation/evidence/transition/CLI/scope tests: **87/87 PASS**.
+- Full command-bus suite: **374 tests run**.
+- Exactly one known pre-existing error remained: `automation.command_bus.tests.test_jules_api_request.JulesApiRequestTests.test_prompt_binds_head_tree_and_allowlist`.
+- The CI guard rejects any additional failure or any failure outside that exact known fixture.
+- Python compileall: **PASS**.
+- `git diff --check`: **PASS**.
+- PR was GitHub-mergeable at readback after CI.
+- Commits after the exact tested code head are documentation-only checkpoint/PR metadata updates.
 
-After exact-head verification, record the tested code head, workflow run, counts and any documentation-only commits after it.
+## Remaining boundary
+
+- The workflow is implemented but has not been merged or run against a real runtime owner generation.
+- No runtime owner event or provider observation was created by this batch.
+- Issue #33 was not changed by the implementation work.
+- AUTO takeover remains disabled and separate from Status projection.
+- A live Status refresh requires real durable records on an explicit data ref; missing or mismatched records fail closed before mutation.
+
