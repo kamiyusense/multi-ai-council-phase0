@@ -14,7 +14,7 @@ from typing import Any, Iterable
 from .loop_status_issue import StatusProjection, project_state
 from .loop_status_evidence import validate_evidence_ref
 from .loop_owner_observation import validate_provider_observation
-from .validator import validate_state
+from .validator import validate_receipt, validate_state
 
 OWNER_ROLES = {"SEMI_AUTO", "AUTO"}
 EVENT_TYPES = {"ACQUIRE", "RENEW", "HANDOFF", "RELEASE", "TERMINAL"}
@@ -179,14 +179,16 @@ def decide_owner(
         expected_target = {"repo": previous["expected_repo"], "pr": previous["expected_pr"], "head": previous["expected_target_head"]}
         if target != expected_target:
             raise ValueError("target repository, PR, or head mismatch")
+        validate_receipt(receipt)
         if receipt.get("receipt_id") != previous["source_receipt_id"] or receipt.get("loop_id") != previous["loop_id"] or receipt.get("command_id") != previous["command_id"] or receipt.get("correlation_id") != previous["correlation_id"]:
             raise ValueError("receipt does not bind this owner generation")
-        if receipt.get("state") != "DONE" or receipt.get("executed_once") is not True or receipt.get("retry_count") != 0 or receipt.get("fallback_used") is not False:
-            raise ValueError("receipt is not a confirmed single execution")
         if set(receipt.get("evidence_refs", [])) != set(previous["evidence_refs"]):
             raise ValueError("receipt evidence differs from owner event")
         if previous["event_type"] in {"RELEASE", "TERMINAL"}:
-            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], "verified owner release or terminal event")
+            kind = previous["event_type"].lower()
+            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], f"verified owner {kind} event")
+        if receipt.get("state") != "DONE":
+            raise ValueError("active owner receipt must be DONE")
         if provider_observation is None:
             raise ValueError("provider observation readback is missing for active owner")
         observation = provider_observation
