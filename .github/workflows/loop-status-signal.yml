@@ -1,0 +1,391 @@
+name: Phase 0 loop status signal
+
+on:
+  workflow_dispatch:
+    inputs:
+      loop_id:
+        description: Durable command-bus loop id
+        required: true
+        type: string
+      state_ref:
+        description: Git ref containing the durable state/owner/receipt/evidence records
+        required: true
+        default: main
+        type: string
+  workflow_call:
+    inputs:
+      loop_id:
+        required: true
+        type: string
+      state_ref:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+concurrency:
+  group: phase0-loop-status-signal
+  queue: max
+
+jobs:
+  project-status:
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted status code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Fetch durable state and owner chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          LOOP_ID: ${{ inputs.loop_id }}
+          STATE_REF: ${{ inputs.state_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${LOOP_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || {
+            echo "Unsafe loop_id." >&2
+            exit 1
+          }
+          [[ -n "${STATE_REF}" && "${STATE_REF}" != *$'\n'* && "${STATE_REF}" != *$'\r'* ]] || {
+            echo "Unsafe state_ref." >&2
+            exit 1
+          }
+
+          encoded_ref="$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["STATE_REF"], safe=""))')"
+          mkdir -p "${RUNNER_TEMP}/owner-events"
+
+          fetch_content() {
+            local path="$1"
+            local output="$2"
+            local encoded_path
+            encoded_path="$(python -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$path")"
+            curl --silent --show-error --fail-with-body --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPOSITORY}/contents/${encoded_path}?ref=${encoded_ref}" \
+              > "${RUNNER_TEMP}/content-response.json"
+            jq -er '.content' "${RUNNER_TEMP}/content-response.json" \
+              | tr -d '\n' \
+              | base64 --decode > "$output"
+          }
+
+          fetch_content             "automation/command_bus/state/${LOOP_ID}.json"             "${RUNNER_TEMP}/loop-state.json"
+
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/contents/automation/command_bus/loop_owner_events/${LOOP_ID}?ref=${encoded_ref}" \
+            > "${RUNNER_TEMP}/owner-list.json"
+
+          jq -e '
+            type == "array"
+            and length >= 1
+            and length <= 100
+            and all(.[];
+              .type == "file"
+              and (.name | test("^[0-9]{6,}\\.json$"))
+            )
+          ' "${RUNNER_TEMP}/owner-list.json" >/dev/null
+
+          while IFS= read -r name; do
+            fetch_content               "automation/command_bus/loop_owner_events/${LOOP_ID}/${name}"               "${RUNNER_TEMP}/owner-events/${name}"
+          done < <(jq -r '.[].name' "${RUNNER_TEMP}/owner-list.json")
+
+      - name: Build exact durable fetch plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m automation.command_bus.loop_status_transition_cli plan             --state-file "${RUNNER_TEMP}/loop-state.json"             --owner-events-dir "${RUNNER_TEMP}/owner-events"             --expected-loop-id "${{ inputs.loop_id }}"             --plan-out "${RUNNER_TEMP}/transition-plan.json"
+
+      - name: Fetch receipt evidence observation target and Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          STATE_REF: ${{ inputs.state_ref }}
+          STATUS_ISSUE: "33"
+        shell: bash
+        run: |
+          set -euo pipefail
+          encoded_ref="$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["STATE_REF"], safe=""))')"
+
+          fetch_content() {
+            local path="$1"
+            local output="$2"
+            local encoded_path
+            encoded_path="$(python -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$path")"
+            curl --silent --show-error --fail-with-body --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPOSITORY}/contents/${encoded_path}?ref=${encoded_ref}" \
+              > "${RUNNER_TEMP}/content-response.json"
+            jq -er '.content' "${RUNNER_TEMP}/content-response.json" \
+              | tr -d '\n' \
+              | base64 --decode > "$output"
+          }
+
+          jq -e --arg repo "${REPOSITORY}" '.expected_repo == $repo'             "${RUNNER_TEMP}/transition-plan.json" >/dev/null
+
+          receipt_ref="$(jq -er '.receipt_ref' "${RUNNER_TEMP}/transition-plan.json")"
+          fetch_content "$receipt_ref" "${RUNNER_TEMP}/receipt.json"
+
+          printf '{}\n' > "${RUNNER_TEMP}/evidence-bundle.json"
+          index=0
+          while IFS= read -r evidence_ref; do
+            evidence_file="${RUNNER_TEMP}/evidence-${index}.json"
+            fetch_content "$evidence_ref" "$evidence_file"
+            jq --arg ref "$evidence_ref" --slurpfile doc "$evidence_file"               '. + {($ref): $doc[0]}'               "${RUNNER_TEMP}/evidence-bundle.json"               > "${RUNNER_TEMP}/evidence-bundle.next.json"
+            mv "${RUNNER_TEMP}/evidence-bundle.next.json" "${RUNNER_TEMP}/evidence-bundle.json"
+            index=$((index + 1))
+          done < <(jq -r '.evidence_refs[]' "${RUNNER_TEMP}/transition-plan.json")
+
+          observation_ref="$(jq -r '.provider_observation_ref // empty' "${RUNNER_TEMP}/transition-plan.json")"
+          if [[ -n "${observation_ref}" ]]; then
+            fetch_content "$observation_ref" "${RUNNER_TEMP}/provider-observation.json"
+          fi
+
+          expected_pr="$(jq -er '.expected_pr' "${RUNNER_TEMP}/transition-plan.json")"
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/pulls/${expected_pr}" \
+            > "${RUNNER_TEMP}/target-pr.json"
+
+          event_type="$(jq -er '.event_type' "${RUNNER_TEMP}/transition-plan.json")"
+          case "${event_type}" in
+            ACQUIRE|RENEW|HANDOFF)
+              jq -e '.state == "open" and (.merged // false) == false'                 "${RUNNER_TEMP}/target-pr.json" >/dev/null
+              ;;
+            RELEASE|TERMINAL)
+              ;;
+            *)
+              echo "Unexpected owner event type." >&2
+              exit 1
+              ;;
+          esac
+
+          target_head="$(jq -er '.head.sha' "${RUNNER_TEMP}/target-pr.json")"
+          jq -n             --arg repo "${REPOSITORY}"             --argjson pr "${expected_pr}"             --arg head "${target_head}"             '{repo:$repo,pr:$pr,head:$head}'             > "${RUNNER_TEMP}/target.json"
+
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+            > "${RUNNER_TEMP}/issue-base.json"
+          jq -j '.body // ""' "${RUNNER_TEMP}/issue-base.json"             > "${RUNNER_TEMP}/issue-base-body.md"
+
+      - name: Render verified durable transition
+        id: render
+        env:
+          LOOP_ID: ${{ inputs.loop_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          receipt_ref="$(jq -er '.receipt_ref' "${RUNNER_TEMP}/transition-plan.json")"
+          generation="$(jq -er '.generation' "${RUNNER_TEMP}/transition-plan.json")"
+          receipt_id="$(jq -er '.last_receipt_id' "${RUNNER_TEMP}/loop-state.json")"
+          now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          last_progress="generation ${generation}; receipt ${receipt_id}"
+
+          args=(
+            render
+            --state-file "${RUNNER_TEMP}/loop-state.json"
+            --owner-events-dir "${RUNNER_TEMP}/owner-events"
+            --expected-loop-id "${LOOP_ID}"
+            --receipt-ref "${receipt_ref}"
+            --receipt-file "${RUNNER_TEMP}/receipt.json"
+            --target-file "${RUNNER_TEMP}/target.json"
+            --evidence-bundle-file "${RUNNER_TEMP}/evidence-bundle.json"
+            --now "${now}"
+            --last-durable-progress "${last_progress}"
+            --existing-body-file "${RUNNER_TEMP}/issue-base-body.md"
+            --body-out "${RUNNER_TEMP}/status-body.md"
+            --notification-out "${RUNNER_TEMP}/notification.md"
+            --result-out "${RUNNER_TEMP}/transition-result.json"
+            --github-output "${GITHUB_OUTPUT}"
+          )
+
+          observation_ref="$(jq -r '.provider_observation_ref // empty' "${RUNNER_TEMP}/transition-plan.json")"
+          if [[ -n "${observation_ref}" ]]; then
+            args+=(
+              --provider-observation-ref "${observation_ref}"
+              --provider-observation-file "${RUNNER_TEMP}/provider-observation.json"
+            )
+          fi
+
+          python -m automation.command_bus.loop_status_transition_cli "${args[@]}"
+
+      - name: Update display Issue only when changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          STATUS_ISSUE: "33"
+          DISPLAY_STATE: ${{ steps.render.outputs.display_state }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${DISPLAY_STATE}" in
+            SEMI_AUTO) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🟢 SEMI_AUTO" ;;
+            AUTO) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🟣 AUTO" ;;
+            IDLE) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🟡 IDLE" ;;
+            BLOCKED) EXPECTED_TITLE="🚦 Phase 0 Loop Status — 🔴 BLOCKED" ;;
+            STOPPED) EXPECTED_TITLE="🚦 Phase 0 Loop Status — ⚫ STOPPED" ;;
+            *) echo "Unexpected display state." >&2; exit 1 ;;
+          esac
+          export EXPECTED_TITLE
+
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+            > "${RUNNER_TEMP}/issue-before.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          base = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-base.json").read_text(encoding="utf-8"))
+          current = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))
+          if current["body"] != base["body"] or current["title"] != base["title"]:
+              raise SystemExit("status Issue changed after transition readback; refusing overwrite")
+          PY
+
+          if python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected_body = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          current = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-before.json").read_text(encoding="utf-8"))
+          expected_title = os.environ["EXPECTED_TITLE"]
+          raise SystemExit(0 if current["body"] == expected_body and current["title"] == expected_title else 1)
+          PY
+          then
+            echo "Status Issue already matches; NO-OP."
+          else
+            jq -n --arg title "${EXPECTED_TITLE}" --rawfile body "${RUNNER_TEMP}/status-body.md"               '{title:$title,body:$body}' > "${RUNNER_TEMP}/issue-patch.json"
+            curl --silent --show-error --fail-with-body --retry 0 \
+              -X PATCH \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              --data-binary @"${RUNNER_TEMP}/issue-patch.json" \
+              "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+              > "${RUNNER_TEMP}/issue-write.json"
+          fi
+
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}" \
+            > "${RUNNER_TEMP}/issue-readback.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected_body = Path(os.environ["RUNNER_TEMP"], "status-body.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "issue-readback.json").read_text(encoding="utf-8"))
+          if actual["body"] != expected_body or actual["title"] != os.environ["EXPECTED_TITLE"]:
+              raise SystemExit("status Issue title/body readback mismatch")
+          PY
+
+      - name: Emit terminal notification once
+        if: steps.render.outputs.notification_kind != 'NONE'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          STATUS_ISSUE: "33"
+          MARKER: ${{ steps.render.outputs.notification_marker }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          page=1
+          while (( page <= 100 )); do
+            curl --silent --show-error --fail-with-body --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}/comments?per_page=100&page=${page}" \
+              > "${RUNNER_TEMP}/comments.json"
+            if jq -e --arg marker "${MARKER}" 'any(.[]; (.body // "") | contains($marker))'               "${RUNNER_TEMP}/comments.json" >/dev/null; then
+              found=1
+              break
+            fi
+            count="$(jq 'length' "${RUNNER_TEMP}/comments.json")"
+            if (( count < 100 )); then
+              break
+            fi
+            page=$((page + 1))
+          done
+          if (( page > 100 )); then
+            echo "Notification ledger exceeded bounded scan." >&2
+            exit 1
+          fi
+          if (( found == 1 )); then
+            echo "Terminal notification already exists; NO-OP."
+            exit 0
+          fi
+
+          jq -Rs '{body:.}' "${RUNNER_TEMP}/notification.md" > "${RUNNER_TEMP}/comment-payload.json"
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            --data-binary @"${RUNNER_TEMP}/comment-payload.json" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${STATUS_ISSUE}/comments" \
+            > "${RUNNER_TEMP}/comment-write.json"
+
+          comment_id="$(jq -er '.id' "${RUNNER_TEMP}/comment-write.json")"
+          curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/comments/${comment_id}" \
+            > "${RUNNER_TEMP}/comment-readback.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected = Path(os.environ["RUNNER_TEMP"], "notification.md").read_text(encoding="utf-8")
+          actual = json.loads(Path(os.environ["RUNNER_TEMP"], "comment-readback.json").read_text(encoding="utf-8"))["body"]
+          if actual != expected:
+              raise SystemExit("notification comment readback mismatch")
+          PY
+
+      - name: Record status projection
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Phase 0 Loop Status"
+            echo "- Issue: #33"
+            echo "- transition_status: `${{ steps.render.outputs.transition_status || 'UNKNOWN' }}`"
+            echo "- display_state: `${{ steps.render.outputs.display_state || 'UNKNOWN' }}`"
+            echo "- owner: `${{ steps.render.outputs.owner || 'UNKNOWN' }}`"
+            echo "- notification: `${{ steps.render.outputs.notification_kind || 'UNKNOWN' }}`"
+            echo "- retry: `0`"
+            echo "- fallback: `disabled`"
+            echo "- provider/model dispatch: `none`"
+          } >> "${GITHUB_STEP_SUMMARY}"
