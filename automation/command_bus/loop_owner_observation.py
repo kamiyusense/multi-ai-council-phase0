@@ -55,6 +55,9 @@ def validate_provider_observation(observation: dict[str, Any]) -> None:
     if not isinstance(observation["state"], str) or not observation["state"].strip():
         raise ValueError("provider state is missing")
     validate_evidence_ref(observation["evidence_ref"])
+    prefix = f"automation/command_bus/evidence/{observation['loop_id']}/"
+    if not observation["evidence_ref"].startswith(prefix):
+        raise ValueError("evidence_ref loop mismatch")
     observed = _time(observation["observed_at"])
     expires = _time(observation["expires_at"])
     if expires <= observed:
