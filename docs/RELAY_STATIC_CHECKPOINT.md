@@ -75,3 +75,7 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - Implemented deterministic test-double ACPClient transport
 - Short corrective static/mock ACP batch
 - Note: Independent Chat validation is required before acceptance.
+
+## Provider Preflight Static Checkpoint
+- Implemented static preflight configuration checks for openai, anthropic, and google.
+- Live execution, external cloud auth, gateways, and provider/SDK retries remain UNKNOWN/BLOCKED.
