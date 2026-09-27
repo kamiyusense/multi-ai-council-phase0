@@ -16,10 +16,13 @@ class RelayCoreAdapter:
 
     def prepare(self, case_context: dict[str, Any]) -> dict[str, Any]:
         context_copy = deepcopy(case_context)
-        explicit_id = context_copy.get("provider_id")
-        if explicit_id is not None and explicit_id != self.provider_id:
-            raise ValueError(f"Conflicting provider_id: expected {self.provider_id}, got {explicit_id}")
-        if explicit_id is None:
+        if "provider_id" in context_copy:
+            explicit_id = context_copy["provider_id"]
+            if explicit_id != self.provider_id:
+                raise ValueError(
+                    f"Conflicting provider_id: expected {self.provider_id}, got {explicit_id}"
+                )
+        else:
             context_copy["provider_id"] = self.provider_id
 
         return self.bridge.prepare(context_copy)
@@ -32,6 +35,8 @@ class RelayCoreAdapter:
 
     def collect(self, process_handle: dict[str, Any]) -> bytes:
         result = self.bridge.collect(process_handle)
+        if not isinstance(result, dict):
+            raise TypeError("bridge.collect must return a dictionary")
         raw_response = result.get("rawResponse")
         if not isinstance(raw_response, str):
             raise TypeError("rawResponse must be a string")
@@ -58,54 +63,62 @@ class RelayCoreAdapter:
             "safety_reason",
             "evidence_refs",
             "marker_echoes",
-            "answer_text"
+            "answer_text",
         }
 
-        for k in parsed.keys():
-            if k not in allowed_keys:
+        for key in parsed:
+            if key not in allowed_keys:
                 return fail_result
 
         if "schema_version" in parsed:
             if parsed["schema_version"] != "phase0-response-v1":
                 return fail_result
 
-        req_fields = {
+        required_fields = {
             "answer_state",
             "conclusion_code",
             "safety_warning",
             "safety_reason",
             "evidence_refs",
             "marker_echoes",
-            "answer_text"
+            "answer_text",
         }
-        for f in req_fields:
-            if f not in parsed:
+        for field in required_fields:
+            if field not in parsed:
                 return fail_result
 
-        if not isinstance(parsed["answer_state"], str): return fail_result
-        if not isinstance(parsed["conclusion_code"], str): return fail_result
+        if not isinstance(parsed["answer_state"], str):
+            return fail_result
+        if not isinstance(parsed["conclusion_code"], str):
+            return fail_result
 
-        sw = parsed["safety_warning"]
-        if sw not in ("PRESENT", "ABSENT", "UNKNOWN"): return fail_result
+        safety_warning = parsed["safety_warning"]
+        if safety_warning not in ("PRESENT", "ABSENT", "UNKNOWN"):
+            return fail_result
 
-        sr = parsed["safety_reason"]
-        if sr is not None and not isinstance(sr, str): return fail_result
+        safety_reason = parsed["safety_reason"]
+        if safety_reason is not None and not isinstance(safety_reason, str):
+            return fail_result
 
-        er = parsed["evidence_refs"]
-        if not isinstance(er, list): return fail_result
-        for r in er:
-            if not isinstance(r, str): return fail_result
+        evidence_refs = parsed["evidence_refs"]
+        if not isinstance(evidence_refs, list):
+            return fail_result
+        if not all(isinstance(ref, str) for ref in evidence_refs):
+            return fail_result
 
-        me = parsed["marker_echoes"]
-        if not isinstance(me, dict): return fail_result
-        if set(me.keys()) != {"head", "middle", "tail"}: return fail_result
-        for mv in me.values():
-            if mv is not None and not isinstance(mv, str): return fail_result
+        marker_echoes = parsed["marker_echoes"]
+        if not isinstance(marker_echoes, dict):
+            return fail_result
+        if set(marker_echoes) != {"head", "middle", "tail"}:
+            return fail_result
+        if not all(value is None or isinstance(value, str) for value in marker_echoes.values()):
+            return fail_result
 
-        if not isinstance(parsed["answer_text"], str): return fail_result
+        if not isinstance(parsed["answer_text"], str):
+            return fail_result
 
         return {
             "execution_state": "COMPLETE",
             "participation_state": "PARTICIPANT",
-            "success": True
+            "success": True,
         }
