@@ -4,7 +4,7 @@ import copy
 import unittest
 
 from automation.command_bus.loop_status_transition import project_durable_transition
-from automation.command_bus.tests.test_loop_owner import NOW, records
+from automation.command_bus.tests.test_loop_owner import EVIDENCE, NOW, records
 from automation.command_bus.tests.test_loop_status_issue import state
 
 
@@ -17,7 +17,7 @@ def inputs():
         "receipt_ref": events[-1]["source_receipt_ref"],
         "receipt": receipt,
         "target": target,
-        "verified_evidence_refs": {"evidence-owner-1"},
+        "evidence_readbacks": {EVIDENCE: {"schema_version": 1, "kind": "owner-evidence"}},
         "provider_observation_ref": "automation/command_bus/loop_owner_observations/loop-015/000001.json",
         "provider_observation": observation,
         "now": NOW,
@@ -46,9 +46,18 @@ class LoopStatusTransitionTests(unittest.TestCase):
         self.assertEqual(result.status, "UNKNOWN")
         self.assertIn("observation locator", result.reason)
 
-    def test_missing_verified_evidence_fails_closed(self):
+    def test_missing_evidence_readback_fails_closed(self):
         values = inputs()
-        values["verified_evidence_refs"] = None
+        values["evidence_readbacks"] = None
+        result = project_durable_transition(**values)
+        self.assertEqual(result.status, "UNKNOWN")
+
+    def test_extra_or_wrong_evidence_readback_fails_closed(self):
+        values = inputs()
+        values["evidence_readbacks"] = {
+            EVIDENCE: {"schema_version": 1},
+            "automation/command_bus/evidence/loop-015/extra.json": {"schema_version": 1},
+        }
         result = project_durable_transition(**values)
         self.assertEqual(result.status, "UNKNOWN")
 
