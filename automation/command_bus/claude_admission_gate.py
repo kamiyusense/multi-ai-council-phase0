@@ -36,6 +36,7 @@ CONTAINER_GATE_PORT = 8080
 HOST_LOOPBACK = "HOST_LOOPBACK"
 CONTAINER_INTERNAL = "CONTAINER_INTERNAL"
 COMPOSE_MANIFEST = Path(__file__).with_name("claude_gate_compose.yaml")
+CONTAINER_ARTIFACT_ROOT = Path(__file__).with_name("docker")
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
 _HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"}
 
@@ -634,6 +635,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS": "1",
         "CLAUDE_CODE_DISABLE_FAST_MODE": "1",
         "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+        "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK": "1",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
         "DISABLE_UPDATES": "1",
     }
@@ -661,27 +663,36 @@ def validate_container_topology(manifest: dict) -> dict:
         "named_volume_mounted_at_fixed_state": gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"],
         "auth_volume_declared_separately": manifest.get("volumes") == {"gate-state": {}, "claude-auth": {}},
         "auth_and_runtime_share_only_fixed_auth_volume": claude.get("volumes") == [auth_volume] and auth.get("volumes") == [auth_volume],
+        "all_services_are_profile_gated": all(service.get("profiles") for service in services.values()),
+        "claude_image_has_local_build_target": claude.get("build") == {"context": ".", "dockerfile": "docker/claude-runtime/Dockerfile"},
+        "gate_image_has_local_build_target": gate.get("build") == {"context": ".", "dockerfile": "docker/admission-gate/Dockerfile"},
+        "auth_image_reuses_claude_build_target": auth.get("build") == claude.get("build"),
         "auth_bootstrap_is_human_gated_login_only": auth.get("profiles") == ["human-auth-bootstrap"] and auth.get("entrypoint") == ["claude"] and auth.get("command") == ["auth", "login"],
-        "runtime_is_human_gated_non_runnable": claude.get("profiles") == ["human-approval-required"] and claude.get("entrypoint") == ["/bin/false"],
-        "images_remain_unbuilt_placeholders": claude.get("image") == auth.get("image") == "phase0-claude-runtime:UNBUILT" and gate.get("image") == "phase0-claude-gate:UNBUILT",
+        "runtime_is_human_gated": claude.get("profiles") == ["human-approval-required"],
+        "runtime_launcher_is_explicit_and_default_fail_closed": claude.get("profiles") == ["human-approval-required"] and claude.get("entrypoint") == ["node", "/opt/phase0/claude_runtime_launcher.mjs"] and "command" not in claude and "PHASE0_LIVE_EXECUTION" not in claude_env and "PHASE0_DISPATCH_ID" not in claude_env,
+        "gate_entrypoint_is_existing_store_serve_only": gate.get("profiles") == ["human-approval-required"] and gate.get("entrypoint") == ["python3", "/opt/phase0/gate_entrypoint.py"] and gate.get("command") == ["serve"] and gate.get("environment", {}).get("PHASE0_GATE_MODE") == "OPEN_EXISTING_ONLY",
+        "runtime_and_gate_images_are_not_latest": claude.get("image") == auth.get("image") == "phase0-claude-runtime:2.1.283" and gate.get("image") == "phase0-claude-gate:1" and all("latest" not in str(service.get("image", "")) and "UNBUILT" not in str(service.get("image", "")) for service in services.values()),
         "fixed_nonroot_identity": claude.get("user") == auth.get("user") == "1000:1000",
+        "gate_nonroot_identity": gate.get("user") == "1000:1000",
         "auth_config_dir_same_as_volume": claude_env.get("CLAUDE_CONFIG_DIR") == auth_env.get("CLAUDE_CONFIG_DIR") == "/home/node/.claude",
         "bootstrap_environment_allowlist_exact": auth_env == {
             "CLAUDE_CONFIG_DIR": "/home/node/.claude",
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
             "DISABLE_UPDATES": "1",
         },
-        "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", **runtime_vars},
+        "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL", **runtime_vars},
         "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth) for v in service.get("volumes", [])),
         "bootstrap_has_no_workspace_or_gate_state": auth.get("volumes") == [auth_volume],
         "gate_cannot_read_auth_volume": auth_volume not in gate.get("volumes", []),
         "runtime_retry_and_resume_contract": all(claude_env.get(k) == v for k, v in runtime_vars.items()),
         "bootstrap_has_no_injected_credentials": not (set(auth_env) & forbidden_env_names),
         "runtime_cli_contract_explicit": runtime_contract == {
-            "mode": "static-contract-only",
-            "argv": ["-p", "--no-session-persistence", "--max-turns", "1", "--tools", "", "--mcp-config", "{\"mcpServers\":{}}", "--strict-mcp-config"],
-            "automatic_model_fallback": "not_configured_and_not_claimed_disabled",
+            "mode": "runnable-packaging-static-unexecuted",
+            "argv": ["-p", "--bare", "--no-session-persistence", "--max-turns", "1", "--tools", "", "--mcp-config", "{\"mcpServers\":{}}", "--strict-mcp-config", "--permission-prompts", "none"],
+            "automatic_model_fallback": "not_proven_disabled; the Admission Gate is the one-upstream-request boundary",
             "tool_scope": "all_builtin_tools_disabled; MCP denied by separate config requirement",
+            "live_execution_gate": "PHASE0_LIVE_EXECUTION=1 plus dispatch metadata; absent from Compose environment",
+            "default_launcher_result": "BLOCKED",
         },
         "no_extra_networks": set(networks) == {"internal", "egress"},
     }
@@ -689,6 +700,71 @@ def validate_container_topology(manifest: dict) -> dict:
     return {"status": "PASS" if not failed else "BLOCKED", "checks": checks,
             "failed": failed,
             "claude_egress": "DENIED_BY_NETWORK_MEMBERSHIP" if not failed else "UNKNOWN"}
+
+
+def validate_container_artifacts() -> dict:
+    """Static, no-Docker verification of the narrowly scoped image build inputs."""
+    paths = {
+        "claude_dockerfile": CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "Dockerfile",
+        "claude_ignore": CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "Dockerfile.dockerignore",
+        "claude_launcher": CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "claude_runtime_launcher.mjs",
+        "gate_dockerfile": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile",
+        "gate_ignore": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile.dockerignore",
+        "gate_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_entrypoint.py",
+    }
+    try:
+        files = {name: path.read_text(encoding="utf-8") for name, path in paths.items()}
+        manifest = load_container_manifest()
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {"status": "BLOCKED", "reason": "container artifact missing or unreadable"}
+
+    claude_dockerfile = files["claude_dockerfile"]
+    gate_dockerfile = files["gate_dockerfile"]
+    launcher = files["claude_launcher"]
+    gate_entrypoint = files["gate_entrypoint"]
+    claude_ignore_expected = "\n".join((
+        "**", "!docker/", "!docker/claude-runtime/", "!docker/claude-runtime/Dockerfile",
+        "!docker/claude-runtime/Dockerfile.dockerignore",
+        "!docker/claude-runtime/claude_runtime_launcher.mjs", "",
+    ))
+    gate_ignore_expected = "\n".join((
+        "**", "!claude_admission_gate.py", "!claude_gate_compose.yaml", "!docker/",
+        "!docker/admission-gate/", "!docker/admission-gate/Dockerfile",
+        "!docker/admission-gate/Dockerfile.dockerignore",
+        "!docker/admission-gate/gate_entrypoint.py", "",
+    ))
+    gate_copy_lines = [line for line in gate_dockerfile.splitlines() if line.startswith("COPY ")]
+    checks = {
+        "all_required_artifacts_exist": all(path.is_file() for path in paths.values()),
+        "claude_base_image_digest_pinned": "FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0" in claude_dockerfile,
+        "claude_code_exact_version_pinned": "npm install --global @anthropic-ai/claude-code@2.1.283" in claude_dockerfile and "@anthropic-ai/claude-code@latest" not in claude_dockerfile,
+        "claude_runs_nonroot": "USER node" in claude_dockerfile and claude_dockerfile.rstrip().endswith('ENTRYPOINT ["node", "/opt/phase0/claude_runtime_launcher.mjs"]'),
+        "gate_base_image_digest_pinned": "FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254" in gate_dockerfile,
+        "gate_runs_nonroot": "USER 1000:1000" in gate_dockerfile and "USER root" in gate_dockerfile,
+        "gate_copies_only_minimum_runtime_files": gate_copy_lines == [
+            "COPY --chown=1000:1000 claude_admission_gate.py /opt/phase0/claude_admission_gate.py",
+            "COPY --chown=1000:1000 claude_gate_compose.yaml /opt/phase0/claude_gate_compose.yaml",
+            "COPY --chown=1000:1000 docker/admission-gate/gate_entrypoint.py /opt/phase0/gate_entrypoint.py",
+        ],
+        "gate_has_no_claude_node_npm_or_auth_volume": not any(term in gate_dockerfile.lower() for term in ("npm", "node:", "claude-auth", "github-cli", "git install")),
+        "claude_context_is_exact_allowlist": files["claude_ignore"] == claude_ignore_expected,
+        "gate_context_is_exact_allowlist": files["gate_ignore"] == gate_ignore_expected,
+        "launcher_has_explicit_live_gate": 'env.PHASE0_LIVE_EXECUTION !== "1"' in launcher and "default_launcher_result" in json.dumps(manifest),
+        "launcher_checks_dispatch_retry_tools_mcp_and_gateway": all(token in launcher for token in (
+            "PHASE0_DISPATCH_ID", "CLAUDE_CODE_MAX_RETRIES", "CLAUDE_CODE_MAX_TURNS",
+            "ANTHROPIC_BASE_URL", "--tools", "--mcp-config", "--strict-mcp-config",
+            "--no-session-persistence", "CLAUDE_CODE_SKIP_PROMPT_HISTORY",
+            "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+            "DISABLE_UPDATES", "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK",
+        )),
+        "launcher_has_no_client_retry": "spawnSync(invocation.executable" in launcher and "no retry will be attempted" in launcher,
+        "launcher_constructs_dispatch_header": "X-Phase0-Dispatch-ID" in launcher and "ANTHROPIC_CUSTOM_HEADERS" in launcher,
+        "gate_open_existing_only_no_bootstrap_or_retry": "DispatchStore.open_production" in gate_entrypoint and "OPEN_EXISTING_ONLY" in gate_entrypoint and "initialize_production_store_once" not in gate_entrypoint and "prepare_production_store_bootstrap" not in gate_entrypoint and "no bootstrap or retry" in gate_entrypoint,
+        "compose_has_no_unbuilt_or_gate_false_placeholder": all("UNBUILT" not in str(s.get("image", "")) for s in manifest["services"].values()) and manifest["services"]["gate"].get("entrypoint") != ["/bin/false"],
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    return {"status": "PASS" if not failed else "BLOCKED", "checks": checks,
+            "failed": failed, "artifact_paths": [str(path) for path in paths.values()]}
 
 
 @dataclass(frozen=True)

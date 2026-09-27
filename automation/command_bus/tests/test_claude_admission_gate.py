@@ -19,7 +19,7 @@ from automation.command_bus.claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK, ClaudeDispatchLifecycle, DispatchStore,
     initialize_production_store_once, load_container_manifest, make_server,
     prepare_production_store_bootstrap,
-    prepare_transport, validate_container_topology,
+    prepare_transport, validate_container_artifacts, validate_container_topology,
 )
 
 
@@ -401,6 +401,9 @@ class AdmissionGateTests(unittest.TestCase):
     def test_docker_manifest_is_valid_and_mutations_fail_closed(self):
         manifest = load_container_manifest()
         self.assertEqual(validate_container_topology(manifest)["status"], "PASS")
+        artifact_result = validate_container_artifacts()
+        self.assertEqual(artifact_result["status"], "PASS", artifact_result)
+        self.assertTrue(all(artifact_result["checks"].values()))
         cases = []
         bad = deepcopy(manifest)
         bad["services"]["claude"]["networks"].append("egress")
@@ -434,6 +437,18 @@ class AdmissionGateTests(unittest.TestCase):
         cases.append(bad)
         bad = deepcopy(manifest)
         bad["services"]["gate"]["volumes"] = ["gate-state:/other/path"]
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["entrypoint"] = ["/bin/false"]
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["profiles"] = []
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["build"]["dockerfile"] = "../Dockerfile"
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["environment"]["PHASE0_GATE_MODE"] = "BOOTSTRAP"
         cases.append(bad)
         mutations = [
             lambda m: m["services"]["auth-bootstrap"].update(profiles=["default"]),

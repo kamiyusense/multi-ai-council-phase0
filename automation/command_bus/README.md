@@ -152,12 +152,19 @@ only and cannot launch a process. Count-token requests are denied locally,
 health checks are local, and unknown routes fail closed. Validation used only
 loopback fake providers. Production upstream is pinned to the exact Anthropic
 HTTPS origin and requires a separately identified production state store;
-fake upstreams require an explicit test-only connector. The Compose manifest is
-only a validated, non-runnable topology contract (no image is built or started):
-Claude has internal-only network access, while the gate alone has a separately
-controlled egress network and no published host port. Egress isolation,
-effective host firewall behavior, production store ACL verification on Windows,
-backup rollback protection, and actual Claude compatibility remain unproven.
+fake upstreams require an explicit test-only connector. The Compose manifest
+now contains runnable-but-unexecuted image definitions: no image was built or
+started. Claude has internal-only network access, while the gate alone has a
+separately controlled egress network and no published host port. Images and
+Claude Code version are pinned; Dockerfile-specific ignore files restrict the
+build contexts. The Claude launcher fails closed unless explicitly enabled
+with valid one-dispatch metadata. The Gate entrypoint only opens an existing
+store and never bootstraps it. Egress isolation, effective host firewall
+behavior, Docker volume ownership, production store ACL verification on
+Windows, external receipt provisioning, backup rollback protection, automatic
+model fallback behavior, and actual Claude compatibility remain unproven.
+No Docker, Claude login, provider, or Jules execution occurred. See
+`docs/CLAUDE_ADMISSION_GATE_DESIGN.md` for constraints and blockers.
 `prepare_transport` separates strict `HOST_LOOPBACK` from opt-in
 `CONTAINER_INTERNAL`, which accepts only the freshly validated Compose endpoint
 `http://gate:8080`. The container contract requires an externally supplied

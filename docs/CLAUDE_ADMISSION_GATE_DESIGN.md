@@ -88,10 +88,27 @@ container mode.
 
 ## Docker network contract (static; never started here)
 
-`automation/command_bus/claude_gate_compose.yaml` is a JSON-form Compose
-manifest template with placeholder `UNBUILT` images, a
-`human-approval-required` profile, and `/bin/false` entrypoints. It is not a
-runnable deployment. The deterministic validator requires:
+`automation/command_bus/claude_gate_compose.yaml` now has runnable packaging
+definitions, but this package has **not** been built or started. Every service
+is behind an explicit human-gated Compose profile. The Claude image pins a
+Node base-image digest and Claude Code version; the Gate image pins a Python
+base-image digest. Dockerfile-specific ignore files restrict each build
+context to an exact allowlist. The Claude launcher defaults to BLOCKED and
+requires explicit live-dispatch metadata; the Gate entrypoint only opens an
+already-existing store and cannot bootstrap or repair one.
+
+The package remains static/unexecuted: no Docker build, pull, container start,
+Claude login, real provider request, or Jules request has occurred. Exact
+runtime image behavior, Docker Desktop volume ownership/copy-up, network
+firewall behavior, and the host's ability to provision/retain the external
+Gate receipt remain unverified. The Compose package deliberately does not
+bootstrap Gate state. A real Gate store and externally retained expected store
+ID/receipt must be provisioned independently before any live consideration;
+Windows ACL verification is still not implemented. Automatic model fallback
+is not proven disabled by CLI settings: the non-streaming fallback flag is
+narrower, while the Admission Gate is the one-upstream-generation boundary.
+
+The deterministic validator requires:
 
 * Claude service: internal network only, no `ports`, no `network_mode`,
   `privileged: false`, and no `extra_hosts`/`links` overrides.
@@ -105,9 +122,14 @@ runnable deployment. The deterministic validator requires:
 This follows Docker's documented Compose networking ([networking guide](https://docs.docker.com/compose/how-tos/networking/),
 [network reference](https://docs.docker.com/reference/compose-file/networks/)).
 It is static intent, not proof of daemon routes, host firewall, subnet
-availability, or running-container membership. Docker was not invoked. A
-human must resolve subnet conflicts and verify effective egress before live
-use.
+availability, image correctness, or running-container membership. Docker was
+not invoked. A human must resolve subnet conflicts and verify effective
+egress before live use.
+
+The Claude image includes an explicit `auth-bootstrap` profile whose command
+is Claude's interactive login flow. This work did not run that profile or
+obtain credentials. The human-gated profile is not itself approval to execute
+it; any credentialed proof requires a separate human decision.
 
 ## Dispatch lifecycle and command-bus receipt linkage
 

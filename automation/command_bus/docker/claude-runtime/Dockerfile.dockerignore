@@ -1,0 +1,6 @@
+**
+!docker/
+!docker/claude-runtime/
+!docker/claude-runtime/Dockerfile
+!docker/claude-runtime/Dockerfile.dockerignore
+!docker/claude-runtime/claude_runtime_launcher.mjs
