@@ -22,6 +22,32 @@ projects already-durable state.
 The renderer maps existing command-bus states onto those five display states.
 Unknown/malformed state fails closed before the Issue is updated.
 
+
+## Development progress lane
+
+Runtime ownership and repository development activity are deliberately separated.
+
+The runtime section continues to show only durable loop state (`SEMI_AUTO`, `AUTO`,
+`IDLE`, `BLOCKED`, `STOPPED`). It must not infer runtime liveness from PR timestamps,
+commit activity, Chat silence, or a recently updated Jules/Claude-related branch.
+
+A separate managed section shows GitHub readback for the two current development lanes:
+
+- Relay: PR #4
+- Claude Loop: PR #25
+
+That section reports only PR state, mergeability, commit count, head SHA, update time,
+and main SHA. It creates no comments or @mentions and does not start a provider/model.
+
+`.github/workflows/loop-status-development.yml` refreshes this section on PR #4/#25
+open/synchronize/reopen/close events and on explicit manual dispatch. It uses
+`pull_request_target` only as a metadata wake-up: executable code is checked out from
+trusted `main`, never from the pull-request head.
+
+The runtime and development workflows share the same concurrency group so Issue #33
+writes are serialized. Both perform a pre-write readback and refuse to overwrite the
+Issue if its body changed after their rendering base was fetched.
+
 ## Notification policy
 
 Normal RUNNING, heartbeat, and status-refresh operations update the Issue body only.
@@ -89,8 +115,11 @@ It does not:
 
 ## Deployment state
 
-The implementation is intentionally carried on a non-default branch/PR first.
-Until that PR is explicitly merged by the user, Issue #33 remains a manually-created
-display placeholder and the automatic synchronizer is not active on `main`.
+The original status synchronizer was merged through PR #34 and is deployed on `main`.
+Issue #33 therefore remains the canonical human-facing signal surface, while durable
+command-bus state/receipts remain the correctness source of truth.
+
+The development-lane enhancement is prepared separately on a non-default branch/PR and
+must not be treated as deployed until that follow-up PR is explicitly merged by the user.
 
 Repository pinning is optional presentation only. It is not required for correctness.
