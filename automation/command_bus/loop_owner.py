@@ -81,6 +81,7 @@ def decide_owner(
     target: dict[str, Any] | None,
     receipt: dict[str, Any] | None,
     evidence_refs: set[str] | None,
+    provider_observation: dict[str, Any] | None,
     now: str,
 ) -> OwnerDecision:
     """Validate a complete ordered chain and its independently read evidence."""
@@ -89,8 +90,8 @@ def decide_owner(
         if not events:
             raise ValueError("owner ledger is absent")
         chain = list(events)
-        if target is None or receipt is None or evidence_refs is None:
-            raise ValueError("target, receipt, or evidence readback is missing")
+        if target is None or receipt is None or evidence_refs is None or provider_observation is None:
+            raise ValueError("target, receipt, evidence, or provider observation readback is missing")
         seen_ids: set[str] = set()
         previous: dict[str, Any] | None = None
         terminal = False
@@ -133,10 +134,25 @@ def decide_owner(
             raise ValueError("receipt is not a confirmed single execution")
         if set(receipt.get("evidence_refs", [])) != set(previous["evidence_refs"]):
             raise ValueError("receipt evidence differs from owner event")
+        observation = provider_observation
+        if observation.get("verified") is not True or observation.get("loop_id") != previous["loop_id"] or observation.get("owner_role") != previous["owner_role"] or observation.get("holder_id") != previous["holder_id"]:
+            raise ValueError("provider observation is unverified or bound to another owner")
+        if observation.get("generation") != previous["generation"] or observation.get("fencing_token") != previous["fencing_token"]:
+            raise ValueError("provider observation generation/fencing mismatch")
+        if observation.get("expected_repo") != previous["expected_repo"] or observation.get("expected_pr") != previous["expected_pr"] or observation.get("expected_target_head") != previous["expected_target_head"]:
+            raise ValueError("provider observation target mismatch")
+        if not isinstance(observation.get("state"), str) or not observation["state"].strip():
+            raise ValueError("provider state is missing")
+        if observation.get("evidence_ref") not in evidence_refs or observation.get("evidence_ref") not in previous["evidence_refs"]:
+            raise ValueError("provider observation evidence is not verified for this generation")
         if _time(now) >= _time(previous["expires_at"]):
             raise ValueError("owner lease is expired")
         if _time(previous["claimed_at"]) > _time(now):
             raise ValueError("owner claim is from the future")
+        if _time(observation.get("observed_at")) < _time(previous["claimed_at"]) or _time(observation.get("observed_at")) > _time(now):
+            raise ValueError("provider observation is stale or from the future")
+        if _time(observation.get("expires_at")) <= _time(now):
+            raise ValueError("provider observation has expired")
         if state["state"] not in {"RUNNING", "WAITING_FOR_EVIDENCE", "VERIFYING_POST_AUTH"}:
             raise ValueError("durable Loop state is not active")
         return OwnerDecision("VALID", previous["owner_role"], previous["generation"], previous["fencing_token"], "validated durable owner chain")

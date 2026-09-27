@@ -15,7 +15,7 @@
 - Ledger path family: `automation/command_bus/loop_owner_events/<loop_id>/<generation>.json`.
 - Generation is monotonic; fencing token must equal generation. Events bind loop, role, holder, repo, PR, target head, command, correlation, receipt, evidence, and lease window.
 - `ACQUIRE`, `RENEW`, `HANDOFF`, `RELEASE`, and `TERMINAL` are represented as immutable events. Handoff names the prior holder; release/terminal close the chain.
-- Missing/malformed/stale/expired/competing or mismatched evidence resolves to `UNKNOWN/NONE`; release or terminal resolves to `BLOCKED/NONE`. Only a complete, active, receipt/evidence-verified chain may project SEMI_AUTO or AUTO.
+- Missing/malformed/stale/expired/competing or mismatched evidence resolves to `UNKNOWN/NONE`; release or terminal resolves to `BLOCKED/NONE`. Provider observation must be verified, fresh, and bound to the same owner generation and target. Only a complete, active, receipt/evidence/provider-verified chain may project SEMI_AUTO or AUTO.
 - No PR activity, silence, or provider commit timestamp is used as an ownership signal.
 
 ## Verification

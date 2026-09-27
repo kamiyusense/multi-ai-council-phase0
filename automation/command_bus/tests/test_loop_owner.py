@@ -25,13 +25,14 @@ def records():
     }
     receipt = {"receipt_id": "receipt-owner-1", "loop_id": "loop-015", "command_id": "cmd-015", "correlation_id": "corr-015", "state": "DONE", "executed_once": True, "retry_count": 0, "fallback_used": False, "evidence_refs": ["evidence-owner-1"]}
     target = {"repo": event["expected_repo"], "pr": 4, "head": HEAD}
-    return [event], receipt, target
+    observation = {"verified": True, "loop_id": "loop-015", "owner_role": "SEMI_AUTO", "holder_id": "controller-1", "generation": 1, "fencing_token": 1, "expected_repo": event["expected_repo"], "expected_pr": 4, "expected_target_head": HEAD, "state": "RUNNING", "evidence_ref": "evidence-owner-1", "observed_at": "2026-09-27T09:30:00+00:00", "expires_at": "2026-09-27T10:30:00+00:00"}
+    return [event], receipt, target, observation
 
 
 class LoopOwnerTests(unittest.TestCase):
     def decide(self, events=None, receipt=None, target=None, evidence=None, raw_state=None, now=NOW):
-        default_events, default_receipt, default_target = records()
-        return decide_owner(default_events if events is None else events, raw_state or state(), target=default_target if target is None else target, receipt=default_receipt if receipt is None else receipt, evidence_refs={"evidence-owner-1"} if evidence is None else evidence, now=now)
+        default_events, default_receipt, default_target, default_observation = records()
+        return decide_owner(default_events if events is None else events, raw_state or state(), target=default_target if target is None else target, receipt=default_receipt if receipt is None else receipt, evidence_refs={"evidence-owner-1"} if evidence is None else evidence, provider_observation=default_observation, now=now)
 
     def test_valid_durable_semiauto_projects_green(self):
         decision = self.decide()
@@ -45,7 +46,7 @@ class LoopOwnerTests(unittest.TestCase):
         self.assertEqual(project_with_durable_owner(state(), decision).display_state, "BLOCKED")
 
     def test_expired_stale_generation_target_and_receipt_are_rejected(self):
-        events, receipt, target = records()
+        events, receipt, target, _ = records()
         expired = copy.deepcopy(events); expired[0]["expires_at"] = "2026-09-27T09:59:00+00:00"
         self.assertEqual(self.decide(events=expired).status, "UNKNOWN")
         stale = copy.deepcopy(events); stale[0]["generation"] = 2
@@ -54,15 +55,23 @@ class LoopOwnerTests(unittest.TestCase):
         self.assertEqual(self.decide(receipt={**receipt, "retry_count": 1}).status, "UNKNOWN")
 
     def test_duplicate_competing_owner_and_malformed_chain_rejected(self):
-        events, receipt, target = records()
+        events, receipt, target, _ = records()
         competing = copy.deepcopy(events[0]); competing.update(event_id="owner-event-2", event_type="ACQUIRE", generation=2, previous_generation=1, fencing_token=2, owner_role="AUTO", holder_id="controller-2")
         self.assertEqual(self.decide(events=[events[0], competing]).status, "UNKNOWN")
         self.assertEqual(self.decide(events=[events[0], events[0]]).status, "UNKNOWN")
         malformed = copy.deepcopy(events); malformed[0]["fencing_token"] = 99
         self.assertEqual(self.decide(events=malformed).status, "UNKNOWN")
 
+    def test_provider_observation_must_be_fresh_and_generation_bound(self):
+        events, receipt, target, observation = records()
+        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=None, now=NOW).status, "UNKNOWN")
+        stale = {**observation, "expires_at": "2026-09-27T09:59:00+00:00"}
+        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=stale, now=NOW).status, "UNKNOWN")
+        mismatch = {**observation, "generation": 2}
+        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=mismatch, now=NOW).status, "UNKNOWN")
+
     def test_release_and_terminal_generation_cannot_reuse_owner(self):
-        events, receipt, target = records()
+        events, receipt, target, _ = records()
         released = copy.deepcopy(events[0]); released.update(event_id="owner-event-2", event_type="RELEASE", generation=2, previous_generation=1, fencing_token=2)
         self.assertEqual(self.decide(events=[events[0], released]).owner, "NONE")
         terminal = copy.deepcopy(released); terminal.update(event_id="owner-event-3", event_type="TERMINAL", generation=3, previous_generation=2, fencing_token=3, terminal_receipt_id="receipt-terminal")
