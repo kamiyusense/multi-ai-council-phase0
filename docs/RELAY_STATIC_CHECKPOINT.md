@@ -70,3 +70,8 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 ## Static/Mock Core Integration Checkpoint
 - Static/mock round-trip integration using RelayCoreAdapter duck typing is PASS.
 - Note: Independent Chat validation is required before acceptance.
+
+## Static/Mock ACP Client Integration Checkpoint
+- Implemented deterministic test-double ACPClient transport
+- Short corrective static/mock ACP batch
+- Note: Independent Chat validation is required before acceptance.
