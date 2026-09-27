@@ -120,8 +120,14 @@ class IntentHashTests(unittest.TestCase):
 
     def test_timeout_differences(self):
         a = compute_intent_hash({}, None)
-        b = compute_intent_hash({}, 10.0)
+        b = compute_intent_hash({}, 10)
         self.assertNotEqual(a, b)
+
+    def test_invalid_timeouts_rejected(self):
+        invalid_timeouts = [False, True, 3.14, 0, -1, "10", [10], {"t": 10}]
+        for invalid_val in invalid_timeouts:
+            with self.assertRaises(ValueError):
+                compute_intent_hash({}, invalid_val)
 
 
 class LifecycleTests(unittest.TestCase):

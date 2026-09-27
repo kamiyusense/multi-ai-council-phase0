@@ -14,6 +14,7 @@ def validate_timeout(timeout_seconds: Any) -> None:
 
 
 def compute_intent_hash(payload: dict[str, Any], timeout_seconds: int | None = None) -> str:
+    validate_timeout(timeout_seconds)
     intent = {"payload": payload, "timeout_seconds": timeout_seconds}
     encoded = json.dumps(intent, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
