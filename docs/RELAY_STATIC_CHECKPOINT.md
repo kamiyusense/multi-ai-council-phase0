@@ -70,3 +70,12 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 ## Static/Mock Core Integration Checkpoint
 - Static/mock round-trip integration using RelayCoreAdapter duck typing is PASS.
 - Note: Independent Chat validation is required before acceptance.
+
+## ACP Static/Mock Lifecycle Checkpoint
+
+- Added `ACPClient` modelling the true static mock layer for agent initialization and session interactions.
+- Validated bounded initialization and static rejection for unallowed capabilities and authentication methods (e.g., API keys).
+- Implemented static safety blockers on ACP methods: permissions, terminal interaction, elicitation, and unknown extensions.
+- Verified one-prompt strict execution bounds using `RelayLifecycle` duplication and correlation policies.
+- Confirmed `live_process_started=False`, and zero fallback/retries occur.
+- No real ACP process/provider was started; independent Chat validation is still required.
