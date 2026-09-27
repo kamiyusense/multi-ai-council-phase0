@@ -22,7 +22,7 @@ def observation():
         "expected_pr": 4,
         "expected_target_head": "a" * 40,
         "state": "RUNNING",
-        "evidence_ref": "evidence-owner-1",
+        "evidence_ref": "automation/command_bus/evidence/loop-015/owner-1.json",
         "observed_at": "2026-09-27T09:30:00+00:00",
         "expires_at": "2026-09-27T10:30:00+00:00",
         "verified": True,
@@ -66,6 +66,12 @@ class ProviderObservationTests(unittest.TestCase):
             with self.subTest(field=field):
                 with self.assertRaises(ValueError):
                     validate_provider_observation(item)
+
+    def test_evidence_ref_must_be_canonical_durable_path(self):
+        item = observation()
+        item["evidence_ref"] = "evidence-owner-1"
+        with self.assertRaises(ValueError):
+            validate_provider_observation(item)
 
     def test_expiry_must_follow_observed_at(self):
         item = observation()
