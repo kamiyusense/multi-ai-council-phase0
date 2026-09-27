@@ -19,6 +19,10 @@ projects already-durable state.
 | 🔴 BLOCKED | Human review is required or an active state has no declared owner |
 | ⚫ STOPPED | The durable loop is halted, expired, or explicitly stopped |
 
+The Issue heading is rendered as `Runtime: <STATE>` so `STOPPED` cannot be
+mistaken for "Relay/Claude development has stopped." Development status is shown
+separately below it.
+
 The renderer maps existing command-bus states onto those five display states.
 Unknown/malformed state fails closed before the Issue is updated.
 
@@ -41,7 +45,16 @@ A separate managed section shows GitHub readback for the two current development
 - Claude Loop: PR #25
 
 That section reports only PR state, mergeability, commit count, head SHA, update time,
-and main SHA. It creates no comments or @mentions and does not start a provider/model.
+and main SHA. A compact visual signal is derived only from those GitHub fields:
+
+- 🟢 OPEN — PR is open and GitHub reports mergeable.
+- 🟡 CHECK — PR is open and GitHub reports not mergeable.
+- ⚪ UNKNOWN — PR mergeability is not yet resolved.
+- ✅ MERGED — PR is merged.
+- ⚫ CLOSED — PR is closed without the merged flag.
+
+These signals do **not** prove current Jules/Claude/model execution. The development
+section creates no comments or @mentions and does not start a provider/model.
 
 `.github/workflows/loop-status-development.yml` refreshes this section on PR #4/#25
 open/synchronize/reopen/close events and on explicit manual dispatch. It uses
@@ -66,6 +79,10 @@ A terminal notification requires a durable event identity. The renderer uses an 
 event id when supplied, otherwise `last_receipt_id`, then `last_command_id`.
 Without an identity the Issue body may still show BLOCKED, but no notification comment
 is emitted.
+
+Terminal notification comments also include the durable Loop id, round, owner,
+runtime state, command-bus state, and provider summary so the user can identify
+what needs attention without opening implementation logs first.
 
 Every notification comment includes a hidden marker:
 
