@@ -18,11 +18,13 @@
 
 ## Validation
 
-- GitHub Actions run `36332831795` on code head `5720448d5ea5444be594a8a1e0d9187a069cb4d8`: SUCCESS.
+- Exact tested code head: `ac251537535350f70775e125506406edfcb1cbcf`.
+- GitHub Actions run `36332896526`: SUCCESS.
 - Focused status/owner/writer/observation/scope suite: 63/63 PASS.
+- Full command-bus suite: 350 tests run; exactly one known pre-existing error was observed: `automation.command_bus.tests.test_jules_api_request.JulesApiRequestTests.test_prompt_binds_head_tree_and_allowlist`. The CI guard rejects any failure outside that exact allowlist or more than one failure.
 - `python -m compileall -q automation/command_bus`: PASS.
 - `git diff --check`: PASS.
-- A subsequent code head adds an exact full-suite guard that rejects every new command-bus failure while allowing only the known expired Jules fixture. Final run/readback is recorded in the PR body after GitHub Actions completes.
+- Commits after the exact tested code head are documentation-only checkpoint/README updates; no runtime code is changed after that tested head.
 
 ## Safety boundary / not yet wired
 
