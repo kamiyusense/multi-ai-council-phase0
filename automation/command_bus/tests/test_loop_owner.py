@@ -11,6 +11,7 @@ from automation.command_bus.tests.test_loop_status_issue import state
 
 NOW = "2026-09-27T10:00:00+00:00"
 HEAD = "a" * 40
+EVIDENCE = "automation/command_bus/evidence/loop-015/owner-1.json"
 
 
 def records():
@@ -21,7 +22,7 @@ def records():
         "claimed_at": "2026-09-27T09:00:00+00:00", "expires_at": "2026-09-27T11:00:00+00:00",
         "expected_repo": "kamiyusense/multi-ai-council-phase0", "expected_pr": 4,
         "expected_target_head": HEAD, "command_id": "cmd-015", "correlation_id": "corr-015",
-        "source_receipt_id": "receipt-owner-1", "source_receipt_ref": "automation/command_bus/receipts/loop-015/000001.json", "evidence_refs": ["evidence-owner-1"],
+        "source_receipt_id": "receipt-owner-1", "source_receipt_ref": "automation/command_bus/receipts/loop-015/000001.json", "evidence_refs": [EVIDENCE],
     }
     receipt = {"receipt_id": "receipt-owner-1", "loop_id": "loop-015", "command_id": "cmd-015", "correlation_id": "corr-015", "state": "DONE", "executed_once": True, "retry_count": 0, "fallback_used": False, "evidence_refs": ["evidence-owner-1"]}
     target = {"repo": event["expected_repo"], "pr": 4, "head": HEAD}
@@ -32,7 +33,7 @@ def records():
 class LoopOwnerTests(unittest.TestCase):
     def decide(self, events=None, receipt=None, target=None, evidence=None, raw_state=None, observation=None, now=NOW):
         default_events, default_receipt, default_target, default_observation = records()
-        return decide_owner(default_events if events is None else events, raw_state or state(), target=default_target if target is None else target, receipt=default_receipt if receipt is None else receipt, evidence_refs={"evidence-owner-1"} if evidence is None else evidence, provider_observation=default_observation if observation is None else observation, now=now)
+        return decide_owner(default_events if events is None else events, raw_state or state(), target=default_target if target is None else target, receipt=default_receipt if receipt is None else receipt, evidence_refs={EVIDENCE} if evidence is None else evidence, provider_observation=default_observation if observation is None else observation, now=now)
 
     def test_valid_durable_semiauto_projects_green(self):
         decision = self.decide()
@@ -102,7 +103,7 @@ class LoopOwnerTests(unittest.TestCase):
 
     def test_owner_chain_bindings_and_active_state_are_immutable(self):
         events, _, _, _ = records()
-        for key, value in (("expected_repo", "elsewhere/repo"), ("expected_pr", 25), ("expected_target_head", "b" * 40), ("command_id", "other-command"), ("correlation_id", "other-correlation"), ("source_receipt_id", "other-receipt"), ("source_receipt_ref", "automation/command_bus/receipts/other-loop/000001.json"), ("evidence_refs", ["other-evidence"])):
+        for key, value in (("expected_repo", "elsewhere/repo"), ("expected_pr", 25), ("expected_target_head", "b" * 40), ("command_id", "other-command"), ("correlation_id", "other-correlation"), ("source_receipt_id", "other-receipt"), ("source_receipt_ref", "automation/command_bus/receipts/other-loop/000001.json"), ("evidence_refs", ["automation/command_bus/evidence/loop-015/other.json"])):
             renewed = copy.deepcopy(events[0]); renewed.update(event_id="owner-event-2", event_type="RENEW", generation=2, previous_generation=1, fencing_token=2); renewed[key] = value
             self.assertEqual(self.decide(events=[events[0], renewed]).status, "UNKNOWN", key)
         inactive_state = state(state="COMPLETE")
