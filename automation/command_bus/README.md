@@ -159,7 +159,14 @@ separately controlled egress network and no published host port. Images and
 Claude Code version are pinned; Dockerfile-specific ignore files restrict the
 build contexts. The Claude launcher fails closed unless explicitly enabled
 with valid one-dispatch metadata. The Gate entrypoint only opens an existing
-store and never bootstraps it. Egress isolation, effective host firewall
+store and never bootstraps it. A separate `gate-bootstrap` service now declares
+the one-time receipt-backed initialization route behind the exact
+`human-gate-bootstrap` profile, a required confirmation argument,
+`network_mode: none`, and the fixed non-root identity. Its receipt is mounted outside the
+`gate-state` named volume via the external host-control directory. Nested mount
+ordering, Docker volume copy-up, effective ownership/mode behavior, and WSL/Docker
+Desktop filesystem semantics remain LIVE UNKNOWN; the validator does not claim
+them as proven. Egress isolation, effective host firewall
 behavior, Docker volume ownership, production store ACL verification on
 Windows, external receipt provisioning, backup rollback protection, automatic
 model fallback behavior, and actual Claude compatibility remain unproven.
@@ -172,5 +179,5 @@ expected store UUID; an empty/replaced volume must fail closed. Production
 store creation is a separate explicit one-time operation with an external
 receipt; normal production open never bootstraps. Windows production ACL
 verification remains blocked. This gate remains prepare/static-only and does
-not launch Claude. See
+not launch Claude or perform the bootstrap. See
 `docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.

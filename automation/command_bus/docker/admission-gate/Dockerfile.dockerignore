@@ -6,3 +6,4 @@
 !docker/admission-gate/Dockerfile
 !docker/admission-gate/Dockerfile.dockerignore
 !docker/admission-gate/gate_entrypoint.py
+!docker/admission-gate/gate_bootstrap_entrypoint.py

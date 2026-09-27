@@ -75,6 +75,20 @@
         "PHASE0_GATE_UPSTREAM_URL": "https://api.anthropic.com"
       },
       "volumes": ["gate-state:/var/lib/phase0/claude-gate"]
+    },
+    "gate-bootstrap": {
+      "image": "phase0-claude-gate:1",
+      "build": {"context": ".", "dockerfile": "docker/admission-gate/Dockerfile"},
+      "profiles": ["human-gate-bootstrap"],
+      "entrypoint": ["python3", "/opt/phase0/gate_bootstrap_entrypoint.py"],
+      "privileged": false,
+      "ports": [],
+      "network_mode": "none",
+      "user": "1000:1000",
+      "volumes": [
+        "${PHASE0_GATE_CONTROL_DIR:?must be externally provisioned}:/var/lib/phase0",
+        "gate-state:/var/lib/phase0/claude-gate"
+      ]
     }
   },
   "networks": {

@@ -595,6 +595,7 @@ def validate_container_topology(manifest: dict) -> dict:
     try:
         services, networks = manifest["services"], manifest["networks"]
         claude, gate = services["claude"], services["gate"]
+        gate_bootstrap = services["gate-bootstrap"]
         auth = services["auth-bootstrap"]
         internal, egress = networks["internal"], networks["egress"]
         internal_subnet = internal["ipam"]["config"][0]["subnet"]
@@ -614,6 +615,7 @@ def validate_container_topology(manifest: dict) -> dict:
     gate_networks = set(gate.get("networks", {}))
     claude_env = claude.get("environment", {})
     auth_env = auth.get("environment", {})
+    gate_bootstrap_env = gate_bootstrap.get("environment", {})
     forbidden_env_names = {
         "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
         "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "ANTHROPIC_AWS_API_KEY",
@@ -640,7 +642,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "DISABLE_UPDATES": "1",
     }
     checks = {
-        "exact_services": set(services) == {"claude", "gate", "auth-bootstrap"},
+        "exact_services": set(services) == {"claude", "gate", "auth-bootstrap", "gate-bootstrap"},
         "claude_internal_only": claude_networks == {"internal"},
         "auth_bootstrap_egress_only": auth_networks == {"egress"},
         "gate_internal_and_egress": gate_networks == {"internal", "egress"},
@@ -651,7 +653,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "auth_bootstrap_no_ports": not auth.get("ports"),
         "gate_no_published_ports": not gate.get("ports"),
         "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth)),
-        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth)),
+        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, gate_bootstrap)),
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
         "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
@@ -671,6 +673,19 @@ def validate_container_topology(manifest: dict) -> dict:
         "runtime_is_human_gated": claude.get("profiles") == ["human-approval-required"],
         "runtime_launcher_is_explicit_and_default_fail_closed": claude.get("profiles") == ["human-approval-required"] and claude.get("entrypoint") == ["node", "/opt/phase0/claude_runtime_launcher.mjs"] and "command" not in claude and "PHASE0_LIVE_EXECUTION" not in claude_env and "PHASE0_DISPATCH_ID" not in claude_env,
         "gate_entrypoint_is_existing_store_serve_only": gate.get("profiles") == ["human-approval-required"] and gate.get("entrypoint") == ["python3", "/opt/phase0/gate_entrypoint.py"] and gate.get("command") == ["serve"] and gate.get("environment", {}).get("PHASE0_GATE_MODE") == "OPEN_EXISTING_ONLY",
+        "gate_bootstrap_profile_exact_and_not_default": gate_bootstrap.get("profiles") == ["human-gate-bootstrap"],
+        "gate_bootstrap_service_fields_exact": set(gate_bootstrap) == {"image", "build", "profiles", "entrypoint", "privileged", "ports", "network_mode", "user", "volumes"},
+        "gate_bootstrap_network_fully_disabled": gate_bootstrap.get("network_mode") == "none" and "networks" not in gate_bootstrap,
+        "gate_bootstrap_has_no_published_ports": not gate_bootstrap.get("ports"),
+        "gate_bootstrap_nonroot_identity": gate_bootstrap.get("user") == "1000:1000",
+        "gate_bootstrap_uses_gate_only_image": gate_bootstrap.get("image") == gate.get("image") == "phase0-claude-gate:1" and gate_bootstrap.get("build") == gate.get("build") == {"context": ".", "dockerfile": "docker/admission-gate/Dockerfile"},
+        "gate_bootstrap_entrypoint_exact_and_no_default_command": gate_bootstrap.get("entrypoint") == ["python3", "/opt/phase0/gate_bootstrap_entrypoint.py"] and "command" not in gate_bootstrap,
+        "gate_bootstrap_control_mount_exact": gate_bootstrap.get("volumes", [None])[0] == "${PHASE0_GATE_CONTROL_DIR:?must be externally provisioned}:/var/lib/phase0",
+        "gate_bootstrap_mounts_only_control_and_gate_state": gate_bootstrap.get("volumes") == ["${PHASE0_GATE_CONTROL_DIR:?must be externally provisioned}:/var/lib/phase0", "gate-state:/var/lib/phase0/claude-gate"],
+        "gate_bootstrap_does_not_mount_auth_or_workspace": not any("claude-auth" in str(v) or "/workspace" in str(v) or str(v).startswith(("./", "../")) for v in gate_bootstrap.get("volumes", [])),
+        "gate_bootstrap_environment_empty_and_no_env_file": gate_bootstrap_env == {} and "env_file" not in gate_bootstrap,
+        "gate_bootstrap_cannot_generate_or_receive_expected_store_id": "PHASE0_GATE_EXPECTED_STORE_ID" not in gate_bootstrap_env and "PHASE0_GATE_EXPECTED_STORE_ID" not in str(gate_bootstrap),
+        "bootstrap_and_runtime_gate_are_separate_profiles_and_paths": gate_bootstrap.get("profiles") != gate.get("profiles") and gate.get("entrypoint") == ["python3", "/opt/phase0/gate_entrypoint.py"] and gate.get("command") == ["serve"] and gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"] and gate.get("environment", {}).get("PHASE0_GATE_MODE") == "OPEN_EXISTING_ONLY",
         "runtime_and_gate_images_are_not_latest": claude.get("image") == auth.get("image") == "phase0-claude-runtime:2.1.283" and gate.get("image") == "phase0-claude-gate:1" and all("latest" not in str(service.get("image", "")) and "UNBUILT" not in str(service.get("image", "")) for service in services.values()),
         "fixed_nonroot_identity": claude.get("user") == auth.get("user") == "1000:1000",
         "gate_nonroot_identity": gate.get("user") == "1000:1000",
@@ -681,7 +696,7 @@ def validate_container_topology(manifest: dict) -> dict:
             "DISABLE_UPDATES": "1",
         },
         "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL", **runtime_vars},
-        "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth) for v in service.get("volumes", [])),
+        "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth, gate_bootstrap) for v in service.get("volumes", [])),
         "bootstrap_has_no_workspace_or_gate_state": auth.get("volumes") == [auth_volume],
         "gate_cannot_read_auth_volume": auth_volume not in gate.get("volumes", []),
         "runtime_retry_and_resume_contract": all(claude_env.get(k) == v for k, v in runtime_vars.items()),
@@ -711,6 +726,7 @@ def validate_container_artifacts() -> dict:
         "gate_dockerfile": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile",
         "gate_ignore": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile.dockerignore",
         "gate_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_entrypoint.py",
+        "gate_bootstrap_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_bootstrap_entrypoint.py",
     }
     try:
         files = {name: path.read_text(encoding="utf-8") for name, path in paths.items()}
@@ -722,6 +738,7 @@ def validate_container_artifacts() -> dict:
     gate_dockerfile = files["gate_dockerfile"]
     launcher = files["claude_launcher"]
     gate_entrypoint = files["gate_entrypoint"]
+    gate_bootstrap_entrypoint = files["gate_bootstrap_entrypoint"]
     launcher_args = launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0] if "args: [" in launcher else ""
     claude_ignore_expected = "\n".join((
         "**", "!docker/", "!docker/claude-runtime/", "!docker/claude-runtime/Dockerfile",
@@ -732,7 +749,8 @@ def validate_container_artifacts() -> dict:
         "**", "!claude_admission_gate.py", "!claude_gate_compose.yaml", "!docker/",
         "!docker/admission-gate/", "!docker/admission-gate/Dockerfile",
         "!docker/admission-gate/Dockerfile.dockerignore",
-        "!docker/admission-gate/gate_entrypoint.py", "",
+        "!docker/admission-gate/gate_entrypoint.py",
+        "!docker/admission-gate/gate_bootstrap_entrypoint.py", "",
     ))
     gate_copy_lines = [line for line in gate_dockerfile.splitlines() if line.startswith("COPY ")]
     checks = {
@@ -746,6 +764,7 @@ def validate_container_artifacts() -> dict:
             "COPY --chown=1000:1000 claude_admission_gate.py /opt/phase0/claude_admission_gate.py",
             "COPY --chown=1000:1000 claude_gate_compose.yaml /opt/phase0/claude_gate_compose.yaml",
             "COPY --chown=1000:1000 docker/admission-gate/gate_entrypoint.py /opt/phase0/gate_entrypoint.py",
+            "COPY --chown=1000:1000 docker/admission-gate/gate_bootstrap_entrypoint.py /opt/phase0/gate_bootstrap_entrypoint.py",
         ],
         "gate_has_no_claude_node_npm_or_auth_volume": not any(term in gate_dockerfile.lower() for term in ("npm", "node:", "claude-auth", "github-cli", "git install")),
         "claude_context_is_exact_allowlist": files["claude_ignore"] == claude_ignore_expected,
@@ -767,6 +786,23 @@ def validate_container_artifacts() -> dict:
         "launcher_has_no_client_retry": "spawnSync(invocation.executable" in launcher and "no retry will be attempted" in launcher,
         "launcher_constructs_dispatch_header": "X-Phase0-Dispatch-ID" in launcher and "ANTHROPIC_CUSTOM_HEADERS" in launcher,
         "gate_open_existing_only_no_bootstrap_or_retry": "DispatchStore.open_production" in gate_entrypoint and "OPEN_EXISTING_ONLY" in gate_entrypoint and "initialize_production_store_once" not in gate_entrypoint and "prepare_production_store_bootstrap" not in gate_entrypoint and "no bootstrap or retry" in gate_entrypoint,
+        "gate_bootstrap_fixed_paths_confirmation_and_contract": all(fragment in gate_bootstrap_entrypoint for fragment in (
+            'CONTROL_DIR = "/var/lib/phase0"',
+            'STATE_DIR = "/var/lib/phase0/claude-gate"',
+            'RECEIPT_PATH = "/var/lib/phase0/claude-gate-bootstrap-receipt.json"',
+            'CONFIRMATION_ARGUMENT = "--confirm-one-time-production-bootstrap"',
+            "initialize_production_store_once(", "explicit_bootstrap=True", "retry=0",
+            'fallback="disabled"', "expected_store_id=None", "no retry", "os.path.ismount(CONTROL_DIR)",
+            "os.path.ismount(STATE_DIR)",
+        )),
+        "gate_bootstrap_never_reads_or_emits_expected_id_or_credentials": not any(token in gate_bootstrap_entrypoint for token in (
+            "PHASE0_GATE_EXPECTED_STORE_ID", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_OAUTH_TOKEN", "subprocess", "Popen", "HTTPConnection", "https://",
+            "print(receipt", "print(result", "print(store_id", 'receipt["store_id"]',
+        )),
+        "gate_bootstrap_has_no_shell_or_provider_execution": not any(token in gate_bootstrap_entrypoint for token in (
+            "os.system", "create_subprocess", "subprocess", "anthropic",
+        )),
         "compose_has_no_unbuilt_or_gate_false_placeholder": all("UNBUILT" not in str(s.get("image", "")) for s in manifest["services"].values()) and manifest["services"]["gate"].get("entrypoint") != ["/bin/false"],
     }
     failed = [name for name, passed in checks.items() if not passed]

@@ -186,26 +186,64 @@ cannot prove whether the state is new; that condition is UNKNOWN and must not
 be auto-reinitialized. The bootstrap API also blocks if the host supplies an
 already-retained expected store ID, even when the DB or receipt is missing.
 
-Future named-volume initialization order is fixed:
+Static Compose now defines a separate `gate-bootstrap` service to bridge the
+first-store operation into the named `gate-state` volume. It is gated behind
+the exact `human-gate-bootstrap` profile, runs the Gate-only image as UID/GID
+1000, uses `network_mode: none`, publishes no ports, and mounts no Claude auth
+volume, workspace, or credential environment. Its entrypoint accepts only the
+single explicit confirmation argument and calls
+`initialize_production_store_once()` with fixed paths,
+`explicit_bootstrap=True`, `retry=0`, `fallback="disabled"`, and
+`expected_store_id=None`. The Compose service has no default command, so an
+operator must explicitly request both the profile and confirmation argument.
+It is not part of normal `gate` startup; the normal service remains
+`OPEN_EXISTING_ONLY` and has no bootstrap fallback.
 
-1. Host/control-plane one-time bootstrap into an empty, privately owned volume
-   (or a separately designed one-shot bootstrap container that is not the Gate
-   runtime and is never part of normal startup).
-2. Capture the returned store ID and receipt in host/control-plane durable
-   storage outside the volume.
-3. Supply that retained ID as `PHASE0_GATE_EXPECTED_STORE_ID`.
-4. Start the ordinary Gate only in `OPEN_EXISTING_ONLY` mode and compare the
-   existing DB ID with the external value. Missing DB, missing input, or any
-   mismatch blocks startup; there is no bootstrap fallback.
+The bootstrap mounts the externally provisioned host-control directory at
+`/var/lib/phase0` and the named `gate-state` volume at its nested
+`/var/lib/phase0/claude-gate` path. The receipt is written to the sibling path
+`/var/lib/phase0/claude-gate-bootstrap-receipt.json`, outside the named volume.
+The host-control directory must be a private POSIX directory owned by UID/GID
+1000 with mode 0700. The Gate image pre-creates the volume target
+with that owner and mode; initial named-volume copy-up is relied upon to
+preserve it. This nested bind-plus-volume behavior, including Docker Desktop / WSL
+filesystem ownership mapping and first-mount copy-up, is a LIVE check and
+remains UNKNOWN until observed on the actual engine. Static validation does
+not claim Docker mount semantics PASS. Before calling the initializer, the
+entrypoint also requires both `/var/lib/phase0` and
+`/var/lib/phase0/claude-gate` to be mountpoints; if Docker does not expose the
+expected bind and nested volume mounts, it exits without creating a receipt or
+database. This fail-closed guard still requires LIVE confirmation that the
+engine reports the intended mountpoints.
 
-This batch does not create a real production volume or run a bootstrap. The
-Windows-only test-fixture exception is constrained to OS temporary directories;
-it does not enable Windows production bootstrap. Full anti-rollback remains a
-known limitation: an older DB copy can carry the same store ID. A later design
-may compare a GitHub durable receipt, monotonic generation, or external store
-epoch. Whether complete anti-rollback is mandatory before a narrowly scoped
-single live proof is a separate decision; it must be reassessed before any
-unattended overnight operation.
+The one-time initialization order is:
+
+1. Before any future live operation, provision the host-control directory on a
+   Linux-native filesystem and externally set `PHASE0_GATE_CONTROL_DIR` to its
+   absolute POSIX path. This turn does not provision it.
+2. A human explicitly invokes the `human-gate-bootstrap` profile and the
+   entrypoint confirmation argument exactly once. The helper refuses a
+   non-empty state directory, an existing DB, an existing receipt, or any
+   interrupted receipt; it never retries or repairs partial state.
+3. Preserve the external receipt outside the volume. The bootstrap entrypoint
+   does not print the generated store ID, and the bootstrap service receives
+   no `PHASE0_GATE_EXPECTED_STORE_ID` input.
+4. An operator independently reads the retained receipt and supplies its
+   `store_id` as the external `PHASE0_GATE_EXPECTED_STORE_ID` only to a later
+   ordinary Gate start. Do not commit the receipt or ID to the repository.
+5. Start the ordinary Gate only in `OPEN_EXISTING_ONLY` mode. Missing DB,
+   missing input, or any mismatch blocks startup; there is no bootstrap
+   fallback.
+
+The Dockerfile, Compose profile, entrypoint, tests, and validators only define
+and statically inspect this route; no image is built and no service is run by
+this change. Windows production bootstrap remains blocked; the Windows-only
+test-fixture exception is constrained to OS temporary directories. Full
+anti-rollback remains a known limitation: an older DB copy can carry the same
+store ID. A later design may compare a GitHub durable receipt, monotonic
+generation, or external store epoch. Whether complete anti-rollback is
+mandatory before a narrowly scoped single live proof is a separate decision;
+it must be reassessed before any unattended overnight operation.
 
 ## Durability and limitations
 

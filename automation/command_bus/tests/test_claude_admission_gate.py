@@ -1,13 +1,16 @@
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing
+from contextlib import closing, redirect_stderr, redirect_stdout
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import StringIO
 import json
+import importlib.util
 import os
 from pathlib import Path
 import sqlite3
+import sys
 import tempfile
 from threading import Event, Lock
 import time
@@ -21,6 +24,17 @@ from automation.command_bus.claude_admission_gate import (
     prepare_production_store_bootstrap,
     prepare_transport, validate_container_artifacts, validate_container_topology,
 )
+
+_BOOTSTRAP_ENTRYPOINT_PATH = (Path(__file__).resolve().parents[1] / "docker" / "admission-gate"
+                              / "gate_bootstrap_entrypoint.py")
+_BOOTSTRAP_ENTRYPOINT_SPEC = importlib.util.spec_from_file_location(
+    "gate_bootstrap_entrypoint", _BOOTSTRAP_ENTRYPOINT_PATH)
+gate_bootstrap_entrypoint = importlib.util.module_from_spec(_BOOTSTRAP_ENTRYPOINT_SPEC)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    _BOOTSTRAP_ENTRYPOINT_SPEC.loader.exec_module(gate_bootstrap_entrypoint)
+finally:
+    sys.path.pop(0)
 
 
 class FakeProvider:
@@ -474,6 +488,83 @@ class AdmissionGateTests(unittest.TestCase):
         for item in cases:
             with self.subTest(item=item):
                 self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
+
+    def test_gate_bootstrap_topology_mutations_fail_closed(self):
+        manifest = load_container_manifest()
+        cases = []
+        for mutate in (
+            lambda m: m["services"]["gate-bootstrap"].update(profiles=["human-approval-required"]),
+            lambda m: m["services"]["gate-bootstrap"].update(network_mode="bridge"),
+            lambda m: m["services"]["gate-bootstrap"].update(networks={"egress": {}}),
+            lambda m: m["services"]["gate-bootstrap"].update(ports=["8080:8080"]),
+            lambda m: m["services"]["gate-bootstrap"].update(privileged=True),
+            lambda m: m["services"]["gate-bootstrap"].update(user="0:0"),
+            lambda m: m["services"]["gate-bootstrap"].update(entrypoint=["sh", "-c"]),
+            lambda m: m["services"]["gate-bootstrap"].update(command=["serve"]),
+            lambda m: m["services"]["gate-bootstrap"].update(
+                volumes=["${PHASE0_GATE_CONTROL_DIR:?must be externally provisioned}:/var/lib/phase0",
+                         "claude-auth:/home/node/.claude"]),
+            lambda m: m["services"]["gate-bootstrap"].update(
+                volumes=["./:/var/lib/phase0", "gate-state:/var/lib/phase0/claude-gate"]),
+            lambda m: m["services"]["gate-bootstrap"].update(
+                volumes=["${PHASE0_GATE_CONTROL_DIR:?must be externally provisioned}:/var/lib/phase0",
+                         "gate-state:/other/path"]),
+            lambda m: m["services"]["gate-bootstrap"].update(environment={"ANTHROPIC_API_KEY": "FAKE_ONLY"}),
+            lambda m: m["services"]["gate-bootstrap"].update(environment={"PHASE0_GATE_EXPECTED_STORE_ID": "self-generated"}),
+            lambda m: m["services"]["gate-bootstrap"].update(env_file=["runtime.env"]),
+            lambda m: m["services"]["gate-bootstrap"].update(secrets=["unexpected-secret"]),
+            lambda m: m["services"]["gate-bootstrap"].update(image="phase0-claude-runtime:2.1.283"),
+            lambda m: m["services"]["gate"].update(profiles=["human-gate-bootstrap"]),
+            lambda m: m["services"]["gate"].update(volumes=["other-state:/var/lib/phase0/claude-gate"]),
+            lambda m: m["services"]["gate"]["environment"].update(PHASE0_GATE_MODE="BOOTSTRAP"),
+        ):
+            bad = deepcopy(manifest)
+            mutate(bad)
+            cases.append(bad)
+        for item in cases:
+            with self.subTest(item=item):
+                self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
+
+    def test_gate_bootstrap_entrypoint_requires_explicit_confirmation_and_calls_once(self):
+        with patch.object(gate_bootstrap_entrypoint, "initialize_production_store_once") as initialize:
+            stderr = StringIO()
+            with redirect_stderr(stderr):
+                self.assertEqual(gate_bootstrap_entrypoint.main([]), 64)
+            initialize.assert_not_called()
+            self.assertIn("no bootstrap attempted", stderr.getvalue())
+
+        fake_store_id = "123e4567-e89b-12d3-a456-426614174000"
+        with patch.object(gate_bootstrap_entrypoint, "initialize_production_store_once",
+                          return_value={"status": "COMPLETE", "retry": 0,
+                                        "fallback": "disabled", "bootstrap_once": True,
+                                        "store_id": fake_store_id}) as initialize:
+            with patch.object(gate_bootstrap_entrypoint.os.path, "ismount", return_value=True) as ismount:
+                stdout = StringIO()
+                with redirect_stdout(stdout):
+                    self.assertEqual(gate_bootstrap_entrypoint.main([
+                        gate_bootstrap_entrypoint.CONFIRMATION_ARGUMENT]), 0)
+                ismount.assert_any_call("/var/lib/phase0")
+                ismount.assert_any_call("/var/lib/phase0/claude-gate")
+                initialize.assert_called_once_with(
+                    state_dir="/var/lib/phase0/claude-gate",
+                    receipt_path="/var/lib/phase0/claude-gate-bootstrap-receipt.json",
+                    explicit_bootstrap=True,
+                    retry=0,
+                    fallback="disabled",
+                    expected_store_id=None,
+                )
+                self.assertNotIn(fake_store_id, stdout.getvalue())
+
+    def test_gate_bootstrap_blocks_without_both_mountpoints(self):
+        with patch.object(gate_bootstrap_entrypoint, "initialize_production_store_once") as initialize:
+            with patch.object(gate_bootstrap_entrypoint.os.path, "ismount",
+                              side_effect=lambda path: path == "/var/lib/phase0"):
+                stderr = StringIO()
+                with redirect_stderr(stderr):
+                    self.assertEqual(gate_bootstrap_entrypoint.main([
+                        gate_bootstrap_entrypoint.CONFIRMATION_ARGUMENT]), 78)
+            initialize.assert_not_called()
+            self.assertIn("no retry", stderr.getvalue())
 
     def test_compose_and_actual_launcher_share_bounded_cli_flags(self):
         manifest = load_container_manifest()
