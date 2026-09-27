@@ -51,6 +51,8 @@ class LoopStatusIssueTests(unittest.TestCase):
         self.assertIn("persist-credentials: false", text)
         self.assertIn("--retry 0", text)
         self.assertIn("status Issue changed after transition readback", text)
+        self.assertIn('.state == "open"', text)
+        self.assertIn("ACQUIRE|RENEW|HANDOFF", text)
 
     def test_running_semiauto_projects_semiauto_without_notification(self):
         raw = state()
