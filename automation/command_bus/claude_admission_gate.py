@@ -722,6 +722,7 @@ def validate_container_artifacts() -> dict:
     gate_dockerfile = files["gate_dockerfile"]
     launcher = files["claude_launcher"]
     gate_entrypoint = files["gate_entrypoint"]
+    launcher_args = launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0] if "args: [" in launcher else ""
     claude_ignore_expected = "\n".join((
         "**", "!docker/", "!docker/claude-runtime/", "!docker/claude-runtime/Dockerfile",
         "!docker/claude-runtime/Dockerfile.dockerignore",
@@ -750,6 +751,12 @@ def validate_container_artifacts() -> dict:
         "claude_context_is_exact_allowlist": files["claude_ignore"] == claude_ignore_expected,
         "gate_context_is_exact_allowlist": files["gate_ignore"] == gate_ignore_expected,
         "launcher_has_explicit_live_gate": 'env.PHASE0_LIVE_EXECUTION !== "1"' in launcher and "default_launcher_result" in json.dumps(manifest),
+        "compose_and_launcher_both_require_bare_mode": "--bare" in manifest["x-phase0-runtime-contract"]["argv"] and '"--bare"' in launcher_args,
+        "launcher_preserves_bounded_cli_flags": all(fragment in launcher_args for fragment in (
+            '"--no-session-persistence"', '"--max-turns", "1"', '"--tools", ""',
+            '"--mcp-config", JSON.stringify({ mcpServers: {} })', '"--strict-mcp-config"',
+            '"--permission-prompts", "none"',
+        )),
         "launcher_checks_dispatch_retry_tools_mcp_and_gateway": all(token in launcher for token in (
             "PHASE0_DISPATCH_ID", "CLAUDE_CODE_MAX_RETRIES", "CLAUDE_CODE_MAX_TURNS",
             "ANTHROPIC_BASE_URL", "--tools", "--mcp-config", "--strict-mcp-config",

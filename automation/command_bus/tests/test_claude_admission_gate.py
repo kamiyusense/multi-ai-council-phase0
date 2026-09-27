@@ -475,6 +475,27 @@ class AdmissionGateTests(unittest.TestCase):
             with self.subTest(item=item):
                 self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
 
+    def test_compose_and_actual_launcher_share_bounded_cli_flags(self):
+        manifest = load_container_manifest()
+        declared = manifest["x-phase0-runtime-contract"]["argv"]
+        launcher_path = Path(__file__).resolve().parents[1] / "docker" / "claude-runtime" / "claude_runtime_launcher.mjs"
+        launcher = launcher_path.read_text(encoding="utf-8")
+        self.assertIn("--bare", declared)
+        self.assertIn('env.PHASE0_LIVE_EXECUTION !== "1"', launcher)
+        self.assertIn('"--bare"', launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0])
+        for fragment in (
+            '"--tools", ""',
+            '"--mcp-config", JSON.stringify({ mcpServers: {} })',
+            '"--strict-mcp-config"',
+            '"--permission-prompts", "none"',
+            '"--no-session-persistence"',
+        ):
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, launcher)
+        artifact_checks = validate_container_artifacts()["checks"]
+        self.assertTrue(artifact_checks["compose_and_launcher_both_require_bare_mode"])
+        self.assertTrue(artifact_checks["launcher_preserves_bounded_cli_flags"])
+
     def test_lifecycle_prepares_then_fake_terminal_receipt_blocks_replay(self):
         lifecycle = ClaudeDispatchLifecycle(self.store, expected_store_id=self.store.store_id)
         prepared = lifecycle.prepare(loop_id="loop-a", correlation_id="corr-a", generation=4,
