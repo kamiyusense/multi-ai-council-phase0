@@ -6,7 +6,7 @@ import unittest
 
 from automation.command_bus.github_backend import GitHubContent
 from automation.command_bus.loop_owner_backend import LoopOwnerGitHubBackend, owner_event_path
-from automation.command_bus.tests.test_loop_owner import records
+from automation.command_bus.tests.test_loop_owner import next_event, records
 
 
 class FakeClient:
@@ -38,34 +38,6 @@ class FakeClient:
 def event1():
     return copy.deepcopy(records()[0][0])
 
-
-def next_event(previous: dict, *, event_type="RENEW", owner_role=None, holder_id=None):
-    event = copy.deepcopy(previous)
-    generation = previous["generation"] + 1
-    event.update(
-        event_id=f"owner-event-{generation}",
-        event_type=event_type,
-        generation=generation,
-        fencing_token=generation,
-        previous_generation=previous["generation"],
-        claimed_at="2026-09-27T09:30:00+00:00",
-        expires_at="2026-09-27T11:30:00+00:00",
-    )
-    if owner_role is not None:
-        event["owner_role"] = owner_role
-    if holder_id is not None:
-        event["holder_id"] = holder_id
-    if event_type == "HANDOFF":
-        event["previous_owner_role"] = previous["owner_role"]
-        event["previous_holder_id"] = previous["holder_id"]
-    else:
-        event.pop("previous_owner_role", None)
-        event.pop("previous_holder_id", None)
-    if event_type == "TERMINAL":
-        event["terminal_receipt_id"] = "terminal-receipt"
-    else:
-        event.pop("terminal_receipt_id", None)
-    return event
 
 
 class LoopOwnerBackendTests(unittest.TestCase):
