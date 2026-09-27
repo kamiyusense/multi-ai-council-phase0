@@ -32,6 +32,19 @@ class LoopStatusTransitionTests(unittest.TestCase):
         self.assertEqual((result.status, result.projection.display_state), ("VALID", "SEMI_AUTO"))
         self.assertEqual(result.projection.owner, "SEMI_AUTO")
 
+    def test_state_identity_must_match_owner_event(self):
+        values = inputs()
+        values["state"] = state(last_receipt_id="mismatch-receipt")
+        result = project_durable_transition(**values)
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertIn("last_receipt_id", result.reason)
+
+        values = inputs()
+        values["state"] = state(last_command_id="mismatch-command", last_receipt_id="receipt-owner-1")
+        result = project_durable_transition(**values)
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertIn("last_command_id", result.reason)
+
     def test_receipt_locator_mismatch_fails_before_projection(self):
         values = inputs()
         values["receipt_ref"] = "automation/command_bus/receipts/other-loop/000001.json"
