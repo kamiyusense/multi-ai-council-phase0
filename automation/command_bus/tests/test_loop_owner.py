@@ -45,6 +45,15 @@ class LoopOwnerTests(unittest.TestCase):
         self.assertEqual(decision.status, "UNKNOWN")
         self.assertEqual(project_with_durable_owner(state(), decision).display_state, "BLOCKED")
 
+    def test_unsafe_loop_id_and_non_hex_target_head_are_rejected(self):
+        events, _, _, _ = records()
+        unsafe_loop = copy.deepcopy(events)
+        unsafe_loop[0]["loop_id"] = "../bad"
+        self.assertEqual(self.decide(events=unsafe_loop).status, "UNKNOWN")
+        bad_head = copy.deepcopy(events)
+        bad_head[0]["expected_target_head"] = "z" * 40
+        self.assertEqual(self.decide(events=bad_head).status, "UNKNOWN")
+
     def test_expired_stale_generation_target_and_receipt_are_rejected(self):
         events, receipt, target, _ = records()
         expired = copy.deepcopy(events); expired[0]["expires_at"] = "2026-09-27T09:59:00+00:00"
@@ -70,12 +79,33 @@ class LoopOwnerTests(unittest.TestCase):
         mismatch = {**observation, "generation": 2}
         self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=mismatch, now=NOW).status, "UNKNOWN")
 
-    def test_release_and_terminal_generation_cannot_reuse_owner(self):
-        events, receipt, target, _ = records()
+    def test_release_and_terminal_generation_close_owner_chain(self):
+        events, _, _, _ = records()
         released = copy.deepcopy(events[0]); released.update(event_id="owner-event-2", event_type="RELEASE", generation=2, previous_generation=1, fencing_token=2)
-        self.assertEqual(self.decide(events=[events[0], released]).owner, "NONE")
-        terminal = copy.deepcopy(released); terminal.update(event_id="owner-event-3", event_type="TERMINAL", generation=3, previous_generation=2, fencing_token=3, terminal_receipt_id="receipt-terminal")
-        self.assertEqual(self.decide(events=[events[0], released, terminal]).owner, "NONE")
+        release_decision = self.decide(events=[events[0], released])
+        self.assertEqual((release_decision.status, release_decision.owner), ("BLOCKED", "NONE"))
+        self.assertIn("released", release_decision.reason)
+
+        terminal = copy.deepcopy(events[0]); terminal.update(
+            event_id="owner-event-2",
+            event_type="TERMINAL",
+            generation=2,
+            previous_generation=1,
+            fencing_token=2,
+            terminal_receipt_id="receipt-terminal",
+        )
+        terminal_decision = self.decide(events=[events[0], terminal])
+        self.assertEqual((terminal_decision.status, terminal_decision.owner), ("BLOCKED", "NONE"))
+        self.assertIn("terminal", terminal_decision.reason)
+
+        continued = copy.deepcopy(terminal); continued.update(
+            event_id="owner-event-3",
+            event_type="RENEW",
+            generation=3,
+            previous_generation=2,
+            fencing_token=3,
+        )
+        self.assertEqual(self.decide(events=[events[0], terminal, continued]).status, "UNKNOWN")
 
     def test_schema_and_ledger_scope_are_explicit(self):
         path = Path(__file__).parents[1] / "schema" / "loop_owner_event.schema.json"
