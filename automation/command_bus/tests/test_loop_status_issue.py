@@ -38,12 +38,19 @@ def state(**changes):
 
 
 class LoopStatusIssueTests(unittest.TestCase):
-    def test_runtime_workflow_fails_closed_without_durable_owner_source(self):
+    def test_runtime_workflow_uses_durable_transition_readbacks(self):
         workflow = Path(__file__).parents[3] / ".github/workflows/loop-status-signal.yml"
         text = workflow.read_text(encoding="utf-8")
-        self.assertIn('--owner "NONE"', text)
-        self.assertNotIn("OWNER: ${{ inputs.owner }}", text)
-        self.assertNotIn("      owner:\n", text)
+        self.assertNotIn('--owner "NONE"', text)
+        self.assertNotIn("inputs.owner", text)
+        self.assertNotIn("inputs.provider_state", text)
+        self.assertNotIn("inputs.event_id", text)
+        self.assertIn("loop_status_transition_cli plan", text)
+        self.assertIn("loop_status_transition_cli", text)
+        self.assertIn("ref: main", text)
+        self.assertIn("persist-credentials: false", text)
+        self.assertIn("--retry 0", text)
+        self.assertIn("status Issue changed after transition readback", text)
 
     def test_running_semiauto_projects_semiauto_without_notification(self):
         raw = state()
