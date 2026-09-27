@@ -12,7 +12,7 @@ def inputs():
     events, receipt, target, observation = records()
     receipt = {"schema_version": 1, **receipt}
     return {
-        "state": state(),
+        "state": state(last_receipt_id="receipt-owner-1"),
         "owner_events": events,
         "receipt_ref": events[-1]["source_receipt_ref"],
         "receipt": receipt,
