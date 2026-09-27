@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any, Iterable
 
 from .loop_status_issue import StatusProjection, project_state
+from .loop_status_evidence import validate_evidence_ref
 from .loop_owner_observation import validate_provider_observation
 from .validator import validate_state
 
@@ -81,8 +82,10 @@ def validate_owner_event(event: dict[str, Any]) -> None:
     claimed, expires = _time(event["claimed_at"]), _time(event["expires_at"])
     if expires <= claimed:
         raise ValueError("owner lease must expire after it is claimed")
-    if not isinstance(event["evidence_refs"], list) or not event["evidence_refs"] or any(not isinstance(item, str) or not item for item in event["evidence_refs"]):
+    if not isinstance(event["evidence_refs"], list) or not event["evidence_refs"]:
         raise ValueError("owner event requires non-empty evidence references")
+    for item in event["evidence_refs"]:
+        validate_evidence_ref(item)
     if event["event_type"] == "HANDOFF":
         if event.get("previous_owner_role") not in OWNER_ROLES or not event.get("previous_holder_id"):
             raise ValueError("handoff must bind the previous owner")
