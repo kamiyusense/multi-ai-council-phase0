@@ -54,8 +54,8 @@ def next_event(
         generation=generation,
         fencing_token=generation,
         previous_generation=previous["generation"],
-        claimed_at=f"2026-09-27T09:{generation * 10:02d}:00+00:00",
-        expires_at=f"2026-09-27T11:{generation * 10:02d}:00+00:00",
+        claimed_at=f"2026-09-27T09:{generation * 5:02d}:00+00:00",
+        expires_at=f"2026-09-27T11:{generation * 5:02d}:00+00:00",
         expected_target_head=head or (hex(generation)[2:] * 40)[:40],
         command_id=f"cmd-015-g{generation}",
         correlation_id=f"corr-015-g{generation}",
@@ -82,6 +82,7 @@ def next_event(
 
 def receipt_for(event: dict):
     return {
+        "schema_version": 1,
         "receipt_id": event["source_receipt_id"],
         "loop_id": event["loop_id"],
         "command_id": event["command_id"],
@@ -290,6 +291,13 @@ class LoopOwnerTests(unittest.TestCase):
         result = decision([first, terminal])
         self.assertEqual((result.status, result.owner), ("BLOCKED", "NONE"))
         self.assertIn("terminal", result.reason)
+
+        blocked_receipt = {**receipt_for(terminal), "state": "BLOCKED"}
+        result = decision([first, terminal], receipt=blocked_receipt)
+        self.assertEqual((result.status, result.owner), ("BLOCKED", "NONE"))
+
+        unsafe_receipt = {**receipt_for(terminal), "retry_count": 1}
+        self.assertEqual(decision([first, terminal], receipt=unsafe_receipt).status, "UNKNOWN")
 
         bad_terminal = copy.deepcopy(terminal)
         bad_terminal["terminal_receipt_id"] = "different-receipt"
