@@ -12,6 +12,7 @@ from typing import Any, Iterable
 from .loop_owner import OwnerDecision, decide_owner, project_with_durable_owner, validate_owner_chain
 from .loop_owner_observation import provider_observation_path, validate_provider_observation
 from .loop_status_issue import StatusProjection
+from .loop_status_evidence import verify_evidence_readbacks
 from .validator import validate_receipt, validate_state
 
 
@@ -31,7 +32,7 @@ def project_durable_transition(
     receipt_ref: str | None,
     receipt: dict[str, Any] | None,
     target: dict[str, Any] | None,
-    verified_evidence_refs: set[str] | None,
+    evidence_readbacks: dict[str, Any] | None,
     provider_observation_ref: str | None,
     provider_observation: dict[str, Any] | None,
     now: str,
@@ -58,8 +59,7 @@ def project_durable_transition(
         if provider_observation_ref != expected_observation_ref:
             raise ValueError("provider observation locator mismatch")
         validate_provider_observation(provider_observation)
-        if verified_evidence_refs is None:
-            raise ValueError("verified evidence set is missing")
+        verified_evidence_refs = verify_evidence_readbacks(latest["evidence_refs"], evidence_readbacks)
 
         decision = decide_owner(
             chain,
