@@ -21,6 +21,7 @@
     "command_id",
     "correlation_id",
     "source_receipt_id",
+    "source_receipt_ref",
     "evidence_refs"
   ],
   "properties": {
@@ -125,6 +126,10 @@
     "terminal_receipt_id": {
       "type": "string",
       "minLength": 1
+    },
+    "source_receipt_ref": {
+      "type": "string",
+      "pattern": "^automation/command_bus/(?:receipts|execution_receipts)/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
     }
   },
   "allOf": [
