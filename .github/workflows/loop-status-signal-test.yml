@@ -4,8 +4,11 @@ on:
   pull_request:
     paths:
       - automation/command_bus/loop_status_issue.py
+      - automation/command_bus/loop_status_development.py
       - automation/command_bus/tests/test_loop_status_issue.py
+      - automation/command_bus/tests/test_loop_status_development.py
       - .github/workflows/loop-status-signal.yml
+      - .github/workflows/loop-status-development.yml
       - .github/workflows/loop-status-signal-test.yml
       - docs/LOOP_STATUS_SIGNAL.md
 
@@ -25,7 +28,7 @@ jobs:
 
       - name: Run focused status and validation-scope tests
         shell: bash
-        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_validation_scope -v
+        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_validation_scope -v
 
       - name: Compile command-bus Python
         shell: bash
