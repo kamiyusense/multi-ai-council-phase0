@@ -1,7 +1,12 @@
 {
-    "protocol_version": 2,
-    "provider_id": "test_provider",
-    "mode": "mock",
-    "live_process_started": true,
-    "capabilities": {}
+  "protocol_version": 1,
+  "provider_id": "test_provider",
+  "mode": "mock",
+  "live_process_started": false,
+  "auth": {
+    "kind": "api_key"
+  },
+  "capabilities": {
+    "terminal": {"mode": "local-mock"}
+  }
 }
