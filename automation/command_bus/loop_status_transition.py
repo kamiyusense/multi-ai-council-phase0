@@ -52,6 +52,9 @@ def project_durable_transition(
             raise ValueError("state last_command_id does not match owner event")
         if state.get("last_receipt_id") != latest["source_receipt_id"]:
             raise ValueError("state last_receipt_id does not match owner event")
+        expected_state_target = {"repo": latest["expected_repo"], "pr": latest["expected_pr"], "head": latest["expected_target_head"]}
+        if state.get("expected_target") != expected_state_target:
+            raise ValueError("state expected_target does not match latest owner generation")
         if receipt_ref is None or receipt is None:
             raise ValueError("durable receipt readback is missing")
         if receipt_ref != latest["source_receipt_ref"]:
