@@ -12,7 +12,7 @@ def inputs():
     events, receipt, target, observation = records()
     receipt = {"schema_version": 1, **receipt}
     return {
-        "state": state(last_receipt_id="receipt-owner-1"),
+        "state": state(last_command_id=events[-1]["command_id"], last_receipt_id=events[-1]["source_receipt_id"], expected_target=target),
         "owner_events": events,
         "receipt_ref": events[-1]["source_receipt_ref"],
         "receipt": receipt,
@@ -34,13 +34,13 @@ class LoopStatusTransitionTests(unittest.TestCase):
 
     def test_state_identity_must_match_owner_event(self):
         values = inputs()
-        values["state"] = state(last_receipt_id="mismatch-receipt")
+        values["state"] = state(last_command_id=values["owner_events"][-1]["command_id"], last_receipt_id="mismatch-receipt", expected_target=values["target"])
         result = project_durable_transition(**values)
         self.assertEqual(result.status, "UNKNOWN")
         self.assertIn("last_receipt_id", result.reason)
 
         values = inputs()
-        values["state"] = state(last_command_id="mismatch-command", last_receipt_id="receipt-owner-1")
+        values["state"] = state(last_command_id="mismatch-command", last_receipt_id=values["owner_events"][-1]["source_receipt_id"], expected_target=values["target"])
         result = project_durable_transition(**values)
         self.assertEqual(result.status, "UNKNOWN")
         self.assertIn("last_command_id", result.reason)
@@ -83,7 +83,7 @@ class LoopStatusTransitionTests(unittest.TestCase):
 
     def test_complete_state_projects_idle_not_active_owner(self):
         values = inputs()
-        values["state"] = state(state="COMPLETE")
+        values["state"] = state(state="COMPLETE", last_command_id=values["owner_events"][-1]["command_id"], last_receipt_id=values["owner_events"][-1]["source_receipt_id"], expected_target=values["target"])
         result = project_durable_transition(**values)
         self.assertEqual((result.status, result.projection.display_state), ("TERMINAL", "IDLE"))
         self.assertEqual(result.projection.owner, "NONE")
