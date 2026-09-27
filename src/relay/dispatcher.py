@@ -32,12 +32,27 @@ class RelayDispatcher:
         self.stop_requested = True
 
     def dispatch(self, slot_id: str, context: dict[str, Any], abort_signal: dict[str, Any] | None = None) -> dict[str, Any]:
+        if not isinstance(slot_id, str) or not slot_id:
+            raise ValueError("Invalid slot_id")
+
         if "provider_id" in context:
             provider_id = context["provider_id"]
             if not isinstance(provider_id, str) or not provider_id:
                 raise ValueError("Invalid provider_id")
         else:
             provider_id = slot_id
+
+        if "session_id" in context:
+            session_id = context["session_id"]
+            if not isinstance(session_id, str) or not session_id:
+                raise ValueError("Invalid session_id")
+        else:
+            session_id = slot_id
+
+        if "correlation_id" in context:
+            correlation_id = context["correlation_id"]
+            if not isinstance(correlation_id, str) or not correlation_id:
+                raise ValueError("Invalid correlation_id")
 
         reservation_key = (provider_id, slot_id)
 
@@ -63,7 +78,7 @@ class RelayDispatcher:
             prepared = self.adapter.prepare({
                 **context,
                 "provider_id": provider_id,
-                "session_id": context.get("session_id", slot_id),
+                "session_id": session_id,
                 "timeout_seconds": timeout_seconds,
             })
             preflight_result = self.adapter.preflight(prepared)

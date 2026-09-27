@@ -387,12 +387,66 @@ class RelayDispatcherTests(unittest.TestCase):
         self.assertEqual(res_explicit["reason"], "SAME_REQUEST")
 
     def test_invalid_explicit_provider_id_rejected(self):
-        d = make()
+        adapter = RelayProviderAdapterBridge()
+        d = make(adapter)
         invalid_providers = [None, "", 123, False, [], {}]
         for provider_id in invalid_providers:
             with self.subTest(provider_id=provider_id):
                 with self.assertRaisesRegex(ValueError, "Invalid provider_id"):
                     d.dispatch("slot", {"provider_id": provider_id, "payload": {}})
+                self.assertEqual(adapter.dispatch_count, 0)
+                self.assertEqual(adapter.collect_count, 0)
+                self.assertEqual(len(d.guard.ledger), 0)
+
+    def test_invalid_slot_id_rejected(self):
+        adapter = RelayProviderAdapterBridge()
+        d = make(adapter)
+        invalid_slots = [None, "", 123, False, [], {}]
+        for slot_id in invalid_slots:
+            with self.subTest(slot_id=slot_id):
+                with self.assertRaisesRegex(ValueError, "Invalid slot_id"):
+                    d.dispatch(slot_id, {"payload": {}})
+                self.assertEqual(adapter.dispatch_count, 0)
+                self.assertEqual(adapter.collect_count, 0)
+                self.assertEqual(len(d.guard.ledger), 0)
+
+    def test_invalid_session_id_rejected(self):
+        adapter = RelayProviderAdapterBridge()
+        d = make(adapter)
+        invalid_sessions = [None, "", 123, False, [], {}]
+        for session_id in invalid_sessions:
+            with self.subTest(session_id=session_id):
+                with self.assertRaisesRegex(ValueError, "Invalid session_id"):
+                    d.dispatch("slot", {"session_id": session_id, "payload": {}})
+                self.assertEqual(adapter.dispatch_count, 0)
+                self.assertEqual(adapter.collect_count, 0)
+                self.assertEqual(len(d.guard.ledger), 0)
+
+    def test_invalid_correlation_id_rejected(self):
+        adapter = RelayProviderAdapterBridge()
+        d = make(adapter)
+        invalid_correlations = [None, "", 123, False, [], {}]
+        for correlation_id in invalid_correlations:
+            with self.subTest(correlation_id=correlation_id):
+                with self.assertRaisesRegex(ValueError, "Invalid correlation_id"):
+                    d.dispatch("slot", {"correlation_id": correlation_id, "payload": {}})
+                self.assertEqual(adapter.dispatch_count, 0)
+                self.assertEqual(adapter.collect_count, 0)
+                self.assertEqual(len(d.guard.ledger), 0)
+
+    def test_identity_fields_omitted_and_explicit_fallbacks(self):
+        adapter = StubAdapter()
+        d = make(adapter)
+
+        # Test omitted session_id fallback
+        d.dispatch("slot_omit", {"payload": {}})
+        self.assertEqual(adapter.prepared_context["session_id"], "slot_omit")
+        self.assertIsNone(adapter.prepared_context.get("correlation_id"))
+
+        # Test explicit session_id and correlation_id
+        d.dispatch("slot_explicit", {"session_id": "session-1", "correlation_id": "corr-1", "payload": {}})
+        self.assertEqual(adapter.prepared_context["session_id"], "session-1")
+        self.assertEqual(adapter.prepared_context["correlation_id"], "corr-1")
 
     def test_rejects_non_dict_payload(self):
         d = make()
