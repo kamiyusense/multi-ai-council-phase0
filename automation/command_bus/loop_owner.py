@@ -7,6 +7,7 @@ evidence, and target-head observations before asking for a projection.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from datetime import datetime
 from typing import Any, Iterable
 
@@ -15,6 +16,8 @@ from .validator import validate_state
 
 OWNER_ROLES = {"SEMI_AUTO", "AUTO"}
 EVENT_TYPES = {"ACQUIRE", "RENEW", "HANDOFF", "RELEASE", "TERMINAL"}
+_LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+_HEX40 = re.compile(r"^[0-9a-f]{40}$")
 
 
 @dataclass(frozen=True)
@@ -50,12 +53,14 @@ def validate_owner_event(event: dict[str, Any]) -> None:
     for key in ("event_id", "loop_id", "holder_id", "expected_repo", "command_id", "correlation_id", "source_receipt_id"):
         if not isinstance(event[key], str) or not event[key].strip():
             raise ValueError(f"{key} must be a non-empty string")
+    if not _LOOP_ID.fullmatch(event["loop_id"]):
+        raise ValueError("loop_id must be a safe durable path component")
     if event["owner_role"] not in OWNER_ROLES:
         raise ValueError("owner role must be SEMI_AUTO or AUTO")
     if not isinstance(event["expected_pr"], int) or event["expected_pr"] <= 0:
         raise ValueError("expected_pr must be a positive integer")
-    if not isinstance(event["expected_target_head"], str) or len(event["expected_target_head"]) != 40:
-        raise ValueError("expected_target_head must be a full commit SHA")
+    if not isinstance(event["expected_target_head"], str) or not _HEX40.fullmatch(event["expected_target_head"]):
+        raise ValueError("expected_target_head must be a full lowercase hexadecimal commit SHA")
     generation = event["generation"]
     if not isinstance(generation, int) or generation <= 0 or event["fencing_token"] != generation:
         raise ValueError("generation and fencing token must be matching positive integers")
