@@ -111,31 +111,6 @@ before a mutation lease can be issued.
 
 ## Bounded static validation scope
 
-### Durable Loop owner (static protocol; not yet wired to Runtime)
-
-`loop_owner_events/<loop_id>/<generation>.json` is the proposed append-only
-owner ledger. Each generation binds one SEMI_AUTO/AUTO holder to the exact
-repository, PR, target head, command, correlation, source receipt, and evidence
-references. `generation` is monotonic and is also the fencing token. A handoff
-must identify the prior holder; a release closes the chain; a terminal event
-also binds its terminal receipt. The event schema is
-`schema/loop_owner_event.schema.json`.
-
-`decide_owner` recovers from the complete ordered event sequence and requires
-the caller to provide independently read state, target, receipt, evidence refs,
-and current time. Missing or malformed inputs, duplicate/competing acquisition,
-generation gaps, expired lease, mismatched target/receipt/evidence, or
-non-active state return UNKNOWN/NONE. A released or terminal chain returns
-BLOCKED/NONE. Only a valid active chain can project SEMI_AUTO or AUTO. It does
-not infer ownership from PR activity or provider timestamps.
-
-This batch supplies deterministic validation/projection only. It does not yet
-include an authenticated GitHub writer, a durable owner acquisition workflow,
-or a caller from state transitions to the Issue status workflow. Therefore the
-production Issue remains fail-closed at NONE/STOPPED until those separately
-reviewed integration layers exist. Never store credentials, cookies, tokens,
-or takeover URLs in owner events or evidence.
-
 `STATIC_VALIDATE_COMMAND_BUS` separates immutable-ish implementation material
 from the append-only operational ledger.
 
@@ -157,3 +132,11 @@ unclassified blob area under `automation/command_bus/**` is not silently
 ignored: `validation_scope.py` classifies it as UNKNOWN and validation fails
 closed until the area is explicitly assigned to the static or ledger scope.
 
+
+### Durable Loop owner (static protocol; not yet wired to Runtime)
+
+`loop_owner_events/<loop_id>/<generation>.json` is the proposed append-only owner ledger. Each generation binds one SEMI_AUTO/AUTO holder to the exact repository, PR, target head, command, correlation, source receipt, and evidence references. `generation` is monotonic and is also the fencing token. A handoff must identify the prior holder; a release closes the chain; a terminal event also binds its terminal receipt. The event schema is `schema/loop_owner_event.schema.json`.
+
+`decide_owner` recovers from the complete ordered event sequence and requires the caller to provide independently read state, target, receipt, evidence refs, and current time. Missing or malformed inputs, duplicate/competing acquisition, generation gaps, expired lease, mismatched target/receipt/evidence, or non-active state return UNKNOWN/NONE. A released or terminal chain returns BLOCKED/NONE. Only a valid active chain can project SEMI_AUTO or AUTO. It does not infer ownership from PR activity or provider timestamps.
+
+This batch supplies deterministic validation/projection only. It does not yet include an authenticated GitHub writer, a durable owner acquisition workflow, or a caller from state transitions to the Issue status workflow. Therefore the production Issue remains fail-closed at NONE/STOPPED until those separately reviewed integration layers exist. Never store credentials, cookies, tokens, or takeover URLs in owner events or evidence.
