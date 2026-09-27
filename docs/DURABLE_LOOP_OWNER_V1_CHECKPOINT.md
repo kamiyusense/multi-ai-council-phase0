@@ -18,13 +18,18 @@
 - Missing/malformed/stale/expired/competing or mismatched evidence resolves to `UNKNOWN/NONE`; release or terminal resolves to `BLOCKED/NONE`. Provider observation must be verified, fresh, and bound to the same owner generation and target. Only a complete, active, receipt/evidence/provider-verified chain may project SEMI_AUTO or AUTO.
 - No PR activity, silence, or provider commit timestamp is used as an ownership signal.
 
-## Verification
+## Verification (2026-09-28)
 
-- Focused owner/status/scope tests: PASS (34 tests).
-- Full command-bus test suite: 328 PASS, 1 FAIL due to an existing time-sensitive Jules fixture (`test_prompt_binds_head_tree_and_allowlist`) dated 2026-09-26 and run on 2026-09-27. No unrelated fixture change was made.
-- Python compile check: PASS.
-- Owner schema JSON parse: PASS.
-- `git diff --check`: PASS.
+- Exact tested implementation head: `5033b399ae2e0d718d89a5296f80582e712b43ea`.
+- Focused owner/status/scope tests: PASS (41 tests).
+- Full command-bus suite: 336 total; 335 PASS, 1 known pre-existing failure.
+- The sole failure is `test_prompt_binds_head_tree_and_allowlist`: its main-branch fixture sets `NOW=2026-09-26` and a one-hour expiry. It fails when run on 2026-09-28 because the fixture is expired. PR #50 changes none of that Jules test/code; it is excluded from PR #50 failure attribution.
+- Python `compileall`: PASS.
+- Owner event schema JSON parse and valid event check: PASS. The standalone `jsonschema` package is not installed; validation used repository protocol validator and schema parse.
+- `git diff --check`: PASS (only line-ending conversion warnings for existing local text files).
+- Validation scope: `automation/command_bus/loop_owner_events/` explicitly classifies as LEDGER.
+- PR #50 at tested head: OPEN, mergeable; main and PR base both `bd28e9b4e7326e7d6a19ae09719b516611217551`; PR metadata reports 9 commits ahead and 0 behind.
+- Live provider/model execution: NONE. main write: NONE. Merge: NONE.
 
 ## Not yet integrated / safety boundary
 
