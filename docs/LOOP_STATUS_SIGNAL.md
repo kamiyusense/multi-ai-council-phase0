@@ -19,8 +19,58 @@ projects already-durable state.
 | 🔴 BLOCKED | Human review is required or an active state has no declared owner |
 | ⚫ STOPPED | The durable loop is halted, expired, or explicitly stopped |
 
+The Issue heading is rendered as `Runtime: <STATE>` so `STOPPED` cannot be
+mistaken for "Relay/Claude development has stopped." Development status is shown
+separately below it.
+
 The renderer maps existing command-bus states onto those five display states.
 Unknown/malformed state fails closed before the Issue is updated.
+
+For mobile/Issue-list visibility, the runtime workflow also mirrors the projected state
+into the Issue title (for example `🚦 Phase 0 Loop Status — ⚫ STOPPED`). The title and
+body are written/read back together; development-only refreshes do not change the title.
+
+
+## Development progress lane
+
+Runtime ownership and repository development activity are deliberately separated.
+
+The runtime section continues to show only durable loop state (`SEMI_AUTO`, `AUTO`,
+`IDLE`, `BLOCKED`, `STOPPED`). It must not infer runtime liveness from PR timestamps,
+commit activity, Chat silence, or a recently updated Jules/Claude-related branch.
+
+A separate managed section shows GitHub readback for the two current development lanes:
+
+- Relay: PR #4
+- Claude Loop: PR #25
+
+That section reports only PR state, mergeability, commit count, head SHA, update time,
+and main SHA. A compact visual signal is derived only from those GitHub fields:
+
+- 🟢 OPEN — PR is open and GitHub reports mergeable.
+- 🟡 CHECK — PR is open and GitHub reports not mergeable.
+- ⚪ UNKNOWN — PR mergeability is not yet resolved.
+- ✅ MERGED — PR is merged.
+- ⚫ CLOSED — PR is closed without the merged flag.
+
+These signals do **not** prove current Jules/Claude/model execution. The development
+section creates no comments or @mentions and does not start a provider/model.
+
+`.github/workflows/loop-status-development.yml` refreshes this section on PR #4/#25
+open/synchronize/reopen/close events, on explicit manual dispatch, and on the
+status implementation's own deployment push to `main`. The deployment push makes
+the development section appear immediately after merge without a separate user action.
+It uses
+`pull_request_target` only as a metadata wake-up: executable code is checked out from
+trusted `main`, never from the pull-request head.
+
+The runtime and development workflows share the same concurrency group so Issue #33
+writes are serialized. Both perform a pre-write readback and refuse to overwrite the
+Issue if its body changed after their rendering base was fetched.
+
+When this enhancement is deployed on `main`, the development section explicitly shows
+that its auto-refresh is enabled. Before merge, a manual preview may be shown in Issue #33,
+but that preview is not evidence that the automatic workflow is already deployed.
 
 ## Notification policy
 
@@ -36,6 +86,10 @@ A terminal notification requires a durable event identity. The renderer uses an 
 event id when supplied, otherwise `last_receipt_id`, then `last_command_id`.
 Without an identity the Issue body may still show BLOCKED, but no notification comment
 is emitted.
+
+Terminal notification comments also include the durable Loop id, round, owner,
+runtime state, command-bus state, and provider summary so the user can identify
+what needs attention without opening implementation logs first.
 
 Every notification comment includes a hidden marker:
 
@@ -89,8 +143,11 @@ It does not:
 
 ## Deployment state
 
-The implementation is intentionally carried on a non-default branch/PR first.
-Until that PR is explicitly merged by the user, Issue #33 remains a manually-created
-display placeholder and the automatic synchronizer is not active on `main`.
+The original status synchronizer was merged through PR #34 and is deployed on `main`.
+Issue #33 therefore remains the canonical human-facing signal surface, while durable
+command-bus state/receipts remain the correctness source of truth.
+
+The development-lane enhancement is prepared separately on a non-default branch/PR and
+must not be treated as deployed until that follow-up PR is explicitly merged by the user.
 
 Repository pinning is optional presentation only. It is not required for correctness.
