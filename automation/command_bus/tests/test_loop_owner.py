@@ -193,6 +193,14 @@ class LoopOwnerTests(unittest.TestCase):
             with self.subTest(field=field, value=value):
                 self.assertEqual(decision([bad], evidence=set(bad.get("evidence_refs", []))).status, "UNKNOWN")
 
+    def test_evidence_ref_count_is_bounded(self):
+        event = first_event()
+        event["evidence_refs"] = [
+            f"automation/command_bus/evidence/loop-015/evidence-{index:02d}.json"
+            for index in range(33)
+        ]
+        self.assertEqual(decision([event], evidence=set(event["evidence_refs"])).status, "UNKNOWN")
+
     def test_expired_future_target_and_receipt_are_rejected(self):
         event = first_event()
         expired = copy.deepcopy(event)
