@@ -18,6 +18,13 @@ OWNER_ROLES = {"SEMI_AUTO", "AUTO"}
 EVENT_TYPES = {"ACQUIRE", "RENEW", "HANDOFF", "RELEASE", "TERMINAL"}
 _LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
+_OWNER_EVENT_KEYS = {
+    "schema_version", "event_id", "event_type", "loop_id", "owner_role",
+    "holder_id", "generation", "fencing_token", "previous_generation",
+    "claimed_at", "expires_at", "expected_repo", "expected_pr",
+    "expected_target_head", "command_id", "correlation_id", "source_receipt_id",
+    "evidence_refs", "previous_owner_role", "previous_holder_id", "terminal_receipt_id",
+}
 
 
 @dataclass(frozen=True)
@@ -46,9 +53,9 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         "expected_target_head", "command_id", "correlation_id", "source_receipt_id",
         "evidence_refs",
     }
-    if not isinstance(event, dict) or not required.issubset(event):
+    if not isinstance(event, dict) or not required.issubset(event) or not set(event).issubset(_OWNER_EVENT_KEYS):
         raise ValueError("owner event is malformed or incomplete")
-    if event["schema_version"] != 1 or event["event_type"] not in EVENT_TYPES:
+    if isinstance(event["schema_version"], bool) or event["schema_version"] != 1 or event["event_type"] not in EVENT_TYPES:
         raise ValueError("unsupported owner event schema or type")
     for key in ("event_id", "loop_id", "holder_id", "expected_repo", "command_id", "correlation_id", "source_receipt_id"):
         if not isinstance(event[key], str) or not event[key].strip():
@@ -57,15 +64,15 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         raise ValueError("loop_id must be a safe durable path component")
     if event["owner_role"] not in OWNER_ROLES:
         raise ValueError("owner role must be SEMI_AUTO or AUTO")
-    if not isinstance(event["expected_pr"], int) or event["expected_pr"] <= 0:
+    if isinstance(event["expected_pr"], bool) or not isinstance(event["expected_pr"], int) or event["expected_pr"] <= 0:
         raise ValueError("expected_pr must be a positive integer")
     if not isinstance(event["expected_target_head"], str) or not _HEX40.fullmatch(event["expected_target_head"]):
         raise ValueError("expected_target_head must be a full lowercase hexadecimal commit SHA")
     generation = event["generation"]
-    if not isinstance(generation, int) or generation <= 0 or event["fencing_token"] != generation:
+    if isinstance(generation, bool) or not isinstance(generation, int) or generation <= 0 or isinstance(event["fencing_token"], bool) or event["fencing_token"] != generation:
         raise ValueError("generation and fencing token must be matching positive integers")
     previous = event["previous_generation"]
-    if previous is not None and (not isinstance(previous, int) or previous < 1):
+    if previous is not None and (isinstance(previous, bool) or not isinstance(previous, int) or previous < 1):
         raise ValueError("previous_generation must be null or positive")
     claimed, expires = _time(event["claimed_at"]), _time(event["expires_at"])
     if expires <= claimed:
@@ -111,14 +118,19 @@ def decide_owner(
                 for key in ("loop_id", "expected_repo", "expected_pr", "expected_target_head", "command_id", "correlation_id"):
                     if event[key] != previous[key]:
                         raise ValueError(f"owner chain binding changed: {key}")
+                if event["source_receipt_id"] != previous["source_receipt_id"] or event["evidence_refs"] != previous["evidence_refs"]:
+                    raise ValueError("owner chain receipt/evidence binding changed")
                 if previous["event_type"] in {"RELEASE", "TERMINAL"}:
                     raise ValueError("owner chain continued after release or terminal")
                 if event["event_type"] == "ACQUIRE":
                     raise ValueError("competing or duplicate active acquisition")
                 if event["event_type"] == "RENEW" and (event["owner_role"], event["holder_id"]) != (previous["owner_role"], previous["holder_id"]):
                     raise ValueError("renewal changed owner without handoff")
-                if event["event_type"] == "HANDOFF" and (event.get("previous_owner_role"), event.get("previous_holder_id")) != (previous["owner_role"], previous["holder_id"]):
-                    raise ValueError("handoff does not fence the previous owner")
+                if event["event_type"] == "HANDOFF":
+                    if (event.get("previous_owner_role"), event.get("previous_holder_id")) != (previous["owner_role"], previous["holder_id"]):
+                        raise ValueError("handoff does not fence the previous owner")
+                    if (event["owner_role"], event["holder_id"]) == (previous["owner_role"], previous["holder_id"]):
+                        raise ValueError("handoff must transfer to a different owner")
             elif event["event_type"] != "ACQUIRE":
                 raise ValueError("owner chain must start with ACQUIRE")
             if not set(event["evidence_refs"]).issubset(evidence_refs):
