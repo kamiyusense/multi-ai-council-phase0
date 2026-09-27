@@ -54,6 +54,19 @@ class LoopStatusDevelopmentTests(unittest.TestCase):
         self.assertIn("#25", text)
         self.assertIn("今この瞬間に実行中だという証明には使いません", text)
         self.assertIn("PR更新だけを理由に SEMI_AUTO / AUTO を推測しません", text)
+        self.assertIn("🟢 OPEN", text)
+
+    def test_lane_signal_is_caution_when_open_but_not_mergeable(self):
+        changed = snapshot()
+        changed["lanes"][0]["mergeable"] = False
+        text = render_development_section(changed)
+        self.assertIn("🟡 CHECK", text)
+
+    def test_lane_signal_is_unknown_when_mergeability_unknown(self):
+        changed = snapshot()
+        changed["lanes"][0]["mergeable"] = None
+        text = render_development_section(changed)
+        self.assertIn("⚪ UNKNOWN", text)
 
     def test_append_development_block_preserves_runtime(self):
         runtime = managed_block(RUNTIME_START, RUNTIME_END, "# 🟢 SEMI_AUTO")
