@@ -71,6 +71,9 @@ class LoopOwnerTests(unittest.TestCase):
         bad = copy.deepcopy(events)
         bad[0]["source_receipt_ref"] = "automation/command_bus/evidence/loop-015/000001.json"
         self.assertEqual(self.decide(events=bad).status, "UNKNOWN")
+        bad = copy.deepcopy(events)
+        bad[0]["source_receipt_ref"] = "automation/command_bus/execution_receipts/loop-015/000001.json"
+        self.assertEqual(self.decide(events=bad).status, "UNKNOWN")
 
     def test_expired_stale_generation_target_and_receipt_are_rejected(self):
         events, receipt, target, _ = records()
