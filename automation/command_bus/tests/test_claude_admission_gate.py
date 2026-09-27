@@ -438,6 +438,8 @@ class AdmissionGateTests(unittest.TestCase):
         mutations = [
             lambda m: m["services"]["auth-bootstrap"].update(profiles=["default"]),
             lambda m: m["services"]["auth-bootstrap"].update(image="user-image:latest"),
+            lambda m: m["services"]["auth-bootstrap"].update(entrypoint=["sh", "-c"]),
+            lambda m: m["services"]["auth-bootstrap"].update(command=["-p", "do work"]),
             lambda m: m["services"]["auth-bootstrap"].update(networks=["internal", "egress"]),
             lambda m: m["services"]["auth-bootstrap"].update(volumes=["claude-auth:/home/node/.claude", ".:/workspace"]),
             lambda m: m["services"]["auth-bootstrap"]["environment"].update(CLAUDE_CODE_OAUTH_TOKEN="fake-only"),

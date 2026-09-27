@@ -661,7 +661,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "named_volume_mounted_at_fixed_state": gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"],
         "auth_volume_declared_separately": manifest.get("volumes") == {"gate-state": {}, "claude-auth": {}},
         "auth_and_runtime_share_only_fixed_auth_volume": claude.get("volumes") == [auth_volume] and auth.get("volumes") == [auth_volume],
-        "auth_bootstrap_is_human_gated_non_runnable": auth.get("profiles") == ["human-auth-bootstrap"] and auth.get("entrypoint") == ["/bin/false"],
+        "auth_bootstrap_is_human_gated_login_only": auth.get("profiles") == ["human-auth-bootstrap"] and auth.get("entrypoint") == ["claude"] and auth.get("command") == ["auth", "login"],
         "runtime_is_human_gated_non_runnable": claude.get("profiles") == ["human-approval-required"] and claude.get("entrypoint") == ["/bin/false"],
         "images_remain_unbuilt_placeholders": claude.get("image") == auth.get("image") == "phase0-claude-runtime:UNBUILT" and gate.get("image") == "phase0-claude-gate:UNBUILT",
         "fixed_nonroot_identity": claude.get("user") == auth.get("user") == "1000:1000",

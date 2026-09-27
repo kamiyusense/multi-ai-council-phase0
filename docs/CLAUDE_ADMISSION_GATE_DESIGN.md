@@ -233,19 +233,21 @@ not start a Claude reviewer process, so it is unchanged. Any future Claude
 reviewer/planner process within that backend must use this same Admission Gate,
 dispatch metadata, one-generation budget, local gate URL, and egress isolation.
 
-## Static subscription-auth container contract (not runnable)
+## Static subscription-auth container contract (not executed)
 
 The Compose manifest now distinguishes `auth-bootstrap` from runtime `claude`.
-Both are deliberately left with the placeholder image and `/bin/false` entrypoint;
-this repository does not run Docker, invoke `claude`, or perform an interactive
-login. The bootstrap service is assigned only the `human-auth-bootstrap` Compose
-profile, only the egress network, no workspace mount, no Gate state, and the
-separate named volume `claude-auth:/home/node/.claude`. Runtime Claude sees the
-same dedicated volume but only the `internal` network and `ANTHROPIC_BASE_URL`
-for the local Gate. Gate state remains on a different volume and the Gate never
-mounts `claude-auth`. The validator rejects credential environment injection,
-unexpected mounts, profile/network changes, volume sharing, and unpinned config
-directory changes. It does not inspect volume contents or prove authentication.
+The image remains a placeholder and is not built or started by this repository.
+The bootstrap service has the explicit `human-auth-bootstrap` profile and the
+login-only command `claude auth login`; it is not part of the default Compose
+profile. Explicitly targeting this service would perform an interactive login,
+so doing so remains outside this static-only change. It receives only the egress
+network, no workspace mount, no Gate state, and the separate named volume
+`claude-auth:/home/node/.claude`. Runtime Claude sees that same dedicated volume
+but only the `internal` network and `ANTHROPIC_BASE_URL` for the local Gate. Gate
+state remains on a different volume and the Gate never mounts `claude-auth`. The
+validator rejects credential environment injection, unexpected mounts,
+profile/network/command changes, volume sharing, and unpinned config directory
+changes. It does not inspect volume contents or prove authentication.
 
 Anthropic's dev-container documentation says that authentication and settings
 are under `~/.claude`, while OAuth account and project trust also use
@@ -255,6 +257,14 @@ under the dedicated volume. Accordingly, both services use
 bootstrap profile is a human-only future boundary; this static change does not
 grant permission to start it or to handle real credentials. A real project
 workspace is not mounted in either service in this contract.
+
+Anthropic's current CLI reference documents `claude auth login` as the sign-in
+command; `--console` selects Console API billing, so the static command
+deliberately omits that switch. Its dev-container guide documents browser sign-in and, if the callback
+cannot return to the container, pasting the displayed one-time code into the
+terminal. This repository neither starts that command nor reads, extracts,
+prints, copies, or tests any credential. A named volume's existence is not
+evidence that a human completed login.
 
 The manifest records only currently documented client controls: retry count
 zero, one maximum turn, no saved prompt history/session persistence,
@@ -288,7 +298,9 @@ this implementation. They informed the design boundaries only:
 | [`100yenadmin/hermes-claude-agent-sdk`](https://github.com/100yenadmin/hermes-claude-agent-sdk/tree/e611437f7a97a67eacee95c3fb7ff0f2f3fe6d5f) — `e611437f7a97a67eacee95c3fb7ff0f2f3fe6d5f` | MIT | `docs/ownership-recovery/native_recovery_probe.py`: local endpoint classification | None; no probe code copied |
 | [`NousResearch/hermes-agent`](https://github.com/NousResearch/hermes-agent/tree/eafb4186a4e8be7ac0ca94d69b10c57e0154aee8) — `eafb4186a4e8be7ac0ca94d69b10c57e0154aee8` | MIT | `evals/directsdk_cache_wire.py`: fake Messages/SSE peer | None; no fixture code copied |
 
-The [Anthropic gateway guide](https://code.claude.com/docs/en/llm-gateway),
+The [Anthropic CLI reference](https://code.claude.com/docs/en/cli-reference),
+[dev-container guide](https://code.claude.com/docs/en/devcontainer),
+[gateway guide](https://code.claude.com/docs/en/llm-gateway),
 [gateway protocol](https://code.claude.com/docs/en/llm-gateway-protocol), and
 [environment-variable reference](https://code.claude.com/docs/en/env-vars) are
 behavioral documentation, not source-code inputs. They document the Messages

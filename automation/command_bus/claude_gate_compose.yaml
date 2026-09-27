@@ -34,7 +34,8 @@
     "auth-bootstrap": {
       "image": "phase0-claude-runtime:UNBUILT",
       "profiles": ["human-auth-bootstrap"],
-      "entrypoint": ["/bin/false"],
+      "entrypoint": ["claude"],
+      "command": ["auth", "login"],
       "privileged": false,
       "ports": [],
       "networks": ["egress"],
