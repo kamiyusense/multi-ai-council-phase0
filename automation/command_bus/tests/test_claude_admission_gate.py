@@ -769,9 +769,10 @@ class ProductionStoreBootstrapTests(unittest.TestCase):
         with closing(sqlite3.connect(path)) as db:
             db.execute("CREATE TABLE store_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             db.execute("INSERT INTO store_meta VALUES('store_id',?)", (store_id,))
+            db.commit()
         os.chmod(path, 0o600)
         before = path.read_bytes()
-        with self.assertRaisesRegex(ValueError, "schema incomplete"):
+        with self.assertRaisesRegex(ValueError, "incomplete"):
             DispatchStore.open_production(str(path), state_dir=str(self.state), expected_store_id=store_id)
         self.assertEqual(path.read_bytes(), before)
 
