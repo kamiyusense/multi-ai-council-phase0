@@ -60,7 +60,7 @@ jobs:
           api_get "pulls/25" "${RUNNER_TEMP}/claude-pr.json"
           api_get "branches/main" "${RUNNER_TEMP}/main-branch.json"
 
-          jq -r '.body // ""' "${RUNNER_TEMP}/issue-base.json" > "${RUNNER_TEMP}/issue-base-body.md"
+          jq -j '.body // ""' "${RUNNER_TEMP}/issue-base.json" > "${RUNNER_TEMP}/issue-base-body.md"
 
           jq -n \
             --slurpfile relay "${RUNNER_TEMP}/relay-pr.json" \
