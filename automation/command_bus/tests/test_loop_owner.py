@@ -25,7 +25,7 @@ def records():
     }
     receipt = {"receipt_id": "receipt-owner-1", "loop_id": "loop-015", "command_id": "cmd-015", "correlation_id": "corr-015", "state": "DONE", "executed_once": True, "retry_count": 0, "fallback_used": False, "evidence_refs": ["evidence-owner-1"]}
     target = {"repo": event["expected_repo"], "pr": 4, "head": HEAD}
-    observation = {"verified": True, "loop_id": "loop-015", "owner_role": "SEMI_AUTO", "holder_id": "controller-1", "generation": 1, "fencing_token": 1, "expected_repo": event["expected_repo"], "expected_pr": 4, "expected_target_head": HEAD, "state": "RUNNING", "evidence_ref": "evidence-owner-1", "observed_at": "2026-09-27T09:30:00+00:00", "expires_at": "2026-09-27T10:30:00+00:00"}
+    observation = {"schema_version": 1, "observation_id": "provider-observation-1", "verified": True, "loop_id": "loop-015", "owner_role": "SEMI_AUTO", "holder_id": "controller-1", "generation": 1, "fencing_token": 1, "expected_repo": event["expected_repo"], "expected_pr": 4, "expected_target_head": HEAD, "state": "RUNNING", "evidence_ref": "evidence-owner-1", "observed_at": "2026-09-27T09:30:00+00:00", "expires_at": "2026-09-27T10:30:00+00:00"}
     return [event], receipt, target, observation
 
 
