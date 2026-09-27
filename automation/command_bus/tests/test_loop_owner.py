@@ -285,7 +285,9 @@ class LoopOwnerTests(unittest.TestCase):
         released = next_event(first, event_type="RELEASE")
         result = decision([first, released])
         self.assertEqual((result.status, result.owner), ("BLOCKED", "NONE"))
-        self.assertIn("released", result.reason)
+        self.assertIn("release", result.reason)
+        blocked_release = {**receipt_for(released), "state": "BLOCKED"}
+        self.assertEqual(decision([first, released], receipt=blocked_release).status, "UNKNOWN")
 
         terminal = next_event(first, event_type="TERMINAL")
         result = decision([first, terminal])
