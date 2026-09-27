@@ -68,6 +68,10 @@ The runtime and development workflows share the same concurrency group so Issue 
 writes are serialized. Both perform a pre-write readback and refuse to overwrite the
 Issue if its body changed after their rendering base was fetched.
 
+When this enhancement is deployed on `main`, the development section explicitly shows
+that its auto-refresh is enabled. Before merge, a manual preview may be shown in Issue #33,
+but that preview is not evidence that the automatic workflow is already deployed.
+
 ## Notification policy
 
 Normal RUNNING, heartbeat, and status-refresh operations update the Issue body only.
