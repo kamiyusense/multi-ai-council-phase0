@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from src.phase0_core.adapter import CoreProviderAdapter
-from src.relay.envelope import validate_timeout
+from src.relay.envelope import validate_timeout, validate_payload
 
 
 class RelayProviderAdapterBridge(CoreProviderAdapter):
@@ -24,13 +24,32 @@ class RelayProviderAdapterBridge(CoreProviderAdapter):
         self.abort_calls: list[tuple[str, str]] = []
 
     def prepare(self, case_context: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(case_context, dict):
+            raise TypeError("case_context must be a dictionary")
+
+        for field in ("provider_id", "session_id", "correlation_id"):
+            if field in case_context:
+                val = case_context[field]
+                if not isinstance(val, str) or not val:
+                    raise ValueError(f"Explicit {field} must be a non-empty string")
+
         validate_timeout(case_context.get("timeout_seconds"))
-        return {"case_id": case_context.get("case_id"),
-                "provider_id": case_context.get("provider_id"),
-                "session_id": case_context.get("session_id"),
-                "correlation_id": case_context.get("correlation_id"),
-                "timeout_seconds": case_context.get("timeout_seconds"),
-                "payload": deepcopy(case_context.get("payload", {}))}
+        payload = case_context.get("payload", {})
+        validate_payload(payload)
+
+        prepared = {
+            "case_id": case_context.get("case_id"),
+            "provider_id": case_context.get("provider_id"),
+            "session_id": case_context.get("session_id"),
+            "correlation_id": case_context.get("correlation_id"),
+            "timeout_seconds": case_context.get("timeout_seconds"),
+            "payload": deepcopy(payload),
+        }
+
+        if "packet_sha256" in case_context:
+            prepared["packet_sha256"] = case_context["packet_sha256"]
+
+        return prepared
 
     def preflight(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
         if self.simulate_no_cli:

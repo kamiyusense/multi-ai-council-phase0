@@ -90,6 +90,58 @@ class RelayIntegrationTests(unittest.TestCase):
         self.assertEqual(prepared_int["payload"], {"k": "v"})
         self.assertEqual(prepared_int["correlation_id"], "c2")
 
+    def test_bridge_prepare_validation_gap(self):
+        adapter = RelayProviderAdapterBridge()
+
+        # Reject non-dict case_context
+        for bad_context in [None, [], "not_a_dict"]:
+            with self.subTest(context=bad_context):
+                with self.assertRaises(TypeError):
+                    adapter.prepare(bad_context)
+
+        # Reject forbidden or non-dict payloads
+        for bad_payload in [{"model": "gpt-4"}, "not_a_dict", []]:
+            with self.subTest(payload=bad_payload):
+                with self.assertRaises(ValueError):
+                    adapter.prepare({"payload": bad_payload})
+
+        # Reject invalid explicit provider/session/correlation IDs
+        for field in ("provider_id", "session_id", "correlation_id"):
+            for bad_id in [None, "", 123, []]:
+                with self.subTest(field=field, bad_id=bad_id):
+                    with self.assertRaises(ValueError):
+                        adapter.prepare({field: bad_id, "payload": {}})
+
+        # Ensure omitted optional IDs are still accepted (resulting in None)
+        prepared_empty = adapter.prepare({"payload": {}})
+        self.assertIsNone(prepared_empty.get("provider_id"))
+        self.assertIsNone(prepared_empty.get("session_id"))
+        self.assertIsNone(prepared_empty.get("correlation_id"))
+
+        # Ensure valid explicit IDs are preserved
+        prepared_ids = adapter.prepare({
+            "provider_id": "p1",
+            "session_id": "s1",
+            "correlation_id": "c1",
+            "payload": {}
+        })
+        self.assertEqual(prepared_ids["provider_id"], "p1")
+        self.assertEqual(prepared_ids["session_id"], "s1")
+        self.assertEqual(prepared_ids["correlation_id"], "c1")
+
+        # Ensure packet_sha256 is preserved unchanged when supplied
+        prepared_hash = adapter.prepare({
+            "packet_sha256": "abcdef123456",
+            "payload": {}
+        })
+        self.assertEqual(prepared_hash["packet_sha256"], "abcdef123456")
+
+        # Verify caller payload remains deep-copied
+        caller_payload = {"messages": [{"role": "user"}]}
+        prepared_copy = adapter.prepare({"payload": caller_payload})
+        caller_payload["messages"].append({"role": "assistant"})
+        self.assertNotEqual(prepared_copy["payload"], caller_payload)
+
     def test_prepared_payload_snapshot(self):
         caller_payload = {"messages": [{"role": "user", "content": "hi"}]}
         adapter = RelayProviderAdapterBridge()
