@@ -109,6 +109,7 @@ def render_development_section(snapshot: dict[str, Any]) -> str:
         + "\n\n"
         f"- main: `{main_sha[:12]}`\n"
         "- Runtime ownership/livenessは上のRuntime信号だけを正本として扱います。\n"
+        "- Development lane auto-refresh: **ENABLED on deployed main** (PR #4/#25 metadata + status deployment push).\n"
         "- PR更新だけを理由に SEMI_AUTO / AUTO を推測しません。\n"
         "- この欄の更新ではIssueコメントや@mention通知を作成しません。\n"
     )
