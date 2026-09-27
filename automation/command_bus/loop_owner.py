@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any, Iterable
 
 from .loop_status_issue import StatusProjection, project_state
+from .loop_owner_observation import validate_provider_observation
 from .validator import validate_state
 
 OWNER_ROLES = {"SEMI_AUTO", "AUTO"}
@@ -164,6 +165,7 @@ def decide_owner(
         if set(receipt.get("evidence_refs", [])) != set(previous["evidence_refs"]):
             raise ValueError("receipt evidence differs from owner event")
         observation = provider_observation
+        validate_provider_observation(observation)
         if observation.get("verified") is not True or observation.get("loop_id") != previous["loop_id"] or observation.get("owner_role") != previous["owner_role"] or observation.get("holder_id") != previous["holder_id"]:
             raise ValueError("provider observation is unverified or bound to another owner")
         if observation.get("generation") != previous["generation"] or observation.get("fencing_token") != previous["fencing_token"]:
