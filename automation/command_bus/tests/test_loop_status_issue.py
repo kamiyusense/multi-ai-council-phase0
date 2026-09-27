@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from automation.command_bus.loop_status_issue import (
     DEVELOPMENT_END,
@@ -37,6 +38,13 @@ def state(**changes):
 
 
 class LoopStatusIssueTests(unittest.TestCase):
+    def test_runtime_workflow_fails_closed_without_durable_owner_source(self):
+        workflow = Path(__file__).parents[3] / ".github/workflows/loop-status-signal.yml"
+        text = workflow.read_text(encoding="utf-8")
+        self.assertIn('--owner "NONE"', text)
+        self.assertNotIn("OWNER: ${{ inputs.owner }}", text)
+        self.assertNotIn("      owner:\n", text)
+
     def test_running_semiauto_projects_semiauto_without_notification(self):
         raw = state()
         projection = project_state(raw, owner="SEMI_AUTO", provider_state="Jules IN_PROGRESS")
