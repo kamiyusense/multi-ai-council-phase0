@@ -164,14 +164,12 @@ def decide_owner(
     """Validate a complete ordered chain and its independently read evidence."""
     try:
         validate_state(state)
-        if target is None or receipt is None or evidence_refs is None or provider_observation is None:
-            raise ValueError("target, receipt, evidence, or provider observation readback is missing")
+        if target is None or receipt is None or evidence_refs is None:
+            raise ValueError("target, receipt, or evidence readback is missing")
         chain = validate_owner_chain(events)
         previous = chain[-1]
         if not set(previous["evidence_refs"]).issubset(evidence_refs):
             raise ValueError("latest owner evidence is absent from verified evidence")
-        if previous["event_type"] in {"RELEASE", "TERMINAL"}:
-            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], "owner was released or loop is terminal")
         if previous["loop_id"] != state["loop_id"]:
             raise ValueError("loop_id mismatch")
         if state.get("last_command_id") != previous["command_id"]:
@@ -187,6 +185,10 @@ def decide_owner(
             raise ValueError("receipt is not a confirmed single execution")
         if set(receipt.get("evidence_refs", [])) != set(previous["evidence_refs"]):
             raise ValueError("receipt evidence differs from owner event")
+        if previous["event_type"] in {"RELEASE", "TERMINAL"}:
+            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], "verified owner release or terminal event")
+        if provider_observation is None:
+            raise ValueError("provider observation readback is missing for active owner")
         observation = provider_observation
         validate_provider_observation(observation)
         if observation.get("verified") is not True or observation.get("loop_id") != previous["loop_id"] or observation.get("owner_role") != previous["owner_role"] or observation.get("holder_id") != previous["holder_id"]:
