@@ -3,6 +3,11 @@ from __future__ import annotations
 import unittest
 
 from automation.command_bus.loop_status_issue import (
+    DEVELOPMENT_END,
+    DEVELOPMENT_START,
+    RUNTIME_END,
+    RUNTIME_START,
+    managed_block,
     notification_for_state,
     project_state,
     render_issue_body,
@@ -111,6 +116,43 @@ class LoopStatusIssueTests(unittest.TestCase):
         self.assertIn("display surface only", body)
         self.assertIn("SEMI_AUTO", body)
         self.assertIn("Loop: `loop-015`", body)
+
+    def test_render_body_uses_runtime_markers(self):
+        projection = project_state(state(), owner="SEMI_AUTO")
+        body = render_issue_body(projection)
+        self.assertEqual(body.count(RUNTIME_START), 1)
+        self.assertEqual(body.count(RUNTIME_END), 1)
+
+    def test_runtime_refresh_preserves_development_block(self):
+        development = managed_block(
+            DEVELOPMENT_START,
+            DEVELOPMENT_END,
+            "## 🛠 Development progress\n\n- Relay: OPEN",
+        )
+        existing = managed_block(RUNTIME_START, RUNTIME_END, "# ⚫ STOPPED") + "\n\n" + development + "\n"
+        projection = project_state(state(), owner="SEMI_AUTO")
+        body = render_issue_body(projection, existing_body=existing)
+        self.assertIn("# 🟢 SEMI_AUTO", body)
+        self.assertIn(development, body)
+        self.assertEqual(body.count(DEVELOPMENT_START), 1)
+
+    def test_legacy_runtime_migration_preserves_existing_development_block(self):
+        development = managed_block(
+            DEVELOPMENT_START,
+            DEVELOPMENT_END,
+            "## 🛠 Development progress\n\n- Relay: OPEN",
+        )
+        existing = "# ⚫ STOPPED\n\nlegacy runtime body\n\n" + development + "\n"
+        projection = project_state(state(), owner="SEMI_AUTO")
+        body = render_issue_body(projection, existing_body=existing)
+        self.assertNotIn("legacy runtime body", body)
+        self.assertIn(development, body)
+        self.assertEqual(body.count(RUNTIME_START), 1)
+
+    def test_partial_runtime_marker_fails_closed(self):
+        projection = project_state(state(), owner="SEMI_AUTO")
+        with self.assertRaisesRegex(ValueError, "markers"):
+            render_issue_body(projection, existing_body=RUNTIME_START + "\npartial")
 
     def test_invalid_owner_is_rejected(self):
         with self.assertRaises(ValueError):
