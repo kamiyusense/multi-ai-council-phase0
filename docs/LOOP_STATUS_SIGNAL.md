@@ -57,7 +57,10 @@ These signals do **not** prove current Jules/Claude/model execution. The develop
 section creates no comments or @mentions and does not start a provider/model.
 
 `.github/workflows/loop-status-development.yml` refreshes this section on PR #4/#25
-open/synchronize/reopen/close events and on explicit manual dispatch. It uses
+open/synchronize/reopen/close events, on explicit manual dispatch, and on the
+status implementation's own deployment push to `main`. The deployment push makes
+the development section appear immediately after merge without a separate user action.
+It uses
 `pull_request_target` only as a metadata wake-up: executable code is checked out from
 trusted `main`, never from the pull-request head.
 
