@@ -755,7 +755,7 @@ def validate_container_artifacts() -> dict:
     gate_copy_lines = [line for line in gate_dockerfile.splitlines() if line.startswith("COPY ")]
     checks = {
         "all_required_artifacts_exist": all(path.is_file() for path in paths.values()),
-        "claude_base_image_digest_pinned": "FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0" in claude_dockerfile,
+        "claude_base_image_digest_pinned": "FROM node:22-bookworm-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c" in claude_dockerfile,
         "claude_code_exact_version_pinned": "npm install --global @anthropic-ai/claude-code@2.1.283" in claude_dockerfile and "@anthropic-ai/claude-code@latest" not in claude_dockerfile,
         "claude_runs_nonroot": "USER node" in claude_dockerfile and claude_dockerfile.rstrip().endswith('ENTRYPOINT ["node", "/opt/phase0/claude_runtime_launcher.mjs"]'),
         "gate_base_image_digest_pinned": "FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254" in gate_dockerfile,
