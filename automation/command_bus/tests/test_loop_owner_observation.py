@@ -73,6 +73,12 @@ class ProviderObservationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_provider_observation(item)
 
+    def test_evidence_ref_must_belong_to_observation_loop(self):
+        item = observation()
+        item["evidence_ref"] = "automation/command_bus/evidence/other-loop/owner-1.json"
+        with self.assertRaises(ValueError):
+            validate_provider_observation(item)
+
     def test_expiry_must_follow_observed_at(self):
         item = observation()
         item["expires_at"] = item["observed_at"]
