@@ -67,6 +67,8 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         raise ValueError("loop_id must be a safe durable path component")
     if not _RECEIPT_REF.fullmatch(event["source_receipt_ref"]):
         raise ValueError("source_receipt_ref must be a safe durable receipt path")
+    if not event["source_receipt_ref"].startswith(f"automation/command_bus/receipts/{event['loop_id']}/"):
+        raise ValueError("source_receipt_ref must belong to the owner loop")
     if event["owner_role"] not in OWNER_ROLES:
         raise ValueError("owner role must be SEMI_AUTO or AUTO")
     if isinstance(event["expected_pr"], bool) or not isinstance(event["expected_pr"], int) or event["expected_pr"] <= 0:
@@ -86,6 +88,8 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         raise ValueError("owner event requires non-empty evidence references")
     for item in event["evidence_refs"]:
         validate_evidence_ref(item)
+        if not item.startswith(f"automation/command_bus/evidence/{event['loop_id']}/"):
+            raise ValueError("evidence ref must belong to the owner loop")
     if event["event_type"] == "HANDOFF":
         if event.get("previous_owner_role") not in OWNER_ROLES or not event.get("previous_holder_id"):
             raise ValueError("handoff must bind the previous owner")
