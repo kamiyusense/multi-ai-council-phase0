@@ -66,3 +66,7 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - Provider failure does not discard successful peer evidence or enable fallback.
 - STOP blocks new dispatch, and cancel/timeout abort is scoped to its provider/session.
 - Package-free repository-root verification: 25 tests PASS; compileall and diff check PASS
+
+## Static/Mock Core Integration Checkpoint
+- Static/mock round-trip integration using RelayCoreAdapter duck typing is PASS.
+- Note: Independent Chat validation is required before acceptance.

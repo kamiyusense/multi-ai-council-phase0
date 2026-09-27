@@ -11,13 +11,17 @@ class RelayProviderAdapterBridge:
 
     def __init__(self, *, simulate_timeout=False, simulate_failure=False,
                  simulate_malformed=False, simulate_unknown=False,
-                 simulate_no_cli=False, simulate_error_in_collect=False):
+                 simulate_no_cli=False, simulate_error_in_collect=False,
+                 mock_raw_response=None):
+        if mock_raw_response is not None and not isinstance(mock_raw_response, str):
+            raise TypeError("mock_raw_response must be a string")
         self.simulate_timeout = simulate_timeout
         self.simulate_failure = simulate_failure
         self.simulate_malformed = simulate_malformed
         self.simulate_unknown = simulate_unknown
         self.simulate_no_cli = simulate_no_cli
         self.simulate_error_in_collect = simulate_error_in_collect
+        self.mock_raw_response = mock_raw_response
         self.dispatch_count = 0
         self.collect_count = 0
         self.abort_calls: list[tuple[str, str]] = []
@@ -77,7 +81,9 @@ class RelayProviderAdapterBridge:
             return {"stdout": "malformed", "rawResponse": "{}", "correlation_id": process_handle.get("correlation_id")}
         if self.simulate_unknown:
             return {"stdout": "unknown", "rawResponse": None, "correlation_id": process_handle.get("correlation_id")}
-        return {"stdout": "mock", "rawResponse": '{"answer_state":"ANSWER"}', "correlation_id": process_handle.get("correlation_id")}
+
+        raw_response = self.mock_raw_response if self.mock_raw_response is not None else '{"answer_state":"ANSWER"}'
+        return {"stdout": "mock", "rawResponse": raw_response, "correlation_id": process_handle.get("correlation_id")}
 
     def abort(self, process_handle: dict[str, Any]) -> dict[str, bool]:
         self.abort_calls.append(

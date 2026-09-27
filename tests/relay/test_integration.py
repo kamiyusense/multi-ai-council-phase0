@@ -197,6 +197,86 @@ class RelayIntegrationTests(unittest.TestCase):
         self.assertEqual(result_a["raw_evidence"]["correlation_id"], "corr-a")
         self.assertEqual(result_b["raw_evidence"]["correlation_id"], "corr-b")
 
+    def test_core_adapter_duck_typing_complete(self):
+        with open("fixtures/relay/valid_provider_response.json", "rb") as f:
+            fixture_bytes = f.read()
+
+        for provider in ("openai", "anthropic", "google"):
+            bridge = RelayProviderAdapterBridge(mock_raw_response=fixture_bytes.decode("utf-8"))
+            # Duck typing RelayCoreAdapter as the bridge for RelayDispatcher
+            adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter(provider, bridge)
+
+            dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+            result = dispatcher.dispatch(
+                provider, {"payload": {"q": "test"}}
+            )
+
+            self.assertEqual(result["state"], "SIMULATED")
+            self.assertEqual(result["provider_state"]["participation_state"], "PARTICIPANT")
+            self.assertTrue(result["provider_state"]["success"])
+            self.assertEqual(result["raw_evidence"], fixture_bytes)
+            self.assertEqual(bridge.dispatch_count, 1)
+            self.assertEqual(bridge.collect_count, 1)
+            self.assertEqual(result["retry_count"], 0)
+            self.assertEqual(result["fallback_state"], "disabled")
+            self.assertFalse(result["live_turn_executed"])
+            self.assertEqual(len(bridge.abort_calls), 0)
+
+    def test_core_adapter_duck_typing_incomplete(self):
+        with open("fixtures/relay/invalid_provider_response_missing_field.json", "rb") as f:
+            fixture_bytes = f.read()
+
+        bridge = RelayProviderAdapterBridge(mock_raw_response=fixture_bytes.decode("utf-8"))
+        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge)
+
+        dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+        result = dispatcher.dispatch(
+            "openai", {"payload": {"q": "test"}}
+        )
+
+        self.assertEqual(result["state"], "UNKNOWN")
+        self.assertFalse(result["provider_state"]["success"])
+        self.assertEqual(result["raw_evidence"], fixture_bytes)
+
+    def test_core_adapter_duck_typing_timeout(self):
+        bridge = RelayProviderAdapterBridge(simulate_timeout=True)
+        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge)
+
+        dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+        result = dispatcher.dispatch(
+            "openai", {"payload": {"q": "test"}, "session_id": "session-1"}
+        )
+
+        self.assertEqual(result["state"], "TIMEOUT")
+        self.assertEqual(len(bridge.abort_calls), 1)
+
+    def test_core_adapter_duck_typing_duplicate(self):
+        with open("fixtures/relay/valid_provider_response.json", "rb") as f:
+            fixture_bytes = f.read()
+        bridge = RelayProviderAdapterBridge(mock_raw_response=fixture_bytes.decode("utf-8"))
+        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge)
+
+        dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+
+        # First dispatch
+        result1 = dispatcher.dispatch(
+            "slot-same", {"provider_id": "openai", "payload": {"q": "test"}}
+        )
+        self.assertEqual(result1["state"], "SIMULATED")
+        self.assertEqual(bridge.dispatch_count, 1)
+        self.assertEqual(bridge.collect_count, 1)
+
+        # Duplicate dispatch
+        result2 = dispatcher.dispatch(
+            "slot-same", {"provider_id": "openai", "payload": {"q": "test"}}
+        )
+        self.assertEqual(result2["state"], "BLOCKED")
+        self.assertEqual(result2["reason"], "SAME_REQUEST")
+
+        # Ensure no second dispatch/collect
+        self.assertEqual(bridge.dispatch_count, 1)
+        self.assertEqual(bridge.collect_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
