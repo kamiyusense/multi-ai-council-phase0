@@ -1,174 +1,262 @@
+import json
+import tempfile
 import unittest
-from src.relay.acp_client import ACPClient
-from src.relay.lifecycle import RelayLifecycle
-from src.relay.envelope import DispatchEnvelope, DispatchSlot
-from src.relay.duplicate_guard import DuplicateGuard
+
+from providers.policy import ProviderPolicy
+from relay.acp_client import ACPClient
+from relay.duplicate_guard import DuplicateGuard
+from relay.envelope import DispatchEnvelope, DispatchSlot
+from relay.lifecycle import RelayLifecycle
+
+
+def make_policy(provider_id: str = "test") -> ProviderPolicy:
+    return ProviderPolicy(
+        provider_id=provider_id,
+        external_agent="test-agent",
+        pinned_version="1.0.0",
+        required_auth_kind="account",
+    )
+
 
 class TestACPClient(unittest.TestCase):
     def setUp(self):
-        self.client = ACPClient()
+        self.client = ACPClient(policy=make_policy())
 
     def test_initialize_success(self):
         result = self.client.initialize("test")
-        self.assertEqual(result, {"live_process_started": False})
+        self.assertEqual(
+            result,
+            {
+                "protocol_version": 1,
+                "provider_id": "test",
+                "mode": "acp_mock",
+                "live_process_started": False,
+            },
+        )
 
-    def test_initialize_unsupported(self):
-        client = ACPClient(init_fixture_path="fixtures/relay/acp_initialize_unsupported.json")
-        with self.assertRaises(ValueError):
+    def test_initialize_requires_policy(self):
+        with self.assertRaisesRegex(ValueError, "ProviderPolicy is required"):
+            ACPClient().initialize("test")
+
+    def test_initialize_rejects_provider_policy_mismatch(self):
+        with self.assertRaisesRegex(ValueError, "provider_id does not match ProviderPolicy"):
+            self.client.initialize("other")
+
+    def test_initialize_rejects_non_account_auth(self):
+        client = ACPClient(
+            init_fixture_path="fixtures/relay/acp_initialize_unsupported.json",
+            policy=make_policy(),
+        )
+        with self.assertRaisesRegex(ValueError, "unsupported auth kind"):
             client.initialize("test")
 
+    def test_initialize_rejects_wrong_protocol_and_bad_capability(self):
+        for payload, message in (
+            (
+                {
+                    "protocol_version": 2,
+                    "live_process_started": False,
+                    "auth": {"kind": "account"},
+                    "capabilities": {},
+                },
+                "Protocol version must be 1",
+            ),
+            (
+                {
+                    "protocol_version": 1,
+                    "live_process_started": False,
+                    "auth": {"kind": "account"},
+                    "capabilities": {"terminal": []},
+                },
+                "Unsupported capability shape",
+            ),
+        ):
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as f:
+                json.dump(payload, f)
+                f.flush()
+                client = ACPClient(init_fixture_path=f.name, policy=make_policy())
+                with self.assertRaisesRegex(ValueError, message):
+                    client.initialize("test")
+
+    def test_initialize_rejects_live_process_claim(self):
+        payload = {
+            "protocol_version": 1,
+            "live_process_started": True,
+            "auth": {"kind": "account"},
+            "capabilities": {},
+        }
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as f:
+            json.dump(payload, f)
+            f.flush()
+            client = ACPClient(init_fixture_path=f.name, policy=make_policy())
+            with self.assertRaisesRegex(ValueError, "live_process_started must be false"):
+                client.initialize("test")
+
     def test_deterministic_session_ids(self):
-        s1 = self.client.open_session("prov1", cwd="/")
-        s2 = self.client.open_session("prov1", cwd="/")
-        self.assertEqual(s1, "acp-mock:prov1:1")
-        self.assertEqual(s2, "acp-mock:prov1:2")
+        s1 = self.client.open_session("test", cwd="/")
+        s2 = self.client.open_session("test", cwd="/")
+        self.assertEqual(s1, "acp-mock:test:1")
+        self.assertEqual(s2, "acp-mock:test:2")
 
     def test_exact_raw_terminal_bytes(self):
-        s1 = self.client.open_session("p", cwd="/")
+        s1 = self.client.open_session("test", cwd="/")
         self.client.configured_responses[s1] = b"raw_bytes"
-        result = self.client.prompt("p", s1, {})
-        self.assertEqual(result, b"raw_bytes")
+        self.assertEqual(self.client.prompt("test", s1, {}), b"raw_bytes")
 
-    def test_missing_terminal(self):
-        s1 = self.client.open_session("p", cwd="/")
-        with self.assertRaises(ValueError):
-            self.client.prompt("p", s1, {})
+    def test_missing_or_malformed_terminal_fails_closed(self):
+        s1 = self.client.open_session("test", cwd="/")
+        with self.assertRaisesRegex(ValueError, "Terminal response"):
+            self.client.prompt("test", s1, {})
 
-    def test_malformed_terminal(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.configured_responses[s1] = "string" # type: ignore
-        with self.assertRaises(ValueError):
-            self.client.prompt("p", s1, {})
+        malformed_values = [None, "text", 1, ["x"], {"x": 1}]
+        for value in malformed_values:
+            client = ACPClient(policy=make_policy())
+            sid = client.open_session("test", cwd="/")
+            client.configured_responses[sid] = value  # type: ignore[assignment]
+            with self.assertRaisesRegex(ValueError, "Terminal response"):
+                client.prompt("test", sid, {})
 
-    def test_timeout_error_raising(self):
-        s1 = self.client.open_session("p", cwd="/")
+    def test_timeout_and_error_raise(self):
+        s1 = self.client.open_session("test", cwd="/")
         with self.assertRaises(TimeoutError):
-            self.client.prompt("p", s1, {"timeout": True})
+            self.client.prompt("test", s1, {"timeout": True})
 
-        s2 = self.client.open_session("p", cwd="/")
+        s2 = self.client.open_session("test", cwd="/")
         with self.assertRaises(RuntimeError):
-            self.client.prompt("p", s2, {"error": True})
+            self.client.prompt("test", s2, {"error": True})
 
-    def test_evidence_deepcopy(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.configured_responses[s1] = b"ok"
-        update = {"k": "v"}
+    def test_evidence_is_separate_and_deepcopied(self):
+        s1 = self.client.open_session("test", cwd="/")
+        terminal = b'{"answer":"raw"}'
+        update = {"event": "start", "data": {"k": "v"}}
+        self.client.configured_responses[s1] = terminal
         self.client.configured_updates[s1] = [update]
-        self.client.prompt("p", s1, {})
 
+        returned = self.client.prompt("test", s1, {})
+        self.assertEqual(returned, terminal)
+        self.assertEqual(self.client.get_evidence(s1), [update])
+
+        update["data"]["k"] = "changed"
         evidence = self.client.get_evidence(s1)
-        self.assertEqual(evidence, [{"k": "v"}])
-        update["k"] = "v2"
-        self.assertEqual(evidence, [{"k": "v"}]) # Original unchanged
+        self.assertEqual(evidence[0]["data"]["k"], "v")
+        evidence[0]["data"]["k"] = "local-change"
+        self.assertEqual(self.client.get_evidence(s1)[0]["data"]["k"], "v")
 
-    def test_malformed_update_rejection(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.configured_updates[s1] = ["not_a_dict"] # type: ignore
-        with self.assertRaises(ValueError):
-            self.client.prompt("p", s1, {})
-
-    def test_safety_callbacks(self):
-        self.assertFalse(self.client.permission_callback({"a": 1}))
-        self.assertEqual(self.client.permission_calls, [{"a": 1}])
-
-        self.assertFalse(self.client.file_read_callback({"b": 1}))
-        self.assertEqual(self.client.file_read_calls, [{"b": 1}])
-
-        self.assertFalse(self.client.file_write_callback({"c": 1}))
-        self.assertEqual(self.client.file_write_calls, [{"c": 1}])
-
-        self.assertFalse(self.client.terminal_request_callback({"d": 1}))
-        self.assertEqual(self.client.terminal_request_calls, [{"d": 1}])
-
-        self.assertFalse(self.client.elicitation_callback({"e": 1}))
-        self.assertEqual(self.client.elicitation_calls, [{"e": 1}])
-
-        self.assertFalse(self.client.unknown_extension_callback({"f": 1}))
-        self.assertEqual(self.client.unknown_extension_calls, [{"f": 1}])
-
-    def test_wrong_provider(self):
-        s1 = self.client.open_session("p1", cwd="/")
-        with self.assertRaises(ValueError):
-            self.client.prompt("p2", s1, {})
-
-    def test_second_prompt(self):
-        s1 = self.client.open_session("p", cwd="/")
+    def test_malformed_update_rejected_before_success(self):
+        s1 = self.client.open_session("test", cwd="/")
         self.client.configured_responses[s1] = b"ok"
-        self.client.prompt("p", s1, {})
-        with self.assertRaises(ValueError):
-            self.client.prompt("p", s1, {})
+        self.client.configured_updates[s1] = ["not-a-dict"]  # type: ignore[list-item]
+        with self.assertRaisesRegex(ValueError, "Malformed update"):
+            self.client.prompt("test", s1, {})
 
-    def test_prompt_after_cancel(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.cancel("p", s1)
-        with self.assertRaises(ValueError):
-            self.client.prompt("p", s1, {})
+    def test_each_safety_callback_denies_and_snapshots(self):
+        cases = (
+            ("permission_callback", "permission_calls"),
+            ("file_read_callback", "file_read_calls"),
+            ("file_write_callback", "file_write_calls"),
+            ("terminal_request_callback", "terminal_request_calls"),
+            ("elicitation_callback", "elicitation_calls"),
+            ("unknown_extension_callback", "unknown_extension_calls"),
+        )
+        for method_name, storage_name in cases:
+            req = {"nested": {"v": 1}}
+            self.assertFalse(getattr(self.client, method_name)(req))
+            req["nested"]["v"] = 2
+            self.assertEqual(getattr(self.client, storage_name)[0]["nested"]["v"], 1)
 
-    def test_prompt_after_close(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.close("p", s1)
-        with self.assertRaises(ValueError):
-            self.client.prompt("p", s1, {})
+    def test_wrong_provider_and_terminal_states(self):
+        s1 = self.client.open_session("test", cwd="/")
+        with self.assertRaisesRegex(ValueError, "Wrong provider"):
+            self.client.prompt("other", s1, {})
 
-    def test_second_cancel(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.cancel("p", s1)
-        with self.assertRaises(ValueError):
-            self.client.cancel("p", s1)
+        self.client.cancel("test", s1)
+        with self.assertRaisesRegex(ValueError, "Session is not open"):
+            self.client.prompt("test", s1, {})
+        with self.assertRaisesRegex(ValueError, "already closed/cancelled"):
+            self.client.cancel("test", s1)
 
-    def test_second_close(self):
-        s1 = self.client.open_session("p", cwd="/")
-        self.client.close("p", s1)
-        with self.assertRaises(ValueError):
-            self.client.close("p", s1)
+        self.client.close("test", s1)
+        with self.assertRaisesRegex(ValueError, "Session is not open"):
+            self.client.prompt("test", s1, {})
+        with self.assertRaisesRegex(ValueError, "Session already closed"):
+            self.client.close("test", s1)
 
-class DummyGuard(DuplicateGuard):
+    def test_second_prompt_rejected(self):
+        s1 = self.client.open_session("test", cwd="/")
+        self.client.configured_responses[s1] = b"ok"
+        self.client.prompt("test", s1, {})
+        with self.assertRaisesRegex(ValueError, "Session already prompted"):
+            self.client.prompt("test", s1, {})
+
+
+class RecordingACPClient(ACPClient):
     def __init__(self):
-        self.reserved = set()
-    def reserve(self, envelope: DispatchEnvelope):
-        from src.relay.duplicate_guard import DuplicateDecision
-        if envelope.correlation_id in self.reserved:
-            return DuplicateDecision.SAME_REQUEST
-        self.reserved.add(envelope.correlation_id)
-        return DuplicateDecision.RESERVED
+        super().__init__(policy=make_policy())
+        self.cancel_calls: list[tuple[str, str]] = []
+        self.close_calls: list[tuple[str, str]] = []
 
-class TestIntegration(unittest.TestCase):
-    def test_integration(self):
-        class WrappedClient(ACPClient):
-            def __init__(self):
-                super().__init__()
-                self.cancelled_calls = []
-                self.closed_calls = []
-            def cancel(self, p, s):
-                self.cancelled_calls.append((p, s))
-                super().cancel(p, s)
-            def close(self, p, s):
-                self.closed_calls.append((p, s))
-                super().close(p, s)
+    def cancel(self, provider_id: str, session_id: str) -> None:
+        self.cancel_calls.append((provider_id, session_id))
+        super().cancel(provider_id, session_id)
 
-        client = WrappedClient()
-        lifecycle = RelayLifecycle(client, DummyGuard())
+    def close(self, provider_id: str, session_id: str) -> None:
+        self.close_calls.append((provider_id, session_id))
+        super().close(provider_id, session_id)
 
-        # Test stop before dispatch
+
+class TestRelayLifecycleIntegration(unittest.TestCase):
+    @staticmethod
+    def envelope(payload: dict, sequence: int = 0) -> DispatchEnvelope:
+        return DispatchEnvelope.build(
+            slot=DispatchSlot("case", "test", sequence),
+            correlation_id=f"corr-{sequence}",
+            payload=payload,
+        )
+
+    def test_timeout_after_session_cancels_once_and_closes_once(self):
+        client = RecordingACPClient()
+        lifecycle = RelayLifecycle(client, DuplicateGuard())
+        result = lifecycle.dispatch_mock(self.envelope({"timeout": True}), cwd="/")
+        self.assertEqual(result.state.name, "TIMEOUT")
+        self.assertIsNotNone(result.session_id)
+        self.assertEqual(client.cancel_calls, [("test", result.session_id)])
+        self.assertEqual(client.close_calls, [("test", result.session_id)])
+
+    def test_error_after_session_cancels_once_and_closes_once(self):
+        client = RecordingACPClient()
+        lifecycle = RelayLifecycle(client, DuplicateGuard())
+        result = lifecycle.dispatch_mock(self.envelope({"error": True}), cwd="/")
+        self.assertEqual(result.state.name, "UNKNOWN")
+        self.assertIsNotNone(result.session_id)
+        self.assertEqual(client.cancel_calls, [("test", result.session_id)])
+        self.assertEqual(client.close_calls, [("test", result.session_id)])
+
+    def test_stop_before_dispatch_creates_no_session(self):
+        client = RecordingACPClient()
+        lifecycle = RelayLifecycle(client, DuplicateGuard())
         lifecycle.request_stop()
-        env1 = DispatchEnvelope(slot=DispatchSlot("case1", "p1", 1), correlation_id="c1", payload={"timeout": True}, packet_sha256="sha")
-        res1 = lifecycle.dispatch_mock(env1, cwd="/")
-        self.assertEqual(res1.state.name, "BLOCKED")
-        self.assertEqual(len(client._sessions), 0)
+        result = lifecycle.dispatch_mock(self.envelope({}), cwd="/")
+        self.assertEqual(result.state.name, "BLOCKED")
+        self.assertEqual(client._session_count, 0)
 
-        # New lifecycle for other tests
-        lifecycle = RelayLifecycle(client, DummyGuard())
+    def test_duplicate_same_envelope_creates_no_second_session_or_prompt(self):
+        client = RecordingACPClient()
+        lifecycle = RelayLifecycle(client, DuplicateGuard())
+        env = self.envelope({})
+        client.configured_responses["acp-mock:test:1"] = b"ok"
 
-        # Test timeout -> 1 cancel, 1 close
-        env2 = DispatchEnvelope(slot=DispatchSlot("case2", "p2", 1), correlation_id="c2", payload={"timeout": True}, packet_sha256="sha2")
-        res2 = lifecycle.dispatch_mock(env2, cwd="/")
-        self.assertEqual(res2.state.name, "TIMEOUT")
-        s2 = res2.session_id
-        self.assertIsNotNone(s2)
-        self.assertEqual(client.cancelled_calls.count(("p2", s2)), 1)
-        self.assertEqual(client.closed_calls.count(("p2", s2)), 1)
+        first = lifecycle.dispatch_mock(env, cwd="/")
+        self.assertEqual(first.state.name, "SIMULATED")
+        self.assertEqual(client._session_count, 1)
+        prompted_before = sum(1 for item in client._sessions.values() if item["prompted"])
+        self.assertEqual(prompted_before, 1)
 
-        # Test duplicate -> no second prompt
-        env3 = DispatchEnvelope(slot=DispatchSlot("case2", "p2", 1), correlation_id="c2", payload={"timeout": True}, packet_sha256="sha2")
-        res3 = lifecycle.dispatch_mock(env3, cwd="/")
-        self.assertEqual(res3.state.name, "BLOCKED")
+        second = lifecycle.dispatch_mock(env, cwd="/")
+        self.assertEqual(second.state.name, "BLOCKED")
+        self.assertEqual(client._session_count, 1)
+        prompted_after = sum(1 for item in client._sessions.values() if item["prompted"])
+        self.assertEqual(prompted_after, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()
