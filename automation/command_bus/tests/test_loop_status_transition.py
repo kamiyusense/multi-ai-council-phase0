@@ -4,7 +4,7 @@ import copy
 import unittest
 
 from automation.command_bus.loop_status_transition import project_durable_transition
-from automation.command_bus.tests.test_loop_owner import EVIDENCE, NOW, records
+from automation.command_bus.tests.test_loop_owner import EVIDENCE, NOW, next_event, receipt_for, records, target_for
 from automation.command_bus.tests.test_loop_status_issue import state
 
 
@@ -52,6 +52,14 @@ class LoopStatusTransitionTests(unittest.TestCase):
         self.assertEqual((result.status, result.projection), ("UNKNOWN", None))
         self.assertIn("receipt locator", result.reason)
 
+    def test_active_owner_requires_provider_observation(self):
+        values = inputs()
+        values["provider_observation_ref"] = None
+        values["provider_observation"] = None
+        result = project_durable_transition(**values)
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertIn("provider observation", result.reason)
+
     def test_provider_observation_locator_mismatch_fails_before_projection(self):
         values = inputs()
         values["provider_observation_ref"] = "automation/command_bus/loop_owner_observations/loop-015/000002.json"
@@ -81,12 +89,68 @@ class LoopStatusTransitionTests(unittest.TestCase):
         self.assertEqual((result.status, result.projection.display_state), ("BLOCKED", "BLOCKED"))
         self.assertEqual(result.projection.owner, "NONE")
 
-    def test_complete_state_projects_idle_not_active_owner(self):
+    def test_complete_state_without_owner_close_fails_closed(self):
         values = inputs()
-        values["state"] = state(state="COMPLETE", last_command_id=values["owner_events"][-1]["command_id"], last_receipt_id=values["owner_events"][-1]["source_receipt_id"], expected_target=values["target"])
+        values["state"] = state(
+            state="COMPLETE",
+            last_command_id=values["owner_events"][-1]["command_id"],
+            last_receipt_id=values["owner_events"][-1]["source_receipt_id"],
+            expected_target=values["target"],
+        )
+        result = project_durable_transition(**values)
+        self.assertEqual((result.status, result.projection.display_state), ("BLOCKED", "BLOCKED"))
+        self.assertEqual(result.projection.owner, "NONE")
+
+    def test_verified_terminal_event_projects_idle_without_provider_observation(self):
+        values = inputs()
+        first = values["owner_events"][0]
+        terminal = next_event(first, event_type="TERMINAL")
+        receipt = receipt_for(terminal)
+        target = target_for(terminal)
+        evidence_ref = terminal["evidence_refs"][0]
+        values.update(
+            owner_events=[first, terminal],
+            state=state(
+                state="COMPLETE",
+                last_command_id=terminal["command_id"],
+                last_receipt_id=terminal["source_receipt_id"],
+                expected_target=target,
+            ),
+            receipt_ref=terminal["source_receipt_ref"],
+            receipt=receipt,
+            target=target,
+            evidence_readbacks={evidence_ref: {"schema_version": 1, "kind": "terminal-evidence"}},
+            provider_observation_ref=None,
+            provider_observation=None,
+        )
         result = project_durable_transition(**values)
         self.assertEqual((result.status, result.projection.display_state), ("TERMINAL", "IDLE"))
         self.assertEqual(result.projection.owner, "NONE")
+
+    def test_close_event_with_active_state_is_blocked(self):
+        values = inputs()
+        first = values["owner_events"][0]
+        released = next_event(first, event_type="RELEASE")
+        receipt = receipt_for(released)
+        target = target_for(released)
+        evidence_ref = released["evidence_refs"][0]
+        values.update(
+            owner_events=[first, released],
+            state=state(
+                state="RUNNING",
+                last_command_id=released["command_id"],
+                last_receipt_id=released["source_receipt_id"],
+                expected_target=target,
+            ),
+            receipt_ref=released["source_receipt_ref"],
+            receipt=receipt,
+            target=target,
+            evidence_readbacks={evidence_ref: {"schema_version": 1, "kind": "release-evidence"}},
+            provider_observation_ref=None,
+            provider_observation=None,
+        )
+        result = project_durable_transition(**values)
+        self.assertEqual((result.status, result.projection.display_state), ("BLOCKED", "BLOCKED"))
 
     def test_requested_loop_mismatch_is_unknown(self):
         values = inputs()
