@@ -20,8 +20,8 @@
 
 ## Verification
 
-- Focused owner/status/scope tests: PASS (33 tests).
-- Full command-bus test suite: 327 PASS, 1 FAIL due to an existing time-sensitive Jules fixture (`test_prompt_binds_head_tree_and_allowlist`) dated 2026-09-26 and run on 2026-09-27. No unrelated fixture change was made.
+- Focused owner/status/scope tests: PASS (34 tests).
+- Full command-bus test suite: 328 PASS, 1 FAIL due to an existing time-sensitive Jules fixture (`test_prompt_binds_head_tree_and_allowlist`) dated 2026-09-26 and run on 2026-09-27. No unrelated fixture change was made.
 - Python compile check: PASS.
 - Owner schema JSON parse: PASS.
 - `git diff --check`: PASS.
