@@ -28,26 +28,30 @@ Unknown/malformed state fails closed before the Issue is updated.
 
 ### Runtime owner wiring status
 
-**BLOCKED / NOT YET WIRED:** the current loop state schema has no durable
-`SEMI_AUTO` / `AUTO` owner field or loop-level owner lease. Executor and reviewer
-claims identify a bounded executor/reviewer for a request; they do not establish
-the owner of the whole runtime loop. The status workflow therefore supplies
-`owner=NONE` internally. An active loop state projects to `BLOCKED`; a caller
-cannot choose an owner through manual dispatch or reusable workflow inputs.
+The durable owner protocol is now the only authoritative path for active
+`SEMI_AUTO` / `AUTO` projection. The workflow does not accept owner,
+provider state, or notification event identity from caller inputs.
 
-The workflow may display `SEMI_AUTO` or `AUTO` only after a future durable owner
-record defines a unique holder, role, generation/fencing token, expiry, and loop
-identity, and the projection validates that record against the current state,
-target head, receipt, and provider evidence. Missing, stale, expired, competing,
-or mismatched ownership must remain `UNKNOWN`/`BLOCKED`. PR activity and provider
-commit timestamps are not ownership evidence.
+For a requested loop and explicit data ref, the trusted workflow code from
+`main` reads and validates:
 
-No durable transition currently invokes the status workflow automatically.
-`workflow_call` is the prepared adapter boundary; a caller must first persist and
-read back the state and required evidence, then call it with the state ref and
-durable event id. Until the owner record and transition caller exist, runtime
-automation is **NOT YET WIRED** and the Issue remains `STOPPED` when no active
-durable loop is being projected.
+- `state/<loop_id>.json`;
+- the complete bounded `loop_owner_events/<loop_id>/` chain;
+- the latest generation's exact source receipt path;
+- every exact durable evidence path required by that generation;
+- the canonical provider observation for active ownership;
+- the current target PR head from the GitHub PR API.
+
+The fetch plan is derived only after owner-chain validation. The state
+`last_command_id` and `last_receipt_id` must bind the latest generation.
+The target repository must equal the repository running the workflow. Active
+ownership requires a fresh observation bound to the same
+generation/fencing/target. Verified RELEASE/TERMINAL generations close the
+owner without requiring an active provider observation.
+
+Malformed, missing, stale, conflicting, cross-loop, or mismatched readbacks
+fail before Issue mutation. PR activity, Chat silence, commit timestamps, and
+caller-supplied display strings are never ownership evidence.
 
 For mobile/Issue-list visibility, the runtime workflow also mirrors the projected state
 into the Issue title (for example `🚦 Phase 0 Loop Status — ⚫ STOPPED`). The title and
@@ -133,14 +137,15 @@ The workflow uses one global status concurrency group with `queue: max` because 
 loop projects onto the same Issue. Status mutations are serialized without replacing
 older pending terminal notifications.
 
-The requested state file is fetched as data from:
+The requested `state_ref` is a data ref only. Workflow code is checked out
+from trusted `main` with persisted checkout credentials disabled. State,
+owner events, receipt, evidence, and provider observation are fetched through
+GitHub Contents readback from that explicit ref. The current target PR head is
+read separately from the Pull Request API.
 
-`automation/command_bus/state/<loop_id>.json`
-
-The workflow code itself is checked out from trusted `main`, not from the requested state
-ref. The requested state ref is fetched strictly as data. The renderer also requires the
-durable state's `loop_id` to match the requested loop id. This prevents an arbitrary state
-branch from supplying executable status code or projecting a different loop identity.
+The owner chain is bounded to 100 generations per refresh and each generation
+to at most 32 evidence refs. Exact locators are validated before they are used.
+The workflow performs no repository-wide search for receipt or evidence files.
 
 All GitHub REST calls use `curl --retry 0`. Issue body writes and notification comments
 receive an independent readback. Ambiguous writes are not resent inside the workflow.
@@ -150,6 +155,7 @@ receive an independent readback. Ambiguous writes are not resent inside the work
 Workflow permissions are limited to:
 
 - `contents: read`
+- `pull-requests: read`
 - `issues: write`
 
 It does not request Secrets, Actions write, pull-request write, repository administration,
@@ -170,8 +176,10 @@ The original status synchronizer was merged through PR #34 and is deployed on `m
 The development-lane enhancement was merged through PR #46 and is also deployed on
 `main`. Issue #33 therefore shows Runtime and Development as separate managed sections.
 
-Durable command-bus state/receipts remain the correctness source of truth. Runtime
-owner automation is still **BLOCKED / NOT YET WIRED** until a validated durable loop-owner
-record and transition caller are implemented.
+Durable command-bus state/receipts/owner events/evidence remain the correctness
+source of truth. The transition caller is implemented in the current development
+line, but no runtime owner or provider-observation record is created by the
+Status workflow itself. AUTO takeover remains a separate, disabled control-plane
+capability.
 
 Repository pinning is optional presentation only. It is not required for correctness.

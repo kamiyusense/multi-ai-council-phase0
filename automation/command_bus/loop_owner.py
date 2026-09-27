@@ -86,6 +86,8 @@ def validate_owner_event(event: dict[str, Any]) -> None:
         raise ValueError("owner lease must expire after it is claimed")
     if not isinstance(event["evidence_refs"], list) or not event["evidence_refs"]:
         raise ValueError("owner event requires non-empty evidence references")
+    if len(event["evidence_refs"]) > 32:
+        raise ValueError("owner event evidence references exceed bounded maximum")
     if len(event["evidence_refs"]) != len(set(event["evidence_refs"])):
         raise ValueError("owner event evidence references must be unique")
     for item in event["evidence_refs"]:
