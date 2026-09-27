@@ -184,9 +184,12 @@ def decide_owner(
             raise ValueError("receipt does not bind this owner generation")
         if set(receipt.get("evidence_refs", [])) != set(previous["evidence_refs"]):
             raise ValueError("receipt evidence differs from owner event")
-        if previous["event_type"] in {"RELEASE", "TERMINAL"}:
-            kind = previous["event_type"].lower()
-            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], f"verified owner {kind} event")
+        if previous["event_type"] == "RELEASE":
+            if receipt.get("state") != "DONE":
+                raise ValueError("owner RELEASE receipt must be DONE")
+            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], "verified owner release event")
+        if previous["event_type"] == "TERMINAL":
+            return OwnerDecision("BLOCKED", "NONE", previous["generation"], previous["fencing_token"], "verified owner terminal event")
         if receipt.get("state") != "DONE":
             raise ValueError("active owner receipt must be DONE")
         if provider_observation is None:
