@@ -164,7 +164,8 @@ def _render_runtime_content(projection: StatusProjection) -> str:
         "STOPPED": "⚫",
     }[projection.display_state]
     return (
-        f"# {icon} {projection.display_state}\n\n"
+        f"# {icon} Runtime: {projection.display_state}\n\n"
+        "この色は **Runtime Loop の状態**です。下の開発進捗とは別です。\n"
         "This Issue is a **display surface only**. The durable command-bus "
         "state/receipts remain the source of truth.\n\n"
         f"- Loop: `{projection.loop_id}`\n"
@@ -238,7 +239,18 @@ def notification_for_state(
         return None
 
     marker = f"loop-status-receipt:{kind}:{resolved}"
-    body = f"{title}\n\n{message}\n\n@{mention}\n\n<!-- {marker} -->\n"
+    details = (
+        f"- Loop: \`{projection.loop_id}\`\n"
+        f"- Round: \`{projection.round}/{projection.max_rounds}\`\n"
+        f"- Owner: \`{projection.owner}\`\n"
+        f"- Runtime state: \`{projection.display_state}\`\n"
+        f"- Command-bus state: \`{projection.source_state}\`\n"
+        f"- Provider: \`{projection.provider_state}\`\n"
+    )
+    body = (
+        f"{title}\n\n{message}\n\n{details}\n"
+        f"@{mention}\n\n<!-- {marker} -->\n"
+    )
     return Notification(kind=kind, event_id=resolved, marker=marker, body=body)
 
 
