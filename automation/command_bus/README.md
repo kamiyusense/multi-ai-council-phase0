@@ -133,12 +133,38 @@ ignored: `validation_scope.py` classifies it as UNKNOWN and validation fails
 closed until the area is explicitly assigned to the static or ledger scope.
 
 
-### Durable Loop owner (static protocol; not yet wired to Runtime)
+### Durable Loop owner and Status transition
 
-`loop_owner_events/<loop_id>/<generation>.json` is the proposed append-only owner ledger. Each generation binds one SEMI_AUTO/AUTO holder to the exact repository, PR, target head, command, correlation, source receipt, and evidence references. `generation` is monotonic and is also the fencing token. A handoff must identify the prior holder; a release closes the chain; a terminal event also binds its terminal receipt. The event schema is `schema/loop_owner_event.schema.json`.
+`loop_owner_events/<loop_id>/<generation>.json` is the append-only owner ledger.
+`generation` is monotonic and is also the fencing token. The chain keeps only
+`loop_id`, target repository, and target PR fixed. Each generation has its own
+target head, command/correlation identity, lease window, source receipt, and
+evidence so RENEW/HANDOFF can follow an advanced target head without reusing
+older proof.
 
-`decide_owner` recovers from the complete ordered event sequence and requires the caller to provide independently read state, target, receipt, evidence refs, and current time. Missing or malformed inputs, duplicate/competing acquisition, generation gaps, expired lease, mismatched target/receipt/evidence, or non-active state return UNKNOWN/NONE. A released or terminal chain returns BLOCKED/NONE. Only a valid active chain can project SEMI_AUTO or AUTO. It does not infer ownership from PR activity or provider timestamps.
+Source receipts use an explicit
+`automation/command_bus/receipts/<loop_id>/<file>.json` locator. Evidence uses
+`automation/command_bus/evidence/<loop_id>/<file>.json`;
+`loop_status_evidence.py` requires an exact non-empty readback for every
+required evidence path.
 
-`loop_owner_backend.py` now provides a create-only GitHub Contents-style writer for the owner ledger. It accepts only the exact next generation, performs independent event readback plus full-chain re-read, never updates an existing owner generation, and never retries automatically. `loop_owner_observation.py` plus `schema/loop_owner_observation.schema.json` define the canonical durable provider-observation record used by projection.
+`loop_owner_backend.py` is create-only. It accepts only the exact next
+generation, performs event readback and complete-chain readback, never updates
+an existing generation, and never retries automatically. ACQUIRE starts the
+chain, RENEW keeps the same owner, HANDOFF fences the previous owner, and
+RELEASE/TERMINAL close the chain. RELEASE requires a DONE receipt. TERMINAL
+binds its terminal receipt to that generation's source receipt.
 
-The authenticated live observation writer and the caller from durable state transitions to the Issue status workflow are still not wired. Therefore the production Issue remains fail-closed at NONE/STOPPED until those separately reviewed integration layers exist. Never store credentials, cookies, tokens, or takeover URLs in owner events or observations.
+`loop_owner_observation.py` defines the provider observation for an active
+generation. Active ACQUIRE/RENEW/HANDOFF requires a fresh verified observation.
+A verified RELEASE/TERMINAL close does not require an active observation.
+
+`loop_status_transition.py` binds state, owner chain, receipt, fresh target,
+evidence readbacks, and active provider observation before Status projection.
+State `last_command_id` and `last_receipt_id` must bind the latest owner
+generation. A non-active state whose owner chain was not closed is forced to
+BLOCKED instead of appearing IDLE.
+
+The production transition caller and live observation writer are still not
+connected. Issue #33 therefore remains fail-closed until those layers exist.
+PR activity, Chat silence, and commit timestamps are not ownership signals.

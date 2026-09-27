@@ -5,6 +5,8 @@ import re
 from datetime import datetime
 from typing import Any
 
+from .loop_status_evidence import validate_evidence_ref
+
 _LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _COMPONENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -52,8 +54,10 @@ def validate_provider_observation(observation: dict[str, Any]) -> None:
         raise ValueError("invalid expected_target_head")
     if not isinstance(observation["state"], str) or not observation["state"].strip():
         raise ValueError("provider state is missing")
-    if not isinstance(observation["evidence_ref"], str) or not observation["evidence_ref"].strip():
-        raise ValueError("provider evidence_ref is missing")
+    validate_evidence_ref(observation["evidence_ref"])
+    prefix = f"automation/command_bus/evidence/{observation['loop_id']}/"
+    if not observation["evidence_ref"].startswith(prefix):
+        raise ValueError("evidence_ref loop mismatch")
     observed = _time(observation["observed_at"])
     expires = _time(observation["expires_at"])
     if expires <= observed:
