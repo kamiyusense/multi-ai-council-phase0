@@ -35,7 +35,6 @@ LEDGER_PREFIXES = (
     ROOT + "jules_launch_attempts/",
     ROOT + "auth_handoffs/",
     ROOT + "loop_owner_events/",
-    ROOT + "loop_owner_events/",
 )
 
 
@@ -103,4 +102,3 @@ def require_bounded_static_scope(entries: Iterable[dict[str, Any]]) -> Validatio
     if not scope.static_blobs:
         raise ValueError("static command-bus scope is empty")
     return scope
-
