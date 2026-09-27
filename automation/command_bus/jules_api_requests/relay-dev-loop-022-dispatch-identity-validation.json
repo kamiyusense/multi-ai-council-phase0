@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-022-dispatch-identity-validation",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "0284698cc2b1c91cded334c7f522c2ec474622ae",
+  "expected_target_tree": "9315a58869e82b0b46974950ff25af2f29336610",
+  "allowed_paths": [
+    "src/relay/dispatcher.py",
+    "tests/relay/test_dispatcher.py",
+    "tests/relay/test_integration.py"
+  ],
+  "prompt": "Bounded static/mock Relay identity-validation task only. Make RelayDispatcher fail closed on malformed dispatch identity fields before reservation/hash/provider work. Require slot_id itself to be a non-empty string. Preserve provider_id semantics from loop018: explicit provider_id must be a non-empty string; omitted provider_id falls back to slot_id. For session_id: if explicitly present, require a non-empty string; if omitted, preserve current fallback to slot_id. For correlation_id: preserve backward compatibility when omitted, but if explicitly present require a non-empty string; reject None/empty/bool/int/list/dict. Derive validated session_id once and pass it to adapter.prepare. Reject all invalid identity inputs before duplicate reservation and before adapter.prepare/preflight/dispatch/collect; tests must assert guard ledger unchanged and adapter dispatch_count/collect_count remain 0. Add focused tests for invalid slot_id types/empty, invalid explicit session_id, invalid explicit correlation_id; valid explicit IDs survive prepare/dispatch/collect evidence; omitted session_id still falls back to slot_id; omitted correlation_id remains accepted for legacy mock calls. Preserve provider+slot duplicate/cancel isolation, shared payload/timeout validation, retry=0, fallback disabled, preflight fail-closed, no-live markers, and all existing behavior. No new files. No provider/network/auth/API/billing/settings/persistence changes. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, git diff --check.",
+  "created_at": "2026-09-27T08:40:15+00:00",
+  "expires_at": "2026-09-27T10:15:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
