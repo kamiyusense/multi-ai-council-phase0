@@ -8,6 +8,7 @@ on:
       - automation/command_bus/loop_owner.py
       - automation/command_bus/loop_owner_backend.py
       - automation/command_bus/loop_owner_observation.py
+      - automation/command_bus/loop_status_transition.py
       - automation/command_bus/schema/loop_owner_event.schema.json
       - automation/command_bus/schema/loop_owner_observation.schema.json
       - automation/command_bus/tests/test_loop_status_issue.py
@@ -15,6 +16,7 @@ on:
       - automation/command_bus/tests/test_loop_owner.py
       - automation/command_bus/tests/test_loop_owner_backend.py
       - automation/command_bus/tests/test_loop_owner_observation.py
+      - automation/command_bus/tests/test_loop_status_transition.py
       - automation/command_bus/tests/test_validation_scope.py
       - .github/workflows/loop-status-signal.yml
       - .github/workflows/loop-status-development.yml
@@ -37,7 +39,7 @@ jobs:
 
       - name: Run focused status and validation-scope tests
         shell: bash
-        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_validation_scope -v
+        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_validation_scope -v
 
       - name: Run full command-bus suite with exact known-fixture allowance
         shell: bash
