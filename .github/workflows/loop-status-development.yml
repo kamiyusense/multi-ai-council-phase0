@@ -2,6 +2,14 @@ name: Phase 0 development lane status
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - automation/command_bus/loop_status_development.py
+      - automation/command_bus/loop_status_issue.py
+      - .github/workflows/loop-status-development.yml
+      - docs/LOOP_STATUS_SIGNAL.md
   pull_request_target:
     types:
       - opened
@@ -24,6 +32,7 @@ jobs:
       github.repository == 'kamiyusense/multi-ai-council-phase0' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'push' ||
         github.event.pull_request.number == 4 ||
         github.event.pull_request.number == 25
       )
