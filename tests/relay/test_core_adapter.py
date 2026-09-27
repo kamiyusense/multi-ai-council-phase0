@@ -1,7 +1,6 @@
 import json
 import unittest
 from typing import Any
-from copy import deepcopy
 
 from relay.core_adapter import RelayCoreAdapter
 from relay.bridge import RelayProviderAdapterBridge
@@ -15,7 +14,7 @@ class RecordingBridge(RelayProviderAdapterBridge):
         self.dispatch_called_with = None
         self.collect_called_with = None
         self.abort_called_with = None
-        self.mock_collect_result = {"rawResponse": "{}"}
+        self.mock_collect_result: Any = {"rawResponse": "{}"}
 
     def prepare(self, case_context: dict[str, Any]) -> dict[str, Any]:
         self.prepare_called_with = case_context
@@ -47,10 +46,15 @@ class TestCoreAdapter(unittest.TestCase):
         context = {"payload": {"q": "hello"}}
         self.adapter.prepare(context)
         self.assertEqual(self.bridge.prepare_called_with["provider_id"], "my-provider")
-        self.assertNotIn("provider_id", context) # Deep copy check
+        self.assertNotIn("provider_id", context)
 
     def test_prepare_rejects_conflicting_id(self):
         context = {"provider_id": "other-provider"}
+        with self.assertRaises(ValueError):
+            self.adapter.prepare(context)
+
+    def test_prepare_rejects_explicit_none_id(self):
+        context = {"provider_id": None}
         with self.assertRaises(ValueError):
             self.adapter.prepare(context)
 
@@ -76,6 +80,11 @@ class TestCoreAdapter(unittest.TestCase):
         self.assertEqual(self.bridge.collect_called_with, handle)
         self.assertEqual(res, b'{"key":"value"}')
 
+    def test_collect_requires_dict_result(self):
+        self.bridge.mock_collect_result = ["not", "a", "dict"]
+        with self.assertRaises(TypeError):
+            self.adapter.collect({"pid": 123})
+
     def test_collect_requires_string_raw_response(self):
         handle = {"pid": 123}
         self.bridge.mock_collect_result = {"rawResponse": {"not": "a string"}}
@@ -96,7 +105,7 @@ class TestCoreAdapter(unittest.TestCase):
             "safety_reason": None,
             "evidence_refs": ["ref1"],
             "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
-            "answer_text": "The answer is 42."
+            "answer_text": "The answer is 42.",
         }
         res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
         self.assertTrue(res["success"])
@@ -111,7 +120,7 @@ class TestCoreAdapter(unittest.TestCase):
             "safety_reason": None,
             "evidence_refs": ["ref1"],
             "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
-            "answer_text": "The answer is 42."
+            "answer_text": "The answer is 42.",
         }
         res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
         self.assertTrue(res["success"])
@@ -122,47 +131,8 @@ class TestCoreAdapter(unittest.TestCase):
         self.assertEqual(res["execution_state"], "UNKNOWN")
 
     def test_classify_fails_closed_on_wrong_schema(self):
-        valid = {
-            "schema_version": "phase0-response-v2", # wrong schema
-            "answer_state": "ANSWER",
-            "conclusion_code": "SUCCESS",
-            "safety_warning": "ABSENT",
-            "safety_reason": None,
-            "evidence_refs": ["ref1"],
-            "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
-            "answer_text": "The answer is 42."
-        }
-        res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
-        self.assertFalse(res["success"])
-
-    def test_classify_fails_closed_on_missing_required(self):
-        valid = {
-            "answer_state": "ANSWER",
-            "conclusion_code": "SUCCESS",
-            "safety_warning": "ABSENT",
-            "safety_reason": None,
-            "evidence_refs": ["ref1"],
-            "marker_echoes": {"head": "h", "middle": None, "tail": "t"}
-            # missing answer_text
-        }
-        res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
-        self.assertFalse(res["success"])
-
-    def test_classify_fails_closed_on_invalid_types(self):
-        valid = {
-            "answer_state": "ANSWER",
-            "conclusion_code": "SUCCESS",
-            "safety_warning": "UNKNOWN",
-            "safety_reason": None,
-            "evidence_refs": "not_a_list",
-            "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
-            "answer_text": "The answer is 42."
-        }
-        res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
-        self.assertFalse(res["success"])
-
-    def test_classify_fails_closed_on_extra_fields(self):
-        valid = {
+        invalid = {
+            "schema_version": "phase0-response-v2",
             "answer_state": "ANSWER",
             "conclusion_code": "SUCCESS",
             "safety_warning": "ABSENT",
@@ -170,20 +140,58 @@ class TestCoreAdapter(unittest.TestCase):
             "evidence_refs": ["ref1"],
             "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
             "answer_text": "The answer is 42.",
-            "extra": 123
         }
-        res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
+        res = self.adapter.classify(json.dumps(invalid).encode("utf-8"))
+        self.assertFalse(res["success"])
+
+    def test_classify_fails_closed_on_missing_required(self):
+        invalid = {
+            "answer_state": "ANSWER",
+            "conclusion_code": "SUCCESS",
+            "safety_warning": "ABSENT",
+            "safety_reason": None,
+            "evidence_refs": ["ref1"],
+            "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
+        }
+        res = self.adapter.classify(json.dumps(invalid).encode("utf-8"))
+        self.assertFalse(res["success"])
+
+    def test_classify_fails_closed_on_invalid_types(self):
+        invalid = {
+            "answer_state": "ANSWER",
+            "conclusion_code": "SUCCESS",
+            "safety_warning": "UNKNOWN",
+            "safety_reason": None,
+            "evidence_refs": "not_a_list",
+            "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
+            "answer_text": "The answer is 42.",
+        }
+        res = self.adapter.classify(json.dumps(invalid).encode("utf-8"))
+        self.assertFalse(res["success"])
+
+    def test_classify_fails_closed_on_extra_fields(self):
+        invalid = {
+            "answer_state": "ANSWER",
+            "conclusion_code": "SUCCESS",
+            "safety_warning": "ABSENT",
+            "safety_reason": None,
+            "evidence_refs": ["ref1"],
+            "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
+            "answer_text": "The answer is 42.",
+            "extra": 123,
+        }
+        res = self.adapter.classify(json.dumps(invalid).encode("utf-8"))
         self.assertFalse(res["success"])
 
     def test_classify_fails_closed_on_invalid_safety_warning(self):
-        valid = {
+        invalid = {
             "answer_state": "ANSWER",
             "conclusion_code": "SUCCESS",
             "safety_warning": "NOT_A_VALID_VALUE",
             "safety_reason": None,
             "evidence_refs": ["ref1"],
             "marker_echoes": {"head": "h", "middle": None, "tail": "t"},
-            "answer_text": "The answer is 42."
+            "answer_text": "The answer is 42.",
         }
-        res = self.adapter.classify(json.dumps(valid).encode("utf-8"))
+        res = self.adapter.classify(json.dumps(invalid).encode("utf-8"))
         self.assertFalse(res["success"])
