@@ -55,6 +55,7 @@ class LoopStatusDevelopmentTests(unittest.TestCase):
         self.assertIn("今この瞬間に実行中だという証明には使いません", text)
         self.assertIn("PR更新だけを理由に SEMI_AUTO / AUTO を推測しません", text)
         self.assertIn("🟢 OPEN", text)
+        self.assertIn("auto-refresh: **ENABLED on deployed main**", text)
 
     def test_lane_signal_is_caution_when_open_but_not_mergeable(self):
         changed = snapshot()
