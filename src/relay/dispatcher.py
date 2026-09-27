@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Any
 
 from src.relay.bridge import RelayProviderAdapterBridge
-from src.relay.envelope import compute_intent_hash, validate_timeout
+from src.relay.envelope import compute_intent_hash, validate_payload, validate_timeout
 
 
 class DuplicateConflictGuard:
@@ -44,12 +44,7 @@ class RelayDispatcher:
         timeout_seconds = context.get("timeout_seconds")
         validate_timeout(timeout_seconds)
         payload = context.get("payload", {})
-        blocked = {"model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
-                   "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
-                   "config", "base", "developer", "general instructions", "plugin disabling",
-                   "billing", "auth route", "timeout_seconds"}
-        if blocked.intersection(payload):
-            raise ValueError("Request override fields rejected.")
+        validate_payload(payload)
         payload_hash = compute_intent_hash(payload, timeout_seconds)
         base = {"live_ready": False, "live_turn_executed": False, "retry_count": 0,
                 "fallback_state": "disabled", "simulated": True}

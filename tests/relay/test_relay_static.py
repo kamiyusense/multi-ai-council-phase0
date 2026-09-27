@@ -136,6 +136,45 @@ class EnvelopeTests(unittest.TestCase):
         self.assertEqual(guard.reserve(self.envelope({"x": 1})), DuplicateDecision.RESERVED)
         self.assertEqual(guard.reserve(self.envelope({"x": 2})), DuplicateDecision.CONFLICT)
 
+    def test_build_rejects_non_dict_payload(self):
+        invalid_payloads = [None, "string", 123, False, []]
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                with self.assertRaisesRegex(ValueError, "Payload must be a dictionary"):
+                    DispatchEnvelope.build(
+                        slot=DispatchSlot("case", "prov", 1),
+                        correlation_id="c",
+                        payload=payload
+                    )
+
+    def test_build_rejects_forbidden_top_level_keys(self):
+        blocked_keys = ["model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
+                        "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
+                        "config", "base", "developer", "general instructions", "plugin disabling",
+                        "billing", "auth route", "timeout_seconds"]
+        for key in blocked_keys:
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(ValueError, "Request override fields rejected."):
+                    DispatchEnvelope.build(
+                        slot=DispatchSlot("case", "prov", 1),
+                        correlation_id="c",
+                        payload={key: "value"}
+                    )
+
+    def test_build_accepts_nested_or_user_content_forbidden_words(self):
+        payload = {
+            "query": "What is the best model?",
+            "nested_config": {"config": "should be allowed", "timeout_seconds": 30},
+            "other_stuff": "developer instructions here",
+            "modelProvider_text": "text"
+        }
+        env = DispatchEnvelope.build(
+            slot=DispatchSlot("case", "prov", 1),
+            correlation_id="c",
+            payload=payload
+        )
+        self.assertEqual(env.payload, payload)
+
 
 class IntentHashTests(unittest.TestCase):
     def test_key_order_determinism(self):

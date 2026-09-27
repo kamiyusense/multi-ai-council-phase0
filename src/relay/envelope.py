@@ -13,6 +13,17 @@ def validate_timeout(timeout_seconds: Any) -> None:
             raise ValueError("Invalid timeout_seconds")
 
 
+def validate_payload(payload: Any) -> None:
+    if not isinstance(payload, dict):
+        raise ValueError("Payload must be a dictionary")
+    blocked = {"model", "modelProvider", "serviceTier", "reasoning", "effort", "thinking",
+               "approvalPolicy", "approvalsReviewer", "sandbox", "sandboxPolicy", "cwd",
+               "config", "base", "developer", "general instructions", "plugin disabling",
+               "billing", "auth route", "timeout_seconds"}
+    if blocked.intersection(payload):
+        raise ValueError("Request override fields rejected.")
+
+
 def compute_intent_hash(payload: dict[str, Any], timeout_seconds: int | None = None) -> str:
     validate_timeout(timeout_seconds)
     intent = {"payload": payload, "timeout_seconds": timeout_seconds}
@@ -57,6 +68,7 @@ class DispatchEnvelope:
         if not isinstance(correlation_id, str) or not correlation_id:
             raise ValueError("correlation_id is required")
         validate_timeout(timeout_seconds)
+        validate_payload(payload)
         snapshot = copy.deepcopy(payload)
         return cls(
             slot=slot,
