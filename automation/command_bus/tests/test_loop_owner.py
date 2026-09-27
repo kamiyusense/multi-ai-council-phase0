@@ -74,6 +74,15 @@ class LoopOwnerTests(unittest.TestCase):
         bad = copy.deepcopy(events)
         bad[0]["source_receipt_ref"] = "automation/command_bus/execution_receipts/loop-015/000001.json"
         self.assertEqual(self.decide(events=bad).status, "UNKNOWN")
+        bad = copy.deepcopy(events)
+        bad[0]["source_receipt_ref"] = "automation/command_bus/receipts/other-loop/000001.json"
+        self.assertEqual(self.decide(events=bad).status, "UNKNOWN")
+
+    def test_evidence_ref_must_belong_to_owner_loop(self):
+        events, _, _, _ = records()
+        bad = copy.deepcopy(events)
+        bad[0]["evidence_refs"] = ["automation/command_bus/evidence/other-loop/owner-1.json"]
+        self.assertEqual(self.decide(events=bad, evidence=set(bad[0]["evidence_refs"])).status, "UNKNOWN")
 
     def test_expired_stale_generation_target_and_receipt_are_rejected(self):
         events, receipt, target, _ = records()
@@ -129,7 +138,7 @@ class LoopOwnerTests(unittest.TestCase):
         events, receipt, target, observation = records()
         self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={EVIDENCE}, provider_observation=None, now=NOW).status, "UNKNOWN")
         stale = {**observation, "expires_at": "2026-09-27T09:59:00+00:00"}
-        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=stale, now=NOW).status, "UNKNOWN")
+        self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={EVIDENCE}, provider_observation=stale, now=NOW).status, "UNKNOWN")
         mismatch = {**observation, "generation": 2}
         self.assertEqual(decide_owner(events, state(), target=target, receipt=receipt, evidence_refs={"evidence-owner-1"}, provider_observation=mismatch, now=NOW).status, "UNKNOWN")
         stale_time = {**observation, "observed_at": "2026-09-27T08:59:00+00:00"}
