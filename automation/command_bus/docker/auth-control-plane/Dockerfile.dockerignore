@@ -1,1 +1,6 @@
-automation/command_bus/docker/auth-control-plane/Dockerfile.dockerignore
+**
+!docker/
+!docker/auth-control-plane/
+!docker/auth-control-plane/Dockerfile
+!docker/auth-control-plane/Dockerfile.dockerignore
+!docker/auth-control-plane/auth_control_plane_proxy.mjs

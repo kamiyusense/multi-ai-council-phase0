@@ -1,1 +1,175 @@
-.github/workflows/loop-status-signal-test.yml
+name: Phase 0 loop status signal tests
+
+on:
+  pull_request:
+    paths:
+      - automation/command_bus/claude_admission_gate.py
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/docker/auth-control-plane/**
+      - automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+      - automation/command_bus/tests/test_claude_admission_gate.py
+      - automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+      - docs/CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md
+      - docs/CLAUDE_ADMISSION_GATE_DESIGN.md
+      - automation/command_bus/loop_status_issue.py
+      - automation/command_bus/control_tower.py
+      - automation/command_bus/control_tower_issue_plan.py
+      - automation/command_bus/control_tower_verified_input.py
+      - automation/command_bus/control_tower_issue_publisher.py
+      - automation/command_bus/control_tower_registration.py
+      - automation/command_bus/control_tower_live_preflight.py
+      - automation/command_bus/control_tower_snapshot.py
+      - automation/command_bus/control_tower_durable_collector.py
+      - automation/command_bus/jules_provider_verification_source.py
+      - automation/command_bus/claude_loop.py
+      - automation/command_bus/config/control_tower_registry.json
+      - automation/command_bus/loop_status_development.py
+      - automation/command_bus/loop_owner.py
+      - automation/command_bus/loop_owner_backend.py
+      - automation/command_bus/loop_owner_observation.py
+      - automation/command_bus/loop_owner_authority.py
+      - automation/command_bus/loop_status_transition.py
+      - automation/command_bus/loop_status_transition_cli.py
+      - automation/command_bus/loop_status_evidence.py
+      - automation/command_bus/runtime_transition_coordinator.py
+      - automation/command_bus/runtime_transition_evidence.py
+      - automation/command_bus/runtime_transition_jules.py
+      - automation/command_bus/runtime_transition_receipt.py
+      - automation/command_bus/runtime_transition_status.py
+      - automation/command_bus/runtime_transition_status_dispatch.py
+      - automation/command_bus/runtime_takeover.py
+      - automation/command_bus/runtime_takeover_prepare.py
+      - automation/command_bus/runtime_transition_writers.py
+      - automation/command_bus/schema/runtime_transition_evidence.schema.json
+      - automation/command_bus/schema/control_tower_registry.schema.json
+      - automation/command_bus/schema/control_tower_snapshot.schema.json
+      - automation/command_bus/schema/loop_owner_event.schema.json
+      - automation/command_bus/schema/loop_owner_observation.schema.json
+      - automation/command_bus/schema/loop_owner_authority.schema.json
+      - automation/command_bus/tests/test_loop_status_issue.py
+      - automation/command_bus/tests/test_control_tower.py
+      - automation/command_bus/tests/test_control_tower_issue_plan.py
+      - automation/command_bus/tests/test_control_tower_verified_input.py
+      - automation/command_bus/tests/test_control_tower_issue_publisher.py
+      - automation/command_bus/tests/test_control_tower_registration.py
+      - automation/command_bus/tests/test_control_tower_live_preflight.py
+      - automation/command_bus/tests/test_control_tower_snapshot.py
+      - automation/command_bus/tests/test_control_tower_durable_collector.py
+      - automation/command_bus/tests/test_jules_provider_verification_source.py
+      - automation/command_bus/tests/test_claude_loop.py
+      - automation/command_bus/tests/test_loop_status_development.py
+      - automation/command_bus/tests/test_loop_owner.py
+      - automation/command_bus/tests/test_loop_owner_backend.py
+      - automation/command_bus/tests/test_loop_owner_observation.py
+      - automation/command_bus/tests/test_loop_owner_authority.py
+      - automation/command_bus/tests/test_runtime_transition_owner_authority.py
+      - automation/command_bus/tests/test_loop_status_transition.py
+      - automation/command_bus/tests/test_loop_status_transition_cli.py
+      - automation/command_bus/tests/test_loop_status_evidence.py
+      - automation/command_bus/tests/test_runtime_transition_publisher.py
+      - automation/command_bus/tests/test_runtime_transition_fail_closed.py
+      - automation/command_bus/tests/test_runtime_transition_close.py
+      - automation/command_bus/tests/test_runtime_transition_jules.py
+      - automation/command_bus/tests/test_runtime_transition_receipt_status.py
+      - automation/command_bus/tests/test_runtime_transition_status_dispatch.py
+      - automation/command_bus/tests/test_runtime_takeover.py
+      - automation/command_bus/tests/test_runtime_takeover_prepare.py
+      - automation/command_bus/tests/test_runtime_takeover_static_e2e.py
+      - automation/command_bus/tests/test_validation_scope.py
+      - .github/workflows/loop-status-signal.yml
+      - .github/workflows/loop-status-development.yml
+      - .github/workflows/loop-status-signal-test.yml
+      - docs/LOOP_STATUS_SIGNAL.md
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Run focused status and validation-scope tests present at exact PR head
+        shell: bash
+        run: |
+          modules=(
+            automation.command_bus.tests.test_claude_admission_gate
+            automation.command_bus.tests.test_loop_status_issue
+            automation.command_bus.tests.test_control_tower
+            automation.command_bus.tests.test_control_tower_issue_plan
+            automation.command_bus.tests.test_control_tower_verified_input
+            automation.command_bus.tests.test_control_tower_issue_publisher
+            automation.command_bus.tests.test_control_tower_registration
+            automation.command_bus.tests.test_control_tower_live_preflight
+            automation.command_bus.tests.test_control_tower_snapshot
+            automation.command_bus.tests.test_control_tower_durable_collector
+            automation.command_bus.tests.test_jules_provider_verification_source
+            automation.command_bus.tests.test_claude_loop
+            automation.command_bus.tests.test_loop_status_development
+            automation.command_bus.tests.test_loop_owner
+            automation.command_bus.tests.test_loop_owner_backend
+            automation.command_bus.tests.test_loop_owner_observation
+            automation.command_bus.tests.test_loop_owner_authority
+            automation.command_bus.tests.test_loop_status_transition
+            automation.command_bus.tests.test_loop_status_transition_cli
+            automation.command_bus.tests.test_loop_status_evidence
+            automation.command_bus.tests.test_runtime_transition_publisher
+            automation.command_bus.tests.test_runtime_transition_fail_closed
+            automation.command_bus.tests.test_runtime_transition_close
+            automation.command_bus.tests.test_runtime_transition_jules
+            automation.command_bus.tests.test_runtime_transition_receipt_status
+            automation.command_bus.tests.test_runtime_transition_status_dispatch
+            automation.command_bus.tests.test_runtime_takeover
+            automation.command_bus.tests.test_runtime_takeover_prepare
+            automation.command_bus.tests.test_runtime_takeover_static_e2e
+            automation.command_bus.tests.test_runtime_transition_owner_authority
+            automation.command_bus.tests.test_validation_scope
+          )
+          existing=()
+          for module in "${modules[@]}"; do
+            path="${module//./\/}.py"
+            if [[ -f "$path" ]]; then
+              existing+=("$module")
+            else
+              echo "::notice::focused test absent at checked-out PR head: $module"
+            fi
+          done
+          test "${#existing[@]}" -gt 0
+          python -m unittest "${existing[@]}" -v
+
+      - name: Run full command-bus suite
+        shell: bash
+        run: |
+          python -m unittest discover -v automation/command_bus/tests
+      - name: Verify OAuth proxy and launcher without network access
+        shell: bash
+        run: |
+          node --check automation/command_bus/docker/auth-control-plane/auth_control_plane_proxy.mjs
+          node --check automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+          node --test automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+          python -m compileall -q automation/command_bus
+      - name: Parse command-bus JSON schemas
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          json.loads(Path("automation/command_bus/claude_gate_compose.yaml").read_text(encoding="utf-8"))
+          for path in sorted(Path("automation/command_bus/schema").glob("*.json")):
+              json.loads(path.read_text(encoding="utf-8"))
+              print(f"schema-ok {path}")
+          PY
+
+      - name: Compile command-bus Python
+        shell: bash
+        run: python -m compileall -q automation/command_bus
+
+      - name: Diff check
+        shell: bash
+        run: git diff --check
