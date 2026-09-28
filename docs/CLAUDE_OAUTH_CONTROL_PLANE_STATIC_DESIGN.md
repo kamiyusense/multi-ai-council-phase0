@@ -62,10 +62,15 @@ one fixed `HTTPS_PROXY` value pointing to a small non-root sidecar on the
 internal network. The sidecar also joins the egress network but has no
 credential, workspace, or Gate-state mount. It accepts only an HTTP CONNECT
 to the exact authority `platform.claude.com:443`, resolves that fixed hostname
-once, rejects non-public/special-use addresses, and opens one TCP connection.
-It rejects `api.anthropic.com:443`, all other hosts, all other ports, and
-malformed authorities. It does not retry or fall back. It logs no requests,
-headers, URLs, bodies, or connection errors containing request data.
+once, rejects non-public/special-use addresses, and then inspects the first TLS
+ClientHello before opening any upstream TCP connection. The ClientHello must
+contain exactly one host-name SNI equal to `platform.claude.com`; missing,
+ambiguous, malformed, or mismatched SNI is terminally rejected. Only after both
+CONNECT authority and TLS SNI match does the proxy open one TCP connection and
+forward the buffered ClientHello. It rejects `api.anthropic.com:443`, all other
+hosts, all other ports, malformed authorities, and authority/SNI mismatch. It
+does not retry or fall back. It logs no requests, headers, URLs, bodies, SNI
+values, or connection errors containing request data.
 
 The runtime keeps `ANTHROPIC_BASE_URL=http://gate:8080`. Docker topology keeps
 the runtime off the egress network. The launcher accepts only the exact fixed
@@ -106,15 +111,18 @@ credential-volume sharing is implemented.
 1. The official documentation confirms `platform.claude.com` but does not
    specify the exact subscription refresh path. The `/v1/oauth/token` path is
    only an observed public implementation detail.
-2. HTTP CONNECT exposes the target authority, not the encrypted HTTP path or
-   Host header. This proxy cannot enforce `/v1/oauth/token`. It permits any
-   TLS path on the exact allowed hostname. This limitation is intentional and
-   must not be described as path-level allowlisting.
-3. A CONNECT tunnel does not inspect the TLS SNI or encrypted Host header.
-   Tests prove that a normal CONNECT request naming `api.anthropic.com` is
-   denied; they do not prove resistance to a deliberately mismatched TLS
-   authority/SNI/Host tunnel. The static design therefore does not establish
-   a complete hostile-runtime model/API bypass proof.
+2. HTTP CONNECT and TLS ClientHello inspection expose the target authority and
+   SNI, but not the encrypted HTTP path or HTTP/2 `:authority` / HTTP Host.
+   This proxy cannot enforce `/v1/oauth/token`. It permits any encrypted HTTP
+   path carried inside TLS whose CONNECT authority and SNI both exactly match
+   `platform.claude.com`. This limitation is intentional and must not be
+   described as path-level allowlisting.
+3. The proxy now rejects CONNECT-authority/TLS-SNI mismatch before opening the
+   upstream TCP connection. This closes the previously identified simple SNI
+   mismatch route. It still does not decrypt TLS and therefore cannot prove
+   that the encrypted HTTP Host/`:authority` matches the SNI or that the
+   allowed host can never route some other application path internally. Full
+   hostile-runtime model/API bypass resistance therefore remains UNKNOWN.
 4. Docker bridge membership is static intent, not proof of effective host
    routes, DNS policy, or firewall behavior. No Docker daemon test was run.
 5. No test establishes that Claude Code 2.1.283's claude.ai refresh request
