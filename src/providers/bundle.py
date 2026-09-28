@@ -68,6 +68,12 @@ class ProviderAdapterBundle:
 
             bridge = bridge_snapshot[provider_id]
             _require_bridge_compatible(bridge)
+            bridge_provider_id = getattr(bridge, "provider_id", None)
+            if bridge_provider_id is not None and bridge_provider_id != provider_id:
+                raise ValueError(
+                    f"bridge key/provider_id mismatch: {provider_id}/"
+                    f"{bridge_provider_id}"
+                )
             adapters[provider_id] = create_core_adapter(profile, bridge)  # type: ignore[arg-type]
 
         self._adapters = MappingProxyType(adapters)
