@@ -187,6 +187,105 @@ def prepare_next_action(
         return LoopResult("UNKNOWN", str(exc))
 
 
+def prepare_jules_closed_loop_command(
+    prepared_request: dict[str, Any], *, starting_branch: str, default_branch: str,
+    command_id: str | None = None,
+) -> LoopResult:
+    """Convert one JULES_BACKEND prepare-only request into an unpersisted command artifact.
+
+    This function has no I/O and cannot dispatch Jules. The returned command is
+    live-capable only after a separately authorized caller durably persists and
+    activates it through the existing Jules closed-loop route.
+    """
+    try:
+        if not isinstance(prepared_request, dict):
+            return LoopResult("UNKNOWN", "prepared request must be an object")
+        expected = {
+            "executor_kind": "jules-api",
+            "action": "PREPARE_JULES_API_REQUEST",
+            "execution_mode": "PREPARE_ONLY",
+            "capability": "prepare-only",
+            "retry": 0,
+            "fallback": "disabled",
+            "workspace_integrity_profile": "TREE_IDENTITY_V1",
+            "requires_live_model": False,
+            "requires_github_write": False,
+            "live_start_permitted": False,
+        }
+        for key, value in expected.items():
+            if prepared_request.get(key) != value:
+                return LoopResult("BLOCKED", f"prepared Jules request contract mismatch: {key}")
+
+        if not isinstance(starting_branch, str) or not starting_branch.strip():
+            return LoopResult("BLOCKED", "starting branch is required")
+        if not isinstance(default_branch, str) or not default_branch.strip():
+            return LoopResult("BLOCKED", "default branch identity is required")
+        if starting_branch == default_branch:
+            return LoopResult("BLOCKED", "default branch is forbidden")
+
+        policies = prepared_request.get("path_policy")
+        if not isinstance(policies, list) or not policies:
+            return LoopResult("BLOCKED", "exact Jules path policy is required")
+        normalized: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in policies:
+            if not isinstance(item, dict):
+                return LoopResult("BLOCKED", "Jules path policy entry must be an object")
+            path = item.get("path")
+            ops = item.get("allowed_ops")
+            if not isinstance(path, str) or not path or re.search(r"[*?\[\]]", path):
+                return LoopResult("BLOCKED", "Jules closed-loop requires exact file paths")
+            if path in seen:
+                return LoopResult("BLOCKED", "duplicate Jules path policy")
+            if not isinstance(ops, list) or not ops or any(op not in {"ADD", "MODIFY"} for op in ops):
+                return LoopResult("BLOCKED", "Jules path policy permits only ADD/MODIFY")
+            seen.add(path)
+            normalized.append({"path": path, "allowed_ops": list(ops)})
+
+        required_strings = (
+            "request_id", "loop_id", "correlation_id", "expected_repo",
+            "expected_target_head", "expected_target_tree", "expires_at",
+        )
+        if any(not isinstance(prepared_request.get(key), str) or not prepared_request[key]
+               for key in required_strings):
+            return LoopResult("UNKNOWN", "prepared Jules request identity is incomplete")
+        if not isinstance(prepared_request.get("round"), int) or isinstance(prepared_request["round"], bool):
+            return LoopResult("UNKNOWN", "prepared Jules request round is invalid")
+        if not isinstance(prepared_request.get("expected_pr"), int) or isinstance(prepared_request["expected_pr"], bool):
+            return LoopResult("UNKNOWN", "prepared Jules request PR identity is invalid")
+        for key in ("expected_target_head", "expected_target_tree"):
+            if not re.fullmatch(r"[0-9a-f]{40}", prepared_request[key]):
+                return LoopResult("UNKNOWN", f"invalid prepared Jules {key}")
+
+        cid = command_id or f"cmd-{prepared_request['request_id']}"
+        if not isinstance(cid, str) or not cid:
+            return LoopResult("BLOCKED", "command identity is required")
+        command = {
+            "schema_version": 1,
+            "command_id": cid,
+            "loop_id": prepared_request["loop_id"],
+            "round": prepared_request["round"],
+            "correlation_id": prepared_request["correlation_id"],
+            "target": "work",
+            "action": "JULES_API_CLOSED_LOOP",
+            "expected_repo": prepared_request["expected_repo"],
+            "expected_pr": prepared_request["expected_pr"],
+            "expected_target_head": prepared_request["expected_target_head"],
+            "expected_target_tree": prepared_request["expected_target_tree"],
+            "starting_branch": starting_branch,
+            "allowed_paths": [item["path"] for item in normalized],
+            "path_policy": normalized,
+            "requires_live_model": True,
+            "requires_github_write": True,
+            "retry": 0,
+            "fallback": "disabled",
+            "expires_at": prepared_request["expires_at"],
+        }
+        return LoopResult("PREPARED", "unpersisted Jules closed-loop command artifact created", command)
+    except (KeyError, TypeError, ValueError) as exc:
+        return LoopResult("UNKNOWN", str(exc))
+
+
 def prepare_claude_transport(*, mode: str, dispatch_id: str, gate_base_url: str,
                              transport_mode: str = HOST_LOOPBACK,
                              live_model: bool = False, external_send: bool = False) -> dict[str, Any]:
