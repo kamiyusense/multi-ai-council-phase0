@@ -8,8 +8,10 @@ from pathlib import Path
 
 from automation.command_bus.jules_session_acceptance import (
     extract_session_acceptance,
+    extract_session_timing_readback,
     load_session_acceptance,
     verify_session_acceptance_readback,
+    verify_timing_readback_matches_acceptance,
 )
 
 
@@ -115,6 +117,47 @@ class JulesSessionAcceptanceTests(unittest.TestCase):
         wrong_branch["sourceContext"]["githubRepoContext"]["startingBranch"] = "feature/other"
         with self.assertRaisesRegex(ValueError, "branch mismatch"):
             verify_session_acceptance_readback(accepted, wrong_branch)
+
+    def test_session_get_timing_readback_is_bound_to_exact_session_id(self):
+        observed = extract_session_timing_readback(
+            response(),
+            expected_session_id="31415926535897932384",
+        )
+        self.assertEqual(
+            observed.source_kind,
+            "JULES_SESSION_GET_CREATE_TIME_READBACK",
+        )
+        self.assertEqual(observed.session_create_time, "2026-09-28T03:59:00Z")
+        self.assertEqual(observed.accepted_at_jst, "2026-09-28T12:59:00+09:00")
+
+        with self.assertRaisesRegex(ValueError, "name mismatch"):
+            extract_session_timing_readback(
+                response(),
+                expected_session_id="999999",
+            )
+
+    def test_session_get_timing_must_match_create_acceptance_record(self):
+        accepted = extract_session_acceptance(
+            response(),
+            expected_branch="feature/example",
+        )
+        observed = extract_session_timing_readback(
+            response(),
+            expected_session_id=accepted.session_id,
+        )
+        verify_timing_readback_matches_acceptance(accepted, observed)
+
+        changed = response()
+        changed["createTime"] = "2026-09-28T04:01:00Z"
+        changed_observed = extract_session_timing_readback(
+            changed,
+            expected_session_id=accepted.session_id,
+        )
+        with self.assertRaisesRegex(ValueError, "createTime mismatch"):
+            verify_timing_readback_matches_acceptance(
+                accepted,
+                changed_observed,
+            )
 
 if __name__ == "__main__":
     unittest.main()
