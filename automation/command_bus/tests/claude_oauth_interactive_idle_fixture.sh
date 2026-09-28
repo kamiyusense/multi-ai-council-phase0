@@ -142,6 +142,19 @@ set -e
 sudo chmod 0755 "$CASE" 2>/dev/null || true
 sudo chmod 0644 "$CASE/.credentials.json" 2>/dev/null || true
 
+export CLI_LOG
+python - <<'PY'
+import os, re
+from pathlib import Path
+
+p = Path(os.environ["CLI_LOG"])
+raw = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
+for name in ("OLD_ACCESS", "OLD_REFRESH", "NEW_ACCESS", "NEW_REFRESH"):
+    raw = raw.replace(os.environ[name], "<fixture-token>")
+raw = re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]", "", raw)
+print("CLI_LOG_SANITIZED_PREFIX=" + raw[:800].replace("\n", "\\n"))
+PY
+
 export DELAY_MS RESPONSE_SEEN WAS_RUNNING_BEFORE_SIGNAL CLI_RUN_EXIT CASE EVIDENCE
 python - <<'PY'
 import json, os
