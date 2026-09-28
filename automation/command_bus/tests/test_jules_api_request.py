@@ -4,6 +4,7 @@ import unittest
 from automation.command_bus.jules_api_request import (
     PROFILE, PROFILE_V2,
     build_jules_prompt,
+    derived_work_branch,
     validate_request,
 )
 
@@ -105,13 +106,24 @@ class JulesApiRequestTests(unittest.TestCase):
         self.assertEqual(value["profile"], PROFILE)
         self.assertEqual(validate_request(value, now=NOW)["command_id"], "chat-jules-001")
 
-    def test_prompt_binds_head_tree_and_allowlist(self):
-        rendered = build_jules_prompt(request(), now=NOW)
-        self.assertIn("Expected starting HEAD: " + "a" * 40, rendered)
-        self.assertIn("Expected starting tree: " + "b" * 40, rendered)
+    def test_prompt_binds_isolated_work_branch_head_tree_and_allowlist(self):
+        value = request()
+        rendered = build_jules_prompt(value, now=NOW)
+        self.assertEqual(derived_work_branch(value), "jules-work/chat-jules-001")
+        self.assertIn("Canonical target branch (READ-ONLY identity): " + value["target_branch"], rendered)
+        self.assertIn("Isolated Jules starting work branch: jules-work/chat-jules-001", rendered)
+        self.assertIn("Expected snapshot HEAD: " + "a" * 40, rendered)
+        self.assertIn("Expected snapshot tree: " + "b" * 40, rendered)
+        self.assertIn("do not mutate the canonical target branch", rendered)
         self.assertIn("tests/relay/test_dispatcher.py", rendered)
         self.assertIn("do not merge", rendered)
         self.assertIn("do not retry", rendered)
+
+    def test_work_branch_is_deterministic_from_command_id(self):
+        self.assertEqual(
+            derived_work_branch(request(command_id="claude-jules-integrated-proof-20260928-001")),
+            "jules-work/claude-jules-integrated-proof-20260928-001",
+        )
 
 
 if __name__ == "__main__":
