@@ -1,0 +1,36 @@
+name: Issue 110 Claude 2.1.283 OAuth fixture refresh measurement
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-fixture-refresh-v1
+    paths:
+      - .github/workflows/issue110-claude-oauth-fixture.yml
+      - automation/command_bus/tests/claude_oauth_refresh_fixture.sh
+      - automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs
+      - automation/command_bus/docker/claude-runtime/Dockerfile
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact fixture head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run isolated actual-2.1.283 OAuth refresh fixture
+        shell: bash
+        run: |
+          chmod +x automation/command_bus/tests/claude_oauth_refresh_fixture.sh
+          automation/command_bus/tests/claude_oauth_refresh_fixture.sh
