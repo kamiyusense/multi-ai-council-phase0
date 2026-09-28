@@ -189,7 +189,7 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
         req = request(
             profile="JULES_CHAT_SEMIAUTO_V2",
             origin_loop_id="claude-night-loop",
-            origin_round=7,
+            origin_round=3,
             origin_correlation_id="semi-durable-001",
             origin_generation=1,
         )
@@ -207,7 +207,7 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
         req = request(
             profile="JULES_CHAT_SEMIAUTO_V2",
             origin_loop_id="claude-night-loop",
-            origin_round=7,
+            origin_round=3,
             origin_correlation_id="origin-correlation-002",
             origin_generation=1,
         )
@@ -218,7 +218,7 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
         req = request(
             profile="JULES_CHAT_SEMIAUTO_V2",
             origin_loop_id="claude-origin-loop",
-            origin_round=7,
+            origin_round=3,
             origin_correlation_id="semi-durable-001",
             origin_generation=1,
         )
