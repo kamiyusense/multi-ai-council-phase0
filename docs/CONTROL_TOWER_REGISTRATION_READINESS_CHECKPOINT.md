@@ -115,14 +115,28 @@ Still unresolved:
 A real collector/migration may proceed only after the final durable loop IDs are
 available through existing durable transition verification.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `2fd125f298cb304a85171a8d223f7533314d5a3c`
+- GitHub Actions run:
+  `36377164603` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **236/236 PASS**
+- full command-bus suite:
+  **523/523 PASS**
+- command-bus JSON schemas parsed:
+  **19/19 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative registration-readiness tests were present in the exact-head CI log:
+  - repository registry without verified inventory -> NOT_WIRED;
+  - registry id alone never counts as READY;
+  - matching existing TransitionProjectionResult -> READY;
+  - durable projection loop-id mismatch -> BLOCKED.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
