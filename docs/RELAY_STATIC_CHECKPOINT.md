@@ -132,6 +132,9 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - every scenario: participant_count=2, agreement_count=2, human_required=true, formal_consensus=false
 - every scenario: retry_count=0, fallback_state=disabled, live_turn_executed=false
 
+### Core PR #3 Policy Matrix Validation Checkpoint
+- Runner status: PREPARED/NOT_RUN
+
 ## Isolation Canary Checkpoint
 - Core PR3 negative-path matrix run 36383797774 succeeded.
 - Relay code SHA validated by that run: 565ba16ed59d5ff979552e7c6524559caa4cf423.
