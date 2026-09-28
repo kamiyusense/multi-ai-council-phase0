@@ -1,0 +1,6 @@
+**
+!claude_oauth_egress_proxy.py
+!docker/
+!docker/oauth-egress/
+!docker/oauth-egress/Dockerfile
+!docker/oauth-egress/Dockerfile.dockerignore
