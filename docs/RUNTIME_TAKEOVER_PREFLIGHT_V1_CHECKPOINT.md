@@ -91,3 +91,23 @@ The new tests cover:
 A real takeover still requires a production authority issuer/authenticator,
 provider verifier source, durable takeover command/receipt/evidence, and explicit
 live authorization. This PR only makes the pre-publication decision fail closed.
+
+## Exact-head verification
+
+- Exact tested code head:
+  `8fc5048f6534c3913af040aec0589e3dabee195b`.
+- GitHub Actions run:
+  `36372083035` — **SUCCESS**.
+- Focused Status/runtime/validation suite:
+  **173/173 PASS**.
+- Full command-bus suite:
+  **460/460 PASS**.
+- Command-bus JSON schemas parsed:
+  **18/18 PASS**.
+- Python compileall:
+  **PASS**.
+- `git diff --check`:
+  **PASS**.
+- PR #71 was OPEN / mergeable=true at exact-head readback.
+- Any commit after this exact tested head must be documentation-only and compared
+  before Merge.
