@@ -197,15 +197,36 @@ Until independent trust sources are wired:
 
 `ChatGPT Semi-Auto durable ACQUIRE = PREPARE_ONLY / NOT_WIRED`
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- live Jules execution: MUST REMAIN NONE
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `ad2438c891353bba6426041ce353261f3d9464fe`
+- GitHub Actions run:
+  `36443292614` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **318/318 PASS**
+- full command-bus suite:
+  **731/731 PASS**
+- command-bus JSON schemas parsed:
+  **22/22 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative provider-readback tests were present in the exact-head CI log:
+  - later RUNNING readback rebinds evidence/observation to Session GET updateTime;
+  - source text VERIFIED without authenticator grants no verification;
+  - rejecting/missing authenticator grants no verification;
+  - exact independent attestation is required;
+  - QUEUED / COMPLETED cannot bind active ACQUIRE;
+  - private URL content is not persisted.
+- initial failed run:
+  `36443127777` failed only because the test expected a source-reader call even
+  though the existing verifier correctly short-circuits when authenticator is
+  absent. The test expectation was corrected; no runtime/live write occurred.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- live Jules execution:
+  **NONE**
+- Issue #33 live mutation:
+  **NONE**
