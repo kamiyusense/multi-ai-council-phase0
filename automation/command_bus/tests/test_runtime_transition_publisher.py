@@ -201,20 +201,20 @@ class RuntimeTransitionPublisherTests(unittest.TestCase):
         fixture.setUp()
         fixture.target.value["state"] = "closed"
         result = fixture.publisher().publish(fixture.request())
-        self.assertEqual(result.status, "UNKNOWN", result)
+        self.assertEqual(result.status, "BLOCKED", result)
         self.assertEqual((fixture.client.creates, fixture.client.updates), (0, 0))
 
         fixture = RuntimeTransitionPublisherTests()
         fixture.setUp()
         fixture.target.value["merged"] = True
         result = fixture.publisher().publish(fixture.request())
-        self.assertEqual(result.status, "UNKNOWN", result)
+        self.assertEqual(result.status, "BLOCKED", result)
         self.assertEqual((fixture.client.creates, fixture.client.updates), (0, 0))
 
     def test_target_or_receipt_mismatch_makes_no_writes(self):
         self.target.value = {**target_for(self.event), "head": "b" * 40}
         self.assertEqual(self.publisher().publish(self.request()).status, "BLOCKED")
-        self.target.value = target_for(self.event)
+        self.target.value = {**target_for(self.event), "state": "open", "merged": False}
         self.client.put(self.event["source_receipt_ref"], {**receipt_for(self.event), "retry_count": 1})
         self.assertEqual(self.publisher().publish(self.request()).status, "UNKNOWN")
         self.assertEqual((self.client.creates, self.client.updates), (0, 0))
