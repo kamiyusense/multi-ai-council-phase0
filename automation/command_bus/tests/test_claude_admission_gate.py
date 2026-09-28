@@ -502,6 +502,52 @@ class AdmissionGateTests(unittest.TestCase):
             with self.subTest(item=item):
                 self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
 
+    def test_oauth_egress_topology_and_mutations_fail_closed(self):
+        manifest = load_container_manifest()
+        baseline = validate_container_topology(manifest)
+        self.assertEqual(baseline["status"], "PASS", baseline)
+        self.assertEqual(baseline["model_bypass"], "DENIED_BY_HOST_ALLOWLIST_AND_NETWORK_MEMBERSHIP")
+        self.assertEqual(baseline["oauth_egress"], "PLATFORM_CLAUDE_CONNECT_ONLY")
+
+        mutations = [
+            lambda m: m["services"]["oauth-egress"]["environment"].update(
+                PHASE0_OAUTH_PROXY_ALLOWED_CONNECT="api.anthropic.com:443"),
+            lambda m: m["services"]["claude"]["environment"].update(
+                HTTPS_PROXY="https://api.anthropic.com"),
+            lambda m: m["services"]["claude"]["environment"].update(
+                NO_PROXY="api.anthropic.com"),
+            lambda m: m["services"]["oauth-egress"].update(
+                volumes=["claude-auth:/home/node/.claude"]),
+            lambda m: m["services"]["oauth-egress"].update(networks={"egress": {}}),
+            lambda m: m["services"]["oauth-egress"].update(ports=["8081:8081"]),
+            lambda m: m["services"]["oauth-egress"]["environment"].update(
+                PHASE0_OAUTH_PROXY_EXTRA_HOST="example.com:443"),
+            lambda m: m["services"]["oauth-egress"].update(image="phase0-claude-oauth-egress:latest"),
+            lambda m: m["services"]["oauth-egress"].update(command=["sh", "-c", "true"]),
+        ]
+        for mutate in mutations:
+            bad = deepcopy(manifest)
+            mutate(bad)
+            with self.subTest(mutation=mutate):
+                self.assertEqual(validate_container_topology(bad)["status"], "BLOCKED")
+
+        missing = deepcopy(manifest)
+        del missing["services"]["oauth-egress"]
+        self.assertEqual(validate_container_topology(missing)["status"], "BLOCKED")
+
+    def test_launcher_pins_oauth_proxy_and_blocks_proxy_bypass_variables(self):
+        manifest = load_container_manifest()
+        launcher_path = Path(__file__).resolve().parents[1] / "docker" / "claude-runtime" / "claude_runtime_launcher.mjs"
+        launcher = launcher_path.read_text(encoding="utf-8")
+        self.assertEqual(
+            manifest["services"]["claude"]["environment"]["HTTPS_PROXY"],
+            "http://oauth-egress:8081",
+        )
+        self.assertIn('HTTPS_PROXY: "http://oauth-egress:8081"', launcher)
+        for forbidden in ('"HTTP_PROXY"', '"ALL_PROXY"', '"NO_PROXY"', '"https_proxy"', '"no_proxy"'):
+            with self.subTest(forbidden=forbidden):
+                self.assertIn(forbidden, launcher)
+
     def test_seccomp_profile_content_is_pinned(self):
         original = gate_module.RUNTIME_SECCOMP_PROFILE.read_text(encoding="utf-8")
         self.assertEqual(validate_container_artifacts()["status"], "PASS")
