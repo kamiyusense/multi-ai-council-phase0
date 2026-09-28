@@ -7,7 +7,7 @@ from automation.command_bus.jules_api_request import (
     validate_request,
 )
 
-NOW = datetime(2026, 9, 26, 0, 0, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc)
 
 
 def request(**changes):

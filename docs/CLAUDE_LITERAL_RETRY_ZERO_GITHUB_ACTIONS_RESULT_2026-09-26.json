@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pr": 25,
+  "probe_date_jst": "2026-09-27",
+  "workflow_run": {
+    "id": 36256718479,
+    "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36256718479",
+    "event": "push",
+    "head_branch": "feature/claude-night-loop-prepare",
+    "head_sha": "9b4a0d877d4baa6d493bfd7802616cc24773f61a",
+    "status": "completed",
+    "conclusion": "failure",
+    "failed_step": "Run A-H only inside network-none container",
+    "step_exit_code": 5,
+    "artifact_id": 10910861788,
+    "artifact_name": "claude-literal-retry-zero-36256718479",
+    "artifact_size_bytes": 4479,
+    "artifact_expired": false,
+    "artifact_contains_claude_binary_or_archive": false
+  },
+  "overall": {
+    "runtime_probe_status": "PREFLIGHT_BLOCKED_BEFORE_A_H",
+    "literal_provider_request_retry_zero": "UNKNOWN",
+    "controller_dispatch_count_for_A_H": 0,
+    "fake_provider_started": false,
+    "fake_provider_request_count": 0,
+    "live_anthropic_requests": 0,
+    "live_jules_requests": 0,
+    "real_credentials_used": 0,
+    "claude_provider_session_started": false,
+    "merge_performed": false,
+    "workflow_rerun_or_retry": false
+  },
+  "network_isolation": {
+    "docker_network_driver": "null",
+    "container_network_mode": "--network none",
+    "interfaces": ["lo"],
+    "ip_command_available": false,
+    "proc_net_route_entries": 0,
+    "proc_net_dev_interfaces": ["lo"],
+    "external_ipv4_probe": {
+      "blocked": true,
+      "evidence": "OSError: [Errno 101] Network is unreachable"
+    },
+    "external_dns_probe": {
+      "blocked": true,
+      "evidence": "gaierror: [Errno -3] Temporary failure in name resolution"
+    },
+    "verdict": "PASS_BEFORE_RUNTIME_PREFLIGHT"
+  },
+  "official_runtime_identity": {
+    "repository": "anthropics/claude-code",
+    "release_tag": "v2.1.283",
+    "source_tag_commit": "7779afb12e3635f46f56ec823979d68350ae000b",
+    "asset_name": "claude-linux-x64.tar.gz",
+    "asset_size_bytes": 107232692,
+    "official_asset_digest": "sha256:db404a91bec8baffb53463166fdc8bf579208a527d60afc2d984d7507dc0c2f9",
+    "downloaded_archive_sha256": "DB404A91BEC8BAFFB53463166FDC8BF579208A527D60AFC2D984D7507DC0C2F9",
+    "executable_path_in_container": "/runtime/claude",
+    "executable_sha256": "1859583CE32920595C61EF868BEE52E1B1594F7486DB209935E01F1E5E804AE2",
+    "executable_hash_matches_runner_record": true,
+    "version_stdout": "2.1.283 (Claude Code)",
+    "version_exit_status": 0,
+    "host_executed_claude": false,
+    "isolated_cli_utility_invocations": ["claude --version", "claude --help"],
+    "model_or_provider_invocations": 0
+  },
+  "container_identity": {
+    "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0",
+    "repo_digest": "python@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
+  },
+  "preflight_failure": {
+    "version_check": "PASS",
+    "help_command_exit_status": 0,
+    "help_capture_limit_chars": 6000,
+    "help_artifact_length_chars": 6000,
+    "help_capture_complete": false,
+    "required_flags_reported_present": ["--tools"],
+    "required_flags_reported_missing": ["--restricted", "--safe-mode", "--max-turns", "--no-session-persistence", "--permission-prompts"],
+    "interpretation": "The persisted help text was truncated to its final 6000 characters. Missing flags cannot be concluded absent from the executable; the probe correctly stopped because actual-binary help verification was incomplete. Do not infer settings support or execute A-H from this artifact."
+  },
+  "cases": [
+    {"id":"A","scenario":"single successful response","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"B","scenario":"max_tokens output truncation","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"C","scenario":"no response / API timeout","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"D","scenario":"mid-stream disconnect","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"E","scenario":"retryable 5xx response","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"F","scenario":"429 response","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"G","scenario":"401 authentication failure/recovery","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0},
+    {"id":"H","scenario":"interrupt / continuation","status":"NOT_STARTED_PRECHECK_BLOCKED","controller_dispatch_count":0,"fake_provider_request_count":0}
+  ],
+  "evidence_artifact_sha256": {
+    "evidence.json": "578F743C568C648E6B4A7FF0CB4FB57EE732A9DCD4519E6279289EBBC268DA63",
+    "runner-identity.json": "FD5EC17B71984ECFB488D49D154DD75BBB81B116F8CEC3A2147AFD034C926EE7",
+    "runtime-help.txt": "91F205F136DEB4980E867513834AAFB5FA1203B955DABE5177B5A942550837F4",
+    "container-identity.json": "2BEA33D0807E6AB45BE1167D84975F723D1EE912ADBB6F6AA15DE7491E7F7F0D"
+  },
+  "static_tests_before_workflow": {
+    "probe_harness_tests": "PASS (10)",
+    "claude_loop_tests": "PASS (9)",
+    "command_bus_regression_tests": "PASS (313)",
+    "compileall": "PASS",
+    "diff_check": "PASS"
+  },
+  "safety": {
+    "official_linux_asset_download_count": 1,
+    "package_install_or_update": false,
+    "real_credential_or_secret_read": false,
+    "repository_or_settings_permission_changes": false,
+    "github_workflow_token_permission": "contents: read",
+    "workflow_rerun": false,
+    "reason_no_rerun": "One-time release download authorization was consumed and retry policy is zero; the runner is ephemeral and did not retain the executable."
+  },
+  "conclusion": "Network isolation, release/archive/executable identity, and v2.1.283 version were verified. The binary's help output was captured incompletely, so required runtime flags were not verified. The safety gate blocked before A-H. CLAUDE_LITERAL_RETRY_ZERO remains UNKNOWN; do not infer PASS or FAIL."
+}

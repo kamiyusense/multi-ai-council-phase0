@@ -91,4 +91,3 @@ compared/read back before Merge.
 
 The existing executor/reviewer claims and mutation leases are deliberately not
 promoted into Loop-wide owner authority.
-
