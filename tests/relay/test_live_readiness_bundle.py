@@ -160,9 +160,12 @@ class TestLiveReadinessBundle(unittest.TestCase):
         mutations = {
             "live_ready_true": {"live_ready": True},
             "dispatch_allowed_true": {"dispatch_allowed": True},
+            "human_approval_false": {"human_approval_required": False},
             "retry_nonzero": {"retry_count": 1},
             "fallback_enabled": {"fallback_state": "enabled"},
+            "unknown_state": {"state": "LIVE_READY"},
             "missing_state": {},
+            "extra_key": {"extra": True},
             "not_a_dict": None,
         }
 
@@ -172,7 +175,7 @@ class TestLiveReadinessBundle(unittest.TestCase):
                     mock_evaluate.return_value = "not a dict"
                 else:
                     mutated = copy.deepcopy(base_valid_mock)
-                    if "missing_state" in name:
+                    if name == "missing_state":
                         del mutated["state"]
                     else:
                         mutated.update(update)
@@ -180,6 +183,36 @@ class TestLiveReadinessBundle(unittest.TestCase):
 
                 result = build_live_readiness_bundle(valid_bundle_input())
                 self.assert_blocked(result)
+
+    def test_non_json_serializable_malformed_input_fails_closed(self):
+        payload = valid_bundle_input()
+        payload["openai"]["proofs"]["finite_timeout"]["evidence_ref"] = object()
+
+        result = build_live_readiness_bundle(payload)
+
+        self.assert_blocked(result)
+        self.assertEqual(result["provider_states"], {})
+        self.assertEqual(result["blocking_providers"], PROVIDER_ORDER)
+        self.assertEqual(result["evidence"], {})
+        self.assertRegex(result["packet_sha256"], r"^[a-f0-9]{64}$")
+
+    def test_summary_sanitizes_untrusted_states(self):
+        result = {
+            "state": "secret://do-not-echo",
+            "provider_states": {
+                "openai": "https://secret.example/token",
+                "anthropic": "READY_FOR_HUMAN_APPROVAL",
+                "google": "BLOCKED_UNKNOWN",
+            },
+        }
+
+        summary = render_live_readiness_summary_ja(result)
+
+        self.assertIn("全体状態: BLOCKED_UNKNOWN", summary)
+        self.assertNotIn("secret://", summary)
+        self.assertNotIn("https://", summary)
+        self.assertIn("- anthropic: READY_FOR_HUMAN_APPROVAL", summary)
+        self.assertIn("- google: BLOCKED_UNKNOWN", summary)
 
     def test_deep_copy_isolation(self):
         payload = valid_bundle_input()
