@@ -230,3 +230,36 @@ Until independent trust sources are wired:
   **NONE**
 - Issue #33 live mutation:
   **NONE**
+
+
+## Production authenticator audit
+
+Fresh repository search after the exact-head CI found:
+
+- `VerificationSourceAuthenticator` exists only as an interface/protocol in
+  `runtime_verifier_sources.py`;
+- concrete `authenticate()` implementations are test doubles under
+  `automation/command_bus/tests/`;
+- no production `SourceBoundProviderVerifier` wiring with a real authenticator
+  exists on current main;
+- no production `SourceBoundAuthorityGrantVerifier` wiring with a real
+  authenticator exists on current main.
+
+Therefore the remaining trust boundary is genuinely unresolved.
+
+This batch deliberately does **not** create a self-authenticating adapter from
+the same GitHub/Jules JSON that is being verified. Doing so would collapse the
+required independent trust boundary.
+
+Current classification:
+
+```text
+Jules provider readback normalization = IMPLEMENTED / STATIC GREEN
+Independent provider authenticator   = NOT_WIRED / UNKNOWN
+Independent authority authenticator  = NOT_WIRED / UNKNOWN
+Real owner ACQUIRE publication       = BLOCKED ON TRUST SOURCES
+```
+
+Choosing a production trust source is a separate design/authorization decision.
+Until then the existing publisher remains fail-closed and performs zero runtime
+ownership writes from this path.
