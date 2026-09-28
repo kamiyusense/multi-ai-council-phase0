@@ -4,7 +4,7 @@ on:
     branches:
       - "feature/relay-transport-7070955470193506982"
     paths:
-      - "automation/command_bus/relay_overlay_matrix_requests/*.json"
+      - "automation/command_bus/relay_overlay_policy_matrix_requests/*.json"
 
 concurrency:
   group: relay-core-pr3-overlay-policy-matrix
@@ -47,7 +47,7 @@ jobs:
           fi
 
           FILE_PATH=$(echo "$RESPONSE" | jq -r '.files[0].filename')
-          if ! echo "$FILE_PATH" | grep -q "^automation/command_bus/relay_overlay_matrix_requests/.*\.json$"; then
+          if ! echo "$FILE_PATH" | grep -q "^automation/command_bus/relay_overlay_policy_matrix_requests/.*\.json$"; then
             echo "Error: unexpected file path $FILE_PATH"
             exit 1
           fi
@@ -111,7 +111,8 @@ jobs:
 
           jq -e '.per_scenario.safety_unknown_google.provider_states == {"openai": "COMPLETE", "anthropic": "COMPLETE", "google": "COMPLETE"}' matrix_result.json > /dev/null
           jq -e '.per_scenario.safety_unknown_google.checkpoint.FAIL == []' matrix_result.json > /dev/null
-          jq -e '.per_scenario.safety_unknown_google.checkpoint.UNKNOWN == ["google:ERROR_UNKNOWN"]' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.checkpoint.UNKNOWN == []' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.participation_states == {"openai": "PARTICIPANT", "anthropic": "PARTICIPANT", "google": "PARTICIPANT"}' matrix_result.json > /dev/null
           jq -e '.per_scenario.safety_unknown_google.raw_evidence.exactness.openai == true' matrix_result.json > /dev/null
           jq -e '.per_scenario.safety_unknown_google.raw_evidence.exactness.anthropic == true' matrix_result.json > /dev/null
           jq -e '.per_scenario.safety_unknown_google.raw_evidence.exactness.google == true' matrix_result.json > /dev/null
@@ -125,13 +126,20 @@ jobs:
 
           jq -e '.per_scenario.fanout_unknown.providers_dir_exists == false' matrix_result.json > /dev/null
           jq -e '.per_scenario.fanout_unknown.comparison == null' matrix_result.json > /dev/null
-          jq -e '.per_scenario.fanout_unknown.checkpoint.UNKNOWN == ["core:FANOUT_UNKNOWN"]' matrix_result.json > /dev/null
-          jq -e 'has("retry_count") | not or (.retry_count == null)' <<< $(jq -c '.per_scenario.fanout_unknown.checkpoint' matrix_result.json) > /dev/null
-          jq -e 'has("fallback_state") | not or (.fallback_state == null)' <<< $(jq -c '.per_scenario.fanout_unknown.checkpoint' matrix_result.json) > /dev/null
+          jq -e '.per_scenario.fanout_unknown.report == null' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.provider_states == {}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.checkpoint.UNKNOWN == ["fan-out not confirmed PASS"]' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.checkpoint.retry_count == null' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.checkpoint.fallback_state == null' matrix_result.json > /dev/null
           jq -e '.per_scenario.fanout_unknown.dispatch_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
           jq -e '.per_scenario.fanout_unknown.collect_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
 
-          jq -e '.per_scenario.stop_before_dispatch.checkpoint.UNKNOWN == ["core:STOP_REQUESTED"]' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.provider_states == {"openai": "ERROR_UNKNOWN", "anthropic": "ERROR_UNKNOWN", "google": "ERROR_UNKNOWN"}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.participation_states == {"openai": "NONPARTICIPANT", "anthropic": "NONPARTICIPANT", "google": "NONPARTICIPANT"}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.checkpoint.FAIL == []' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.checkpoint.UNKNOWN == ["anthropic:ERROR_UNKNOWN", "google:ERROR_UNKNOWN", "openai:ERROR_UNKNOWN"]' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.comparison.participant_count == 0' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.comparison.agreement_count == 0' matrix_result.json > /dev/null
           jq -e '.per_scenario.stop_before_dispatch.comparison.human_required == true' matrix_result.json > /dev/null
           jq -e '.per_scenario.stop_before_dispatch.comparison.formal_consensus == false' matrix_result.json > /dev/null
           jq -e '.per_scenario.stop_before_dispatch.dispatch_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
