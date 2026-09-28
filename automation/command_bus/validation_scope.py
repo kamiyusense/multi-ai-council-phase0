@@ -36,6 +36,7 @@ LEDGER_PREFIXES = (
     ROOT + "auth_handoffs/",
     ROOT + "loop_owner_events/",
     ROOT + "loop_owner_observations/",
+    ROOT + "loop_owner_authorities/",
 )
 
 

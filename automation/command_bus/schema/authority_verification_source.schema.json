@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Normalized authority verification source v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","verification_kind","source_id","source_ref","verification_state","observed_at","expires_at","authority_id","loop_id","owner_role","holder_id","generation","fencing_token","previous_generation","event_type","expected_repo","expected_pr","expected_target_head","command_id","correlation_id","proof_refs"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "verification_kind": {"const": "AUTHORITY_GRANT"},
+    "source_id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "source_ref": {"type":"string","pattern":"^automation/command_bus/evidence/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"},
+    "verification_state": {"enum":["VERIFIED","REJECTED","UNKNOWN"]},
+    "observed_at": {"type":"string","format":"date-time"},
+    "expires_at": {"type":"string","format":"date-time"},
+    "authority_id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "loop_id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "owner_role": {"enum":["SEMI_AUTO","AUTO"]},
+    "holder_id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "generation": {"type":"integer","minimum":1},
+    "fencing_token": {"type":"integer","minimum":1},
+    "previous_generation": {"oneOf":[{"type":"null"},{"type":"integer","minimum":1}]},
+    "event_type": {"enum":["ACQUIRE","RENEW","HANDOFF","RELEASE","TERMINAL"]},
+    "expected_repo": {"type":"string","pattern":"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "expected_pr": {"type":"integer","minimum":1},
+    "expected_target_head": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "command_id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "correlation_id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "proof_refs": {"type":"array","minItems":1,"maxItems":32,"uniqueItems":true,"items":{"type":"string","pattern":"^[A-Za-z][A-Za-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._/-]{0,191}$"}}
+  }
+}

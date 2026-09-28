@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Canonical Runtime Transition Evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidence_id", "loop_id", "generation", "command_id", "correlation_id", "expected_repo", "expected_pr", "expected_target_head", "source_receipt_ref", "provider_kind", "provider_state", "observed_at", "external_refs", "test_results", "provider_readback", "publication_evidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "evidence_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "loop_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "generation": {"type": "integer", "minimum": 1},
+    "command_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "correlation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "expected_repo": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "expected_pr": {"type": "integer", "minimum": 1},
+    "expected_target_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_receipt_ref": {"type": "string", "pattern": "^automation/command_bus/receipts/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"},
+    "provider_kind": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "provider_state": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_ -]{0,63}$"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "external_refs": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._/-]{0,191}$"}},
+    "test_results": {"type": "array", "maxItems": 32, "items": {"type": "object", "additionalProperties": false, "required": ["name", "status"], "properties": {"name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}, "status": {"enum": ["PASS", "FAIL", "UNKNOWN"]}}}},
+    "provider_readback": {"type": ["string", "null"], "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._/-]{0,191}$"},
+    "publication_evidence": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["commit_sha", "tree_sha"], "properties": {"commit_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"}, "tree_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"}}}]}
+  }
+}
