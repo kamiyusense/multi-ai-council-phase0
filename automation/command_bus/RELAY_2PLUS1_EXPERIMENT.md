@@ -575,3 +575,47 @@ Cycle members:
 - retry=0 / fallback=disabled / merge=human-only
 - live provider/model/API execution: no
 - required invariant: unresolved inventory blocks before bundle evaluation; complete synthetic inventory may reach only READY_FOR_HUMAN_APPROVAL and never live_ready/dispatch_allowed
+
+
+### Loop 048 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: static readiness pipeline connecting inventory -> proof conversion -> three-provider readiness bundle
+- Jules session: `1931943215736578174`
+- Jules PR: #108
+- isolated base: `jules-work/relay-dev-loop-048-readiness-pipeline`
+- canonical snapshot parent: `071c733b6a59f85a90c22b9563e056505f2b77ba`
+- initial Jules head: `b54b32dabc3432abdea23bf26c64debff6d7bd6c`
+- corrected isolated candidate: `df2812e8534c90b3e93b4c2110fb638145349e06`
+- accepted canonical head: `672033b9ab0ff91829b2595617b5ae120aceb6b1`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial issues:
+  - bundle packet_sha256 was not validated as exact lowercase 64-hex
+  - provider_states and blocking_providers were not validated as exact/consistent bundle semantics
+  - normalized inventory dependency output was copied into pipeline metadata before strict validation
+  - schema allowed empty-string hashes and did not strictly model empty fail-closed vs exact three-provider maps
+  - tests did not directly cover tampered inventory dependency output, conversion failure, malformed bundle hashes/provider maps, or AST no-direct-provider-gate constraint
+- correction_commits_on_isolated_candidate: 4
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 2
+- actions_status_feedback: 0
+- actions_total: 3
+- candidate exact validation run: `36450908609` SUCCESS
+- canonical exact validation run: `36451117459` SUCCESS
+- exact validation: 332 tests PASS; compileall PASS; diff-check PASS
+- pipeline now strictly validates normalized inventory and bundle dependency outputs before trusting metadata
+- unresolved inventory blocks before bundle evaluation
+- complete synthetic evidence may reach only READY_FOR_HUMAN_APPROVAL; live_ready=false / dispatch_allowed=false / human_approval_required=true remain fixed
+- real live proofs confirmed: none
+- live provider/model/API execution: no
+- isolation result: PASS
+- PR #108 closed unmerged after validated content publication
+
+## Experiment cycle 4 interim
+- Loop 047 medium: accepted after correction
+- Loop 048 medium: accepted after correction
+- final acceptance so far: 2/2
+- untouched first pass so far: 0/2
+- re-Jules replacement sessions: 0
+- Loop 049 long is next
