@@ -16,6 +16,7 @@ import { prepareClaudeInvocation } from "../docker/claude-runtime/claude_runtime
 const requiredRuntimeEnv = {
   ANTHROPIC_BASE_URL: "http://gate:8080",
   HTTPS_PROXY: "http://auth-control-proxy:3128",
+  NO_PROXY: "gate",
   CLAUDE_CODE_PROXY_RESOLVES_HOSTS: "1",
   PHASE0_TRANSPORT_MODE: "CONTAINER_INTERNAL",
   CLAUDE_CODE_MAX_RETRIES: "0",
@@ -253,14 +254,17 @@ test("launcher pins HTTPS_PROXY and keeps model traffic bound to Admission Gate"
   };
   const invocation = prepareClaudeInvocation(env, ["synthetic prompt"]);
   assert.equal(invocation.env.HTTPS_PROXY, "http://auth-control-proxy:3128");
+  assert.equal(invocation.env.NO_PROXY, "gate");
   assert.equal(invocation.env.CLAUDE_CODE_PROXY_RESOLVES_HOSTS, "1");
   assert.equal(invocation.env.ANTHROPIC_BASE_URL, "http://gate:8080");
-  for (const name of ["HTTP_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"]) {
+  for (const name of ["HTTP_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy", "No_Proxy"]) {
     const injected = { ...env, [name]: "http://attacker.example:3128" };
     assert.throws(() => prepareClaudeInvocation(injected, ["synthetic prompt"]), /proxy/);
   }
   const overridden = { ...env, HTTPS_PROXY: "http://attacker.example:3128" };
   assert.throws(() => prepareClaudeInvocation(overridden, ["synthetic prompt"]), /HTTPS_PROXY/);
+  const noProxyOverridden = { ...env, NO_PROXY: "*" };
+  assert.throws(() => prepareClaudeInvocation(noProxyOverridden, ["synthetic prompt"]), /NO_PROXY/);
 });
 
 test("proxy source has no request-data logging", async () => {
