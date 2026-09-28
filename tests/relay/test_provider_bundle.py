@@ -1,54 +1,60 @@
+import ast
+import json
 import unittest
-from copy import deepcopy
+from pathlib import Path
 
-from src.providers.base import ProviderStaticProfile
-from src.providers.codex_acp import build_codex_profile
-from src.providers.claude_acp import build_claude_profile
-from src.providers.antigravity_acp import build_antigravity_profile
-from src.providers.bundle import ProviderAdapterBundle
-from src.relay.bridge import RelayProviderAdapterBridge
-from src.relay.dispatcher import RelayDispatcher, DuplicateConflictGuard
+from providers.antigravity_acp import build_antigravity_profile
+from providers.base import ProviderStaticProfile
+from providers.bundle import ProviderAdapterBundle
+from providers.claude_acp import build_claude_profile
+from providers.codex_acp import build_codex_profile
+from relay.bridge import RelayProviderAdapterBridge
+from relay.dispatcher import DuplicateConflictGuard, RelayDispatcher
 
-class TestProviderBundle(unittest.TestCase):
-    def setUp(self):
-        self.valid_profiles = [
-            build_codex_profile(
-                auth_kind="account",
-                route_evidence={
-                    "api_key_present": False,
-                    "gateway_configured": False,
-                    "external_cloud_configured": False,
-                    "custom_model_provider_configured": False,
-                    "arbitrary_codex_config_present": False,
-                }
-            ),
-            build_claude_profile(
-                auth_kind="account",
-                route_evidence={
-                    "api_key_present": False,
-                    "gateway_configured": False,
-                    "external_cloud_configured": False,
-                    "hide_claude_auth": False,
-                    "dangerous_permission_bypass": False,
-                }
-            ),
-            build_antigravity_profile(
-                auth_kind="account",
-                route_evidence={
-                    "api_key_present": False,
-                    "gateway_configured": False,
-                    "external_cloud_configured": False,
-                    "cloud_billing_selected": False,
-                    "overages_enabled": False,
-                    "adc_present": False,
-                    "vertex_selected": False,
-                },
-                platform="linux",
-                architecture="x86_64"
-            )
-        ]
-        import json
-        self.valid_raw_response = json.dumps({
+
+class CountingBridge(RelayProviderAdapterBridge):
+    def __init__(self, *, provider_id=None, **kwargs):
+        super().__init__(**kwargs)
+        self.provider_id = provider_id
+        self.preflight_count = 0
+        self.classify_count = 0
+
+    def preflight(self, prepared_context):
+        self.preflight_count += 1
+        return super().preflight(prepared_context)
+
+    def classify(self, raw_result):
+        self.classify_count += 1
+        return super().classify(raw_result)
+
+
+class DuckBridge:
+    def __init__(self, inner, provider_id=None):
+        self.inner = inner
+        self.provider_id = provider_id
+
+    def prepare(self, value):
+        return self.inner.prepare(value)
+
+    def preflight(self, value):
+        return self.inner.preflight(value)
+
+    def dispatch(self, value):
+        return self.inner.dispatch(value)
+
+    def collect(self, value):
+        return self.inner.collect(value)
+
+    def abort(self, value):
+        return self.inner.abort(value)
+
+    def classify(self, value):
+        return self.inner.classify(value)
+
+
+def raw_response():
+    return json.dumps(
+        {
             "schema_version": "phase0-response-v1",
             "answer_state": "ANSWER",
             "conclusion_code": "SUCCESS",
@@ -57,134 +63,269 @@ class TestProviderBundle(unittest.TestCase):
             "evidence_refs": [],
             "marker_echoes": {"head": None, "middle": None, "tail": None},
             "answer_text": "hello",
-        })
-        self.valid_bridges = {
-            "openai": RelayProviderAdapterBridge(mock_raw_response=self.valid_raw_response),
-            "anthropic": RelayProviderAdapterBridge(mock_raw_response=self.valid_raw_response),
-            "google": RelayProviderAdapterBridge(mock_raw_response=self.valid_raw_response)
         }
+    )
 
-    def test_bundle_creation_success(self):
-        bundle = ProviderAdapterBundle(self.valid_profiles, self.valid_bridges)
-        adapters = bundle.get_adapters_in_order()
 
-        self.assertEqual(len(adapters), 3)
-        self.assertEqual(adapters[0].provider_id, "openai")
-        self.assertEqual(adapters[1].provider_id, "anthropic")
-        self.assertEqual(adapters[2].provider_id, "google")
+def profiles():
+    return {
+        "openai": build_codex_profile(
+            "account",
+            {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False,
+            },
+        ),
+        "anthropic": build_claude_profile(
+            "account",
+            {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "dangerous_permission_bypass": False,
+                "hide_claude_auth": False,
+            },
+        ),
+        "google": build_antigravity_profile(
+            "account",
+            {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "cloud_billing_selected": False,
+                "overages_enabled": False,
+                "adc_present": False,
+                "vertex_selected": False,
+            },
+            "linux",
+            "x86_64",
+        ),
+    }
 
-        for k in self.valid_bridges:
-            self.assertEqual(self.valid_bridges[k].dispatch_count, 0)
-            self.assertEqual(self.valid_bridges[k].collect_count, 0)
 
-    def test_bundle_rejects_missing_profile(self):
-        profiles = self.valid_profiles[:2]
-        with self.assertRaisesRegex(ValueError, "Exactly three profiles required"):
-            ProviderAdapterBundle(profiles, self.valid_bridges)
+def bridges():
+    response = raw_response()
+    return {
+        provider_id: CountingBridge(
+            provider_id=provider_id,
+            mock_raw_response=response,
+        )
+        for provider_id in ("openai", "anthropic", "google")
+    }
 
-    def test_bundle_rejects_missing_bridge(self):
-        bridges = {"openai": self.valid_bridges["openai"], "anthropic": self.valid_bridges["anthropic"]}
-        with self.assertRaisesRegex(ValueError, "Exactly three bridges required"):
-            ProviderAdapterBundle(self.valid_profiles, bridges)
 
-    def test_bundle_rejects_duplicate_profiles(self):
-        profiles = [self.valid_profiles[0], self.valid_profiles[0], self.valid_profiles[1]]
-        with self.assertRaisesRegex(ValueError, "Profiles must exactly match canonical provider set"):
-            ProviderAdapterBundle(profiles, self.valid_bridges)
+class TestProviderAdapterBundle(unittest.TestCase):
+    def test_bundle_construction_is_side_effect_free_and_deterministic(self):
+        source_profiles = profiles()
+        source_bridges = bridges()
+        bundle = ProviderAdapterBundle(source_profiles, source_bridges)
 
-    def test_bundle_rejects_wrong_keys_bridges(self):
-        bridges = {
-            "openai": self.valid_bridges["openai"],
-            "anthropic": self.valid_bridges["anthropic"],
-            "wrong": self.valid_bridges["google"]
-        }
-        with self.assertRaisesRegex(ValueError, "Bridges must exactly match canonical provider set"):
-            ProviderAdapterBundle(self.valid_profiles, bridges)
+        self.assertEqual(
+            tuple(adapter.provider_id for adapter in bundle.get_adapters_in_order()),
+            ("openai", "anthropic", "google"),
+        )
+        self.assertEqual(tuple(bundle.adapters), ("openai", "anthropic", "google"))
 
-    def test_adapters_preflight_and_live_ready(self):
-        bundle = ProviderAdapterBundle(self.valid_profiles, self.valid_bridges)
+        for bridge in source_bridges.values():
+            self.assertEqual(bridge.preflight_count, 0)
+            self.assertEqual(bridge.dispatch_count, 0)
+            self.assertEqual(bridge.collect_count, 0)
+            self.assertEqual(bridge.classify_count, 0)
+            self.assertEqual(bridge.abort_calls, [])
+
+    def test_accepts_bridge_compatible_duck_type(self):
+        source_profiles = profiles()
+        source_bridges = bridges()
+        source_bridges["openai"] = DuckBridge(
+            source_bridges["openai"], provider_id="openai"
+        )
+        bundle = ProviderAdapterBundle(source_profiles, source_bridges)
+        self.assertEqual(bundle.get_adapters_in_order()[0].provider_id, "openai")
+
+    def test_all_three_static_preflights_pass_but_live_stays_blocked(self):
+        bundle = ProviderAdapterBundle(profiles(), bridges())
         for adapter in bundle.get_adapters_in_order():
-            prepared = adapter.prepare({
-                "case_id": "test",
-                "provider_id": adapter.provider_id,
-                "session_id": "sess-1",
-                "correlation_id": "corr-1"
-            })
-            preflight = adapter.preflight(prepared)
-            self.assertTrue(preflight.get("ok"))
-            self.assertFalse(preflight.get("live_ready"))
-
-    def test_dispatcher_roundtrip_per_provider(self):
-        bundle = ProviderAdapterBundle(self.valid_profiles, self.valid_bridges)
-        adapters = bundle.get_adapters_in_order()
-
-        for adapter in adapters:
-            guard = DuplicateConflictGuard()
-            dispatcher = RelayDispatcher(adapter, guard)
-
-            result = dispatcher.dispatch(
-                slot_id=f"slot-{adapter.provider_id}",
-                context={
-                    "case_id": "case-1",
+            prepared = adapter.prepare(
+                {
+                    "case_id": "case",
                     "provider_id": adapter.provider_id,
                     "session_id": f"sess-{adapter.provider_id}",
                     "correlation_id": f"corr-{adapter.provider_id}",
                 }
             )
+            result = adapter.preflight(prepared)
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["static_configuration_status"], "PASS")
+            self.assertFalse(result["live_ready"])
+            self.assertEqual(result["live_readiness"], "BLOCKED")
 
-            self.assertEqual(result.get("state"), "SIMULATED")
-            self.assertFalse(result.get("live_ready"))
-            self.assertFalse(result.get("live_turn_executed"))
-            self.assertEqual(result.get("retry_count"), 0)
-            self.assertEqual(result.get("fallback_state"), "disabled")
+    def test_exact_mock_round_trip_once_per_provider(self):
+        source_bridges = bridges()
+        bundle = ProviderAdapterBundle(profiles(), source_bridges)
 
-            bridge = self.valid_bridges[adapter.provider_id]
+        for adapter in bundle.get_adapters_in_order():
+            dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+            result = dispatcher.dispatch(
+                f"slot-{adapter.provider_id}",
+                {
+                    "case_id": "case",
+                    "provider_id": adapter.provider_id,
+                    "session_id": f"sess-{adapter.provider_id}",
+                    "correlation_id": f"corr-{adapter.provider_id}",
+                    "payload": {},
+                },
+            )
+            self.assertEqual(result["state"], "SIMULATED")
+            self.assertEqual(result["retry_count"], 0)
+            self.assertEqual(result["fallback_state"], "disabled")
+            self.assertFalse(result["live_ready"])
+            self.assertFalse(result["live_turn_executed"])
+            self.assertEqual(
+                result["raw_evidence"]["rawResponse"],
+                raw_response(),
+            )
+            self.assertTrue(result["provider_state"]["success"])
+
+        for bridge in source_bridges.values():
             self.assertEqual(bridge.dispatch_count, 1)
             self.assertEqual(bridge.collect_count, 1)
+            self.assertEqual(bridge.classify_count, 1)
 
-    def test_provider_isolation_on_failure(self):
-        self.valid_bridges["openai"].simulate_failure = True
-        bundle = ProviderAdapterBundle(self.valid_profiles, self.valid_bridges)
-        adapters = {a.provider_id: a for a in bundle.get_adapters_in_order()}
+    def test_timeout_does_not_touch_or_fallback_to_other_provider(self):
+        source_bridges = bridges()
+        source_bridges["openai"].simulate_timeout = True
+        bundle = ProviderAdapterBundle(profiles(), source_bridges)
+        adapters = bundle.adapters
 
-        guard = DuplicateConflictGuard()
-        dispatcher_openai = RelayDispatcher(adapters["openai"], guard)
-
-        result_openai = dispatcher_openai.dispatch(
-            slot_id="slot-openai",
-            context={
-                "case_id": "case-1",
+        result = RelayDispatcher(
+            adapters["openai"], DuplicateConflictGuard()
+        ).dispatch(
+            "slot-openai",
+            {
                 "provider_id": "openai",
-                "session_id": "sess-1",
-                "correlation_id": "corr-1",
-            }
+                "session_id": "sess-openai",
+                "correlation_id": "corr-openai",
+                "payload": {},
+            },
         )
-        self.assertEqual(result_openai.get("state"), "UNKNOWN")
-        self.assertEqual(self.valid_bridges["openai"].dispatch_count, 0)
+        self.assertEqual(result["state"], "TIMEOUT")
+        self.assertEqual(result["retry_count"], 0)
+        self.assertEqual(result["fallback_state"], "disabled")
+        self.assertEqual(source_bridges["openai"].dispatch_count, 1)
+        self.assertEqual(source_bridges["openai"].collect_count, 1)
+        self.assertEqual(len(source_bridges["openai"].abort_calls), 1)
+        for other in ("anthropic", "google"):
+            self.assertEqual(source_bridges[other].dispatch_count, 0)
+            self.assertEqual(source_bridges[other].collect_count, 0)
+            self.assertEqual(source_bridges[other].abort_calls, [])
 
-        dispatcher_anthropic = RelayDispatcher(adapters["anthropic"], guard)
-        result_anthropic = dispatcher_anthropic.dispatch(
-            slot_id="slot-anthropic",
-            context={
-                "case_id": "case-2",
+    def test_error_does_not_touch_or_fallback_to_other_provider(self):
+        source_bridges = bridges()
+        source_bridges["anthropic"].simulate_error_in_collect = True
+        bundle = ProviderAdapterBundle(profiles(), source_bridges)
+        adapters = bundle.adapters
+
+        result = RelayDispatcher(
+            adapters["anthropic"], DuplicateConflictGuard()
+        ).dispatch(
+            "slot-anthropic",
+            {
                 "provider_id": "anthropic",
-                "session_id": "sess-2",
-                "correlation_id": "corr-2",
-            }
+                "session_id": "sess-anthropic",
+                "correlation_id": "corr-anthropic",
+                "payload": {},
+            },
         )
-        self.assertEqual(result_anthropic.get("state"), "SIMULATED")
-        self.assertEqual(self.valid_bridges["anthropic"].dispatch_count, 1)
-        self.assertEqual(self.valid_bridges["anthropic"].collect_count, 1)
+        self.assertEqual(result["state"], "UNKNOWN")
+        self.assertEqual(result["retry_count"], 0)
+        self.assertEqual(result["fallback_state"], "disabled")
+        self.assertEqual(source_bridges["anthropic"].dispatch_count, 1)
+        self.assertEqual(source_bridges["anthropic"].collect_count, 1)
+        self.assertEqual(len(source_bridges["anthropic"].abort_calls), 1)
+        for other in ("openai", "google"):
+            self.assertEqual(source_bridges[other].dispatch_count, 0)
+            self.assertEqual(source_bridges[other].collect_count, 0)
+            self.assertEqual(source_bridges[other].abort_calls, [])
+
+    def test_rejects_missing_extra_and_mismatched_profiles(self):
+        good_profiles = profiles()
+        good_bridges = bridges()
+
+        missing = dict(good_profiles)
+        missing.pop("google")
+        with self.assertRaisesRegex(ValueError, "Profiles must exactly match"):
+            ProviderAdapterBundle(missing, good_bridges)
+
+        extra = dict(good_profiles)
+        extra["extra"] = good_profiles["openai"]
+        with self.assertRaisesRegex(ValueError, "Profiles must exactly match"):
+            ProviderAdapterBundle(extra, good_bridges)
+
+        mismatched = dict(good_profiles)
+        mismatched["anthropic"] = good_profiles["openai"]
+        with self.assertRaisesRegex(ValueError, "profile key/provider_id mismatch"):
+            ProviderAdapterBundle(mismatched, good_bridges)
+
+    def test_rejects_missing_extra_and_mismatched_bridges(self):
+        good_profiles = profiles()
+        good_bridges = bridges()
+
+        missing = dict(good_bridges)
+        missing.pop("google")
+        with self.assertRaisesRegex(ValueError, "Bridges must exactly match"):
+            ProviderAdapterBundle(good_profiles, missing)
+
+        extra = dict(good_bridges)
+        extra["extra"] = CountingBridge(provider_id="extra")
+        with self.assertRaisesRegex(ValueError, "Bridges must exactly match"):
+            ProviderAdapterBundle(good_profiles, extra)
+
+        mismatched = dict(good_bridges)
+        mismatched["google"] = CountingBridge(provider_id="openai")
+        with self.assertRaisesRegex(ValueError, "bridge key/provider_id mismatch"):
+            ProviderAdapterBundle(good_profiles, mismatched)
+
+    def test_rejects_non_profile_and_non_compatible_bridge(self):
+        bad_profiles = profiles()
+        bad_profiles["google"] = object()
+        with self.assertRaisesRegex(TypeError, "ProviderStaticProfile"):
+            ProviderAdapterBundle(bad_profiles, bridges())
+
+        bad_bridges = bridges()
+        bad_bridges["google"] = object()
+        with self.assertRaisesRegex(TypeError, "bridge must provide callable"):
+            ProviderAdapterBundle(profiles(), bad_bridges)
+
+    def test_source_mapping_mutation_and_returned_snapshots_cannot_mutate_bundle(self):
+        source_profiles = profiles()
+        source_bridges = bridges()
+        bundle = ProviderAdapterBundle(source_profiles, source_bridges)
+
+        source_profiles.clear()
+        source_bridges.clear()
+        self.assertEqual(
+            tuple(adapter.provider_id for adapter in bundle.get_adapters_in_order()),
+            ("openai", "anthropic", "google"),
+        )
+
+        returned = bundle.get_adapters_in_order()
+        self.assertIsInstance(returned, tuple)
+        with self.assertRaises(TypeError):
+            bundle.adapters["openai"] = returned[0]
+
+    def test_new_module_has_no_os_subprocess_or_network_side_effect_imports(self):
+        path = Path("src/providers/bundle.py")
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    self.assertNotIn(alias.name, ("os", "subprocess", "socket"))
+            if isinstance(node, ast.ImportFrom):
+                self.assertNotIn(node.module, ("os", "subprocess", "socket"))
 
 
-    def test_bundle_immutable_snapshot(self):
-        bundle = ProviderAdapterBundle(self.valid_profiles, self.valid_bridges)
-        adapters_list = bundle.get_adapters_in_order()
-        adapters_list.pop()
-
-        adapters_again = bundle.get_adapters_in_order()
-        self.assertEqual(len(adapters_again), 3)
-        self.assertEqual(adapters_again[2].provider_id, "google")
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
