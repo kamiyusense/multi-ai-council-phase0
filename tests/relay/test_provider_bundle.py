@@ -192,7 +192,9 @@ class TestProviderAdapterBundle(unittest.TestCase):
         for bridge in source_bridges.values():
             self.assertEqual(bridge.dispatch_count, 1)
             self.assertEqual(bridge.collect_count, 1)
-            self.assertEqual(bridge.classify_count, 1)
+            # RelayCoreAdapter owns Provider Response Contract classification;
+            # the transport bridge must not classify the raw bytes again.
+            self.assertEqual(bridge.classify_count, 0)
 
     def test_timeout_does_not_touch_or_fallback_to_other_provider(self):
         source_bridges = bridges()
