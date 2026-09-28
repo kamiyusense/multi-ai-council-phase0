@@ -9,6 +9,7 @@ from pathlib import Path
 from automation.command_bus.jules_session_acceptance import (
     extract_session_acceptance,
     load_session_acceptance,
+    verify_session_acceptance_readback,
 )
 
 
@@ -85,6 +86,35 @@ class JulesSessionAcceptanceTests(unittest.TestCase):
             result = load_session_acceptance(path, expected_branch="feature/example")
         self.assertEqual(result.session_id, "31415926535897932384")
 
+
+    def test_later_session_readback_confirms_same_acceptance_time(self):
+        accepted = extract_session_acceptance(
+            response(),
+            expected_branch="feature/example",
+        )
+        observed = verify_session_acceptance_readback(accepted, response())
+        self.assertEqual(observed, accepted)
+
+    def test_later_session_readback_time_or_identity_mismatch_blocks(self):
+        accepted = extract_session_acceptance(
+            response(),
+            expected_branch="feature/example",
+        )
+
+        wrong_time = response()
+        wrong_time["createTime"] = "2026-09-28T04:00:00Z"
+        with self.assertRaisesRegex(ValueError, "createTime mismatch"):
+            verify_session_acceptance_readback(accepted, wrong_time)
+
+        wrong_name = response()
+        wrong_name["name"] = "sessions/999999"
+        with self.assertRaisesRegex(ValueError, "name mismatch"):
+            verify_session_acceptance_readback(accepted, wrong_name)
+
+        wrong_branch = response()
+        wrong_branch["sourceContext"]["githubRepoContext"]["startingBranch"] = "feature/other"
+        with self.assertRaisesRegex(ValueError, "branch mismatch"):
+            verify_session_acceptance_readback(accepted, wrong_branch)
 
 if __name__ == "__main__":
     unittest.main()
