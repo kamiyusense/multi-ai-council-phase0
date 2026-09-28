@@ -393,3 +393,68 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - retry=0 / fallback=disabled / merge=human-only
 - live provider/model/API execution: no
 - required invariant: even complete synthetic proof may reach only READY_FOR_HUMAN_APPROVAL; live_ready=false and dispatch_allowed=false remain mandatory
+
+
+## Experiment cycle 3 — 2 medium + 1 long
+
+Cycle members:
+- Loop 044: medium
+- Loop 045: medium
+- Loop 046: long
+
+### Loop 045 — medium — COMPLETE / ACCEPTED
+- task: static fail-closed live-readiness evidence gate
+- Jules session: 2496941792782960868
+- Jules PR: #99
+- isolated base: jules-work/relay-dev-loop-045-live-readiness-gate
+- canonical snapshot parent: 83b74d9ef689fc696c6237a41d7791c501385f54
+- initial Jules head: b1fd0ab1f71584b1853fff1a9322b4825b66d3e5
+- corrected isolated candidate: b620ceff76fa99c1bcc0bc2088a69a7a1ff2ec59
+- accepted canonical head: 3a5abc99f834dc038d39033a9ac14967ddb6c7b3
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial issues:
+  - tests were written as pytest-style top-level functions and were not discoverable by the canonical unittest-discover validation path
+  - preflight consistency checks did not fail closed on external_agent / pinned_version / live_readiness tampering
+  - malformed proof records with extra fields were not rejected exactly
+- correction_commits_on_isolated_candidate: 2
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 2
+- actions_status_feedback: 0
+- actions_total: 3
+- candidate exact validation run: 36398844755 SUCCESS
+- canonical exact validation run: 36399066904 SUCCESS
+- exact validation: 259 tests PASS; compileall PASS; diff-check PASS
+- canonical publication: validated four-file content copied by Chat-side commits; Jules candidate history was not pointed directly at canonical
+- gate invariant: synthetic full evidence may reach only READY_FOR_HUMAN_APPROVAL; live_ready=false / dispatch_allowed=false always
+- real live blockers resolved: no
+- live provider/model execution: no
+- isolation result: PASS for Loop 045 publication path
+
+### Loop 046 — long — DISPATCHED / IN PROGRESS
+- task: deterministic three-provider live-readiness bundle / human-approval packet
+- target duration class: ~25-35 min
+- canonical snapshot head: 3a5abc99f834dc038d39033a9ac14967ddb6c7b3
+- canonical snapshot tree: 59704369fec5bcd99731460ca8a3ec515d6dd6fd
+- isolated starting branch: jules-work/relay-dev-loop-046-readiness-bundle
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: 36399406416 SUCCESS
+- Jules session: 17865758442948188006
+- verified Jules session accepted: 2026-09-28 17:46:58 JST
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: aggregate READY_FOR_HUMAN_APPROVAL can never set live_ready or dispatch_allowed true
+
+## Experiment cycle 3 interim totals
+- completed medium tasks: 2/2 accepted = 100%
+- untouched medium first pass: 0/2
+- re-Jules replacement sessions: 0
+- Loop 044 Actions: 7
+- Loop 045 Actions: 3
+- Loop 046 dispatch Actions so far: 1
+- cycle Actions so far: 11
+- status/readback/feedback Actions are concentrated in Loop 044 because of the Jules plan-payload AWAITING_USER_FEEDBACK event
+- Loop 045 required no status/feedback workflow and completed with 3 Actions total
+- long-task result not yet scored
