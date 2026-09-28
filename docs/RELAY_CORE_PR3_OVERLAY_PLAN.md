@@ -33,7 +33,16 @@ The negative-path matrix is now **PASS**. GitHub Actions run `36383797774` execu
 
 ## Policy Matrix Boundary
 
-- Static/mock policy matrix (safety unknown, fanout unknown, stop before dispatch) is PREPARED/NOT_RUN.
+- Static/mock policy matrix (safety unknown, fanout unknown, stop before dispatch): **PASS**
+- GitHub Actions run: `36395766196`
+- Relay code SHA: `089d34b013fe7462ad3c69cea17148f8e6e20ae9`
+- Trigger request commit: `384038943d763486ca666614828afd71ae71c2ab`
+- Pinned Core PR #3 head: `494b7296f32dce1c173a7699e4bd2d87f70d31a9`
+- `safety_unknown_google`: all three providers remained COMPLETE participants with exact RAW evidence; agreement_count=3; safety_block=true; human_required=true; formal_consensus=false.
+- `fanout_unknown`: Core stopped before provider directories/dispatch; comparison/report stayed absent; Core checkpoint preserved `fan-out not confirmed PASS`; dispatch/collect counts were 0.
+- `stop_before_dispatch`: all providers remained NONPARTICIPANT/ERROR_UNKNOWN from the pinned Core behavior; dispatch/collect counts were 0; participant_count=0; human_required=true; formal_consensus=false.
+- retry/fallback fields were preserved exactly: fanout early-return emits neither value (reported as null in matrix output); normal provider-loop cases emitted retry_count=0 and fallback_state=disabled.
+- live_turn_executed=false in every scenario.
 
 ## Live execution boundary
 
