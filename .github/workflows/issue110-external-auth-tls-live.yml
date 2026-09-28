@@ -1,0 +1,145 @@
+name: Issue 110 external auth TLS execution gate
+
+on:
+  push:
+    branches:
+      - prepare/issue110-external-tls-proof-v1
+    paths:
+      - .github/workflows/issue110-external-auth-tls-live.yml
+      - automation/command_bus/live_authorizations/issue110-external-auth-tls-001.json
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact execution head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Validate one-shot authorization receipt
+        id: auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="automation/command_bus/live_authorizations/issue110-external-auth-tls-001.json"
+
+          if [ "${GITHUB_RUN_ATTEMPT:-1}" != "1" ]; then
+            echo "authorized=false" >> "$GITHUB_OUTPUT"
+            echo "AUTHORIZATION_REPLAY_BLOCKED_NOOP"
+            exit 0
+          fi
+
+          if [ ! -f "$AUTH" ]; then
+            echo "authorized=false" >> "$GITHUB_OUTPUT"
+            echo "AUTHORIZATION_ABSENT_NOOP"
+            exit 0
+          fi
+
+          if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -Fx "$AUTH" >/dev/null; then
+            echo "authorized=false" >> "$GITHUB_OUTPUT"
+            echo "AUTHORIZATION_NOT_ADDED_BY_THIS_HEAD_NOOP"
+            exit 0
+          fi
+
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+
+          auth_path = Path("automation/command_bus/live_authorizations/issue110-external-auth-tls-001.json")
+          a = json.loads(auth_path.read_text(encoding="utf-8"))
+          required = {
+              "authorization_id",
+              "scope",
+              "authorized",
+              "expected_probe_blob",
+              "expected_proxy_blob",
+              "expected_compose_blob",
+              "retry",
+              "fallback",
+          }
+          assert set(a) == required, sorted(set(a) ^ required)
+          assert a["authorization_id"] == "ISSUE110-EXTERNAL-AUTH-TLS-001"
+          assert a["scope"] == "credential-free-external-tls-only"
+          assert a["authorized"] is True
+          assert a["retry"] == 0
+          assert a["fallback"] == "disabled"
+
+          expected = {
+              "automation/command_bus/claude_external_auth_tls_probe.mjs": a["expected_probe_blob"],
+              "automation/command_bus/docker/auth-control-plane/auth_control_plane_proxy.mjs": a["expected_proxy_blob"],
+              "automation/command_bus/claude_gate_compose.yaml": a["expected_compose_blob"],
+          }
+          for path, blob in expected.items():
+              actual = subprocess.check_output(["git", "hash-object", path], text=True).strip()
+              assert actual == blob, (path, actual, blob)
+          print("AUTHORIZATION_RECEIPT_EXACT_PASS")
+          PY
+
+          echo "authorized=true" >> "$GITHUB_OUTPUT"
+
+      - name: Verify credential-free environment
+        if: steps.auth.outputs.authorized == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in             ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_OAUTH_TOKEN             CLAUDE_CODE_OAUTH_REFRESH_TOKEN ANTHROPIC_AWS_API_KEY             ANTHROPIC_FOUNDRY_API_KEY ANTHROPIC_FOUNDRY_AUTH_TOKEN             AWS_BEARER_TOKEN_BEDROCK PHASE0_LIVE_EXECUTION PHASE0_DISPATCH_ID; do
+            if printenv "$key" >/dev/null 2>&1; then
+              echo "::error::forbidden credential/model-live environment present: $key"
+              exit 1
+            fi
+          done
+          echo "CREDENTIAL_FREE_ENV_PASS"
+
+      - name: Build and start auth-control proxy only
+        if: steps.auth.outputs.authorized == 'true'
+        shell: bash
+        env:
+          PHASE0_GATE_EXPECTED_STORE_ID: external-tls-proof-placeholder
+          PHASE0_GATE_CONTROL_DIR: ${{ runner.temp }}/phase0-external-tls-control
+        run: |
+          set -euo pipefail
+          mkdir -p "$PHASE0_GATE_CONTROL_DIR"
+          docker compose -p phase0externaltls             -f automation/command_bus/claude_gate_compose.yaml             --profile human-approval-required             build auth-control-proxy
+          docker compose -p phase0externaltls             -f automation/command_bus/claude_gate_compose.yaml             --profile human-approval-required             up -d --no-deps auth-control-proxy
+
+      - name: Execute one credential-free TLS-only probe
+        if: steps.auth.outputs.authorized == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm             --network phase0externaltls_internal             -e PHASE0_EXTERNAL_AUTH_TLS_PROOF=1             -v "$PWD/automation/command_bus:/probe:ro"             --entrypoint node             phase0-claude-auth-control-proxy:1             /probe/claude_external_auth_tls_probe.mjs run             | tee "${RUNNER_TEMP}/issue110-external-auth-tls-evidence.json"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"]) / "issue110-external-auth-tls-evidence.json"
+          e = json.loads(p.read_text(encoding="utf-8"))
+          assert e["status"] == "PASS"
+          assert e["connect_authority"] == "platform.claude.com:443"
+          assert e["tls_servername"] == "platform.claude.com"
+          assert e["tls_authorized"] is True
+          assert e["application_data_sent"] is False
+          assert e["credential_inputs_present"] is False
+          assert e["oauth_operation_performed"] is False
+          assert e["claude_process_started"] is False
+          assert e["anthropic_http_request_sent"] is False
+          assert e["retry"] == 0
+          assert e["fallback"] == "disabled"
+          print("EXTERNAL_TLS_ONLY_EVIDENCE_PASS")
+          PY
+
+      - name: Clean up proof containers and networks
+        if: always() && steps.auth.outputs.authorized == 'true'
+        shell: bash
+        env:
+          PHASE0_GATE_EXPECTED_STORE_ID: external-tls-proof-placeholder
+          PHASE0_GATE_CONTROL_DIR: ${{ runner.temp }}/phase0-external-tls-control
+        run: |
+          docker compose -p phase0externaltls             -f automation/command_bus/claude_gate_compose.yaml             --profile human-approval-required             down -v --remove-orphans || true
