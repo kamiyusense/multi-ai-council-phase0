@@ -126,6 +126,14 @@ class ControlTowerSnapshotContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exactly one"):
             extract_control_tower_snapshot(body + "\n" + body)
 
+
+    def test_unrelated_managed_comment_closers_after_snapshot_are_allowed(self):
+        body = rendered_body()
+        parsed = extract_control_tower_snapshot(
+            body + "\n<!-- unrelated-managed-block -->\n"
+        )
+        self.assertEqual(parsed["loops"][0]["loop_id"], "chatgpt-semi-auto")
+
     def test_unknown_top_level_or_lane_fields_fail_closed(self):
         top = fixture()
         top["extra"] = True
