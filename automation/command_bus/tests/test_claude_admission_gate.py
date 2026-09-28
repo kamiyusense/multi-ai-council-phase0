@@ -442,6 +442,9 @@ class AdmissionGateTests(unittest.TestCase):
         bad["services"]["auth-control-proxy"]["ports"] = ["3128:3128"]
         cases.append(bad)
         bad = deepcopy(manifest)
+        bad["services"]["auth-control-proxy"]["networks"]["internal"]["ipv4_address"] = "172.29.247.4"
+        cases.append(bad)
+        bad = deepcopy(manifest)
         bad["services"]["auth-control-proxy"]["volumes"] = ["claude-auth:/home/node/.claude"]
         cases.append(bad)
         bad = deepcopy(manifest)
