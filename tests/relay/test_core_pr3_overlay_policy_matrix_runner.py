@@ -73,5 +73,17 @@ class TestCorePR3OverlayPolicyMatrixRunner(unittest.TestCase):
         with self.assertRaises(ValueError):
             runner_module._provider_states_from_checkpoint({"FAIL": ["invalid"]})
 
+    def test_provider_states_rejects_invented_core_entry(self):
+        with self.assertRaises(ValueError):
+            runner_module._provider_states_from_checkpoint({
+                "FAIL": [],
+                "UNKNOWN": ["core:STOP_REQUESTED"],
+            })
+
+    def test_safety_unknown_fixture_keeps_yes_conclusion(self):
+        payload = runner_module._google_unknown_raw_response()
+        self.assertIn('"conclusion_code":"YES"', payload)
+        self.assertIn('"safety_warning":"UNKNOWN"', payload)
+
 if __name__ == "__main__":
     unittest.main()
