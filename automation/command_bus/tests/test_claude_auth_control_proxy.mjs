@@ -1,0 +1,1 @@
+automation/command_bus/tests/test_claude_auth_control_proxy.mjs
