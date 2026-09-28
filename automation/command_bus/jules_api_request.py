@@ -53,16 +53,23 @@ def _parse_time(value: Any, field: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def _validate_branch(branch: Any) -> str:
+def _validate_branch(branch: Any, field: str = "target_branch") -> str:
     if not isinstance(branch, str) or not branch:
-        raise ValueError("target_branch required")
+        raise ValueError(f"{field} required")
     if branch in {"main", "master"}:
-        raise ValueError("default branch dispatch is forbidden")
+        raise ValueError(f"default branch dispatch is forbidden for {field}")
     if not BRANCH_RE.fullmatch(branch) or branch.startswith("/") or branch.endswith("/"):
-        raise ValueError("invalid target_branch")
+        raise ValueError(f"invalid {field}")
     if ".." in branch or "\\" in branch or branch.startswith("refs/"):
-        raise ValueError("unsafe target_branch")
+        raise ValueError(f"unsafe {field}")
     return branch
+
+
+def derived_work_branch(request: dict[str, Any]) -> str:
+    command_id = request["command_id"]
+    if not isinstance(command_id, str) or not COMMAND_ID_RE.fullmatch(command_id):
+        raise ValueError("invalid command_id")
+    return _validate_branch(f"jules-work/{command_id}", "work_branch")
 
 
 def _validate_path(value: Any) -> str:
@@ -146,6 +153,7 @@ def validate_request(request: dict[str, Any], *, now: datetime | None = None) ->
 def build_jules_prompt(request: dict[str, Any], *, now: datetime | None = None) -> str:
     validate_request(request, now=now)
     allowed = "\n".join(f"- {path}" for path in request["allowed_paths"])
+    work_branch = derived_work_branch(request)
     origin = ""
     if request["profile"] == PROFILE_V2:
         origin = (
@@ -158,18 +166,21 @@ def build_jules_prompt(request: dict[str, Any], *, now: datetime | None = None) 
 
 Command ID: {request['command_id']}
 {origin}Target repository: {request['target_repo']}
-Target repository: {request['target_repo']}
-Exact starting branch: {request['target_branch']}
-Expected starting HEAD: {request['expected_target_head']}
-Expected starting tree: {request['expected_target_tree']}
+Canonical target branch (READ-ONLY identity): {request['target_branch']}
+Isolated Jules starting work branch: {work_branch}
+Expected snapshot HEAD: {request['expected_target_head']}
+Expected snapshot tree: {request['expected_target_tree']}
 
-Before editing, verify the checked-out starting HEAD is exactly the expected HEAD above. If it is not exact, make no edits and report the mismatch.
+Before editing, verify the checked-out work-branch HEAD is exactly the expected snapshot HEAD above. If it is not exact, make no edits and report the mismatch.
+
+The canonical target branch is NOT your working branch. Do not commit, push, reset, rebase, merge, or otherwise mutate the canonical target branch. All Jules edits must remain on the isolated work branch or a Jules-created descendant branch/PR.
 
 Allowed changed paths only:
 {allowed}
 
 Hard bounds:
 - do not modify any path outside the allowlist
+- do not mutate the canonical target branch
 - do not merge
 - do not force push
 - do not delete branches
@@ -196,6 +207,7 @@ def _write_github_output(path: str, request: dict[str, Any]) -> None:
             stream.write(f"origin_correlation_id={request['origin_correlation_id']}\n")
             stream.write(f"origin_generation={request['origin_generation']}\n")
         stream.write(f"target_branch={request['target_branch']}\n")
+        stream.write(f"work_branch={derived_work_branch(request)}\n")
         stream.write(f"expected_target_head={request['expected_target_head']}\n")
         stream.write(f"expected_target_tree={request['expected_target_tree']}\n")
         stream.write(f"prompt<<{marker}\n{prompt}\n{marker}\n")
