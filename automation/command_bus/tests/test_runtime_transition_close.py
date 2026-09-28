@@ -49,6 +49,19 @@ class CloseTransitionTests(unittest.TestCase):
         self.assertEqual(self.publisher().publish(self.request()).status, "READY")
         self.assertEqual((self.client.creates, self.client.updates), (2, 1))
 
+    def test_terminal_blocked_state_closes_owner_and_prepares_blocked_status(self):
+        self.desired = state(
+            state="BLOCKED",
+            last_command_id=self.event["command_id"],
+            last_receipt_id=self.event["source_receipt_id"],
+            expected_target=target_for(self.event),
+        )
+        blocked_receipt = {**receipt_for(self.event), "state": "BLOCKED"}
+        self.client.put(self.event["source_receipt_ref"], blocked_receipt)
+        result = self.publisher().publish(self.request())
+        self.assertEqual((result.status, result.status_plan.display_state), ("READY", "BLOCKED"), result)
+        self.assertEqual((self.client.creates, self.client.updates), (2, 1))
+
 
 if __name__ == "__main__":
     unittest.main()
