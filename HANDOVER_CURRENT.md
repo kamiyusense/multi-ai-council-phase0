@@ -1,6 +1,80 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-28
+Updated: 2026-09-29
+
+## 0.0 2026-09-29 current override — Claude→Jules integrated proof terminal / OAuth refresh STATIC diagnosis
+
+This section supersedes older Claude LIVE / authorization statements below when they conflict.
+
+New Chat recovery must be GitHub-first:
+
+1. fresh-read current `main`;
+2. read this `HANDOVER_CURRENT.md`;
+3. read open Issue #110;
+4. read closed Issue #102 only for terminal LIVE evidence;
+5. do not use remembered Chat/Work/Codex thread IDs as correctness inputs.
+
+Current terminal LIVE result (Issue #102):
+- the one-shot Claude→Jules authorization was **consumed**;
+- REAL Claude process = 1;
+- Admission-Gate admitted Anthropic `POST /v1/messages` = 1;
+- upstream HTTP = **401**;
+- retry = 0 / fallback disabled;
+- no valid Claude verdict;
+- Jules request publication/session/PR = 0;
+- no retry or second LIVE attempt;
+- Issue #102 is closed terminal evidence and must not be reused for another attempt.
+
+Static diagnosis already established:
+- the prior successful REAL Claude proof and the failed Issue #102 proof use byte-identical Gate / Gate entrypoint / Claude launcher / Compose / Claude runtime Dockerfile artifacts;
+- Gate does not intentionally drop normal authentication headers;
+- therefore runtime/Gate code drift does not currently explain the 401;
+- saved claude.ai OAuth/Pro metadata said logged in, but effective upstream authentication failed;
+- strongest current hypothesis: the internal-only Claude runtime may be unable to reach the separate OAuth refresh control plane when the stored access token needs refresh;
+- this is **not proven** and must remain a hypothesis until separately authorized evidence resolves it.
+
+Current work authority:
+- Issue #110 = STATIC diagnosis/remediation source of truth;
+- no new Claude/Anthropic/Jules LIVE work is authorized by Issue #110;
+- do not broaden Claude runtime to unrestricted Internet egress;
+- do not use `claude auth status` alone as proof that provider authentication is effective;
+- OAuth relogin/refresh execution, provider request, Jules dispatch, Merge, default-branch write, billing/settings/permissions changes all require their normal explicit boundaries.
+
+Current Issue #110 STATIC result:
+- implementation PR = **#113** `feature/claude-oauth-egress-static-v1`;
+- exact implementation head = `c95e32fe7b6d1d3c2d39af65ad738e6426585331`;
+- PR #113 is OPEN, unmerged, and fresh readback reported mergeable;
+- design: Claude runtime remains internal-only; model traffic remains pinned to Admission Gate;
+- added credential-blind `oauth-egress` CONNECT sidecar;
+- sidecar exact CONNECT allowlist = `platform.claude.com:443`;
+- direct `api.anthropic.com:443` through the OAuth sidecar is denied before upstream connect;
+- runtime pins `HTTPS_PROXY=http://oauth-egress:8081` and `CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1`;
+- `NO_PROXY` and alternate/lowercase proxy bypass variables are rejected by the launcher contract;
+- OAuth sidecar mounts no auth volume, workspace, or Gate state;
+- exact-head GitHub Actions run `36457650437` PASS: command-bus unit suite, Python compile, and diff check all PASS;
+- Issue #110 contains append-only STATIC checkpoint and blocker records.
+
+Current verified research:
+- official Claude Code docs expose `HTTPS_PROXY`, `NO_PROXY`, `ANTHROPIC_BASE_URL`, `CLAUDE_CODE_PROXY_RESOLVES_HOSTS`, and OAuth token inputs;
+- no verified OAuth endpoint/base-URL override was found that would allow a credential-blind path-filtering reverse proxy;
+- upstream issue evidence reports refresh traffic to `POST https://platform.claude.com/v1/oauth/token` in multiple 2.1.x versions;
+- older 2.1.74 issue evidence also reports `GET https://api.anthropic.com/api/oauth/profile`;
+- exact Claude Code 2.1.283 OAuth dependency behavior remains UNKNOWN until separately authorized LIVE evidence.
+
+Current STATIC blocker / deferred decision:
+- a normal HTTPS CONNECT proxy can enforce exact host/port but cannot inspect the encrypted inner path without terminating TLS;
+- therefore PR #113 does **not** claim enforcement of only `/v1/oauth/token`;
+- TLS interception would create a new credential-reading/custom-CA trust boundary;
+- a dedicated refresh helper would become a new credential owner and needs a proven refresh-token rotation/persistence contract;
+- broad runtime egress or `NO_PROXY` is rejected because it weakens the Admission Gate boundary;
+- safe default = **do not authorize LIVE yet** while Issue #110's exact host/path criterion remains stricter than the credential-blind CONNECT boundary can prove.
+
+Next Chat should:
+1. fresh-read current `main`, PR #111, Issue #110, and PR #113;
+2. preserve PR #113 head unless a new STATIC fix is actually needed;
+3. do not Merge PR #113 without explicit user approval;
+4. do not run OAuth/provider/Claude/Jules LIVE work without separate explicit approval;
+5. if deciding the blocker, present the human choice explicitly: accept exact host/port + end-to-end TLS as sufficient for a bounded diagnostic, or expand the secret-handling design to a path-aware credential owner.
 
 ## 0. 2026-09-28 current override — Chat-first / Work fallback
 
