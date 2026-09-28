@@ -5,7 +5,10 @@
     "properties": {
         "state": {
             "type": "string",
-            "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"]
+            "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+            ]
         },
         "live_ready": {
             "type": "boolean",
@@ -31,12 +34,22 @@
             "type": "array",
             "items": {
                 "type": "string",
-                "enum": ["openai", "anthropic", "google"]
+                "enum": [
+                    "openai",
+                    "anthropic",
+                    "google"
+                ]
             },
             "prefixItems": [
-                {"const": "openai"},
-                {"const": "anthropic"},
-                {"const": "google"}
+                {
+                    "const": "openai"
+                },
+                {
+                    "const": "anthropic"
+                },
+                {
+                    "const": "google"
+                }
             ],
             "minItems": 3,
             "maxItems": 3
@@ -46,28 +59,49 @@
             "properties": {
                 "openai": {
                     "type": "string",
-                    "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"]
+                    "enum": [
+                        "BLOCKED_UNKNOWN",
+                        "READY_FOR_HUMAN_APPROVAL"
+                    ]
                 },
                 "anthropic": {
                     "type": "string",
-                    "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"]
+                    "enum": [
+                        "BLOCKED_UNKNOWN",
+                        "READY_FOR_HUMAN_APPROVAL"
+                    ]
                 },
                 "google": {
                     "type": "string",
-                    "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"]
+                    "enum": [
+                        "BLOCKED_UNKNOWN",
+                        "READY_FOR_HUMAN_APPROVAL"
+                    ]
                 }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "required": [
+                "openai",
+                "anthropic",
+                "google"
+            ]
         },
         "blocking_providers": {
             "type": "array",
             "items": {
                 "type": "string",
-                "enum": ["openai", "anthropic", "google"]
-            }
+                "enum": [
+                    "openai",
+                    "anthropic",
+                    "google"
+                ]
+            },
+            "uniqueItems": true,
+            "maxItems": 3
         },
         "evidence": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": true
         },
         "packet_sha256": {
             "type": "string",
