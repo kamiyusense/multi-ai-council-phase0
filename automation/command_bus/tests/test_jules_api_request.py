@@ -12,11 +12,12 @@ NOW = datetime(2026, 9, 26, 0, 0, tzinfo=timezone.utc)
 
 def request(**changes):
     values = {
-        "schema_version": 1,
+        "schema_version": 2,
         "profile": PROFILE,
         "command_id": "chat-jules-001",
         "target_repo": "kamiyusense/multi-ai-council-phase0",
         "target_branch": "feature/relay-transport-7070955470193506982",
+        "work_branch": "jules-work/chat-jules-001",
         "expected_target_head": "a" * 40,
         "expected_target_tree": "b" * 40,
         "allowed_paths": ["tests/relay/test_dispatcher.py"],
@@ -39,6 +40,17 @@ class JulesApiRequestTests(unittest.TestCase):
     def test_default_branch_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "default branch"):
             validate_request(request(target_branch="main"), now=NOW)
+        with self.assertRaisesRegex(ValueError, "default branch"):
+            validate_request(request(work_branch="main"), now=NOW)
+
+    def test_work_branch_must_be_isolated_and_command_scoped(self):
+        with self.assertRaisesRegex(ValueError, "isolated per-command"):
+            validate_request(
+                request(work_branch="feature/relay-transport-7070955470193506982"),
+                now=NOW,
+            )
+        with self.assertRaisesRegex(ValueError, "isolated per-command"):
+            validate_request(request(work_branch="jules-work/other-command"), now=NOW)
 
     def test_retry_and_fallback_are_fixed(self):
         with self.assertRaisesRegex(ValueError, "retry/fallback"):
@@ -73,8 +85,11 @@ class JulesApiRequestTests(unittest.TestCase):
             expires_at=(now + timedelta(hours=1)).isoformat(),
         )
         rendered = build_jules_prompt(prompt_request)
-        self.assertIn("Expected starting HEAD: " + "a" * 40, rendered)
-        self.assertIn("Expected starting tree: " + "b" * 40, rendered)
+        self.assertIn("Canonical target branch (READ-ONLY identity): feature/relay-transport-7070955470193506982", rendered)
+        self.assertIn("Isolated Jules starting work branch: jules-work/chat-jules-001", rendered)
+        self.assertIn("Expected snapshot HEAD: " + "a" * 40, rendered)
+        self.assertIn("Expected snapshot tree: " + "b" * 40, rendered)
+        self.assertIn("do not mutate the canonical target branch", rendered)
         self.assertIn("tests/relay/test_dispatcher.py", rendered)
         self.assertIn("do not merge", rendered)
         self.assertIn("do not retry", rendered)
