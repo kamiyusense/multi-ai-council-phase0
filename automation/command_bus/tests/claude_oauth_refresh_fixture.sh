@@ -3,8 +3,9 @@ set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
 IMAGE="phase0-claude-runtime:2.1.283"
-NET="phase0-oauth-fixture-$GITHUB_RUN_ID"
-MOCK="phase0-oauth-mock-$GITHUB_RUN_ID"
+MOCK_DELAY_MS="${MOCK_DELAY_MS:-0}"
+NET="phase0-oauth-fixture-$GITHUB_RUN_ID-$MOCK_DELAY_MS"
+MOCK="phase0-oauth-mock-$GITHUB_RUN_ID-$MOCK_DELAY_MS"
 TMP="$(mktemp -d)"
 CERTS="$TMP/certs"
 EVIDENCE="$TMP/evidence"
@@ -43,7 +44,7 @@ chmod 0666 "$EVIDENCE/events.jsonl"
 
 docker network create --internal "$NET" >/dev/null
 
-docker run -d --rm   --name "$MOCK"   --network "$NET"   --network-alias oauth-mock   -e MOCK_EXPECTED_REFRESH_TOKEN="$OLD_REFRESH"   -e MOCK_NEW_ACCESS_TOKEN="$NEW_ACCESS"   -e MOCK_NEW_REFRESH_TOKEN="$NEW_REFRESH"   -v "$ROOT/automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs:/fixture/mock.mjs:ro"   -v "$CERTS:/certs:ro"   -v "$EVIDENCE:/evidence"   --entrypoint node   "$IMAGE"   /fixture/mock.mjs >/dev/null
+docker run -d --rm   --name "$MOCK"   --network "$NET"   --network-alias oauth-mock   -e MOCK_EXPECTED_REFRESH_TOKEN="$OLD_REFRESH"   -e MOCK_NEW_ACCESS_TOKEN="$NEW_ACCESS"   -e MOCK_NEW_REFRESH_TOKEN="$NEW_REFRESH"   -e MOCK_RESPONSE_DELAY_MS="$MOCK_DELAY_MS"   -v "$ROOT/automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs:/fixture/mock.mjs:ro"   -v "$CERTS:/certs:ro"   -v "$EVIDENCE:/evidence"   --entrypoint node   "$IMAGE"   /fixture/mock.mjs >/dev/null
 
 for _ in $(seq 1 30); do
   if docker logs "$MOCK" 2>&1 | grep -F "OAUTH_FIXTURE_PROXY_READY" >/dev/null; then
@@ -98,10 +99,13 @@ STATUS_CODE=$?
 STATUS_SECONDS=$SECONDS
 set -e
 
+# Give a delayed local response time to finish or observe that the client exited.
+sleep 4
+
 sudo chmod 0755 "$CASE" 2>/dev/null || true
 sudo chmod 0644 "$CASE/.credentials.json" 2>/dev/null || true
 
-export STATUS_CODE STATUS_SECONDS STATUS_OUTPUT CASE EVIDENCE
+export STATUS_CODE STATUS_SECONDS STATUS_OUTPUT CASE EVIDENCE MOCK_DELAY_MS
 python - <<'PY'
 import json, os
 from pathlib import Path
@@ -138,6 +142,9 @@ for line in (evidence / "events.jsonl").read_text(encoding="utf-8").splitlines()
 
 refresh = [e for e in events if e.get("type") == "oauth_refresh_request"]
 connects = [e for e in events if e.get("type") == "connect"]
+scheduled = [e for e in events if e.get("type") == "oauth_refresh_response_scheduled"]
+response_sent = [e for e in events if e.get("type") == "oauth_refresh_response_sent"]
+client_gone = [e for e in events if e.get("type") == "oauth_refresh_response_client_gone"]
 unexpected = [e for e in events if e.get("type") in {
     "unexpected_https_request",
     "tls_http_error",
@@ -179,12 +186,16 @@ result = {
     "model_endpoint_reachable": False,
     "claude_code_version": "2.1.283",
     "command": "claude auth status --json",
+    "mock_response_delay_ms": int(os.environ["MOCK_DELAY_MS"]),
     "command_exit_code": int(os.environ["STATUS_CODE"]),
     "command_seconds": int(os.environ["STATUS_SECONDS"]),
     "status_summary": status_summary,
     "oauth_refresh_posts": len(refresh),
     "connect_authorities": [e.get("authority") for e in connects],
     "mock_refresh_request_validated": bool(refresh),
+    "mock_response_scheduled": len(scheduled),
+    "mock_response_sent": len(response_sent),
+    "mock_response_client_gone": len(client_gone),
     "credential_persistence_classification": classification,
     "rotated_pair_persisted": persisted,
     "unexpected_mock_events": len(unexpected),
