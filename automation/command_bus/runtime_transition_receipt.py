@@ -50,12 +50,16 @@ def build_terminal_owner_receipt(
     prefix = f"automation/command_bus/receipts/{owner_event['loop_id']}/"
     if not provider_receipt_ref.startswith(prefix):
         raise ValueError("provider receipt ref loop mismatch")
+    if provider_receipt_ref == owner_event["source_receipt_ref"]:
+        raise ValueError("provider and canonical owner receipts must use distinct paths")
     if provider_receipt.get("loop_id") != owner_event["loop_id"]:
         raise ValueError("provider receipt loop mismatch")
     if provider_receipt.get("correlation_id") != owner_event["correlation_id"]:
         raise ValueError("provider receipt correlation mismatch")
     if provider_receipt.get("retry_count") != 0 or provider_receipt.get("fallback_used") is not False:
         raise ValueError("provider receipt violates retry/fallback policy")
+    if len(owner_event["evidence_refs"]) != 1:
+        raise ValueError("canonical owner receipt requires exactly one evidence ref")
     if owner_event["evidence_refs"] != list(dict.fromkeys(owner_event["evidence_refs"])):
         raise ValueError("owner evidence refs must be unique")
 
