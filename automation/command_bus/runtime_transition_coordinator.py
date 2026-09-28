@@ -249,7 +249,12 @@ class RuntimeTransitionPublisher:
                 validate_owner_chain([*chain, event])
                 owner_already_present = False
             target_raw = self.target_reader.read_target(event["expected_repo"], event["expected_pr"])
-            target = _canonical_target(target_raw, event, close=close)
+            if not isinstance(target_raw, dict):
+                return PublishResult("UNKNOWN", stage, "fresh target PR readback unavailable")
+            try:
+                target = _canonical_target(target_raw, event, close=close)
+            except ValueError as exc:
+                return PublishResult("BLOCKED", stage, str(exc))
             if not owner_already_present and prior_state == request.desired_state:
                 return PublishResult("BLOCKED", stage, "state advanced without the expected owner generation")
             receipt, _ = self._read_json(event["source_receipt_ref"])
