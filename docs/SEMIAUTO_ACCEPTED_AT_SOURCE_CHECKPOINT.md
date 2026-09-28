@@ -234,28 +234,31 @@ Control Tower registration gate.
 ## Exact-head verification
 
 - exact tested PR head:
-  `7642a850bb59d5821a6085296ebfae2105c5d0c7`
+  `b2ed326ed19dbbd069646633d295f9657d7f496f`
 - GitHub Actions run:
-  `36379940119` — **SUCCESS**
+  `36384222952` — **SUCCESS**
 - focused Status/runtime/validation suite:
-  **264/264 PASS**
+  **236/236 PASS**
 - full command-bus suite:
-  **551/551 PASS**
+  **561/561 PASS**
 - command-bus JSON schemas parsed:
   **20/20 PASS**
 - Python compileall:
   **PASS**
 - `git diff --check`:
   **PASS**
-- representative accepted-at/readback/bridge tests were present in the exact-head CI log:
-  - createTime -> canonical UTC/JST;
-  - missing/naive createTime rejection;
-  - single Jules POST + retry=0 retention;
-  - GitHub/commit/shell clocks forbidden as acceptance source;
-  - Session GET remains one retry-zero readback;
-  - verified schedule receives accepted_at only from JulesSessionAcceptance;
-  - missing acceptance remains UNKNOWN without ETA;
-  - optional Session GET timing must match Create Session evidence.
+- the exact-head CI included:
+  - provider createTime -> canonical UTC/JST;
+  - Session GET timing bound to exact session id;
+  - verified schedule accepted_at sourced only from JulesSessionAcceptance;
+  - missing acceptance -> UNKNOWN without ETA;
+  - Create Session remains exactly one retry-zero POST;
+  - Session GET remains exactly one retry-zero readback.
+- stacked-branch conflict resolution:
+  no rebase/merge/history rewrite; already-merged registration files were
+  synchronized from main and the Signal CI workflow was restored exactly to
+  main. A watched Signal documentation update triggered the exact-head full
+  regression suite.
 - tested head -> current head compare:
   to be read back after this documentation-only evidence commit.
 - live Jules execution:
