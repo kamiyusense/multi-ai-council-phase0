@@ -29,6 +29,7 @@ from .loop_status_issue import (
 from .control_tower_schedule import (
     SemiAutoScheduleHint,
     schedule_compact_text,
+    refresh_schedule_hint,
     schedule_snapshot,
     validate_schedule_hint,
 )
@@ -199,7 +200,7 @@ def build_control_tower(
             continue
         raw = lane_inputs.get(entry.loop_id)
         try:
-            lane = _verified_lane(entry, raw)
+            lane = _verified_lane(entry, raw, generated_at=generated_at)
         except (ValueError, TypeError, KeyError, AssertionError) as exc:
             lane = _unknown_lane(entry, str(exc))
         lanes.append(lane)
@@ -273,7 +274,12 @@ def notification_marker(lane: ControlTowerLane, kind: str) -> str:
     return f"control-tower-receipt:{kind}:{lane.loop_id}:{lane.last_event_id}"
 
 
-def _verified_lane(entry: RegistryEntry, raw: Any) -> ControlTowerLane:
+def _verified_lane(
+    entry: RegistryEntry,
+    raw: Any,
+    *,
+    generated_at: str,
+) -> ControlTowerLane:
     if not isinstance(raw, PerLoopProjectionInput):
         raise ValueError("verified per-loop projection is unavailable")
     projection = raw.projection
@@ -315,6 +321,7 @@ def _verified_lane(entry: RegistryEntry, raw: Any) -> ControlTowerLane:
         if entry.mode != "SEMI_AUTO":
             raise ValueError("schedule_hint is allowed only for SEMI_AUTO presentation lanes")
         validate_schedule_hint(schedule_hint)
+        schedule_hint = refresh_schedule_hint(schedule_hint, now=generated_at)
 
     human_action = _single_line(projection.human_action, max_len=64)
     if projection.display_state == "BLOCKED" and human_action == "NONE":
