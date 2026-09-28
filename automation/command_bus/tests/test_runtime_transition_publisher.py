@@ -59,7 +59,7 @@ class Client:
 
 class Target:
     def __init__(self, target):
-        self.value = target
+        self.value = {**target, "state": "open", "merged": False}
 
     def read_target(self, repository, pr_number):
         return self.value
@@ -167,6 +167,31 @@ class RuntimeTransitionPublisherTests(unittest.TestCase):
                 result = self.publisher(**kwargs).publish(self.request())
                 self.assertEqual(result.status, "NOT_WIRED", result)
                 self.assertEqual((self.client.creates, self.client.updates), (0, 0))
+
+    def test_rich_target_snapshot_is_canonicalized_and_active_target_must_be_open(self):
+        self.target.value.update(
+            repository=self.event["expected_repo"],
+            pr_number=self.event["expected_pr"],
+            tree="c" * 40,
+            branch="feature/runtime",
+            default_branch="main",
+        )
+        result = self.publisher().publish(self.request())
+        self.assertEqual(result.status, "READY", result)
+
+        fixture = RuntimeTransitionPublisherTests()
+        fixture.setUp()
+        fixture.target.value["state"] = "closed"
+        result = fixture.publisher().publish(fixture.request())
+        self.assertEqual(result.status, "UNKNOWN", result)
+        self.assertEqual((fixture.client.creates, fixture.client.updates), (0, 0))
+
+        fixture = RuntimeTransitionPublisherTests()
+        fixture.setUp()
+        fixture.target.value["merged"] = True
+        result = fixture.publisher().publish(fixture.request())
+        self.assertEqual(result.status, "UNKNOWN", result)
+        self.assertEqual((fixture.client.creates, fixture.client.updates), (0, 0))
 
     def test_target_or_receipt_mismatch_makes_no_writes(self):
         self.target.value = {**target_for(self.event), "head": "b" * 40}
