@@ -103,9 +103,9 @@ class ControlTowerLane:
     target_ref: str | None
     last_event_kind: str | None
     last_event_id: str | None
-    schedule_hint: SemiAutoScheduleHint | None
     human_action: str
     reason: str
+    schedule_hint: SemiAutoScheduleHint | None = None
 
 
 @dataclass(frozen=True)
