@@ -196,6 +196,7 @@ class ControlTowerRegistrationReadinessTests(unittest.TestCase):
                     "display_order": 20,
                     "enabled": True,
                     "safe_detail_ref": "issue:33",
+                    "identity_state": "DURABLE",
                 },
             ],
         }
