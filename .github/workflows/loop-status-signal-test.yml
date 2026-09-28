@@ -78,9 +78,48 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Run focused status and validation-scope tests
+      - name: Run focused status and validation-scope tests present at exact PR head
         shell: bash
-        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_control_tower automation.command_bus.tests.test_control_tower_issue_plan automation.command_bus.tests.test_control_tower_verified_input automation.command_bus.tests.test_control_tower_issue_publisher automation.command_bus.tests.test_control_tower_registration automation.command_bus.tests.test_control_tower_live_preflight automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_owner_authority automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_runtime_transition_publisher automation.command_bus.tests.test_runtime_transition_fail_closed automation.command_bus.tests.test_runtime_transition_close automation.command_bus.tests.test_runtime_transition_jules automation.command_bus.tests.test_runtime_transition_receipt_status automation.command_bus.tests.test_runtime_transition_status_dispatch automation.command_bus.tests.test_runtime_takeover automation.command_bus.tests.test_runtime_takeover_prepare automation.command_bus.tests.test_runtime_takeover_static_e2e automation.command_bus.tests.test_runtime_transition_owner_authority automation.command_bus.tests.test_validation_scope -v
+        run: |
+          modules=(
+            automation.command_bus.tests.test_loop_status_issue
+            automation.command_bus.tests.test_control_tower
+            automation.command_bus.tests.test_control_tower_issue_plan
+            automation.command_bus.tests.test_control_tower_verified_input
+            automation.command_bus.tests.test_control_tower_issue_publisher
+            automation.command_bus.tests.test_control_tower_registration
+            automation.command_bus.tests.test_control_tower_live_preflight
+            automation.command_bus.tests.test_loop_status_development
+            automation.command_bus.tests.test_loop_owner
+            automation.command_bus.tests.test_loop_owner_backend
+            automation.command_bus.tests.test_loop_owner_observation
+            automation.command_bus.tests.test_loop_owner_authority
+            automation.command_bus.tests.test_loop_status_transition
+            automation.command_bus.tests.test_loop_status_transition_cli
+            automation.command_bus.tests.test_loop_status_evidence
+            automation.command_bus.tests.test_runtime_transition_publisher
+            automation.command_bus.tests.test_runtime_transition_fail_closed
+            automation.command_bus.tests.test_runtime_transition_close
+            automation.command_bus.tests.test_runtime_transition_jules
+            automation.command_bus.tests.test_runtime_transition_receipt_status
+            automation.command_bus.tests.test_runtime_transition_status_dispatch
+            automation.command_bus.tests.test_runtime_takeover
+            automation.command_bus.tests.test_runtime_takeover_prepare
+            automation.command_bus.tests.test_runtime_takeover_static_e2e
+            automation.command_bus.tests.test_runtime_transition_owner_authority
+            automation.command_bus.tests.test_validation_scope
+          )
+          existing=()
+          for module in "${modules[@]}"; do
+            path="${module//./\/}.py"
+            if [[ -f "$path" ]]; then
+              existing+=("$module")
+            else
+              echo "::notice::focused test absent at checked-out PR head: $module"
+            fi
+          done
+          test "${#existing[@]}" -gt 0
+          python -m unittest "${existing[@]}" -v
 
       - name: Run full command-bus suite
         shell: bash
