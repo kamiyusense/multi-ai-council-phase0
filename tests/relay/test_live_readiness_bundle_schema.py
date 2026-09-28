@@ -45,12 +45,26 @@ class TestLiveReadinessBundleSchema(unittest.TestCase):
     def test_provider_states_are_strict(self):
         states_prop = self.schema["properties"]["provider_states"]
         self.assertIs(states_prop["additionalProperties"], False)
+        self.assertEqual(
+            states_prop["required"],
+            ["openai", "anthropic", "google"],
+        )
 
         for provider in ("openai", "anthropic", "google"):
             self.assertEqual(
                 set(states_prop["properties"][provider]["enum"]),
                 {"BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"}
             )
+
+    def test_blocking_providers_are_bounded_and_unique(self):
+        blockers = self.schema["properties"]["blocking_providers"]
+        self.assertIs(blockers["uniqueItems"], True)
+        self.assertEqual(blockers["maxItems"], 3)
+
+    def test_forbidden_authorization_states_absent(self):
+        serialized = json.dumps(self.schema, sort_keys=True)
+        for forbidden in ("LIVE_READY", "AUTO_APPROVED", "DISPATCH_ALLOWED"):
+            self.assertNotIn(forbidden, serialized)
 
     def test_packet_sha256_format(self):
         sha_prop = self.schema["properties"]["packet_sha256"]
