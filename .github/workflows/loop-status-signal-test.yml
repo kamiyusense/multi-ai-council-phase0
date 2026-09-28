@@ -12,8 +12,10 @@ on:
       - automation/command_bus/control_tower_live_preflight.py
       - automation/command_bus/control_tower_snapshot.py
       - automation/command_bus/control_tower_durable_collector.py
+      - automation/command_bus/runtime_owner_main_policy.py
       - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
+      - automation/command_bus/config/runtime_owner_policy.json
       - automation/command_bus/loop_status_development.py
       - automation/command_bus/loop_owner.py
       - automation/command_bus/loop_owner_backend.py
@@ -34,6 +36,7 @@ on:
       - automation/command_bus/schema/runtime_transition_evidence.schema.json
       - automation/command_bus/schema/control_tower_registry.schema.json
       - automation/command_bus/schema/control_tower_snapshot.schema.json
+      - automation/command_bus/schema/runtime_owner_policy.schema.json
       - automation/command_bus/schema/loop_owner_event.schema.json
       - automation/command_bus/schema/loop_owner_observation.schema.json
       - automation/command_bus/schema/loop_owner_authority.schema.json
@@ -46,6 +49,7 @@ on:
       - automation/command_bus/tests/test_control_tower_live_preflight.py
       - automation/command_bus/tests/test_control_tower_snapshot.py
       - automation/command_bus/tests/test_control_tower_durable_collector.py
+      - automation/command_bus/tests/test_runtime_owner_main_policy.py
       - automation/command_bus/tests/test_claude_loop.py
       - automation/command_bus/tests/test_loop_status_development.py
       - automation/command_bus/tests/test_loop_owner.py
@@ -98,6 +102,7 @@ jobs:
             automation.command_bus.tests.test_control_tower_live_preflight
             automation.command_bus.tests.test_control_tower_snapshot
             automation.command_bus.tests.test_control_tower_durable_collector
+            automation.command_bus.tests.test_runtime_owner_main_policy
             automation.command_bus.tests.test_claude_loop
             automation.command_bus.tests.test_loop_status_development
             automation.command_bus.tests.test_loop_owner
