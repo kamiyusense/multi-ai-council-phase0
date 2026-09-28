@@ -68,6 +68,25 @@ def _safe_profiles():
         "google": build_antigravity_profile("account", {"api_key_present": False, "gateway_configured": False, "external_cloud_configured": False, "cloud_billing_selected": False, "overages_enabled": False, "adc_present": False, "vertex_selected": False}, "linux", "x86_64"),
     }
 
+def _provider_states_from_checkpoint(checkpoint: dict[str, Any]) -> dict[str, str]:
+    if not isinstance(checkpoint, dict):
+        raise TypeError("checkpoint must be a dictionary")
+    states = {provider_id: "COMPLETE" for provider_id in _PROVIDER_ORDER}
+    seen: set[str] = set()
+    for bucket in ("FAIL", "UNKNOWN"):
+        entries = checkpoint.get(bucket)
+        if not isinstance(entries, list):
+            raise ValueError(f"checkpoint {bucket} must be a list")
+        for entry in entries:
+            if not isinstance(entry, str) or entry.count(":") != 1:
+                raise ValueError(f"malformed checkpoint state entry: {entry!r}")
+            provider_id, state = entry.split(":", 1)
+            if provider_id not in states or not state or provider_id in seen:
+                raise ValueError(f"invalid checkpoint state entry: {entry!r}")
+            states[provider_id] = state
+            seen.add(provider_id)
+    return states
+
 def _valid_raw_response() -> str:
     return json.dumps(
         {
@@ -169,10 +188,7 @@ def run_matrix(core_root: Path, relay_root: Path, core_head: str) -> dict[str, A
                 checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
 
                 return {
-                    "provider_states": {
-                        p: res["report"].split(f"{p.upper()}: ")[1].split("\n")[0].strip() if f"{p.upper()}: " in res["report"] else "UNKNOWN"
-                        for p in _PROVIDER_ORDER
-                    } if res["report"] else {},
+                    "provider_states": _provider_states_from_checkpoint(checkpoint),
                     "comparison": {
                         "participant_count": comparison.participant_count,
                         "agreement_count": comparison.agreement_count,
@@ -204,20 +220,16 @@ def run_matrix(core_root: Path, relay_root: Path, core_head: str) -> dict[str, A
     for scen in scenario_order:
         s_res = run_scenario(scen)
 
-        # Scenario specific assertions and state fixes
+        # Scenario-specific evidence must come from the real Core checkpoint.
         if scen == "timeout_openai":
             assert s_res["checkpoint"]["FAIL"] == ["openai:TIMEOUT"]
             assert s_res["checkpoint"]["UNKNOWN"] == []
-            # We fix provider states as per requirements explicitly because of mocking
-            s_res["provider_states"] = {"openai": "TIMEOUT", "anthropic": "COMPLETE", "google": "COMPLETE"}
         elif scen == "collect_error_anthropic":
             assert s_res["checkpoint"]["FAIL"] == []
             assert s_res["checkpoint"]["UNKNOWN"] == ["anthropic:ERROR_UNKNOWN"]
-            s_res["provider_states"] = {"openai": "COMPLETE", "anthropic": "ERROR_UNKNOWN", "google": "COMPLETE"}
         elif scen == "invalid_output_google":
             assert s_res["checkpoint"]["FAIL"] == ["google:INVALID_OUTPUT"]
             assert s_res["checkpoint"]["UNKNOWN"] == []
-            s_res["provider_states"] = {"openai": "COMPLETE", "anthropic": "COMPLETE", "google": "INVALID_OUTPUT"}
 
         assert s_res["checkpoint"]["live_turn_executed"] is False
         assert s_res["checkpoint"]["retry_count"] == 0
