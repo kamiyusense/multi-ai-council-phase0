@@ -18,7 +18,7 @@ EXP = (NOW + timedelta(hours=1)).isoformat()
 
 def verdict(mode=BackendMode.JULES_BACKEND.value, decision=VerdictDecision.CONTINUE.value, **extra):
     return make_structured_verdict(
-        verdict_id="v-001", loop_id="claude-night-001", round=1,
+        verdict_id="v-001", loop_id="claude-night-001", round=1, generation=1,
         correlation_id="claude-night-001-r1", mode=mode, decision=decision,
         expected_target_head="a" * 40, expected_target_tree="b" * 40,
         reasons=["fresh readback"], evidence_refs=["evidence://review"],
@@ -240,7 +240,6 @@ class ClaudeLoopTests(unittest.TestCase):
             target_branch="feature/bounded-target",
             default_branch="main",
             created_at=NOW.isoformat(),
-            generation=1,
             command_id="claude-jules-a-live-001",
         )
         self.assertEqual(result.status, "PREPARED")
@@ -250,6 +249,7 @@ class ClaudeLoopTests(unittest.TestCase):
         self.assertEqual(request["origin_round"], 1)
         self.assertEqual(request["origin_correlation_id"], "claude-night-001-r1")
         self.assertEqual(request["origin_generation"], 1)
+        self.assertEqual(prepared.request["generation"], 1)
         self.assertEqual(request["target_repo"], "kamiyusense/multi-ai-council-phase0")
         self.assertEqual(request["target_branch"], "feature/bounded-target")
         self.assertEqual(request["expected_target_head"], "a" * 40)
@@ -274,7 +274,6 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
-            generation=1,
             ).status,
             "UNKNOWN",
         )
@@ -290,7 +289,6 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
-            generation=1,
             ).status,
             "UNKNOWN",
         )
@@ -306,7 +304,6 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="main",
                 default_branch="main",
                 created_at=NOW.isoformat(),
-            generation=1,
             ).status,
             "BLOCKED",
         )
@@ -323,7 +320,6 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
-            generation=1,
             ).status,
             "UNKNOWN",
         )
@@ -340,27 +336,38 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
-            generation=1,
             ).status,
             "BLOCKED",
         )
 
-    def test_semiauto_bridge_rejects_invalid_generation(self):
+    def test_generation_is_required_and_propagated(self):
+        value = verdict()
+        value["generation"] = 0
+        self.assertEqual(
+            prepare_next_action(
+                value,
+                expected_repo="kamiyusense/multi-ai-council-phase0",
+                expected_pr=4,
+                expires_at=EXP,
+                path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+            ).status,
+            "UNKNOWN",
+        )
+
         prepared = prepare_next_action(
-            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            verdict(),
+            expected_repo="kamiyusense/multi-ai-council-phase0",
+            expected_pr=4,
             expires_at=EXP,
             path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
         )
-        self.assertEqual(
-            prepare_jules_semiauto_request(
-                prepared.request,
-                target_branch="feature/x",
-                default_branch="main",
-                created_at=NOW.isoformat(),
-                generation=0,
-            ).status,
-            "BLOCKED",
+        self.assertEqual(prepared.request["generation"], 1)
+        closed = prepare_jules_closed_loop_command(
+            prepared.request,
+            starting_branch="feature/x",
+            default_branch="main",
         )
+        self.assertEqual(closed.request["generation"], 1)
 
     def test_claude_transport_is_static_preflight_only(self):
         import uuid
