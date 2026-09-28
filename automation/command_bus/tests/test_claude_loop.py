@@ -131,6 +131,8 @@ class ClaudeLoopTests(unittest.TestCase):
         self.assertEqual(schema["properties"]["reasons"]["type"], "array")
         self.assertEqual(schema["properties"]["next_prompt"]["type"], ["string", "null"])
         self.assertEqual(schema["properties"]["terminal"]["type"], "boolean")
+        self.assertIn("generation", schema["required"])
+        self.assertEqual(schema["properties"]["generation"]["minimum"], 1)
         self.assertEqual(len(schema["allOf"]), 1)
 
     def test_verdict_rejects_live_flags(self):
