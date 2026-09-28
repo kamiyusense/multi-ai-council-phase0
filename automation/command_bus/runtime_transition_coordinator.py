@@ -175,8 +175,13 @@ class RuntimeTransitionPublisher:
         if request.desired_state.get("expected_target") != target or request.desired_state.get("last_command_id") != event["command_id"] or request.desired_state.get("last_receipt_id") != event["source_receipt_id"]:
             raise ValueError("desired state is not bound to the owner generation")
         close = event["event_type"] in {"RELEASE", "TERMINAL"}
-        if close and request.desired_state["state"] not in {"COMPLETE", "RECONCILED_LATE_RESULT", "HALTED", "EXPIRED"}:
-            raise ValueError("closed owner generation requires an idle or stopped state")
+        close_states = {
+            "COMPLETE", "RECONCILED_LATE_RESULT", "HALTED", "EXPIRED",
+            "BLOCKED", "FAILED", "UNKNOWN", "WAITING_FOR_HUMAN_AUTH",
+            "HUMAN_COMPLETED_UNVERIFIED",
+        }
+        if close and request.desired_state["state"] not in close_states:
+            raise ValueError("closed owner generation requires a non-active terminal/blocked state")
         if not close and request.desired_state["state"] not in {"RUNNING", "WAITING_FOR_EVIDENCE", "VERIFYING_POST_AUTH"}:
             raise ValueError("active owner generation requires an active state")
         return evidence_ref, close
@@ -283,7 +288,8 @@ class RuntimeTransitionPublisher:
                 provider_observation_ref=proposed_observation_ref,
                 provider_observation=observation, now=self.clock.now(), expected_loop_id=loop_id,
             )
-            if preflight.status not in {"VALID", "TERMINAL"}:
+            accepted_projection_states = {"VALID", "TERMINAL"} | ({"BLOCKED"} if close else set())
+            if preflight.status not in accepted_projection_states:
                 return PublishResult("UNKNOWN", stage, f"transition preflight failed: {preflight.reason}")
 
             stage = "evidence"
@@ -333,7 +339,8 @@ class RuntimeTransitionPublisher:
                 provider_observation=final_observation,
                 now=self.clock.now(), expected_loop_id=loop_id,
             )
-            if projection.status not in {"VALID", "TERMINAL"} or projection.projection is None or projection.event_id is None:
+            accepted_final_states = {"VALID", "TERMINAL"} | ({"BLOCKED"} if close else set())
+            if projection.status not in accepted_final_states or projection.projection is None or projection.event_id is None:
                 return PublishResult("UNKNOWN", stage, f"final transition validation failed: {projection.reason}")
             plan = StatusRefreshPlan(loop_id, self.branch, projection.event_id, generation, projection.projection.display_state, projection.status)
             if self.status_boundary is None:
