@@ -121,9 +121,10 @@ Still required before live migration:
 1. production multi-loop collection of already verified per-loop projections;
 2. exact durable loop IDs for the real lanes, or an explicitly accepted
    presentation-only registry mapping to verified durable loop IDs;
-3. live adapter that performs one Issue update attempt only after the conflict
-   gate and exact readback;
-4. live notification adapter that preserves loop_id + durable event_id dedupe;
+3. production GitHub transport wiring for the tested retry-zero publisher
+   boundary; the transport-neutral behavior is implemented but not connected;
+4. confirmation that live notification comment transport preserves the tested
+   loop_id + durable event_id readback/dedupe rules;
 5. explicit human approval for the first deployed Issue #33 migration.
 
 This batch intentionally stops before those live effects.
@@ -131,24 +132,29 @@ This batch intentionally stops before those live effects.
 ## Exact-head verification
 
 - exact tested PR head:
-  `af2ebd5d89cc2f4a649bc8755d8cd8e556fc35a0`
+  `0785c8b6b152965801307a9509644075d35a3cf5`
 - GitHub Actions run:
-  `36374751234` — **SUCCESS**
+  `36375072738` — **SUCCESS**
 - focused Status/runtime/validation suite:
-  **207/207 PASS**
+  **226/226 PASS**
 - full command-bus suite:
-  **494/494 PASS**
+  **513/513 PASS**
 - command-bus JSON schemas parsed:
   **19/19 PASS**
 - Python compileall:
   **PASS**
 - `git diff --check`:
   **PASS**
-- representative CT-2 prepare tests were present in the exact-head CI log:
+- representative CT-2 tests were present in the exact-head CI log:
   - legacy -> multi-loop migration planning;
   - pre-write Issue conflict rejection;
   - TURN_COMPLETE/HUMAN_NEEDED-only notification planning;
-  - loop/event replay NO-OP.
+  - loop/event replay NO-OP;
+  - verified durable-transition input bridge;
+  - UNKNOWN not promoted into a healthy lane;
+  - generation sourced from existing owner decision;
+  - retry-zero Issue PATCH/comment publisher behavior;
+  - ambiguous writes recovered by readback only.
 - tested head -> current head compare:
   to be read back after this documentation-only evidence commit.
 - Issue #33 live mutation:
