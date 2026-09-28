@@ -2,7 +2,7 @@
 
 Updated: 2026-09-29
 
-## 0.0 2026-09-29 current override — Issue #110 STATIC merged / next boundary is component proof approval
+## 0.0 2026-09-29 current override — Issue #110 STATIC merged / credential-free Docker component proof PASS
 
 This section supersedes older Issue #110 / PR #111 / PR #113 / PR #114 state below when they conflict.
 
@@ -38,16 +38,31 @@ Merged STATIC boundary:
 Remaining UNKNOWN:
 - encrypted OAuth URL path / HTTP Host cannot be enforced without TLS termination;
 - whether pinned Claude Code 2.1.283 still needs historical `api.anthropic.com/api/oauth/profile`;
-- effective Docker network enforcement in a credential-free component proof;
+- effective Docker network separation on the GitHub-hosted Linux proof runner: **DIRECTLY MEASURED PASS**;
 - actual claude.ai subscription OAuth refresh behavior;
 - root cause of Issue #102 upstream HTTP 401.
 
+Credential-free Docker component proof:
+- user explicitly authorized this proof after PR #114 Merge;
+- proof branch: `proof/issue110-docker-component-001`;
+- exact successful proof head: `5f09e7d2b21ce2f15390f184c2fd0358d58c17da`;
+- GitHub Actions run `36465205344` = **SUCCESS**;
+- actual proxy container hardening PASS;
+- direct `api.anthropic.com:443` CONNECT through auth proxy returned 403;
+- proxy listener was unreachable on the egress-facing interface;
+- auth proxy could reach an egress-only local sink;
+- internal-only probe could not directly reach that egress-only local sink;
+- actual Claude runtime container had only the internal network and exited 78 without `PHASE0_LIVE_EXECUTION=1`, before spawning Claude;
+- no credential inputs, OAuth operation, Anthropic/provider model request, or Jules execution were part of the successful proof;
+- retry=0 / fallback=disabled preserved.
+
 Current approval boundary:
-- Issue #110 STATIC work is exhausted and merged;
-- **do not automatically run the credential-free Docker component proof**;
-- **do not run OAuth login/refresh, Claude, Anthropic/provider, or Jules LIVE work**;
-- Docker component proof requires separate explicit user authorization;
-- any later REAL OAuth/Claude/Anthropic/Jules proof requires a further separate authorization;
+- Issue #110 STATIC work is exhausted, merged, and its credential-free Docker component proof is PASS;
+- **do not run REAL OAuth login/refresh, Claude, Anthropic/provider, or Jules LIVE work without a new explicit authorization**;
+- exact Claude Code 2.1.283 subscription-refresh behavior remains UNKNOWN;
+- historical `api.anthropic.com/api/oauth/profile` dependency remains UNKNOWN;
+- encrypted OAuth URL path / HTTP Host remains unenforceable without TLS termination;
+- Issue #102 HTTP 401 root cause remains UNKNOWN;
 - Merge of any new PR remains explicit-approval gated.
 
 Work-routing rule:
