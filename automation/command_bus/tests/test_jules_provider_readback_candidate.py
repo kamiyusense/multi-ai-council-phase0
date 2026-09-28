@@ -5,6 +5,7 @@ import json
 import unittest
 
 from automation.command_bus.jules_provider_readback_candidate import (
+    bind_jules_active_provider_readback,
     build_provider_verification_source,
     prepare_jules_provider_readback_candidate,
 )
@@ -104,6 +105,10 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
             bundle=prepared,
             session_readback=session_get(),
         )
+        binding = bind_jules_active_provider_readback(
+            bundle=prepared,
+            candidate=candidate,
+        )
         source = build_provider_verification_source(
             candidate,
             verification_state="VERIFIED",
@@ -113,8 +118,8 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         verifier = SourceBoundProviderVerifier(reader, authenticator=None)
         self.assertIsNone(
             verifier.verify(
-                prepared.provider_observation_input,
-                prepared.evidence_document,
+                binding.provider_observation_input,
+                binding.evidence_document,
                 prepared.source_receipt,
             )
         )
@@ -125,6 +130,10 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         candidate = prepare_jules_provider_readback_candidate(
             bundle=prepared,
             session_readback=session_get(),
+        )
+        binding = bind_jules_active_provider_readback(
+            bundle=prepared,
+            candidate=candidate,
         )
         source = build_provider_verification_source(
             candidate,
@@ -137,8 +146,8 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         )
         self.assertIsNone(
             rejecting.verify(
-                prepared.provider_observation_input,
-                prepared.evidence_document,
+                binding.provider_observation_input,
+                binding.evidence_document,
                 prepared.source_receipt,
             )
         )
@@ -146,8 +155,8 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         auth = Authenticator(accept=True)
         verifier = SourceBoundProviderVerifier(Reader(source), auth)
         proof = verifier.verify(
-            prepared.provider_observation_input,
-            prepared.evidence_document,
+            binding.provider_observation_input,
+            binding.evidence_document,
             prepared.source_receipt,
         )
         self.assertIsNotNone(proof)
@@ -158,25 +167,49 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         )
         self.assertEqual(len(auth.calls), 1)
 
-    def test_queued_source_cannot_verify_running_acquire_evidence(self):
+    def test_only_explicit_running_readback_can_bind_active_acquire(self):
+        prepared = bundle()
+        for state in ("QUEUED", "COMPLETED"):
+            with self.subTest(state=state):
+                candidate = prepare_jules_provider_readback_candidate(
+                    bundle=prepared,
+                    session_readback=session_get(state=state),
+                )
+                with self.assertRaisesRegex(ValueError, "explicit RUNNING"):
+                    bind_jules_active_provider_readback(
+                        bundle=prepared,
+                        candidate=candidate,
+                    )
+
+
+    def test_running_binding_rebinds_evidence_and_observation_to_readback_time(self):
         prepared = bundle()
         candidate = prepare_jules_provider_readback_candidate(
             bundle=prepared,
-            session_readback=session_get(state="QUEUED"),
+            session_readback=session_get(),
         )
-        source = build_provider_verification_source(
-            candidate,
-            verification_state="VERIFIED",
+        binding = bind_jules_active_provider_readback(
+            bundle=prepared,
+            candidate=candidate,
         )
-        auth = Authenticator()
-        verifier = SourceBoundProviderVerifier(Reader(source), auth)
-        proof = verifier.verify(
-            prepared.provider_observation_input,
-            prepared.evidence_document,
-            prepared.source_receipt,
+        self.assertEqual(
+            binding.evidence_document["observed_at"],
+            "2026-09-28T04:05:00Z",
         )
-        self.assertIsNone(proof)
-        self.assertEqual(auth.calls, [])
+        self.assertEqual(
+            binding.provider_observation_input["observed_at"],
+            "2026-09-28T04:05:00Z",
+        )
+        self.assertEqual(binding.evidence_document["provider_state"], "RUNNING")
+        self.assertEqual(binding.provider_observation_input["state"], "RUNNING")
+        self.assertEqual(
+            binding.transition_request.evidence_document,
+            binding.evidence_document,
+        )
+        self.assertEqual(
+            binding.transition_request.provider_observation_input,
+            binding.provider_observation_input,
+        )
 
     def test_session_identity_and_create_time_must_match_acquire_bundle(self):
         prepared = bundle()
@@ -241,6 +274,10 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         )
         for state in ("UNKNOWN", "REJECTED"):
             with self.subTest(state=state):
+                binding = bind_jules_active_provider_readback(
+                    bundle=prepared,
+                    candidate=candidate,
+                )
                 source = build_provider_verification_source(
                     candidate,
                     verification_state=state,
@@ -249,8 +286,8 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
                 verifier = SourceBoundProviderVerifier(Reader(source), auth)
                 self.assertIsNone(
                     verifier.verify(
-                        prepared.provider_observation_input,
-                        prepared.evidence_document,
+                        binding.provider_observation_input,
+                        binding.evidence_document,
                         prepared.source_receipt,
                     )
                 )
