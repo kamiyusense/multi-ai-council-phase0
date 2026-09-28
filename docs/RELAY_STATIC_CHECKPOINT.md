@@ -48,6 +48,10 @@ A runner capable of executing repository tests may:
 7. save exact command output and hashes;
 8. stop before live provider execution.
 
+## Static/Mock Factory Boundaries
+- The profile -> adapter factory boundary is strictly mock/static only.
+- Core PR #3 integration remains a separate checkpoint.
+
 ## Live boundary
 
 All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
