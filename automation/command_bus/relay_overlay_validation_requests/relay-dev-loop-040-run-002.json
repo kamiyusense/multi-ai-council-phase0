@@ -1,0 +1,5 @@
+{
+  "relay_sha": "223ff60cdde0bf08e980a004be6cb3b8abee89ae",
+  "core_sha": "494b7296f32dce1c173a7699e4bd2d87f70d31a9",
+  "purpose": "relay-dev-loop-040-real-cross-branch-static-overlay-after-import-fix"
+}
