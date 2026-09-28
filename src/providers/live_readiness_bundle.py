@@ -67,8 +67,14 @@ def build_live_readiness_bundle(providers_input: dict[str, Any]) -> dict[str, An
         if not isinstance(entry, dict) or set(entry.keys()) != {"preflight", "proofs"}:
             return _fail_closed(base, providers_input)
 
+    try:
+        normalized_input = copy.deepcopy(providers_input)
+        _canonical_json(normalized_input)
+    except (TypeError, ValueError, OverflowError):
+        return _fail_closed(base)
+
     for provider in PROVIDER_ORDER:
-        entry = providers_input[provider]
+        entry = normalized_input[provider]
 
         try:
             result = evaluate_live_readiness(
@@ -77,24 +83,24 @@ def build_live_readiness_bundle(providers_input: dict[str, Any]) -> dict[str, An
                 entry["proofs"],
             )
         except Exception:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
 
         if not isinstance(result, dict):
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if set(result) != _GATE_RESULT_KEYS:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if result["state"] not in _ALLOWED_STATES:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if result["live_ready"] is not False:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if result["dispatch_allowed"] is not False:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if result["human_approval_required"] is not True:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if result["retry_count"] != 0:
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
         if result["fallback_state"] != "disabled":
-            return _fail_closed(base, providers_input)
+            return _fail_closed(base, normalized_input)
 
         state = result["state"]
         provider_states[provider] = state
@@ -103,7 +109,7 @@ def build_live_readiness_bundle(providers_input: dict[str, Any]) -> dict[str, An
 
     base["provider_states"] = provider_states
     base["blocking_providers"] = blocking_providers
-    base["evidence"] = copy.deepcopy(providers_input)
+    base["evidence"] = normalized_input
 
     if not blocking_providers:
         base["state"] = "READY_FOR_HUMAN_APPROVAL"
