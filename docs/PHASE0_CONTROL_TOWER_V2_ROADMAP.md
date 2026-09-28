@@ -104,9 +104,9 @@ Recommended body:
 | Signal | Loop | Controller -> Worker | Target | Gen | Last durable event | Human action |
 | --- | --- | --- | --- | ---: | --- | --- |
 | 🟢 SEMI_AUTO | ChatGPT Semi-Auto | ChatGPT -> Jules | PR #4 | 18 | receipt verified | NONE |
-| 🟣 AUTO | Claude -> Gemini | Claude -> Gemini | PR #72 | 4 | provider readback | NONE |
+| 🟣 AUTO | Claude -> Gemini | Claude -> Gemini | PR #<target-A> | 4 | provider readback | NONE |
 | 🟡 IDLE | Claude -> Claude | Claude -> Claude | - | 6 | COMPLETE | NONE |
-| 🔴 BLOCKED | Work -> Gemini | Work -> Gemini | PR #81 | 3 | HUMAN_NEEDED | REVIEW |
+| 🔴 BLOCKED | Work -> Gemini | Work -> Gemini | PR #<target-B> | 3 | HUMAN_NEEDED | REVIEW |
 
 A **HUMAN NEEDED** section should appear above the normal table whenever at
 least one lane requires user action.
@@ -260,7 +260,7 @@ Suggested JSON fields:
       "controller_kind": "CLAUDE",
       "worker_kind": "GEMINI",
       "generation": 4,
-      "target_ref": "pr:72",
+      "target_ref": "pr:example",
       "last_event_kind": "RUNNING",
       "last_event_id": "receipt-...",
       "human_action": "NONE"
