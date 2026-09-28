@@ -10,13 +10,16 @@ invented here.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime
 import re
 from typing import Any, Iterable
 
 from .jules_semiauto_owner_prepare import JulesSemiAutoAcquireBundle
 from .jules_session_acceptance import extract_session_timing_readback
+from .loop_owner_observation import validate_provider_observation
+from .runtime_transition_coordinator import TransitionRequest
+from .runtime_transition_evidence import validate_evidence_document
 from .runtime_verifier_sources import validate_provider_verification_source
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -46,6 +49,14 @@ class JulesProviderReadbackCandidate:
     source_receipt_ref: str
     evidence_ref: str
     proof_refs: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class JulesProviderReadbackBinding:
+    candidate: JulesProviderReadbackCandidate
+    evidence_document: dict[str, Any]
+    provider_observation_input: dict[str, Any]
+    transition_request: TransitionRequest
 
 
 def prepare_jules_provider_readback_candidate(
@@ -131,6 +142,88 @@ def prepare_jules_provider_readback_candidate(
     build_provider_verification_source(candidate, verification_state="UNKNOWN")
     return candidate
 
+
+
+def bind_jules_active_provider_readback(
+    *,
+    bundle: JulesSemiAutoAcquireBundle,
+    candidate: JulesProviderReadbackCandidate,
+) -> JulesProviderReadbackBinding:
+    """Rebind provider evidence to a later independently-read RUNNING state."""
+    if not isinstance(bundle, JulesSemiAutoAcquireBundle):
+        raise ValueError("JulesSemiAutoAcquireBundle is required")
+    if not isinstance(candidate, JulesProviderReadbackCandidate):
+        raise ValueError("JulesProviderReadbackCandidate is required")
+    if candidate.provider_state != "RUNNING":
+        raise ValueError(
+            "active durable ACQUIRE requires an explicit RUNNING Jules readback"
+        )
+
+    event = bundle.owner_event
+    observation = bundle.provider_observation_input
+    evidence = bundle.evidence_document
+
+    expected = {
+        "loop_id": event["loop_id"],
+        "owner_role": event["owner_role"],
+        "holder_id": event["holder_id"],
+        "generation": event["generation"],
+        "fencing_token": event["fencing_token"],
+        "expected_repo": event["expected_repo"],
+        "expected_pr": event["expected_pr"],
+        "expected_target_head": event["expected_target_head"],
+        "command_id": event["command_id"],
+        "correlation_id": event["correlation_id"],
+        "source_receipt_ref": event["source_receipt_ref"],
+        "evidence_ref": observation["evidence_ref"],
+        "source_ref": evidence["provider_readback"],
+    }
+    actual = {
+        "loop_id": candidate.loop_id,
+        "owner_role": candidate.owner_role,
+        "holder_id": candidate.holder_id,
+        "generation": candidate.generation,
+        "fencing_token": candidate.fencing_token,
+        "expected_repo": candidate.expected_repo,
+        "expected_pr": candidate.expected_pr,
+        "expected_target_head": candidate.expected_target_head,
+        "command_id": candidate.command_id,
+        "correlation_id": candidate.correlation_id,
+        "source_receipt_ref": candidate.source_receipt_ref,
+        "evidence_ref": candidate.evidence_ref,
+        "source_ref": candidate.source_ref,
+    }
+    if actual != expected:
+        raise ValueError("Jules provider candidate context mismatch")
+
+    refreshed_evidence = {
+        **evidence,
+        "provider_state": candidate.provider_state,
+        "observed_at": candidate.observed_at,
+    }
+    if validate_evidence_document(refreshed_evidence) != candidate.evidence_ref:
+        raise ValueError("refreshed Jules evidence path mismatch")
+
+    refreshed_observation = {
+        **observation,
+        "state": candidate.provider_state,
+        "observed_at": candidate.observed_at,
+    }
+    validate_provider_observation({**refreshed_observation, "verified": True})
+
+    transition_request = TransitionRequest(
+        owner_event=bundle.owner_event,
+        evidence_document=refreshed_evidence,
+        provider_observation_input=refreshed_observation,
+        expected_prior_state=bundle.transition_request.expected_prior_state,
+        desired_state=bundle.transition_request.desired_state,
+    )
+    return JulesProviderReadbackBinding(
+        candidate=candidate,
+        evidence_document=refreshed_evidence,
+        provider_observation_input=refreshed_observation,
+        transition_request=transition_request,
+    )
 
 def build_provider_verification_source(
     candidate: JulesProviderReadbackCandidate,
