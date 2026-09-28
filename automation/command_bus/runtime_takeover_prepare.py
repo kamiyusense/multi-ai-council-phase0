@@ -7,6 +7,7 @@ and desired state into one TransitionRequest.
 """
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -130,11 +131,11 @@ def prepare_takeover_transition(
             return PreparedTakeoverTransition("BLOCKED", stage, "desired state retry policy must remain zero")
 
         request = TransitionRequest(
-            owner_event=dict(proposed_event),
-            evidence_document=dict(evidence_document),
-            provider_observation_input=dict(provider_observation_input),
-            expected_prior_state=dict(state),
-            desired_state=dict(desired_state),
+            owner_event=copy.deepcopy(proposed_event),
+            evidence_document=copy.deepcopy(evidence_document),
+            provider_observation_input=copy.deepcopy(provider_observation_input),
+            expected_prior_state=copy.deepcopy(state),
+            desired_state=copy.deepcopy(desired_state),
         )
         return PreparedTakeoverTransition(
             "READY",
