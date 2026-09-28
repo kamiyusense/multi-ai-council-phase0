@@ -1,6 +1,77 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-28
+Updated: 2026-09-29
+
+## 0.0 2026-09-29 current override — Issue #110 STATIC merged / credential-free Docker component proof PASS
+
+This section supersedes older Issue #110 / PR #111 / PR #113 / PR #114 state below when they conflict.
+
+Fresh recovery order:
+
+1. read current `main`;
+2. read Issue #110 and its latest checkpoints (currently CLOSED after the merged STATIC remediation);
+3. read merged PR #114 for the implemented OAuth-control-plane STATIC boundary;
+4. use Issue #102 only as terminal historical LIVE evidence;
+5. do not treat remembered Chat/Work state as correctness evidence.
+
+Current merged state:
+- PR #114 = **MERGED**;
+- PR #114 merged-main validation target = `160a3b90bec19bcdf898f4ff0dfb6f096aa1d106`;
+- current main after unrelated PR #109 = `6617bfa4dd64b2dca69fb3593d8f6295f401f6fe`;
+- PR #114 Docker/Claude production blobs were read back and are byte-identical between `160a3b90...` and current main `6617bfa4...`;
+- PR #114 pre-merge exact-head evidence: Actions run `36460054102` SUCCESS;
+- merged-main exact-head validation: Actions run `36463690053` SUCCESS;
+- post-merge validation PASS included exact target checkout, command-bus unit suite, Python compile, and diff check;
+- Issue #110 has the post-merge checkpoint.
+
+Merged STATIC boundary:
+- Claude runtime remains internal-only;
+- model traffic remains forced through Admission Gate;
+- OAuth/control-plane HTTPS uses the internal auth-control-plane proxy;
+- exact CONNECT authority is `platform.claude.com:443`;
+- TLS ClientHello SNI must exactly match `platform.claude.com`;
+- no upstream TCP connection occurs before SNI validation;
+- proxy-side DNS is required;
+- private/special-use resolved addresses are rejected;
+- `api.anthropic.com:443` is denied by the auth proxy;
+- auth proxy has no credential/auth/Gate/workspace mounts, no published ports, and no provider credentials;
+- retry=0 / fallback=disabled remain mandatory.
+
+Remaining UNKNOWN:
+- encrypted OAuth URL path / HTTP Host cannot be enforced without TLS termination;
+- whether pinned Claude Code 2.1.283 still needs historical `api.anthropic.com/api/oauth/profile`;
+- effective Docker network separation on the GitHub-hosted Linux proof runner: **DIRECTLY MEASURED PASS**;
+- actual claude.ai subscription OAuth refresh behavior;
+- root cause of Issue #102 upstream HTTP 401.
+
+Credential-free Docker component proof:
+- user explicitly authorized this proof after PR #114 Merge;
+- first terminal PASS: branch `proof/issue110-docker-component-001`, exact tested head `5f09e7d2b21ce2f15390f184c2fd0358d58c17da`, Actions run `36465205344` SUCCESS;
+- current-main confirmation: branch `proof/issue110-docker-component-current`, exact tested head `42a7c244f052dc70633e6514cafb6eff7588e767`, Actions run `36465690997` SUCCESS;
+- reproducible proof/evidence PR = **#117** (OPEN, unmerged; Merge still requires explicit approval);
+- actual proxy container hardening PASS;
+- direct `api.anthropic.com:443` CONNECT through auth proxy returned 403;
+- proxy listener was unreachable on the egress-facing interface;
+- auth proxy could reach an egress-only local sink;
+- internal-only probe could not directly reach that egress-only local sink;
+- actual Claude runtime container had only the internal network and exited 78 without `PHASE0_LIVE_EXECUTION=1`, before spawning Claude;
+- no credential inputs, OAuth operation, Anthropic/provider model request, or Jules execution were part of the successful proof;
+- retry=0 / fallback=disabled preserved.
+
+Current approval boundary:
+- Issue #110 STATIC work is exhausted, merged, and its credential-free Docker component proof is PASS;
+- **do not run REAL OAuth login/refresh, Claude, Anthropic/provider, or Jules LIVE work without a new explicit authorization**;
+- exact Claude Code 2.1.283 subscription-refresh behavior remains UNKNOWN;
+- historical `api.anthropic.com/api/oauth/profile` dependency remains UNKNOWN;
+- encrypted OAuth URL path / HTTP Host remains unenforceable without TLS termination;
+- Issue #102 HTTP 401 root cause remains UNKNOWN;
+- Merge of any new PR remains explicit-approval gated.
+
+Work-routing rule:
+- do not automatically hand off to Work;
+- if Work is genuinely needed, provide the user a complete Work prompt in a copyable code block instead of performing a handoff.
+
+PR #111 and PR #116 are older handover snapshots. This branch/its PR supersedes them for Issue #110 current recovery.
 
 ## 0. 2026-09-28 current override — Chat-first / Work fallback
 
