@@ -136,6 +136,48 @@ Resolution: the probe now constructs CRLF with
 No blind rerun was used. Each failure was read back, diagnosed, corrected on a
 new commit, and then validated by a new exact-head run.
 
+
+## Current-main confirmation
+
+After the original successful proof, unrelated PR #109 advanced `main` to:
+
+`6617bfa4dd64b2dca69fb3593d8f6295f401f6fe`
+
+Before repeating the proof, the relevant production blobs were compared between
+PR #114's merged baseline `160a3b90...` and current main. The Compose file,
+auth-control proxy source/Dockerfile, Claude runtime launcher, and Claude runtime
+Dockerfile were byte-identical by Git blob SHA.
+
+A fresh branch from current main was then tested:
+
+- branch: `proof/issue110-docker-component-current`
+- exact tested head: `42a7c244f052dc70633e6514cafb6eff7588e767`
+- GitHub Actions run: `36465690997`
+- result: **SUCCESS**
+
+The current-main run reproduced all terminal PASS markers:
+
+- `COMPOSE_CONTRACT_PASS`
+- `PROXY_CONTAINER_HARDENING_PASS`
+- `MODEL_CONNECT_DENIED_PASS`
+- `PROXY_EGRESS_LISTENER_BLOCKED_PASS`
+- `PROXY_EGRESS_NETWORK_REACH_PASS`
+- `INTERNAL_TO_EGRESS_DIRECT_BLOCKED_PASS`
+- `RUNTIME_FAIL_CLOSED_AND_INTERNAL_ONLY_PASS`
+- `CREDENTIAL_FREE_DOCKER_COMPONENT_PROOF_PASS`
+
+The recorded current-main evidence again showed:
+
+- model CONNECT via auth proxy = `DENIED_403`
+- internal-only -> egress-only sink = `BLOCKED`
+- proxy -> egress-only sink = `REACHABLE`
+- runtime exit code without LIVE gate = `78`
+- credential inputs present = false
+- OAuth operation performed = false
+- Anthropic/provider request intentionally performed = false
+- retry = 0
+- fallback = disabled
+
 ## Remaining UNKNOWN
 
 This component proof does **not** prove:
