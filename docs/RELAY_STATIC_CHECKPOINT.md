@@ -72,6 +72,10 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - STOP blocks new dispatch, and cancel/timeout abort is scoped to its provider/session.
 - Package-free repository-root verification: 25 tests PASS; compileall and diff check PASS
 
+- Implemented static ProviderAdapterBundle for three-provider fan-out integration.
+- Bundle construction validates exactly openai, anthropic, and google.
+- Bundle is strictly static/mock only. Real Core fan-out integration remains a separate checkpoint.
+
 ## Static/Mock Core Integration Checkpoint
 - Static/mock round-trip integration using RelayCoreAdapter duck typing is PASS.
 - Note: Independent Chat validation is required before acceptance.

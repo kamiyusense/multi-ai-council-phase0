@@ -21,11 +21,13 @@ from .claude_acp import build_claude_profile
 from .antigravity_acp import build_antigravity_profile
 
 from .factory import create_core_adapter
+from .bundle import ProviderAdapterBundle
 
 __all__.extend([
     "ProviderStaticProfile",
     "build_codex_profile",
     "build_claude_profile",
     "build_antigravity_profile",
-    "create_core_adapter"
+    "create_core_adapter",
+    "ProviderAdapterBundle"
 ])
