@@ -12,7 +12,7 @@ from typing import Any
 
 PINNED_CORE_HEAD = "494b7296f32dce1c173a7699e4bd2d87f70d31a9"
 _PROVIDER_ORDER = ("openai", "anthropic", "google")
-_MODULE_PREFIXES = ("phase0_core", "providers", "relay")
+_MODULE_PREFIXES = ("phase0_core", "providers", "relay", "src")
 
 
 def _namespace_matches(name: str) -> bool:
@@ -136,7 +136,9 @@ def run_overlay(core_root: Path, relay_root: Path, core_head: str) -> dict[str, 
     try:
         core_src = core_root / "src"
         relay_src = relay_root / "src"
-        sys.path[:0] = [str(core_src), str(relay_src)]
+        # Relay contains both top-level packages under relay/src and imports
+        # through the explicit src.* namespace. Keep both explicit roots.
+        sys.path[:0] = [str(core_src), str(relay_root), str(relay_src)]
         importlib.invalidate_caches()
 
         from phase0_core.fanout import FanoutGate
