@@ -215,14 +215,30 @@ Live Issue #33 migration remains blocked until the real loops expose stable
 durable IDs and existing durable transition verification returns accepted
 `TransitionProjectionResult` values under those exact IDs.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `6d540692d1af8e62cf02bc5bd42ea82ac02fb185`
+- GitHub Actions run:
+  `36384877964` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **246/246 PASS**
+- full command-bus suite:
+  **571/571 PASS**
+- command-bus JSON schemas parsed:
+  **20/20 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative live-preflight tests were present in the exact-head CI log:
+  - repository placeholder registry without durable inventory -> NOT_WIRED;
+  - all enabled lanes require exact durable transitions before plan;
+  - exact durable lane -> READY model + Issue plan;
+  - zero enabled lanes cannot live-migrate;
+  - ETA OVERDUE remains presentation-only and creates no notification;
+  - unusable Issue readback -> UNKNOWN after durable gates.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
