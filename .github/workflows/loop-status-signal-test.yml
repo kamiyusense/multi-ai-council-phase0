@@ -18,6 +18,7 @@ on:
       - automation/command_bus/runtime_transition_receipt.py
       - automation/command_bus/runtime_transition_status.py
       - automation/command_bus/runtime_transition_status_dispatch.py
+      - automation/command_bus/runtime_takeover.py
       - automation/command_bus/runtime_transition_writers.py
       - automation/command_bus/schema/runtime_transition_evidence.schema.json
       - automation/command_bus/schema/loop_owner_event.schema.json
@@ -39,6 +40,7 @@ on:
       - automation/command_bus/tests/test_runtime_transition_jules.py
       - automation/command_bus/tests/test_runtime_transition_receipt_status.py
       - automation/command_bus/tests/test_runtime_transition_status_dispatch.py
+      - automation/command_bus/tests/test_runtime_takeover.py
       - automation/command_bus/tests/test_validation_scope.py
       - .github/workflows/loop-status-signal.yml
       - .github/workflows/loop-status-development.yml
@@ -61,7 +63,7 @@ jobs:
 
       - name: Run focused status and validation-scope tests
         shell: bash
-        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_owner_authority automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_runtime_transition_publisher automation.command_bus.tests.test_runtime_transition_fail_closed automation.command_bus.tests.test_runtime_transition_close automation.command_bus.tests.test_runtime_transition_jules automation.command_bus.tests.test_runtime_transition_receipt_status automation.command_bus.tests.test_runtime_transition_status_dispatch automation.command_bus.tests.test_runtime_transition_owner_authority automation.command_bus.tests.test_validation_scope -v
+        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_owner_authority automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_runtime_transition_publisher automation.command_bus.tests.test_runtime_transition_fail_closed automation.command_bus.tests.test_runtime_transition_close automation.command_bus.tests.test_runtime_transition_jules automation.command_bus.tests.test_runtime_transition_receipt_status automation.command_bus.tests.test_runtime_transition_status_dispatch automation.command_bus.tests.test_runtime_takeover automation.command_bus.tests.test_runtime_transition_owner_authority automation.command_bus.tests.test_validation_scope -v
 
       - name: Run full command-bus suite
         shell: bash
