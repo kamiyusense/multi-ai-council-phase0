@@ -250,6 +250,7 @@ export function createAuthControlProxy({
 
     void (async () => {
       let upstream;
+      let tunnelAccepted = false;
       try {
         const addresses = await resolveHost();
         const selected = Array.isArray(addresses) ? addresses[0] : undefined;
@@ -259,6 +260,7 @@ export function createAuthControlProxy({
         }
 
         client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+        tunnelAccepted = true;
         const clientHello = await readValidatedClientHello(client);
         if (client.destroyed) return;
 
@@ -276,7 +278,10 @@ export function createAuthControlProxy({
         client.resume?.();
       } catch {
         if (upstream) upstream.destroy();
-        if (!client.destroyed) client.destroy();
+        if (!client.destroyed) {
+          if (tunnelAccepted) client.destroy();
+          else endWithStatus(client, 502, "Bad Gateway");
+        }
       }
     })();
   });
