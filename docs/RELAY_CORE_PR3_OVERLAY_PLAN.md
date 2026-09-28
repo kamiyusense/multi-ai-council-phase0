@@ -29,6 +29,8 @@ matrix using the real pinned Core runner to prove timeout, generic collect error
 invalid provider output remain isolated to the failing provider while healthy peer
 evidence survives unchanged.
 
+The negative matrix runner and workflow are PREPARED only and the real matrix run remains NOT_RUN/UNKNOWN until a later append-only request is added after this candidate is independently accepted.
+
 ## Live execution boundary
 
 - No Merge implied.

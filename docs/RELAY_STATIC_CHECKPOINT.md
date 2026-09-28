@@ -117,3 +117,9 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - live_turn_executed=false / retry_count=0 / fallback_state=disabled: PASS
 - first real run `36380485605` exposed a test-only import-path defect; corrected without retrying that request
 - live provider execution: BLOCKED
+
+## Core PR3 Overlay Matrix Checkpoint
+- negative-path matrix runner prepared: YES
+- negative-path matrix workflow prepared: YES
+- real cross-branch matrix run: NOT_RUN/UNKNOWN
+- The negative matrix is prepared only and awaits independent acceptance before triggering.
