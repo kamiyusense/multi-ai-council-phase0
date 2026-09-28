@@ -275,15 +275,31 @@ Until those production trust sources are wired:
 
 `ChatGPT Semi-Auto durable ACQUIRE = PREPARE_ONLY / NOT_WIRED`
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- live Jules execution: MUST REMAIN NONE
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `d0a4a8868003d6f1de1a8b828e6479811d162550`
+- GitHub Actions run:
+  `36394238067` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **290/290 PASS**
+- full command-bus suite:
+  **709/709 PASS**
+- command-bus JSON schemas parsed:
+  **22/22 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative tests present in the exact-head CI log:
+  - create-only PREPARED initializer write/readback;
+  - ambiguous state create recovered without resend;
+  - V1 + explicit durable context -> exact ACQUIRE bundle;
+  - exact target PR number/branch/head/open-state binding;
+  - RuntimeTransitionPublisher without owner authority -> NOT_WIRED with zero writes.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- live Jules execution:
+  **NONE**
+- Issue #33 live mutation:
+  **NONE**
