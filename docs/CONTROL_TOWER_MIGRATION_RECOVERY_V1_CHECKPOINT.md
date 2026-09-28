@@ -182,14 +182,29 @@ rollback evidence.
 - no Windows executable;
 - no Merge in this batch.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `eaf9c42f9253b9f6aba1bf4efe044e222676e043`
+- GitHub Actions run:
+  `36390786698` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **271/271 PASS**
+- full command-bus suite:
+  **596/596 PASS**
+- command-bus JSON schemas parsed:
+  **21/21 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative recovery tests were present in the exact-head CI log:
+  - exact applied migration is required before rollback plan;
+  - human/later Issue edits block rollback;
+  - ambiguous PATCH that applied is recovered by readback without resend;
+  - notification comments remain untouched;
+  - identical rollback plan cannot be attempted twice.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
