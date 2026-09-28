@@ -1,0 +1,90 @@
+# Relay 2+1 Loop Experiment
+
+Started: 2026-09-28
+Repository: kamiyusense/multi-ai-council-phase0
+Canonical Relay branch: feature/relay-transport-7070955470193506982
+
+## Purpose
+
+Compare the new operating pattern against the recent Relay development baseline.
+
+Pattern under test:
+
+1. Complete one medium task (~15-20 min): inspect -> safe correction if needed -> exact validation -> FF PR #4.
+2. Complete a second medium task (~15-20 min) the same way.
+3. Dispatch one bounded long task (~25-35 min) and stop Chat-side polling.
+4. On the next cycle, inspect the long-task result first.
+
+No live provider/model execution is authorized by this experiment.
+
+## Metrics
+
+Count per Jules task:
+- final_accept: candidate eventually FF'd into PR #4
+- untouched_first_pass: Jules initial PR needed no Chat-side code/test correction before validation
+- correction_commits: Chat-side commits added to the Jules PR branch
+- rejules_sessions: extra replacement Jules sessions created for the same task
+- actions_dispatch: Jules dispatch workflow runs
+- actions_validation: exact-head validation workflow runs
+- actions_status_feedback: status/readback/feedback workflow runs
+- actions_total: sum of the three Action categories above
+- tests_at_accept: full Relay test count from exact validation
+- structural_error: initial PR had a contract/architecture error rather than only missing test/docs proof
+
+Ordinary GitHub API/readback calls are not counted as GitHub Actions.
+
+## Baseline A: loops 029-035
+
+- total tasks: 7
+- final accepted into PR #4: 5/7 = 71.4%
+- untouched first pass: 1/7 = 14.3%
+- rejected/replaced tasks: Loop 030, Loop 031
+- recent stabilized subwindow Loop 032-035: 4/4 final accepted
+- Loop 032-035 untouched first pass: 0/4
+- Loop 032-035 re-Jules replacement sessions: 0/4
+- Loop 032-035 Actions:
+  - 032: dispatch 1 + validation 1 = 2
+  - 033: dispatch 1 + validation 1 = 2
+  - 034: dispatch 1 + validation 1 + status/readback 3 + feedback reply 1 = 6
+  - 035: dispatch 1 + validation 1 = 2
+  - total = 12
+  - mean = 3.0 Actions per accepted task
+  - mean excluding the Loop 034 feedback anomaly = 2.0 Actions per accepted task
+
+Interpretation: 15-20 minute tasks improved final acceptance, but most still needed Chat-side corrections.
+
+## Experiment cycle 1
+
+### Loop 036 — medium — COMPLETE / ACCEPTED
+- task: provider profile -> RelayCoreAdapter factory
+- Jules session: 2616107734508394528
+- Jules PR: #67
+- canonical parent: 7e153522bf03425ea3a043a352d2606794dfddf3
+- accepted head: de28e4726d46cc09f1595b2bb8e5d3ceaed1e337
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: no
+- issue found: requested proof for all three provider round trips and zero preflight calls at factory construction was incomplete
+- correction_commits: 1
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 1
+- actions_status_feedback: 0
+- actions_total: 2
+- exact validation: 178 tests PASS; compileall PASS; diff-check PASS
+- PR #4 FF: yes
+
+### Loop 037 — medium — IN PROGRESS
+- task: deterministic three-provider static adapter bundle
+- Jules session: 1777315736131937574
+- canonical parent: de28e4726d46cc09f1595b2bb8e5d3ceaed1e337
+- actions_dispatch: 1
+- retry: 0
+- fallback: disabled
+- result: pending
+
+### Loop 038 — long — PLANNED
+- target scope: Core PR #3 contract compatibility / three-provider static mock integration readiness
+- target duration class: ~25-35 min
+- dispatch only after Loop 037 is accepted
+- no live execution
