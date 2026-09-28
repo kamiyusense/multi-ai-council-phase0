@@ -22,6 +22,8 @@ from .antigravity_acp import build_antigravity_profile
 
 from .factory import create_core_adapter
 from .bundle import ProviderAdapterBundle
+from .core_boundary import build_core_pr3_adapter_map
+
 
 __all__.extend([
     "ProviderStaticProfile",
@@ -29,5 +31,6 @@ __all__.extend([
     "build_claude_profile",
     "build_antigravity_profile",
     "create_core_adapter",
-    "ProviderAdapterBundle"
+    "ProviderAdapterBundle",
+    "build_core_pr3_adapter_map"
 ])

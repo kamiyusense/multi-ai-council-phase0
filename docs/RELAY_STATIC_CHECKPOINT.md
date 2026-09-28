@@ -89,3 +89,8 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - Implemented static preflight configuration checks for openai, anthropic, and google.
 - Provider preflight is wired only for static/mock dispatch and live remains BLOCKED.
 - Live execution, external cloud auth, gateways, and provider/SDK retries remain UNKNOWN/BLOCKED.
+
+## Static/Mock Core PR #3 Integration Checkpoint
+- Core boundary mapping completed.
+- Pinned against exact Core PR #3 head 494b7296f32dce1c173a7699e4bd2d87f70d31a9.
+- PASS
