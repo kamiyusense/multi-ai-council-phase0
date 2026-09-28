@@ -1,6 +1,6 @@
 # Issue #110 — Claude Code 2.1.283 OAuth Refresh Fixture Findings
 
-Date: 2026-09-29  
+Date: 2026-09-29
 Status: fixture-only evidence; **no real credentials and no real OAuth/model endpoint**
 
 ## Scope
