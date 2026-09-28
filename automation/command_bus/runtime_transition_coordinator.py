@@ -338,7 +338,10 @@ class RuntimeTransitionPublisher:
             plan = StatusRefreshPlan(loop_id, self.branch, projection.event_id, generation, projection.projection.display_state, projection.status)
             if self.status_boundary is None:
                 return PublishResult("NOT_WIRED", "status_boundary", "durable publication verified; Status refresh boundary is not configured", plan)
-            self.status_boundary.prepare(plan)
+            try:
+                self.status_boundary.prepare(plan)
+            except Exception as exc:
+                return PublishResult("UNKNOWN", "status_boundary", f"Status refresh boundary failed; do not retry: {exc}", plan)
             return PublishResult("READY", "status_boundary", "durable publication verified; Status refresh prepared", plan)
         except LookupError as exc:
             return PublishResult("NOT_WIRED", stage, str(exc))
