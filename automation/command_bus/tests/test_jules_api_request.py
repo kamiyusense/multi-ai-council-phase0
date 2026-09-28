@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import unittest
 
 from automation.command_bus.jules_api_request import (
-    PROFILE,
+    PROFILE, PROFILE_V2,
     build_jules_prompt,
     validate_request,
 )
@@ -65,6 +65,45 @@ class JulesApiRequestTests(unittest.TestCase):
         bad["thread_id"] = "not-correctness"
         with self.assertRaisesRegex(ValueError, "keys mismatch"):
             validate_request(bad, now=NOW)
+
+    def test_v2_preserves_origin_correlation(self):
+        value = request(
+            profile=PROFILE_V2,
+            origin_loop_id="claude-night-001",
+            origin_round=2,
+            origin_correlation_id="corr-001",
+            origin_generation=3,
+        )
+        self.assertEqual(validate_request(value, now=NOW)["profile"], PROFILE_V2)
+        rendered = build_jules_prompt(value, now=NOW)
+        self.assertIn("Origin loop: claude-night-001", rendered)
+        self.assertIn("Origin round: 2", rendered)
+        self.assertIn("Origin correlation: corr-001", rendered)
+        self.assertIn("Origin generation: 3", rendered)
+
+    def test_v2_rejects_missing_or_invalid_origin_identity(self):
+        base = request(
+            profile=PROFILE_V2,
+            origin_loop_id="claude-night-001",
+            origin_round=2,
+            origin_correlation_id="corr-001",
+            origin_generation=3,
+        )
+        for key, value in (
+            ("origin_loop_id", ""),
+            ("origin_round", 0),
+            ("origin_correlation_id", ""),
+            ("origin_generation", 0),
+        ):
+            changed = dict(base)
+            changed[key] = value
+            with self.assertRaises(ValueError, msg=key):
+                validate_request(changed, now=NOW)
+
+    def test_v1_remains_backward_compatible(self):
+        value = request()
+        self.assertEqual(value["profile"], PROFILE)
+        self.assertEqual(validate_request(value, now=NOW)["command_id"], "chat-jules-001")
 
     def test_prompt_binds_head_tree_and_allowlist(self):
         rendered = build_jules_prompt(request(), now=NOW)
