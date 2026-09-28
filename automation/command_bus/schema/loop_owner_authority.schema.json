@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 0 durable Loop owner authority grant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "authority_id",
+    "loop_id",
+    "owner_role",
+    "holder_id",
+    "generation",
+    "fencing_token",
+    "previous_generation",
+    "event_type",
+    "expected_repo",
+    "expected_pr",
+    "expected_target_head",
+    "command_id",
+    "correlation_id",
+    "issued_at",
+    "expires_at",
+    "verification_ref",
+    "grant_state"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "authority_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "loop_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "owner_role": {
+      "enum": [
+        "SEMI_AUTO",
+        "AUTO"
+      ]
+    },
+    "holder_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fencing_token": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previous_generation": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "integer",
+          "minimum": 1
+        }
+      ]
+    },
+    "event_type": {
+      "enum": [
+        "ACQUIRE",
+        "RENEW",
+        "HANDOFF",
+        "RELEASE",
+        "TERMINAL"
+      ]
+    },
+    "expected_repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "expected_pr": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_target_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "command_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "verification_ref": {
+      "type": "string",
+      "pattern": "^automation/command_bus/evidence/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
+    },
+    "grant_state": {
+      "const": "GRANTED"
+    }
+  }
+}
