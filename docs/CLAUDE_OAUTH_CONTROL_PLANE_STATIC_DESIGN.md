@@ -85,7 +85,10 @@ exact `https://api.anthropic.com` upstream.
 The sidecar code has no package installs, shell invocation, credential
 handling, mounted volumes, or listening host port. It runs with UID/GID
 1000:1000, `privileged: false`, no added capabilities, and only the pinned
-Node base image.
+Node base image. Although it joins both internal and egress Docker networks, it
+listens only on the fixed internal address `172.29.247.3:3128`; it does not
+bind `0.0.0.0` and therefore does not intentionally expose the proxy listener
+on its egress-facing interface.
 
 ## Why option A is rejected for now
 
