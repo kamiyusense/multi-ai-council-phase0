@@ -282,3 +282,35 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - canonical PR #4 head immediately after dispatch: `c3312b73f91eff45593ebf6472d1460614ae8617` (unchanged)
 - retry=0 / fallback=disabled / merge=human-only
 - canary result: IN_PROGRESS; final PASS requires independent readback proving Jules writes stayed off canonical PR #4
+
+
+## Loop 043b isolation canary result
+- Jules session: `14603234206499791108`
+- Jules PR: #87
+- Jules PR base: `jules-work/relay-dev-loop-043b-isolation-checkpoint`
+- base SHA: `c3312b73f91eff45593ebf6472d1460614ae8617`
+- initial Jules candidate: `82f69c09a8e84d4a8f0f0aea77e29cf00ffcf7ba`
+- corrected candidate: `bca010c35164a328c3160c7e8c72d09c8b7bc809`
+- changed paths: exactly `docs/RELAY_STATIC_CHECKPOINT.md`
+- exact validation run: `36386416927` SUCCESS
+- Relay tests: 232 PASS; compileall PASS; diff-check PASS
+- accepted canonical content commit: `5f7baf275932a497274d221648d0e38bc49d5f17`
+- structural isolation proof: PASS — Jules PR was based on the isolated work branch, not canonical PR #4
+- complete causal proof that Jules session caused zero canonical writes: UNKNOWN because a concurrent delayed destructive Jules-bot commit `c1d7dfb5...` landed on canonical during the same broad window and cannot be durably attributed to a specific session from current evidence
+- fourth delayed overwrite was rejected and recovered append-only at `a0982004767a53bc024eb974aef8306b1a832dfb`
+- root cause of delayed canonical direct writes remains UNKNOWN
+- PR #87 closed after validated content was copied to canonical; PR #85 closed as obsolete/rejected source branch
+
+## Loop 044 — isolated V2 — DISPATCHED / IN PROGRESS
+- task: Core PR #3 cross-branch policy-edge matrix preparation
+- scenarios: safety_unknown_google; fanout_unknown; stop_before_dispatch
+- canonical Relay snapshot head: `5f7baf275932a497274d221648d0e38bc49d5f17`
+- canonical Relay snapshot tree: `ebc757ed6ebe27ce90fff8d54da687c29574cbdf`
+- isolated starting branch: `jules-work/relay-dev-loop-044-core-policy-matrix`
+- pre-dispatch isolated branch comparison: identical; ahead=0; behind=0
+- dispatch run: `36386795323` SUCCESS
+- Jules session: `8612918239052647565`
+- canonical PR #4 head immediately after dispatch: `5f7baf275932a497274d221648d0e38bc49d5f17` unchanged
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model execution: no
+- next readback: inspect Jules-created PR base/head/path set, independently validate exact candidate, then trigger the prepared real cross-branch workflow only if semantic review passes
