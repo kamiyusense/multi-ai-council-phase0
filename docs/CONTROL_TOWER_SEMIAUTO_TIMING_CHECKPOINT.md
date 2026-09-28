@@ -298,14 +298,29 @@ Tests cover:
 - no private URL persistence;
 - no accepted_at inference.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `46556a80aaaba0c1aa61f713c0e546e38f77b2d5`
+- GitHub Actions run:
+  `36378199676` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **236/236 PASS**
+- full command-bus suite:
+  **523/523 PASS**
+- command-bus JSON schemas parsed:
+  **20/20 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative timing tests were present in the exact-head CI log:
+  - ETA-state derivation;
+  - OVERDUE while runtime remains SEMI_AUTO;
+  - ETA overdue creates no notification/HUMAN NEEDED;
+  - Control Tower generated_at refreshes stale ETA state;
+  - verified/unknown fixtures match machine snapshot contract.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
