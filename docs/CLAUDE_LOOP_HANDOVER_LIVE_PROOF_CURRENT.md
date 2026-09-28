@@ -1,8 +1,17 @@
 # Claude Loop live-proof handover (CURRENT)
 
-## 2026-09-28 LIVE追記（先に読む）
+## 2026-09-28 最新LIVE結果（先に読む）
 
-この追記より下の `--bare` / 実行回数0 / STATIC直前の記述は、2026-09-27時点の履歴であり、現在の実行状態ではない。
+- 人間がIssue #23 comment `5864265631` で追加許可した1回のREAL再試験は**成功して終端済み**。新dispatch `e80d615b-9e87-4b20-9bad-2812a76adee6`、対象PR head `1373bf5512f7208ca88452b0bda12632bd5dbd05`、tree `a28c42d33f23c391b634bafddf36b6c436604de9`。このSHAは履歴であり、次回の正本にはしない。
+- 前確認時点のmainは `88020699a00056d3635899c2d9d4c7739f87a25b`。PRはmainより古かったが、main側とPR側の変更ファイル重複は0件で、PRはOPEN / MERGEABLE / CLEAN、対象headのActionsは2件ともSUCCESS。merge/rebase/force pushはしていない。
+- 保存済み`claude.ai` OAuth / Pro subscriptionで `claude auth status` がログイン済み。API key/Console/setup-token経路を使わず、`--safe-mode` 修正版の隔離容器でClaude Code生成processを**1回だけ**起動し、exit 0、restart 0。返答は固定文字列 `PHASE0_CLAUDE_LIVE_OK` の1行と完全一致。
+- Gate DBの今回のevidenceは1件のみ: ordinal 1、`ADMITTED`、request body SHA-256 `4781909b9ddf633cc22816202463a9c864195491c5189e71f5d52d6bccf8b7fb`、upstream HTTP 200。Gateが観測した実Anthropic `POST /v1/messages` は**1回**。retry 0、fallback disabled、max turns 1。モデル名や請求状態は検証しておらず推測しない。
+- Terminal receiptは `phase0-runs/real-claude-proof-20260928-r3/terminal-receipt.json` と元のGate DBに保存済み。Gateの契約上の `state=SUCCEEDED`、完了判定 `completion_status=COMPLETE`。Gate停止後にread-onlyでDBと外部receiptを照合し、累計dispatch 3件、evidence 1件、terminal receipt 3件、DB store identity一致を確認。Claude runtimeとGateは停止し、auth volume・Gate volume・外部bootstrap receipt・証拠を保持した。
+- **CLAUDE AUTH=PASS、REAL CLAUDE=PASS、REAL ANTHROPIC=PASS**。この追加許可は消費済み。追加dispatch、Claude実行、Loop開始、夜間自動運転、Jules連携、Mergeは実施しない。
+
+## 2026-09-28 前回LIVE失敗と修正（履歴）
+
+この節以降の `--bare` / 実行回数0 / STATIC直前の記述は過去時点の履歴であり、現在の実行状態ではない。
 
 - PR #25 の2026-09-28再試行は、`phase0-runs/real-claude-proof-20260928-r2/terminal-receipt.json` に `FAILED` として終端保存済み。dispatch `d384c645-cf10-433f-a44e-d2d41130efa7`、Claude起動1回、再起動0、Gateが観測した `/v1/messages` 送信0回。Gate DBには累計dispatch 2件、evidence 0件、terminal receipt 2件。GateとClaude runtimeは停止済み。
 - `claude auth status` は既存auth volumeで `claude.ai` のログイン済みとPro subscriptionを示した。一方、実runtimeは `Not logged in` でGate到達前に終了した。再認証・再dispatch・再送は行っていない。
