@@ -328,3 +328,17 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - a fifth delayed destructive Jules-bot commit `c48771d0063f200b1f41c9c9a66f519f6d10b0c4` landed on canonical PR #4 from an older direct-write lineage
 - fifth delayed overwrite was rejected and recovered append-only at `9d2b34db01db869ee41234ca4f1b035d8d3ec8a1`
 - Loop 044 itself remains isolated on `jules-work/relay-dev-loop-044-core-policy-matrix`; attribution of the delayed canonical write to Loop 044 is not supported
+
+
+## Loop 044 feedback checkpoint — 2026-09-28 16:36 JST
+- status readback run `36392356015`: session state `AWAITING_USER_FEEDBACK`, PR NONE
+- blocker: Jules plan payload exceeded its plan-save HTTP string limits; this was a planning-transport limit, not a code/test failure
+- latest Jules message asked whether it could use a shorter descriptive plan and directly apply the already-prepared allowlisted changes
+- this decision was within the pre-authorized Loop 044 safety envelope and did not require human escalation
+- one durable feedback message was sent through `jules-session-message.yml`
+- feedback workflow run `36392460254`: SUCCESS
+- retry=0; the message was sent exactly once
+- feedback preserved all original constraints: six allowed paths only, static/mock only, pinned Core head, no live provider/model/process/network/API/credential/billing/settings execution, no canonical target writes, no merge
+- post-feedback readback run `36392596369`: session returned to `IN_PROGRESS`, PR NONE
+- canonical PR #4 remained at recovered head `9d2b34db01db869ee41234ca4f1b035d8d3ec8a1`
+- isolated work branch remains content-equivalent to the accepted snapshot tree and is history-behind only because canonical contains the rejected delayed bot commit plus append-only recovery
