@@ -36,7 +36,7 @@ assert set(c["networks"]) == {"internal"}, c["networks"]
 assert set(p["networks"]) == {"internal","egress"}, p["networks"]
 assert p.get("ports", []) == [], p.get("ports")
 assert not p.get("volumes"), p.get("volumes")
-assert p.get("privileged") is False
+assert p.get("privileged", False) is False
 assert "ALL" in p.get("cap_drop", [])
 assert any(str(x).startswith("no-new-privileges") for x in p.get("security_opt", []))
 assert c["environment"]["ANTHROPIC_BASE_URL"] == "http://gate:8080"
