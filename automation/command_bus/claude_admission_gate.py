@@ -633,13 +633,14 @@ def validate_container_topology(manifest: dict) -> dict:
         "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "ANTHROPIC_AWS_API_KEY",
         "ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_AUTH_TOKEN",
         "ANTHROPIC_CUSTOM_HEADERS", "AWS_BEARER_TOKEN_BEDROCK",
-        "HTTP_PROXY", "ALL_PROXY", "NO_PROXY",
+        "HTTP_PROXY", "ALL_PROXY",
     }
     env_maps = [service.get("environment", {}) for service in services.values()]
     env_keys = {str(key).upper() for env in env_maps if isinstance(env, dict) for key in env}
     runtime_contract = manifest.get("x-phase0-runtime-contract", {})
     auth_volume = "claude-auth:/home/node/.claude"
     runtime_vars = {
+        "NO_PROXY": "gate",
         "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
         "CLAUDE_CODE_MAX_RETRIES": "0",
         "CLAUDE_CODE_MAX_TURNS": "1",
@@ -679,7 +680,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "auth_proxy_binds_internal_address": auth_proxy_ip == CONTAINER_AUTH_PROXY_BIND_IP and auth_proxy_ip_obj in internal_network and auth_proxy_ip_obj != gate_ip_obj,
         "claude_gateway_exact": claude_gateway == "http://gate:8080",
         "model_traffic_remains_on_gate": claude_gateway == "http://gate:8080" and upstream_url == "https://api.anthropic.com",
-        "runtime_has_only_fixed_https_proxy": claude_env.get("HTTPS_PROXY") == "http://auth-control-proxy:3128" and not (set(claude_env) & {"HTTP_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"}),
+        "runtime_has_only_fixed_https_proxy": claude_env.get("HTTPS_PROXY") == "http://auth-control-proxy:3128" and claude_env.get("NO_PROXY") == "gate" and not (set(claude_env) & {"HTTP_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy", "No_Proxy"}),
         "other_services_have_no_proxy_environment": all(
             not (set(service.get("environment", {})) & {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"})
             for service_name, service in services.items() if service_name != "claude"
