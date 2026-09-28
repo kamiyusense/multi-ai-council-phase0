@@ -169,6 +169,25 @@ class TestProviderAdapters(unittest.TestCase):
         with self.assertRaises(Exception):
             profile.provider_id = "hacked"
 
+    def test_profile_constructor_rejects_unsafe_invariants(self):
+        base = {
+            "provider_id": "openai",
+            "external_agent": "test-agent",
+            "pinned_version": "test-version",
+            "_static_preflight_config": {
+                "auth_kind": "account",
+                "route_evidence": codex_evidence(),
+            },
+        }
+        for overrides in (
+            {"retry_count": 1},
+            {"fallback_state": "enabled"},
+            {"live_ready": True},
+            {"live_readiness": "READY"},
+        ):
+            with self.assertRaises(ValueError):
+                ProviderStaticProfile(**base, **overrides)
+
     def test_claude_rejects_noncanonical_meta(self):
         bad_meta = {
             "claudeCode": {
