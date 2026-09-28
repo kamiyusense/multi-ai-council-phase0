@@ -48,7 +48,7 @@
       "cap_drop": ["ALL"],
       "security_opt": ["no-new-privileges:true"],
       "ports": [],
-      "networks": {"internal": {}, "egress": {}},
+      "networks": {"internal": {"ipv4_address": "172.29.247.3"}, "egress": {}},
       "user": "1000:1000"
     },
     "auth-bootstrap": {
