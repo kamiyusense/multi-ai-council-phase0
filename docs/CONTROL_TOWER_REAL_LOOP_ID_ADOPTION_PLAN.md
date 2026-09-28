@@ -198,3 +198,27 @@ Recommended dependency order:
 
 The order above is an implementation dependency recommendation, not runtime
 priority or ownership truth.
+
+
+## PR verification
+
+Exact tested PR head:
+
+`b6a898b636846a7c716279b709fa6e5a9e30481f`
+
+GitHub Actions run:
+
+`36393149222` — **SUCCESS**
+
+Evidence:
+
+- focused Status/runtime/validation suite: **285/285 PASS**
+- full command-bus suite: **693/693 PASS**
+- command-bus JSON schemas parsed: **22/22 PASS**
+- Python compileall: **PASS**
+- `git diff --check`: **PASS**
+- focused CI contains both durable collector and migration recovery modules
+- Issue #33 was not mutated by this batch
+
+The current branch head after this verification entry may be one
+documentation-only commit ahead of the tested head.
