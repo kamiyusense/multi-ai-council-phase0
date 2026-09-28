@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 0 runtime owner main-policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "policies"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "policies": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy_id",
+          "enabled",
+          "loop_id",
+          "owner_role",
+          "holder_id",
+          "expected_repo",
+          "expected_pr",
+          "allowed_event_types",
+          "max_lease_seconds"
+        ],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "enabled": {"type": "boolean"},
+          "loop_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "owner_role": {"enum": ["SEMI_AUTO", "AUTO"]},
+          "holder_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "expected_repo": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          },
+          "expected_pr": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "allowed_event_types": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true,
+            "items": {
+              "enum": ["ACQUIRE", "RENEW", "HANDOFF", "RELEASE", "TERMINAL"]
+            }
+          },
+          "max_lease_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 14400
+          }
+        }
+      }
+    }
+  }
+}
