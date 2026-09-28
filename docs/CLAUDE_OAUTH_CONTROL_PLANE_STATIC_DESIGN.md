@@ -32,6 +32,16 @@ observed implementation details, not a published protocol contract. This
 static candidate therefore allows the official-documentation hostname only;
 it does not claim to enforce that path.
 
+A separate older report for Claude Code 2.1.74 observed an OAuth-related
+`GET https://api.anthropic.com/api/oauth/profile` before refresh. The pinned
+Phase 0 client is 2.1.283, and current official network documentation separates
+`platform.claude.com` OAuth exchange/refresh/revocation from
+`api.anthropic.com` API requests, but no credential-free STATIC evidence
+proves that 2.1.283 never uses the historical profile path. The auth proxy
+therefore continues to deny `api.anthropic.com:443` rather than widening the
+allowlist; if the pinned client still needs that historical path, a future
+bounded component proof must fail closed and report the dependency as UNKNOWN.
+
 ### C. Repository evidence
 
 The five Gate/runtime files identified in the Issue #102 post-mortem have
@@ -135,6 +145,10 @@ credential-volume sharing is implemented.
 5. No test establishes that Claude Code 2.1.283's claude.ai refresh request
    honors the fixed HTTPS_PROXY in this exact image, or that the OAuth
    endpoint accepts the subscription flow in this environment.
+6. Older upstream issue evidence reports an OAuth profile request on
+   `api.anthropic.com`. Whether pinned 2.1.283 still requires that historical
+   dependency is UNKNOWN. The candidate deliberately does not allow it through
+   the OAuth proxy because doing so would weaken the model-host separation.
 
 Until these limitations are resolved with authoritative protocol evidence
 and a reviewed network enforcement design, this candidate is not permission
