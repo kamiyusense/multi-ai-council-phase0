@@ -1,46 +1,80 @@
-from src.providers.base import ProviderStaticProfile
-from src.providers.factory import create_core_adapter
-from src.relay.bridge import RelayProviderAdapterBridge
+from __future__ import annotations
+
+from types import MappingProxyType
+from typing import Any, Mapping
+
+from .base import ProviderStaticProfile
+from .factory import create_core_adapter
 from src.relay.core_adapter import RelayCoreAdapter
 
+
+_PROVIDER_ORDER = ("openai", "anthropic", "google")
+_REQUIRED_BRIDGE_METHODS = (
+    "prepare",
+    "preflight",
+    "dispatch",
+    "collect",
+    "abort",
+    "classify",
+)
+
+
+def _require_bridge_compatible(bridge: object) -> None:
+    for name in _REQUIRED_BRIDGE_METHODS:
+        if not callable(getattr(bridge, name, None)):
+            raise TypeError(f"bridge must provide callable {name}()")
+
+
 class ProviderAdapterBundle:
-    def __init__(self, profiles: list[ProviderStaticProfile], bridges: dict[str, RelayProviderAdapterBridge]):
-        if not isinstance(profiles, list):
-            raise TypeError("profiles must be a list")
-        if not isinstance(bridges, dict):
-            raise TypeError("bridges must be a dict")
+    """Immutable static/mock three-provider adapter bundle."""
 
-        if len(profiles) != 3:
-            raise ValueError("Exactly three profiles required")
-        if len(bridges) != 3:
-            raise ValueError("Exactly three bridges required")
+    __slots__ = ("_adapters",)
 
-        expected_keys = {"openai", "anthropic", "google"}
-        p_keys = set()
+    def __init__(
+        self,
+        profiles: Mapping[str, ProviderStaticProfile],
+        bridges: Mapping[str, object],
+    ) -> None:
+        if not isinstance(profiles, Mapping):
+            raise TypeError("profiles must be a mapping keyed by provider_id")
+        if not isinstance(bridges, Mapping):
+            raise TypeError("bridges must be a mapping keyed by provider_id")
 
-        for p in profiles:
-            if not isinstance(p, ProviderStaticProfile):
-                raise TypeError("profiles items must be ProviderStaticProfile")
-            p_keys.add(p.provider_id)
+        expected = set(_PROVIDER_ORDER)
+        if set(profiles) != expected:
+            raise ValueError(
+                "Profiles must exactly match canonical provider set "
+                "{'openai', 'anthropic', 'google'}"
+            )
+        if set(bridges) != expected:
+            raise ValueError(
+                "Bridges must exactly match canonical provider set "
+                "{'openai', 'anthropic', 'google'}"
+            )
 
-        b_keys = set(bridges.keys())
+        profile_snapshot = dict(profiles)
+        bridge_snapshot = dict(bridges)
 
-        if p_keys != expected_keys:
-            raise ValueError("Profiles must exactly match canonical provider set {'openai', 'anthropic', 'google'}")
-        if b_keys != expected_keys:
-            raise ValueError("Bridges must exactly match canonical provider set {'openai', 'anthropic', 'google'}")
+        adapters: dict[str, RelayCoreAdapter] = {}
+        for provider_id in _PROVIDER_ORDER:
+            profile = profile_snapshot[provider_id]
+            if not isinstance(profile, ProviderStaticProfile):
+                raise TypeError("profile values must be ProviderStaticProfile")
+            if profile.provider_id != provider_id:
+                raise ValueError(
+                    f"profile key/provider_id mismatch: {provider_id}/"
+                    f"{profile.provider_id}"
+                )
 
-        for k in expected_keys:
-            if not isinstance(bridges[k], RelayProviderAdapterBridge):
-                raise TypeError("bridges items must be RelayProviderAdapterBridge")
+            bridge = bridge_snapshot[provider_id]
+            _require_bridge_compatible(bridge)
+            adapters[provider_id] = create_core_adapter(profile, bridge)  # type: ignore[arg-type]
 
-        self._adapters: dict[str, RelayCoreAdapter] = {}
-        for p in profiles:
-            self._adapters[p.provider_id] = create_core_adapter(p, bridges[p.provider_id])
+        self._adapters = MappingProxyType(adapters)
 
-    def get_adapters_in_order(self) -> list[RelayCoreAdapter]:
-        return [
-            self._adapters["openai"],
-            self._adapters["anthropic"],
-            self._adapters["google"]
-        ]
+    @property
+    def adapters(self) -> Mapping[str, RelayCoreAdapter]:
+        return self._adapters
+
+    def get_adapters_in_order(self) -> tuple[RelayCoreAdapter, ...]:
+        return tuple(self._adapters[provider_id] for provider_id in _PROVIDER_ORDER)
