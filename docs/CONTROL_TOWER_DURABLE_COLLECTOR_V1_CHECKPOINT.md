@@ -199,14 +199,29 @@ remains the live integration blocker.
 Once a real loop adopts a DURABLE ID, this collector can be used as the
 read-only evidence source for the already-merged Control Tower live preflight.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `14688620e3109abee428d38df019ead31fdb1096`
+- GitHub Actions run:
+  `36390391360` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **274/274 PASS**
+- full command-bus suite:
+  **599/599 PASS**
+- command-bus JSON schemas parsed:
+  **21/21 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative collector tests were present in the exact-head CI log:
+  - valid active durable transition is collected read-only;
+  - PLACEHOLDER registry is NOT_WIRED without durable reads;
+  - state mutation during collection -> UNKNOWN;
+  - target mutation during collection -> UNKNOWN;
+  - TERMINAL transition does not require provider observation.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
