@@ -210,15 +210,30 @@ Therefore:
 - owner authority production source: NOT_WIRED
 - live durable ACQUIRE: NOT_WIRED
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- live Jules execution: MUST REMAIN NONE
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `9786ea4d66be0f928a5c7dbd9581107320c6bea9`
+- GitHub Actions run:
+  `36400187843` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **301/301 PASS**
+- full command-bus suite:
+  **730/730 PASS**
+- command-bus JSON schemas parsed:
+  **22/22 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative tests present in the exact-head CI log:
+  - fresh Jules + GitHub readbacks return attestation;
+  - only QUEUED / PLANNING / IN_PROGRESS authenticate RUNNING;
+  - target repo/PR/head/branch/open-state must match;
+  - expired/future source fails before provider read.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- live Jules execution:
+  **NONE**
+- Issue #33 live mutation:
+  **NONE**
