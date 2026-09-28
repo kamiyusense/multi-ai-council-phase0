@@ -1,0 +1,44 @@
+name: Issue 110 Claude 2.1.283 OAuth 500ms repeated fixture
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-fixture-refresh-v1
+    paths:
+      - .github/workflows/issue110-claude-oauth-500ms-repeat.yml
+
+permissions:
+  contents: read
+
+jobs:
+  repeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact repeat head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Build exact pinned Claude runtime image once
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build             -t phase0-claude-runtime:2.1.283             -f automation/command_bus/docker/claude-runtime/Dockerfile             automation/command_bus
+
+      - name: Run five isolated 500ms refresh trials
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x automation/command_bus/tests/claude_oauth_refresh_fixture.sh
+          for trial in 1 2 3 4 5; do
+            echo "=== FIXTURE_TRIAL=$trial ==="
+            MOCK_DELAY_MS=500             FIXTURE_TRIAL="$trial"             PHASE0_FIXTURE_SKIP_BUILD=1               automation/command_bus/tests/claude_oauth_refresh_fixture.sh
+          done
+          echo "CLAUDE_OAUTH_500MS_REPEAT_MEASUREMENT_PASS"
