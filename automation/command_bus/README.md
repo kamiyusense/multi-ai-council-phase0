@@ -146,6 +146,19 @@ closed until the area is explicitly assigned to the static or ledger scope.
 
 ## Claude admission gate (static only)
 
+Issue #110 adds a credential-blind OAuth control-plane egress boundary. The
+Claude runtime remains on the internal network and keeps model traffic pinned to
+`http://gate:8080`. HTTPS control-plane traffic is sent to the internal
+`oauth-egress` CONNECT proxy, which allows only
+`platform.claude.com:443`; `api.anthropic.com:443` is denied by that proxy
+before upstream connect. The sidecar mounts no auth volume, workspace, or Gate
+state and does not terminate TLS. `CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1` keeps
+external hostname resolution at the proxy boundary, while `NO_PROXY` and
+alternate proxy variables remain disallowed by the launcher. The intended OAuth
+refresh path is `/v1/oauth/token`, but path-level enforcement inside CONNECT
+TLS is deliberately not claimed. See
+`docs/CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md`.
+
 `claude_admission_gate.py` provides a host-owned atomic SQLite claim that
 admits at most one generation POST per in-process host-registered dispatch;
 all later attempts are denied before upstream connect. The optional loop
