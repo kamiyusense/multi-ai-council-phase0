@@ -762,3 +762,18 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 051 — medium — DISPATCHED / IN PROGRESS
+- task: static approval-receipt contract for future durable human live-approval evidence
+- canonical Relay snapshot head: `56d561093108064dddf14d298f0fc24bc4145ec8`
+- canonical Relay snapshot tree: `80c2a5a7d4efe831e72f98177c05bd889a380f26`
+- isolated starting branch: `jules-work/relay-dev-loop-051-approval-receipt`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36484100041`
+- Jules session: `10431598339778891411`
+- accepted_at: 2026-09-29 06:08:49 JST
+- task size: medium (~15-25 minute class)
+- canonical PR #4 head immediately after dispatch: `56d561093108064dddf14d298f0fc24bc4145ec8` unchanged
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: structural approval-record validity never proves human provenance and never authorizes execution; provenance_verified=false / execution_authorized=false / dispatch_allowed=false / live_ready=false remain fixed
+
