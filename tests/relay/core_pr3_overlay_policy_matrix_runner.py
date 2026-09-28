@@ -76,9 +76,6 @@ def _provider_states_from_checkpoint(checkpoint: dict[str, Any]) -> dict[str, st
             if not isinstance(entry, str) or entry.count(":") != 1:
                 raise ValueError(f"malformed checkpoint state entry: {entry!r}")
             provider_id, state = entry.split(":", 1)
-            # Skip non-provider entries like "core:STOP_REQUESTED"
-            if provider_id not in _PROVIDER_ORDER:
-                continue
             if provider_id not in states or not state or provider_id in seen:
                 raise ValueError(f"invalid checkpoint state entry: {entry!r}")
             states[provider_id] = state
@@ -106,12 +103,12 @@ def _google_unknown_raw_response() -> str:
         {
             "schema_version": "phase0-response-v1",
             "answer_state": "ANSWER",
-            "conclusion_code": "UNKNOWN",
+            "conclusion_code": "YES",
             "safety_warning": "UNKNOWN",
             "safety_reason": "Policy mock reason",
             "evidence_refs": [],
             "marker_echoes": {"head": None, "middle": None, "tail": None},
-            "answer_text": "",
+            "answer_text": "Mock yes answer with unresolved safety",
         },
         separators=(",", ":"),
         sort_keys=True,
@@ -211,8 +208,16 @@ def run_matrix(core_root: Path, relay_root: Path, core_head: str) -> dict[str, A
                 else:
                     checkpoint = {}
 
+                provider_results = res.get("provider_results", {})
                 return {
-                    "provider_states": _provider_states_from_checkpoint(checkpoint) if comparison else None,
+                    "provider_states": {
+                        p: provider_results[p].execution_state.value for p in _PROVIDER_ORDER
+                        if p in provider_results
+                    },
+                    "participation_states": {
+                        p: provider_results[p].participation_state.value for p in _PROVIDER_ORDER
+                        if p in provider_results
+                    },
                     "comparison": {
                         "participant_count": comparison.participant_count,
                         "agreement_count": comparison.agreement_count,
@@ -220,6 +225,7 @@ def run_matrix(core_root: Path, relay_root: Path, core_head: str) -> dict[str, A
                         "formal_consensus": comparison.formal_consensus,
                         "safety_block": getattr(comparison, "safety_block", None),
                     } if comparison else None,
+                    "report": res.get("report"),
                     "checkpoint": {
                         "live_turn_executed": checkpoint.get("live_turn_executed"),
                         "retry_count": checkpoint.get("retry_count"),
@@ -248,7 +254,17 @@ def run_matrix(core_root: Path, relay_root: Path, core_head: str) -> dict[str, A
 
         if scen == "safety_unknown_google":
             assert s_res["checkpoint"]["FAIL"] == []
-            assert s_res["checkpoint"]["UNKNOWN"] == ["google:ERROR_UNKNOWN"]
+            assert s_res["checkpoint"]["UNKNOWN"] == []
+            assert s_res["provider_states"] == {
+                "openai": "COMPLETE",
+                "anthropic": "COMPLETE",
+                "google": "COMPLETE",
+            }
+            assert s_res["participation_states"] == {
+                "openai": "PARTICIPANT",
+                "anthropic": "PARTICIPANT",
+                "google": "PARTICIPANT",
+            }
             assert s_res["checkpoint"]["live_turn_executed"] is False
             assert s_res["checkpoint"]["retry_count"] == 0
             assert s_res["checkpoint"]["fallback_state"] == "disabled"
@@ -260,26 +276,53 @@ def run_matrix(core_root: Path, relay_root: Path, core_head: str) -> dict[str, A
             assert set(s_res["dispatch_counts"].values()) == {1}
             assert set(s_res["collect_counts"].values()) == {1}
             assert set(s_res["abort_counts"].values()) == {0}
+            assert all(s_res["raw_evidence"]["exactness"].values())
+            assert all(
+                isinstance(value, str) and len(value) == 64
+                for value in s_res["raw_evidence"]["hashes"].values()
+            )
 
         elif scen == "fanout_unknown":
             assert s_res["comparison"] is None
+            assert s_res["report"] is None
+            assert s_res["provider_states"] == {}
+            assert s_res["participation_states"] == {}
             assert s_res["providers_dir_exists"] is False
             assert set(s_res["dispatch_counts"].values()) == {0}
             assert set(s_res["collect_counts"].values()) == {0}
             assert s_res["checkpoint"]["live_turn_executed"] is False
-            assert s_res["checkpoint"]["UNKNOWN"] == ["core:FANOUT_UNKNOWN"]
-            assert "retry_count" not in s_res["checkpoint"] or s_res["checkpoint"]["retry_count"] is None
-            assert "fallback_state" not in s_res["checkpoint"] or s_res["checkpoint"]["fallback_state"] is None
+            assert s_res["checkpoint"]["UNKNOWN"] == ["fan-out not confirmed PASS"]
+            assert s_res["checkpoint"]["retry_count"] is None
+            assert s_res["checkpoint"]["fallback_state"] is None
 
         elif scen == "stop_before_dispatch":
+            assert s_res["provider_states"] == {
+                "openai": "ERROR_UNKNOWN",
+                "anthropic": "ERROR_UNKNOWN",
+                "google": "ERROR_UNKNOWN",
+            }
+            assert s_res["participation_states"] == {
+                "openai": "NONPARTICIPANT",
+                "anthropic": "NONPARTICIPANT",
+                "google": "NONPARTICIPANT",
+            }
             assert set(s_res["dispatch_counts"].values()) == {0}
             assert set(s_res["collect_counts"].values()) == {0}
+            assert set(s_res["abort_counts"].values()) == {0}
+            assert s_res["comparison"]["participant_count"] == 0
+            assert s_res["comparison"]["agreement_count"] == 0
             assert s_res["comparison"]["human_required"] is True
             assert s_res["comparison"]["formal_consensus"] is False
-            assert s_res["checkpoint"]["UNKNOWN"] == ["core:STOP_REQUESTED"]
+            assert s_res["checkpoint"]["FAIL"] == []
+            assert s_res["checkpoint"]["UNKNOWN"] == [
+                "anthropic:ERROR_UNKNOWN",
+                "google:ERROR_UNKNOWN",
+                "openai:ERROR_UNKNOWN",
+            ]
             assert s_res["checkpoint"]["live_turn_executed"] is False
             assert s_res["checkpoint"]["retry_count"] == 0
             assert s_res["checkpoint"]["fallback_state"] == "disabled"
+            assert not any(s_res["raw_evidence"]["existence"].values())
 
         results["per_scenario"][scen] = s_res
 
