@@ -597,12 +597,13 @@ def load_container_manifest() -> dict:
 
 
 def validate_container_topology(manifest: dict) -> dict:
-    """Fail-closed static Compose topology and isolated auth-volume contract."""
+    """Fail-closed static Compose topology and isolated auth/control-plane contract."""
     try:
         services, networks = manifest["services"], manifest["networks"]
         claude, gate = services["claude"], services["gate"]
         gate_bootstrap = services["gate-bootstrap"]
         auth = services["auth-bootstrap"]
+        oauth = services["oauth-egress"]
         internal, egress = networks["internal"], networks["egress"]
         internal_subnet = internal["ipam"]["config"][0]["subnet"]
         gate_bind = gate["environment"]["PHASE0_GATE_BIND"]
@@ -611,14 +612,20 @@ def validate_container_topology(manifest: dict) -> dict:
         state_dir = gate["environment"]["PHASE0_GATE_STATE_DIR"]
         upstream_url = gate["environment"]["PHASE0_GATE_UPSTREAM_URL"]
         claude_gateway = claude["environment"]["ANTHROPIC_BASE_URL"]
+        claude_https_proxy = claude["environment"]["HTTPS_PROXY"]
         gate_ip = gate["networks"]["internal"]["ipv4_address"]
+        oauth_ip = oauth["networks"]["internal"]["ipv4_address"]
+        oauth_env = oauth["environment"]
         internal_network = ipaddress.ip_network(internal_subnet, strict=True)
         gate_ip_obj = ipaddress.ip_address(gate_ip)
+        oauth_ip_obj = ipaddress.ip_address(oauth_ip)
     except (KeyError, TypeError, IndexError, ValueError):
         return {"status": "BLOCKED", "reason": "missing or malformed topology fields"}
+
     claude_networks = set(claude.get("networks", []))
     auth_networks = set(auth.get("networks", []))
     gate_networks = set(gate.get("networks", {}))
+    oauth_networks = set(oauth.get("networks", {}))
     claude_env = claude.get("environment", {})
     auth_env = auth.get("environment", {})
     gate_bootstrap_env = gate_bootstrap.get("environment", {})
@@ -647,39 +654,54 @@ def validate_container_topology(manifest: dict) -> dict:
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
         "DISABLE_UPDATES": "1",
     }
+    oauth_expected_env = {
+        "PHASE0_OAUTH_PROXY_BIND": "172.29.247.3",
+        "PHASE0_OAUTH_PROXY_PORT": "8081",
+        "PHASE0_OAUTH_PROXY_ALLOWED_CONNECT": "platform.claude.com:443",
+    }
     checks = {
-        "exact_services": set(services) == {"claude", "gate", "auth-bootstrap", "gate-bootstrap"},
+        "exact_services": set(services) == {"claude", "gate", "auth-bootstrap", "gate-bootstrap", "oauth-egress"},
         "claude_internal_only": claude_networks == {"internal"},
         "auth_bootstrap_egress_only": auth_networks == {"egress"},
         "gate_internal_and_egress": gate_networks == {"internal", "egress"},
+        "oauth_internal_and_egress": oauth_networks == {"internal", "egress"},
         "internal_true": internal.get("internal") is True,
         "internal_bridge": internal.get("driver") == "bridge",
         "egress_is_external_bridge": egress.get("driver") == "bridge" and egress.get("internal") is not True,
         "claude_no_ports": not claude.get("ports"),
         "auth_bootstrap_no_ports": not auth.get("ports"),
         "gate_no_published_ports": not gate.get("ports"),
-        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth)),
-        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, gate_bootstrap)),
+        "oauth_no_published_ports": not oauth.get("ports"),
+        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth, oauth)),
+        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, gate_bootstrap, oauth)),
         "runtime_seccomp_profile_exact": claude.get("security_opt") == [f"seccomp={RUNTIME_SECCOMP_RELATIVE_PATH}"],
-        "seccomp_only_on_runtime": all("security_opt" not in service for service in (gate, auth, gate_bootstrap)),
+        "seccomp_only_on_runtime": all("security_opt" not in service for service in (gate, auth, gate_bootstrap, oauth)),
         "no_added_capabilities": all("cap_add" not in service for service in services.values()),
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
         "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
+        "no_oauth_host_route_overrides": not any(k in oauth for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
+        "oauth_binds_distinct_internal_address": oauth_ip == oauth_env.get("PHASE0_OAUTH_PROXY_BIND") == "172.29.247.3" and oauth_ip_obj in internal_network and oauth_ip_obj != gate_ip_obj,
         "claude_gateway_exact": claude_gateway == "http://gate:8080",
+        "claude_https_proxy_exact": claude_https_proxy == "http://oauth-egress:8081",
         "gate_port_exact": gate_port == str(CONTAINER_GATE_PORT),
         "production_upstream_exact": upstream_url == "https://api.anthropic.com",
+        "oauth_allowlist_exact": oauth_env == oauth_expected_env,
+        "oauth_model_api_not_allowlisted": "api.anthropic.com" not in oauth_env.get("PHASE0_OAUTH_PROXY_ALLOWED_CONNECT", ""),
         "fixed_state_directory": state_dir == "/var/lib/phase0/claude-gate",
         "store_id_externally_supplied": expected_store_id == "${PHASE0_GATE_EXPECTED_STORE_ID:?must be externally provisioned}",
         "named_volume_mounted_at_fixed_state": gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"],
         "auth_volume_declared_separately": manifest.get("volumes") == {"gate-state": {}, "claude-auth": {}},
         "auth_and_runtime_share_only_fixed_auth_volume": claude.get("volumes") == [auth_volume] and auth.get("volumes") == [auth_volume],
+        "oauth_mounts_nothing": not oauth.get("volumes") and "env_file" not in oauth,
         "all_services_are_profile_gated": all(service.get("profiles") for service in services.values()),
         "claude_image_has_local_build_target": claude.get("build") == {"context": ".", "dockerfile": "docker/claude-runtime/Dockerfile"},
         "gate_image_has_local_build_target": gate.get("build") == {"context": ".", "dockerfile": "docker/admission-gate/Dockerfile"},
+        "oauth_image_has_local_build_target": oauth.get("build") == {"context": ".", "dockerfile": "docker/oauth-egress/Dockerfile"},
         "auth_image_reuses_claude_build_target": auth.get("build") == claude.get("build"),
         "auth_bootstrap_is_human_gated_login_only": auth.get("profiles") == ["human-auth-bootstrap"] and auth.get("entrypoint") == ["claude"] and auth.get("command") == ["auth", "login"],
         "runtime_is_human_gated": claude.get("profiles") == ["human-approval-required"],
+        "oauth_is_human_gated_connect_only": oauth.get("profiles") == ["human-approval-required"] and oauth.get("entrypoint") == ["python3", "/opt/phase0/claude_oauth_egress_proxy.py"] and oauth.get("command") == ["serve"],
         "runtime_launcher_is_explicit_and_default_fail_closed": claude.get("profiles") == ["human-approval-required"] and claude.get("entrypoint") == ["node", "/opt/phase0/claude_runtime_launcher.mjs"] and "command" not in claude and "PHASE0_LIVE_EXECUTION" not in claude_env and "PHASE0_DISPATCH_ID" not in claude_env,
         "gate_entrypoint_is_existing_store_serve_only": gate.get("profiles") == ["human-approval-required"] and gate.get("entrypoint") == ["python3", "/opt/phase0/gate_entrypoint.py"] and gate.get("command") == ["serve"] and gate.get("environment", {}).get("PHASE0_GATE_MODE") == "OPEN_EXISTING_ONLY",
         "gate_bootstrap_profile_exact_and_not_default": gate_bootstrap.get("profiles") == ["human-gate-bootstrap"],
@@ -695,8 +717,8 @@ def validate_container_topology(manifest: dict) -> dict:
         "gate_bootstrap_environment_empty_and_no_env_file": gate_bootstrap_env == {} and "env_file" not in gate_bootstrap,
         "gate_bootstrap_cannot_generate_or_receive_expected_store_id": "PHASE0_GATE_EXPECTED_STORE_ID" not in gate_bootstrap_env and "PHASE0_GATE_EXPECTED_STORE_ID" not in str(gate_bootstrap),
         "bootstrap_and_runtime_gate_are_separate_profiles_and_paths": gate_bootstrap.get("profiles") != gate.get("profiles") and gate.get("entrypoint") == ["python3", "/opt/phase0/gate_entrypoint.py"] and gate.get("command") == ["serve"] and gate.get("volumes") == ["gate-state:/var/lib/phase0/claude-gate"] and gate.get("environment", {}).get("PHASE0_GATE_MODE") == "OPEN_EXISTING_ONLY",
-        "runtime_and_gate_images_are_not_latest": claude.get("image") == auth.get("image") == "phase0-claude-runtime:2.1.283" and gate.get("image") == "phase0-claude-gate:1" and all("latest" not in str(service.get("image", "")) and "UNBUILT" not in str(service.get("image", "")) for service in services.values()),
-        "fixed_nonroot_identity": claude.get("user") == auth.get("user") == "1000:1000",
+        "runtime_and_gate_images_are_not_latest": claude.get("image") == auth.get("image") == "phase0-claude-runtime:2.1.283" and gate.get("image") == "phase0-claude-gate:1" and oauth.get("image") == "phase0-claude-oauth-egress:1" and all("latest" not in str(service.get("image", "")) and "UNBUILT" not in str(service.get("image", "")) for service in services.values()),
+        "fixed_nonroot_identity": claude.get("user") == auth.get("user") == oauth.get("user") == "1000:1000",
         "gate_nonroot_identity": gate.get("user") == "1000:1000",
         "auth_config_dir_same_as_volume": claude_env.get("CLAUDE_CONFIG_DIR") == auth_env.get("CLAUDE_CONFIG_DIR") == "/home/node/.claude",
         "bootstrap_environment_allowlist_exact": auth_env == {
@@ -704,10 +726,16 @@ def validate_container_topology(manifest: dict) -> dict:
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
             "DISABLE_UPDATES": "1",
         },
-        "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL", **runtime_vars},
-        "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth, gate_bootstrap) for v in service.get("volumes", [])),
+        "runtime_environment_allowlist_exact": claude_env == {
+            "ANTHROPIC_BASE_URL": "http://gate:8080",
+            "HTTPS_PROXY": "http://oauth-egress:8081",
+            "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL",
+            **runtime_vars,
+        },
+        "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth, gate_bootstrap, oauth) for v in service.get("volumes", [])),
         "bootstrap_has_no_workspace_or_gate_state": auth.get("volumes") == [auth_volume],
         "gate_cannot_read_auth_volume": auth_volume not in gate.get("volumes", []),
+        "oauth_cannot_read_auth_gate_or_workspace": not oauth.get("volumes") and not any(term in str(oauth) for term in ("claude-auth", "gate-state", "/workspace")),
         "runtime_retry_and_resume_contract": all(claude_env.get(k) == v for k, v in runtime_vars.items()),
         "bootstrap_has_no_injected_credentials": not (set(auth_env) & forbidden_env_names),
         "runtime_cli_contract_explicit": runtime_contract == {
@@ -721,10 +749,14 @@ def validate_container_topology(manifest: dict) -> dict:
         "no_extra_networks": set(networks) == {"internal", "egress"},
     }
     failed = [key for key, passed in checks.items() if not passed]
-    return {"status": "PASS" if not failed else "BLOCKED", "checks": checks,
-            "failed": failed,
-            "claude_egress": "DENIED_BY_NETWORK_MEMBERSHIP" if not failed else "UNKNOWN"}
-
+    return {
+        "status": "PASS" if not failed else "BLOCKED",
+        "checks": checks,
+        "failed": failed,
+        "claude_egress": "PROXY_AND_GATE_ONLY" if not failed else "UNKNOWN",
+        "oauth_egress": "PLATFORM_CLAUDE_CONNECT_ONLY" if not failed else "UNKNOWN",
+        "model_bypass": "DENIED_BY_HOST_ALLOWLIST_AND_NETWORK_MEMBERSHIP" if not failed else "UNKNOWN",
+    }
 
 def validate_container_artifacts() -> dict:
     """Static, no-Docker verification of the narrowly scoped image build inputs."""
