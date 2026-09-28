@@ -682,7 +682,10 @@ def validate_container_topology(manifest: dict) -> dict:
         "model_traffic_remains_on_gate": claude_gateway == "http://gate:8080" and upstream_url == "https://api.anthropic.com",
         "runtime_has_only_fixed_https_proxy": claude_env.get("HTTPS_PROXY") == "http://auth-control-proxy:3128" and claude_env.get("NO_PROXY") == "gate" and not (set(claude_env) & {"HTTP_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy", "No_Proxy"}),
         "other_services_have_no_proxy_environment": all(
-            not (set(service.get("environment", {})) & {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"})
+            not any(
+                str(key).upper() in {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"}
+                for key in service.get("environment", {})
+            )
             for service_name, service in services.items() if service_name != "claude"
         ),
         "auth_proxy_service_is_exact_nonroot_internal_egress": auth_proxy.get("image") == "phase0-claude-auth-control-proxy:1" and auth_proxy.get("build") == {"context": ".", "dockerfile": "docker/auth-control-plane/Dockerfile"} and auth_proxy.get("profiles") == ["human-approval-required"] and auth_proxy.get("entrypoint") == ["node", "/opt/phase0/auth_control_plane_proxy.mjs"] and auth_proxy.get("user") == "1000:1000" and auth_proxy.get("ports") == [] and auth_proxy_networks == {"internal", "egress"} and auth_proxy.get("cap_drop") == ["ALL"] and auth_proxy.get("security_opt") == ["no-new-privileges:true"],
