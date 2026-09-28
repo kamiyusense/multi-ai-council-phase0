@@ -5,6 +5,7 @@ from typing import Any
 
 from .loop_owner import validate_owner_event
 from .runtime_transition_evidence import validate_evidence_document
+from .runtime_transition_receipt import build_terminal_owner_receipt
 
 
 def prepare_jules_evidence(
@@ -62,3 +63,28 @@ def prepare_jules_evidence(
     if path != owner_event["evidence_refs"][0]:
         raise ValueError("Jules evidence path is not bound to the owner event")
     return document
+
+
+def prepare_jules_terminal_owner_receipt(
+    owner_event: dict[str, Any],
+    *,
+    jules_receipt: dict[str, Any],
+) -> dict[str, Any]:
+    """Derive one canonical TERMINAL owner receipt from a durable Jules receipt.
+
+    The original Jules receipt remains immutable at its own round-scoped path.
+    This function only prepares a new owner receipt; it performs no write.
+    """
+    round_number = jules_receipt.get("round")
+    if isinstance(round_number, bool) or not isinstance(round_number, int) or round_number < 1:
+        raise ValueError("Jules receipt round is required")
+    provider_ref = (
+        f"automation/command_bus/receipts/{owner_event['loop_id']}/"
+        f"{round_number:06d}.json"
+    )
+    return build_terminal_owner_receipt(
+        owner_event,
+        provider_kind="JULES",
+        provider_receipt=jules_receipt,
+        provider_receipt_ref=provider_ref,
+    )
