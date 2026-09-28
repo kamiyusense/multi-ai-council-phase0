@@ -36,16 +36,45 @@ Static diagnosis already established:
 Current work authority:
 - Issue #110 = STATIC diagnosis/remediation source of truth;
 - no new Claude/Anthropic/Jules LIVE work is authorized by Issue #110;
-- allowed next batch: official-doc / upstream-code research, threat model, least-privilege OAuth control-plane isolation design, mock/fixture/unit/regression tests, docs/evidence, non-default-branch PR;
-- preferred direction to evaluate: keep model traffic forced through Admission Gate while isolating OAuth refresh/control-plane traffic behind a fail-closed exact allowlist proxy/sidecar;
 - do not broaden Claude runtime to unrestricted Internet egress;
 - do not use `claude auth status` alone as proof that provider authentication is effective;
 - OAuth relogin/refresh execution, provider request, Jules dispatch, Merge, default-branch write, billing/settings/permissions changes all require their normal explicit boundaries.
 
-Next Chat should continue Issue #110 until STATIC work is exhausted. Only after static remediation is validated should it return for:
-1. Merge approval for the remediation PR; then separately
-2. a new bounded LIVE auth/network proof; then separately
-3. a Claude→Jules integrated LIVE retest if still needed.
+Current Issue #110 STATIC result:
+- implementation PR = **#113** `feature/claude-oauth-egress-static-v1`;
+- exact implementation head = `c95e32fe7b6d1d3c2d39af65ad738e6426585331`;
+- PR #113 is OPEN, unmerged, and fresh readback reported mergeable;
+- design: Claude runtime remains internal-only; model traffic remains pinned to Admission Gate;
+- added credential-blind `oauth-egress` CONNECT sidecar;
+- sidecar exact CONNECT allowlist = `platform.claude.com:443`;
+- direct `api.anthropic.com:443` through the OAuth sidecar is denied before upstream connect;
+- runtime pins `HTTPS_PROXY=http://oauth-egress:8081` and `CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1`;
+- `NO_PROXY` and alternate/lowercase proxy bypass variables are rejected by the launcher contract;
+- OAuth sidecar mounts no auth volume, workspace, or Gate state;
+- exact-head GitHub Actions run `36457650437` PASS: command-bus unit suite, Python compile, and diff check all PASS;
+- Issue #110 contains append-only STATIC checkpoint and blocker records.
+
+Current verified research:
+- official Claude Code docs expose `HTTPS_PROXY`, `NO_PROXY`, `ANTHROPIC_BASE_URL`, `CLAUDE_CODE_PROXY_RESOLVES_HOSTS`, and OAuth token inputs;
+- no verified OAuth endpoint/base-URL override was found that would allow a credential-blind path-filtering reverse proxy;
+- upstream issue evidence reports refresh traffic to `POST https://platform.claude.com/v1/oauth/token` in multiple 2.1.x versions;
+- older 2.1.74 issue evidence also reports `GET https://api.anthropic.com/api/oauth/profile`;
+- exact Claude Code 2.1.283 OAuth dependency behavior remains UNKNOWN until separately authorized LIVE evidence.
+
+Current STATIC blocker / deferred decision:
+- a normal HTTPS CONNECT proxy can enforce exact host/port but cannot inspect the encrypted inner path without terminating TLS;
+- therefore PR #113 does **not** claim enforcement of only `/v1/oauth/token`;
+- TLS interception would create a new credential-reading/custom-CA trust boundary;
+- a dedicated refresh helper would become a new credential owner and needs a proven refresh-token rotation/persistence contract;
+- broad runtime egress or `NO_PROXY` is rejected because it weakens the Admission Gate boundary;
+- safe default = **do not authorize LIVE yet** while Issue #110's exact host/path criterion remains stricter than the credential-blind CONNECT boundary can prove.
+
+Next Chat should:
+1. fresh-read current `main`, PR #111, Issue #110, and PR #113;
+2. preserve PR #113 head unless a new STATIC fix is actually needed;
+3. do not Merge PR #113 without explicit user approval;
+4. do not run OAuth/provider/Claude/Jules LIVE work without separate explicit approval;
+5. if deciding the blocker, present the human choice explicitly: accept exact host/port + end-to-end TLS as sufficient for a bounded diagnostic, or expand the secret-handling design to a path-aware credential owner.
 
 ## 0. 2026-09-28 current override — Chat-first / Work fallback
 
