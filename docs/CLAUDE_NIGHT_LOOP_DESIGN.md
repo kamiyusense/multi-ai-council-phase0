@@ -56,14 +56,15 @@ There are two distinct Jules contracts and they must not be conflated:
    - no I/O and no workflow dispatch.
 
 2. `prepare_jules_semiauto_request()`
-   - current live GitHub workflow request profile
-     `JULES_CHAT_SEMIAUTO_V1`;
+   - current live GitHub workflow request profile for Claude-origin work:
+     `JULES_CHAT_SEMIAUTO_V2` (V1 remains accepted for existing Chat-driven tasks);
    - converts the already-safe JULES_BACKEND PREPARE_ONLY request into the exact
      request read by `.github/workflows/jules-chat-semiauto.yml`;
    - reuses the internal bridge first, then validates again with
      `jules_api_request.validate_request()`;
-   - preserves target repo, branch, exact head/tree, allowlisted paths, prompt,
-     expiry, retry=0, fallback=disabled, merge=false and force-push=false;
+   - preserves origin loop/round/correlation/generation plus target repo, branch,
+     exact head/tree, allowlisted paths, prompt, expiry, retry=0,
+     fallback=disabled, merge=false and force-push=false;
    - carries per-path ADD/MODIFY operation bounds into the task prompt and
      explicitly forbids DELETE/RENAME;
    - still performs no file persistence, GitHub write, workflow dispatch, Jules
