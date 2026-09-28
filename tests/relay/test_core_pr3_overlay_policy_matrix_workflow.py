@@ -28,7 +28,7 @@ class TestCorePR3OverlayPolicyMatrixWorkflow(unittest.TestCase):
     def test_workflow_has_required_configurations(self):
         self.assertIn("permissions:\n  contents: read", self.workflow_text)
         self.assertIn("feature/relay-transport-7070955470193506982", self.workflow_text)
-        self.assertIn("automation/command_bus/relay_overlay_matrix_requests/*.json", self.workflow_text)
+        self.assertIn("automation/command_bus/relay_overlay_policy_matrix_requests/*.json", self.workflow_text)
         self.assertIn("actions/checkout@11d5960a326750d5838078e36cf38b85af677262", self.workflow_text)
 
         checkout_count = self.workflow_text.count("uses: actions/checkout")
@@ -57,7 +57,7 @@ class TestCorePR3OverlayPolicyMatrixWorkflow(unittest.TestCase):
         self.assertIn('!= "1"', self.workflow_text)
         self.assertIn("'.files[0].status'", self.workflow_text)
         self.assertIn('!= "added"', self.workflow_text)
-        self.assertIn("^automation/command_bus/relay_overlay_matrix_requests/", self.workflow_text)
+        self.assertIn("^automation/command_bus/relay_overlay_policy_matrix_requests/", self.workflow_text)
         self.assertIn('.purpose | select(type == "string" and length > 0)', self.workflow_text)
 
     def test_workflow_enforces_parent_binding(self):
@@ -70,8 +70,10 @@ class TestCorePR3OverlayPolicyMatrixWorkflow(unittest.TestCase):
         self.assertIn("jq -e '.matrix_state == \"PASS\"'", self.workflow_text)
         self.assertIn("jq -e '.scenario_order == [\"safety_unknown_google\", \"fanout_unknown\", \"stop_before_dispatch\"]'", self.workflow_text)
         self.assertIn(".per_scenario.safety_unknown_google.comparison.participant_count == 3", self.workflow_text)
-        self.assertIn(".per_scenario.fanout_unknown.checkpoint.UNKNOWN == [\"core:FANOUT_UNKNOWN\"]", self.workflow_text)
-        self.assertIn(".per_scenario.stop_before_dispatch.checkpoint.UNKNOWN == [\"core:STOP_REQUESTED\"]", self.workflow_text)
+        self.assertIn(".per_scenario.safety_unknown_google.checkpoint.UNKNOWN == []", self.workflow_text)
+        self.assertIn(".per_scenario.fanout_unknown.checkpoint.UNKNOWN == [\"fan-out not confirmed PASS\"]", self.workflow_text)
+        self.assertIn(".per_scenario.stop_before_dispatch.checkpoint.UNKNOWN == [\"anthropic:ERROR_UNKNOWN\", \"google:ERROR_UNKNOWN\", \"openai:ERROR_UNKNOWN\"]", self.workflow_text)
+        self.assertIn(".per_scenario.stop_before_dispatch.comparison.participant_count == 0", self.workflow_text)
 
     def test_no_live_provider_or_secret_surface(self):
         for value in (
