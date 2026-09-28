@@ -65,6 +65,9 @@ There are two distinct Jules contracts and they must not be conflated:
    - preserves origin loop/round/correlation/generation plus target repo, branch,
      exact head/tree, allowlisted paths, prompt, expiry, retry=0,
      fallback=disabled, merge=false and force-push=false;
+   - generation is a required Claude verdict field and is copied through the
+     PREPARE_ONLY executor request and internal closed-loop command; the live
+     bridge does not accept a separate generation override;
    - carries per-path ADD/MODIFY operation bounds into the task prompt and
      explicitly forbids DELETE/RENAME;
    - still performs no file persistence, GitHub write, workflow dispatch, Jules
