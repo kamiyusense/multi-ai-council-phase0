@@ -88,6 +88,40 @@ class JulesChatSemiAutoTimingWorkflowTests(unittest.TestCase):
         for value in expected:
             with self.subTest(value=value):
                 self.assertIn(value, self.text)
+    def test_live_proof_uses_dedicated_carrier_and_isolated_work_branch(self):
+        self.assertIn(
+            "- live/claude-jules-integrated-carrier-20260928",
+            self.text,
+        )
+        self.assertNotIn("- feature/chat-work-command-bus", self.text)
+        self.assertIn(
+            "WORK_BRANCH: ${{ steps.validate.outputs.work_branch }}",
+            self.text,
+        )
+        self.assertIn(
+            "Verify exact target and isolated work branch snapshots",
+            self.text,
+        )
+        self.assertIn('work_head="$(read_branch_head "${WORK_BRANCH}")"', self.text)
+        self.assertIn(
+            'if [[ "${work_head}" != "${EXPECTED_HEAD}" ]]',
+            self.text,
+        )
+        self.assertIn(
+            'if [[ "${work_tree}" != "${EXPECTED_TREE}" ]]',
+            self.text,
+        )
+        self.assertIn(
+            '--arg starting_branch "${WORK_BRANCH}"',
+            self.text,
+        )
+        self.assertIn(
+            "EXPECTED_BRANCH: ${{ steps.validate.outputs.work_branch }}",
+            self.text,
+        )
+        self.assertIn("canonical_target_branch:", self.text)
+        self.assertIn("isolated_work_branch:", self.text)
+
     def test_no_private_jules_url_is_added_to_summary(self):
         summary_section = self.text.split(
             "- name: Record dispatch boundary in job summary",
