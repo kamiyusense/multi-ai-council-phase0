@@ -91,7 +91,17 @@ sudo chown -R 1000:1000 "$CASE"
 sudo chmod 0700 "$CASE"
 sudo chmod 0600 "$CASE/.credentials.json" "$CASE/settings.json"
 
-docker run -dit   --name "$CLI"   --network "$NET"   -e CLAUDE_CONFIG_DIR=/fixture   -e HTTPS_PROXY=http://oauth-mock:3129   -e NODE_EXTRA_CA_CERTS=/certs/ca.crt   -e DISABLE_UPDATES=1   -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1   -v "$CASE:/fixture"   -v "$CERTS:/certs:ro"   --entrypoint claude   "$IMAGE"   --safe-mode   --no-session-persistence   --tools ""   --mcp-config '{"mcpServers":{}}'   --strict-mcp-config   --permission-prompts none   >/dev/null
+FIFO="$TMP/cli-input"
+CLI_LOG="$TMP/cli.log"
+mkfifo "$FIFO"
+
+# Keep stdin open through a FIFO so the CLI sees a real, live TTY session
+# instead of a detached EOF-like session.
+docker run -i -t   --name "$CLI"   --network "$NET"   -e TERM=xterm-256color   -e CLAUDE_CONFIG_DIR=/fixture   -e HTTPS_PROXY=http://oauth-mock:3129   -e NODE_EXTRA_CA_CERTS=/certs/ca.crt   -e DISABLE_UPDATES=1   -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1   -v "$CASE:/fixture"   -v "$CERTS:/certs:ro"   --entrypoint claude   "$IMAGE"   --safe-mode   --no-session-persistence   --tools ""   --mcp-config '{"mcpServers":{}}'   --strict-mcp-config   --permission-prompts none   <"$FIFO" >"$CLI_LOG" 2>&1 &
+DOCKER_RUN_PID=$!
+
+# Opening the writer keeps the FIFO from reaching EOF while Claude initializes.
+exec 3>"$FIFO"
 
 RESPONSE_SEEN=0
 for _ in $(seq 1 60); do
@@ -102,10 +112,15 @@ for _ in $(seq 1 60); do
   sleep 0.2
 done
 
+if [ "$RESPONSE_SEEN" = "1" ]; then
+  sleep 2
+fi
+
 WAS_RUNNING_BEFORE_SIGNAL="$(docker inspect -f '{{.State.Running}}' "$CLI" 2>/dev/null || echo false)"
 if [ "$WAS_RUNNING_BEFORE_SIGNAL" = "true" ]; then
   docker kill --signal=SIGINT "$CLI" >/dev/null || true
 fi
+exec 3>&-
 
 for _ in $(seq 1 25); do
   if [ "$(docker inspect -f '{{.State.Running}}' "$CLI" 2>/dev/null || echo false)" != "true" ]; then
@@ -119,10 +134,15 @@ if [ "$STILL_RUNNING" = "true" ]; then
   docker stop -t 1 "$CLI" >/dev/null || true
 fi
 
+set +e
+wait "$DOCKER_RUN_PID"
+CLI_RUN_EXIT=$?
+set -e
+
 sudo chmod 0755 "$CASE" 2>/dev/null || true
 sudo chmod 0644 "$CASE/.credentials.json" 2>/dev/null || true
 
-export DELAY_MS RESPONSE_SEEN WAS_RUNNING_BEFORE_SIGNAL CASE EVIDENCE
+export DELAY_MS RESPONSE_SEEN WAS_RUNNING_BEFORE_SIGNAL CLI_RUN_EXIT CASE EVIDENCE
 python - <<'PY'
 import json, os
 from pathlib import Path
@@ -173,6 +193,7 @@ result = {
     "rejected_connects": len(rejected),
     "response_seen_before_signal": os.environ["RESPONSE_SEEN"] == "1",
     "cli_was_running_before_signal": os.environ["WAS_RUNNING_BEFORE_SIGNAL"] == "true",
+    "cli_run_exit_code": int(os.environ["CLI_RUN_EXIT"]),
     "credential_persistence_classification": persistence,
     "rotated_pair_persisted": rotated,
 }
