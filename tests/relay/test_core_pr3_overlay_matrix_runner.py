@@ -76,6 +76,35 @@ class TestCorePR3OverlayMatrixRunner(unittest.TestCase):
                 else:
                     sys.modules["src.sentinel"] = previous_src
 
+    def test_provider_states_are_derived_from_checkpoint_evidence(self):
+        states = matrix_runner._provider_states_from_checkpoint(
+            {
+                "FAIL": ["openai:TIMEOUT"],
+                "UNKNOWN": ["anthropic:ERROR_UNKNOWN"],
+            }
+        )
+        self.assertEqual(
+            states,
+            {
+                "openai": "TIMEOUT",
+                "anthropic": "ERROR_UNKNOWN",
+                "google": "COMPLETE",
+            },
+        )
+
+    def test_provider_state_derivation_fails_closed_on_malformed_evidence(self):
+        bad_checkpoints = (
+            {"FAIL": None, "UNKNOWN": []},
+            {"FAIL": ["unknown:TIMEOUT"], "UNKNOWN": []},
+            {"FAIL": ["openai:"], "UNKNOWN": []},
+            {"FAIL": ["openai:TIMEOUT"], "UNKNOWN": ["openai:ERROR_UNKNOWN"]},
+            {"FAIL": ["openai:TIMEOUT:EXTRA"], "UNKNOWN": []},
+        )
+        for checkpoint in bad_checkpoints:
+            with self.subTest(checkpoint=checkpoint):
+                with self.assertRaises((TypeError, ValueError)):
+                    matrix_runner._provider_states_from_checkpoint(checkpoint)
+
     def test_static_ast_proof_no_ambient_discovery_or_external_execution(self):
         runner_path = Path(__file__).parent / "core_pr3_overlay_matrix_runner.py"
         tree = ast.parse(runner_path.read_text(encoding="utf-8"))
