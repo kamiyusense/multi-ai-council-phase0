@@ -157,14 +157,28 @@ Coverage now requires:
 - no default-branch direct write;
 - no Merge in this batch.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `923520143df203af9dadaa78ab7b4b59715d5a67`
+- GitHub Actions run:
+  `36386843095` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **248/248 PASS**
+- full command-bus suite:
+  **573/573 PASS**
+- command-bus JSON schemas parsed:
+  **20/20 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative identity-state tests were present in the exact-head CI log:
+  - repository registry placeholders -> NOT_WIRED;
+  - PLACEHOLDER + matching transition -> NOT_WIRED;
+  - all four repository placeholder strings + matching transitions -> live migration still NOT_WIRED;
+  - synthetic DURABLE + matching accepted transition -> READY.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
