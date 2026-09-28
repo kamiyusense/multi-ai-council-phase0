@@ -504,3 +504,19 @@ Cycle members:
 - untouched first pass: 0/3 = 0%
 - re-Jules replacement sessions: 0
 - interpretation: long scope again did not produce an untouched first pass, but Loop 046's initial architecture was materially closer to acceptance than Loops 044/045; remaining defects were boundary-hardening issues rather than a wrong overall design
+
+
+## Loop 047 — medium — DISPATCHED / IN PROGRESS
+- task: static live-readiness evidence inventory / blocker worklist
+- purpose: enumerate unresolved proof categories deterministically without authorizing or triggering live execution
+- canonical Relay snapshot head: `ba9fb9e400d6d7b68cf169ad21d5bda603bb45ae`
+- canonical Relay snapshot tree: `6b93f0619cfeb3cdc786c1135503fe237466dbdf`
+- isolated starting branch: `jules-work/relay-dev-loop-047-readiness-inventory`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36413987725`
+- Jules session: `6765073816543987940`
+- accepted_at: 2026-09-28 20:09:58 JST
+- canonical PR #4 head immediately after dispatch: `ba9fb9e400d6d7b68cf169ad21d5bda603bb45ae` unchanged
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: inventory states are worklist-only; even PROOF_RECORDS_COMPLETE must keep live_ready=false / dispatch_allowed=false / human_approval_required=true
