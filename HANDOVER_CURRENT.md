@@ -58,9 +58,20 @@ Credential-free Docker component proof:
 - no credential inputs, OAuth operation, Anthropic/provider model request, or Jules execution were part of the successful proof;
 - retry=0 / fallback=disabled preserved.
 
+Next external diagnostic — PREPARE ONLY:
+- prepared probe PR = **#120** (OPEN, unmerged);
+- prepare head = `19063885d4fe90929e2f3bfe4e02fe263bcc10c2`;
+- prepare-only Actions run `36466637189` = SUCCESS;
+- Node guard tests = 8 PASS / 0 FAIL;
+- unarmed run exits 78 before network;
+- the proposed next execution is credential-free TLS only: internal-only probe -> auth proxy -> `platform.claude.com:443` -> certificate-verified TLS handshake -> close, with no HTTP/OAuth data;
+- actual external network execution remains blocked unless `PHASE0_EXTERNAL_AUTH_TLS_PROOF=1`;
+- no external TLS connection has been performed yet.
+
 Current approval boundary:
 - Issue #110 STATIC work is exhausted, merged, and its credential-free Docker component proof is PASS;
-- **do not run REAL OAuth login/refresh, Claude, Anthropic/provider, or Jules LIVE work without a new explicit authorization**;
+- **next explicit approval, if granted, should cover only the credential-free external TLS-only path proof prepared in PR #120**;
+- **do not run REAL OAuth login/refresh, Claude, Anthropic HTTP/model request, or Jules LIVE work under that TLS-only approval**;
 - exact Claude Code 2.1.283 subscription-refresh behavior remains UNKNOWN;
 - historical `api.anthropic.com/api/oauth/profile` dependency remains UNKNOWN;
 - encrypted OAuth URL path / HTTP Host remains unenforceable without TLS termination;
