@@ -183,3 +183,29 @@ Status workflow itself. AUTO takeover remains a separate, disabled control-plane
 capability.
 
 Repository pinning is optional presentation only. It is not required for correctness.
+
+
+## Semi-Auto accepted-at presentation source
+
+Semi-Auto timing is presentation metadata only.
+
+For a verified Semi-Auto timing hint, `accepted_at` must originate from the
+Jules Session resource's provider-side `createTime` after the existing session
+identity / starting-branch checks pass.
+
+The supported provenance path is:
+
+```text
+Jules Create Session response createTime
+-> JulesSessionAcceptance
+-> optional existing Session GET createTime corroboration
+-> SemiAutoScheduleHint
+-> Control Tower / machine snapshot
+```
+
+If Create Session acceptance evidence is unavailable, accepted time and ETA
+remain UNKNOWN. GitHub commit time, Actions time, Chat time, and local wall clock
+must not be substituted.
+
+ETA remains presentation-only and must not cause BLOCKED, owner expiry,
+provider-dead inference, FAILED, or AUTO takeover.

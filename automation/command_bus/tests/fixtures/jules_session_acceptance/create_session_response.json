@@ -1,0 +1,13 @@
+{
+  "name": "sessions/31415926535897932384",
+  "id": "31415926535897932384",
+  "state": "QUEUED",
+  "createTime": "2026-09-28T03:59:00Z",
+  "updateTime": "2026-09-28T03:59:00Z",
+  "sourceContext": {
+    "source": "sources/github-kamiyusense-multi-ai-council-phase0",
+    "githubRepoContext": {
+      "startingBranch": "feature/example"
+    }
+  }
+}

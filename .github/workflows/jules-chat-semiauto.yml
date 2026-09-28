@@ -155,9 +155,14 @@ jobs:
             exit 1
           fi
           session_id="${session_name#sessions/}"
+          acceptance_json="$(python -m automation.command_bus.jules_session_acceptance             "${response_file}" "${EXPECTED_BRANCH}")"
+          session_create_time="$(jq -er '.session_create_time' <<<"${acceptance_json}")"
+          accepted_at_jst="$(jq -er '.accepted_at_jst' <<<"${acceptance_json}")"
           echo "session_id=${session_id}" >> "${GITHUB_OUTPUT}"
           echo "session_name=${session_name}" >> "${GITHUB_OUTPUT}"
-          echo "Jules session accepted: ${session_name}"
+          echo "session_create_time=${session_create_time}" >> "${GITHUB_OUTPUT}"
+          echo "accepted_at_jst=${accepted_at_jst}" >> "${GITHUB_OUTPUT}"
+          echo "Jules session accepted: ${session_name} at ${accepted_at_jst}"
 
       - name: Record dispatch boundary in job summary
         if: always()
@@ -167,6 +172,8 @@ jobs:
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
           SESSION_ID: ${{ steps.invoke.outputs.session_id }}
+          SESSION_CREATE_TIME: ${{ steps.invoke.outputs.session_create_time }}
+          ACCEPTED_AT_JST: ${{ steps.invoke.outputs.accepted_at_jst }}
         shell: bash
         run: |
           {
@@ -176,6 +183,9 @@ jobs:
             echo "- expected_target_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
             echo "- expected_target_tree: \`${EXPECTED_TREE:-UNKNOWN}\`"
             echo "- jules_session_id: \`${SESSION_ID:-UNKNOWN}\`"
+            echo "- jules_session_create_time: \`${SESSION_CREATE_TIME:-UNKNOWN}\`"
+            echo "- accepted_at_jst: \`${ACCEPTED_AT_JST:-UNKNOWN}\`"
+            echo "- accepted_at_source: \`JULES_CREATE_SESSION_RESPONSE_CREATE_TIME\`"
             echo "- retry: \`0\`"
             echo "- fallback: \`disabled\`"
             echo "- merge: \`human-only\`"
