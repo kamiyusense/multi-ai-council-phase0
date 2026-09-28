@@ -7,6 +7,7 @@ on:
       - automation/command_bus/control_tower.py
       - automation/command_bus/control_tower_schedule.py
       - automation/command_bus/jules_session_acceptance.py
+      - automation/command_bus/control_tower_jules_schedule.py
       - automation/command_bus/control_tower_issue_plan.py
       - automation/command_bus/control_tower_verified_input.py
       - automation/command_bus/control_tower_issue_publisher.py
@@ -40,6 +41,7 @@ on:
       - automation/command_bus/tests/test_jules_session_acceptance.py
       - automation/command_bus/tests/test_jules_chat_semiauto_timing_workflow.py
       - automation/command_bus/tests/test_jules_session_readback_timing_workflow.py
+      - automation/command_bus/tests/test_control_tower_jules_schedule.py
       - automation/command_bus/tests/test_control_tower_issue_plan.py
       - automation/command_bus/tests/test_control_tower_verified_input.py
       - automation/command_bus/tests/test_control_tower_issue_publisher.py
@@ -85,7 +87,7 @@ jobs:
 
       - name: Run focused status and validation-scope tests
         shell: bash
-        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_control_tower automation.command_bus.tests.test_control_tower_schedule automation.command_bus.tests.test_jules_session_acceptance automation.command_bus.tests.test_jules_chat_semiauto_timing_workflow automation.command_bus.tests.test_jules_session_readback_timing_workflow automation.command_bus.tests.test_control_tower_issue_plan automation.command_bus.tests.test_control_tower_verified_input automation.command_bus.tests.test_control_tower_issue_publisher automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_owner_authority automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_runtime_transition_publisher automation.command_bus.tests.test_runtime_transition_fail_closed automation.command_bus.tests.test_runtime_transition_close automation.command_bus.tests.test_runtime_transition_jules automation.command_bus.tests.test_runtime_transition_receipt_status automation.command_bus.tests.test_runtime_transition_status_dispatch automation.command_bus.tests.test_runtime_takeover automation.command_bus.tests.test_runtime_takeover_prepare automation.command_bus.tests.test_runtime_takeover_static_e2e automation.command_bus.tests.test_runtime_transition_owner_authority automation.command_bus.tests.test_validation_scope -v
+        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_control_tower automation.command_bus.tests.test_control_tower_schedule automation.command_bus.tests.test_jules_session_acceptance automation.command_bus.tests.test_jules_chat_semiauto_timing_workflow automation.command_bus.tests.test_jules_session_readback_timing_workflow automation.command_bus.tests.test_control_tower_jules_schedule automation.command_bus.tests.test_control_tower_issue_plan automation.command_bus.tests.test_control_tower_verified_input automation.command_bus.tests.test_control_tower_issue_publisher automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_owner_authority automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_runtime_transition_publisher automation.command_bus.tests.test_runtime_transition_fail_closed automation.command_bus.tests.test_runtime_transition_close automation.command_bus.tests.test_runtime_transition_jules automation.command_bus.tests.test_runtime_transition_receipt_status automation.command_bus.tests.test_runtime_transition_status_dispatch automation.command_bus.tests.test_runtime_takeover automation.command_bus.tests.test_runtime_takeover_prepare automation.command_bus.tests.test_runtime_takeover_static_e2e automation.command_bus.tests.test_runtime_transition_owner_authority automation.command_bus.tests.test_validation_scope -v
 
       - name: Run full command-bus suite
         shell: bash
