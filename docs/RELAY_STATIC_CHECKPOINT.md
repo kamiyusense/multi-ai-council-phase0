@@ -121,5 +121,28 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 ## Core PR3 Overlay Matrix Checkpoint
 - negative-path matrix runner prepared: YES
 - negative-path matrix workflow prepared: YES
-- real cross-branch matrix run: NOT_RUN/UNKNOWN
-- The negative matrix is prepared only and awaits independent acceptance before triggering.
+- real cross-branch matrix run: PASS
+- GitHub Actions run: 36383797774 SUCCESS
+- Relay code SHA: 565ba16ed59d5ff979552e7c6524559caa4cf423
+- pinned Core PR3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
+- trigger request commit: f8ad5adda400d7f0fafa91aa363dce03442b107a
+- timeout_openai: isolated OpenAI TIMEOUT; healthy Anthropic/Google RAW evidence preserved exactly
+- collect_error_anthropic: isolated Anthropic ERROR_UNKNOWN; healthy OpenAI/Google RAW evidence preserved exactly
+- invalid_output_google: isolated Google INVALID_OUTPUT; healthy OpenAI/Anthropic RAW evidence and malformed Google RAW preserved exactly
+- every scenario: participant_count=2, agreement_count=2, human_required=true, formal_consensus=false
+- every scenario: retry_count=0, fallback_state=disabled, live_turn_executed=false
+
+## Isolation Canary Checkpoint
+- Core PR3 negative-path matrix run 36383797774 succeeded.
+- Relay code SHA validated by that run: 565ba16ed59d5ff979552e7c6524559caa4cf423.
+- Pinned Core PR3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9.
+- Trigger request commit: f8ad5adda400d7f0fafa91aa363dce03442b107a.
+- timeout_openai isolated OpenAI TIMEOUT and preserved exact healthy-peer RAW evidence.
+- collect_error_anthropic isolated Anthropic ERROR_UNKNOWN and preserved exact healthy-peer RAW evidence.
+- invalid_output_google isolated Google INVALID_OUTPUT and preserved exact healthy-peer RAW evidence, including malformed Google RAW.
+- every scenario had retry_count=0, fallback_state=disabled, live_turn_executed=false, participant_count=2, agreement_count=2, human_required=true, formal_consensus=false.
+- Four delayed Jules-bot direct writes to the canonical Relay branch were detected and rejected/recovered append-only.
+- latest verified recovery commit is a0982004767a53bc024eb974aef8306b1a832dfb and its restored tree is 3b706e31739b1b36cdd3882ea9e4cb0cd264bfc9.
+- root cause of the direct writes remains UNKNOWN.
+- isolation policy: canonical target branch is read-only identity; Jules starts only from an exact per-command jules-work snapshot branch.
+- live provider/model execution remains BLOCKED.
