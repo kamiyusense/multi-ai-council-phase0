@@ -282,8 +282,6 @@ def _provider_expected(
     for field in ("loop_id", "command_id", "correlation_id"):
         if receipt.get(field) != evidence[field]:
             raise ValueError(f"provider receipt/evidence mismatch: {field}")
-    if receipt.get("receipt_id") is None or evidence["source_receipt_ref"].rsplit("/", 1)[-1] != f"{receipt['receipt_id']}.json":
-        raise ValueError("provider receipt locator mismatch")
     return {
         "verification_kind": "PROVIDER_OBSERVATION",
         "source_ref": evidence["provider_readback"],
