@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://relay.local/schemas/relay_live_readiness_approval_v1.schema.json",
+  "title": "Relay Live Readiness Approval Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "approval_granted",
+    "retry_count",
+    "fallback_state",
+    "next_action",
+    "snapshot_state",
+    "snapshot_packet_sha256",
+    "preflight_states",
+    "inventory_state",
+    "unresolved_count",
+    "provider_states",
+    "blocking_providers",
+    "approval_packet_sha256"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "READY_FOR_HUMAN_APPROVAL"
+      ]
+    },
+    "live_ready": {
+      "type": "boolean",
+      "const": false
+    },
+    "dispatch_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "human_approval_required": {
+      "type": "boolean",
+      "const": true
+    },
+    "approval_granted": {
+      "type": "boolean",
+      "const": false
+    },
+    "retry_count": {
+      "type": "integer",
+      "const": 0
+    },
+    "fallback_state": {
+      "type": "string",
+      "const": "disabled"
+    },
+    "next_action": {
+      "type": "string",
+      "enum": [
+        "RESOLVE_BLOCKERS",
+        "REQUEST_HUMAN_APPROVAL"
+      ]
+    },
+    "snapshot_state": {
+      "type": "string",
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "READY_FOR_HUMAN_APPROVAL"
+      ]
+    },
+    "snapshot_packet_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "preflight_states": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "UNKNOWN"
+              ]
+            },
+            "anthropic": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "UNKNOWN"
+              ]
+            },
+            "google": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "UNKNOWN"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "inventory_state": {
+      "type": "string",
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "UNRESOLVED",
+        "PROOF_RECORDS_COMPLETE"
+      ]
+    },
+    "unresolved_count": {
+      "type": "integer",
+      "minimum": -1
+    },
+    "provider_states": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            },
+            "anthropic": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            },
+            "google": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "blocking_providers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "openai",
+          "anthropic",
+          "google"
+        ]
+      },
+      "uniqueItems": true,
+      "maxItems": 3
+    },
+    "approval_packet_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
