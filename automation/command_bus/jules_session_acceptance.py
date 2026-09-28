@@ -32,6 +32,15 @@ class JulesSessionAcceptance:
     accepted_at_jst: str
 
 
+@dataclass(frozen=True)
+class JulesSessionTimingReadback:
+    source_kind: str
+    session_name: str
+    session_id: str
+    session_create_time: str
+    accepted_at_jst: str
+
+
 def extract_session_acceptance(
     response: dict[str, Any],
     *,
@@ -67,6 +76,53 @@ def extract_session_acceptance(
     )
 
 
+
+
+def extract_session_timing_readback(
+    response: dict[str, Any],
+    *,
+    expected_session_id: str,
+) -> JulesSessionTimingReadback:
+    """Extract provider createTime from an existing Session GET response."""
+    if not isinstance(response, dict):
+        raise ValueError("Jules Session GET response must be an object")
+    if (
+        not isinstance(expected_session_id, str)
+        or not expected_session_id.isdigit()
+    ):
+        raise ValueError("expected Jules session id must be numeric")
+    expected_name = f"sessions/{expected_session_id}"
+    session_name = response.get("name")
+    if session_name != expected_name:
+        raise ValueError("Jules Session GET name mismatch")
+    create_time = _parse_provider_time(response.get("createTime"))
+    create_utc = create_time.astimezone(timezone.utc)
+    create_jst = create_time.astimezone(_JST)
+    return JulesSessionTimingReadback(
+        source_kind="JULES_SESSION_GET_CREATE_TIME_READBACK",
+        session_name=session_name,
+        session_id=expected_session_id,
+        session_create_time=_canonical_utc(create_utc),
+        accepted_at_jst=create_jst.isoformat(timespec="seconds"),
+    )
+
+
+def verify_timing_readback_matches_acceptance(
+    accepted: JulesSessionAcceptance,
+    observed: JulesSessionTimingReadback,
+) -> None:
+    if not isinstance(accepted, JulesSessionAcceptance):
+        raise ValueError("existing JulesSessionAcceptance is required")
+    if not isinstance(observed, JulesSessionTimingReadback):
+        raise ValueError("JulesSessionTimingReadback is required")
+    if observed.session_name != accepted.session_name:
+        raise ValueError("Jules timing readback name mismatch")
+    if observed.session_id != accepted.session_id:
+        raise ValueError("Jules timing readback id mismatch")
+    if observed.session_create_time != accepted.session_create_time:
+        raise ValueError("Jules timing readback createTime mismatch")
+    if observed.accepted_at_jst != accepted.accepted_at_jst:
+        raise ValueError("Jules timing readback JST time mismatch")
 
 def verify_session_acceptance_readback(
     accepted: JulesSessionAcceptance,
@@ -117,9 +173,20 @@ def _canonical_utc(value: datetime) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    if len(args) != 2:
-        raise SystemExit("usage: python -m automation.command_bus.jules_session_acceptance RESPONSE_JSON EXPECTED_BRANCH")
-    result = load_session_acceptance(args[0], expected_branch=args[1])
+    if len(args) == 2:
+        result = load_session_acceptance(args[0], expected_branch=args[1])
+    elif len(args) == 3 and args[1] == "--expected-session-id":
+        value = json.loads(Path(args[0]).read_text(encoding="utf-8"))
+        result = extract_session_timing_readback(
+            value,
+            expected_session_id=args[2],
+        )
+    else:
+        raise SystemExit(
+            "usage: python -m automation.command_bus.jules_session_acceptance "
+            "RESPONSE_JSON EXPECTED_BRANCH | "
+            "RESPONSE_JSON --expected-session-id SESSION_ID"
+        )
     print(json.dumps(asdict(result), sort_keys=True, separators=(",", ":")))
     return 0
 
