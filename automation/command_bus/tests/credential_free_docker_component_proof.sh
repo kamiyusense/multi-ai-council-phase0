@@ -25,7 +25,7 @@ done
 docker version --format 'docker-server={{.Server.Version}}'
 docker compose version
 
-docker compose -p "$PROJECT" -f "$COMPOSE" --profile human-approval-required config >/tmp/phase0-proof-compose.json
+docker compose -p "$PROJECT" -f "$COMPOSE" --profile human-approval-required config --format json >/tmp/phase0-proof-compose.json
 python - <<'PY'
 import json
 from pathlib import Path
