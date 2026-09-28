@@ -184,8 +184,8 @@ class TestProviderAdapterBundle(unittest.TestCase):
             self.assertFalse(result["live_ready"])
             self.assertFalse(result["live_turn_executed"])
             self.assertEqual(
-                result["raw_evidence"]["rawResponse"],
-                raw_response(),
+                result["raw_evidence"],
+                raw_response().encode("utf-8"),
             )
             self.assertTrue(result["provider_state"]["success"])
 
