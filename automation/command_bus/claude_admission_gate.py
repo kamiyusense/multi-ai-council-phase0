@@ -642,6 +642,7 @@ def validate_container_topology(manifest: dict) -> dict:
     runtime_vars = {
         "CLAUDE_CODE_MAX_RETRIES": "0",
         "CLAUDE_CODE_MAX_TURNS": "1",
+        "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
         "CLAUDE_CONFIG_DIR": "/home/node/.claude",
         "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1",
         "CLAUDE_CODE_RESUME_INTERRUPTED_TURN": "0",
@@ -842,7 +843,7 @@ def validate_container_artifacts() -> dict:
         )),
         "launcher_checks_dispatch_retry_tools_mcp_and_gateway": all(token in launcher for token in (
             "PHASE0_DISPATCH_ID", "CLAUDE_CODE_MAX_RETRIES", "CLAUDE_CODE_MAX_TURNS",
-            "ANTHROPIC_BASE_URL", "HTTPS_PROXY", "--tools", "--mcp-config", "--strict-mcp-config",
+            "ANTHROPIC_BASE_URL", "HTTPS_PROXY", "CLAUDE_CODE_PROXY_RESOLVES_HOSTS", "--tools", "--mcp-config", "--strict-mcp-config",
             "--no-session-persistence", "CLAUDE_CODE_SKIP_PROMPT_HISTORY",
             "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
             "DISABLE_UPDATES", "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK",
