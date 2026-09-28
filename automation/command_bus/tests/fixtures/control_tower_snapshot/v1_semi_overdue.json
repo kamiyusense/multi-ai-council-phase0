@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "project": "phase0",
+  "generated_at": "2026-09-28T06:45:00+00:00",
+  "loops": [
+    {
+      "loop_id": "chatgpt-semi-auto",
+      "display_name": "ChatGPT Semi-Auto",
+      "mode": "SEMI_AUTO",
+      "display_state": "SEMI_AUTO",
+      "controller_kind": "CHATGPT",
+      "worker_kind": "JULES",
+      "generation": 39,
+      "target_ref": "pr:4",
+      "last_event_kind": "RECEIPT",
+      "last_event_id": "receipt-semi-39",
+      "schedule_hint": {
+        "loop_number": 39,
+        "acceptance_state": "VERIFIED",
+        "accepted_at": "2026-09-28T12:59:00+09:00",
+        "task_size": "MEDIUM",
+        "eta_start": "2026-09-28T13:15:00+09:00",
+        "eta_end": "2026-09-28T13:25:00+09:00",
+        "eta_state": "OVERDUE"
+      },
+      "human_action": "NONE",
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
+    }
+  ]
+}
