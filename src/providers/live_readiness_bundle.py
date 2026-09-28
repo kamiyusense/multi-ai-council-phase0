@@ -7,6 +7,15 @@ from .live_readiness import evaluate_live_readiness
 
 
 PROVIDER_ORDER = ["openai", "anthropic", "google"]
+_ALLOWED_STATES = {"BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"}
+_GATE_RESULT_KEYS = {
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "retry_count",
+    "fallback_state",
+}
 
 
 def _base_blocked_result() -> dict[str, Any]:
@@ -24,10 +33,19 @@ def _base_blocked_result() -> dict[str, Any]:
     }
 
 
+def _canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
 def _fail_closed(base: dict[str, Any], payload: dict[str, Any] | None = None) -> dict[str, Any]:
     if payload is not None:
-        base["evidence"] = copy.deepcopy(payload)
-    base_json = json.dumps(base, sort_keys=True, separators=(",", ":"))
+        try:
+            evidence = copy.deepcopy(payload)
+            _canonical_json(evidence)
+        except (TypeError, ValueError, OverflowError):
+            evidence = {}
+        base["evidence"] = evidence
+    base_json = _canonical_json(base)
     base["packet_sha256"] = hashlib.sha256(base_json.encode("utf-8")).hexdigest()
     return base
 
@@ -63,20 +81,19 @@ def build_live_readiness_bundle(providers_input: dict[str, Any]) -> dict[str, An
 
         if not isinstance(result, dict):
             return _fail_closed(base, providers_input)
-
-        if result.get("live_ready") is not False:
+        if set(result) != _GATE_RESULT_KEYS:
             return _fail_closed(base, providers_input)
-
-        if result.get("dispatch_allowed") is not False:
+        if result["state"] not in _ALLOWED_STATES:
             return _fail_closed(base, providers_input)
-
-        if result.get("retry_count") != 0:
+        if result["live_ready"] is not False:
             return _fail_closed(base, providers_input)
-
-        if result.get("fallback_state") != "disabled":
+        if result["dispatch_allowed"] is not False:
             return _fail_closed(base, providers_input)
-
-        if "state" not in result:
+        if result["human_approval_required"] is not True:
+            return _fail_closed(base, providers_input)
+        if result["retry_count"] != 0:
+            return _fail_closed(base, providers_input)
+        if result["fallback_state"] != "disabled":
             return _fail_closed(base, providers_input)
 
         state = result["state"]
@@ -95,16 +112,30 @@ def build_live_readiness_bundle(providers_input: dict[str, Any]) -> dict[str, An
 
 
 def render_live_readiness_summary_ja(result: dict[str, Any]) -> str:
+    aggregate_state = "BLOCKED_UNKNOWN"
+    states: dict[str, str] = {}
+
+    if isinstance(result, dict):
+        candidate_state = result.get("state")
+        if candidate_state in _ALLOWED_STATES:
+            aggregate_state = candidate_state
+
+        candidate_states = result.get("provider_states")
+        if isinstance(candidate_states, dict):
+            for provider in PROVIDER_ORDER:
+                candidate = candidate_states.get(provider)
+                if candidate in _ALLOWED_STATES:
+                    states[provider] = candidate
+
     lines = [
         "ライブ実行: 禁止",
         "人間承認が必要",
-        f"全体状態: {result.get('state', 'UNKNOWN')}"
+        f"全体状態: {aggregate_state}",
     ]
 
-    states = result.get("provider_states", {})
     if states:
         lines.append("プロバイダー状態:")
         for provider in PROVIDER_ORDER:
-            lines.append(f"  - {provider}: {states.get(provider, 'UNKNOWN')}")
+            lines.append(f"  - {provider}: {states.get(provider, 'BLOCKED_UNKNOWN')}")
 
     return "\n".join(lines)
