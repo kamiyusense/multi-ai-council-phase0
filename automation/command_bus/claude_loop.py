@@ -94,6 +94,7 @@ def make_structured_verdict(
     verdict_id: str,
     loop_id: str,
     round: int,
+    generation: int,
     correlation_id: str,
     mode: str,
     decision: str,
@@ -110,6 +111,7 @@ def make_structured_verdict(
         "verdict_id": verdict_id,
         "loop_id": loop_id,
         "round": round,
+        "generation": generation,
         "correlation_id": correlation_id,
         "backend_mode": mode,
         "decision": decision,
@@ -184,6 +186,7 @@ def prepare_next_action(
             requires_live_model=False, requires_github_write=False,
             capability="prepare-only",
         )
+        request["generation"] = verdict["generation"]
         return LoopResult("PREPARED", "single prepare-only action created", request)
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
@@ -255,6 +258,8 @@ def prepare_jules_closed_loop_command(
             return LoopResult("UNKNOWN", "prepared Jules request round is invalid")
         if not isinstance(prepared_request.get("expected_pr"), int) or isinstance(prepared_request["expected_pr"], bool):
             return LoopResult("UNKNOWN", "prepared Jules request PR identity is invalid")
+        if not isinstance(prepared_request.get("generation"), int) or isinstance(prepared_request["generation"], bool) or prepared_request["generation"] < 1:
+            return LoopResult("UNKNOWN", "prepared Jules request generation is invalid")
         for key in ("expected_target_head", "expected_target_tree"):
             if not re.fullmatch(r"[0-9a-f]{40}", prepared_request[key]):
                 return LoopResult("UNKNOWN", f"invalid prepared Jules {key}")
@@ -267,6 +272,7 @@ def prepare_jules_closed_loop_command(
             "command_id": cid,
             "loop_id": prepared_request["loop_id"],
             "round": prepared_request["round"],
+            "generation": prepared_request["generation"],
             "correlation_id": prepared_request["correlation_id"],
             "target": "work",
             "action": "JULES_API_CLOSED_LOOP",
@@ -290,7 +296,7 @@ def prepare_jules_closed_loop_command(
 
 def prepare_jules_semiauto_request(
     prepared_request: dict[str, Any], *, target_branch: str, default_branch: str,
-    created_at: str, generation: int, command_id: str | None = None,
+    created_at: str, command_id: str | None = None,
 ) -> LoopResult:
     """Convert one JULES_BACKEND preparation to the current live semi-auto request.
 
@@ -311,8 +317,6 @@ def prepare_jules_semiauto_request(
         command = internal.request
         if not isinstance(created_at, str) or not created_at:
             return LoopResult("BLOCKED", "semi-auto created_at is required")
-        if not isinstance(generation, int) or isinstance(generation, bool) or generation < 1:
-            return LoopResult("BLOCKED", "semi-auto generation must be a positive integer")
         try:
             created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
         except ValueError as exc:
@@ -340,7 +344,7 @@ def prepare_jules_semiauto_request(
             "origin_loop_id": prepared_request["loop_id"],
             "origin_round": prepared_request["round"],
             "origin_correlation_id": prepared_request["correlation_id"],
-            "origin_generation": generation,
+            "origin_generation": command["generation"],
             "target_repo": command["expected_repo"],
             "target_branch": command["starting_branch"],
             "expected_target_head": command["expected_target_head"],
@@ -378,7 +382,7 @@ def prepare_claude_transport(*, mode: str, dispatch_id: str, gate_base_url: str,
 
 def _validate_verdict(verdict: dict[str, Any]) -> None:
     required = {
-        "schema_version", "verdict_id", "loop_id", "round", "correlation_id",
+        "schema_version", "verdict_id", "loop_id", "round", "generation", "correlation_id",
         "backend_mode", "decision", "reasons", "next_prompt", "evidence_refs",
         "expected_target_head", "expected_target_tree", "terminal", "retry",
         "fallback", "execution_mode", "model_executed", "external_send_attempted",
@@ -400,6 +404,8 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
             raise ValueError(f"invalid {key}")
     if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= 6:
         raise ValueError("invalid verdict round")
+    if isinstance(verdict["generation"], bool) or not isinstance(verdict["generation"], int) or verdict["generation"] < 1:
+        raise ValueError("invalid verdict generation")
     for key in ("reasons", "evidence_refs"):
         if not isinstance(verdict[key], list) or any(not isinstance(item, str) or not item for item in verdict[key]):
             raise ValueError(f"invalid verdict {key}")
