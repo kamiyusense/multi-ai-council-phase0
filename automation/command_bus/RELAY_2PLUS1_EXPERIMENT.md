@@ -74,17 +74,49 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - exact validation: 178 tests PASS; compileall PASS; diff-check PASS
 - PR #4 FF: yes
 
-### Loop 037 — medium — IN PROGRESS
+### Loop 037 — medium — COMPLETE / ACCEPTED
 - task: deterministic three-provider static adapter bundle
 - Jules session: 1777315736131937574
+- Jules PR: #70
 - canonical parent: de28e4726d46cc09f1595b2bb8e5d3ceaed1e337
+- accepted head: 723641270070e46b26262bd4d55e257f52a53cd2
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes (profiles were not provider-keyed; bridge compatibility was over-constrained; timeout/error cross-provider proof was incomplete)
+- correction_commits: 5
+- rejules_sessions: 0
 - actions_dispatch: 1
+- actions_validation: 3
+- actions_status_feedback: 0
+- actions_total: 4
+- validation attempts: 2 failed due Chat-added test expectation mistakes; third passed
+- exact validation: 189 tests PASS; compileall PASS; diff-check PASS
+- PR #4 FF: yes
+
+### Loop 038 — long — DISPATCHED / IN PROGRESS
+- target scope: Core PR #3 exact Adapter contract compatibility / three-provider static mock integration readiness
+- target duration class: ~25-35 min
+- pinned Core PR #3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
+- canonical Relay parent: 723641270070e46b26262bd4d55e257f52a53cd2
+- Jules session: 5199104662632728848
+- first command action: failed before Jules invocation because requested lifetime exceeded command-bus 2-hour maximum by 1m45s
+- corrected v2 command: accepted; request lifetime reduced to 1h45m; task scope unchanged
+- actions_dispatch_so_far: 2
 - retry: 0
 - fallback: disabled
+- live execution: no
 - result: pending
 
-### Loop 038 — long — PLANNED
-- target scope: Core PR #3 contract compatibility / three-provider static mock integration readiness
-- target duration class: ~25-35 min
-- dispatch only after Loop 037 is accepted
-- no live execution
+## Experiment cycle 1 interim totals after long-task dispatch
+
+- completed medium tasks: 2/2 accepted
+- medium-task final acceptance: 100%
+- untouched medium first pass: 0/2
+- re-Jules replacement sessions for completed medium tasks: 0
+- Loop 036 Actions: 2
+- Loop 037 Actions: 4
+- Loop 038 dispatch Actions so far: 2 (one pre-Jules validation failure + one accepted dispatch)
+- cycle Actions so far: 8
+- status-poll Actions: 0
+- long-task result not yet scored
+- important confounder: 2 of Loop 037's 3 validation runs failed because of Chat-added test expectation mistakes, not defects in the Jules implementation itself
