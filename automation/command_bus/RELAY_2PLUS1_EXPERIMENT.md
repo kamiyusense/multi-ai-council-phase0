@@ -264,3 +264,21 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - first isolation canary command was blocked before Jules invocation because canonical head had changed from 96e9d454... to 7d106616...
 - this stale-target block proves the V2 pre-dispatch guard failed closed; no Jules canary session was created
 - next condition: recover canonical tree, confirm a stable fresh head, create a fresh per-command snapshot branch, then issue a new command_id; never replay the blocked command
+
+
+## Loop 043 — Jules isolated work-branch canary
+- control-plane profile: JULES_CHAT_SEMIAUTO_V2
+- exact control-plane validation run: 36384738693 SUCCESS
+- command-bus tests: 298 PASS; compileall PASS; diff-check PASS
+- first command `relay-dev-loop-043-isolation-checkpoint`: BLOCKED before Jules invocation because canonical target moved from expected `96e9d454...` to delayed Jules commit `7d106616...`; no Jules session created and command was not replayed
+- third append-only recovery: `c3312b73f91eff45593ebf6472d1460614ae8617`
+- recovered tree: `3b706e31739b1b36cdd3882ea9e4cb0cd264bfc9`
+- fresh isolated work branch: `jules-work/relay-dev-loop-043b-isolation-checkpoint`
+- pre-dispatch compare against canonical recovery head: identical; ahead=0; behind=0
+- second command id: `relay-dev-loop-043b-isolation-checkpoint`
+- dispatch run: `36385154057` SUCCESS
+- Jules session: `14603234206499791108`
+- REST startingBranch: isolated work branch only
+- canonical PR #4 head immediately after dispatch: `c3312b73f91eff45593ebf6472d1460614ae8617` (unchanged)
+- retry=0 / fallback=disabled / merge=human-only
+- canary result: IN_PROGRESS; final PASS requires independent readback proving Jules writes stayed off canonical PR #4
