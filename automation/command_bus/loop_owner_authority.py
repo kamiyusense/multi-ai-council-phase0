@@ -229,6 +229,16 @@ class DurableOwnerAuthority:
             validate_state(prior_state)
             validate_receipt(receipt)
             effective_chain = _effective_chain(chain, event)
+            if event["generation"] > 1:
+                candidates: list[dict[str, Any]] = []
+                if chain and chain[-1] == event:
+                    candidates.append(event)
+                    if len(chain) > 1:
+                        candidates.append(chain[-2])
+                elif chain:
+                    candidates.append(chain[-1])
+                if not candidates or not any(_state_matches_generation(prior_state, item) for item in candidates):
+                    return None
             grant = self.backend.read(event["loop_id"], event["generation"])
             if grant is None:
                 return None
@@ -289,6 +299,18 @@ def _effective_chain(chain: list[dict[str, Any]], event: dict[str, Any]) -> list
     if generation == len(chain) and chain and chain[-1] == event:
         return validate_owner_chain(chain)
     raise ValueError("authority event does not match owner chain frontier")
+
+
+def _state_matches_generation(state: dict[str, Any], event: dict[str, Any]) -> bool:
+    return (
+        state.get("last_command_id") == event["command_id"]
+        and state.get("last_receipt_id") == event["source_receipt_id"]
+        and state.get("expected_target") == {
+            "repo": event["expected_repo"],
+            "pr": event["expected_pr"],
+            "head": event["expected_target_head"],
+        }
+    )
 
 
 def _bind_grant(grant: dict[str, Any], event: dict[str, Any]) -> None:
