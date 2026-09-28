@@ -1,15 +1,24 @@
+import ast
 import copy
 import hashlib
+import inspect
 import json
 import unittest
 from typing import Any
+from unittest import mock
+
+import src.providers.live_readiness_snapshot as snapshot_mod
 
 from src.providers.live_readiness_snapshot import (
     build_live_readiness_snapshot,
     render_snapshot_summary_ja,
     _canonical_json
 )
-from src.providers.live_readiness_pipeline import PROVIDER_ORDER
+from src.providers.live_readiness_pipeline import (
+    PROVIDER_ORDER,
+    build_live_readiness_pipeline as real_build_live_readiness_pipeline,
+)
+from src.providers.preflight import validate_provider_static as real_validate_provider_static
 from src.providers.live_readiness import COMMON_PROOFS, PROVIDER_PROOFS
 
 
@@ -276,3 +285,532 @@ class TestLiveReadinessSnapshot(unittest.TestCase):
 
         self.assertEqual(sum1, sum2)
         self.assertNotIn("different_evidence_ref", sum1)
+
+
+    def _real_preflight_for(self, provider: str) -> dict[str, Any]:
+        config = self.valid_configs[provider]
+        return real_validate_provider_static(
+            provider_id=provider,
+            auth_kind=config["auth_kind"],
+            route_evidence=copy.deepcopy(config["route_evidence"]),
+            platform=config["platform"],
+            architecture=config["architecture"],
+            provider_meta=copy.deepcopy(config["provider_meta"]),
+        )
+
+    def _real_preflights(self) -> dict[str, dict[str, Any]]:
+        return {
+            provider: self._real_preflight_for(provider)
+            for provider in PROVIDER_ORDER
+        }
+
+    def _real_pipeline(self, inventory: dict[str, Any]) -> dict[str, Any]:
+        return real_build_live_readiness_pipeline(
+            {
+                "preflights": self._real_preflights(),
+                "inventory": copy.deepcopy(inventory),
+            }
+        )
+
+    def test_dependency_call_order_and_exactly_once(self) -> None:
+        call_order: list[str] = []
+
+        def wrapped_validate(**kwargs):
+            call_order.append(kwargs["provider_id"])
+            return self._real_preflight_for(kwargs["provider_id"])
+
+        with mock.patch(
+            "src.providers.live_readiness_snapshot.validate_provider_static",
+            side_effect=wrapped_validate,
+        ) as validate_mock, mock.patch(
+            "src.providers.live_readiness_snapshot.build_live_readiness_pipeline",
+            wraps=real_build_live_readiness_pipeline,
+        ) as pipeline_mock:
+            result = build_live_readiness_snapshot(
+                {
+                    "provider_configs": copy.deepcopy(self.valid_configs),
+                    "inventory": copy.deepcopy(self.unknown_inventory),
+                }
+            )
+
+        self.assertEqual(call_order, list(PROVIDER_ORDER))
+        self.assertEqual(validate_mock.call_count, 3)
+        pipeline_mock.assert_called_once()
+        self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+        self.assertIs(result["live_ready"], False)
+        self.assertIs(result["dispatch_allowed"], False)
+
+    def test_all_structural_failures_block_dependencies(self) -> None:
+        cases: list[tuple[str, Any]] = [
+            ("top-level-not-mapping", None),
+            ("top-level-missing", {"provider_configs": {}}),
+            (
+                "top-level-extra",
+                {
+                    "provider_configs": copy.deepcopy(self.valid_configs),
+                    "inventory": copy.deepcopy(self.unknown_inventory),
+                    "extra": False,
+                },
+            ),
+        ]
+
+        missing_provider = copy.deepcopy(self.valid_configs)
+        missing_provider.pop("google")
+        cases.append((
+            "provider-set-missing",
+            {"provider_configs": missing_provider, "inventory": self.unknown_inventory},
+        ))
+
+        extra_provider = copy.deepcopy(self.valid_configs)
+        extra_provider["other"] = copy.deepcopy(extra_provider["openai"])
+        cases.append((
+            "provider-set-extra",
+            {"provider_configs": extra_provider, "inventory": self.unknown_inventory},
+        ))
+
+        for provider in PROVIDER_ORDER:
+            missing_config_key = copy.deepcopy(self.valid_configs)
+            missing_config_key[provider].pop("auth_kind")
+            cases.append((
+                f"{provider}-config-missing",
+                {"provider_configs": missing_config_key, "inventory": self.unknown_inventory},
+            ))
+
+            extra_config_key = copy.deepcopy(self.valid_configs)
+            extra_config_key[provider]["extra"] = None
+            cases.append((
+                f"{provider}-config-extra",
+                {"provider_configs": extra_config_key, "inventory": self.unknown_inventory},
+            ))
+
+            bad_auth = copy.deepcopy(self.valid_configs)
+            bad_auth[provider]["auth_kind"] = 123
+            cases.append((
+                f"{provider}-auth-type",
+                {"provider_configs": bad_auth, "inventory": self.unknown_inventory},
+            ))
+
+            route_key = next(iter(self.valid_configs[provider]["route_evidence"]))
+            missing_route = copy.deepcopy(self.valid_configs)
+            missing_route[provider]["route_evidence"].pop(route_key)
+            cases.append((
+                f"{provider}-route-missing",
+                {"provider_configs": missing_route, "inventory": self.unknown_inventory},
+            ))
+
+            extra_route = copy.deepcopy(self.valid_configs)
+            extra_route[provider]["route_evidence"]["extra"] = False
+            cases.append((
+                f"{provider}-route-extra",
+                {"provider_configs": extra_route, "inventory": self.unknown_inventory},
+            ))
+
+            for bad_bool in (0, 1, "false", None):
+                bad_route_type = copy.deepcopy(self.valid_configs)
+                bad_route_type[provider]["route_evidence"][route_key] = bad_bool
+                cases.append((
+                    f"{provider}-route-type-{bad_bool!r}",
+                    {
+                        "provider_configs": bad_route_type,
+                        "inventory": self.unknown_inventory,
+                    },
+                ))
+
+        openai_platform = copy.deepcopy(self.valid_configs)
+        openai_platform["openai"]["platform"] = "linux"
+        cases.append((
+            "openai-platform",
+            {"provider_configs": openai_platform, "inventory": self.unknown_inventory},
+        ))
+
+        anthropic_meta = copy.deepcopy(self.valid_configs)
+        anthropic_meta["anthropic"]["provider_meta"] = None
+        cases.append((
+            "anthropic-meta",
+            {"provider_configs": anthropic_meta, "inventory": self.unknown_inventory},
+        ))
+
+        google_platform = copy.deepcopy(self.valid_configs)
+        google_platform["google"]["platform"] = ""
+        cases.append((
+            "google-platform",
+            {"provider_configs": google_platform, "inventory": self.unknown_inventory},
+        ))
+
+        google_arch = copy.deepcopy(self.valid_configs)
+        google_arch["google"]["architecture"] = 7
+        cases.append((
+            "google-architecture",
+            {"provider_configs": google_arch, "inventory": self.unknown_inventory},
+        ))
+
+        google_meta = copy.deepcopy(self.valid_configs)
+        google_meta["google"]["provider_meta"] = {}
+        cases.append((
+            "google-meta",
+            {"provider_configs": google_meta, "inventory": self.unknown_inventory},
+        ))
+
+        with mock.patch(
+            "src.providers.live_readiness_snapshot.validate_provider_static"
+        ) as validate_mock, mock.patch(
+            "src.providers.live_readiness_snapshot.build_live_readiness_pipeline"
+        ) as pipeline_mock:
+            for name, payload in cases:
+                with self.subTest(name=name):
+                    self._assert_fail_closed(build_live_readiness_snapshot(payload))
+            validate_mock.assert_not_called()
+            pipeline_mock.assert_not_called()
+
+    def test_nonserializable_input_calls_no_dependencies(self) -> None:
+        bad_inventory = copy.deepcopy(self.unknown_inventory)
+        proof = next(iter(bad_inventory["openai"]))
+        bad_inventory["openai"][proof] = object()
+
+        with mock.patch(
+            "src.providers.live_readiness_snapshot.validate_provider_static"
+        ) as validate_mock, mock.patch(
+            "src.providers.live_readiness_snapshot.build_live_readiness_pipeline"
+        ) as pipeline_mock:
+            self._assert_fail_closed(
+                build_live_readiness_snapshot(
+                    {
+                        "provider_configs": copy.deepcopy(self.valid_configs),
+                        "inventory": bad_inventory,
+                    }
+                )
+            )
+            validate_mock.assert_not_called()
+            pipeline_mock.assert_not_called()
+
+    def test_preflight_exception_stops_without_later_provider_or_pipeline(self) -> None:
+        calls: list[str] = []
+
+        def fake_validate(**kwargs):
+            provider = kwargs["provider_id"]
+            calls.append(provider)
+            if provider == "anthropic":
+                raise RuntimeError("boom")
+            return self._real_preflight_for(provider)
+
+        with mock.patch(
+            "src.providers.live_readiness_snapshot.validate_provider_static",
+            side_effect=fake_validate,
+        ) as validate_mock, mock.patch(
+            "src.providers.live_readiness_snapshot.build_live_readiness_pipeline"
+        ) as pipeline_mock:
+            self._assert_fail_closed(
+                build_live_readiness_snapshot(
+                    {
+                        "provider_configs": copy.deepcopy(self.valid_configs),
+                        "inventory": copy.deepcopy(self.unknown_inventory),
+                    }
+                )
+            )
+
+        self.assertEqual(calls, ["openai", "anthropic"])
+        self.assertEqual(validate_mock.call_count, 2)
+        pipeline_mock.assert_not_called()
+
+    def test_malformed_preflight_matrix_blocks_pipeline(self) -> None:
+        valid = self._real_preflight_for("openai")
+        cases: list[tuple[str, dict[str, Any]]] = []
+
+        extra = copy.deepcopy(valid)
+        extra["extra"] = False
+        cases.append(("extra-key", extra))
+
+        missing = copy.deepcopy(valid)
+        missing.pop("provider_id")
+        cases.append(("missing-key", missing))
+
+        for name, field, value in (
+            ("wrong-provider", "provider_id", "google"),
+            ("wrong-agent", "external_agent", "__tampered__"),
+            ("wrong-version", "pinned_version", "__tampered__"),
+            ("bad-status", "static_configuration_status", "READY"),
+            ("bad-live-readiness", "live_readiness", "READY"),
+            ("reasons-not-list", "reasons", "bad"),
+            ("reasons-nonstr", "reasons", ["ok", 7]),
+            ("retry-one", "retry_count", 1),
+            ("retry-bool", "retry_count", False),
+            ("fallback", "fallback_state", "enabled"),
+            ("live-ready", "live_ready", True),
+        ):
+            item = copy.deepcopy(valid)
+            item[field] = value
+            cases.append((name, item))
+
+        for name, bad_openai in cases:
+            with self.subTest(name=name):
+                def fake_validate(**kwargs):
+                    provider = kwargs["provider_id"]
+                    if provider == "openai":
+                        return copy.deepcopy(bad_openai)
+                    return self._real_preflight_for(provider)
+
+                with mock.patch(
+                    "src.providers.live_readiness_snapshot.validate_provider_static",
+                    side_effect=fake_validate,
+                ), mock.patch(
+                    "src.providers.live_readiness_snapshot.build_live_readiness_pipeline"
+                ) as pipeline_mock:
+                    self._assert_fail_closed(
+                        build_live_readiness_snapshot(
+                            {
+                                "provider_configs": copy.deepcopy(self.valid_configs),
+                                "inventory": copy.deepcopy(self.unknown_inventory),
+                            }
+                        )
+                    )
+                    pipeline_mock.assert_not_called()
+
+    def test_pipeline_exception_is_one_attempt(self) -> None:
+        with mock.patch(
+            "src.providers.live_readiness_snapshot.build_live_readiness_pipeline",
+            side_effect=RuntimeError("boom"),
+        ) as pipeline_mock:
+            self._assert_fail_closed(
+                build_live_readiness_snapshot(
+                    {
+                        "provider_configs": copy.deepcopy(self.valid_configs),
+                        "inventory": copy.deepcopy(self.unknown_inventory),
+                    }
+                )
+            )
+            pipeline_mock.assert_called_once()
+
+    def test_malformed_pipeline_matrix_fails_closed(self) -> None:
+        ready = self._real_pipeline(self.confirmed_inventory)
+        blocked = self._real_pipeline(self.unknown_inventory)
+        cases: list[tuple[str, dict[str, Any]]] = []
+
+        extra = copy.deepcopy(ready)
+        extra["extra"] = False
+        cases.append(("extra-key", extra))
+
+        missing = copy.deepcopy(ready)
+        missing.pop("state")
+        cases.append(("missing-key", missing))
+
+        for name, field, value in (
+            ("bad-state", "state", "LIVE"),
+            ("live-ready", "live_ready", True),
+            ("dispatch", "dispatch_allowed", True),
+            ("human", "human_approval_required", False),
+            ("retry", "retry_count", 1),
+            ("retry-bool", "retry_count", False),
+            ("fallback", "fallback_state", "enabled"),
+            ("inventory-state", "inventory_state", "READY"),
+            ("count-bool", "unresolved_count", False),
+            ("count-negative", "unresolved_count", -2),
+        ):
+            item = copy.deepcopy(ready)
+            item[field] = value
+            cases.append((name, item))
+
+        wrong_counts = copy.deepcopy(ready)
+        wrong_counts["unresolved_by_provider"].pop("google")
+        cases.append(("count-provider-set", wrong_counts))
+
+        negative_count = copy.deepcopy(ready)
+        negative_count["unresolved_by_provider"]["openai"] = -1
+        cases.append(("count-negative-provider", negative_count))
+
+        sum_mismatch = copy.deepcopy(ready)
+        sum_mismatch["unresolved_by_provider"]["openai"] = 1
+        cases.append(("count-sum", sum_mismatch))
+
+        wrong_states = copy.deepcopy(ready)
+        wrong_states["provider_states"].pop("google")
+        cases.append(("state-provider-set", wrong_states))
+
+        bad_state = copy.deepcopy(ready)
+        bad_state["provider_states"]["openai"] = "LIVE"
+        cases.append(("provider-state", bad_state))
+
+        duplicate_blocking = copy.deepcopy(blocked)
+        duplicate_blocking["blocking_providers"] = ["openai", "openai"]
+        cases.append(("blocking-duplicate", duplicate_blocking))
+
+        wrong_order = copy.deepcopy(blocked)
+        wrong_order["blocking_providers"] = ["google", "openai", "anthropic"]
+        cases.append(("blocking-order", wrong_order))
+
+        inconsistent_blocking = copy.deepcopy(ready)
+        inconsistent_blocking["blocking_providers"] = ["openai"]
+        cases.append(("blocking-inconsistent", inconsistent_blocking))
+
+        empty_states_wrong_blockers = copy.deepcopy(blocked)
+        empty_states_wrong_blockers["blocking_providers"] = []
+        cases.append(("empty-state-blockers", empty_states_wrong_blockers))
+
+        blocked_all_ready = copy.deepcopy(ready)
+        blocked_all_ready["state"] = "BLOCKED_UNKNOWN"
+        cases.append(("blocked-all-ready", blocked_all_ready))
+
+        for field in (
+            "inventory_packet_sha256",
+            "bundle_packet_sha256",
+            "pipeline_packet_sha256",
+        ):
+            bad_hash = copy.deepcopy(ready)
+            bad_hash[field] = "A" * 64
+            cases.append((f"{field}-uppercase", bad_hash))
+
+        pipeline_hash_null = copy.deepcopy(ready)
+        pipeline_hash_null["pipeline_packet_sha256"] = None
+        cases.append(("pipeline-hash-null", pipeline_hash_null))
+
+        ready_bad_inventory = copy.deepcopy(ready)
+        ready_bad_inventory["inventory_state"] = "UNRESOLVED"
+        cases.append(("ready-inventory", ready_bad_inventory))
+
+        ready_bad_count = copy.deepcopy(ready)
+        ready_bad_count["unresolved_count"] = 1
+        cases.append(("ready-count", ready_bad_count))
+
+        ready_bad_provider = copy.deepcopy(ready)
+        ready_bad_provider["provider_states"]["openai"] = "BLOCKED_UNKNOWN"
+        cases.append(("ready-provider", ready_bad_provider))
+
+        ready_no_inventory_hash = copy.deepcopy(ready)
+        ready_no_inventory_hash["inventory_packet_sha256"] = None
+        cases.append(("ready-inventory-hash", ready_no_inventory_hash))
+
+        ready_no_bundle_hash = copy.deepcopy(ready)
+        ready_no_bundle_hash["bundle_packet_sha256"] = None
+        cases.append(("ready-bundle-hash", ready_no_bundle_hash))
+
+        for name, pipeline_result in cases:
+            with self.subTest(name=name):
+                with mock.patch(
+                    "src.providers.live_readiness_snapshot.build_live_readiness_pipeline",
+                    return_value=pipeline_result,
+                ):
+                    self._assert_fail_closed(
+                        build_live_readiness_snapshot(
+                            {
+                                "provider_configs": copy.deepcopy(self.valid_configs),
+                                "inventory": copy.deepcopy(self.unknown_inventory),
+                            }
+                        )
+                    )
+
+    def test_source_and_dependency_result_mutation_isolation(self) -> None:
+        configs = copy.deepcopy(self.valid_configs)
+        inventory = copy.deepcopy(self.confirmed_inventory)
+        returned_preflights = {
+            provider: self._real_preflight_for(provider)
+            for provider in PROVIDER_ORDER
+        }
+        external_pipeline = self._real_pipeline(self.confirmed_inventory)
+
+        def fake_validate(**kwargs):
+            return returned_preflights[kwargs["provider_id"]]
+
+        with mock.patch(
+            "src.providers.live_readiness_snapshot.validate_provider_static",
+            side_effect=fake_validate,
+        ), mock.patch(
+            "src.providers.live_readiness_snapshot.build_live_readiness_pipeline",
+            return_value=external_pipeline,
+        ):
+            result = build_live_readiness_snapshot(
+                {"provider_configs": configs, "inventory": inventory}
+            )
+
+        digest = result["snapshot_packet_sha256"]
+        configs["openai"]["auth_kind"] = "tampered"
+        proof = next(iter(inventory["openai"]))
+        inventory["openai"][proof] = {
+            "status": "CONFIRMED",
+            "evidence_ref": "tampered",
+        }
+        returned_preflights["openai"]["provider_id"] = "tampered"
+        external_pipeline["state"] = "BLOCKED_UNKNOWN"
+        external_pipeline["provider_states"]["openai"] = "BLOCKED_UNKNOWN"
+
+        self.assertEqual(result["snapshot_packet_sha256"], digest)
+        self.assertEqual(
+            result["preflight_snapshots"]["openai"]["provider_id"],
+            "openai",
+        )
+        self.assertEqual(result["state"], "READY_FOR_HUMAN_APPROVAL")
+        self.assertEqual(
+            result["provider_states"]["openai"],
+            "READY_FOR_HUMAN_APPROVAL",
+        )
+
+    def test_renderer_sanitizes_untrusted_state_and_count_strings(self) -> None:
+        marker = "https://evil.invalid/?token=secret"
+        summary = render_snapshot_summary_ja(
+            {
+                "state": marker,
+                "unresolved_count": marker,
+                "preflight_states": {
+                    "openai": marker,
+                    "anthropic": "PASS",
+                    "google": "PASS",
+                },
+                "provider_states": {
+                    "openai": marker,
+                    "anthropic": "READY_FOR_HUMAN_APPROVAL",
+                    "google": "READY_FOR_HUMAN_APPROVAL",
+                },
+                "blocking_providers": [marker, "google"],
+                "reasons": [marker],
+                "evidence_ref": marker,
+            }
+        )
+        self.assertNotIn(marker, summary)
+        self.assertNotIn("token=", summary)
+        self.assertIn("全体状態: BLOCKED_UNKNOWN", summary)
+        self.assertIn("未解決の証明数: -1", summary)
+        self.assertIn(
+            "ブロック中のプロバイダー: openai, anthropic, google",
+            summary,
+        )
+
+    def test_ast_static_boundary_excludes_ambient_io_and_direct_live_gate(self) -> None:
+        source = inspect.getsource(snapshot_mod)
+        tree = ast.parse(source)
+        banned_import_roots = {
+            "os",
+            "pathlib",
+            "subprocess",
+            "socket",
+            "urllib",
+            "requests",
+            "http",
+            "time",
+            "random",
+        }
+        banned_calls = {
+            "open",
+            "exec",
+            "eval",
+            "__import__",
+            "evaluate_live_readiness",
+        }
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    self.assertNotIn(
+                        alias.name.split(".")[0],
+                        banned_import_roots,
+                    )
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    self.assertNotIn(
+                        node.module.split(".")[0],
+                        banned_import_roots,
+                    )
+                for alias in node.names:
+                    self.assertNotEqual(alias.name, "evaluate_live_readiness")
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    self.assertNotIn(node.func.id, banned_calls)
+                elif isinstance(node.func, ast.Attribute):
+                    self.assertNotIn(node.func.attr, banned_calls)
