@@ -8,6 +8,122 @@ from .live_readiness_inventory import convert_to_live_readiness_proofs, normaliz
 
 
 _ALLOWED_STATES = {"BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"}
+_INVENTORY_STATES = {"UNRESOLVED", "PROOF_RECORDS_COMPLETE"}
+_INVENTORY_RESULT_KEYS = {
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "retry_count",
+    "fallback_state",
+    "unresolved_count",
+    "unresolved_by_provider",
+    "inventory",
+    "packet_sha256",
+}
+_BUNDLE_RESULT_KEYS = {
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "retry_count",
+    "fallback_state",
+    "provider_order",
+    "provider_states",
+    "blocking_providers",
+    "evidence",
+    "packet_sha256",
+}
+
+
+def _is_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdef" for ch in value)
+    )
+
+
+def _valid_inventory_result(result: Any) -> bool:
+    if not isinstance(result, dict) or set(result) != _INVENTORY_RESULT_KEYS:
+        return False
+    if result["state"] not in _INVENTORY_STATES:
+        return False
+    if result["live_ready"] is not False or result["dispatch_allowed"] is not False:
+        return False
+    if result["human_approval_required"] is not True:
+        return False
+    if result["retry_count"] != 0 or result["fallback_state"] != "disabled":
+        return False
+    count = result["unresolved_count"]
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        return False
+    by_provider = result["unresolved_by_provider"]
+    if not isinstance(by_provider, dict) or set(by_provider) != set(PROVIDER_ORDER):
+        return False
+    if any(
+        not isinstance(by_provider[p], int)
+        or isinstance(by_provider[p], bool)
+        or by_provider[p] < 0
+        for p in PROVIDER_ORDER
+    ):
+        return False
+    if sum(by_provider[p] for p in PROVIDER_ORDER) != count:
+        return False
+    if not isinstance(result["inventory"], dict) or set(result["inventory"]) != set(PROVIDER_ORDER):
+        return False
+    if not _is_sha256(result["packet_sha256"]):
+        return False
+    if result["state"] == "PROOF_RECORDS_COMPLETE" and count != 0:
+        return False
+    if result["state"] == "UNRESOLVED" and count == 0:
+        return False
+    return True
+
+
+def _valid_bundle_result(result: Any) -> bool:
+    if not isinstance(result, dict) or set(result) != _BUNDLE_RESULT_KEYS:
+        return False
+    if result["state"] not in _ALLOWED_STATES:
+        return False
+    if result["live_ready"] is not False or result["dispatch_allowed"] is not False:
+        return False
+    if result["human_approval_required"] is not True:
+        return False
+    if result["retry_count"] != 0 or result["fallback_state"] != "disabled":
+        return False
+    if result["provider_order"] != PROVIDER_ORDER:
+        return False
+
+    states = result["provider_states"]
+    if not isinstance(states, dict) or set(states) != set(PROVIDER_ORDER):
+        return False
+    if any(states[p] not in _ALLOWED_STATES for p in PROVIDER_ORDER):
+        return False
+
+    blockers = result["blocking_providers"]
+    if not isinstance(blockers, list):
+        return False
+    expected_blockers = [
+        p for p in PROVIDER_ORDER if states[p] != "READY_FOR_HUMAN_APPROVAL"
+    ]
+    if blockers != expected_blockers:
+        return False
+
+    expected_state = (
+        "READY_FOR_HUMAN_APPROVAL"
+        if not expected_blockers
+        else "BLOCKED_UNKNOWN"
+    )
+    if result["state"] != expected_state:
+        return False
+    if not _is_sha256(result["packet_sha256"]):
+        return False
+    try:
+        _canonical_json(result["evidence"])
+    except (TypeError, ValueError, OverflowError):
+        return False
+    return True
 
 
 def _base_pipeline_result() -> dict[str, Any]:
@@ -55,10 +171,18 @@ def build_live_readiness_pipeline(input_data: dict[str, Any]) -> dict[str, Any]:
     if set(input_data.keys()) != {"preflights", "inventory"}:
         return _fail_closed(base)
 
-    preflights = input_data["preflights"]
-    inventory = input_data["inventory"]
+    try:
+        safe_input = copy.deepcopy(input_data)
+        _canonical_json(safe_input)
+    except (TypeError, ValueError, OverflowError):
+        return _fail_closed(base)
+
+    preflights = safe_input["preflights"]
+    inventory = safe_input["inventory"]
 
     if not isinstance(preflights, dict) or set(preflights.keys()) != set(PROVIDER_ORDER):
+        return _fail_closed(base)
+    if any(not isinstance(preflights[p], dict) for p in PROVIDER_ORDER):
         return _fail_closed(base)
 
     try:
@@ -66,14 +190,14 @@ def build_live_readiness_pipeline(input_data: dict[str, Any]) -> dict[str, Any]:
     except Exception:
         return _fail_closed(base)
 
-    if not isinstance(normalized_inventory, dict):
+    if not _valid_inventory_result(normalized_inventory):
         return _fail_closed(base)
 
-    inv_state = normalized_inventory.get("state", "BLOCKED_UNKNOWN")
+    inv_state = normalized_inventory["state"]
     base["inventory_state"] = inv_state
-    base["unresolved_count"] = normalized_inventory.get("unresolved_count", -1)
-    base["unresolved_by_provider"] = normalized_inventory.get("unresolved_by_provider", {})
-    base["inventory_packet_sha256"] = normalized_inventory.get("packet_sha256")
+    base["unresolved_count"] = normalized_inventory["unresolved_count"]
+    base["unresolved_by_provider"] = copy.deepcopy(normalized_inventory["unresolved_by_provider"])
+    base["inventory_packet_sha256"] = normalized_inventory["packet_sha256"]
 
     if inv_state != "PROOF_RECORDS_COMPLETE":
         return _fail_closed(base)
@@ -101,39 +225,13 @@ def build_live_readiness_pipeline(input_data: dict[str, Any]) -> dict[str, Any]:
     except Exception:
         return _fail_closed(base)
 
-    if not isinstance(bundle_result, dict):
-        return _fail_closed(base)
-    if set(bundle_result.keys()) != {
-        "state", "live_ready", "dispatch_allowed", "human_approval_required",
-        "retry_count", "fallback_state", "provider_order", "provider_states",
-        "blocking_providers", "evidence", "packet_sha256"
-    }:
+    if not _valid_bundle_result(bundle_result):
         return _fail_closed(base)
 
-    b_state = bundle_result["state"]
-    if b_state not in _ALLOWED_STATES:
-        return _fail_closed(base)
-    if bundle_result["live_ready"] is not False:
-        return _fail_closed(base)
-    if bundle_result["dispatch_allowed"] is not False:
-        return _fail_closed(base)
-    if bundle_result["human_approval_required"] is not True:
-        return _fail_closed(base)
-    if bundle_result["retry_count"] != 0:
-        return _fail_closed(base)
-    if bundle_result["fallback_state"] != "disabled":
-        return _fail_closed(base)
-    if bundle_result["provider_order"] != PROVIDER_ORDER:
-        return _fail_closed(base)
-
-    p_states = bundle_result["provider_states"]
-    if not isinstance(p_states, dict):
-        return _fail_closed(base)
-
-    base["state"] = b_state
-    base["provider_states"] = p_states
-    base["blocking_providers"] = bundle_result.get("blocking_providers", list(PROVIDER_ORDER))
-    base["bundle_packet_sha256"] = bundle_result.get("packet_sha256")
+    base["state"] = bundle_result["state"]
+    base["provider_states"] = copy.deepcopy(bundle_result["provider_states"])
+    base["blocking_providers"] = list(bundle_result["blocking_providers"])
+    base["bundle_packet_sha256"] = bundle_result["packet_sha256"]
 
     base_json = _canonical_json(base)
     base["pipeline_packet_sha256"] = hashlib.sha256(base_json.encode("utf-8")).hexdigest()
@@ -152,7 +250,11 @@ def render_pipeline_summary_ja(result: dict[str, Any]) -> str:
             aggregate_state = candidate_state
 
         unresolved_candidate = result.get("unresolved_count")
-        if isinstance(unresolved_candidate, int):
+        if (
+            isinstance(unresolved_candidate, int)
+            and not isinstance(unresolved_candidate, bool)
+            and unresolved_candidate >= 0
+        ):
             unresolved = unresolved_candidate
 
         candidate_states = result.get("provider_states")
