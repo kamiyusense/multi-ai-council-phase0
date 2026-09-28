@@ -1,0 +1,37 @@
+name: Issue 110 Claude production HTTPS proxy routing fixture
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-model-fixture-v1
+    paths:
+      - .github/workflows/issue110-claude-proxy-routing-fixture.yml
+      - automation/command_bus/tests/claude_production_proxy_routing_fixture.sh
+      - automation/command_bus/tests/fixtures/claude_model_auth_mock.mjs
+      - automation/command_bus/docker/auth-control-plane/**
+      - automation/command_bus/docker/claude-runtime/Dockerfile
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact fixture head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run production HTTPS proxy routing A/B fixture
+        shell: bash
+        run: |
+          chmod +x automation/command_bus/tests/claude_production_proxy_routing_fixture.sh
+          automation/command_bus/tests/claude_production_proxy_routing_fixture.sh
