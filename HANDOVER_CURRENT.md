@@ -60,12 +60,16 @@ Credential-free Docker component proof:
 
 Next external diagnostic — PREPARE ONLY:
 - prepared probe PR = **#120** (OPEN, unmerged);
-- prepare head = `19063885d4fe90929e2f3bfe4e02fe263bcc10c2`;
-- prepare-only Actions run `36466637189` = SUCCESS;
+- initial prepare head = `19063885d4fe90929e2f3bfe4e02fe263bcc10c2`, Actions run `36466637189` = SUCCESS;
+- final prepare head = `047a176b4a75bc6d950bb199c615112e7caa6a9a`, final prepare-only Actions run `36467090700` = SUCCESS;
 - Node guard tests = 8 PASS / 0 FAIL;
 - unarmed run exits 78 before network;
 - the proposed next execution is credential-free TLS only: internal-only probe -> auth proxy -> `platform.claude.com:443` -> certificate-verified TLS handshake -> close, with no HTTP/OAuth data;
 - actual external network execution remains blocked unless `PHASE0_EXTERNAL_AUTH_TLS_PROOF=1`;
+- one-shot execution workflow is prepared but inert without an authorization receipt;
+- guard-only run `36466968733` = SUCCESS / NO-OP with `AUTHORIZATION_ABSENT_NOOP`;
+- that run skipped credential check, Docker build/start, external TLS probe, and cleanup;
+- rerun replay is blocked by `run_attempt=1` and the receipt must be newly added by the exact execution HEAD;
 - no external TLS connection has been performed yet.
 
 Current approval boundary:
