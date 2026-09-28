@@ -191,7 +191,7 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
             origin_loop_id="claude-night-loop",
             origin_round=7,
             origin_correlation_id="semi-durable-001",
-            origin_backend_mode="JULES_BACKEND",
+            origin_generation=1,
         )
         prepared = bundle(request=req)
         self.assertEqual(
@@ -209,7 +209,7 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
             origin_loop_id="claude-night-loop",
             origin_round=7,
             origin_correlation_id="origin-correlation-002",
-            origin_backend_mode="JULES_BACKEND",
+            origin_generation=1,
         )
         with self.assertRaisesRegex(ValueError, "origin_correlation_id"):
             bundle(request=req)
@@ -220,7 +220,7 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
             origin_loop_id="claude-origin-loop",
             origin_round=7,
             origin_correlation_id="semi-durable-001",
-            origin_backend_mode="JULES_BACKEND",
+            origin_generation=1,
         )
         prepared = bundle(request=req)
         self.assertEqual(prepared.owner_event["loop_id"], "chatgpt-semi-auto-v1")
