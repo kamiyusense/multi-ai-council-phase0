@@ -1,121 +1,238 @@
-import unittest
 import ast
+import unittest
 from pathlib import Path
-from providers import build_codex_profile, build_claude_profile, build_antigravity_profile, ProviderStaticProfile
-from providers.policy import CODEX_POLICY, CLAUDE_POLICY, ANTIGRAVITY_POLICY, claude_session_meta, antigravity_binary_name
+
+from providers import (
+    ProviderStaticProfile,
+    build_antigravity_profile,
+    build_claude_profile,
+    build_codex_profile,
+)
+from providers.policy import (
+    ANTIGRAVITY_POLICY,
+    CLAUDE_POLICY,
+    CODEX_POLICY,
+    antigravity_binary_name,
+    claude_session_meta,
+)
+from relay.bridge import RelayProviderAdapterBridge
+from relay.core_adapter import RelayCoreAdapter
+
+
+def codex_evidence():
+    return {
+        "api_key_present": False,
+        "gateway_configured": False,
+        "external_cloud_configured": False,
+        "custom_model_provider_configured": False,
+        "arbitrary_codex_config_present": False,
+    }
+
+
+def claude_evidence():
+    return {
+        "api_key_present": False,
+        "gateway_configured": False,
+        "external_cloud_configured": False,
+        "dangerous_permission_bypass": False,
+        "hide_claude_auth": False,
+    }
+
+
+def google_evidence():
+    return {
+        "api_key_present": False,
+        "gateway_configured": False,
+        "external_cloud_configured": False,
+        "cloud_billing_selected": False,
+        "overages_enabled": False,
+        "adc_present": False,
+        "vertex_selected": False,
+    }
+
 
 class TestProviderAdapters(unittest.TestCase):
-    def test_codex_profile_pass(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "custom_model_provider_configured": False,
-            "arbitrary_codex_config_present": False,
-        }
-        profile = build_codex_profile("account", evidence)
-        self.assertEqual(profile.provider_id, CODEX_POLICY.provider_id)
-        self.assertEqual(profile.external_agent, CODEX_POLICY.external_agent)
-        self.assertEqual(profile.pinned_version, CODEX_POLICY.pinned_version)
+    def assert_profile_invariants(self, profile: ProviderStaticProfile, policy):
+        self.assertEqual(profile.provider_id, policy.provider_id)
+        self.assertEqual(profile.external_agent, policy.external_agent)
+        self.assertEqual(profile.pinned_version, policy.pinned_version)
         self.assertEqual(profile.retry_count, 0)
-        self.assertEqual(profile.fallback_state, 'disabled')
+        self.assertEqual(profile.fallback_state, "disabled")
         self.assertFalse(profile.live_ready)
-        self.assertEqual(profile.live_readiness, 'BLOCKED')
+        self.assertEqual(profile.live_readiness, "BLOCKED")
 
-    def test_claude_profile_pass(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "dangerous_permission_bypass": False,
-            "hide_claude_auth": False,
-        }
-        profile = build_claude_profile("account", evidence)
-        self.assertEqual(profile.provider_id, CLAUDE_POLICY.provider_id)
-        self.assertEqual(profile.session_meta, claude_session_meta())
-
-        # Claude meta exact false
-        self.assertFalse(profile.session_meta["claudeCode"]["options"]["allowDangerouslySkipPermissions"])
-
-    def test_antigravity_profile_pass(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "cloud_billing_selected": False,
-            "overages_enabled": False,
-            "adc_present": False,
-            "vertex_selected": False,
-        }
-        profile = build_antigravity_profile("account", evidence, "windows", "x86_64")
-        self.assertEqual(profile.provider_id, ANTIGRAVITY_POLICY.provider_id)
-        self.assertEqual(profile.binary_name, "agy_acp_server.exe")
-
-    def test_mutation_resistance(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "custom_model_provider_configured": False,
-            "arbitrary_codex_config_present": False,
-        }
+    def test_codex_profile_pass_and_adapter_compatible_config(self):
+        evidence = codex_evidence()
         profile = build_codex_profile("account", evidence)
-        config = profile.get_static_preflight_config()
-        config["new_key"] = "hacked"
-        self.assertNotIn("new_key", profile.get_static_preflight_config())
+        self.assert_profile_invariants(profile, CODEX_POLICY)
+        self.assertEqual(
+            profile.static_preflight_config,
+            {"auth_kind": "account", "route_evidence": evidence},
+        )
+        adapter = RelayCoreAdapter(
+            "openai",
+            RelayProviderAdapterBridge(),
+            profile.static_preflight_config,
+        )
+        result = adapter.preflight({})
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["static_configuration_status"], "PASS")
+        self.assertFalse(result["live_ready"])
 
-        with self.assertRaises(Exception): # frozen dataclass
-            profile.provider_id = "hacked"
-    def test_claude_meta_exact_false_failure(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "dangerous_permission_bypass": False,
-            "hide_claude_auth": False,
-        }
-        bad_meta = {"claudeCode": {"options": {"allowDangerouslySkipPermissions": True}}}
-        with self.assertRaises(ValueError):
-            build_claude_profile("account", evidence, bad_meta)
+    def test_claude_profile_pass_and_adapter_compatible_config(self):
+        evidence = claude_evidence()
+        expected_meta = claude_session_meta()
+        profile = build_claude_profile("account", evidence)
+        self.assert_profile_invariants(profile, CLAUDE_POLICY)
+        self.assertEqual(profile.session_meta, expected_meta)
+        self.assertFalse(
+            profile.session_meta["claudeCode"]["options"][
+                "allowDangerouslySkipPermissions"
+            ]
+        )
+        self.assertEqual(
+            profile.static_preflight_config,
+            {
+                "auth_kind": "account",
+                "route_evidence": evidence,
+                "provider_meta": expected_meta,
+            },
+        )
+        adapter = RelayCoreAdapter(
+            "anthropic",
+            RelayProviderAdapterBridge(),
+            profile.static_preflight_config,
+        )
+        self.assertTrue(adapter.preflight({})["ok"])
 
-    def test_antigravity_unsupported_arch(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "cloud_billing_selected": False,
-            "overages_enabled": False,
-            "adc_present": False,
-            "vertex_selected": False,
-        }
-        with self.assertRaises(ValueError):
-            build_antigravity_profile("account", evidence, "mac", "x86_64")
+    def test_antigravity_profile_pass_and_adapter_compatible_config(self):
+        evidence = google_evidence()
+        profile = build_antigravity_profile(
+            "account", evidence, "windows", "x86_64"
+        )
+        self.assert_profile_invariants(profile, ANTIGRAVITY_POLICY)
+        self.assertEqual(
+            profile.binary_name,
+            antigravity_binary_name("windows", "x86_64"),
+        )
+        self.assertEqual(
+            profile.static_preflight_config,
+            {
+                "auth_kind": "account",
+                "route_evidence": evidence,
+                "platform": "windows",
+                "architecture": "x86_64",
+            },
+        )
+        adapter = RelayCoreAdapter(
+            "google",
+            RelayProviderAdapterBridge(),
+            profile.static_preflight_config,
+        )
+        self.assertTrue(adapter.preflight({})["ok"])
 
-    def test_wrong_auth_failure(self):
-        evidence = {
-            "api_key_present": False,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "custom_model_provider_configured": False,
-            "arbitrary_codex_config_present": False,
-        }
-        with self.assertRaises(ValueError):
-            build_codex_profile("apikey", evidence)
+    def test_input_and_returned_config_are_deep_copied(self):
+        evidence = codex_evidence()
+        profile = build_codex_profile("account", evidence)
+        evidence["api_key_present"] = True
+        self.assertFalse(
+            profile.static_preflight_config["route_evidence"]["api_key_present"]
+        )
 
-    def test_malformed_evidence_failure(self):
+        returned = profile.get_static_preflight_config()
+        returned["auth_kind"] = "hacked"
+        returned["route_evidence"]["api_key_present"] = True
+        fresh = profile.get_static_preflight_config()
+        self.assertEqual(fresh["auth_kind"], "account")
+        self.assertFalse(fresh["route_evidence"]["api_key_present"])
+
+    def test_claude_meta_is_deep_copied(self):
+        evidence = claude_evidence()
+        supplied = claude_session_meta()
+        profile = build_claude_profile("account", evidence, supplied)
+        supplied["claudeCode"]["options"]["allowDangerouslySkipPermissions"] = True
+        self.assertFalse(
+            profile.static_preflight_config["provider_meta"]["claudeCode"][
+                "options"
+            ]["allowDangerouslySkipPermissions"]
+        )
+        returned_meta = profile.session_meta
+        returned_meta["claudeCode"]["options"]["allowDangerouslySkipPermissions"] = True
+        self.assertFalse(
+            profile.session_meta["claudeCode"]["options"][
+                "allowDangerouslySkipPermissions"
+            ]
+        )
+
+    def test_frozen_profile_identity(self):
+        profile = build_codex_profile("account", codex_evidence())
         with self.assertRaises(Exception):
-            build_codex_profile("account", ["not_a_dict"])
+            profile.provider_id = "hacked"
 
-    def test_ast_no_os_subprocess_import(self):
-        # Ensure no os/subprocess imported
+    def test_claude_rejects_noncanonical_meta(self):
+        bad_meta = {
+            "claudeCode": {
+                "options": {"allowDangerouslySkipPermissions": True}
+            }
+        }
+        with self.assertRaises(ValueError):
+            build_claude_profile("account", claude_evidence(), bad_meta)
+
+    def test_antigravity_rejects_unsupported_platform_architecture(self):
+        with self.assertRaises(ValueError):
+            build_antigravity_profile(
+                "account", google_evidence(), "mac", "x86_64"
+            )
+
+    def test_wrong_auth_fails_closed_for_all_profiles(self):
+        cases = (
+            lambda: build_codex_profile("api_key", codex_evidence()),
+            lambda: build_claude_profile("api_key", claude_evidence()),
+            lambda: build_antigravity_profile(
+                "api_key", google_evidence(), "windows", "x86_64"
+            ),
+        )
+        for build in cases:
+            with self.assertRaises(ValueError):
+                build()
+
+    def test_missing_true_and_malformed_route_evidence_fail_closed(self):
+        with self.assertRaises(ValueError):
+            bad = codex_evidence()
+            bad.pop("gateway_configured")
+            build_codex_profile("account", bad)
+
+        with self.assertRaises(ValueError):
+            bad = claude_evidence()
+            bad["dangerous_permission_bypass"] = True
+            build_claude_profile("account", bad)
+
+        with self.assertRaises(ValueError):
+            bad = google_evidence()
+            bad["overages_enabled"] = "false"
+            build_antigravity_profile(
+                "account", bad, "windows", "x86_64"
+            )
+
+        for builder in (
+            lambda: build_codex_profile("account", ["not-a-dict"]),
+            lambda: build_claude_profile("account", None),
+            lambda: build_antigravity_profile(
+                "account", "bad", "windows", "x86_64"
+            ),
+        ):
+            with self.assertRaises((TypeError, ValueError, AttributeError)):
+                builder()
+
+    def test_static_modules_do_not_import_os_or_subprocess(self):
         files_to_check = [
+            Path("src/providers/base.py"),
             Path("src/providers/codex_acp.py"),
             Path("src/providers/claude_acp.py"),
             Path("src/providers/antigravity_acp.py"),
         ]
         for path in files_to_check:
-            with open(path, "r") as f:
-                tree = ast.parse(f.read(), filename=str(path))
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     for alias in node.names:
@@ -123,45 +240,24 @@ class TestProviderAdapters(unittest.TestCase):
                 elif isinstance(node, ast.ImportFrom):
                     self.assertNotIn(node.module, ("os", "subprocess"))
 
-    def test_no_duplicate_version_literals(self):
-        files_to_check = [
+    def test_no_duplicate_provider_versions_or_agent_literals(self):
+        forbidden = (
+            "1.12.0",
+            "0.79.0",
+            "1.1.1",
+            "@agentclientprotocol/codex-acp",
+            "@agentclientprotocol/claude-agent-acp",
+            "antigravity-acp",
+        )
+        for path in (
             Path("src/providers/codex_acp.py"),
             Path("src/providers/claude_acp.py"),
             Path("src/providers/antigravity_acp.py"),
-        ]
-        for path in files_to_check:
-            with open(path, "r") as f:
-                content = f.read()
-                self.assertNotIn("1.12.0", content)
-                self.assertNotIn("0.79.0", content)
-                self.assertNotIn("1.1.1", content)
-                self.assertNotIn("@agentclientprotocol/codex-acp", content)
-                self.assertNotIn("@agentclientprotocol/claude-agent-acp", content)
-                self.assertNotIn("antigravity-acp", content)
+        ):
+            source = path.read_text(encoding="utf-8")
+            for literal in forbidden:
+                self.assertNotIn(literal, source)
 
-
-    def test_missing_or_true_evidence_failure(self):
-        # true evidence fail
-        evidence_true = {
-            "api_key_present": True,
-            "gateway_configured": False,
-            "external_cloud_configured": False,
-            "custom_model_provider_configured": False,
-            "arbitrary_codex_config_present": False,
-        }
-        with self.assertRaises(ValueError):
-            build_codex_profile("account", evidence_true)
-
-        # missing evidence fail
-        evidence_missing = {
-            "api_key_present": False,
-            # gateway_configured is missing
-            "external_cloud_configured": False,
-            "custom_model_provider_configured": False,
-            "arbitrary_codex_config_present": False,
-        }
-        with self.assertRaises(ValueError):
-            build_codex_profile("account", evidence_missing)
 
 if __name__ == "__main__":
     unittest.main()
