@@ -4,6 +4,7 @@ Updated: 2026-09-21
 Rule: every safety-relevant UNKNOWN below blocks live provider execution.
 
 This document does **not** authorize a live Relay/provider POC.
+See `RELAY_LIVE_READINESS_CONTRACT.md` for the static gate mapping these blockers to expected proofs.
 
 ## 1. Common live blockers
 
