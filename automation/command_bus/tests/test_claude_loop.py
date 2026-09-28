@@ -5,8 +5,11 @@ import unittest
 
 from automation.command_bus.claude_loop import (
     BackendMode, CONTAINER_INTERNAL, HOST_LOOPBACK, VerdictDecision, make_structured_verdict,
-    prepare_claude_transport, prepare_next_action, validate_machine_gate,
+    prepare_claude_transport, prepare_jules_closed_loop_command, prepare_next_action,
+    validate_machine_gate,
 )
+from automation.command_bus.jules_api_closed_loop import JulesApiClosedLoop
+from automation.command_bus.validator import validate_command
 
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
 EXP = (NOW + timedelta(hours=1)).isoformat()
@@ -135,6 +138,95 @@ class ClaudeLoopTests(unittest.TestCase):
         result = prepare_next_action(value, expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
                                      path_policy=[{"path":"automation/command_bus/**","allowed_ops":["ADD","MODIFY"]}])
         self.assertEqual(result.status, "UNKNOWN")
+
+    def test_jules_bridge_prepares_exact_unpersisted_closed_loop_command(self):
+        prepared = prepare_next_action(
+            verdict(), expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["ADD","MODIFY"]}],
+        )
+        self.assertEqual(prepared.status, "PREPARED")
+        result = prepare_jules_closed_loop_command(
+            prepared.request, starting_branch="feature/bounded-target", default_branch="main",
+        )
+        self.assertEqual(result.status, "PREPARED")
+        command = result.request
+        self.assertEqual(command["action"], "JULES_API_CLOSED_LOOP")
+        self.assertEqual(command["expected_target_head"], "a" * 40)
+        self.assertEqual(command["expected_target_tree"], "b" * 40)
+        self.assertEqual(command["starting_branch"], "feature/bounded-target")
+        self.assertEqual(command["allowed_paths"], ["tests/example.py"])
+        self.assertEqual(command["path_policy"], [{"path":"tests/example.py","allowed_ops":["ADD","MODIFY"]}])
+        self.assertTrue(command["requires_live_model"])
+        self.assertTrue(command["requires_github_write"])
+        self.assertEqual(command["retry"], 0)
+        self.assertEqual(command["fallback"], "disabled")
+        validate_command(command)
+        JulesApiClosedLoop._validate_command(command)
+        self.assertFalse(prepared.request["requires_live_model"])
+        self.assertFalse(prepared.request["requires_github_write"])
+        self.assertFalse(prepared.request["live_start_permitted"])
+
+    def test_jules_bridge_rejects_wrong_backend_and_unsafe_activation_inputs(self):
+        claude = prepare_next_action(
+            verdict(BackendMode.CLAUDE_BACKEND.value), expected_repo="owner/repo",
+            expected_pr=6, expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        self.assertEqual(
+            prepare_jules_closed_loop_command(
+                claude.request, starting_branch="feature/x", default_branch="main"
+            ).status,
+            "BLOCKED",
+        )
+
+        prepared = prepare_next_action(
+            verdict(), expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        ).request
+        for key, value in (
+            ("live_start_permitted", True),
+            ("requires_live_model", True),
+            ("requires_github_write", True),
+            ("retry", 1),
+            ("fallback", "claude"),
+        ):
+            changed = dict(prepared)
+            changed[key] = value
+            self.assertEqual(
+                prepare_jules_closed_loop_command(
+                    changed, starting_branch="feature/x", default_branch="main"
+                ).status,
+                "BLOCKED",
+                key,
+            )
+        self.assertEqual(
+            prepare_jules_closed_loop_command(
+                prepared, starting_branch="main", default_branch="main"
+            ).status,
+            "BLOCKED",
+        )
+
+    def test_jules_bridge_rejects_globs_destructive_ops_and_duplicate_paths(self):
+        variants = (
+            [{"path":"tests/**","allowed_ops":["MODIFY"]}],
+            [{"path":"tests/example.py","allowed_ops":["DELETE"]}],
+            [
+                {"path":"tests/example.py","allowed_ops":["MODIFY"]},
+                {"path":"tests/example.py","allowed_ops":["ADD"]},
+            ],
+        )
+        for policy in variants:
+            prepared = prepare_next_action(
+                verdict(), expected_repo="owner/repo", expected_pr=6, expires_at=EXP,
+                path_policy=policy,
+            )
+            self.assertEqual(prepared.status, "PREPARED")
+            self.assertEqual(
+                prepare_jules_closed_loop_command(
+                    prepared.request, starting_branch="feature/x", default_branch="main"
+                ).status,
+                "BLOCKED",
+            )
 
     def test_claude_transport_is_static_preflight_only(self):
         import uuid
