@@ -69,7 +69,10 @@
       ]
     },
     "snapshot_packet_sha256": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^[a-f0-9]{64}$"
     },
     "preflight_states": {
@@ -180,7 +183,7 @@
       "maxItems": 3
     },
     "approval_packet_sha256": {
-      "type": ["string", "null"],
+      "type": "string",
       "pattern": "^[a-f0-9]{64}$"
     }
   }
