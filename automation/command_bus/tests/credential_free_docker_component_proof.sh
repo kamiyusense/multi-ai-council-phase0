@@ -89,7 +89,8 @@ docker run --rm --network "${PROJECT}_internal" --entrypoint node   phase0-claud
 const net=require("net");
 const host=process.argv[1];
 const s=net.connect({host,port:3128},()=>{
-  s.write("CONNECT api.anthropic.com:443 HTTP/1.1\\r\\nHost: api.anthropic.com:443\\r\\n\\r\\n");
+  const crlf=String.fromCharCode(13,10);
+  s.write(["CONNECT api.anthropic.com:443 HTTP/1.1","Host: api.anthropic.com:443","",""].join(crlf));
 });
 let data="";
 const timer=setTimeout(()=>{console.error("timeout");process.exit(3)},3000);
