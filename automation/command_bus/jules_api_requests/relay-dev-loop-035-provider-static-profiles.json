@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-035-provider-static-profiles",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "b23770fa25b8ef07128780e0277d0d2a82ef334c",
+  "expected_target_tree": "c04fb6ae77d7977d0b3ac002dc32482bfc5dd1e5",
+  "allowed_paths": [
+    "src/providers/base.py",
+    "src/providers/codex_acp.py",
+    "src/providers/claude_acp.py",
+    "src/providers/antigravity_acp.py",
+    "src/providers/__init__.py",
+    "tests/relay/test_provider_adapters.py",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Medium static/mock provider-profile batch (~15-20 minute scope). Start ONLY from the exact target head/tree above. No subprocess, ACP spawn, provider/network/model call, credential access, env inspection, billing/settings/workflow mutation, or live execution. Do not change existing policy.py, preflight.py, Relay, Core, ACPClient, or workflow behavior.\n\nGoal: implement the provider-specific static layer named in docs/RELAY_STATIC_BUILD_PLAN.md without duplicating provider policy/version literals. Add `src/providers/base.py` plus `codex_acp.py`, `claude_acp.py`, and `antigravity_acp.py` as pure deterministic profile builders around the existing `ProviderPolicy` constants and `validate_provider_static`.\n\nDefine a small immutable/frozen `ProviderStaticProfile` (or equivalent) in base.py carrying at least: provider_id, external_agent, pinned_version, static_preflight_config, retry_count=0, fallback_state='disabled', live_ready=False, live_readiness='BLOCKED', plus optional session_meta/binary_name where provider-specific. Deep-copy mutable config on construction/exposure so caller mutation cannot alter the profile. A profile must never imply live authorization.\n\nEach provider builder takes only explicit local observation arguments; it must not read ambient environment/files/settings. It calls `validate_provider_static` exactly once, and constructs a profile only when static_configuration_status=='PASS'. Otherwise fail closed with a deterministic provider-specific error/result; do not silently repair observations.\n\nOpenAI/Codex builder: use CODEX_POLICY only; require explicit account auth plus route evidence required by current preflight contract. No custom model provider/gateway/API-key route. No duplicated version/agent string.\n\nAnthropic/Claude builder: use CLAUDE_POLICY only; require explicit account auth + current route evidence; attach exactly `claude_session_meta()` as session_meta and prove allowDangerouslySkipPermissions is false. No duplicated version/agent string.\n\nGoogle/Antigravity builder: use ANTIGRAVITY_POLICY only; require explicit account auth, current Google route evidence, explicit platform + architecture; derive binary_name only through `antigravity_binary_name()`. No Gemini CLI fallback or third-party bridge. Unsupported platform/arch fails closed. No duplicated version/agent string.\n\nThe profile should expose a method/property that returns a deep-copied RelayCoreAdapter-compatible `static_preflight_config` dict, so a later wiring task can inject it without reading ambient state. Do NOT wire it into RelayCoreAdapter in this batch.\n\nTests must cover: all three provider profiles PASS with explicit safe observations; metadata comes from current policy constants; Claude meta exact false; Google binary selection; unsupported Google arch; missing/true/malformed route evidence; wrong auth; unknown/malformed observations; caller mutation after construction and mutation of returned config cannot alter stored profile; retry=0/fallback disabled/live_ready=false/live_readiness BLOCKED invariants; and AST/static proof that provider adapter modules do not import os/subprocess or start anything. Also test no duplicated provider version literals inside the new provider modules (policy.py remains the source of truth).\n\nDo not ask for confirmation for ambiguities that existing repo contracts resolve; choose the conservative fail-closed interpretation and continue. Ask only if two existing requirements directly conflict and no safe interpretation exists.\n\nUpdate RELAY_STATIC_CHECKPOINT with static-profile-only wording and note these profiles are not live authorization. Run focused tests first, then once only: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Create the normal Jules PR. No merge, no force push.",
+  "created_at": "2026-09-28T01:16:00+00:00",
+  "expires_at": "2026-09-28T02:45:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
