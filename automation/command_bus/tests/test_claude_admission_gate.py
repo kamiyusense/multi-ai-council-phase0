@@ -544,6 +544,8 @@ class AdmissionGateTests(unittest.TestCase):
             "http://oauth-egress:8081",
         )
         self.assertIn('HTTPS_PROXY: "http://oauth-egress:8081"', launcher)
+        self.assertIn('CLAUDE_CODE_PROXY_RESOLVES_HOSTS: "1"', launcher)
+        self.assertEqual(manifest["services"]["claude"]["environment"]["CLAUDE_CODE_PROXY_RESOLVES_HOSTS"], "1")
         for forbidden in ('"HTTP_PROXY"', '"ALL_PROXY"', '"NO_PROXY"', '"https_proxy"', '"no_proxy"'):
             with self.subTest(forbidden=forbidden):
                 self.assertIn(forbidden, launcher)
