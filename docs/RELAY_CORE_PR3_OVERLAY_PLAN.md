@@ -5,7 +5,9 @@ This document confirms that the test-only cross-branch overlay runner has been p
 ## Status
 
 - Real cross-branch run: NOT_RUN/UNKNOWN
-- The execution of this runner relies on a dedicated exact-head workflow which has not yet executed.
+- The execution of this runner relies on a dedicated exact-head workflow which has been prepared but has not yet executed.
+- The future request commit must have relay_sha equal its sole parent and core_sha pinned.
+- This will execute via an append-only request added after this workflow is accepted into PR #4.
 
 ## Versions
 

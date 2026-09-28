@@ -97,7 +97,7 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 
 ## Core PR3 Overlay Runner Checkpoint
 - Overlay runner prepared
-- Real cross-branch run is still NOT_RUN/UNKNOWN until the next dedicated exact-head workflow executes it
+- Real cross-branch run is still NOT_RUN/UNKNOWN until the next dedicated exact-head workflow executes it. The exact workflow has been prepared.
 - Pinned Core head: `494b7296f32dce1c173a7699e4bd2d87f70d31a9`
 - Relay parent: `f0eb3b08d240d8f407c51f9f8847684bf2e34bae`
 - No Merge/live authorization implied
