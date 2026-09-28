@@ -139,14 +139,13 @@ class ControlTowerIssuePublisherTests(unittest.TestCase):
         self.assertEqual(transport.post_calls, 0)
 
     def test_existing_notification_marker_is_replay_noop(self):
-        initial = self.plan()
-        existing = initial.notifications[0]
-        plan = self.plan(comments=[existing.body])
+        plan = self.plan()
+        existing = plan.notifications[0]
         transport = Transport(comments=[existing.body])
         result = ControlTowerIssuePublisher(transport).publish(plan)
         self.assertEqual(result.status, "VERIFIED")
         self.assertEqual(transport.post_calls, 1)
-        self.assertEqual(result.notifications_replayed, ())
+        self.assertEqual(result.notifications_replayed, (existing.marker,))
         self.assertEqual(len(result.notifications_written), 1)
 
     def test_ambiguous_comment_that_applied_is_recovered_without_resend(self):
