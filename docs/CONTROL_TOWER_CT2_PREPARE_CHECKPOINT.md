@@ -234,3 +234,38 @@ Mock tests cover:
 - malformed comment readback rejection.
 
 No live Issue write is executed by these tests.
+
+## Durable real-lane identity readback
+
+Fresh GitHub readback after the static publisher verification found:
+
+- `automation/command_bus/state/` exists on main and contains 63 state files;
+- candidate names containing ChatGPT/Work terms are validation/preflight records,
+  not evidence that they are the four final Control Tower runtime lanes;
+- the four CT-1 registry IDs
+  `chatgpt-semi-auto`, `claude-gemini`, `claude-claude`,
+  and `work-gemini` are currently found only in the static display registry
+  and CT-1 tests;
+- no corresponding durable owner-event ledger records were found by repository
+  search for those IDs;
+- no branch matching `ledger` was found.
+
+Therefore the mapping from the four presentation lanes to real durable runtime
+loop IDs is **UNKNOWN**.
+
+The registry IDs must not be promoted into durable correctness identities by
+assumption.
+
+### Deferred Decision
+
+`decision_id: CONTROL-TOWER-REAL-LOOP-IDS-001`
+
+**内容:** Finalize the durable loop IDs and their mapping to the four
+presentation lanes.
+
+**安全なdefault:** keep the live multi-loop collector NOT_WIRED and leave
+Issue #33 on the existing deployed single-loop Status until independently
+verified durable loop IDs/readbacks are available.
+
+**影響範囲:** production multi-loop collector, first live Issue #33 migration,
+and later real multi-loop / Windows snapshot integration.
