@@ -67,3 +67,23 @@ Coverage includes:
 The next production step still requires concrete independently trustworthy
 authority/provider source adapters. This batch deliberately does not invent
 those sources or claim GitHub JSON self-assertions are sufficient.
+
+## Exact-head verification
+
+- Exact tested code head:
+  `7c35941b472eeda2c91fc038f4ae4863235a14b4`.
+- GitHub Actions run:
+  `36373149344` — **SUCCESS**.
+- Focused Status/runtime/validation suite:
+  **182/182 PASS**.
+- Full command-bus suite:
+  **469/469 PASS**.
+- Command-bus JSON schemas parsed:
+  **18/18 PASS**.
+- Python compileall:
+  **PASS**.
+- `git diff --check`:
+  **PASS**.
+- PR #74 was OPEN / mergeable=true at exact-head readback.
+- Any commit after this exact tested head must be documentation-only and compared
+  before Merge.
