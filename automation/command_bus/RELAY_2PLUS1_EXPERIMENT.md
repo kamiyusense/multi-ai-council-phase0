@@ -342,3 +342,38 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - post-feedback readback run `36392596369`: session returned to `IN_PROGRESS`, PR NONE
 - canonical PR #4 remained at recovered head `9d2b34db01db869ee41234ca4f1b035d8d3ec8a1`
 - isolated work branch remains content-equivalent to the accepted snapshot tree and is history-behind only because canonical contains the rejected delayed bot commit plus append-only recovery
+
+
+## Loop 044 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: Core PR #3 cross-branch policy-edge matrix for safety UNKNOWN / fanout UNKNOWN / stop-before-dispatch
+- Jules session: `8612918239052647565`
+- Jules PR: #96
+- isolated base: `jules-work/relay-dev-loop-044-core-policy-matrix`
+- initial Jules head: `4cfdb1f300456d62d89c368ee07a2e73778ce40b`
+- corrected isolated head: `62a42afbb72a186dd42ce2fecc56cadf4d516cad`
+- canonical accepted code/content commit: `089d34b013fe7462ad3c69cea17148f8e6e20ae9`
+- real matrix trigger commit: `384038943d763486ca666614828afd71ae71c2ab`
+- final checkpoint docs head: `83b74d9ef689fc696c6237a41d7791c501385f54`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial semantic issues:
+  - safety UNKNOWN fixture changed Google conclusion_code to UNKNOWN, contradicting the intended 3-of-3 conclusion agreement
+  - workflow expected invented `google:ERROR_UNKNOWN` despite all three providers being COMPLETE in the safety-warning scenario
+  - fanout UNKNOWN expected invented `core:FANOUT_UNKNOWN` instead of the real Core checkpoint string `fan-out not confirmed PASS`
+  - stop-before-dispatch expected invented `core:STOP_REQUESTED` instead of the pinned Core provider-loop behavior (three ERROR_UNKNOWN nonparticipants)
+  - new policy matrix workflow reused the existing negative-matrix request directory, risking unintended duplicate workflow activation
+- correction_commits: 4
+- rejules_sessions: 0
+- one Jules feedback message was needed only because Jules hit its plan-payload size limit; no task replacement session was created
+- exact candidate validation run: `36395610660` SUCCESS
+- exact validation: 249 tests PASS; compileall PASS; diff-check PASS
+- real Core PR #3 x Relay policy matrix run: `36395766196` SUCCESS
+- safety_unknown_google: all 3 COMPLETE/PARTICIPANT, agreement_count=3, safety_block=true, exact RAW for all 3
+- fanout_unknown: no providers dir, dispatch=0, collect=0, comparison/report absent, Core UNKNOWN evidence preserved exactly
+- stop_before_dispatch: all 3 ERROR_UNKNOWN/NONPARTICIPANT, dispatch=0, collect=0, participant_count=0
+- human_required=true / formal_consensus=false where comparison exists
+- live_turn_executed=false throughout; retry=0/fallback=disabled where Core emits those fields
+- accepted_at approximately 15:30 JST; Jules PR created 16:55 JST after one feedback wait
+- observed wall-clock to PR creation: about 85 minutes, dominated by AWAITING_USER_FEEDBACK on the plan-size limit rather than code execution
+- isolation result: PASS for publication path; PR #96 based on isolated work branch, not canonical PR #4
