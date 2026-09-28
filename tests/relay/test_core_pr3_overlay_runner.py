@@ -1,82 +1,134 @@
 import ast
 import sys
+import tempfile
 import unittest
 from pathlib import Path
-import tempfile
+from types import ModuleType
 
-from .core_pr3_overlay_runner import run_overlay
+from . import core_pr3_overlay_runner as overlay
+
 
 class TestCorePR3OverlayRunner(unittest.TestCase):
     def setUp(self):
-        self.pinned_head = "494b7296f32dce1c173a7699e4bd2d87f70d31a9"
+        self.pinned_head = overlay.PINNED_CORE_HEAD
 
-    def test_wrong_core_head_fails(self):
-        with self.assertRaises(ValueError) as cm:
-            run_overlay(Path("/tmp/core"), Path("/tmp/relay"), "wrong_head")
-        self.assertIn("core_head mismatch", str(cm.exception))
+    def _make_required_fake_roots(self, base: Path) -> tuple[Path, Path]:
+        core_root = base / "core"
+        relay_root = base / "relay"
+        for path in overlay._required_paths(core_root, relay_root):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("", encoding="utf-8")
+        return core_root, relay_root
 
-    def test_missing_explicit_roots_fails(self):
+    def test_import_is_safe_without_phase0_core_installed(self):
+        self.assertNotIn("phase0_core", overlay.__dict__)
+        self.assertTrue(callable(overlay.run_overlay))
+
+    def test_wrong_core_head_fails_before_path_validation_or_import(self):
+        with self.assertRaisesRegex(ValueError, "core_head mismatch"):
+            overlay.run_overlay(
+                Path("/definitely/missing/core"),
+                Path("/definitely/missing/relay"),
+                "wrong-head",
+            )
+
+    def test_non_path_roots_fail_closed(self):
+        with self.assertRaises(TypeError):
+            overlay.run_overlay("core", Path("/relay"), self.pinned_head)
+        with self.assertRaises(TypeError):
+            overlay.run_overlay(Path("/core"), "relay", self.pinned_head)
+
+    def test_missing_explicit_required_file_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
-            core_root = Path(td) / "core"
-            relay_root = Path(td) / "relay"
-            core_root.mkdir()
-            relay_root.mkdir()
+            base = Path(td)
+            core_root, relay_root = self._make_required_fake_roots(base)
+            missing = core_root / "src/phase0_core/runner.py"
+            missing.unlink()
 
-            with self.assertRaises(FileNotFoundError) as cm:
-                run_overlay(core_root, relay_root, self.pinned_head)
-            self.assertIn("Missing required explicit file", str(cm.exception))
+            with self.assertRaisesRegex(FileNotFoundError, "Missing required explicit file"):
+                overlay.run_overlay(core_root, relay_root, self.pinned_head)
 
-    def test_sys_path_and_module_restoration_on_import_error(self):
+    def test_sys_path_and_module_namespace_restored_on_fake_core_import_failure(self):
         with tempfile.TemporaryDirectory() as td:
-            base_dir = Path(td)
-            core_root = base_dir / "core"
-            relay_root = base_dir / "relay"
+            base = Path(td)
+            core_root, relay_root = self._make_required_fake_roots(base)
 
-            for d in [
-                core_root / "src/phase0_core",
-                relay_root / "src/providers",
-                relay_root / "src/relay",
-            ]:
-                d.mkdir(parents=True)
+            (core_root / "src/phase0_core/__init__.py").write_text("", encoding="utf-8")
+            (core_root / "src/phase0_core/fanout.py").write_text(
+                "raise RuntimeError('fake fanout import failure')\n",
+                encoding="utf-8",
+            )
 
-            (core_root / "src/phase0_core/adapter.py").touch()
-            with open(core_root / "src/phase0_core/runner.py", "w") as f:
-                f.write("raise RuntimeError('Failing fake import')\n")
+            original_path = list(sys.path)
+            sentinel = ModuleType("phase0_core.sentinel")
+            previous = sys.modules.get("phase0_core.sentinel")
+            sys.modules["phase0_core.sentinel"] = sentinel
 
-            (relay_root / "src/providers/core_boundary.py").touch()
-            (relay_root / "src/providers/bundle.py").touch()
-            (relay_root / "src/relay/core_adapter.py").touch()
+            try:
+                with self.assertRaisesRegex(RuntimeError, "fake fanout import failure"):
+                    overlay.run_overlay(core_root, relay_root, self.pinned_head)
+                self.assertEqual(sys.path, original_path)
+                self.assertIs(sys.modules.get("phase0_core.sentinel"), sentinel)
+            finally:
+                if previous is None:
+                    sys.modules.pop("phase0_core.sentinel", None)
+                else:
+                    sys.modules["phase0_core.sentinel"] = previous
 
-            original_path = sys.path[:]
+    def test_required_paths_are_deterministic_and_explicit(self):
+        core = Path("/core")
+        relay = Path("/relay")
+        paths = overlay._required_paths(core, relay)
+        self.assertEqual(len(paths), len(set(paths)))
+        self.assertTrue(all(path.is_absolute() for path in paths))
+        self.assertIn(core / "src/phase0_core/runner.py", paths)
+        self.assertIn(relay / "src/providers/core_boundary.py", paths)
 
-            with self.assertRaises(RuntimeError) as cm:
-                run_overlay(core_root, relay_root, self.pinned_head)
-            self.assertIn("Failing fake import", str(cm.exception))
+    def test_valid_raw_response_is_deterministic(self):
+        first = overlay._valid_raw_response()
+        second = overlay._valid_raw_response()
+        self.assertEqual(first, second)
+        self.assertIn('"conclusion_code":"YES"', first)
 
-            self.assertEqual(sys.path, original_path)
-            self.assertFalse(any(m.startswith("phase0_core") for m in sys.modules))
-
-    def test_static_ast_proof(self):
+    def test_static_ast_proof_no_ambient_discovery_or_external_execution(self):
         runner_path = Path(__file__).parent / "core_pr3_overlay_runner.py"
-        with open(runner_path, "r") as f:
-            tree = ast.parse(f.read())
+        tree = ast.parse(runner_path.read_text(encoding="utf-8"))
+
+        forbidden_import_roots = {
+            "os",
+            "subprocess",
+            "socket",
+            "requests",
+            "urllib",
+            "http",
+        }
+        forbidden_calls = {
+            "glob",
+            "rglob",
+            "walk",
+            "system",
+            "popen",
+            "run",
+            "check_call",
+            "check_output",
+        }
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.Attribute):
-                if node.attr == "environ" and getattr(node.value, "id", "") == "os":
-                    self.fail("os.environ found in runner")
             if isinstance(node, ast.Import):
-                for name in node.names:
-                    if name.name in ("subprocess", "socket", "requests", "urllib"):
-                        self.fail(f"Forbidden import found: {name.name}")
-            if isinstance(node, ast.ImportFrom):
-                if node.module in ("subprocess", "socket", "requests", "urllib"):
-                    self.fail(f"Forbidden import from found: {node.module}")
-            if isinstance(node, ast.Call):
-                func = node.func
-                if isinstance(func, ast.Attribute):
-                    if func.attr in ("rglob", "glob") and isinstance(func.value, ast.Name) and func.value.id == "Path":
-                         self.fail(f"Forbidden filesystem search method found: {func.attr}")
+                for alias in node.names:
+                    self.assertNotIn(
+                        alias.name.split(".")[0],
+                        forbidden_import_roots,
+                    )
+            elif isinstance(node, ast.ImportFrom):
+                self.assertNotIn(
+                    (node.module or "").split(".")[0],
+                    forbidden_import_roots,
+                )
+            elif isinstance(node, ast.Attribute):
+                self.assertNotEqual(node.attr, "environ")
+                self.assertNotIn(node.attr, forbidden_calls)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
