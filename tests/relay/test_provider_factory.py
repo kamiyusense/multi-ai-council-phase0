@@ -10,7 +10,57 @@ from providers.policy import CODEX_POLICY, CLAUDE_POLICY, ANTIGRAVITY_POLICY, cl
 from relay.bridge import RelayProviderAdapterBridge
 from relay.dispatcher import RelayDispatcher, DuplicateConflictGuard
 
+
+class CountingBridge(RelayProviderAdapterBridge):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.preflight_count = 0
+
+    def preflight(self, prepared_context):
+        self.preflight_count += 1
+        return super().preflight(prepared_context)
+
 class TestProviderFactory(unittest.TestCase):
+    @staticmethod
+    def valid_raw_response():
+        import json
+        return json.dumps({
+            "schema_version": "phase0-response-v1",
+            "answer_state": "ANSWER",
+            "conclusion_code": "SUCCESS",
+            "safety_warning": "ABSENT",
+            "safety_reason": None,
+            "evidence_refs": [],
+            "marker_echoes": {"head": None, "middle": None, "tail": None},
+            "answer_text": "hello",
+        })
+
+    def assert_static_roundtrip(self, profile, provider_id):
+        bridge = CountingBridge(mock_raw_response=self.valid_raw_response())
+        adapter = create_core_adapter(profile, bridge)
+
+        self.assertEqual(bridge.preflight_count, 0)
+        self.assertEqual(bridge.dispatch_count, 0)
+        self.assertEqual(bridge.collect_count, 0)
+        self.assertEqual(bridge.abort_calls, [])
+
+        dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
+        result = dispatcher.dispatch(
+            provider_id,
+            {
+                "session_id": "s1",
+                "correlation_id": f"corr-{provider_id}",
+                "payload": {},
+            },
+        )
+        self.assertEqual(result["state"], "SIMULATED")
+        self.assertEqual(result["retry_count"], 0)
+        self.assertEqual(result["fallback_state"], "disabled")
+        self.assertFalse(result["live_turn_executed"])
+        self.assertEqual(bridge.dispatch_count, 1)
+        self.assertEqual(bridge.collect_count, 1)
+        self.assertEqual(bridge.preflight_count, 1)
+
     def test_codex_factory_success_and_roundtrip(self):
         profile = build_codex_profile(
             auth_kind="account",
@@ -20,40 +70,9 @@ class TestProviderFactory(unittest.TestCase):
                 "external_cloud_configured": False,
                 "custom_model_provider_configured": False,
                 "arbitrary_codex_config_present": False,
-            }
+            },
         )
-        import json
-        mock_raw_response_json = {
-            "schema_version": "phase0-response-v1",
-            "answer_state": "ANSWER",
-            "conclusion_code": "SUCCESS",
-            "safety_warning": "ABSENT",
-            "safety_reason": None,
-            "evidence_refs": [],
-            "marker_echoes": {"head": None, "middle": None, "tail": None},
-            "answer_text": "hello"
-        }
-        bridge = RelayProviderAdapterBridge(mock_raw_response=json.dumps(mock_raw_response_json))
-        adapter = create_core_adapter(profile, bridge)
-
-        # Preflight PASS
-        prepared = adapter.prepare({"provider_id": "openai", "session_id": "s1", "correlation_id": "c1"})
-        preflight_result = adapter.preflight(prepared)
-        self.assertTrue(preflight_result["ok"])
-        self.assertEqual(preflight_result["static_configuration_status"], "PASS")
-
-        # Prove zero execution during factory construction
-        self.assertEqual(bridge.dispatch_count, 0)
-        self.assertEqual(bridge.collect_count, 0)
-        self.assertEqual(len(bridge.abort_calls), 0)
-
-        # Prove roundtrip
-        dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
-        result = dispatcher.dispatch("openai", {"session_id": "s1", "correlation_id": "c1", "payload": {}})
-        self.assertEqual(result["state"], "SIMULATED")
-        self.assertEqual(result["retry_count"], 0)
-        self.assertEqual(result["fallback_state"], "disabled")
-        self.assertFalse(result["live_turn_executed"])
+        self.assert_static_roundtrip(profile, "openai")
 
     def test_claude_factory_success(self):
         profile = build_claude_profile(
@@ -66,11 +85,7 @@ class TestProviderFactory(unittest.TestCase):
                 "hide_claude_auth": False,
             }
         )
-        bridge = RelayProviderAdapterBridge()
-        adapter = create_core_adapter(profile, bridge)
-        prepared = adapter.prepare({"provider_id": "anthropic", "session_id": "s1", "correlation_id": "c1"})
-        preflight_result = adapter.preflight(prepared)
-        self.assertTrue(preflight_result["ok"])
+        self.assert_static_roundtrip(profile, "anthropic")
 
     def test_antigravity_factory_success(self):
         profile = build_antigravity_profile(
@@ -87,11 +102,7 @@ class TestProviderFactory(unittest.TestCase):
             platform="linux",
             architecture="x86_64",
         )
-        bridge = RelayProviderAdapterBridge()
-        adapter = create_core_adapter(profile, bridge)
-        prepared = adapter.prepare({"provider_id": "google", "session_id": "s1", "correlation_id": "c1"})
-        preflight_result = adapter.preflight(prepared)
-        self.assertTrue(preflight_result["ok"])
+        self.assert_static_roundtrip(profile, "google")
 
     def test_factory_fails_unknown_provider(self):
         profile = ProviderStaticProfile(
