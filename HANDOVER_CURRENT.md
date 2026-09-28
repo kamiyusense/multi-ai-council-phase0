@@ -58,29 +58,42 @@ Credential-free Docker component proof:
 - no credential inputs, OAuth operation, Anthropic/provider model request, or Jules execution were part of the successful proof;
 - retry=0 / fallback=disabled preserved.
 
-Next external diagnostic — PREPARE ONLY:
-- prepared probe PR = **#120** (OPEN, unmerged);
-- initial prepare head = `19063885d4fe90929e2f3bfe4e02fe263bcc10c2`, Actions run `36466637189` = SUCCESS;
-- final prepare head = `047a176b4a75bc6d950bb199c615112e7caa6a9a`, final prepare-only Actions run `36467090700` = SUCCESS;
-- Node guard tests = 8 PASS / 0 FAIL;
-- unarmed run exits 78 before network;
-- the proposed next execution is credential-free TLS only: internal-only probe -> auth proxy -> `platform.claude.com:443` -> certificate-verified TLS handshake -> close, with no HTTP/OAuth data;
-- actual external network execution remains blocked unless `PHASE0_EXTERNAL_AUTH_TLS_PROOF=1`;
-- one-shot execution workflow is prepared but inert without an authorization receipt;
-- guard-only run `36466968733` = SUCCESS / NO-OP with `AUTHORIZATION_ABSENT_NOOP`;
-- that run skipped credential check, Docker build/start, external TLS probe, and cleanup;
-- rerun replay is blocked by `run_attempt=1` and the receipt must be newly added by the exact execution HEAD;
-- no external TLS connection has been performed yet.
+Credential-free external TLS-only proof — TERMINAL PASS:
+- prepared/execution PR = **#120** (OPEN, unmerged);
+- pre-execution prepare-only validation head `047a176b4a75bc6d950bb199c615112e7caa6a9a`, Actions `36467090700` SUCCESS;
+- user explicitly authorized exactly one credential-free external TLS-only proof;
+- authorization receipt / exact execution head = `fc79e70e1ca8740998f0d889e2647de52a9b3214`;
+- terminal Actions run `36476675389` = **SUCCESS**, `run_attempt=1`;
+- receipt validation PASS;
+- credential-free environment PASS;
+- auth proxy build/start PASS;
+- external TLS-only probe PASS;
+- cleanup PASS;
+- CONNECT authority = `platform.claude.com:443`;
+- TLS SNI = `platform.claude.com`;
+- certificate verification = true;
+- negotiated TLS = `TLSv1.3`;
+- ALPN = `http/1.1`;
+- peer certificate CN = `platform.claude.com`;
+- application data sent after TLS establishment = false;
+- credential inputs present = false;
+- OAuth operation performed = false;
+- Claude process started = false;
+- Anthropic HTTP request sent = false;
+- retry = 0 / fallback = disabled;
+- terminal evidence stored in Issue #110 comment `5877560217` and PR #120 comment `5877560823`;
+- this authorization must not be replayed.
 
 Current approval boundary:
-- Issue #110 STATIC work is exhausted, merged, and its credential-free Docker component proof is PASS;
-- **next explicit approval, if granted, should cover only the credential-free external TLS-only path proof prepared in PR #120**;
-- **do not run REAL OAuth login/refresh, Claude, Anthropic HTTP/model request, or Jules LIVE work under that TLS-only approval**;
-- exact Claude Code 2.1.283 subscription-refresh behavior remains UNKNOWN;
-- historical `api.anthropic.com/api/oauth/profile` dependency remains UNKNOWN;
+- Issue #110 STATIC remediation = merged;
+- credential-free Docker component proof = PASS;
+- credential-free real external TLS path proof to `platform.claude.com:443` = PASS;
+- **do not run credentialed OAuth login/refresh, Claude, Anthropic HTTP/model request, or Jules LIVE work without a new explicit authorization**;
+- exact Claude Code 2.1.283 real subscription-refresh/token-rotation/persistence behavior remains UNKNOWN;
+- whether pinned Claude Code 2.1.283 still needs historical `api.anthropic.com/api/oauth/profile` remains UNKNOWN;
 - encrypted OAuth URL path / HTTP Host remains unenforceable without TLS termination;
-- Issue #102 HTTP 401 root cause remains UNKNOWN;
-- Merge of any new PR remains explicit-approval gated.
+- Issue #102 upstream HTTP 401 root cause remains UNKNOWN;
+- Merge of PR #117 / #119 / #120 or any other new PR remains explicit-approval gated.
 
 Work-routing rule:
 - do not automatically hand off to Work;
