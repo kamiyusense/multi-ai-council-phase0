@@ -98,6 +98,8 @@ STATUS_CODE=$?
 STATUS_SECONDS=$SECONDS
 set -e
 
+sudo chmod 0644 "$CASE/.credentials.json" 2>/dev/null || true
+
 export STATUS_CODE STATUS_SECONDS STATUS_OUTPUT CASE EVIDENCE
 python - <<'PY'
 import json, os
