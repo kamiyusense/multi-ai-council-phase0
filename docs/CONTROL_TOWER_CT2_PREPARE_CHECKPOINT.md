@@ -153,3 +153,36 @@ This batch intentionally stops before those live effects.
   to be read back after this documentation-only evidence commit.
 - Issue #33 live mutation:
   **NONE required; fresh readback must remain the deployed pre-migration Status.**
+
+## Verified per-loop input bridge
+
+Added `automation/command_bus/control_tower_verified_input.py`.
+
+This bridge accepts only the existing `TransitionProjectionResult` from the
+durable transition path.
+
+Rules:
+
+- VALID / TERMINAL / BLOCKED results may be forwarded when projection and owner
+  decision are present;
+- UNKNOWN returns no Control Tower lane input and is therefore isolated as
+  UNKNOWN by the CT-1 aggregator;
+- generation comes only from the existing `OwnerDecision`, not from caller
+  presentation metadata;
+- target_ref remains a bounded safe presentation ref such as `pr:4`;
+- durable event kind is optional and is never inferred by the bridge;
+- no private/external URL is accepted as target_ref.
+
+The bridge does not inspect state/receipt/evidence/provider/target/authority
+records itself and therefore does not duplicate durable correctness logic.
+
+Additional tests cover:
+
+- VALID transition forwarding;
+- existing BLOCKED projection preservation;
+- UNKNOWN not promoted to a healthy lane;
+- accepted result requiring projection + owner decision;
+- generation sourced from owner decision;
+- private/unbounded target-ref rejection;
+- durable-event-kind boundedness and non-inference;
+- input immutability.
