@@ -16,6 +16,7 @@ ROOT = "automation/command_bus/"
 STATIC_PREFIXES = (
     ROOT + "tests/",
     ROOT + "schema/",
+    ROOT + "config/",
 )
 LEDGER_PREFIXES = (
     ROOT + "commands/",
