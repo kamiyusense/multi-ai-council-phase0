@@ -7,14 +7,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import PurePosixPath
 from typing import Any
 
-PROFILE = "JULES_CHAT_SEMIAUTO_V1"
+PROFILE_V1 = "JULES_CHAT_SEMIAUTO_V1"
+PROFILE_V2 = "JULES_CHAT_SEMIAUTO_V2"
+PROFILE = PROFILE_V1
 TARGET_REPO = "kamiyusense/multi-ai-council-phase0"
 MAX_PROMPT_CHARS = 12000
 MAX_LIFETIME = timedelta(hours=2)
 COMMAND_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 BRANCH_RE = re.compile(r"^[A-Za-z0-9._/-]+$")
-REQUIRED_KEYS = {
+REQUIRED_KEYS_V1 = {
     "schema_version",
     "profile",
     "command_id",
@@ -30,6 +32,12 @@ REQUIRED_KEYS = {
     "fallback",
     "merge_allowed",
     "force_push_allowed",
+}
+REQUIRED_KEYS_V2 = REQUIRED_KEYS_V1 | {
+    "origin_loop_id",
+    "origin_round",
+    "origin_correlation_id",
+    "origin_generation",
 }
 
 
@@ -71,13 +79,20 @@ def _validate_path(value: Any) -> str:
 def validate_request(request: dict[str, Any], *, now: datetime | None = None) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise ValueError("request must be an object")
-    keys = set(request)
-    if keys != REQUIRED_KEYS:
-        missing = sorted(REQUIRED_KEYS - keys)
-        extra = sorted(keys - REQUIRED_KEYS)
-        raise ValueError(f"request keys mismatch missing={missing} extra={extra}")
-    if request["schema_version"] != 1 or request["profile"] != PROFILE:
+    profile = request.get("profile")
+    if profile == PROFILE_V1:
+        required = REQUIRED_KEYS_V1
+    elif profile == PROFILE_V2:
+        required = REQUIRED_KEYS_V2
+    else:
         raise ValueError("unsupported request profile")
+    keys = set(request)
+    if keys != required:
+        missing = sorted(required - keys)
+        extra = sorted(keys - required)
+        raise ValueError(f"request keys mismatch missing={missing} extra={extra}")
+    if request["schema_version"] != 1:
+        raise ValueError("unsupported request schema")
     command_id = request["command_id"]
     if not isinstance(command_id, str) or not COMMAND_ID_RE.fullmatch(command_id):
         raise ValueError("invalid command_id")
@@ -104,6 +119,23 @@ def validate_request(request: dict[str, Any], *, now: datetime | None = None) ->
     check_now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     if check_now >= expires:
         raise ValueError("request expired")
+    if profile == PROFILE_V2:
+        if not isinstance(request["origin_loop_id"], str) or not request["origin_loop_id"]:
+            raise ValueError("invalid origin_loop_id")
+        if (
+            not isinstance(request["origin_round"], int)
+            or isinstance(request["origin_round"], bool)
+            or not 1 <= request["origin_round"] <= 6
+        ):
+            raise ValueError("invalid origin_round")
+        if not isinstance(request["origin_correlation_id"], str) or not request["origin_correlation_id"]:
+            raise ValueError("invalid origin_correlation_id")
+        if (
+            not isinstance(request["origin_generation"], int)
+            or isinstance(request["origin_generation"], bool)
+            or request["origin_generation"] < 1
+        ):
+            raise ValueError("invalid origin_generation")
     if request["retry"] != 0 or request["fallback"] != "disabled":
         raise ValueError("retry/fallback policy mismatch")
     if request["merge_allowed"] is not False or request["force_push_allowed"] is not False:
@@ -114,9 +146,18 @@ def validate_request(request: dict[str, Any], *, now: datetime | None = None) ->
 def build_jules_prompt(request: dict[str, Any], *, now: datetime | None = None) -> str:
     validate_request(request, now=now)
     allowed = "\n".join(f"- {path}" for path in request["allowed_paths"])
+    origin = ""
+    if request["profile"] == PROFILE_V2:
+        origin = (
+            f"Origin loop: {request['origin_loop_id']}\n"
+            f"Origin round: {request['origin_round']}\n"
+            f"Origin correlation: {request['origin_correlation_id']}\n"
+            f"Origin generation: {request['origin_generation']}\n"
+        )
     return f"""Multi-AI Council Phase 0 — bounded Chat->Jules API task.
 
 Command ID: {request['command_id']}
+{origin}Target repository: {request['target_repo']}
 Target repository: {request['target_repo']}
 Exact starting branch: {request['target_branch']}
 Expected starting HEAD: {request['expected_target_head']}
@@ -148,6 +189,12 @@ def _write_github_output(path: str, request: dict[str, Any]) -> None:
         raise ValueError("prompt contains reserved output marker")
     with open(path, "a", encoding="utf-8") as stream:
         stream.write(f"command_id={request['command_id']}\n")
+        stream.write(f"profile={request['profile']}\n")
+        if request["profile"] == PROFILE_V2:
+            stream.write(f"origin_loop_id={request['origin_loop_id']}\n")
+            stream.write(f"origin_round={request['origin_round']}\n")
+            stream.write(f"origin_correlation_id={request['origin_correlation_id']}\n")
+            stream.write(f"origin_generation={request['origin_generation']}\n")
         stream.write(f"target_branch={request['target_branch']}\n")
         stream.write(f"expected_target_head={request['expected_target_head']}\n")
         stream.write(f"expected_target_tree={request['expected_target_tree']}\n")
