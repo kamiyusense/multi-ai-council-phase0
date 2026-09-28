@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 12128)
-Total output lines: 863
-
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, redirect_stderr, redirect_stdout
 from copy import deepcopy
@@ -478,7 +475,18 @@ class AdmissionGateTests(unittest.TestCase):
         bad["services"]["claude"]["environment"]["NO_PROXY"] = "*"
         cases.append(bad)
         bad = deepcopy(manifest)
-        bad["services"]["auth-control-proxy"…128 tokens truncated…epcopy(manifest)
+        bad["services"]["auth-control-proxy"]["environment"] = {"HTTPS_PROXY": "http://other:3128"}
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["environment"]["PHASE0_GATE_EXPECTED_STORE_ID"] = "self-generated"
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["volumes"] = ["gate-state:/other/path"]
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["gate"]["entrypoint"] = ["/bin/false"]
+        cases.append(bad)
+        bad = deepcopy(manifest)
         bad["services"]["claude"]["profiles"] = []
         cases.append(bad)
         bad = deepcopy(manifest)

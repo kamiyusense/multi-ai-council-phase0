@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 15522)
-Total output lines: 968
-
 """Host-owned, one-generation admission gate for a Claude Code dispatch.
 
 This module is a static transport implementation; it never launches Claude,
@@ -426,7 +423,260 @@ def make_server(*, store: DispatchStore, upstream_url: str, bind_host: str = "12
     """Create a production-pinned gate or an explicitly injected loopback test gate."""
     if container_mode:
         topology = validate_container_topology(load_container_manifest())
-  …3522 tokens truncated…xy", "no_proxy"})
+        if topology["status"] != "PASS" or bind_host != CONTAINER_GATE_BIND_IP:
+            raise ValueError("container mode requires validated internal-only bind configuration")
+        if test_only_upstream_factory is not None or not store.production:
+            raise ValueError("container mode requires production store and upstream policy")
+    else:
+        try:
+            if not ipaddress.ip_address(bind_host).is_loopback:
+                raise ValueError("gate must bind to a literal loopback address")
+        except ValueError as exc:
+            raise ValueError("gate must bind to a literal loopback address") from exc
+    try:
+        upstream = urlsplit(upstream_url)
+        port = upstream.port
+    except ValueError as exc:
+        raise ValueError("malformed upstream URL") from exc
+    if test_only_upstream_factory is not None:
+        try:
+            loopback_upstream = ipaddress.ip_address(upstream.hostname or "").is_loopback
+        except ValueError:
+            loopback_upstream = False
+        if (container_mode or upstream.scheme != "http" or not loopback_upstream or port is None
+                or upstream.username or upstream.password or upstream.path not in {"", "/"}
+                or upstream.query or upstream.fragment):
+            raise ValueError("test-only upstream must be explicit plain-HTTP loopback")
+        conn_factory = test_only_upstream_factory
+    else:
+        if (upstream.scheme != "https" or upstream.hostname != PRODUCTION_UPSTREAM_HOST
+                or port not in {None, 443} or upstream.username or upstream.password
+                or upstream.path not in {"", "/"} or upstream.query or upstream.fragment):
+            raise ValueError("production upstream must be exactly https://api.anthropic.com:443")
+        if not store.production:
+            raise ValueError("production upstream requires an identity-checked production store")
+        conn_factory = HTTPSConnection
+    prefix = upstream.path.rstrip("/")
+
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.0"
+        server_version = "Phase0AdmissionGate/1"
+
+        def log_message(self, fmt, *args):
+            # Never let standard access logs expose header/body values.
+            return
+
+        def do_HEAD(self):
+            if urlsplit(self.path).path == "/api/hello":
+                self.send_response(204)
+                self.send_header("Connection", "close")
+                self.end_headers()
+            else:
+                self._deny(404, "UNKNOWN_ENDPOINT")
+
+        def do_POST(self):
+            path = urlsplit(self.path).path
+            if path == "/v1/messages/count_tokens":
+                self._deny(403, "AUXILIARY_ENDPOINT_DENIED_LOCALLY")
+                return
+            if path != "/v1/messages":
+                self._deny(404, "UNKNOWN_ENDPOINT")
+                return
+            raw_len = self.headers.get("Content-Length")
+            if raw_len is None or not raw_len.isdigit() or int(raw_len) > MAX_REQUEST_BYTES:
+                self._deny(413, "INVALID_OR_OVERSIZE_BODY")
+                return
+            body = self.rfile.read(int(raw_len))
+            if len(body) != int(raw_len):
+                self._deny(400, "INCOMPLETE_BODY")
+                return
+            admission = store.claim(self.headers.get(DISPATCH_HEADER), body, self.headers)
+            if admission.decision != "ADMITTED":
+                store.record_denial(admission.dispatch_id, body, self.headers, admission.reason)
+                self._deny(429, admission.reason, retry_suppression=True)
+                return
+            target = prefix + "/v1/messages" + (("?" + urlsplit(self.path).query) if urlsplit(self.path).query else "")
+            connection = None
+            response_started = False
+            try:
+                connection = conn_factory(upstream.hostname, upstream.port,
+                                          timeout=connect_timeout)
+                forward_headers = _forward_headers(self.headers)
+                connection.request("POST", target, body=body, headers=forward_headers)
+                response = connection.getresponse()
+                store.record_upstream_status(admission.dispatch_id, response.status)
+                self.send_response(response.status)
+                for key, value in response.getheaders():
+                    if key.lower() not in _HOP_HEADERS | {"content-length", "connection", "server", "date"}:
+                        self.send_header(key, value)
+                self.send_header("Connection", "close")
+                self.end_headers()
+                response_started = True
+                while True:
+                    chunk = response.read1(CHUNK_BYTES)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+            except (OSError, HTTPException, TimeoutError) as exc:
+                # Slot remains consumed; never retry or select a fallback.
+                try:
+                    if not response_started and not self.wfile.closed:
+                        self._deny(502, "UPSTREAM_TRANSPORT_ERROR")
+                except (OSError, ConnectionError):
+                    pass
+            finally:
+                if connection is not None:
+                    connection.close()
+
+        def _deny(self, status: int, reason: str, retry_suppression: bool = False):
+            payload = json.dumps({"type": "error", "error": {"type": "phase0_gate_error",
+                                                                   "message": reason}},
+                                 separators=(",", ":")).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Connection", "close")
+            if retry_suppression:
+                self.send_header("x-should-retry", "false")
+                self.send_header("retry-after", "61")
+            self.end_headers()
+            self.wfile.write(payload)
+
+    return ThreadingHTTPServer((bind_host, 8080 if container_mode else 0), Handler)
+
+
+def _is_local_gate_url(value: str) -> bool:
+    try:
+        parsed = urlsplit(value)
+        ip = ipaddress.ip_address(parsed.hostname or "")
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+    return (parsed.scheme == "http" and ip.is_loopback and port is not None and port > 0
+            and parsed.username is None and parsed.password is None
+            and parsed.path in {"", "/"} and not parsed.query and not parsed.fragment)
+
+
+def _is_container_gate_url(value: str) -> bool:
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+    return (parsed.scheme == "http" and parsed.hostname == CONTAINER_GATE_SERVICE
+            and port == CONTAINER_GATE_PORT and parsed.username is None and parsed.password is None
+            and parsed.path in {"", "/"} and not parsed.query and not parsed.fragment)
+
+
+def validate_production_store_path(path: str, *, state_dir: str) -> dict:
+    """Check a fixed existing host store; do not silently create/reset production state."""
+    if os.name == "nt":
+        raise ValueError("production ACL verification is UNKNOWN on Windows")
+    try:
+        root = Path(state_dir).resolve(strict=True)
+        candidate = Path(path)
+        if not candidate.is_absolute() or candidate.is_symlink():
+            raise ValueError("production DB path must be absolute and not a symlink")
+        resolved = candidate.resolve(strict=True)
+    except OSError as exc:
+        raise ValueError("production state path must already exist") from exc
+    if resolved.parent != root or resolved.name != "dispatches.sqlite3":
+        raise ValueError("production DB must be dispatches.sqlite3 directly under state_dir")
+    file_stat, dir_stat = resolved.stat(), root.stat()
+    if (not stat.S_ISREG(file_stat.st_mode) or file_stat.st_uid != os.getuid()
+            or dir_stat.st_uid != os.getuid()):
+        raise ValueError("production state must be regular and owned by the current host user")
+    if stat.S_IMODE(file_stat.st_mode) & 0o077 or stat.S_IMODE(dir_stat.st_mode) & 0o077:
+        raise ValueError("production DB and state directory must deny group/other access")
+    return {"status": "PASS", "path": str(resolved), "permissions_checked": True}
+
+
+def load_container_manifest() -> dict:
+    return json.loads(COMPOSE_MANIFEST.read_text(encoding="utf-8"))
+
+
+def validate_container_topology(manifest: dict) -> dict:
+    """Fail-closed static Compose topology and isolated auth-volume contract."""
+    try:
+        services, networks = manifest["services"], manifest["networks"]
+        claude, gate = services["claude"], services["gate"]
+        auth_proxy = services["auth-control-proxy"]
+        gate_bootstrap = services["gate-bootstrap"]
+        auth = services["auth-bootstrap"]
+        internal, egress = networks["internal"], networks["egress"]
+        internal_subnet = internal["ipam"]["config"][0]["subnet"]
+        gate_bind = gate["environment"]["PHASE0_GATE_BIND"]
+        gate_port = gate["environment"]["PHASE0_GATE_PORT"]
+        expected_store_id = gate["environment"]["PHASE0_GATE_EXPECTED_STORE_ID"]
+        state_dir = gate["environment"]["PHASE0_GATE_STATE_DIR"]
+        upstream_url = gate["environment"]["PHASE0_GATE_UPSTREAM_URL"]
+        claude_gateway = claude["environment"]["ANTHROPIC_BASE_URL"]
+        gate_ip = gate["networks"]["internal"]["ipv4_address"]
+        internal_network = ipaddress.ip_network(internal_subnet, strict=True)
+        gate_ip_obj = ipaddress.ip_address(gate_ip)
+    except (KeyError, TypeError, IndexError, ValueError):
+        return {"status": "BLOCKED", "reason": "missing or malformed topology fields"}
+    claude_networks = set(claude.get("networks", []))
+    auth_proxy_networks = set(auth_proxy.get("networks", {}))
+    auth_networks = set(auth.get("networks", []))
+    gate_networks = set(gate.get("networks", {}))
+    claude_env = claude.get("environment", {})
+    auth_env = auth.get("environment", {})
+    auth_proxy_env = auth_proxy.get("environment", {})
+    gate_bootstrap_env = gate_bootstrap.get("environment", {})
+    forbidden_env_names = {
+        "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
+        "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "ANTHROPIC_AWS_API_KEY",
+        "ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_AUTH_TOKEN",
+        "ANTHROPIC_CUSTOM_HEADERS", "AWS_BEARER_TOKEN_BEDROCK",
+        "HTTP_PROXY", "ALL_PROXY", "NO_PROXY",
+    }
+    env_maps = [service.get("environment", {}) for service in services.values()]
+    env_keys = {str(key).upper() for env in env_maps if isinstance(env, dict) for key in env}
+    runtime_contract = manifest.get("x-phase0-runtime-contract", {})
+    auth_volume = "claude-auth:/home/node/.claude"
+    runtime_vars = {
+        "CLAUDE_CODE_MAX_RETRIES": "0",
+        "CLAUDE_CODE_MAX_TURNS": "1",
+        "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+        "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1",
+        "CLAUDE_CODE_RESUME_INTERRUPTED_TURN": "0",
+        "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+        "CLAUDE_CODE_DISABLE_AGENT_VIEW": "1",
+        "CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS": "1",
+        "CLAUDE_CODE_DISABLE_FAST_MODE": "1",
+        "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+        "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK": "1",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_UPDATES": "1",
+    }
+    checks = {
+        "exact_services": set(services) == {"claude", "auth-control-proxy", "gate", "auth-bootstrap", "gate-bootstrap"},
+        "claude_internal_only": claude_networks == {"internal"},
+        "auth_proxy_internal_and_egress_only": auth_proxy_networks == {"internal", "egress"},
+        "auth_bootstrap_egress_only": auth_networks == {"egress"},
+        "gate_internal_and_egress": gate_networks == {"internal", "egress"},
+        "internal_true": internal.get("internal") is True,
+        "internal_bridge": internal.get("driver") == "bridge",
+        "egress_is_external_bridge": egress.get("driver") == "bridge" and egress.get("internal") is not True,
+        "claude_no_ports": not claude.get("ports"),
+        "auth_bootstrap_no_ports": not auth.get("ports"),
+        "auth_proxy_no_published_ports": not auth_proxy.get("ports"),
+        "gate_no_published_ports": not gate.get("ports"),
+        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth, auth_proxy)),
+        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, auth_proxy, gate_bootstrap)),
+        "runtime_seccomp_profile_exact": claude.get("security_opt") == [f"seccomp={RUNTIME_SECCOMP_RELATIVE_PATH}"],
+        "seccomp_only_on_runtime": all("security_opt" not in service for service in (gate, auth, gate_bootstrap)),
+        "no_added_capabilities": all("cap_add" not in service for service in services.values()),
+        "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
+        "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
+        "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
+        "claude_gateway_exact": claude_gateway == "http://gate:8080",
+        "model_traffic_remains_on_gate": claude_gateway == "http://gate:8080" and upstream_url == "https://api.anthropic.com",
+        "runtime_has_only_fixed_https_proxy": claude_env.get("HTTPS_PROXY") == "http://auth-control-proxy:3128" and not (set(claude_env) & {"HTTP_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"}),
+        "other_services_have_no_proxy_environment": all(
+            not (set(service.get("environment", {})) & {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"})
             for service_name, service in services.items() if service_name != "claude"
         ),
         "auth_proxy_service_is_exact_nonroot_internal_egress": auth_proxy.get("image") == "phase0-claude-auth-control-proxy:1" and auth_proxy.get("build") == {"context": ".", "dockerfile": "docker/auth-control-plane/Dockerfile"} and auth_proxy.get("profiles") == ["human-approval-required"] and auth_proxy.get("entrypoint") == ["node", "/opt/phase0/auth_control_plane_proxy.mjs"] and auth_proxy.get("user") == "1000:1000" and auth_proxy.get("ports") == [] and auth_proxy_networks == {"internal", "egress"} and auth_proxy.get("cap_drop") == ["ALL"] and auth_proxy.get("security_opt") == ["no-new-privileges:true"],
