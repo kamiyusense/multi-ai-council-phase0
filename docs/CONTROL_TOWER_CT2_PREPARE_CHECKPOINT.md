@@ -186,3 +186,45 @@ Additional tests cover:
 - private/unbounded target-ref rejection;
 - durable-event-kind boundedness and non-inference;
 - input immutability.
+
+## Retry-zero publisher boundary
+
+Added `automation/command_bus/control_tower_issue_publisher.py`.
+
+This is transport-neutral only. No production GitHub transport is implemented.
+
+Behavior:
+
+- exact Issue plan is read back before write;
+- conflicting Issue snapshot stops before PATCH;
+- at most one Issue PATCH attempt per exact plan in one publisher instance;
+- ambiguous PATCH is resolved by exact Issue readback only;
+- if the exact title/body appeared, the write is RECOVERED without resend;
+- if exact readback is unavailable/mismatched, result is UNKNOWN and no retry is performed;
+- each planned notification marker is checked before POST;
+- at most one POST attempt per marker;
+- ambiguous POST is resolved by marker readback only;
+- exactly one marker proves the comment write;
+- zero or duplicate marker readback is UNKNOWN;
+- already-existing marker is replay NO-OP.
+
+The in-memory replay sets are defense-in-depth for the static adapter and are
+not claimed as durable production exactly-once state. Production correctness
+continues to depend on fresh GitHub readback and durable loop_id + event_id
+markers.
+
+Mock tests cover:
+
+- normal Issue PATCH + notification verification;
+- ambiguous PATCH recovered by readback;
+- ambiguous PATCH without applied readback -> UNKNOWN;
+- pre-write conflict -> no write;
+- already-matching Issue -> PATCH NO-OP;
+- existing notification marker -> POST NO-OP;
+- ambiguous comment recovered by marker readback;
+- unresolved ambiguous comment -> UNKNOWN without resend;
+- exact-plan replay guard;
+- duplicate marker readback rejection;
+- malformed comment readback rejection.
+
+No live Issue write is executed by these tests.
