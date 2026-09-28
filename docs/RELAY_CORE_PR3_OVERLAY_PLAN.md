@@ -29,7 +29,7 @@ matrix using the real pinned Core runner to prove timeout, generic collect error
 invalid provider output remain isolated to the failing provider while healthy peer
 evidence survives unchanged.
 
-The negative matrix runner and workflow are PREPARED only and the real matrix run remains NOT_RUN/UNKNOWN until a later append-only request is added after this candidate is independently accepted.
+The negative-path matrix is now **PASS**. GitHub Actions run `36383797774` executed the accepted Relay code SHA `565ba16ed59d5ff979552e7c6524559caa4cf423` against pinned Core PR #3 head `494b7296f32dce1c173a7699e4bd2d87f70d31a9` from append-only trigger commit `f8ad5adda400d7f0fafa91aa363dce03442b107a`. Timeout, generic collect error, and invalid-output scenarios each isolated the failing provider while both healthy peers retained exact RAW evidence. retry_count=0, fallback_state=disabled, live_turn_executed=false.
 
 ## Live execution boundary
 
