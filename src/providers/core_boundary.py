@@ -1,5 +1,3 @@
-from typing import Any
-
 from src.relay.core_adapter import RelayCoreAdapter
 from .bundle import ProviderAdapterBundle, _PROVIDER_ORDER
 
