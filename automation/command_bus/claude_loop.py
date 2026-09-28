@@ -16,7 +16,7 @@ import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
-from .jules_api_request import PROFILE as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
+from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,
@@ -290,7 +290,7 @@ def prepare_jules_closed_loop_command(
 
 def prepare_jules_semiauto_request(
     prepared_request: dict[str, Any], *, target_branch: str, default_branch: str,
-    created_at: str, command_id: str | None = None,
+    created_at: str, generation: int, command_id: str | None = None,
 ) -> LoopResult:
     """Convert one JULES_BACKEND preparation to the current live semi-auto request.
 
@@ -311,6 +311,8 @@ def prepare_jules_semiauto_request(
         command = internal.request
         if not isinstance(created_at, str) or not created_at:
             return LoopResult("BLOCKED", "semi-auto created_at is required")
+        if not isinstance(generation, int) or isinstance(generation, bool) or generation < 1:
+            return LoopResult("BLOCKED", "semi-auto generation must be a positive integer")
         try:
             created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
         except ValueError as exc:
@@ -335,6 +337,10 @@ def prepare_jules_semiauto_request(
             "schema_version": 1,
             "profile": JULES_SEMIAUTO_PROFILE,
             "command_id": command["command_id"],
+            "origin_loop_id": prepared_request["loop_id"],
+            "origin_round": prepared_request["round"],
+            "origin_correlation_id": prepared_request["correlation_id"],
+            "origin_generation": generation,
             "target_repo": command["expected_repo"],
             "target_branch": command["starting_branch"],
             "expected_target_head": command["expected_target_head"],
