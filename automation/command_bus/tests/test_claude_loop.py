@@ -240,11 +240,16 @@ class ClaudeLoopTests(unittest.TestCase):
             target_branch="feature/bounded-target",
             default_branch="main",
             created_at=NOW.isoformat(),
+            generation=1,
             command_id="claude-jules-a-live-001",
         )
         self.assertEqual(result.status, "PREPARED")
         request = result.request
-        self.assertEqual(request["profile"], "JULES_CHAT_SEMIAUTO_V1")
+        self.assertEqual(request["profile"], "JULES_CHAT_SEMIAUTO_V2")
+        self.assertEqual(request["origin_loop_id"], "claude-night-001")
+        self.assertEqual(request["origin_round"], 1)
+        self.assertEqual(request["origin_correlation_id"], "claude-night-001-r1")
+        self.assertEqual(request["origin_generation"], 1)
         self.assertEqual(request["target_repo"], "kamiyusense/multi-ai-council-phase0")
         self.assertEqual(request["target_branch"], "feature/bounded-target")
         self.assertEqual(request["expected_target_head"], "a" * 40)
@@ -269,6 +274,7 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
+            generation=1,
             ).status,
             "UNKNOWN",
         )
@@ -284,6 +290,7 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
+            generation=1,
             ).status,
             "UNKNOWN",
         )
@@ -299,6 +306,7 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="main",
                 default_branch="main",
                 created_at=NOW.isoformat(),
+            generation=1,
             ).status,
             "BLOCKED",
         )
@@ -315,6 +323,7 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
+            generation=1,
             ).status,
             "UNKNOWN",
         )
@@ -331,6 +340,24 @@ class ClaudeLoopTests(unittest.TestCase):
                 target_branch="feature/x",
                 default_branch="main",
                 created_at=NOW.isoformat(),
+            generation=1,
+            ).status,
+            "BLOCKED",
+        )
+
+    def test_semiauto_bridge_rejects_invalid_generation(self):
+        prepared = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        self.assertEqual(
+            prepare_jules_semiauto_request(
+                prepared.request,
+                target_branch="feature/x",
+                default_branch="main",
+                created_at=NOW.isoformat(),
+                generation=0,
             ).status,
             "BLOCKED",
         )
