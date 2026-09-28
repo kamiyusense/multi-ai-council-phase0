@@ -11,6 +11,11 @@ on:
       - automation/command_bus/loop_status_transition.py
       - automation/command_bus/loop_status_transition_cli.py
       - automation/command_bus/loop_status_evidence.py
+      - automation/command_bus/runtime_transition_coordinator.py
+      - automation/command_bus/runtime_transition_evidence.py
+      - automation/command_bus/runtime_transition_jules.py
+      - automation/command_bus/runtime_transition_writers.py
+      - automation/command_bus/schema/runtime_transition_evidence.schema.json
       - automation/command_bus/schema/loop_owner_event.schema.json
       - automation/command_bus/schema/loop_owner_observation.schema.json
       - automation/command_bus/tests/test_loop_status_issue.py
@@ -21,6 +26,10 @@ on:
       - automation/command_bus/tests/test_loop_status_transition.py
       - automation/command_bus/tests/test_loop_status_transition_cli.py
       - automation/command_bus/tests/test_loop_status_evidence.py
+      - automation/command_bus/tests/test_runtime_transition_publisher.py
+      - automation/command_bus/tests/test_runtime_transition_fail_closed.py
+      - automation/command_bus/tests/test_runtime_transition_close.py
+      - automation/command_bus/tests/test_runtime_transition_jules.py
       - automation/command_bus/tests/test_validation_scope.py
       - .github/workflows/loop-status-signal.yml
       - .github/workflows/loop-status-development.yml
@@ -43,7 +52,7 @@ jobs:
 
       - name: Run focused status and validation-scope tests
         shell: bash
-        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_validation_scope -v
+        run: python -m unittest automation.command_bus.tests.test_loop_status_issue automation.command_bus.tests.test_loop_status_development automation.command_bus.tests.test_loop_owner automation.command_bus.tests.test_loop_owner_backend automation.command_bus.tests.test_loop_owner_observation automation.command_bus.tests.test_loop_status_transition automation.command_bus.tests.test_loop_status_transition_cli automation.command_bus.tests.test_loop_status_evidence automation.command_bus.tests.test_runtime_transition_publisher automation.command_bus.tests.test_runtime_transition_fail_closed automation.command_bus.tests.test_runtime_transition_close automation.command_bus.tests.test_runtime_transition_jules automation.command_bus.tests.test_validation_scope -v
 
       - name: Run full command-bus suite with exact known-fixture allowance
         shell: bash
@@ -64,6 +73,17 @@ jobs:
               raise SystemExit(f"more than the single known fixture failed: {sorted(failed)}")
           print(f"command_bus testsRun={result.testsRun} failed={sorted(failed)}")
           PY
+      - name: Parse command-bus JSON schemas
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in sorted(Path("automation/command_bus/schema").glob("*.json")):
+              json.loads(path.read_text(encoding="utf-8"))
+              print(f"schema-ok {path}")
+          PY
+
       - name: Compile command-bus Python
         shell: bash
         run: python -m compileall -q automation/command_bus
