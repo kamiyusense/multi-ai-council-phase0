@@ -75,6 +75,10 @@ But source-of-work checkpoints should normally use Git commit SHA.
 長時間のChat / Work連携では `docs/CHAT_WORK_AUTONOMY_RULES.md` も適用する。
 
 要点:
+- **Chat-first**: Chat + GitHubで実行可能な作業はChatで継続する
+- Workは、ユーザー明示指定・既存Work継続・またはChatでは不可能な作業に限る
+- Chatでは不可能でWorkが必要な場合は、理由を書き、**「🔵Workに貼り付けてください」** と明記し、完全なWork指示文をコードブロックで渡す
+- このChat-first / Work fallback ruleはhandoverでも必ず継承する
 - safe-work exhaustion
 - blocker isolation
 - evidence-first

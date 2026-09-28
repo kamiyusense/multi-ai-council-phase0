@@ -1,8 +1,62 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-25
+Updated: 2026-09-28
 
-## 0. 2026-09-25 current override — Jules API route adopted
+## 0. 2026-09-28 current override — Chat-first / Work fallback
+
+This rule is durable project policy and must be carried into every new Chat handover.
+
+- Continue in the current Chat whenever Chat + GitHub can perform the work safely.
+- Do not move work to Work merely because the task is long or implementation-heavy.
+- Use Work only when:
+  - the user explicitly requests Work;
+  - an already-running Work is being continued; or
+  - the remaining task is genuinely impossible from Chat and Work is required.
+- When Chat cannot do the remaining task and Work is required:
+  1. explain the concrete reason Work is necessary;
+  2. write **「🔵Workに貼り付けてください」**;
+  3. provide the complete Work instruction inside a code block;
+  4. require no manual summarization or rewriting by the user.
+- This rule does not weaken system approval, Merge, billing, permission, live-model, or other safety boundaries.
+
+Canonical detail:
+`docs/CHAT_WORK_AUTONOMY_RULES.md`
+
+## 0.1 2026-09-28 current override — Control Tower v2
+
+The current Signal/Status presentation direction is **Multi-loop Control Tower**.
+
+Before further Signal presentation work, fresh-read:
+
+- PR #72: `docs(status): add Control Tower v2 and Windows companion roadmap`
+- `docs/PHASE0_CONTROL_TOWER_V2_ROADMAP.md`
+- `docs/SIGNAL_DEVELOPER_CONTROL_TOWER_V2_CHANGE_REQUEST.md`
+
+If PR #72 is still open and those files are not on `main`, read them from the
+fresh PR #72 head. GitHub current state overrides remembered PR numbers/SHA.
+
+Immediate implementation priority is **CT-1 static foundation** only:
+
+- bounded presentation registry/schema;
+- `config/` explicitly STATIC in validation scope;
+- pure multi-loop aggregation/renderer;
+- aggregate count title;
+- HUMAN NEEDED summary;
+- human table + machine-readable snapshot from the same in-memory projection;
+- fixtures/unit/regression tests and exact-head CI evidence.
+
+Control Tower presentation metadata (`mode`, `controller_kind`, `worker_kind`,
+`display_name`) is not durable owner/liveness truth. Existing state/owner
+chain/receipt/evidence/provider observation/fresh target/authority/fencing remain
+the correctness source.
+
+Do not live-migrate Issue #33 during CT-1. The live single-loop -> multi-loop
+Issue migration is the next major boundary after CT-1 is green.
+
+Takeover/authority code remains a durable-control-plane concern and must not be
+reimplemented inside the Control Tower renderer.
+
+## 0.1 2026-09-25 current override — Jules API route adopted
 
 This section supersedes older Jules-launch / API-key statements below when they
 conflict.
@@ -298,7 +352,7 @@ A new chat should:
 2. read the implementation spec and checklist
 3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
 4. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
-5. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
+5. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use and preserve the Chat-first / Work fallback rule
 6. inspect the current open PR / branch before changing files
 7. preserve all fixed safety decisions
 8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
