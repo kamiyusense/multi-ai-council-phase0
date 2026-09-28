@@ -314,3 +314,17 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - retry=0 / fallback=disabled / merge=human-only
 - live provider/model execution: no
 - next readback: inspect Jules-created PR base/head/path set, independently validate exact candidate, then trigger the prepared real cross-branch workflow only if semantic review passes
+
+
+## Loop 044 interim readback — 2026-09-28 16:08 JST
+- Jules session readback run: `36389973229` SUCCESS
+- session `8612918239052647565`: `IN_PROGRESS`
+- Jules PR: NONE at readback
+- accepted_at: about 15:30 JST
+- planned class: medium
+- original presentation estimate: 15:45-15:55 JST
+- status at 16:08 JST: overdue relative to presentation estimate; no correctness inference from ETA
+- no duplicate dispatch / retry / fallback
+- a fifth delayed destructive Jules-bot commit `c48771d0063f200b1f41c9c9a66f519f6d10b0c4` landed on canonical PR #4 from an older direct-write lineage
+- fifth delayed overwrite was rejected and recovered append-only at `9d2b34db01db869ee41234ca4f1b035d8d3ec8a1`
+- Loop 044 itself remains isolated on `jules-work/relay-dev-loop-044-core-policy-matrix`; attribution of the delayed canonical write to Loop 044 is not supported
