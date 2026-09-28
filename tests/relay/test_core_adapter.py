@@ -214,6 +214,25 @@ class TestCoreAdapter(unittest.TestCase):
         res = adapter.preflight({})
         self.assertFalse(res["ok"])
         self.assertEqual(res["static_configuration_status"], "UNKNOWN")
+        self.assertIn("provider_preflight", res)
+        self.assertEqual(
+            res["provider_preflight"]["static_configuration_status"],
+            "UNKNOWN",
+        )
+
+    def test_preflight_pass_preserves_provider_preflight_evidence(self):
+        res = self.adapter.preflight({})
+        self.assertTrue(res["ok"])
+        self.assertEqual(res["static_configuration_status"], "PASS")
+        self.assertEqual(res["live_readiness"], "BLOCKED")
+        self.assertFalse(res["live_ready"])
+        self.assertIn("provider_preflight", res)
+        nested = res["provider_preflight"]
+        self.assertEqual(nested["static_configuration_status"], "PASS")
+        self.assertEqual(nested["provider_id"], "openai")
+        self.assertEqual(nested["retry_count"], 0)
+        self.assertEqual(nested["fallback_state"], "disabled")
+        self.assertFalse(nested["live_ready"])
 
     def test_classify_fails_closed_on_missing_required(self):
         invalid = {
