@@ -93,30 +93,57 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - exact validation: 189 tests PASS; compileall PASS; diff-check PASS
 - PR #4 FF: yes
 
-### Loop 038 — long — DISPATCHED / IN PROGRESS
-- target scope: Core PR #3 exact Adapter contract compatibility / three-provider static mock integration readiness
+### Loop 038 — long — COMPLETE / ACCEPTED
+- task: Core PR #3 exact Adapter contract compatibility / three-provider static mock integration readiness
 - target duration class: ~25-35 min
 - pinned Core PR #3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
 - canonical Relay parent: 723641270070e46b26262bd4d55e257f52a53cd2
 - Jules session: 5199104662632728848
+- Jules PR: #76
+- initial Jules head: 7befe98336e0b3eeb4dd148fdc52b86beae2d852
+- accepted head: f0eb3b08d240d8f407c51f9f8847684bf2e34bae
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial issues:
+  - added out-of-allowlist root file step_maker.py
+  - timeout compatibility test invented a manual abort not performed by Core PR #3 runner
+  - zero-side-effect / exact raw-byte / peer-isolation / malformed-map proofs were incomplete
+- correction_commits: 4
+- rejules_sessions: 0
 - first command action: failed before Jules invocation because requested lifetime exceeded command-bus 2-hour maximum by 1m45s
-- corrected v2 command: accepted; request lifetime reduced to 1h45m; task scope unchanged
-- actions_dispatch_so_far: 2
+- corrected v2 command: accepted; task scope unchanged
+- accepted dispatch time: 2026-09-28 12:15 JST
+- Jules PR creation time: 2026-09-28 12:29 JST
+- observed Jules turnaround: about 14 minutes 24 seconds
+- actions_dispatch: 2
+- actions_validation: 1
+- actions_status_feedback: 0
+- actions_total: 3
+- exact validation: 200 tests PASS; compileall PASS; diff-check PASS
 - retry: 0
 - fallback: disabled
 - live execution: no
-- result: pending
+- PR #4 FF: yes
 
-## Experiment cycle 1 interim totals after long-task dispatch
+## Experiment cycle 1 final totals
 
-- completed medium tasks: 2/2 accepted
-- medium-task final acceptance: 100%
-- untouched medium first pass: 0/2
-- re-Jules replacement sessions for completed medium tasks: 0
+- completed tasks: 3/3 accepted = 100%
+- untouched first pass: 0/3 = 0%
+- re-Jules replacement sessions: 0
 - Loop 036 Actions: 2
 - Loop 037 Actions: 4
-- Loop 038 dispatch Actions so far: 2 (one pre-Jules validation failure + one accepted dispatch)
-- cycle Actions so far: 8
+- Loop 038 Actions: 3
+- total Actions: 9
+- mean Actions per accepted task: 3.0
 - status-poll Actions: 0
-- long-task result not yet scored
-- important confounder: 2 of Loop 037's 3 validation runs failed because of Chat-added test expectation mistakes, not defects in the Jules implementation itself
+- normalized Actions excluding Chat/operator mistakes:
+  - Loop 037 two extra validations were caused by Chat-added test expectation mistakes
+  - Loop 038 one extra dispatch Action was caused by Chat choosing an invalid >2h request lifetime
+  - normalized total: 6 = 2.0 Actions per accepted task
+- preliminary comparison:
+  - final acceptance improved versus baseline 029-035 (100% vs 71.4%), but sample is small
+  - untouched-first-pass precision did not improve (0% in cycle 1)
+  - raw Actions efficiency is equal to baseline average (3.0/task)
+  - normalized Actions efficiency is equal to the stabilized baseline without anomalies (2.0/task)
+  - the long task covered a broader Core compatibility checkpoint but still required structural correction; no evidence yet that long scope improves first-pass precision
