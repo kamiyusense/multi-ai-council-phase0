@@ -637,6 +637,7 @@ def validate_container_topology(manifest: dict) -> dict:
     runtime_contract = manifest.get("x-phase0-runtime-contract", {})
     auth_volume = "claude-auth:/home/node/.claude"
     runtime_vars = {
+        "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
         "CLAUDE_CODE_MAX_RETRIES": "0",
         "CLAUDE_CODE_MAX_TURNS": "1",
         "CLAUDE_CONFIG_DIR": "/home/node/.claude",
