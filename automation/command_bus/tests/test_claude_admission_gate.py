@@ -506,7 +506,7 @@ class AdmissionGateTests(unittest.TestCase):
         manifest = load_container_manifest()
         baseline = validate_container_topology(manifest)
         self.assertEqual(baseline["status"], "PASS", baseline)
-        self.assertEqual(baseline["model_bypass"], "DENIED_BY_HOST_ALLOWLIST_AND_NETWORK_MEMBERSHIP")
+        self.assertEqual(baseline["direct_model_api_host_bypass"], "DENIED_BY_HOST_ALLOWLIST_AND_NETWORK_MEMBERSHIP")
         self.assertEqual(baseline["oauth_egress"], "PLATFORM_CLAUDE_CONNECT_ONLY")
 
         mutations = [
