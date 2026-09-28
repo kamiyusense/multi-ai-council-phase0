@@ -212,6 +212,51 @@ class DurableOwnerAuthorityTests(unittest.TestCase):
             )
         )
 
+    def test_generation_two_authority_requires_state_bound_to_frontier(self):
+        first = self.event
+        second = next_event(
+            first,
+            event_type="HANDOFF",
+            owner_role="AUTO",
+            holder_id="controller-2",
+            head="b" * 40,
+        )
+        second_grant = grant(second)
+        path = authority_grant_path(second["loop_id"], second["generation"])
+        self.client.data[path] = GitHubContent(
+            path=path,
+            text=json.dumps(second_grant, sort_keys=True, separators=(",", ":")),
+            sha="g2",
+        )
+        verifier = Verifier(
+            source_ref="automation/command_bus/evidence/loop-015/authority-2.json"
+        )
+        authority = self.authority(verifier)
+        stale = state(state="PREPARED")
+        result = authority.authorize(
+            second,
+            stale,
+            target_for(second),
+            receipt_for(second),
+            [first],
+        )
+        self.assertIsNone(result)
+
+        bound = state(
+            state="RUNNING",
+            last_command_id=first["command_id"],
+            last_receipt_id=first["source_receipt_id"],
+            expected_target=target_for(first),
+        )
+        result = authority.authorize(
+            second,
+            bound,
+            target_for(second),
+            receipt_for(second),
+            [first],
+        )
+        self.assertIsNotNone(result)
+
     def test_existing_generation_recovery_is_supported(self):
         self.put_grant()
         result = self.authority(Verifier()).authorize(
