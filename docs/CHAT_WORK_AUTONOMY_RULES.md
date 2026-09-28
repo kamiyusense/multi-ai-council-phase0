@@ -35,8 +35,26 @@
 
 ## 2. Work利用条件
 
-### 2.1 新規handoff
-ChatからWorkへの新規handoffは、ユーザーが明示的にWork利用を指示した場合、または既に開始済みWorkを継続する場合に限る。
+### 2.1 Chat-first / Work fallback
+
+原則として、現在のChatで実行可能な作業はChat + GitHubで継続する。
+
+Workへ新規handoffしてよいのは、次のいずれかに限る。
+
+- ユーザーが明示的にWork利用を指示した場合
+- 既に開始済みWorkを継続する場合
+- Chatでは実行不能な作業が残り、Workでのみ実行可能であることを具体的に説明できる場合
+
+単に「Workの方が楽」「長い作業だから」「ローカル環境が便利だから」という理由だけでChatからWorkへ切り替えない。
+
+Chatでは不可能でWorkが必要な場合、ユーザー向け案内は必ず次の形式にする。
+
+1. Workが必要な具体的理由を書く
+2. 見出しまたは案内文に **「🔵Workに貼り付けてください」** と明記する
+3. Workへ渡す完全な指示文をコードブロックで提示する
+4. ユーザーが追加編集・手動要約しなくてよい形にする
+
+このChat-first / Work fallback ruleは、新しいChatへのhandoverにも必ず継承する。
 
 ### 2.2 現在の既知制約
 Windows環境でProject → local Work handoff時に
@@ -393,10 +411,14 @@ live POCでは:
 ### Chat
 - 設計判断
 - 安全レビュー
+- GitHub read/write（許可済みfeature branch / PR境界内）
+- 静的実装・mock・fixture・test・checkpoint作成をChat環境で実行可能な場合はそのまま継続
 - Work/Jules成果物検品
 - live実行可否判定
 - ユーザー説明
 - GitHub checkpoint readback
+
+**Chatで実行可能な作業を、Workへ回すことを前提にしない。**
 
 ### Work
 Work利用可能かつユーザーが開始・許可した場合:
@@ -433,6 +455,7 @@ transport / dispatch担当。Council最終判断をしない。
 7. 現在のopen PR / branch / checkpoint SHA
 
 そのうえで:
+- Chat-first / Work fallback rule
 - Work利用可否
 - GitHub承認範囲
 - live実行承認有無
