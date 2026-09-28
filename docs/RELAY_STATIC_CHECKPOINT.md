@@ -165,3 +165,10 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - root cause of the direct writes remains UNKNOWN.
 - isolation policy: canonical target branch is read-only identity; Jules starts only from an exact per-command jules-work snapshot branch.
 - live provider/model execution remains BLOCKED.
+
+## Live Readiness Inventory Static Checkpoint
+- Implemented static live-readiness inventory worklist builder.
+- Inventory enforces explicit proof categories per provider and strict proof-record states (UNKNOWN/null or CONFIRMED/string).
+- Aggregate output is strictly UNRESOLVED or PROOF_RECORDS_COMPLETE; it does not claim actual readiness.
+- Fixed safety fields: live_ready=false, dispatch_allowed=false, human_approval_required=true, retry_count=0, fallback_state=disabled.
+- This checkpoint is strictly PREPARED/static evidence-inventory machinery only. Real live proofs remain UNKNOWN and real blockers unresolved.
