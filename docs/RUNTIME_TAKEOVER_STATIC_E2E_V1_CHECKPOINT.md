@@ -78,3 +78,46 @@ All negative paths must stop before durable mutation in the fake client.
 - no real takeover;
 - no default-branch write;
 - no Merge.
+
+## Exact-head verification
+
+- Exact tested code head:
+  `81233217ced60df0de138074307d17556033d0f4`.
+- GitHub Actions run:
+  `36373340889` — **SUCCESS**.
+- Focused Status/runtime/validation suite:
+  **186/186 PASS**.
+- Full command-bus suite:
+  **473/473 PASS**.
+- Command-bus JSON schemas parsed:
+  **18/18 PASS**.
+- Python compileall:
+  **PASS**.
+- `git diff --check`:
+  **PASS**.
+- PR #75 was OPEN / mergeable=true at exact-head readback.
+- Any commit after this exact tested head must be documentation-only and compared
+  before Merge.
+
+## Deferred Decision
+
+`decision_id: RUNTIME-VERIFIER-SOURCE-001`
+
+**内容:** productionで使う Authority / Provider verification source と、その
+独立Authenticatorの実体を決める。
+
+**判断が必要な理由:** static codeは source reader / authenticatorを注入する
+fail-closed契約まで完成したが、どの外部事実をproduction trust sourceとするかは
+repository内の自己申告だけから決定できない。
+
+**選択肢:** production controller / provider API・session readback /
+GitHub Actions等の外部実行証拠 / human-approved authority sourceのうち、
+独立性・readback・expiry・identity bindingを証明できるものを採用する。
+現時点ではどれを正式採用するかは **UNKNOWN**。
+
+**安全なdefault:** verifier source未選定のままなら `NOT_WIRED` を維持し、
+real SEMI_AUTO/AUTO takeoverを開始しない。
+
+**影響範囲:** authority grant issuer、ProviderVerifier、
+SourceBoundAuthorityGrantVerifier / SourceBoundProviderVerifierのproduction
+adapter、real takeover、live Status更新。
