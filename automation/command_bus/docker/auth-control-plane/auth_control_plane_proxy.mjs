@@ -8,6 +8,8 @@ export const ALLOWED_AUTH_AUTHORITY = `${ALLOWED_AUTH_HOST}:443`;
 export const DENIED_MODEL_AUTHORITY = "api.anthropic.com:443";
 export const PROXY_BIND = "0.0.0.0";
 export const PROXY_PORT = 3128;
+const MAX_CLIENT_HELLO_BYTES = 32 * 1024;
+const CLIENT_HELLO_TIMEOUT_MS = 5_000;
 
 const blockedV4 = new net.BlockList();
 for (const [subnet, prefix] of [
@@ -45,6 +47,120 @@ export function isPublicAddress(address, family = net.isIP(address)) {
   return false;
 }
 
+function denyTls(reason) {
+  return { status: "DENY", reason };
+}
+
+export function inspectTlsClientHello(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length > MAX_CLIENT_HELLO_BYTES) {
+    return denyTls("invalid_or_oversize_client_hello");
+  }
+
+  let offset = 0;
+  const handshakeParts = [];
+  let handshakeBytes = 0;
+  let expectedHandshakeBytes = null;
+
+  while (offset < buffer.length) {
+    if (buffer.length - offset < 5) return { status: "NEED_MORE" };
+    if (buffer[offset] !== 22) return denyTls("first_tls_record_is_not_handshake");
+    const recordLength = buffer.readUInt16BE(offset + 3);
+    if (recordLength === 0 || recordLength > 18_432) return denyTls("invalid_tls_record_length");
+    if (buffer.length - offset - 5 < recordLength) return { status: "NEED_MORE" };
+
+    const payload = buffer.subarray(offset + 5, offset + 5 + recordLength);
+    handshakeParts.push(payload);
+    handshakeBytes += payload.length;
+    if (handshakeBytes > MAX_CLIENT_HELLO_BYTES) return denyTls("oversize_client_hello");
+
+    const handshake = Buffer.concat(handshakeParts, handshakeBytes);
+    if (handshake.length >= 4 && expectedHandshakeBytes === null) {
+      if (handshake[0] !== 1) return denyTls("first_handshake_message_is_not_client_hello");
+      expectedHandshakeBytes = 4 + handshake.readUIntBE(1, 3);
+      if (expectedHandshakeBytes > MAX_CLIENT_HELLO_BYTES) return denyTls("oversize_client_hello");
+    }
+    if (expectedHandshakeBytes !== null && handshake.length >= expectedHandshakeBytes) {
+      return inspectClientHelloBody(handshake.subarray(4, expectedHandshakeBytes));
+    }
+    offset += 5 + recordLength;
+  }
+  return { status: "NEED_MORE" };
+}
+
+function inspectClientHelloBody(body) {
+  let offset = 0;
+  const take = (count) => {
+    if (!Number.isInteger(count) || count < 0 || offset + count > body.length) return null;
+    const out = body.subarray(offset, offset + count);
+    offset += count;
+    return out;
+  };
+  const takeU8 = () => {
+    const part = take(1);
+    return part ? part[0] : null;
+  };
+  const takeU16 = () => {
+    const part = take(2);
+    return part ? part.readUInt16BE(0) : null;
+  };
+
+  if (!take(2) || !take(32)) return denyTls("truncated_client_hello");
+  const sessionIdLength = takeU8();
+  if (sessionIdLength === null || !take(sessionIdLength)) return denyTls("truncated_session_id");
+
+  const cipherLength = takeU16();
+  if (cipherLength === null || cipherLength < 2 || cipherLength % 2 !== 0 || !take(cipherLength)) {
+    return denyTls("invalid_cipher_suites");
+  }
+
+  const compressionLength = takeU8();
+  if (compressionLength === null || compressionLength < 1 || !take(compressionLength)) {
+    return denyTls("invalid_compression_methods");
+  }
+
+  if (offset === body.length) return denyTls("missing_sni");
+  const extensionsLength = takeU16();
+  if (extensionsLength === null || extensionsLength !== body.length - offset) {
+    return denyTls("invalid_extensions_length");
+  }
+
+  const extensionsEnd = offset + extensionsLength;
+  let allowedSniCount = 0;
+  while (offset < extensionsEnd) {
+    const type = takeU16();
+    const length = takeU16();
+    if (type === null || length === null || offset + length > extensionsEnd) {
+      return denyTls("truncated_extension");
+    }
+    const extension = take(length);
+    if (type !== 0) continue;
+
+    if (extension.length < 2) return denyTls("invalid_sni_extension");
+    const listLength = extension.readUInt16BE(0);
+    if (listLength !== extension.length - 2) return denyTls("invalid_sni_list_length");
+    let nameOffset = 2;
+    while (nameOffset < extension.length) {
+      if (nameOffset + 3 > extension.length) return denyTls("truncated_sni_name");
+      const nameType = extension[nameOffset];
+      const nameLength = extension.readUInt16BE(nameOffset + 1);
+      nameOffset += 3;
+      if (nameOffset + nameLength > extension.length) return denyTls("truncated_sni_name");
+      const rawName = extension.subarray(nameOffset, nameOffset + nameLength);
+      nameOffset += nameLength;
+      if (nameType !== 0) continue;
+      if (rawName.length === 0 || /[^\x21-\x7e]/.test(rawName.toString("latin1"))) {
+        return denyTls("invalid_sni_hostname");
+      }
+      const hostname = rawName.toString("ascii");
+      if (hostname !== ALLOWED_AUTH_HOST) return denyTls("sni_not_allowlisted");
+      allowedSniCount += 1;
+    }
+  }
+
+  if (allowedSniCount !== 1) return denyTls("missing_or_ambiguous_sni");
+  return { status: "ALLOW", sni: ALLOWED_AUTH_HOST };
+}
+
 async function resolveAllowedAuthHost() {
   return lookup(ALLOWED_AUTH_HOST, { all: true, verbatim: true });
 }
@@ -71,6 +187,46 @@ function connectResolvedAddress(record) {
 function endWithStatus(socket, status, reason) {
   if (socket.destroyed) return;
   socket.end(`HTTP/1.1 ${status} ${reason}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+}
+
+function readValidatedClientHello(client) {
+  return new Promise((resolve, reject) => {
+    let buffered = Buffer.alloc(0);
+    const timer = setTimeout(() => fail(new Error("client hello timeout")), CLIENT_HELLO_TIMEOUT_MS);
+    timer.unref();
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      client.removeListener("data", onData);
+      client.removeListener("close", onClose);
+      client.removeListener("error", onError);
+    };
+    const fail = (error) => {
+      cleanup();
+      reject(error);
+    };
+    const onClose = () => fail(new Error("client closed before validated client hello"));
+    const onError = () => fail(new Error("client error before validated client hello"));
+    const onData = (chunk) => {
+      client.pause?.();
+      buffered = Buffer.concat([buffered, Buffer.from(chunk)]);
+      const inspected = inspectTlsClientHello(buffered);
+      if (inspected.status === "ALLOW") {
+        cleanup();
+        resolve(buffered);
+        return;
+      }
+      if (inspected.status === "DENY" || buffered.length >= MAX_CLIENT_HELLO_BYTES) {
+        fail(new Error("client hello rejected"));
+        return;
+      }
+      client.resume?.();
+    };
+
+    client.on("data", onData);
+    client.once("close", onClose);
+    client.once("error", onError);
+  });
 }
 
 export function createAuthControlProxy({
@@ -101,19 +257,26 @@ export function createAuthControlProxy({
           endWithStatus(client, 502, "Bad Gateway");
           return;
         }
+
+        client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+        const clientHello = await readValidatedClientHello(client);
+        if (client.destroyed) return;
+
         upstream = await connectAddress(selected);
         if (client.destroyed) {
           upstream.destroy();
           return;
         }
-        client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+
+        upstream.write(clientHello);
         client.pipe(upstream);
         upstream.pipe(client);
         client.once("close", () => upstream.destroy());
         upstream.once("error", () => client.destroy());
+        client.resume?.();
       } catch {
         if (upstream) upstream.destroy();
-        endWithStatus(client, 502, "Bad Gateway");
+        if (!client.destroyed) client.destroy();
       }
     })();
   });
