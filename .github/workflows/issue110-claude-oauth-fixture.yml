@@ -15,8 +15,15 @@ permissions:
 
 jobs:
   fixture:
+    name: fixture-delay-${{ matrix.delay_ms }}ms
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        delay_ms: [0, 500, 3000]
+    env:
+      MOCK_DELAY_MS: ${{ matrix.delay_ms }}
     steps:
       - name: Checkout exact fixture head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
