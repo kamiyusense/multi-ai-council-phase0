@@ -769,6 +769,9 @@ def validate_container_artifacts() -> dict:
         "gate_ignore": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile.dockerignore",
         "gate_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_entrypoint.py",
         "gate_bootstrap_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_bootstrap_entrypoint.py",
+        "oauth_proxy": Path(__file__).with_name("claude_oauth_egress_proxy.py"),
+        "oauth_dockerfile": CONTAINER_ARTIFACT_ROOT / "oauth-egress" / "Dockerfile",
+        "oauth_ignore": CONTAINER_ARTIFACT_ROOT / "oauth-egress" / "Dockerfile.dockerignore",
     }
     try:
         files = {name: path.read_text(encoding="utf-8") for name, path in paths.items()}
@@ -782,6 +785,8 @@ def validate_container_artifacts() -> dict:
     launcher = files["claude_launcher"]
     gate_entrypoint = files["gate_entrypoint"]
     gate_bootstrap_entrypoint = files["gate_bootstrap_entrypoint"]
+    oauth_proxy = files["oauth_proxy"]
+    oauth_dockerfile = files["oauth_dockerfile"]
     launcher_args = launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0] if "args: [" in launcher else ""
     claude_ignore_expected = "\n".join((
         "**", "!docker/", "!docker/claude-runtime/", "!docker/claude-runtime/Dockerfile",
@@ -795,7 +800,12 @@ def validate_container_artifacts() -> dict:
         "!docker/admission-gate/gate_entrypoint.py",
         "!docker/admission-gate/gate_bootstrap_entrypoint.py", "",
     ))
+    oauth_ignore_expected = "\n".join((
+        "**", "!claude_oauth_egress_proxy.py", "!docker/", "!docker/oauth-egress/",
+        "!docker/oauth-egress/Dockerfile", "!docker/oauth-egress/Dockerfile.dockerignore", "",
+    ))
     gate_copy_lines = [line for line in gate_dockerfile.splitlines() if line.startswith("COPY ")]
+    oauth_copy_lines = [line for line in oauth_dockerfile.splitlines() if line.startswith("COPY ")]
     checks = {
         "all_required_artifacts_exist": all(path.is_file() for path in paths.values()),
         "claude_seccomp_profile_pinned": sha256(files["claude_seccomp"].encode("utf-8")).hexdigest() == RUNTIME_SECCOMP_SHA256,
@@ -814,6 +824,15 @@ def validate_container_artifacts() -> dict:
         "gate_has_no_claude_node_npm_or_auth_volume": not any(term in gate_dockerfile.lower() for term in ("npm", "node:", "claude-auth", "github-cli", "git install")),
         "claude_context_is_exact_allowlist": files["claude_ignore"] == claude_ignore_expected,
         "gate_context_is_exact_allowlist": files["gate_ignore"] == gate_ignore_expected,
+        "oauth_base_image_digest_pinned": "FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254" in oauth_dockerfile,
+        "oauth_runs_nonroot": "USER 1000:1000" in oauth_dockerfile and oauth_dockerfile.rstrip().endswith('CMD ["serve"]'),
+        "oauth_copies_only_proxy": oauth_copy_lines == [
+            "COPY --chown=1000:1000 claude_oauth_egress_proxy.py /opt/phase0/claude_oauth_egress_proxy.py",
+        ],
+        "oauth_context_is_exact_allowlist": files["oauth_ignore"] == oauth_ignore_expected,
+        "oauth_proxy_connect_allowlist_exact": 'ALLOWED_CONNECT_HOST = "platform.claude.com"' in oauth_proxy and 'ALLOWED_CONNECT_PORT = 443' in oauth_proxy and "def do_CONNECT" in oauth_proxy,
+        "oauth_proxy_has_no_model_host_or_tls_interception": "api.anthropic.com" not in oauth_proxy and "import ssl" not in oauth_proxy and "wrap_socket" not in oauth_proxy,
+        "oauth_proxy_has_no_auth_volume_or_provider_client": not any(term in oauth_dockerfile.lower() for term in ("claude-auth", "gate-state", "workspace", "npm", "node:")),
         "launcher_has_explicit_live_gate": 'env.PHASE0_LIVE_EXECUTION !== "1"' in launcher and "default_launcher_result" in json.dumps(manifest),
         "compose_and_launcher_both_require_oauth_compatible_safe_mode": "--safe-mode" in manifest["x-phase0-runtime-contract"]["argv"] and '"--safe-mode"' in launcher_args and "--bare" not in manifest["x-phase0-runtime-contract"]["argv"] and '"--bare"' not in launcher_args,
         "launcher_preserves_bounded_cli_flags": all(fragment in launcher_args for fragment in (
@@ -823,7 +842,7 @@ def validate_container_artifacts() -> dict:
         )),
         "launcher_checks_dispatch_retry_tools_mcp_and_gateway": all(token in launcher for token in (
             "PHASE0_DISPATCH_ID", "CLAUDE_CODE_MAX_RETRIES", "CLAUDE_CODE_MAX_TURNS",
-            "ANTHROPIC_BASE_URL", "--tools", "--mcp-config", "--strict-mcp-config",
+            "ANTHROPIC_BASE_URL", "HTTPS_PROXY", "--tools", "--mcp-config", "--strict-mcp-config",
             "--no-session-persistence", "CLAUDE_CODE_SKIP_PROMPT_HISTORY",
             "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
             "DISABLE_UPDATES", "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK",
