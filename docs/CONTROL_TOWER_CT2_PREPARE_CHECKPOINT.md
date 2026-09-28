@@ -128,14 +128,28 @@ Still required before live migration:
 
 This batch intentionally stops before those live effects.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `af2ebd5d89cc2f4a649bc8755d8cd8e556fc35a0`
+- GitHub Actions run:
+  `36374751234` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **207/207 PASS**
+- full command-bus suite:
+  **494/494 PASS**
+- command-bus JSON schemas parsed:
+  **19/19 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative CT-2 prepare tests were present in the exact-head CI log:
+  - legacy -> multi-loop migration planning;
+  - pre-write Issue conflict rejection;
+  - TURN_COMPLETE/HUMAN_NEEDED-only notification planning;
+  - loop/event replay NO-OP.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed pre-migration Status.**
