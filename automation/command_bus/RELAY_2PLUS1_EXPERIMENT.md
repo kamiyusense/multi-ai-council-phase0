@@ -147,3 +147,84 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
   - raw Actions efficiency is equal to baseline average (3.0/task)
   - normalized Actions efficiency is equal to the stabilized baseline without anomalies (2.0/task)
   - the long task covered a broader Core compatibility checkpoint but still required structural correction; no evidence yet that long scope improves first-pass precision
+
+
+## Experiment cycle 2
+
+### Loop 039 — medium — COMPLETE / ACCEPTED
+- task: test-only Core PR #3 cross-branch overlay runner preparation
+- Jules session: 204477371697583196
+- Jules PR: #79
+- canonical parent: f0eb3b08d240d8f407c51f9f8847684bf2e34bae
+- accepted head: 234de53b5439037af448400c7230994b8c7eaf01
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial issues: wrong Core import/API assumptions, incomplete provider preflight observations, unsupported Google architecture spelling
+- correction_commits: 2
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 1
+- actions_status_feedback: 0
+- actions_total: 2
+- exact validation: 208 tests PASS; compileall PASS; diff-check PASS
+- PR #4 FF: yes
+
+### Loop 040 — medium — COMPLETE / ACCEPTED
+- task: exact cross-branch Core PR #3 overlay workflow plus first real happy-path proof
+- Jules session: 15419810865880618723
+- Jules PR: #83
+- canonical parent: 234de53b5439037af448400c7230994b8c7eaf01
+- initial Jules head: 22449a55ecc6b7bdce8c4c0979127c719a6a11fc
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial issues: request commit was not constrained to exactly one changed file; workflow validated nonexistent scalar output keys instead of the runner's per-provider count maps
+- later real-overlay issue: first real run exposed missing Relay checkout root for existing src.* imports in the test-only runner
+- correction_commits: 5
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 3
+- actions_overlay_validation: 2
+- actions_status_feedback: 0
+- actions_total: 6
+- validation detail:
+  - exact candidate run 36380346300: FAIL due Chat-added static test expectations
+  - exact candidate run 36380411921: SUCCESS, 216 tests PASS
+  - first real overlay run 36380485605: FAIL at test-only import path, exact request/checkouts passed
+  - import-path fix exact validation 36380616365: SUCCESS, 217 tests PASS
+  - second real overlay run 36380669299: SUCCESS
+- real Core PR #3 x Relay happy-path static/mock E2E: PASS
+- pinned Core head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
+- successful Relay code SHA: 223ff60cdde0bf08e980a004be6cb3b8abee89ae
+- successful overlay request commit: 8d120942a4df83a07270ddeebce60412740bee5c
+- live_turn_executed=false / retry_count=0 / fallback_state=disabled
+- PR #4 checkpoint docs head after proof: e3414e46581492dc11e6cd03762e7773d1441b74
+
+### Loop 041 — long — DISPATCHED / IN PROGRESS
+- task: real pinned Core PR #3 negative-path provider-isolation matrix
+- target duration class: ~25-35 min
+- canonical Relay parent: e3414e46581492dc11e6cd03762e7773d1441b74
+- pinned Core PR #3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
+- Jules session: 4781088550264311675
+- verified Jules session accepted: 2026-09-28 14:16:06 JST
+- scenarios requested: timeout_openai; collect_error_anthropic; invalid_output_google
+- actions_dispatch_so_far: 1
+- retry: 0
+- fallback: disabled
+- live execution: no
+- result: pending
+
+## Experiment cycle 2 interim totals after long-task dispatch
+- completed medium tasks: 2/2 accepted = 100%
+- untouched medium first pass: 0/2
+- re-Jules replacement sessions: 0
+- Loop 039 Actions: 2
+- Loop 040 Actions: 6
+- Loop 041 dispatch Actions so far: 1
+- cycle Actions so far: 9
+- status-poll Actions: 0
+- long-task result not yet scored
+- important confounders:
+  - one Loop 040 exact validation failure was caused by Chat-added test expectation mistakes
+  - one Loop 040 real overlay failure was a genuine test-only integration defect exposed only by the real exact cross-branch run
