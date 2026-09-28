@@ -17,10 +17,10 @@ from typing import Any, Iterable, Mapping
 from .control_tower import (
     ControlTowerModel,
     PerLoopProjectionInput,
-    SemiAutoScheduleHint,
     build_control_tower,
     validate_registry,
 )
+from .control_tower_schedule import SemiAutoScheduleHint
 from .control_tower_issue_plan import (
     ControlTowerIssuePlan,
     prepare_control_tower_issue_plan,
@@ -171,17 +171,26 @@ def prepare_verified_control_tower_migration(
             lane_inputs,
             generated_at=generated_at,
         )
-        unknown = tuple(
-            lane.loop_id for lane in model.lanes if lane.display_state == "UNKNOWN"
+    except (ValueError, TypeError, KeyError, AssertionError) as exc:
+        return ControlTowerMigrationPreflight(
+            "BLOCKED",
+            "projection",
+            str(exc),
+            registration,
         )
-        if unknown:
-            return ControlTowerMigrationPreflight(
-                "BLOCKED",
-                "projection",
-                "verified lane failed presentation projection: " + ",".join(unknown),
-                registration,
-            )
 
+    unknown = tuple(
+        lane.loop_id for lane in model.lanes if lane.display_state == "UNKNOWN"
+    )
+    if unknown:
+        return ControlTowerMigrationPreflight(
+            "BLOCKED",
+            "projection",
+            "verified lane failed presentation projection: " + ",".join(unknown),
+            registration,
+        )
+
+    try:
         issue_plan = prepare_control_tower_issue_plan(
             model,
             issue_readback,
@@ -190,9 +199,11 @@ def prepare_verified_control_tower_migration(
     except (ValueError, TypeError, KeyError, AssertionError) as exc:
         return ControlTowerMigrationPreflight(
             "UNKNOWN",
-            "prepare",
+            "issue_readback",
             str(exc),
             registration,
+            model,
+            None,
         )
 
     return ControlTowerMigrationPreflight(
