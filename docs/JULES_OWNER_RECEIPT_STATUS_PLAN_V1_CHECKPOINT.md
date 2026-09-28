@@ -71,15 +71,35 @@ No runtime owner/authority/provider-observation record was created in this
 batch. No Jules/Claude/provider/model execution occurred. Issue #33 was not
 modified.
 
-## Verification target
+## Exact-head verification
 
-Exact-head GitHub Actions must prove:
-- new owner-receipt/Status-plan adapter tests PASS;
-- existing owner/authority/runtime-publisher tests PASS;
-- full command-bus suite has no new failure beyond the exact known Jules
-  expired-fixture test;
-- schema parse PASS;
-- compileall PASS;
-- git diff --check PASS.
+- Exact tested code head:
+  `8a3949b2fd9f9e7d81e3bbfebf519046669a4171`.
+- GitHub Actions run:
+  `36366258087` — **SUCCESS**.
+- Focused Status/owner/authority/runtime-publisher/Jules-receipt tests:
+  **148/148 PASS**.
+- Full command-bus suite:
+  **435 tests run**.
+- Exactly one known pre-existing error remained:
+  `automation.command_bus.tests.test_jules_api_request.JulesApiRequestTests.test_prompt_binds_head_tree_and_allowlist`.
+- CI rejects any additional/unexpected failure.
+- All command-bus JSON schemas parse: **PASS**.
+- Python compileall: **PASS**.
+- `git diff --check`: **PASS**.
+- PR was OPEN / mergeable=true at exact-head readback.
 
-After CI, record the exact tested code head/run/counts here and in the PR body.
+Any commit after this tested code head must be documentation-only and compared/read
+back before Merge.
+
+## Remaining live blockers
+
+1. Production authority-grant issuer.
+2. Production independent AuthorityGrantVerifier.
+3. Production ProviderVerifier.
+4. Live Status workflow dispatch/readback adapter.
+5. Explicit live authorization before real SEMI_AUTO/AUTO acquisition/handoff/takeover.
+
+The Jules terminal receipt path is now statically bridgeable into the canonical
+owner receipt contract, but the adapter still does not launch Jules or grant
+ownership.
