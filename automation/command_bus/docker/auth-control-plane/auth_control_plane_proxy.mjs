@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 export const ALLOWED_AUTH_HOST = "platform.claude.com";
 export const ALLOWED_AUTH_AUTHORITY = `${ALLOWED_AUTH_HOST}:443`;
 export const DENIED_MODEL_AUTHORITY = "api.anthropic.com:443";
-export const PROXY_BIND = "0.0.0.0";
+export const PROXY_BIND = "172.29.247.3";
 export const PROXY_PORT = 3128;
 const MAX_CLIENT_HELLO_BYTES = 32 * 1024;
 const CLIENT_HELLO_TIMEOUT_MS = 5_000;
