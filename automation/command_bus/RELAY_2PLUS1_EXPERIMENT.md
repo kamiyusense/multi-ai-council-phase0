@@ -700,3 +700,20 @@ Cycle members:
 - re-Jules replacement sessions: 0
 - observation: Loop 049 exceeded its expected window and paused for feedback; stopping and harvesting the partial PR was more efficient than continuing to wait. Green repository tests alone were not sufficient because independent semantic review found contract/schema gaps.
 
+## Experiment cycle 5 — started
+
+### Loop 050 — medium — DISPATCHED / IN PROGRESS
+- task: static human-approval packet built from accepted readiness snapshot
+- canonical Relay snapshot head: `35a55ae5cb7aa849d28b7b83f2c468f39a398ce2`
+- canonical Relay snapshot tree: `e4343cee99e98971722f767e7a4f3937371db87a`
+- isolated starting branch: `jules-work/relay-dev-loop-050-approval-packet`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36476532239`
+- Jules session: `14580370330648151591`
+- accepted_at: 2026-09-29 05:03:54 JST
+- canonical PR #4 head immediately after dispatch: `35a55ae5cb7aa849d28b7b83f2c468f39a398ce2` unchanged
+- task size: medium (~15-25 minute class)
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: READY_FOR_HUMAN_APPROVAL may only produce REQUEST_HUMAN_APPROVAL; approval_granted=false, live_ready=false, dispatch_allowed=false always
+
