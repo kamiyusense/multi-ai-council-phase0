@@ -70,6 +70,10 @@ class ControlTowerTests(unittest.TestCase):
             [entry.display_name for entry in entries],
             ["ChatGPT Semi-Auto", "Claude -> Gemini", "Claude -> Claude", "Work -> Gemini"],
         )
+        self.assertEqual(
+            [entry.identity_state for entry in entries],
+            ["PLACEHOLDER", "PLACEHOLDER", "PLACEHOLDER", "PLACEHOLDER"],
+        )
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         self.assertEqual(schema["properties"]["loops"]["maxItems"], 8)
         item = schema["properties"]["loops"]["items"]
@@ -192,6 +196,10 @@ class ControlTowerTests(unittest.TestCase):
         self.assertEqual(payload["loops"][0]["display_state"], model.lanes[0].display_state)
         self.assertEqual(payload["loops"][0]["controller_kind"], model.lanes[0].controller_kind)
         self.assertEqual(payload["loops"][0]["worker_kind"], model.lanes[0].worker_kind)
+        self.assertEqual(
+            payload["loops"][0]["identity_state"],
+            model.lanes[0].identity_state,
+        )
         self.assertIn(rendered.snapshot_json, rendered.body)
         self.assertIn("<!-- phase0-control-tower-json:v1", rendered.body)
         self.assertNotIn("https://", rendered.snapshot_json)
@@ -226,6 +234,12 @@ class ControlTowerTests(unittest.TestCase):
             bad["loops"][0][field] = value
             with self.subTest(field=field), self.assertRaises(ValueError):
                 validate_registry(bad)
+
+
+        bad = copy.deepcopy(base)
+        bad["loops"][0]["identity_state"] = "VERIFIED"
+        with self.assertRaises(ValueError):
+            validate_registry(bad)
 
         bad = copy.deepcopy(base)
         bad["loops"][0]["safe_detail_ref"] = "https://github.com/private"
