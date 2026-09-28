@@ -26,6 +26,13 @@ from .loop_status_issue import (
     extract_managed_block,
     managed_block,
 )
+from .control_tower_schedule import (
+    SemiAutoScheduleHint,
+    schedule_compact_text,
+    refresh_schedule_hint,
+    schedule_snapshot,
+    validate_schedule_hint,
+)
 
 _MAX_LOOPS = 8
 _REGISTRY_KEYS = {"schema_version", "loops"}
@@ -80,6 +87,7 @@ class PerLoopProjectionInput:
     target_ref: str | None
     last_event_kind: str | None
     last_event_id: str | None
+    schedule_hint: SemiAutoScheduleHint | None = None
 
 
 @dataclass(frozen=True)
@@ -98,6 +106,7 @@ class ControlTowerLane:
     last_event_id: str | None
     human_action: str
     reason: str
+    schedule_hint: SemiAutoScheduleHint | None = None
 
 
 @dataclass(frozen=True)
@@ -191,7 +200,7 @@ def build_control_tower(
             continue
         raw = lane_inputs.get(entry.loop_id)
         try:
-            lane = _verified_lane(entry, raw)
+            lane = _verified_lane(entry, raw, generated_at=generated_at)
         except (ValueError, TypeError, KeyError, AssertionError) as exc:
             lane = _unknown_lane(entry, str(exc))
         lanes.append(lane)
@@ -222,6 +231,7 @@ def render_snapshot(model: ControlTowerModel) -> str:
                 "target_ref": lane.target_ref,
                 "last_event_kind": lane.last_event_kind,
                 "last_event_id": lane.last_event_id,
+                "schedule_hint": schedule_snapshot(lane.schedule_hint),
                 "human_action": lane.human_action,
                 "safe_detail_ref": lane.safe_detail_ref,
             }
@@ -264,7 +274,12 @@ def notification_marker(lane: ControlTowerLane, kind: str) -> str:
     return f"control-tower-receipt:{kind}:{lane.loop_id}:{lane.last_event_id}"
 
 
-def _verified_lane(entry: RegistryEntry, raw: Any) -> ControlTowerLane:
+def _verified_lane(
+    entry: RegistryEntry,
+    raw: Any,
+    *,
+    generated_at: str,
+) -> ControlTowerLane:
     if not isinstance(raw, PerLoopProjectionInput):
         raise ValueError("verified per-loop projection is unavailable")
     projection = raw.projection
@@ -301,6 +316,13 @@ def _verified_lane(entry: RegistryEntry, raw: Any) -> ControlTowerLane:
     ):
         raise ValueError("invalid durable event id")
 
+    schedule_hint = raw.schedule_hint
+    if schedule_hint is not None:
+        if entry.mode != "SEMI_AUTO":
+            raise ValueError("schedule_hint is allowed only for SEMI_AUTO presentation lanes")
+        validate_schedule_hint(schedule_hint)
+        schedule_hint = refresh_schedule_hint(schedule_hint, now=generated_at)
+
     human_action = _single_line(projection.human_action, max_len=64)
     if projection.display_state == "BLOCKED" and human_action == "NONE":
         human_action = "REVIEW REQUIRED"
@@ -318,6 +340,7 @@ def _verified_lane(entry: RegistryEntry, raw: Any) -> ControlTowerLane:
         target_ref=target_ref,
         last_event_kind=event_kind,
         last_event_id=event_id,
+        schedule_hint=schedule_hint,
         human_action=human_action,
         reason=_single_line(projection.reason),
     )
@@ -337,6 +360,7 @@ def _unknown_lane(entry: RegistryEntry, reason: str) -> ControlTowerLane:
         target_ref=None,
         last_event_kind="UNKNOWN",
         last_event_id=None,
+        schedule_hint=None,
         human_action="REVIEW REQUIRED",
         reason=_single_line(reason),
     )
@@ -361,8 +385,8 @@ def _render_runtime_content(model: ControlTowerModel, snapshot: str) -> str:
         lines.append("")
 
     lines += [
-        "| Signal | Loop | Mode | Controller → Worker | Target | Gen | Last durable event | Human |",
-        "| --- | --- | --- | --- | --- | ---: | --- | --- |",
+        "| Signal | Loop | Mode | Controller → Worker | Schedule | Target | Gen | Last durable event | Human |",
+        "| --- | --- | --- | --- | --- | --- | ---: | --- | --- |",
     ]
     for lane in model.lanes:
         signal = f"{_ICONS[lane.display_state]} {lane.display_state}"
@@ -378,6 +402,7 @@ def _render_runtime_content(model: ControlTowerModel, snapshot: str) -> str:
                 _cell(lane.display_name),
                 _cell(lane.mode),
                 _cell(controller_worker),
+                _cell(schedule_compact_text(lane.schedule_hint)),
                 _cell(lane.target_ref or "-"),
                 _cell(str(lane.generation) if lane.generation is not None else "-"),
                 _cell(last),
