@@ -13,6 +13,7 @@ const NEW_ACCESS_TOKEN =
   process.env.MOCK_NEW_ACCESS_TOKEN || "fixture-access-new";
 const NEW_REFRESH_TOKEN =
   process.env.MOCK_NEW_REFRESH_TOKEN || "fixture-refresh-new";
+const RESPONSE_DELAY_MS = Number(process.env.MOCK_RESPONSE_DELAY_MS || "0");
 
 const secureContext = tls.createSecureContext({
   cert: fs.readFileSync(CERT_PATH),
@@ -150,13 +151,34 @@ function handleTlsHttp(socket) {
       token_type: "Bearer",
       scope: "user:profile user:inference",
     });
-    socket.end(
-      "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: application/json\r\n" +
-        `Content-Length: ${Buffer.byteLength(payload)}\r\n` +
-        "Connection: close\r\n\r\n" +
-        payload,
-    );
+    const responseOrdinal = refreshPosts;
+    record({
+      type: "oauth_refresh_response_scheduled",
+      refresh_post_ordinal: responseOrdinal,
+      delay_ms: RESPONSE_DELAY_MS,
+    });
+    setTimeout(() => {
+      if (socket.destroyed) {
+        record({
+          type: "oauth_refresh_response_client_gone",
+          refresh_post_ordinal: responseOrdinal,
+          delay_ms: RESPONSE_DELAY_MS,
+        });
+        return;
+      }
+      socket.end(
+        "HTTP/1.1 200 OK\r\n" +
+          "Content-Type: application/json\r\n" +
+          `Content-Length: ${Buffer.byteLength(payload)}\r\n` +
+          "Connection: close\r\n\r\n" +
+          payload,
+      );
+      record({
+        type: "oauth_refresh_response_sent",
+        refresh_post_ordinal: responseOrdinal,
+        delay_ms: RESPONSE_DELAY_MS,
+      });
+    }, RESPONSE_DELAY_MS);
   });
 }
 
