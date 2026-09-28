@@ -75,8 +75,12 @@ values, or connection errors containing request data.
 The runtime keeps `ANTHROPIC_BASE_URL=http://gate:8080`. Docker topology keeps
 the runtime off the egress network. The launcher accepts only the exact fixed
 `HTTPS_PROXY=http://auth-control-proxy:3128`; it rejects HTTP_PROXY, ALL_PROXY,
-NO_PROXY and case variants/overrides. The model API destination remains the
-Gate's exact `https://api.anthropic.com` upstream.
+NO_PROXY and case variants/overrides. It also requires
+`CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1`, an official Claude Code opt-in that
+delegates hostname resolution to the proxy rather than the caller. This keeps
+external DNS selection inside the fixed allowlist proxy boundary instead of
+the internal-only Claude runtime. The model API destination remains the Gate's
+exact `https://api.anthropic.com` upstream.
 
 The sidecar code has no package installs, shell invocation, credential
 handling, mounted volumes, or listening host port. It runs with UID/GID
@@ -163,7 +167,7 @@ the underlying OAuth refresh cause is proven.
 
 ## References
 
-- Anthropic, [Corporate proxy configuration and network access requirements](https://code.claude.com/docs/en/corporate-proxy)
+- Anthropic, [Enterprise network configuration](https://code.claude.com/docs/en/corporate-proxy) — documents standard HTTPS proxy support, proxy-side DNS opt-in, and the network-access table separating `api.anthropic.com` model/API traffic from `platform.claude.com` OAuth token exchange/refresh/revocation
 - Anthropic, [Claude Code authentication](https://code.claude.com/docs/en/authentication)
 - Anthropic Claude Code GitHub, [Issue #47754](https://github.com/anthropics/claude-code/issues/47754) — user-reported refresh request details
 - Anthropic Claude Code GitHub, [Issue #54443](https://github.com/anthropics/claude-code/issues/54443) — user-reported 401/refresh behavior and shared-credential race hypothesis
