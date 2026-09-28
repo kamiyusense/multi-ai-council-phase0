@@ -19,6 +19,8 @@
       "networks": ["internal"],
       "environment": {
         "ANTHROPIC_BASE_URL": "http://gate:8080",
+        "HTTPS_PROXY": "http://auth-control-proxy:3128",
+        "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
         "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL",
         "CLAUDE_CODE_MAX_RETRIES": "0",
         "CLAUDE_CODE_MAX_TURNS": "1",
@@ -36,6 +38,18 @@
       },
       "user": "1000:1000",
       "volumes": ["claude-auth:/home/node/.claude"]
+    },
+    "auth-control-proxy": {
+      "image": "phase0-claude-auth-control-proxy:1",
+      "build": {"context": ".", "dockerfile": "docker/auth-control-plane/Dockerfile"},
+      "profiles": ["human-approval-required"],
+      "entrypoint": ["node", "/opt/phase0/auth_control_plane_proxy.mjs"],
+      "privileged": false,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "ports": [],
+      "networks": {"internal": {"ipv4_address": "172.29.247.3"}, "egress": {}},
+      "user": "1000:1000"
     },
     "auth-bootstrap": {
       "image": "phase0-claude-runtime:2.1.283",
