@@ -183,14 +183,28 @@ batch.
 Live migration from single-loop Status to Multi-loop Control Tower belongs to
 CT-2 and remains the next major boundary after CT-1 is green.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `211df40fecb63118b423dd8c047bfd2c799076b3`
+- GitHub Actions run:
+  `36374364942` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **197/197 PASS**
+- full command-bus suite:
+  **484/484 PASS**
+- command-bus JSON schemas parsed:
+  **19/19 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative CT-1 tests were present in the exact-head CI log:
+  - mixed independent states;
+  - malformed lane isolation;
+  - shared human/machine model;
+  - loop+event notification dedupe.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the pre-CT-1 deployed single-loop Status.**
