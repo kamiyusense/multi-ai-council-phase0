@@ -98,6 +98,20 @@ def _canonical(record: dict[str, Any]) -> str:
     return json.dumps(record, sort_keys=True, separators=(",", ":"))
 
 
+def _canonical_target(raw: dict[str, Any] | None, event: dict[str, Any], *, close: bool) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise ValueError("target readback unavailable")
+    repo = raw.get("repo", raw.get("repository"))
+    pr = raw.get("pr", raw.get("pr_number"))
+    head = raw.get("head")
+    if repo != event["expected_repo"] or pr != event["expected_pr"] or head != event["expected_target_head"]:
+        raise ValueError("fresh target PR identity/head mismatch")
+    if not close:
+        if raw.get("state") != "open" or raw.get("merged") is not False:
+            raise ValueError("active owner requires an OPEN non-merged target PR")
+    return {"repo": repo, "pr": pr, "head": head}
+
+
 def _same_context(event: dict[str, Any], context: AuthorizedOwnerContext) -> bool:
     return isinstance(context, AuthorizedOwnerContext) and all(
         getattr(context, field) == event[field]
@@ -234,12 +248,10 @@ class RuntimeTransitionPublisher:
                     return PublishResult("BLOCKED", stage, "skipped owner generation")
                 validate_owner_chain([*chain, event])
                 owner_already_present = False
-            target = self.target_reader.read_target(event["expected_repo"], event["expected_pr"])
+            target_raw = self.target_reader.read_target(event["expected_repo"], event["expected_pr"])
+            target = _canonical_target(target_raw, event, close=close)
             if not owner_already_present and prior_state == request.desired_state:
                 return PublishResult("BLOCKED", stage, "state advanced without the expected owner generation")
-            expected_target = {"repo": event["expected_repo"], "pr": event["expected_pr"], "head": event["expected_target_head"]}
-            if target != expected_target:
-                return PublishResult("BLOCKED", stage, "fresh target PR head mismatch")
             receipt, _ = self._read_json(event["source_receipt_ref"])
             validate_receipt(receipt)
             for key in ("loop_id", "command_id", "correlation_id", "receipt_id"):
@@ -307,7 +319,7 @@ class RuntimeTransitionPublisher:
                 if final_observation != observation:
                     raise ValueError("provider observation changed before status boundary")
             final_chain = self._read_chain(loop_id)
-            fresh_target = self.target_reader.read_target(event["expected_repo"], event["expected_pr"])
+            fresh_target = _canonical_target(self.target_reader.read_target(event["expected_repo"], event["expected_pr"]), event, close=close)
             projection = project_durable_transition(
                 final_state, final_chain,
                 receipt_ref=event["source_receipt_ref"], receipt=final_receipt,
