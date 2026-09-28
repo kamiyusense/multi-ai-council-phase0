@@ -458,3 +458,49 @@ Cycle members:
 - status/readback/feedback Actions are concentrated in Loop 044 because of the Jules plan-payload AWAITING_USER_FEEDBACK event
 - Loop 045 required no status/feedback workflow and completed with 3 Actions total
 - long-task result not yet scored
+
+
+### Loop 046 — long — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: deterministic three-provider live-readiness bundle / human-approval packet
+- target duration class: ~25-35 min
+- Jules session: `17865758442948188006`
+- Jules PR: #104
+- isolated base: `jules-work/relay-dev-loop-046-readiness-bundle`
+- canonical snapshot parent: `3a5abc99f834dc038d39033a9ac14967ddb6c7b3`
+- initial Jules head: `8422d63546810209a417bbf511d449b8b7db3af8`
+- corrected isolated candidate: `80a42e2e0a27ce50964d5b60dab42ff47575caa5`
+- accepted canonical head: `ba9fb9e400d6d7b68cf169ad21d5bda603bb45ae`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial design was substantially closer than Loops 044/045, but four fail-closed gaps remained:
+  - unknown provider-gate state was not rejected exactly and could be retained in provider_states
+  - human_approval_required=true was not independently revalidated by the bundle
+  - extra fields in provider-gate output were not rejected
+  - non-JSON-serializable malformed evidence could survive until packet hashing and raise instead of returning BLOCKED_UNKNOWN
+- additional hardening:
+  - summary renderer now sanitizes untrusted aggregate/provider states and cannot echo arbitrary URL/secret-like state strings
+  - schema now requires all three provider_states and bounds blocking_providers to unique max-3 entries
+- Chat correction commits on isolated candidate: 5
+- re-Jules replacement sessions: 0
+- first corrected exact validation run `36413401666`: FAIL, exposed one remaining serializability ordering bug
+- failure was diagnosed before any retry; source fixed, then a new append-only validation request was used
+- second candidate exact validation run `36413538239`: SUCCESS
+- final candidate validation: 281 tests PASS; compileall PASS; diff-check PASS
+- canonical exact validation run `36413676087`: SUCCESS
+- canonical publication: validated six-file tree copied by Chat-side normal fast-forward commit; Jules branch history was not pointed directly at canonical
+- bundle invariant: even fully synthetic confirmed evidence may only produce READY_FOR_HUMAN_APPROVAL; live_ready=false / dispatch_allowed=false / human_approval_required=true / retry_count=0 / fallback_state=disabled always
+- real live blockers resolved: no
+- live provider/model/API execution: no
+- isolation result: PASS for publication path
+- PR #104 closed unmerged after validated content publication
+- PR #99 closed unmerged because Loop 045 content was already independently validated and copied to canonical
+
+## Experiment cycle 3 current result
+- Loop 044 medium: accepted after correction
+- Loop 045 medium: accepted after correction
+- Loop 046 long: accepted after correction
+- final acceptance: 3/3 = 100%
+- untouched first pass: 0/3 = 0%
+- re-Jules replacement sessions: 0
+- interpretation: long scope again did not produce an untouched first pass, but Loop 046's initial architecture was materially closer to acceptance than Loops 044/045; remaining defects were boundary-hardening issues rather than a wrong overall design
