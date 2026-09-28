@@ -301,26 +301,26 @@ Tests cover:
 ## Exact-head verification
 
 - exact tested PR head:
-  `46556a80aaaba0c1aa61f713c0e546e38f77b2d5`
+  `af6a0db104c02951265d436c97d69681412a2015`
 - GitHub Actions run:
-  `36378199676` — **SUCCESS**
+  `36383922318` — **SUCCESS**
 - focused Status/runtime/validation suite:
   **236/236 PASS**
 - full command-bus suite:
-  **523/523 PASS**
+  **533/533 PASS**
 - command-bus JSON schemas parsed:
   **20/20 PASS**
 - Python compileall:
   **PASS**
 - `git diff --check`:
   **PASS**
-- representative timing tests were present in the exact-head CI log:
-  - ETA-state derivation;
-  - OVERDUE while runtime remains SEMI_AUTO;
-  - ETA overdue creates no notification/HUMAN NEEDED;
-  - Control Tower generated_at refreshes stale ETA state;
-  - verified/unknown fixtures match machine snapshot contract.
+- the exact-head CI included both:
+  - Semi-Auto timing regression tests, including OVERDUE while runtime remains SEMI_AUTO and no ETA-only notification;
+  - the merged Control Tower registration readiness tests from PR #81.
+- conflict resolution method:
+  no rebase/merge/history rewrite; the branch tree was synchronized with the
+  already-merged registration files and current main CI workflow, then re-tested.
 - tested head -> current head compare:
   to be read back after this documentation-only evidence commit.
 - Issue #33 live mutation:
-  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
+  **NONE**
