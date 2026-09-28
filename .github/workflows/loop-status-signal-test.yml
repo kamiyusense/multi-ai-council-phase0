@@ -13,6 +13,7 @@ on:
       - automation/command_bus/control_tower_snapshot.py
       - automation/command_bus/control_tower_durable_collector.py
       - automation/command_bus/control_tower_migration_recovery.py
+      - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
       - automation/command_bus/loop_status_development.py
       - automation/command_bus/loop_owner.py
@@ -47,6 +48,7 @@ on:
       - automation/command_bus/tests/test_control_tower_snapshot.py
       - automation/command_bus/tests/test_control_tower_durable_collector.py
       - automation/command_bus/tests/test_control_tower_migration_recovery.py
+      - automation/command_bus/tests/test_claude_loop.py
       - automation/command_bus/tests/test_loop_status_development.py
       - automation/command_bus/tests/test_loop_owner.py
       - automation/command_bus/tests/test_loop_owner_backend.py
@@ -99,6 +101,7 @@ jobs:
             automation.command_bus.tests.test_control_tower_snapshot
             automation.command_bus.tests.test_control_tower_durable_collector
             automation.command_bus.tests.test_control_tower_migration_recovery
+            automation.command_bus.tests.test_claude_loop
             automation.command_bus.tests.test_loop_status_development
             automation.command_bus.tests.test_loop_owner
             automation.command_bus.tests.test_loop_owner_backend
