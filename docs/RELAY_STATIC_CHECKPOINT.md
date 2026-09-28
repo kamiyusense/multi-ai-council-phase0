@@ -101,3 +101,19 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - Pinned Core head: `494b7296f32dce1c173a7699e4bd2d87f70d31a9`
 - Relay parent: `f0eb3b08d240d8f407c51f9f8847684bf2e34bae`
 - No Merge/live authorization implied
+
+
+## Core PR3 Real Cross-Branch Overlay Checkpoint
+- happy-path cross-branch static/mock overlay: PASS
+- pinned Core head: `494b7296f32dce1c173a7699e4bd2d87f70d31a9`
+- Relay code SHA: `223ff60cdde0bf08e980a004be6cb3b8abee89ae`
+- request commit: `8d120942a4df83a07270ddeebce60412740bee5c`
+- GitHub Actions run: `36380669299` SUCCESS
+- exact Core/Relay checkout binding: PASS
+- provider order openai/anthropic/google: PASS
+- participant_count=3 / agreement_count=3: PASS
+- human_required=true / formal_consensus=false: PASS
+- raw SHA-256 evidence for all three providers: PASS
+- live_turn_executed=false / retry_count=0 / fallback_state=disabled: PASS
+- first real run `36380485605` exposed a test-only import-path defect; corrected without retrying that request
+- live provider execution: BLOCKED
