@@ -37,6 +37,12 @@ HOST_LOOPBACK = "HOST_LOOPBACK"
 CONTAINER_INTERNAL = "CONTAINER_INTERNAL"
 COMPOSE_MANIFEST = Path(__file__).with_name("claude_gate_compose.yaml")
 CONTAINER_ARTIFACT_ROOT = Path(__file__).with_name("docker")
+RUNTIME_SECCOMP_RELATIVE_PATH = "./docker/claude-runtime/claude-bwrap-seccomp-amd64.json"
+RUNTIME_SECCOMP_PROFILE = CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "claude-bwrap-seccomp-amd64.json"
+# Docker Engine 29.8.0 (moby/moby 3ce5872b7950c63ba2ffbc5123101019ff3e6682)
+# vendors moby/profiles default.json at Git blob ea5a494afb8d64898fa0f4f47ae0c4f5ba9cbbc9.
+# The pinned profile adds only the amd64 bubblewrap syscalls observed by strace.
+RUNTIME_SECCOMP_SHA256 = "b4516f39b519c306068c7507f3be555e039fa691c2527c96594d7ecffaebe759"
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
 _HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"}
 
@@ -654,6 +660,9 @@ def validate_container_topology(manifest: dict) -> dict:
         "gate_no_published_ports": not gate.get("ports"),
         "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth)),
         "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, gate_bootstrap)),
+        "runtime_seccomp_profile_exact": claude.get("security_opt") == [f"seccomp={RUNTIME_SECCOMP_RELATIVE_PATH}"],
+        "seccomp_only_on_runtime": all("security_opt" not in service for service in (gate, auth, gate_bootstrap)),
+        "no_added_capabilities": all("cap_add" not in service for service in services.values()),
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
         "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
@@ -723,6 +732,7 @@ def validate_container_artifacts() -> dict:
         "claude_dockerfile": CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "Dockerfile",
         "claude_ignore": CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "Dockerfile.dockerignore",
         "claude_launcher": CONTAINER_ARTIFACT_ROOT / "claude-runtime" / "claude_runtime_launcher.mjs",
+        "claude_seccomp": RUNTIME_SECCOMP_PROFILE,
         "gate_dockerfile": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile",
         "gate_ignore": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile.dockerignore",
         "gate_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_entrypoint.py",
@@ -731,6 +741,7 @@ def validate_container_artifacts() -> dict:
     try:
         files = {name: path.read_text(encoding="utf-8") for name, path in paths.items()}
         manifest = load_container_manifest()
+        seccomp_profile = json.loads(files["claude_seccomp"])
     except (OSError, UnicodeError, json.JSONDecodeError):
         return {"status": "BLOCKED", "reason": "container artifact missing or unreadable"}
 
@@ -755,6 +766,8 @@ def validate_container_artifacts() -> dict:
     gate_copy_lines = [line for line in gate_dockerfile.splitlines() if line.startswith("COPY ")]
     checks = {
         "all_required_artifacts_exist": all(path.is_file() for path in paths.values()),
+        "claude_seccomp_profile_pinned": sha256(files["claude_seccomp"].encode("utf-8")).hexdigest() == RUNTIME_SECCOMP_SHA256,
+        "claude_seccomp_default_denies": isinstance(seccomp_profile, dict) and seccomp_profile.get("defaultAction") == "SCMP_ACT_ERRNO",
         "claude_base_image_digest_pinned": "FROM node:22-bookworm-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c" in claude_dockerfile,
         "claude_code_exact_version_pinned": "npm install --global @anthropic-ai/claude-code@2.1.283" in claude_dockerfile and "@anthropic-ai/claude-code@latest" not in claude_dockerfile,
         "claude_runs_nonroot": "USER node" in claude_dockerfile and claude_dockerfile.rstrip().endswith('ENTRYPOINT ["node", "/opt/phase0/claude_runtime_launcher.mjs"]'),

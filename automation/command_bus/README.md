@@ -130,6 +130,8 @@ Static blob verification/reconstruction includes only:
 - `automation/command_bus/README.md`
 - `automation/command_bus/tests/**`
 - `automation/command_bus/schema/**`
+- `automation/command_bus/config/**`
+- `automation/command_bus/docker/**`
 
 Operational record families such as commands, events, evidence, receipts,
 states, reviewer records, reviewer wake reservations, and executor records are
@@ -153,8 +155,7 @@ health checks are local, and unknown routes fail closed. Validation used only
 loopback fake providers. Production upstream is pinned to the exact Anthropic
 HTTPS origin and requires a separately identified production state store;
 fake upstreams require an explicit test-only connector. The Compose manifest
-now contains runnable-but-unexecuted image definitions: no image was built or
-started. Claude has internal-only network access, while the gate alone has a
+requires an explicit human-gated runtime launch. Claude has internal-only network access, while the gate alone has a
 separately controlled egress network and no published host port. Images and
 Claude Code version are pinned; Dockerfile-specific ignore files restrict the
 build contexts. The Claude launcher fails closed unless explicitly enabled
@@ -164,13 +165,12 @@ the one-time receipt-backed initialization route behind the exact
 `human-gate-bootstrap` profile, a required confirmation argument,
 `network_mode: none`, and the fixed non-root identity. Its receipt is mounted outside the
 `gate-state` named volume via the external host-control directory. Nested mount
-ordering, Docker volume copy-up, effective ownership/mode behavior, and WSL/Docker
-Desktop filesystem semantics remain LIVE UNKNOWN; the validator does not claim
-them as proven. Egress isolation, effective host firewall
-behavior, Docker volume ownership, production store ACL verification on
-Windows, external receipt provisioning, backup rollback protection, automatic
-model fallback behavior, and actual Claude compatibility remain unproven.
-No Docker, Claude login, provider, or Jules execution occurred. See
+ordering and volume ownership still require checks for each deployment.
+Effective host firewall behavior, production store ACL verification on Windows,
+backup rollback protection, automatic model fallback behavior, and a complete
+real Claude response remain unproven. One 2026-09-28 Claude process ended before
+the Gate due to a missing sandbox dependency; the Gate recorded zero upstream
+requests. Claude OAuth succeeded. No Jules execution occurred. See
 `docs/CLAUDE_ADMISSION_GATE_DESIGN.md` for constraints and blockers.
 `prepare_transport` separates strict `HOST_LOOPBACK` from opt-in
 `CONTAINER_INTERNAL`, which accepts only the freshly validated Compose endpoint
@@ -181,6 +181,29 @@ receipt; normal production open never bootstraps. Windows production ACL
 verification remains blocked. This gate remains prepare/static-only and does
 not launch Claude or perform the bootstrap. See
 `docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.
+
+### Credential-free bubblewrap component proof
+
+Docker Engine 29.8.0 denied bubblewrap's
+`clone(CLONE_NEWNS|CLONE_NEWUSER|SIGCHLD)` under its default seccomp profile.
+The `claude` service alone uses
+`docker/claude-runtime/claude-bwrap-seccomp-amd64.json`. It starts from the
+profile vendored in Moby commit `3ce5872b7950c63ba2ffbc5123101019ff3e6682`
+(Git blob `ea5a494afb8d64898fa0f4f47ae0c4f5ba9cbbc9`) and adds only the
+observed amd64 clone flags, eight observed mount flag combinations, `pivot_root`,
+and `umount2(MNT_DETACH)`. The validator pins the resulting file hash and
+rejects other runtime security options, added capabilities, or applying this
+profile to Gate/bootstrap services. The profile is applied by Docker Compose;
+it is excluded from the image build context.
+
+A network-none, UID/GID 1000:1000 component container with no mounts or
+credentials failed under Docker's default profile and passed with the pinned
+profile. Its mount and user namespaces differed from the outer container;
+direct connection to a reserved test IP and lookup of an invalid domain both
+failed. A request for an additional PID namespace was denied. No Claude Code
+process or Anthropic request was made during this component proof. The prior
+real attempt remains terminal FAILED; this component result does not authorize
+a new dispatch or real-model run. See Issue #23 for the LIVE checkpoints.
 
 ## Durable Loop owner and Status transition
 

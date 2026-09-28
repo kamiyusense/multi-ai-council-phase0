@@ -17,6 +17,7 @@ STATIC_PREFIXES = (
     ROOT + "tests/",
     ROOT + "schema/",
     ROOT + "config/",
+    ROOT + "docker/",
 )
 LEDGER_PREFIXES = (
     ROOT + "commands/",

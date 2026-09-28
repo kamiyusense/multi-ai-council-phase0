@@ -18,6 +18,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 
+from automation.command_bus import claude_admission_gate as gate_module
 from automation.command_bus.claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK, ClaudeDispatchLifecycle, DispatchStore,
     initialize_production_store_once, load_container_manifest, make_server,
@@ -440,6 +441,18 @@ class AdmissionGateTests(unittest.TestCase):
         bad = deepcopy(manifest)
         bad["services"]["claude"]["privileged"] = True
         cases.append(bad)
+        for mutate in (
+            lambda s: s["claude"].update(security_opt=["seccomp=unconfined"]),
+            lambda s: s["claude"].update(security_opt=["seccomp=./other.json"]),
+            lambda s: s["claude"]["security_opt"].append("apparmor=unconfined"),
+            lambda s: s["claude"].update(cap_add=["SYS_ADMIN"]),
+            lambda s: s["gate"].update(security_opt=s["claude"]["security_opt"]),
+            lambda s: s["auth-bootstrap"].update(security_opt=s["claude"]["security_opt"]),
+            lambda s: s["gate-bootstrap"].update(security_opt=s["claude"]["security_opt"]),
+        ):
+            bad = deepcopy(manifest)
+            mutate(bad["services"])
+            cases.append(bad)
         for path, value in (("ANTHROPIC_BASE_URL", "http://other-service:8080"),
                             ("PHASE0_GATE_BIND", "0.0.0.0"), ("PHASE0_GATE_PORT", "8081")):
             bad = deepcopy(manifest)
@@ -488,6 +501,18 @@ class AdmissionGateTests(unittest.TestCase):
         for item in cases:
             with self.subTest(item=item):
                 self.assertEqual(validate_container_topology(item)["status"], "BLOCKED")
+
+    def test_seccomp_profile_content_is_pinned(self):
+        original = gate_module.RUNTIME_SECCOMP_PROFILE.read_text(encoding="utf-8")
+        self.assertEqual(validate_container_artifacts()["status"], "PASS")
+        with tempfile.TemporaryDirectory() as root:
+            changed = Path(root) / "seccomp.json"
+            changed.write_text(original.replace('"value": 268566545', '"value": 268566546', 1), encoding="utf-8")
+            self.assertNotEqual(changed.read_text(encoding="utf-8"), original)
+            with patch.object(gate_module, "RUNTIME_SECCOMP_PROFILE", changed):
+                result = validate_container_artifacts()
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertIn("claude_seccomp_profile_pinned", result["failed"])
 
     def test_gate_bootstrap_topology_mutations_fail_closed(self):
         manifest = load_container_manifest()

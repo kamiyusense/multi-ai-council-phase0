@@ -14,6 +14,7 @@
       "profiles": ["human-approval-required"],
       "entrypoint": ["node", "/opt/phase0/claude_runtime_launcher.mjs"],
       "privileged": false,
+      "security_opt": ["seccomp=./docker/claude-runtime/claude-bwrap-seccomp-amd64.json"],
       "ports": [],
       "networks": ["internal"],
       "environment": {
