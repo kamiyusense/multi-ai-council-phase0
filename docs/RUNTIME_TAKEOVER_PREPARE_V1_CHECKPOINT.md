@@ -87,3 +87,21 @@ those sources or claim GitHub JSON self-assertions are sufficient.
 - PR #74 was OPEN / mergeable=true at exact-head readback.
 - Any commit after this exact tested head must be documentation-only and compared
   before Merge.
+
+## Control Tower v2 compatibility
+
+This takeover prepare layer is part of the durable correctness/control-plane
+path, not the Signal presentation layer.
+
+It does not:
+
+- decide a Control Tower lane's display state;
+- assign presentation `controller_kind`, `worker_kind`, or `display_name`;
+- create a global AUTO/SEMI_AUTO truth;
+- aggregate independent loops;
+- mutate Issue #33.
+
+Control Tower v2 must consume already verified per-loop projections and must not
+duplicate this takeover/owner/authority verification logic. CT-1 remains a
+separate static presentation foundation and the live Issue #33 migration remains
+a later boundary.
