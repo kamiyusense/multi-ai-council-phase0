@@ -1,6 +1,6 @@
 # Relay Static Checkpoint
 
-Updated: 2026-09-21
+Updated: 2026-09-28
 Scope: static/mock Relay skeleton only
 
 ## Implemented in this checkpoint
@@ -133,7 +133,17 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - every scenario: retry_count=0, fallback_state=disabled, live_turn_executed=false
 
 ### Core PR #3 Policy Matrix Validation Checkpoint
-- Runner status: PREPARED/NOT_RUN
+- real cross-branch policy matrix: PASS
+- GitHub Actions run: 36395766196 SUCCESS
+- Relay code SHA: 089d34b013fe7462ad3c69cea17148f8e6e20ae9
+- pinned Core PR #3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
+- trigger request commit: 384038943d763486ca666614828afd71ae71c2ab
+- safety_unknown_google: 3 COMPLETE participants / agreement_count=3 / safety_block=true / exact RAW for all providers
+- fanout_unknown: no providers directory / dispatch=0 / collect=0 / comparison and report absent / Core UNKNOWN evidence preserved exactly
+- stop_before_dispatch: 3 NONPARTICIPANT ERROR_UNKNOWN results / dispatch=0 / collect=0 / participant_count=0
+- human_required=true / formal_consensus=false where comparison exists
+- live_turn_executed=false in every scenario
+- fanout early-return retry/fallback fields are absent in Core and represented as null; other scenarios retain retry_count=0 / fallback_state=disabled
 
 ## Isolation Canary Checkpoint
 - Core PR3 negative-path matrix run 36383797774 succeeded.
@@ -144,8 +154,8 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - collect_error_anthropic isolated Anthropic ERROR_UNKNOWN and preserved exact healthy-peer RAW evidence.
 - invalid_output_google isolated Google INVALID_OUTPUT and preserved exact healthy-peer RAW evidence, including malformed Google RAW.
 - every scenario had retry_count=0, fallback_state=disabled, live_turn_executed=false, participant_count=2, agreement_count=2, human_required=true, formal_consensus=false.
-- Four delayed Jules-bot direct writes to the canonical Relay branch were detected and rejected/recovered append-only.
-- latest verified recovery commit is a0982004767a53bc024eb974aef8306b1a832dfb and its restored tree is 3b706e31739b1b36cdd3882ea9e4cb0cd264bfc9.
+- Five delayed Jules-bot direct writes to the canonical Relay branch were detected and rejected/recovered append-only.
+- latest verified delayed-write recovery commit is 9d2b34db01db869ee41234ca4f1b035d8d3ec8a1.
 - root cause of the direct writes remains UNKNOWN.
 - isolation policy: canonical target branch is read-only identity; Jules starts only from an exact per-command jules-work snapshot branch.
 - live provider/model execution remains BLOCKED.
