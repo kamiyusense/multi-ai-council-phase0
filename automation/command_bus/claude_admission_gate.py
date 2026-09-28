@@ -756,7 +756,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "failed": failed,
         "claude_egress": "PROXY_AND_GATE_ONLY" if not failed else "UNKNOWN",
         "oauth_egress": "PLATFORM_CLAUDE_CONNECT_ONLY" if not failed else "UNKNOWN",
-        "model_bypass": "DENIED_BY_HOST_ALLOWLIST_AND_NETWORK_MEMBERSHIP" if not failed else "UNKNOWN",
+        "direct_model_api_host_bypass": "DENIED_BY_HOST_ALLOWLIST_AND_NETWORK_MEMBERSHIP" if not failed else "UNKNOWN",
     }
 
 def validate_container_artifacts() -> dict:
