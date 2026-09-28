@@ -717,3 +717,48 @@ Cycle members:
 - live provider/model/API execution: no
 - required invariant: READY_FOR_HUMAN_APPROVAL may only produce REQUEST_HUMAN_APPROVAL; approval_granted=false, live_ready=false, dispatch_allowed=false always
 
+### Loop 050 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: static human-approval packet built from accepted readiness snapshot
+- Jules session: `14580370330648151591`
+- Jules PR: #122
+- isolated base: `jules-work/relay-dev-loop-050-approval-packet`
+- canonical snapshot parent: `35a55ae5cb7aa849d28b7b83f2c468f39a398ce2`
+- initial Jules candidate: `af9595d334f240732c5f6274ab45a92ae4ce0b67`
+- corrected isolated candidate: `cdd227d551b4e220ce9ac7e0cda610ebb761b8ee`
+- accepted canonical head: `56d561093108064dddf14d298f0fc24bc4145ec8`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial semantic gaps despite green tests:
+  - malformed serializable top-level input could still invoke the snapshot dependency
+  - SHA-256 predicate was not exact lowercase hex and rejected some valid all-digit digests while admitting non-hex lowercase alphanumerics
+  - fail-closed provider/blocker and blocked-vs-ready cross-field consistency was incomplete
+  - preflight policy identity values were only typed as strings rather than pinned to accepted policy identities
+  - preflight digest consistency was not recomputed
+  - inventory UNRESOLVED/PROOF_RECORDS_COMPLETE count semantics were incomplete
+  - approval_packet_sha256 schema incorrectly allowed null although runtime always finalizes a digest
+  - Japanese renderer exposed the internal next_action enum instead of safe Japanese wording
+  - evidence-change test malformed inventory rather than changing one valid evidence_ref
+- initial exact validation run `36483154918`: SUCCESS; 378 tests PASS; compileall PASS; diff-check PASS, but semantic review rejected the candidate
+- Chat correction commits on isolated candidate: 4
+- corrected candidate exact validation run `36483599687`: SUCCESS
+- canonical exact validation run `36483755485`: SUCCESS
+- exact validation: 406 tests PASS; compileall PASS; diff-check PASS
+- corrected approval layer now:
+  - rejects malformed/nonserializable outer input before snapshot dependency
+  - calls build_live_readiness_snapshot exactly once for valid input
+  - strictly validates accepted snapshot semantics, policy identities, provider maps, blockers, counts, hashes, and snapshot digest
+  - keeps approval_granted=false / live_ready=false / dispatch_allowed=false under every state
+  - maps READY_FOR_HUMAN_APPROVAL only to REQUEST_HUMAN_APPROVAL, never approval
+  - emits deterministic approval_packet_sha256 on every output
+  - renderer uses safe Japanese next-action wording and never echoes raw evidence/config values
+- canonical publication: exact six validated blobs copied into one normal fast-forward canonical commit
+- candidate/canonical six-file blob equality after publication: PASS
+- correction_commits_on_isolated_candidate: 4
+- rejules_sessions: 0
+- retry=0 / fallback=disabled
+- live provider/model/API execution: no
+- human approval granted: no
+- merge: no
+- isolation result: PASS
+
