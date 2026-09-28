@@ -31,13 +31,18 @@ class TestLiveReadinessInventorySchema(unittest.TestCase):
         self.assertEqual(set(inv["required"]), {"openai", "anthropic", "google"})
         self.assertEqual(set(inv["properties"].keys()), {"openai", "anthropic", "google"})
 
+        from providers.live_readiness import COMMON_PROOFS, PROVIDER_PROOFS
+
         for provider in ["openai", "anthropic", "google"]:
             p_obj = inv["properties"][provider]
             self.assertEqual(p_obj["type"], "object")
             self.assertFalse(p_obj["additionalProperties"])
-            self.assertIn("patternProperties", p_obj)
-            self.assertIn(".*", p_obj["patternProperties"])
-            self.assertEqual(p_obj["patternProperties"][".*"], {"$ref": "#/$defs/proof_record"})
+            expected = COMMON_PROOFS | PROVIDER_PROOFS[provider]
+            self.assertEqual(set(p_obj["required"]), expected)
+            self.assertEqual(set(p_obj["properties"]), expected)
+            self.assertNotIn("patternProperties", p_obj)
+            for key in expected:
+                self.assertEqual(p_obj["properties"][key], {"$ref": "#/$defs/proof_record"})
 
     def test_schema_fixed_safety_fields(self) -> None:
         props = self.schema["properties"]
@@ -54,11 +59,14 @@ class TestLiveReadinessInventorySchema(unittest.TestCase):
         self.assertEqual(set(state_prop["enum"]), {"UNRESOLVED", "PROOF_RECORDS_COMPLETE"})
 
     def test_schema_no_live_authorization_state_strings(self) -> None:
-        # We manually verify no strings like READY_FOR_HUMAN_APPROVAL or PASS are in enums
         state_prop = self.schema["properties"]["state"]
         self.assertNotIn("READY_FOR_HUMAN_APPROVAL", state_prop["enum"])
         self.assertNotIn("PASS", state_prop["enum"])
         self.assertNotIn("BLOCKED_UNKNOWN", state_prop["enum"])
+
+        serialized = json.dumps(self.schema, sort_keys=True)
+        for forbidden in ("LIVE_READY", "AUTO_APPROVED", "DISPATCH_ALLOWED"):
+            self.assertNotIn(forbidden, serialized)
 
     def test_schema_proof_record_defs(self) -> None:
         proof_record = self.schema["$defs"]["proof_record"]
