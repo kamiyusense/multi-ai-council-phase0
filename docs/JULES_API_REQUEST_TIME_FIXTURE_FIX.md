@@ -26,11 +26,22 @@
 - No default-branch direct write.
 - Merge is not performed in this batch.
 
-## Verification target
+## Exact-head verification
 
-- exact-head GitHub Actions SUCCESS;
-- full command-bus suite zero failures;
-- focused tests PASS;
-- schema parse PASS;
-- compileall PASS;
-- git diff --check PASS.
+- Exact tested code head:
+  `6b6baad95168b00c52203b24065287cd5d0c080f`.
+- GitHub Actions run:
+  `36367201115` — **SUCCESS**.
+- Focused Status/runtime tests:
+  **148/148 PASS**.
+- Full command-bus suite:
+  **435/435 PASS**.
+- Known Jules expired-fixture allowance:
+  **removed**.
+- All command-bus JSON schemas parse: **PASS**.
+- Python compileall: **PASS**.
+- `git diff --check`: **PASS**.
+- PR was OPEN / mergeable=true at exact-head readback.
+
+Any commit after this tested code head must be documentation-only and compared
+before Merge.
