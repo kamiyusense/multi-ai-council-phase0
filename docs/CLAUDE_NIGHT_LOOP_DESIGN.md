@@ -45,6 +45,44 @@ path policyを必須にする。
 - Persisting/activating the returned live-capable Jules command remains a
   separate LIVE boundary requiring explicit authorization and fresh preflight.
 
+## JULES_BACKEND transport bridge
+
+There are two distinct Jules contracts and they must not be conflated:
+
+1. `prepare_jules_closed_loop_command()`
+   - internal `JULES_API_CLOSED_LOOP` command artifact;
+   - used to validate correlation/head/tree/path-policy compatibility with the
+     closed-loop implementation;
+   - no I/O and no workflow dispatch.
+
+2. `prepare_jules_semiauto_request()`
+   - current live GitHub workflow request profile for Claude-origin work:
+     `JULES_CHAT_SEMIAUTO_V2` (V1 remains accepted for existing Chat-driven tasks);
+   - converts the already-safe JULES_BACKEND PREPARE_ONLY request into the exact
+     request read by `.github/workflows/jules-chat-semiauto.yml`;
+   - reuses the internal bridge first, then validates again with
+     `jules_api_request.validate_request()`;
+   - preserves origin loop/round/correlation/generation plus target repo, branch,
+     exact head/tree, allowlisted paths, prompt, expiry, retry=0,
+     fallback=disabled, merge=false and force-push=false;
+   - generation is a required Claude verdict field and is copied through the
+     PREPARE_ONLY executor request and internal closed-loop command; the live
+     bridge does not accept a separate generation override;
+   - carries per-path ADD/MODIFY operation bounds into the task prompt and
+     explicitly forbids DELETE/RENAME;
+   - still performs no file persistence, GitHub write, workflow dispatch, Jules
+     API call, Jules session start, or Claude start.
+
+The only live transition after this static bridge is to append exactly one new
+`automation/command_bus/jules_api_requests/<command_id>.json` on the approved
+carrier branch. That write is the trigger for the existing semi-auto workflow
+and therefore remains a separate explicit LIVE authorization boundary.
+
+The workflow must still fresh-read the target branch head/tree immediately
+before the one Jules API call. Post-run Jules PR ancestry, changed paths,
+operations and tests must be independently read back; Actions green alone is
+not PASS.
+
 ## 共通machine gate
 
 - `round <= max_rounds <= 6`

@@ -31,7 +31,15 @@ Append-only commands live at:
 A command commit must add exactly one file and change nothing else. Updating an
 existing command does not dispatch.
 
-Required profile: `JULES_CHAT_SEMIAUTO_V1`.
+Required profiles:
+- `JULES_CHAT_SEMIAUTO_V1`: existing Chat-driven semi-auto tasks.
+- `JULES_CHAT_SEMIAUTO_V2`: Claude-origin integrated tasks; additionally requires
+  `origin_loop_id`, `origin_round`, `origin_correlation_id`, and
+  `origin_generation`.
+
+Both profiles use the same bounded single-submit workflow. V2 adds durable
+origin correlation only; it does not add retry, fallback, merge authority, or
+extra provider calls.
 
 Each command binds:
 

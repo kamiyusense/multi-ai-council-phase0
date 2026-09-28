@@ -168,6 +168,11 @@ jobs:
         if: always()
         env:
           COMMAND_ID: ${{ steps.validate.outputs.command_id }}
+          PROFILE: ${{ steps.validate.outputs.profile }}
+          ORIGIN_LOOP_ID: ${{ steps.validate.outputs.origin_loop_id }}
+          ORIGIN_ROUND: ${{ steps.validate.outputs.origin_round }}
+          ORIGIN_CORRELATION_ID: ${{ steps.validate.outputs.origin_correlation_id }}
+          ORIGIN_GENERATION: ${{ steps.validate.outputs.origin_generation }}
           TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
@@ -179,6 +184,11 @@ jobs:
           {
             echo "## Phase 0 Chat -> Jules semi-auto dispatch"
             echo "- command_id: \`${COMMAND_ID:-UNKNOWN}\`"
+            echo "- profile: \`${PROFILE:-UNKNOWN}\`"
+            echo "- origin_loop_id: \`${ORIGIN_LOOP_ID:-N/A}\`"
+            echo "- origin_round: \`${ORIGIN_ROUND:-N/A}\`"
+            echo "- origin_correlation_id: \`${ORIGIN_CORRELATION_ID:-N/A}\`"
+            echo "- origin_generation: \`${ORIGIN_GENERATION:-N/A}\`"
             echo "- target_branch: \`${TARGET_BRANCH:-UNKNOWN}\`"
             echo "- expected_target_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
             echo "- expected_target_tree: \`${EXPECTED_TREE:-UNKNOWN}\`"

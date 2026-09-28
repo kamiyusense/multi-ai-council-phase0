@@ -10,11 +10,13 @@ Claude-only coding step for the no-Jules contingency.  There is no fallback.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
+from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,
@@ -92,6 +94,7 @@ def make_structured_verdict(
     verdict_id: str,
     loop_id: str,
     round: int,
+    generation: int,
     correlation_id: str,
     mode: str,
     decision: str,
@@ -108,6 +111,7 @@ def make_structured_verdict(
         "verdict_id": verdict_id,
         "loop_id": loop_id,
         "round": round,
+        "generation": generation,
         "correlation_id": correlation_id,
         "backend_mode": mode,
         "decision": decision,
@@ -182,6 +186,7 @@ def prepare_next_action(
             requires_live_model=False, requires_github_write=False,
             capability="prepare-only",
         )
+        request["generation"] = verdict["generation"]
         return LoopResult("PREPARED", "single prepare-only action created", request)
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
@@ -253,6 +258,8 @@ def prepare_jules_closed_loop_command(
             return LoopResult("UNKNOWN", "prepared Jules request round is invalid")
         if not isinstance(prepared_request.get("expected_pr"), int) or isinstance(prepared_request["expected_pr"], bool):
             return LoopResult("UNKNOWN", "prepared Jules request PR identity is invalid")
+        if not isinstance(prepared_request.get("generation"), int) or isinstance(prepared_request["generation"], bool) or prepared_request["generation"] < 1:
+            return LoopResult("UNKNOWN", "prepared Jules request generation is invalid")
         for key in ("expected_target_head", "expected_target_tree"):
             if not re.fullmatch(r"[0-9a-f]{40}", prepared_request[key]):
                 return LoopResult("UNKNOWN", f"invalid prepared Jules {key}")
@@ -265,6 +272,7 @@ def prepare_jules_closed_loop_command(
             "command_id": cid,
             "loop_id": prepared_request["loop_id"],
             "round": prepared_request["round"],
+            "generation": prepared_request["generation"],
             "correlation_id": prepared_request["correlation_id"],
             "target": "work",
             "action": "JULES_API_CLOSED_LOOP",
@@ -282,6 +290,76 @@ def prepare_jules_closed_loop_command(
             "expires_at": prepared_request["expires_at"],
         }
         return LoopResult("PREPARED", "unpersisted Jules closed-loop command artifact created", command)
+    except (KeyError, TypeError, ValueError) as exc:
+        return LoopResult("UNKNOWN", str(exc))
+
+
+def prepare_jules_semiauto_request(
+    prepared_request: dict[str, Any], *, target_branch: str, default_branch: str,
+    created_at: str, command_id: str | None = None,
+) -> LoopResult:
+    """Convert one JULES_BACKEND preparation to the current live semi-auto request.
+
+    This is a pure conversion. It does not persist the request under
+    jules_api_requests/, trigger GitHub Actions, start Jules, or mutate GitHub.
+    The real workflow performs a fresh branch head/tree check again before the
+    single Jules API call.
+    """
+    try:
+        internal = prepare_jules_closed_loop_command(
+            prepared_request,
+            starting_branch=target_branch,
+            default_branch=default_branch,
+            command_id=command_id,
+        )
+        if internal.status != "PREPARED" or internal.request is None:
+            return internal
+        command = internal.request
+        if not isinstance(created_at, str) or not created_at:
+            return LoopResult("BLOCKED", "semi-auto created_at is required")
+        try:
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            return LoopResult("BLOCKED", f"invalid semi-auto created_at: {exc}")
+        if created.tzinfo is None or created.utcoffset() is None:
+            return LoopResult("BLOCKED", "semi-auto created_at must include timezone")
+
+        operation_bounds = []
+        for item in command["path_policy"]:
+            operation_bounds.append(
+                f"- {item['path']}: permitted operations {','.join(item['allowed_ops'])}"
+            )
+        prompt = prepared_request["objective"].strip()
+        bounded_prompt = (
+            prompt
+            + "\n\nOperation bounds inherited from the Claude verdict:\n"
+            + "\n".join(operation_bounds)
+            + "\nDo not perform DELETE or RENAME. If an operation cannot stay within these bounds, make no edit and report BLOCKED."
+        )
+
+        request = {
+            "schema_version": 1,
+            "profile": JULES_SEMIAUTO_PROFILE,
+            "command_id": command["command_id"],
+            "origin_loop_id": prepared_request["loop_id"],
+            "origin_round": prepared_request["round"],
+            "origin_correlation_id": prepared_request["correlation_id"],
+            "origin_generation": command["generation"],
+            "target_repo": command["expected_repo"],
+            "target_branch": command["starting_branch"],
+            "expected_target_head": command["expected_target_head"],
+            "expected_target_tree": command["expected_target_tree"],
+            "allowed_paths": list(command["allowed_paths"]),
+            "prompt": bounded_prompt,
+            "created_at": created_at,
+            "expires_at": command["expires_at"],
+            "retry": 0,
+            "fallback": "disabled",
+            "merge_allowed": False,
+            "force_push_allowed": False,
+        }
+        validate_jules_semiauto_request(request, now=created)
+        return LoopResult("PREPARED", "unpersisted Jules semi-auto request artifact created", request)
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
 
@@ -304,7 +382,7 @@ def prepare_claude_transport(*, mode: str, dispatch_id: str, gate_base_url: str,
 
 def _validate_verdict(verdict: dict[str, Any]) -> None:
     required = {
-        "schema_version", "verdict_id", "loop_id", "round", "correlation_id",
+        "schema_version", "verdict_id", "loop_id", "round", "generation", "correlation_id",
         "backend_mode", "decision", "reasons", "next_prompt", "evidence_refs",
         "expected_target_head", "expected_target_tree", "terminal", "retry",
         "fallback", "execution_mode", "model_executed", "external_send_attempted",
@@ -326,6 +404,8 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
             raise ValueError(f"invalid {key}")
     if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= 6:
         raise ValueError("invalid verdict round")
+    if isinstance(verdict["generation"], bool) or not isinstance(verdict["generation"], int) or verdict["generation"] < 1:
+        raise ValueError("invalid verdict generation")
     for key in ("reasons", "evidence_refs"):
         if not isinstance(verdict[key], list) or any(not isinstance(item, str) or not item for item in verdict[key]):
             raise ValueError(f"invalid verdict {key}")

@@ -73,6 +73,21 @@ class JulesChatSemiAutoTimingWorkflowTests(unittest.TestCase):
         self.assertIn("jules_session_create_time:", self.text)
         self.assertIn("accepted_at_jst:", self.text)
 
+    def test_v2_origin_correlation_is_exposed_in_summary(self):
+        expected = (
+            "PROFILE: ${{ steps.validate.outputs.profile }}",
+            "ORIGIN_LOOP_ID: ${{ steps.validate.outputs.origin_loop_id }}",
+            "ORIGIN_ROUND: ${{ steps.validate.outputs.origin_round }}",
+            "ORIGIN_CORRELATION_ID: ${{ steps.validate.outputs.origin_correlation_id }}",
+            "ORIGIN_GENERATION: ${{ steps.validate.outputs.origin_generation }}",
+            "origin_loop_id:",
+            "origin_round:",
+            "origin_correlation_id:",
+            "origin_generation:",
+        )
+        for value in expected:
+            with self.subTest(value=value):
+                self.assertIn(value, self.text)
     def test_no_private_jules_url_is_added_to_summary(self):
         summary_section = self.text.split(
             "- name: Record dispatch boundary in job summary",
