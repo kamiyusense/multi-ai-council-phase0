@@ -61,19 +61,32 @@ class TestCorePR3OverlayRunner(unittest.TestCase):
 
             original_path = list(sys.path)
             sentinel = ModuleType("phase0_core.sentinel")
+            src_sentinel = ModuleType("src.sentinel")
             previous = sys.modules.get("phase0_core.sentinel")
+            previous_src = sys.modules.get("src.sentinel")
             sys.modules["phase0_core.sentinel"] = sentinel
+            sys.modules["src.sentinel"] = src_sentinel
 
             try:
                 with self.assertRaisesRegex(RuntimeError, "fake fanout import failure"):
                     overlay.run_overlay(core_root, relay_root, self.pinned_head)
                 self.assertEqual(sys.path, original_path)
                 self.assertIs(sys.modules.get("phase0_core.sentinel"), sentinel)
+                self.assertIs(sys.modules.get("src.sentinel"), src_sentinel)
             finally:
                 if previous is None:
                     sys.modules.pop("phase0_core.sentinel", None)
                 else:
                     sys.modules["phase0_core.sentinel"] = previous
+                if previous_src is None:
+                    sys.modules.pop("src.sentinel", None)
+                else:
+                    sys.modules["src.sentinel"] = previous_src
+
+    def test_overlay_namespace_cleanup_includes_src_namespace(self):
+        self.assertTrue(overlay._namespace_matches("src"))
+        self.assertTrue(overlay._namespace_matches("src.relay.core_adapter"))
+        self.assertFalse(overlay._namespace_matches("unrelated.module"))
 
     def test_required_paths_are_deterministic_and_explicit(self):
         core = Path("/core")
