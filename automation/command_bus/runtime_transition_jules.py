@@ -1,10 +1,17 @@
 """Static Jules input adapter. It never grants owner authority or verifies a provider."""
 from __future__ import annotations
 
+import json
 from typing import Any
 
+from .github_backend import GitHubContentsClient
 from .loop_owner import validate_owner_event
 from .runtime_transition_evidence import validate_evidence_document
+from .runtime_transition_receipt import (
+    CanonicalOwnerReceiptGitHubBackend,
+    OwnerReceiptWriteResult,
+    build_terminal_owner_receipt,
+)
 
 
 def prepare_jules_evidence(
@@ -62,3 +69,60 @@ def prepare_jules_evidence(
     if path != owner_event["evidence_refs"][0]:
         raise ValueError("Jules evidence path is not bound to the owner event")
     return document
+
+
+def prepare_jules_terminal_owner_receipt(
+    owner_event: dict[str, Any],
+    *,
+    jules_receipt: dict[str, Any],
+) -> dict[str, Any]:
+    """Derive one canonical TERMINAL owner receipt from a durable Jules receipt.
+
+    The original Jules receipt remains immutable at its own round-scoped path.
+    This function only prepares a new owner receipt; it performs no write.
+    """
+    round_number = jules_receipt.get("round")
+    if isinstance(round_number, bool) or not isinstance(round_number, int) or round_number < 1:
+        raise ValueError("Jules receipt round is required")
+    provider_ref = (
+        f"automation/command_bus/receipts/{owner_event['loop_id']}/"
+        f"{round_number:06d}.json"
+    )
+    return build_terminal_owner_receipt(
+        owner_event,
+        provider_kind="JULES",
+        provider_receipt=jules_receipt,
+        provider_receipt_ref=provider_ref,
+    )
+
+
+class JulesTerminalOwnerReceiptAdapter:
+    """Read a durable Jules terminal receipt and publish one canonical owner receipt."""
+
+    def __init__(self, client: GitHubContentsClient, *, branch: str):
+        self.client = client
+        self.branch = branch
+        self.backend = CanonicalOwnerReceiptGitHubBackend(client, branch=branch)
+
+    def publish(self, owner_event: dict[str, Any], *, jules_round: int) -> OwnerReceiptWriteResult:
+        try:
+            if isinstance(jules_round, bool) or not isinstance(jules_round, int) or jules_round < 1:
+                raise ValueError("Jules round must be a positive integer")
+            validate_owner_event(owner_event)
+            source_ref = (
+                f"automation/command_bus/receipts/{owner_event['loop_id']}/"
+                f"{jules_round:06d}.json"
+            )
+            content = self.client.get(source_ref, self.branch)
+            if content is None:
+                return OwnerReceiptWriteResult("UNKNOWN", "durable Jules receipt readback unavailable")
+            jules_receipt = json.loads(content.text)
+            if not isinstance(jules_receipt, dict):
+                raise ValueError("durable Jules receipt is not a JSON object")
+            canonical = prepare_jules_terminal_owner_receipt(
+                owner_event,
+                jules_receipt=jules_receipt,
+            )
+            return self.backend.write(owner_event, canonical)
+        except (ValueError, TypeError, KeyError, json.JSONDecodeError, RuntimeError) as exc:
+            return OwnerReceiptWriteResult("UNKNOWN", str(exc))
