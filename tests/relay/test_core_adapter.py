@@ -40,12 +40,22 @@ class RecordingBridge(RelayProviderAdapterBridge):
 class TestCoreAdapter(unittest.TestCase):
     def setUp(self):
         self.bridge = RecordingBridge()
-        self.adapter = RelayCoreAdapter("my-provider", self.bridge)
+        self.valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
+        self.adapter = RelayCoreAdapter("openai", self.bridge, self.valid_openai_config)
 
     def test_prepare_injects_provider_id(self):
         context = {"payload": {"q": "hello"}}
         self.adapter.prepare(context)
-        self.assertEqual(self.bridge.prepare_called_with["provider_id"], "my-provider")
+        self.assertEqual(self.bridge.prepare_called_with["provider_id"], "openai")
         self.assertNotIn("provider_id", context)
 
     def test_prepare_rejects_conflicting_id(self):
@@ -59,9 +69,9 @@ class TestCoreAdapter(unittest.TestCase):
             self.adapter.prepare(context)
 
     def test_prepare_accepts_matching_id(self):
-        context = {"provider_id": "my-provider", "payload": {"a": "b"}}
+        context = {"provider_id": "openai", "payload": {"a": "b"}}
         self.adapter.prepare(context)
-        self.assertEqual(self.bridge.prepare_called_with["provider_id"], "my-provider")
+        self.assertEqual(self.bridge.prepare_called_with["provider_id"], "openai")
 
     def test_preflight_delegates(self):
         prepared = {"prepared": True}
@@ -143,6 +153,67 @@ class TestCoreAdapter(unittest.TestCase):
         }
         res = self.adapter.classify(json.dumps(invalid).encode("utf-8"))
         self.assertFalse(res["success"])
+
+    def test_preflight_missing_config_fails(self):
+        adapter = RelayCoreAdapter("openai", self.bridge, None)
+        res = adapter.preflight({})
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["static_configuration_status"], "UNKNOWN")
+        self.assertIn("static_preflight_config missing", res["reasons"][0])
+
+    def test_preflight_bridge_exception_fails(self):
+        class BrokenBridge(RecordingBridge):
+            def preflight(self, ctx):
+                raise RuntimeError("Boom")
+        adapter = RelayCoreAdapter("openai", BrokenBridge(), self.valid_openai_config)
+        res = adapter.preflight({})
+        self.assertFalse(res["ok"])
+        self.assertIn("bridge preflight exception: Boom", res["reasons"][0])
+
+    def test_preflight_bridge_malformed_fails(self):
+        class BrokenBridge(RecordingBridge):
+            def preflight(self, ctx):
+                return {"ok": True, "live_ready": True} # live_ready must be False
+        adapter = RelayCoreAdapter("openai", BrokenBridge(), self.valid_openai_config)
+        res = adapter.preflight({})
+        self.assertFalse(res["ok"])
+        self.assertIn("bridge preflight failed", res["reasons"][0])
+
+    def test_preflight_wrong_auth_kind_fails(self):
+        bad_config = dict(self.valid_openai_config)
+        bad_config["auth_kind"] = "unsupported"
+        adapter = RelayCoreAdapter("openai", self.bridge, bad_config)
+        res = adapter.preflight({})
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["static_configuration_status"], "UNKNOWN")
+
+    def test_preflight_unsafe_route_evidence_fails(self):
+        bad_config = dict(self.valid_openai_config)
+        bad_config["route_evidence"] = {"api_key_present": True}
+        adapter = RelayCoreAdapter("openai", self.bridge, bad_config)
+        res = adapter.preflight({})
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["static_configuration_status"], "UNKNOWN")
+
+    def test_preflight_case_context_override_ignored(self):
+        adapter = RelayCoreAdapter("openai", self.bridge, self.valid_openai_config)
+        # payload attempts to override auth_kind
+        ctx = {"auth_kind": "invalid", "route_evidence": {"api_key_present": True}}
+        res = adapter.preflight(ctx)
+        self.assertTrue(res["ok"]) # The adapter should use self.static_preflight_config, not ctx
+
+    def test_preflight_config_deep_copied(self):
+        config = dict(self.valid_openai_config)
+        adapter = RelayCoreAdapter("openai", self.bridge, config)
+        config["auth_kind"] = "invalid" # Mutate caller data
+        res = adapter.preflight({})
+        self.assertTrue(res["ok"]) # Still passes because adapter has deep copy
+
+    def test_preflight_provider_mismatch_fails(self):
+        adapter = RelayCoreAdapter("google", self.bridge, self.valid_openai_config)
+        res = adapter.preflight({})
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["static_configuration_status"], "UNKNOWN")
 
     def test_classify_fails_closed_on_missing_required(self):
         invalid = {

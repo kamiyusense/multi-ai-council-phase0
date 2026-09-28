@@ -4,15 +4,17 @@ import json
 from copy import deepcopy
 from typing import Any
 
+from providers.preflight import validate_provider_static
 from .bridge import RelayProviderAdapterBridge
 
 
 class RelayCoreAdapter:
-    def __init__(self, provider_id: str, bridge: RelayProviderAdapterBridge):
+    def __init__(self, provider_id: str, bridge: RelayProviderAdapterBridge, static_preflight_config: dict[str, Any] | None = None):
         if not isinstance(provider_id, str) or not provider_id:
             raise ValueError("provider_id must be a non-empty string")
         self.provider_id = provider_id
         self.bridge = bridge
+        self.static_preflight_config = deepcopy(static_preflight_config)
 
     def prepare(self, case_context: dict[str, Any]) -> dict[str, Any]:
         context_copy = deepcopy(case_context)
@@ -28,7 +30,57 @@ class RelayCoreAdapter:
         return self.bridge.prepare(context_copy)
 
     def preflight(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
-        return self.bridge.preflight(prepared_context)
+        fail_result = {
+            "ok": False,
+            "live_ready": False,
+            "static_configuration_status": "UNKNOWN",
+            "reasons": []
+        }
+
+        try:
+            bridge_res = self.bridge.preflight(prepared_context)
+        except Exception as e:
+            fail_result["reasons"].append(f"bridge preflight exception: {e}")
+            return fail_result
+
+        if not isinstance(bridge_res, dict) or bridge_res.get("ok") is not True or bridge_res.get("live_ready") is not False:
+            fail_result["reasons"].append("bridge preflight failed or returned invalid dict")
+            return fail_result
+
+        if not isinstance(self.static_preflight_config, dict):
+            fail_result["reasons"].append("static_preflight_config missing or malformed")
+            return fail_result
+
+        auth_kind = self.static_preflight_config.get("auth_kind")
+        route_evidence = self.static_preflight_config.get("route_evidence", {})
+        platform = self.static_preflight_config.get("platform")
+        architecture = self.static_preflight_config.get("architecture")
+        provider_meta = self.static_preflight_config.get("provider_meta")
+
+        val_res = validate_provider_static(
+            provider_id=self.provider_id,
+            auth_kind=auth_kind,
+            route_evidence=route_evidence,
+            platform=platform,
+            architecture=architecture,
+            provider_meta=provider_meta,
+        )
+
+        if val_res.get("static_configuration_status") != "PASS":
+            fail_result["reasons"].extend(val_res.get("reasons", []))
+            for k in ("provider_id", "external_agent", "pinned_version", "retry_count", "fallback_state"):
+                if k in val_res:
+                    fail_result[k] = val_res[k]
+            return fail_result
+
+        val_res.update({
+            "ok": True,
+            "mode": "static_mock",
+            "live_ready": False,
+            "live_readiness": "BLOCKED",
+            "static_configuration_status": "PASS"
+        })
+        return val_res
 
     def dispatch(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
         return self.bridge.dispatch(prepared_context)

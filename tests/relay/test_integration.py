@@ -201,10 +201,54 @@ class RelayIntegrationTests(unittest.TestCase):
         with open("fixtures/relay/valid_provider_response.json", "rb") as f:
             fixture_bytes = f.read()
 
+        configs = {
+            "openai": {
+                "auth_kind": "account",
+                "route_evidence": {
+                    "api_key_present": False,
+                    "gateway_configured": False,
+                    "external_cloud_configured": False,
+                    "custom_model_provider_configured": False,
+                    "arbitrary_codex_config_present": False
+                }
+            },
+            "anthropic": {
+                "auth_kind": "account",
+                "route_evidence": {
+                    "api_key_present": False,
+                    "gateway_configured": False,
+                    "external_cloud_configured": False,
+                    "dangerous_permission_bypass": False,
+                    "hide_claude_auth": False
+                },
+                "provider_meta": {
+                    "claudeCode": {
+                        "options": {
+                            "allowDangerouslySkipPermissions": False,
+                        }
+                    }
+                }
+            },
+            "google": {
+                "auth_kind": "account",
+                "route_evidence": {
+                    "api_key_present": False,
+                    "gateway_configured": False,
+                    "external_cloud_configured": False,
+                    "cloud_billing_selected": False,
+                    "overages_enabled": False,
+                    "adc_present": False,
+                    "vertex_selected": False
+                },
+                "platform": "linux",
+                "architecture": "x86_64"
+            }
+        }
+
         for provider in ("openai", "anthropic", "google"):
             bridge = RelayProviderAdapterBridge(mock_raw_response=fixture_bytes.decode("utf-8"))
             # Duck typing RelayCoreAdapter as the bridge for RelayDispatcher
-            adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter(provider, bridge)
+            adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter(provider, bridge, configs[provider])
 
             dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
             result = dispatcher.dispatch(
@@ -226,8 +270,19 @@ class RelayIntegrationTests(unittest.TestCase):
         with open("fixtures/relay/invalid_provider_response_missing_field.json", "rb") as f:
             fixture_bytes = f.read()
 
+        valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
+
         bridge = RelayProviderAdapterBridge(mock_raw_response=fixture_bytes.decode("utf-8"))
-        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge)
+        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge, valid_openai_config)
 
         dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
         result = dispatcher.dispatch(
@@ -240,7 +295,17 @@ class RelayIntegrationTests(unittest.TestCase):
 
     def test_core_adapter_duck_typing_timeout(self):
         bridge = RelayProviderAdapterBridge(simulate_timeout=True)
-        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge)
+        valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
+        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge, valid_openai_config)
 
         dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
         result = dispatcher.dispatch(
@@ -253,8 +318,18 @@ class RelayIntegrationTests(unittest.TestCase):
     def test_core_adapter_duck_typing_duplicate(self):
         with open("fixtures/relay/valid_provider_response.json", "rb") as f:
             fixture_bytes = f.read()
+        valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
         bridge = RelayProviderAdapterBridge(mock_raw_response=fixture_bytes.decode("utf-8"))
-        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge)
+        adapter = __import__("src.relay.core_adapter", fromlist=["RelayCoreAdapter"]).RelayCoreAdapter("openai", bridge, valid_openai_config)
 
         dispatcher = RelayDispatcher(adapter, DuplicateConflictGuard())
 
