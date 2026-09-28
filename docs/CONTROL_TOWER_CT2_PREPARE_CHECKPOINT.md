@@ -269,3 +269,17 @@ verified durable loop IDs/readbacks are available.
 
 **影響範囲:** production multi-loop collector, first live Issue #33 migration,
 and later real multi-loop / Windows snapshot integration.
+
+### PR #25 latest-head cross-check
+
+Fresh readback of PR #25 (`feature/claude-night-loop-prepare`) found that
+`automation/command_bus/claude_loop.py` accepts `loop_id` as an input but does
+not establish the final durable IDs for the Control Tower presentation lanes
+`Claude -> Gemini` or `Claude -> Claude`.
+
+The current PR #25 handover also describes prepare/live boundaries but does not
+supply a verified mapping from those display labels to final durable Control
+Tower loop IDs.
+
+This reinforces `CONTROL-TOWER-REAL-LOOP-IDS-001 = UNKNOWN`; no mapping is
+inferred from branch/PR names.
