@@ -4,9 +4,11 @@ import { EventEmitter } from "node:events";
 import { Duplex } from "node:stream";
 import {
   ALLOWED_AUTH_AUTHORITY,
+  ALLOWED_AUTH_HOST,
   DENIED_MODEL_AUTHORITY,
   classifyConnectAuthority,
   createAuthControlProxy,
+  inspectTlsClientHello,
   isPublicAddress,
 } from "../docker/auth-control-plane/auth_control_plane_proxy.mjs";
 import { prepareClaudeInvocation } from "../docker/claude-runtime/claude_runtime_launcher.mjs";
@@ -30,25 +32,72 @@ const requiredRuntimeEnv = {
   DISABLE_UPDATES: "1",
 };
 
+const u16 = (value) => Buffer.from([(value >>> 8) & 0xff, value & 0xff]);
+const u24 = (value) => Buffer.from([(value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff]);
+
+function makeClientHello(hostname = ALLOWED_AUTH_HOST) {
+  const extensions = [];
+  if (hostname !== null) {
+    const host = Buffer.from(hostname, "ascii");
+    const entry = Buffer.concat([Buffer.from([0]), u16(host.length), host]);
+    const list = Buffer.concat([u16(entry.length), entry]);
+    extensions.push(Buffer.concat([u16(0), u16(list.length), list]));
+  }
+  const extensionBlock = Buffer.concat(extensions);
+  const body = Buffer.concat([
+    Buffer.from([0x03, 0x03]),
+    Buffer.alloc(32, 0x11),
+    Buffer.from([0]),
+    u16(2),
+    Buffer.from([0x13, 0x01]),
+    Buffer.from([1, 0]),
+    u16(extensionBlock.length),
+    extensionBlock,
+  ]);
+  const handshake = Buffer.concat([Buffer.from([1]), u24(body.length), body]);
+  return Buffer.concat([
+    Buffer.from([22, 0x03, 0x01]),
+    u16(handshake.length),
+    handshake,
+  ]);
+}
+
 function fakeClient() {
   const client = new EventEmitter();
   client.destroyed = false;
   client.responses = [];
+  client.paused = false;
   client.write = (chunk) => { client.responses.push(Buffer.from(chunk)); return true; };
   client.end = (chunk) => {
     if (chunk) client.responses.push(Buffer.from(chunk));
     client.ended = true;
     return true;
   };
-  client.destroy = () => { client.destroyed = true; client.emit("close"); return client; };
+  client.destroy = () => {
+    if (!client.destroyed) {
+      client.destroyed = true;
+      client.emit("close");
+    }
+    return client;
+  };
+  client.pause = () => { client.paused = true; return client; };
+  client.resume = () => { client.paused = false; return client; };
   client.pipe = (destination) => { client.pipeTarget = destination; return destination; };
   return client;
 }
 
-async function emitConnect(server, authority) {
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+async function emitConnect(server, authority, tlsChunks = []) {
   const client = fakeClient();
   server.emit("connect", { url: authority }, client, Buffer.alloc(0));
-  await new Promise((resolve) => setImmediate(resolve));
+  await flush();
+  await flush();
+  for (const chunk of tlsChunks) {
+    client.emit("data", chunk);
+    await flush();
+    await flush();
+  }
   return client;
 }
 
@@ -85,6 +134,16 @@ test("DNS result must be public unicast; private and special addresses fail clos
   assert.equal(isPublicAddress("2606:4700:4700::1111", 6), true);
 });
 
+test("TLS ClientHello requires the exact allowlisted SNI and handles fragmentation", () => {
+  const allowed = makeClientHello();
+  assert.deepEqual(inspectTlsClientHello(allowed), { status: "ALLOW", sni: ALLOWED_AUTH_HOST });
+  assert.equal(inspectTlsClientHello(allowed.subarray(0, 12)).status, "NEED_MORE");
+  assert.equal(inspectTlsClientHello(makeClientHello("api.anthropic.com")).status, "DENY");
+  assert.equal(inspectTlsClientHello(makeClientHello("other.example")).status, "DENY");
+  assert.equal(inspectTlsClientHello(makeClientHello(null)).status, "DENY");
+  assert.equal(inspectTlsClientHello(Buffer.from("not tls")).status, "DENY");
+});
+
 test("proxy denies the model host and arbitrary CONNECT targets before DNS or egress", async () => {
   let lookups = 0;
   const server = createAuthControlProxy({
@@ -98,30 +157,76 @@ test("proxy denies the model host and arbitrary CONNECT targets before DNS or eg
   assert.equal(lookups, 0);
 });
 
-test("allowed CONNECT tunnels only through the injected no-network test socket", async () => {
+test("allowed CONNECT opens upstream only after exact TLS SNI validation", async () => {
   let selectedAddress;
-  let testUpstream;
+  let connectCalls = 0;
+  let initialTls;
   const server = createAuthControlProxy({
     resolveHost: async () => [{ address: "93.184.216.34", family: 4 }],
     connectAddress: async (record) => {
+      connectCalls += 1;
       selectedAddress = record.address;
       const upstream = new Duplex({
         read() {},
         write(chunk, _encoding, callback) {
-          this.push(Buffer.concat([Buffer.from("echo:"), chunk]));
+          initialTls = Buffer.from(chunk);
           callback();
         },
       });
-      testUpstream = upstream;
       return upstream;
     },
   });
-  const result = await emitConnect(server, ALLOWED_AUTH_AUTHORITY);
+  const hello = makeClientHello();
+  const result = await emitConnect(server, ALLOWED_AUTH_AUTHORITY, [hello]);
   assert.match(responseText(result), /^HTTP\/1\.1 200 Connection Established/);
+  assert.equal(connectCalls, 1);
   assert.equal(selectedAddress, "93.184.216.34");
-  assert.equal(result.pipeTarget, testUpstream);
-  result.pipeTarget.write(Buffer.from("synthetic TLS request"));
-  assert.ok(responseText(result).includes("echo:synthetic TLS request"));
+  assert.deepEqual(initialTls, hello);
+  assert.ok(result.pipeTarget);
+  result.destroy();
+});
+
+test("mismatched TLS SNI is terminal and never opens an upstream connection", async () => {
+  let connects = 0;
+  const server = createAuthControlProxy({
+    resolveHost: async () => [{ address: "93.184.216.34", family: 4 }],
+    connectAddress: async () => { connects += 1; throw new Error("must not connect"); },
+  });
+  const result = await emitConnect(
+    server,
+    ALLOWED_AUTH_AUTHORITY,
+    [makeClientHello("api.anthropic.com")],
+  );
+  assert.match(responseText(result), /^HTTP\/1\.1 200 Connection Established/);
+  assert.equal(connects, 0);
+  assert.equal(result.destroyed, true);
+});
+
+test("fragmented allowlisted ClientHello is buffered before the one upstream connect", async () => {
+  let connects = 0;
+  let initialTls;
+  const server = createAuthControlProxy({
+    resolveHost: async () => [{ address: "93.184.216.34", family: 4 }],
+    connectAddress: async () => {
+      connects += 1;
+      return new Duplex({
+        read() {},
+        write(chunk, _encoding, callback) {
+          initialTls = Buffer.from(chunk);
+          callback();
+        },
+      });
+    },
+  });
+  const hello = makeClientHello();
+  const split = Math.floor(hello.length / 2);
+  const result = await emitConnect(
+    server,
+    ALLOWED_AUTH_AUTHORITY,
+    [hello.subarray(0, split), hello.subarray(split)],
+  );
+  assert.equal(connects, 1);
+  assert.deepEqual(initialTls, hello);
   result.destroy();
 });
 
