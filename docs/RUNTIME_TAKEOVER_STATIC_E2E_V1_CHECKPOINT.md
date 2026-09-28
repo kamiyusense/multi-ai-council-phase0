@@ -121,3 +121,16 @@ real SEMI_AUTO/AUTO takeoverを開始しない。
 **影響範囲:** authority grant issuer、ProviderVerifier、
 SourceBoundAuthorityGrantVerifier / SourceBoundProviderVerifierのproduction
 adapter、real takeover、live Status更新。
+
+## Control Tower v2 compatibility
+
+This static E2E proves the durable takeover/control-plane chain only. It is not
+a Control Tower renderer test and it must not become one.
+
+The Multi-loop Control Tower must aggregate already verified per-loop
+projections. Presentation metadata and aggregate counts must never replace the
+state/owner/receipt/evidence/provider/target/authority/fencing path exercised
+here.
+
+CT-1 remains separately bounded to static registry/model/rendering/snapshot
+work. No live Issue #33 migration is authorized by this E2E.
