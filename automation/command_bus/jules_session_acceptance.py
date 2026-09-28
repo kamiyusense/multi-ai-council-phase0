@@ -67,6 +67,28 @@ def extract_session_acceptance(
     )
 
 
+
+def verify_session_acceptance_readback(
+    accepted: JulesSessionAcceptance,
+    response: dict[str, Any],
+) -> JulesSessionAcceptance:
+    """Require a later Session GET to confirm the same provider createTime."""
+    if not isinstance(accepted, JulesSessionAcceptance):
+        raise ValueError("existing JulesSessionAcceptance is required")
+    observed = extract_session_acceptance(
+        response,
+        expected_branch=accepted.starting_branch,
+    )
+    if observed.session_name != accepted.session_name:
+        raise ValueError("Jules session readback name mismatch")
+    if observed.session_id != accepted.session_id:
+        raise ValueError("Jules session readback id mismatch")
+    if observed.session_create_time != accepted.session_create_time:
+        raise ValueError("Jules session readback createTime mismatch")
+    if observed.accepted_at_jst != accepted.accepted_at_jst:
+        raise ValueError("Jules session readback JST time mismatch")
+    return observed
+
 def load_session_acceptance(
     response_path: str | Path,
     *,
