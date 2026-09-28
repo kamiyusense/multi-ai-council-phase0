@@ -243,16 +243,33 @@ None of those happen in this batch.
 - no PLACEHOLDER -> DURABLE promotion;
 - no Merge in this batch.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- OIDC token requests: MUST REMAIN ZERO
-- workflow permission changes: MUST REMAIN NONE
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `d664d235c968a52710e05482f996be4a32ce3ab9`
+- GitHub Actions run:
+  `36446443041` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **302/302 PASS**
+- full command-bus suite:
+  **731/731 PASS**
+- command-bus JSON schemas parsed:
+  **22/22 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative OIDC policy tests were present in the exact-head CI log:
+  - exact expected claims context -> MATCH;
+  - each bounded identity mismatch -> BLOCKED;
+  - reusable workflow identity must be explicit;
+  - subject is exact policy input and is not inferred;
+  - MATCH does not produce provider or owner authority proof.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- OIDC token requests:
+  **ZERO**
+- workflow permission changes:
+  **NONE**
+- Issue #33 live mutation:
+  **NONE**
