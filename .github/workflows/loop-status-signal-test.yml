@@ -3,6 +3,14 @@ name: Phase 0 loop status signal tests
 on:
   pull_request:
     paths:
+      - automation/command_bus/claude_admission_gate.py
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/docker/auth-control-plane/**
+      - automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+      - automation/command_bus/tests/test_claude_admission_gate.py
+      - automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+      - docs/CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md
+      - docs/CLAUDE_ADMISSION_GATE_DESIGN.md
       - automation/command_bus/loop_status_issue.py
       - automation/command_bus/control_tower.py
       - automation/command_bus/control_tower_issue_plan.py
@@ -93,6 +101,7 @@ jobs:
         shell: bash
         run: |
           modules=(
+            automation.command_bus.tests.test_claude_admission_gate
             automation.command_bus.tests.test_loop_status_issue
             automation.command_bus.tests.test_control_tower
             automation.command_bus.tests.test_control_tower_issue_plan
@@ -141,12 +150,22 @@ jobs:
         shell: bash
         run: |
           python -m unittest discover -v automation/command_bus/tests
+
+      - name: Verify OAuth proxy and launcher without network access
+        shell: bash
+        run: |
+          node --check automation/command_bus/docker/auth-control-plane/auth_control_plane_proxy.mjs
+          node --check automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+          node --test automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+          python -m compileall -q automation/command_bus
+
       - name: Parse command-bus JSON schemas
         shell: bash
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
+          json.loads(Path("automation/command_bus/claude_gate_compose.yaml").read_text(encoding="utf-8"))
           for path in sorted(Path("automation/command_bus/schema").glob("*.json")):
               json.loads(path.read_text(encoding="utf-8"))
               print(f"schema-ok {path}")
