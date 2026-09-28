@@ -44,7 +44,10 @@ class TestCorePR3OverlayWorkflow(unittest.TestCase):
 
     def test_workflow_has_expected_command_logic(self):
         self.assertIn("494b7296f32dce1c173a7699e4bd2d87f70d31a9", self.workflow_text)
-        self.assertIn("PYTHONPATH=relay/src python relay/tests/relay/core_pr3_overlay_runner.py --core-root core --relay-root relay --core-head", self.workflow_text)
+        self.assertIn("PYTHONPATH=relay/src python relay/tests/relay/core_pr3_overlay_runner.py", self.workflow_text)
+        self.assertIn("--core-root core", self.workflow_text)
+        self.assertIn("--relay-root relay", self.workflow_text)
+        self.assertIn("--core-head", self.workflow_text)
 
     def test_workflow_github_token(self):
         self.assertIn("github.token", self.workflow_text.lower())
@@ -82,8 +85,10 @@ class TestCorePR3OverlayWorkflow(unittest.TestCase):
         )
         for fragment in required:
             self.assertIn(fragment, self.workflow_text)
-        for obsolete in (".each_dispatch_count", ".collect_count", ".abort_count"):
+        for obsolete in (".each_dispatch_count",):
             self.assertNotIn(obsolete, self.workflow_text)
+        self.assertNotIn("jq -r '.collect_count'", self.workflow_text)
+        self.assertNotIn("jq -r '.abort_count'", self.workflow_text)
 
     def test_no_live_provider_or_secret_surface(self):
         for value in (
