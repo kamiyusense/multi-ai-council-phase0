@@ -132,23 +132,93 @@ Added tests:
 - bounded timing fields appear in job summary;
 - no private Jules session URL is added to the summary.
 
-## Remaining production readback boundary
+## Existing Session GET readback reuse
 
-The workflow now emits a trustworthy presentation timestamp source, but a future
-Control Tower collector still needs a bounded way to obtain the successful
-workflow/session acceptance evidence.
+The repository already contains:
 
-This batch does not add:
+`.github/workflows/jules-session-readback.yml`
+
+which performs exactly one GET of an existing Jules Session with
+`curl --retry 0`.
+
+This batch reuses that existing path. It does not add another readback endpoint
+or polling loop.
+
+The Session GET path now emits:
+
+- `jules_session_create_time`
+- `accepted_at_jst`
+- `accepted_at_source=JULES_SESSION_GET_CREATE_TIME_READBACK`
+
+from the same GET response.
+
+The pure acceptance module also supports:
+
+- exact expected session-id binding for Session GET;
+- provider `createTime` normalization;
+- equality verification between Create Session acceptance evidence and later
+  Session GET timing evidence.
+
+Mismatch in session identity or createTime is fail-closed.
+
+## Control Tower schedule provenance bridge
+
+Added:
+
+`automation/command_bus/control_tower_jules_schedule.py`
+
+This is the preferred production-facing constructor for verified Semi-Auto
+schedule hints.
+
+Callers do **not** pass `accepted_at` directly.
+
+For a VERIFIED schedule:
+
+`JulesSessionAcceptance.accepted_at_jst`
+
+is the only accepted source.
+
+Optional Session GET timing readback may be supplied and must exactly match the
+Create Session acceptance record.
+
+If Create Session acceptance evidence is unavailable:
+
+- acceptance remains UNKNOWN;
+- accepted_at is null;
+- eta_start is null;
+- eta_end is null;
+- a later GET readback alone is not allowed to manufacture VERIFIED acceptance.
+
+This closes the gap where a caller could otherwise hand-type a timestamp while
+claiming `acceptance_state=VERIFIED`.
+
+## Remaining production boundary
+
+The static provenance path is now:
+
+```text
+Jules Create Session 2xx response
+-> validated session name + starting branch + provider createTime
+-> JulesSessionAcceptance
+-> optional existing Session GET readback corroboration
+-> control_tower_jules_schedule bridge
+-> SemiAutoScheduleHint
+-> Control Tower presentation/snapshot
+```
+
+Still not added:
 
 - repository runtime writes;
 - write permissions;
-- a new database/backend;
-- a second Jules API call;
-- a provider/model run;
+- new database/backend;
+- polling loop;
+- extra Jules API request during creation;
+- provider/model run;
 - Issue #33 mutation.
 
-The collector/readback path should reuse existing GitHub workflow/job/log
-evidence if practical and remain retry=0/fail-closed.
+A future live collector still needs to read the already-produced workflow/run
+evidence and verified durable lane identity without weakening the current
+Control Tower registration gate.
 
 ## Explicitly not performed
 
@@ -164,24 +234,28 @@ evidence if practical and remain retry=0/fail-closed.
 ## Exact-head verification
 
 - exact tested PR head:
-  `5eb471d2e7efb67da776cdb661ab38e73f53b167`
+  `7642a850bb59d5821a6085296ebfae2105c5d0c7`
 - GitHub Actions run:
-  `36379502077` — **SUCCESS**
+  `36379940119` — **SUCCESS**
 - focused Status/runtime/validation suite:
-  **250/250 PASS**
+  **264/264 PASS**
 - full command-bus suite:
-  **537/537 PASS**
+  **551/551 PASS**
 - command-bus JSON schemas parsed:
   **20/20 PASS**
 - Python compileall:
   **PASS**
 - `git diff --check`:
   **PASS**
-- representative accepted-at tests were present in the exact-head CI log:
+- representative accepted-at/readback/bridge tests were present in the exact-head CI log:
   - createTime -> canonical UTC/JST;
   - missing/naive createTime rejection;
   - single Jules POST + retry=0 retention;
-  - GitHub/commit/shell clocks forbidden as acceptance source.
+  - GitHub/commit/shell clocks forbidden as acceptance source;
+  - Session GET remains one retry-zero readback;
+  - verified schedule receives accepted_at only from JulesSessionAcceptance;
+  - missing acceptance remains UNKNOWN without ETA;
+  - optional Session GET timing must match Create Session evidence.
 - tested head -> current head compare:
   to be read back after this documentation-only evidence commit.
 - live Jules execution:
