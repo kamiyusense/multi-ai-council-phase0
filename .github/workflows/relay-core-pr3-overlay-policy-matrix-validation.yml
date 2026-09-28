@@ -1,0 +1,150 @@
+name: "Relay Core PR3 Overlay Policy Matrix Validation"
+on:
+  push:
+    branches:
+      - "feature/relay-transport-7070955470193506982"
+    paths:
+      - "automation/command_bus/relay_overlay_matrix_requests/*.json"
+
+concurrency:
+  group: relay-core-pr3-overlay-policy-matrix
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate_overlay_policy_matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: "Checkout exact triggering commit"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          path: trigger_repo
+
+      - name: "Read and validate append-only trigger request"
+        id: parse_request
+        run: |
+          cd trigger_repo
+          COMMIT_SHA="${{ github.sha }}"
+          RESPONSE=$(curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/$COMMIT_SHA")
+
+          FILE_COUNT=$(echo "$RESPONSE" | jq '.files | length')
+          if [ "$FILE_COUNT" != "1" ]; then
+            echo "Error: commit must change exactly one file. Found $FILE_COUNT."
+            exit 1
+          fi
+
+          FILE_STATUS=$(echo "$RESPONSE" | jq -r '.files[0].status')
+          if [ "$FILE_STATUS" != "added" ]; then
+            echo "Error: commit must only add a new request. Status was $FILE_STATUS."
+            exit 1
+          fi
+
+          FILE_PATH=$(echo "$RESPONSE" | jq -r '.files[0].filename')
+          if ! echo "$FILE_PATH" | grep -q "^automation/command_bus/relay_overlay_matrix_requests/.*\.json$"; then
+            echo "Error: unexpected file path $FILE_PATH"
+            exit 1
+          fi
+
+          PARENT_COUNT=$(echo "$RESPONSE" | jq '.parents | length')
+          if [ "$PARENT_COUNT" != "1" ]; then
+            echo "Error: request commit must have exactly one parent (no merges)."
+            exit 1
+          fi
+
+          PARENT_SHA=$(echo "$RESPONSE" | jq -r '.parents[0].sha')
+
+          RELAY_SHA=$(jq -r '.relay_sha | select(type == "string" and length == 40 and test("^[0-9a-f]{40}$"))' "$FILE_PATH")
+          CORE_SHA=$(jq -r '.core_sha | select(type == "string" and length == 40 and test("^[0-9a-f]{40}$"))' "$FILE_PATH")
+          PURPOSE=$(jq -r '.purpose | select(type == "string" and length > 0)' "$FILE_PATH")
+
+          if [ -z "$RELAY_SHA" ] || [ -z "$CORE_SHA" ] || [ -z "$PURPOSE" ]; then
+            echo "Error: Invalid request JSON payload."
+            exit 1
+          fi
+
+          if [ "$CORE_SHA" != "494b7296f32dce1c173a7699e4bd2d87f70d31a9" ]; then
+            echo "Error: core_sha must exactly match pinned PR3 head 494b7296f32dce1c173a7699e4bd2d87f70d31a9."
+            exit 1
+          fi
+
+          if [ "$RELAY_SHA" != "$PARENT_SHA" ]; then
+            echo "Error: relay_sha must equal the triggering commit's sole parent."
+            exit 1
+          fi
+
+          echo "relay_sha=$RELAY_SHA" >> $GITHUB_OUTPUT
+          echo "core_sha=$CORE_SHA" >> $GITHUB_OUTPUT
+
+      - name: "Checkout Relay"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.parse_request.outputs.relay_sha }}
+          persist-credentials: false
+          path: relay
+
+      - name: "Checkout Core"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.parse_request.outputs.core_sha }}
+          persist-credentials: false
+          path: core
+
+      - name: "Execute and Validate Policy Matrix Overlay"
+        run: |
+          PYTHONPATH=relay/src python relay/tests/relay/core_pr3_overlay_policy_matrix_runner.py \
+            --core-root core \
+            --relay-root relay \
+            --core-head "494b7296f32dce1c173a7699e4bd2d87f70d31a9" > matrix_result.json
+
+          cat matrix_result.json
+
+          jq -e '.core_head == "494b7296f32dce1c173a7699e4bd2d87f70d31a9"' matrix_result.json > /dev/null
+          jq -e '.matrix_state == "PASS"' matrix_result.json > /dev/null
+          jq -e '.scenario_order == ["safety_unknown_google", "fanout_unknown", "stop_before_dispatch"]' matrix_result.json > /dev/null
+
+          jq -e '.per_scenario.safety_unknown_google.provider_states == {"openai": "COMPLETE", "anthropic": "COMPLETE", "google": "COMPLETE"}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.checkpoint.FAIL == []' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.checkpoint.UNKNOWN == ["google:ERROR_UNKNOWN"]' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.raw_evidence.exactness.openai == true' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.raw_evidence.exactness.anthropic == true' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.raw_evidence.exactness.google == true' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.comparison.participant_count == 3' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.comparison.agreement_count == 3' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.comparison.human_required == true' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.comparison.formal_consensus == false' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.comparison.safety_block == true' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.dispatch_counts == {"openai": 1, "anthropic": 1, "google": 1}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.safety_unknown_google.collect_counts == {"openai": 1, "anthropic": 1, "google": 1}' matrix_result.json > /dev/null
+
+          jq -e '.per_scenario.fanout_unknown.providers_dir_exists == false' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.comparison == null' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.checkpoint.UNKNOWN == ["core:FANOUT_UNKNOWN"]' matrix_result.json > /dev/null
+          jq -e 'has("retry_count") | not or (.retry_count == null)' <<< $(jq -c '.per_scenario.fanout_unknown.checkpoint' matrix_result.json) > /dev/null
+          jq -e 'has("fallback_state") | not or (.fallback_state == null)' <<< $(jq -c '.per_scenario.fanout_unknown.checkpoint' matrix_result.json) > /dev/null
+          jq -e '.per_scenario.fanout_unknown.dispatch_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.fanout_unknown.collect_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
+
+          jq -e '.per_scenario.stop_before_dispatch.checkpoint.UNKNOWN == ["core:STOP_REQUESTED"]' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.comparison.human_required == true' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.comparison.formal_consensus == false' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.dispatch_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
+          jq -e '.per_scenario.stop_before_dispatch.collect_counts == {"openai": 0, "anthropic": 0, "google": 0}' matrix_result.json > /dev/null
+
+          for s in safety_unknown_google fanout_unknown stop_before_dispatch; do
+            jq -e ".per_scenario.$s.checkpoint.live_turn_executed == false" matrix_result.json > /dev/null
+            if [ "$s" != "fanout_unknown" ]; then
+              jq -e ".per_scenario.$s.checkpoint.retry_count == 0" matrix_result.json > /dev/null
+              jq -e ".per_scenario.$s.checkpoint.fallback_state == \"disabled\"" matrix_result.json > /dev/null
+            fi
+          done
+
+      - name: "Summary"
+        run: |
+          echo "static/mock policy matrix PASS and live remains BLOCKED." >> $GITHUB_STEP_SUMMARY
