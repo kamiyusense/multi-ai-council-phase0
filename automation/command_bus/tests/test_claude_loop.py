@@ -5,10 +5,11 @@ import unittest
 
 from automation.command_bus.claude_loop import (
     BackendMode, CONTAINER_INTERNAL, HOST_LOOPBACK, VerdictDecision, make_structured_verdict,
-    prepare_claude_transport, prepare_jules_closed_loop_command, prepare_next_action,
-    validate_machine_gate,
+    prepare_claude_transport, prepare_jules_closed_loop_command, prepare_jules_semiauto_request,
+    prepare_next_action, validate_machine_gate,
 )
 from automation.command_bus.jules_api_closed_loop import JulesApiClosedLoop
+from automation.command_bus.jules_api_request import validate_request as validate_jules_semiauto_request
 from automation.command_bus.validator import validate_command
 
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
@@ -227,6 +228,112 @@ class ClaudeLoopTests(unittest.TestCase):
                 ).status,
                 "BLOCKED",
             )
+
+    def test_semiauto_bridge_matches_current_live_request_contract_without_io(self):
+        prepared = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        result = prepare_jules_semiauto_request(
+            prepared.request,
+            target_branch="feature/bounded-target",
+            default_branch="main",
+            created_at=NOW.isoformat(),
+            command_id="claude-jules-a-live-001",
+        )
+        self.assertEqual(result.status, "PREPARED")
+        request = result.request
+        self.assertEqual(request["profile"], "JULES_CHAT_SEMIAUTO_V1")
+        self.assertEqual(request["target_repo"], "kamiyusense/multi-ai-council-phase0")
+        self.assertEqual(request["target_branch"], "feature/bounded-target")
+        self.assertEqual(request["expected_target_head"], "a" * 40)
+        self.assertEqual(request["expected_target_tree"], "b" * 40)
+        self.assertEqual(request["allowed_paths"], ["tests/example.py"])
+        self.assertIn("permitted operations MODIFY", request["prompt"])
+        self.assertIn("Do not perform DELETE or RENAME", request["prompt"])
+        self.assertEqual(request["retry"], 0)
+        self.assertEqual(request["fallback"], "disabled")
+        self.assertFalse(request["merge_allowed"])
+        self.assertFalse(request["force_push_allowed"])
+        validate_jules_semiauto_request(request, now=NOW)
+
+    def test_semiauto_bridge_fails_closed_on_wrong_repo_expiry_and_default_branch(self):
+        wrong_repo = prepare_next_action(
+            verdict(), expected_repo="owner/repo", expected_pr=4, expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        self.assertEqual(
+            prepare_jules_semiauto_request(
+                wrong_repo.request,
+                target_branch="feature/x",
+                default_branch="main",
+                created_at=NOW.isoformat(),
+            ).status,
+            "UNKNOWN",
+        )
+
+        expired = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=(NOW - timedelta(minutes=1)).isoformat(),
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        self.assertEqual(
+            prepare_jules_semiauto_request(
+                expired.request,
+                target_branch="feature/x",
+                default_branch="main",
+                created_at=NOW.isoformat(),
+            ).status,
+            "UNKNOWN",
+        )
+
+        valid = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        self.assertEqual(
+            prepare_jules_semiauto_request(
+                valid.request,
+                target_branch="main",
+                default_branch="main",
+                created_at=NOW.isoformat(),
+            ).status,
+            "BLOCKED",
+        )
+
+    def test_semiauto_bridge_rejects_overlong_lifetime_and_unsafe_prepared_flags(self):
+        long_lived = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=(NOW + timedelta(hours=3)).isoformat(),
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        )
+        self.assertEqual(
+            prepare_jules_semiauto_request(
+                long_lived.request,
+                target_branch="feature/x",
+                default_branch="main",
+                created_at=NOW.isoformat(),
+            ).status,
+            "UNKNOWN",
+        )
+        valid = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        ).request
+        changed = dict(valid)
+        changed["requires_github_write"] = True
+        self.assertEqual(
+            prepare_jules_semiauto_request(
+                changed,
+                target_branch="feature/x",
+                default_branch="main",
+                created_at=NOW.isoformat(),
+            ).status,
+            "BLOCKED",
+        )
 
     def test_claude_transport_is_static_preflight_only(self):
         import uuid
