@@ -25,6 +25,7 @@ on:
       - automation/command_bus/jules_provider_readback_candidate.py
       - automation/command_bus/jules_provider_verification_source.py
       - automation/command_bus/jules_direct_readback_authenticator.py
+      - automation/command_bus/semiauto_stable_identity.py
       - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
       - automation/command_bus/loop_status_development.py
@@ -64,6 +65,7 @@ on:
       - automation/command_bus/tests/test_jules_provider_readback_candidate.py
       - automation/command_bus/tests/test_jules_provider_verification_source.py
       - automation/command_bus/tests/test_jules_direct_readback_authenticator.py
+      - automation/command_bus/tests/test_semiauto_stable_identity_static_e2e.py
       - automation/command_bus/tests/test_claude_loop.py
       - automation/command_bus/tests/test_loop_status_development.py
       - automation/command_bus/tests/test_loop_owner.py
@@ -122,6 +124,7 @@ jobs:
             automation.command_bus.tests.test_jules_provider_readback_candidate
             automation.command_bus.tests.test_jules_provider_verification_source
             automation.command_bus.tests.test_jules_direct_readback_authenticator
+            automation.command_bus.tests.test_semiauto_stable_identity_static_e2e
             automation.command_bus.tests.test_claude_loop
             automation.command_bus.tests.test_loop_status_development
             automation.command_bus.tests.test_loop_owner
