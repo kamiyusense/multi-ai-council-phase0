@@ -31,6 +31,7 @@ MAX_REQUEST_BYTES = 16 * 1024 * 1024
 CHUNK_BYTES = 16 * 1024
 PRODUCTION_UPSTREAM_HOST = "api.anthropic.com"
 CONTAINER_GATE_BIND_IP = "172.29.247.2"
+CONTAINER_AUTH_PROXY_BIND_IP = "172.29.247.3"
 CONTAINER_GATE_SERVICE = "gate"
 CONTAINER_GATE_PORT = 8080
 HOST_LOOPBACK = "HOST_LOOPBACK"
@@ -613,8 +614,10 @@ def validate_container_topology(manifest: dict) -> dict:
         upstream_url = gate["environment"]["PHASE0_GATE_UPSTREAM_URL"]
         claude_gateway = claude["environment"]["ANTHROPIC_BASE_URL"]
         gate_ip = gate["networks"]["internal"]["ipv4_address"]
+        auth_proxy_ip = auth_proxy["networks"]["internal"]["ipv4_address"]
         internal_network = ipaddress.ip_network(internal_subnet, strict=True)
         gate_ip_obj = ipaddress.ip_address(gate_ip)
+        auth_proxy_ip_obj = ipaddress.ip_address(auth_proxy_ip)
     except (KeyError, TypeError, IndexError, ValueError):
         return {"status": "BLOCKED", "reason": "missing or malformed topology fields"}
     claude_networks = set(claude.get("networks", []))
@@ -673,6 +676,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
         "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
+        "auth_proxy_binds_internal_address": auth_proxy_ip == CONTAINER_AUTH_PROXY_BIND_IP and auth_proxy_ip_obj in internal_network and auth_proxy_ip_obj != gate_ip_obj,
         "claude_gateway_exact": claude_gateway == "http://gate:8080",
         "model_traffic_remains_on_gate": claude_gateway == "http://gate:8080" and upstream_url == "https://api.anthropic.com",
         "runtime_has_only_fixed_https_proxy": claude_env.get("HTTPS_PROXY") == "http://auth-control-proxy:3128" and not (set(claude_env) & {"HTTP_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"}),
@@ -812,6 +816,7 @@ def validate_container_artifacts() -> dict:
         "auth_proxy_runs_nonroot": "USER 1000:1000" in auth_proxy_dockerfile and auth_proxy_dockerfile.rstrip().endswith('ENTRYPOINT ["node", "/opt/phase0/auth_control_plane_proxy.mjs"]'),
         "auth_proxy_has_no_package_or_system_installs": not any(fragment in auth_proxy_dockerfile.lower() for fragment in ("npm", "apt-get", "curl", "wget", "adduser", "useradd")),
         "auth_proxy_exact_host_and_port_policy": 'ALLOWED_AUTH_HOST = "platform.claude.com"' in auth_proxy_source and 'ALLOWED_AUTH_AUTHORITY = `${ALLOWED_AUTH_HOST}:443`' in auth_proxy_source and 'DENIED_MODEL_AUTHORITY = "api.anthropic.com:443"' in auth_proxy_source,
+        "auth_proxy_binds_only_internal_address": 'PROXY_BIND = "172.29.247.3"' in auth_proxy_source and 'PROXY_BIND = "0.0.0.0"' not in auth_proxy_source,
         "auth_proxy_only_connect_and_no_dynamic_request_logging": 'server.on("connect"' in auth_proxy_source and "console." not in auth_proxy_source and "JSON.stringify" not in auth_proxy_source,
         "auth_proxy_one_resolution_and_one_connect_no_retry": "const addresses = await resolveHost();" in auth_proxy_source and "connectAddress(selected)" in auth_proxy_source and "retry" not in auth_proxy_source.lower(),
         "launcher_has_explicit_live_gate": 'env.PHASE0_LIVE_EXECUTION !== "1"' in launcher and "default_launcher_result" in json.dumps(manifest),
