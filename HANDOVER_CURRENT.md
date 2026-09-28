@@ -22,6 +22,38 @@ This rule is durable project policy and must be carried into every new Chat hand
 Canonical detail:
 `docs/CHAT_WORK_AUTONOMY_RULES.md`
 
+## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
+
+This rule is durable project policy for every Chat that uses the Chat -> Jules
+semi-auto loop.
+
+Before using the semi-auto route, fresh-read:
+
+- `docs/CHAT_JULES_API_SEMIAUTO.md`
+
+When a Jules task is successfully accepted and the Chat returns control to the
+human before the result is available, the **last line of the user-facing reply**
+must show:
+
+- Loop number;
+- verified Jules `session accepted` time in JST;
+- task-size label: `短`, `中`, or `長`;
+- estimated completion window.
+
+Required shape:
+
+```text
+## **🟣🕒 Loop 039投入：12:59 ／投入タスク目安：中／ 推定完了目安：13:15〜13:25ごろ**
+```
+
+Do not add prose after this footer. Do not append
+`→ この時間以降なら結果確認おすすめ`.
+
+The dispatch time is not the command commit time or Action queue time. It is the
+verified Jules API session-acceptance time converted to Asia/Tokyo/JST. If Jules
+acceptance is not verifiable, do not invent the time or completion estimate;
+report UNKNOWN instead.
+
 ## 0.1 2026-09-28 current override — Control Tower v2
 
 The current Signal/Status presentation direction is **Multi-loop Control Tower**.
@@ -357,5 +389,6 @@ A new chat should:
 7. preserve all fixed safety decisions
 8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
 9. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
-10. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-11. keep GitHub writes within this private repository and authorized feature branches/PR scope
+10. before using the Chat -> Jules semi-auto loop, read `docs/CHAT_JULES_API_SEMIAUTO.md` and obey its mandatory task-time footer
+11. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+12. keep GitHub writes within this private repository and authorized feature branches/PR scope

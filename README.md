@@ -66,8 +66,9 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 4. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary
 5. [docs/PIONEER_OSS_RESEARCH_HANDOVER.md](docs/PIONEER_OSS_RESEARCH_HANDOVER.md) — 先駆者/OSS調査・流用候補・監査方針
 6. [docs/CHAT_WORK_AUTONOMY_RULES.md](docs/CHAT_WORK_AUTONOMY_RULES.md) — Chat ⇄ Work長時間自律実行・承認境界
-7. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
-8. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
+7. [docs/CHAT_JULES_API_SEMIAUTO.md](docs/CHAT_JULES_API_SEMIAUTO.md) — Chat→Jules半ループ運用・必須投入時刻/タスク目安/推定完了表示
+8. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+9. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
 
 ## Repository roles
 

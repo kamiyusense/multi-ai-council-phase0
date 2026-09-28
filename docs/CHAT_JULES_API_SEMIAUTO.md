@@ -82,6 +82,44 @@ Chat should then:
    session state;
 7. never Merge without explicit human approval.
 
+## Mandatory task-time footer
+
+Every Chat that uses this semi-auto loop and returns control to the human after
+dispatching a Jules task must end its user-facing reply with one mandatory
+task-time footer.
+
+The footer is part of the semi-auto operating contract, not optional presentation.
+
+Rules:
+
+1. Confirm that Jules actually accepted the session before calling the task
+   "投入済み". A command commit, queued Action, or pre-Jules validation is not
+   enough.
+2. Use the confirmed Jules `session accepted` timestamp converted to
+   **Asia/Tokyo / JST** as the dispatch time.
+3. Classify the dispatched task as exactly one of:
+   - `短`
+   - `中`
+   - `長`
+4. Estimate a completion window from the accepted-session time and the actual
+   bounded task scope. The window is a human checking guide only; it is not a
+   correctness claim or SLA.
+5. Render the footer as an H2-sized bold line using `🟣🕒`.
+6. It must be the **last line of the Chat reply**. Do not put any prose after it.
+7. Do not append wording such as
+   `→ この時間以降なら結果確認おすすめ`.
+8. If Jules acceptance cannot be verified, do not invent an投入時刻 or completion
+   estimate. Report the dispatch state as UNKNOWN in the main body instead.
+
+Canonical display shape:
+
+```text
+## **🟣🕒 Loop 039投入：12:59 ／投入タスク目安：中／ 推定完了目安：13:15〜13:25ごろ**
+```
+
+The Loop number, accepted time, task size, and estimated window must be replaced
+with the current task's verified values.
+
 ## Evidence boundary
 
 GitHub Actions green alone is not PASS. The hardened workflow captures and validates the
