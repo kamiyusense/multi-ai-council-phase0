@@ -31,6 +31,7 @@ MAX_REQUEST_BYTES = 16 * 1024 * 1024
 CHUNK_BYTES = 16 * 1024
 PRODUCTION_UPSTREAM_HOST = "api.anthropic.com"
 CONTAINER_GATE_BIND_IP = "172.29.247.2"
+CONTAINER_AUTH_PROXY_BIND_IP = "172.29.247.3"
 CONTAINER_GATE_SERVICE = "gate"
 CONTAINER_GATE_PORT = 8080
 HOST_LOOPBACK = "HOST_LOOPBACK"
@@ -601,6 +602,7 @@ def validate_container_topology(manifest: dict) -> dict:
     try:
         services, networks = manifest["services"], manifest["networks"]
         claude, gate = services["claude"], services["gate"]
+        auth_proxy = services["auth-control-proxy"]
         gate_bootstrap = services["gate-bootstrap"]
         auth = services["auth-bootstrap"]
         internal, egress = networks["internal"], networks["egress"]
@@ -612,27 +614,33 @@ def validate_container_topology(manifest: dict) -> dict:
         upstream_url = gate["environment"]["PHASE0_GATE_UPSTREAM_URL"]
         claude_gateway = claude["environment"]["ANTHROPIC_BASE_URL"]
         gate_ip = gate["networks"]["internal"]["ipv4_address"]
+        auth_proxy_ip = auth_proxy["networks"]["internal"]["ipv4_address"]
         internal_network = ipaddress.ip_network(internal_subnet, strict=True)
         gate_ip_obj = ipaddress.ip_address(gate_ip)
+        auth_proxy_ip_obj = ipaddress.ip_address(auth_proxy_ip)
     except (KeyError, TypeError, IndexError, ValueError):
         return {"status": "BLOCKED", "reason": "missing or malformed topology fields"}
     claude_networks = set(claude.get("networks", []))
+    auth_proxy_networks = set(auth_proxy.get("networks", {}))
     auth_networks = set(auth.get("networks", []))
     gate_networks = set(gate.get("networks", {}))
     claude_env = claude.get("environment", {})
     auth_env = auth.get("environment", {})
+    auth_proxy_env = auth_proxy.get("environment", {})
     gate_bootstrap_env = gate_bootstrap.get("environment", {})
     forbidden_env_names = {
         "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
         "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "ANTHROPIC_AWS_API_KEY",
         "ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_AUTH_TOKEN",
         "ANTHROPIC_CUSTOM_HEADERS", "AWS_BEARER_TOKEN_BEDROCK",
+        "HTTP_PROXY", "ALL_PROXY", "NO_PROXY",
     }
     env_maps = [service.get("environment", {}) for service in services.values()]
     env_keys = {str(key).upper() for env in env_maps if isinstance(env, dict) for key in env}
     runtime_contract = manifest.get("x-phase0-runtime-contract", {})
     auth_volume = "claude-auth:/home/node/.claude"
     runtime_vars = {
+        "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
         "CLAUDE_CODE_MAX_RETRIES": "0",
         "CLAUDE_CODE_MAX_TURNS": "1",
         "CLAUDE_CONFIG_DIR": "/home/node/.claude",
@@ -648,8 +656,9 @@ def validate_container_topology(manifest: dict) -> dict:
         "DISABLE_UPDATES": "1",
     }
     checks = {
-        "exact_services": set(services) == {"claude", "gate", "auth-bootstrap", "gate-bootstrap"},
+        "exact_services": set(services) == {"claude", "auth-control-proxy", "gate", "auth-bootstrap", "gate-bootstrap"},
         "claude_internal_only": claude_networks == {"internal"},
+        "auth_proxy_internal_and_egress_only": auth_proxy_networks == {"internal", "egress"},
         "auth_bootstrap_egress_only": auth_networks == {"egress"},
         "gate_internal_and_egress": gate_networks == {"internal", "egress"},
         "internal_true": internal.get("internal") is True,
@@ -657,16 +666,26 @@ def validate_container_topology(manifest: dict) -> dict:
         "egress_is_external_bridge": egress.get("driver") == "bridge" and egress.get("internal") is not True,
         "claude_no_ports": not claude.get("ports"),
         "auth_bootstrap_no_ports": not auth.get("ports"),
+        "auth_proxy_no_published_ports": not auth_proxy.get("ports"),
         "gate_no_published_ports": not gate.get("ports"),
-        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth)),
-        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, gate_bootstrap)),
+        "no_host_network_mode": all("network_mode" not in service for service in (claude, gate, auth, auth_proxy)),
+        "not_privileged": all(service.get("privileged") is False for service in (claude, gate, auth, auth_proxy, gate_bootstrap)),
         "runtime_seccomp_profile_exact": claude.get("security_opt") == [f"seccomp={RUNTIME_SECCOMP_RELATIVE_PATH}"],
         "seccomp_only_on_runtime": all("security_opt" not in service for service in (gate, auth, gate_bootstrap)),
         "no_added_capabilities": all("cap_add" not in service for service in services.values()),
         "no_claude_host_route_overrides": not any(k in claude for k in ("extra_hosts", "links")),
         "no_auth_host_route_overrides": not any(k in auth for k in ("extra_hosts", "links")),
         "gate_binds_internal_address": gate_ip == gate_bind == CONTAINER_GATE_BIND_IP and gate_ip_obj in internal_network,
+        "auth_proxy_binds_internal_address": auth_proxy_ip == CONTAINER_AUTH_PROXY_BIND_IP and auth_proxy_ip_obj in internal_network and auth_proxy_ip_obj != gate_ip_obj,
         "claude_gateway_exact": claude_gateway == "http://gate:8080",
+        "model_traffic_remains_on_gate": claude_gateway == "http://gate:8080" and upstream_url == "https://api.anthropic.com",
+        "runtime_has_only_fixed_https_proxy": claude_env.get("HTTPS_PROXY") == "http://auth-control-proxy:3128" and not (set(claude_env) & {"HTTP_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"}),
+        "other_services_have_no_proxy_environment": all(
+            not (set(service.get("environment", {})) & {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"})
+            for service_name, service in services.items() if service_name != "claude"
+        ),
+        "auth_proxy_service_is_exact_nonroot_internal_egress": auth_proxy.get("image") == "phase0-claude-auth-control-proxy:1" and auth_proxy.get("build") == {"context": ".", "dockerfile": "docker/auth-control-plane/Dockerfile"} and auth_proxy.get("profiles") == ["human-approval-required"] and auth_proxy.get("entrypoint") == ["node", "/opt/phase0/auth_control_plane_proxy.mjs"] and auth_proxy.get("user") == "1000:1000" and auth_proxy.get("ports") == [] and auth_proxy_networks == {"internal", "egress"} and auth_proxy.get("cap_drop") == ["ALL"] and auth_proxy.get("security_opt") == ["no-new-privileges:true"],
+        "auth_proxy_has_no_environment_or_mounts": auth_proxy_env == {} and "env_file" not in auth_proxy and not auth_proxy.get("volumes"),
         "gate_port_exact": gate_port == str(CONTAINER_GATE_PORT),
         "production_upstream_exact": upstream_url == "https://api.anthropic.com",
         "fixed_state_directory": state_dir == "/var/lib/phase0/claude-gate",
@@ -704,7 +723,7 @@ def validate_container_topology(manifest: dict) -> dict:
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
             "DISABLE_UPDATES": "1",
         },
-        "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL", **runtime_vars},
+        "runtime_environment_allowlist_exact": claude_env == {"ANTHROPIC_BASE_URL": "http://gate:8080", "HTTPS_PROXY": "http://auth-control-proxy:3128", "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL", **runtime_vars},
         "no_direct_credential_or_workspace_mount": not (env_keys & forbidden_env_names) and not any(str(v).startswith(("./", "../")) or "/workspace" in str(v) for service in (claude, auth, gate_bootstrap) for v in service.get("volumes", [])),
         "bootstrap_has_no_workspace_or_gate_state": auth.get("volumes") == [auth_volume],
         "gate_cannot_read_auth_volume": auth_volume not in gate.get("volumes", []),
@@ -737,6 +756,9 @@ def validate_container_artifacts() -> dict:
         "gate_ignore": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "Dockerfile.dockerignore",
         "gate_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_entrypoint.py",
         "gate_bootstrap_entrypoint": CONTAINER_ARTIFACT_ROOT / "admission-gate" / "gate_bootstrap_entrypoint.py",
+        "auth_proxy_dockerfile": CONTAINER_ARTIFACT_ROOT / "auth-control-plane" / "Dockerfile",
+        "auth_proxy_ignore": CONTAINER_ARTIFACT_ROOT / "auth-control-plane" / "Dockerfile.dockerignore",
+        "auth_proxy_source": CONTAINER_ARTIFACT_ROOT / "auth-control-plane" / "auth_control_plane_proxy.mjs",
     }
     try:
         files = {name: path.read_text(encoding="utf-8") for name, path in paths.items()}
@@ -750,6 +772,8 @@ def validate_container_artifacts() -> dict:
     launcher = files["claude_launcher"]
     gate_entrypoint = files["gate_entrypoint"]
     gate_bootstrap_entrypoint = files["gate_bootstrap_entrypoint"]
+    auth_proxy_dockerfile = files["auth_proxy_dockerfile"]
+    auth_proxy_source = files["auth_proxy_source"]
     launcher_args = launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0] if "args: [" in launcher else ""
     claude_ignore_expected = "\n".join((
         "**", "!docker/", "!docker/claude-runtime/", "!docker/claude-runtime/Dockerfile",
@@ -762,6 +786,11 @@ def validate_container_artifacts() -> dict:
         "!docker/admission-gate/Dockerfile.dockerignore",
         "!docker/admission-gate/gate_entrypoint.py",
         "!docker/admission-gate/gate_bootstrap_entrypoint.py", "",
+    ))
+    auth_proxy_ignore_expected = "\n".join((
+        "**", "!docker/", "!docker/auth-control-plane/", "!docker/auth-control-plane/Dockerfile",
+        "!docker/auth-control-plane/Dockerfile.dockerignore",
+        "!docker/auth-control-plane/auth_control_plane_proxy.mjs", "",
     ))
     gate_copy_lines = [line for line in gate_dockerfile.splitlines() if line.startswith("COPY ")]
     checks = {
@@ -782,6 +811,14 @@ def validate_container_artifacts() -> dict:
         "gate_has_no_claude_node_npm_or_auth_volume": not any(term in gate_dockerfile.lower() for term in ("npm", "node:", "claude-auth", "github-cli", "git install")),
         "claude_context_is_exact_allowlist": files["claude_ignore"] == claude_ignore_expected,
         "gate_context_is_exact_allowlist": files["gate_ignore"] == gate_ignore_expected,
+        "auth_proxy_context_is_exact_allowlist": files["auth_proxy_ignore"] == auth_proxy_ignore_expected,
+        "auth_proxy_base_image_digest_pinned": "FROM node:22-bookworm-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c" in auth_proxy_dockerfile,
+        "auth_proxy_runs_nonroot": "USER 1000:1000" in auth_proxy_dockerfile and auth_proxy_dockerfile.rstrip().endswith('ENTRYPOINT ["node", "/opt/phase0/auth_control_plane_proxy.mjs"]'),
+        "auth_proxy_has_no_package_or_system_installs": not any(fragment in auth_proxy_dockerfile.lower() for fragment in ("npm", "apt-get", "curl", "wget", "adduser", "useradd")),
+        "auth_proxy_exact_host_and_port_policy": 'ALLOWED_AUTH_HOST = "platform.claude.com"' in auth_proxy_source and 'ALLOWED_AUTH_AUTHORITY = `${ALLOWED_AUTH_HOST}:443`' in auth_proxy_source and 'DENIED_MODEL_AUTHORITY = "api.anthropic.com:443"' in auth_proxy_source,
+        "auth_proxy_binds_only_internal_address": 'PROXY_BIND = "172.29.247.3"' in auth_proxy_source and 'PROXY_BIND = "0.0.0.0"' not in auth_proxy_source,
+        "auth_proxy_only_connect_and_no_dynamic_request_logging": 'server.on("connect"' in auth_proxy_source and "console." not in auth_proxy_source and "JSON.stringify" not in auth_proxy_source,
+        "auth_proxy_one_resolution_and_one_connect_no_retry": "const addresses = await resolveHost();" in auth_proxy_source and "connectAddress(selected)" in auth_proxy_source and "retry" not in auth_proxy_source.lower(),
         "launcher_has_explicit_live_gate": 'env.PHASE0_LIVE_EXECUTION !== "1"' in launcher and "default_launcher_result" in json.dumps(manifest),
         "compose_and_launcher_both_require_oauth_compatible_safe_mode": "--safe-mode" in manifest["x-phase0-runtime-contract"]["argv"] and '"--safe-mode"' in launcher_args and "--bare" not in manifest["x-phase0-runtime-contract"]["argv"] and '"--bare"' not in launcher_args,
         "launcher_preserves_bounded_cli_flags": all(fragment in launcher_args for fragment in (
