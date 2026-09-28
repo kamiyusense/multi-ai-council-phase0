@@ -9,7 +9,8 @@
       "worker_kind": "JULES",
       "display_order": 10,
       "enabled": true,
-      "safe_detail_ref": "issue:33"
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
     },
     {
       "loop_id": "claude-gemini",
@@ -19,7 +20,8 @@
       "worker_kind": "GEMINI",
       "display_order": 20,
       "enabled": true,
-      "safe_detail_ref": "issue:33"
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
     },
     {
       "loop_id": "claude-claude",
@@ -29,7 +31,8 @@
       "worker_kind": "CLAUDE",
       "display_order": 30,
       "enabled": true,
-      "safe_detail_ref": "issue:33"
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
     },
     {
       "loop_id": "work-gemini",
@@ -39,7 +42,8 @@
       "worker_kind": "GEMINI",
       "display_order": 40,
       "enabled": true,
-      "safe_detail_ref": "issue:33"
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
     }
   ]
 }
