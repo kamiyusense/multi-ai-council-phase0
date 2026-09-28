@@ -4,8 +4,9 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 IMAGE="phase0-claude-runtime:2.1.283"
 MOCK_DELAY_MS="${MOCK_DELAY_MS:-0}"
-NET="phase0-oauth-fixture-$GITHUB_RUN_ID-$MOCK_DELAY_MS"
-MOCK="phase0-oauth-mock-$GITHUB_RUN_ID-$MOCK_DELAY_MS"
+FIXTURE_TRIAL="${FIXTURE_TRIAL:-1}"
+NET="phase0-oauth-fixture-$GITHUB_RUN_ID-$MOCK_DELAY_MS-$FIXTURE_TRIAL"
+MOCK="phase0-oauth-mock-$GITHUB_RUN_ID-$MOCK_DELAY_MS-$FIXTURE_TRIAL"
 TMP="$(mktemp -d)"
 CERTS="$TMP/certs"
 EVIDENCE="$TMP/evidence"
@@ -25,7 +26,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-docker build   -t "$IMAGE"   -f "$ROOT/automation/command_bus/docker/claude-runtime/Dockerfile"   "$ROOT/automation/command_bus"
+if [ "${PHASE0_FIXTURE_SKIP_BUILD:-0}" != "1" ]; then
+  docker build   -t "$IMAGE"   -f "$ROOT/automation/command_bus/docker/claude-runtime/Dockerfile"   "$ROOT/automation/command_bus"
+else
+  docker image inspect "$IMAGE" >/dev/null
+fi
 
 openssl req -x509 -newkey rsa:2048 -nodes   -keyout "$CERTS/ca.key"   -out "$CERTS/ca.crt"   -days 1   -subj "/CN=Phase0 OAuth Fixture CA"   >/dev/null 2>&1
 
@@ -105,7 +110,7 @@ sleep 4
 sudo chmod 0755 "$CASE" 2>/dev/null || true
 sudo chmod 0644 "$CASE/.credentials.json" 2>/dev/null || true
 
-export STATUS_CODE STATUS_SECONDS STATUS_OUTPUT CASE EVIDENCE MOCK_DELAY_MS
+export STATUS_CODE STATUS_SECONDS STATUS_OUTPUT CASE EVIDENCE MOCK_DELAY_MS FIXTURE_TRIAL
 python - <<'PY'
 import json, os
 from pathlib import Path
@@ -187,6 +192,7 @@ result = {
     "claude_code_version": "2.1.283",
     "command": "claude auth status --json",
     "mock_response_delay_ms": int(os.environ["MOCK_DELAY_MS"]),
+    "fixture_trial": int(os.environ["FIXTURE_TRIAL"]),
     "command_exit_code": int(os.environ["STATUS_CODE"]),
     "command_seconds": int(os.environ["STATUS_SECONDS"]),
     "status_summary": status_summary,
