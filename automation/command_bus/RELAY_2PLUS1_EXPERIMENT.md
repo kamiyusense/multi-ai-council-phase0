@@ -377,3 +377,19 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - accepted_at approximately 15:30 JST; Jules PR created 16:55 JST after one feedback wait
 - observed wall-clock to PR creation: about 85 minutes, dominated by AWAITING_USER_FEEDBACK on the plan-size limit rather than code execution
 - isolation result: PASS for publication path; PR #96 based on isolated work branch, not canonical PR #4
+
+
+## Loop 045 — medium — DISPATCHED / IN PROGRESS
+- task: static fail-closed live-readiness evidence gate
+- purpose: formalize current live blockers into machine-readable BLOCKED_UNKNOWN vs READY_FOR_HUMAN_APPROVAL evaluation without authorizing dispatch
+- canonical Relay snapshot head: `83b74d9ef689fc696c6237a41d7791c501385f54`
+- canonical Relay snapshot tree: `5830a319ae86b1ca7528c5d34b465e2d519aed73`
+- isolated starting branch: `jules-work/relay-dev-loop-045-live-readiness-gate`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36396241811` SUCCESS
+- Jules session: `2496941792782960868`
+- accepted_at: approximately 17:15 JST
+- canonical PR #4 head immediately after dispatch: `83b74d9ef689fc696c6237a41d7791c501385f54` unchanged
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: even complete synthetic proof may reach only READY_FOR_HUMAN_APPROVAL; live_ready=false and dispatch_allowed=false remain mandatory
