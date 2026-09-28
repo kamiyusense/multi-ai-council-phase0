@@ -192,9 +192,15 @@ class DurableOwnerAuthorityTests(unittest.TestCase):
             source_ref="automation/command_bus/evidence/loop-015/authority-2.json"
         )
         authority = self.authority(verifier)
+        bound = state(
+            state="RUNNING",
+            last_command_id=first["command_id"],
+            last_receipt_id=first["source_receipt_id"],
+            expected_target=target_for(first),
+        )
         result = authority.authorize(
             second,
-            prior_state(second),
+            bound,
             target_for(second),
             receipt_for(second),
             [first],
