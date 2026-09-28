@@ -123,7 +123,7 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
                 prepared.source_receipt,
             )
         )
-        self.assertEqual(reader.calls, [source["source_ref"]])
+        self.assertEqual(reader.calls, [])
 
     def test_independent_authenticator_is_required_for_verified_observation(self):
         prepared = bundle()
