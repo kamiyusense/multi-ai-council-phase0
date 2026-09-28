@@ -64,6 +64,16 @@ class Target:
     def read_target(self, repository, pr_number):
         return self.value
 
+class SequencedTarget:
+    def __init__(self, *values):
+        self.values = list(values)
+        self.calls = 0
+
+    def read_target(self, repository, pr_number):
+        index = min(self.calls, len(self.values) - 1)
+        self.calls += 1
+        return self.values[index]
+
 
 class Authority:
     def authorize(self, event, prior_state, target, receipt, chain):
@@ -81,6 +91,14 @@ class Status:
 
     def prepare(self, plan):
         self.plans.append(plan)
+
+class FailingStatus:
+    def __init__(self):
+        self.calls = 0
+
+    def prepare(self, plan):
+        self.calls += 1
+        raise OSError("ambiguous status boundary")
 
 
 class Clock:
@@ -206,6 +224,38 @@ class RuntimeTransitionPublisherTests(unittest.TestCase):
         result = self.publisher().publish(self.request())
         self.assertEqual(result.status, "READY", result)
         self.assertEqual(self.client.updates, 1)
+
+    def test_target_drift_after_publication_stops_before_status(self):
+        initial = {**target_for(self.event), "state": "open", "merged": False}
+        drifted = {**initial, "head": "b" * 40}
+        publisher = RuntimeTransitionPublisher(
+            self.client,
+            branch="runtime-ledger",
+            target_reader=SequencedTarget(initial, drifted),
+            owner_authority=Authority(),
+            provider_verifier=Verifier(),
+            status_boundary=self.status,
+            clock=Clock(),
+        )
+        result = publisher.publish(self.request())
+        self.assertEqual((result.status, result.stage), ("UNKNOWN", "final_validation"), result)
+        self.assertEqual(len(self.status.plans), 0)
+        self.assertEqual((self.client.creates, self.client.updates), (3, 1))
+
+    def test_status_boundary_failure_returns_unknown_without_repeat(self):
+        failing = FailingStatus()
+        publisher = RuntimeTransitionPublisher(
+            self.client,
+            branch="runtime-ledger",
+            target_reader=self.target,
+            owner_authority=Authority(),
+            provider_verifier=Verifier(),
+            status_boundary=failing,
+            clock=Clock(),
+        )
+        result = publisher.publish(self.request())
+        self.assertEqual((result.status, result.stage), ("UNKNOWN", "status_boundary"), result)
+        self.assertEqual(failing.calls, 1)
 
     def test_unresolved_state_write_requires_recovery_not_resend(self):
         self.client.fail_update_before_write = True
