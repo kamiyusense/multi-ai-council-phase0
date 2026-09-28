@@ -133,6 +133,154 @@ class TestLiveReadinessPipeline(unittest.TestCase):
         self.assertEqual(res["state"], "BLOCKED_UNKNOWN")
 
 
+    @unittest.mock.patch('src.providers.live_readiness_pipeline.normalize_inventory')
+    def test_tampered_inventory_dependency_output_fails_closed(self, mock_normalize):
+        mock_normalize.return_value = {
+            "state": "PROOF_RECORDS_COMPLETE",
+            "live_ready": False,
+            "dispatch_allowed": False,
+            "human_approval_required": True,
+            "retry_count": 0,
+            "fallback_state": "disabled",
+            "unresolved_count": 0,
+            "unresolved_by_provider": {"openai": 0, "anthropic": 0, "google": 0},
+            "inventory": {"openai": {}, "anthropic": {}, "google": {}},
+            "packet_sha256": "not-a-valid-hash",
+        }
+        result = build_live_readiness_pipeline(self.valid_input)
+        self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+        self.assertEqual(result["inventory_state"], "BLOCKED_UNKNOWN")
+        self.assertEqual(result["provider_states"], {})
+
+    @unittest.mock.patch('src.providers.live_readiness_pipeline.convert_to_live_readiness_proofs')
+    def test_tampered_conversion_result_blocks_before_bundle(self, mock_convert):
+        mock_convert.return_value = {}
+        with unittest.mock.patch(
+            'src.providers.live_readiness_pipeline.build_live_readiness_bundle'
+        ) as mock_bundle:
+            result = build_live_readiness_pipeline(self.valid_input)
+        self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+        mock_bundle.assert_not_called()
+
+    def _valid_mock_bundle(self):
+        return {
+            "state": "READY_FOR_HUMAN_APPROVAL",
+            "live_ready": False,
+            "dispatch_allowed": False,
+            "human_approval_required": True,
+            "retry_count": 0,
+            "fallback_state": "disabled",
+            "provider_order": list(PROVIDER_ORDER),
+            "provider_states": {p: "READY_FOR_HUMAN_APPROVAL" for p in PROVIDER_ORDER},
+            "blocking_providers": [],
+            "evidence": {},
+            "packet_sha256": "a" * 64,
+        }
+
+    @unittest.mock.patch('src.providers.live_readiness_pipeline.build_live_readiness_bundle')
+    def test_bundle_hash_and_shape_must_be_exact(self, mock_bundle):
+        cases = []
+
+        bad_hash = self._valid_mock_bundle()
+        bad_hash["packet_sha256"] = "fakehash"
+        cases.append(bad_hash)
+
+        missing_provider_state = self._valid_mock_bundle()
+        del missing_provider_state["provider_states"]["google"]
+        cases.append(missing_provider_state)
+
+        extra_provider_state = self._valid_mock_bundle()
+        extra_provider_state["provider_states"]["extra"] = "BLOCKED_UNKNOWN"
+        cases.append(extra_provider_state)
+
+        wrong_blocking = self._valid_mock_bundle()
+        wrong_blocking["provider_states"]["openai"] = "BLOCKED_UNKNOWN"
+        wrong_blocking["blocking_providers"] = []
+        wrong_blocking["state"] = "BLOCKED_UNKNOWN"
+        cases.append(wrong_blocking)
+
+        bad_order = self._valid_mock_bundle()
+        bad_order["provider_order"] = ["google", "anthropic", "openai"]
+        cases.append(bad_order)
+
+        for payload in cases:
+            with self.subTest(payload=payload):
+                mock_bundle.return_value = payload
+                result = build_live_readiness_pipeline(self.valid_input)
+                self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+                self.assertEqual(result["provider_states"], {})
+
+    def test_source_and_result_mutation_isolation(self):
+        source = copy.deepcopy(self.valid_input)
+        result = build_live_readiness_pipeline(source)
+
+        source["preflights"]["openai"]["retry_count"] = 99
+        source["inventory"]["openai"][next(iter(source["inventory"]["openai"]))]["status"] = "UNKNOWN"
+
+        self.assertEqual(result["state"], "READY_FOR_HUMAN_APPROVAL")
+        self.assertEqual(result["provider_states"]["openai"], "READY_FOR_HUMAN_APPROVAL")
+
+        result["provider_states"]["openai"] = "BLOCKED_UNKNOWN"
+        pristine = build_live_readiness_pipeline(self.valid_input)
+        self.assertEqual(pristine["provider_states"]["openai"], "READY_FOR_HUMAN_APPROVAL")
+
+    def test_evidence_ref_changes_pipeline_digest_but_not_summary(self):
+        first = copy.deepcopy(self.valid_input)
+        second = copy.deepcopy(self.valid_input)
+        key = next(iter(second["inventory"]["openai"]))
+        second["inventory"]["openai"][key]["evidence_ref"] = "SECRET_URL_https://example.invalid/token"
+
+        first_result = build_live_readiness_pipeline(first)
+        second_result = build_live_readiness_pipeline(second)
+
+        self.assertNotEqual(
+            first_result["pipeline_packet_sha256"],
+            second_result["pipeline_packet_sha256"],
+        )
+        summary = render_pipeline_summary_ja(second_result)
+        self.assertNotIn("SECRET_URL", summary)
+        self.assertNotIn("https://", summary)
+
+    def test_renderer_sanitizes_untrusted_count_and_provider_values(self):
+        bad = {
+            "state": "https://secret.example/state",
+            "unresolved_count": "https://secret.example/count",
+            "provider_states": {
+                "openai": "https://secret.example/provider",
+                "anthropic": "READY_FOR_HUMAN_APPROVAL",
+                "google": "BLOCKED_UNKNOWN",
+            },
+            "blocking_providers": ["openai", "unknown", "google"],
+        }
+        summary = render_pipeline_summary_ja(bad)
+        self.assertIn("全体状態: BLOCKED_UNKNOWN", summary)
+        self.assertIn("未解決の証明数: -1", summary)
+        self.assertNotIn("https://", summary)
+        self.assertNotIn("unknown", summary)
+
+    def test_ast_has_no_ambient_io_or_direct_provider_gate(self):
+        import ast
+        from pathlib import Path
+
+        source = Path("src/providers/live_readiness_pipeline.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        forbidden_imports = {
+            "os", "subprocess", "socket", "requests", "urllib", "http",
+            "pathlib", "time", "random",
+        }
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    self.assertNotIn(alias.name.split(".")[0], forbidden_imports)
+            elif isinstance(node, ast.ImportFrom):
+                self.assertNotIn((node.module or "").split(".")[0], forbidden_imports)
+                for alias in node.names:
+                    self.assertNotEqual(alias.name, "evaluate_live_readiness")
+            elif isinstance(node, ast.Name):
+                self.assertNotEqual(node.id, "evaluate_live_readiness")
+            elif isinstance(node, ast.Attribute):
+                self.assertNotEqual(node.attr, "environ")
+
     @unittest.mock.patch('src.providers.live_readiness_pipeline.build_live_readiness_bundle')
     def test_bundle_builder_called_exactly_once(self, mock_bundle):
         mock_bundle.return_value = {
@@ -146,7 +294,7 @@ class TestLiveReadinessPipeline(unittest.TestCase):
             "provider_states": {p: "READY_FOR_HUMAN_APPROVAL" for p in PROVIDER_ORDER},
             "blocking_providers": [],
             "evidence": {},
-            "packet_sha256": "fakehash"
+            "packet_sha256": "a" * 64
         }
         build_live_readiness_pipeline(self.valid_input)
         mock_bundle.assert_called_once()
