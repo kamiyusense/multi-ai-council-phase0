@@ -56,16 +56,39 @@ No default authority adapter is installed automatically. Production verifier/iss
 - No Status workflow dispatch.
 - No Issue #33 mutation.
 
-## Verification target
+## Exact-head verification
 
-Exact-head GitHub Actions must prove:
-- authority unit tests PASS;
-- publisher + durable authority integration tests PASS;
-- existing Status/owner/runtime publisher focused tests PASS;
-- full command-bus suite has no new failure beyond the exact known expired Jules fixture;
-- authority schema JSON parses;
-- compileall PASS;
-- git diff --check PASS;
-- validation scope classifies authority grants as LEDGER.
+- Exact tested code head:
+  `c636b0fd8b9df09addb2abcdb06723715f2d3e2a`.
+- GitHub Actions run:
+  `36365441925` — **SUCCESS**.
+- Focused Status/owner/authority/runtime-publisher/scope tests:
+  **139/139 PASS**.
+- Full command-bus suite:
+  **426 tests run**.
+- Exactly one known pre-existing error remained:
+  `automation.command_bus.tests.test_jules_api_request.JulesApiRequestTests.test_prompt_binds_head_tree_and_allowlist`.
+- CI rejects any additional/unexpected failure.
+- Authority grant JSON schema parse: **PASS**.
+- All command-bus schema parse: **PASS**.
+- Python compileall: **PASS**.
+- `git diff --check`: **PASS**.
+- PR was OPEN / mergeable=true at exact-head readback.
 
-After CI, record exact tested code head/run/counts here and in the PR body.
+Any commit after this tested code head must be documentation-only and must be
+compared/read back before Merge.
+
+## Remaining live blockers
+
+1. A production issuer for authority grants.
+2. A production independent `AuthorityGrantVerifier` bound to a real durable
+   authorization source.
+3. Production provider verification.
+4. Canonical owner receipt adapter for real Jules/other provider transitions.
+5. Live Status workflow dispatch/readback adapter.
+6. Explicit live authorization before any real SEMI_AUTO/AUTO acquisition,
+   handoff or takeover.
+
+The existing executor/reviewer claims and mutation leases are deliberately not
+promoted into Loop-wide owner authority.
+
