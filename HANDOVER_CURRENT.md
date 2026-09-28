@@ -1,6 +1,51 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-28
+Updated: 2026-09-29
+
+## 0.0 2026-09-29 current override — Claude→Jules integrated proof terminal / OAuth refresh STATIC diagnosis
+
+This section supersedes older Claude LIVE / authorization statements below when they conflict.
+
+New Chat recovery must be GitHub-first:
+
+1. fresh-read current `main`;
+2. read this `HANDOVER_CURRENT.md`;
+3. read open Issue #110;
+4. read closed Issue #102 only for terminal LIVE evidence;
+5. do not use remembered Chat/Work/Codex thread IDs as correctness inputs.
+
+Current terminal LIVE result (Issue #102):
+- the one-shot Claude→Jules authorization was **consumed**;
+- REAL Claude process = 1;
+- Admission-Gate admitted Anthropic `POST /v1/messages` = 1;
+- upstream HTTP = **401**;
+- retry = 0 / fallback disabled;
+- no valid Claude verdict;
+- Jules request publication/session/PR = 0;
+- no retry or second LIVE attempt;
+- Issue #102 is closed terminal evidence and must not be reused for another attempt.
+
+Static diagnosis already established:
+- the prior successful REAL Claude proof and the failed Issue #102 proof use byte-identical Gate / Gate entrypoint / Claude launcher / Compose / Claude runtime Dockerfile artifacts;
+- Gate does not intentionally drop normal authentication headers;
+- therefore runtime/Gate code drift does not currently explain the 401;
+- saved claude.ai OAuth/Pro metadata said logged in, but effective upstream authentication failed;
+- strongest current hypothesis: the internal-only Claude runtime may be unable to reach the separate OAuth refresh control plane when the stored access token needs refresh;
+- this is **not proven** and must remain a hypothesis until separately authorized evidence resolves it.
+
+Current work authority:
+- Issue #110 = STATIC diagnosis/remediation source of truth;
+- no new Claude/Anthropic/Jules LIVE work is authorized by Issue #110;
+- allowed next batch: official-doc / upstream-code research, threat model, least-privilege OAuth control-plane isolation design, mock/fixture/unit/regression tests, docs/evidence, non-default-branch PR;
+- preferred direction to evaluate: keep model traffic forced through Admission Gate while isolating OAuth refresh/control-plane traffic behind a fail-closed exact allowlist proxy/sidecar;
+- do not broaden Claude runtime to unrestricted Internet egress;
+- do not use `claude auth status` alone as proof that provider authentication is effective;
+- OAuth relogin/refresh execution, provider request, Jules dispatch, Merge, default-branch write, billing/settings/permissions changes all require their normal explicit boundaries.
+
+Next Chat should continue Issue #110 until STATIC work is exhausted. Only after static remediation is validated should it return for:
+1. Merge approval for the remediation PR; then separately
+2. a new bounded LIVE auth/network proof; then separately
+3. a Claude→Jules integrated LIVE retest if still needed.
 
 ## 0. 2026-09-28 current override — Chat-first / Work fallback
 
