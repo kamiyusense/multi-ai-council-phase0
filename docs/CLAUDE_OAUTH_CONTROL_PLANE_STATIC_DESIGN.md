@@ -140,7 +140,7 @@ broaden the allowlist merely to make that historical path succeed.
 
 Protected properties:
 
-1. direct model traffic cannot use the OAuth egress path to bypass Admission Gate;
+1. direct connection to the documented model API host `api.anthropic.com` cannot use the OAuth egress path to bypass Admission Gate;
 2. OAuth egress cannot read the auth volume, workspace, or Gate state;
 3. the runtime cannot bypass the proxy through `NO_PROXY`, lowercase proxy
    variables, alternate proxy destinations, host networking, added capabilities,
@@ -245,7 +245,7 @@ model-path Gate boundary.
 ### Credential-blind CONNECT sidecar
 
 Selected for STATIC hardening because it preserves the existing credential
-owner, keeps direct model-host egress denied, and fails closed if the currently
+owner, keeps direct egress to the documented model API host denied, and fails closed if the currently
 unknown 2.1.283 OAuth dependency set is broader than `platform.claude.com:443`.
 
 ## Exit-criteria status
