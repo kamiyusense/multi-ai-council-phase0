@@ -217,7 +217,7 @@ Evidence:
 - command-bus JSON schemas parsed: **22/22 PASS**
 - Python compileall: **PASS**
 - `git diff --check`: **PASS**
-- focused CI contains both durable collector and migration recovery modules
+- full command-bus regression includes the merged migration-recovery tests
 - Issue #33 was not mutated by this batch
 
 The current branch head after this verification entry may be one
