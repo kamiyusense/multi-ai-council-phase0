@@ -172,3 +172,14 @@ All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.
 - Aggregate output is strictly UNRESOLVED or PROOF_RECORDS_COMPLETE; it does not claim actual readiness.
 - Fixed safety fields: live_ready=false, dispatch_allowed=false, human_approval_required=true, retry_count=0, fallback_state=disabled.
 - This checkpoint is strictly PREPARED/static evidence-inventory machinery only. Real live proofs remain UNKNOWN and real blockers unresolved.
+
+### RELAY_LIVE_READINESS_PIPELINE.md (Readiness Pipeline)
+
+This signifies the PREPARED static pipeline checkpoint.
+
+**Note**:
+- The current real evidence inventory remains `UNKNOWN`/unresolved.
+- Synthetic `READY_FOR_HUMAN_APPROVAL` test cases resolve nothing in reality.
+- The pipeline solely implements a side-effect-free preparation layer.
+- The first live turn remains a completely separate process requiring explicit human approval.
+- No real blocker is resolved by the existence of this pipeline.
