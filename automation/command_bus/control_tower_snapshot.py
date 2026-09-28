@@ -74,9 +74,10 @@ def extract_control_tower_snapshot(issue_body: str) -> dict[str, Any]:
     end = issue_body.find(SNAPSHOT_END, start)
     if end < 0:
         raise ValueError("Control Tower snapshot closing marker is missing")
-    if issue_body.find(SNAPSHOT_END, end + len(SNAPSHOT_END)) >= 0:
-        raise ValueError("Issue body contains multiple snapshot closing markers")
 
+    # Other managed Issue blocks also use HTML comment closers. The unique
+    # Control Tower start marker identifies this payload; only its first
+    # following closer belongs to the snapshot.
     raw = issue_body[start:end].strip()
     return parse_control_tower_snapshot_json(raw)
 
