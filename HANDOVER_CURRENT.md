@@ -58,32 +58,39 @@ report UNKNOWN instead.
 
 The current Signal/Status presentation direction is **Multi-loop Control Tower**.
 
-Before further Signal presentation work, fresh-read:
+Before further Signal / Control Tower work, fresh-read from current `main`:
 
-- PR #72: `docs(status): add Control Tower v2 and Windows companion roadmap`
 - `docs/PHASE0_CONTROL_TOWER_V2_ROADMAP.md`
 - `docs/SIGNAL_DEVELOPER_CONTROL_TOWER_V2_CHANGE_REQUEST.md`
+- the latest Control Tower checkpoint documents.
 
-If PR #72 is still open and those files are not on `main`, read them from the
-fresh PR #72 head. GitHub current state overrides remembered PR numbers/SHA.
+PR #72 is historical source material only once the two documents above are on
+`main`. GitHub current state overrides remembered PR numbers/SHA.
 
-Immediate implementation priority is **CT-1 static foundation** only:
+Current implementation status:
 
-- bounded presentation registry/schema;
-- `config/` explicitly STATIC in validation scope;
-- pure multi-loop aggregation/renderer;
-- aggregate count title;
-- HUMAN NEEDED summary;
-- human table + machine-readable snapshot from the same in-memory projection;
-- fixtures/unit/regression tests and exact-head CI evidence.
+- CT-1 static foundation: implemented;
+- CT-2 prepare-only migration plan and publisher boundary: implemented;
+- explicit PLACEHOLDER / DURABLE identity state and registration gate: implemented;
+- live-migration preflight: implemented;
+- machine-readable snapshot v1 schema/read-only parser: implemented;
+- read-only durable transition collector: implemented;
+- retry-zero migration rollback boundary: implemented;
+- Issue #33 live single-loop -> multi-loop migration: **NOT STARTED**;
+- CT-3 Development registry migration: not started;
+- Windows executable: not started.
+
+The next major integration boundary is **real durable loop identity adoption**.
+Do not promote the four presentation placeholder IDs merely to unblock the
+Control Tower. Each real runtime lane must first expose/adopt a stable durable
+`loop_id` backed by the existing state/owner-chain/receipt/evidence/provider
+observation/fresh-target verification path. Until then live migration remains
+NOT_WIRED.
 
 Control Tower presentation metadata (`mode`, `controller_kind`, `worker_kind`,
-`display_name`) is not durable owner/liveness truth. Existing state/owner
-chain/receipt/evidence/provider observation/fresh target/authority/fencing remain
-the correctness source.
-
-Do not live-migrate Issue #33 during CT-1. The live single-loop -> multi-loop
-Issue migration is the next major boundary after CT-1 is green.
+`display_name`, schedule/ETA fields, and `identity_state`) is not durable
+owner/liveness truth. Existing state/owner chain/receipt/evidence/provider
+observation/fresh target/authority/fencing remain the correctness source.
 
 Takeover/authority code remains a durable-control-plane concern and must not be
 reimplemented inside the Control Tower renderer.
