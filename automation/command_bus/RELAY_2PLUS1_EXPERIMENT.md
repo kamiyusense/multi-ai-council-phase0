@@ -520,3 +520,43 @@ Cycle members:
 - retry=0 / fallback=disabled / merge=human-only
 - live provider/model/API execution: no
 - required invariant: inventory states are worklist-only; even PROOF_RECORDS_COMPLETE must keep live_ready=false / dispatch_allowed=false / human_approval_required=true
+
+
+## Experiment cycle 4 — 2 medium + 1 long
+Cycle members:
+- Loop 047: medium
+- Loop 048: medium
+- Loop 049: long (planned after Loop 048)
+
+### Loop 047 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: static live-readiness evidence inventory / blocker worklist
+- Jules session: `6765073816543987940`
+- Jules PR: #105
+- isolated base: `jules-work/relay-dev-loop-047-readiness-inventory`
+- canonical snapshot parent: `ba9fb9e400d6d7b68cf169ad21d5bda603bb45ae`
+- initial Jules head: `67c1d1925889c2a940ffbfa37a11c9d2ef4acea6`
+- corrected isolated candidate: `badedcf5591ee60bc6dd5fda7c1888509ec6e95d`
+- accepted canonical head: `071c733b6a59f85a90c22b9563e056505f2b77ba`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial issues:
+  - schema used catch-all patternProperties, so unknown proof-category names were schema-valid
+  - Japanese renderer treated every non-UNKNOWN status as confirmed and could misrepresent malformed status input
+  - conversion helper trusted a caller-supplied PROOF_RECORDS_COMPLETE result without re-normalizing/verifying the complete normalized packet
+- correction_commits_on_isolated_candidate: 4
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 2
+- actions_status_feedback: 0
+- actions_total: 3
+- candidate exact validation run: `36443632909` SUCCESS
+- canonical exact validation run: `36443813725` SUCCESS
+- exact validation: 304 tests PASS; compileall PASS; diff-check PASS
+- schema now pins exact provider-specific proof category sets with additionalProperties=false
+- conversion now accepts only an exact normalized complete result and rejects post-normalization mutation
+- renderer sanitizes malformed count/status values and never echoes untrusted evidence refs or state strings
+- real live proofs confirmed: none
+- live provider/model/API execution: no
+- isolation result: PASS
+- PR #105 closed unmerged after validated content publication
