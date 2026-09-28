@@ -5,6 +5,7 @@ Scope: static/mock Relay skeleton only
 
 ## Implemented in this checkpoint
 
+- provider static profiles constructed without live authorization
 - deterministic dispatch envelope and payload SHA-256
 - dispatch-slot duplicate/conflict semantics
 - transport-neutral Relay protocol
