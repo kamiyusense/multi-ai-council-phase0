@@ -120,6 +120,40 @@ Record only non-secret facts:
 Do not record cookies, OAuth tokens, Authorization headers, credential files, or
 request bodies.
 
+## Prepared one-shot execution workflow
+
+Prepared workflow:
+
+`.github/workflows/issue110-external-auth-tls-live.yml`
+
+Reserved authorization receipt:
+
+`automation/command_bus/live_authorizations/issue110-external-auth-tls-001.json`
+
+The receipt file does not exist yet.
+
+The workflow requires all of the following before any Docker/network step:
+
+1. GitHub Actions `run_attempt=1`;
+2. the reserved authorization file exists;
+3. that file was added by the exact current HEAD commit;
+4. authorization ID/scope/retry/fallback fields are exact;
+5. probe/proxy/Compose Git blob IDs match the authorized receipt;
+6. credential-like and provider/model LIVE environment variables are absent.
+
+The workflow was executed once in the current unapproved state only to verify
+the guard behavior.
+
+Actions run `36466968733` completed successfully with:
+
+- `AUTHORIZATION_ABSENT_NOOP`;
+- credential check skipped;
+- Docker build/start skipped;
+- external TLS probe skipped;
+- cleanup skipped.
+
+Thus the presence of the workflow alone does not perform the external proof.
+
 ## Approval boundary
 
 Creating and testing the guard logic does **not** authorize the external TLS
