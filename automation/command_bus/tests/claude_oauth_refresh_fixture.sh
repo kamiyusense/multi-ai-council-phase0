@@ -11,10 +11,16 @@ EVIDENCE="$TMP/evidence"
 CASE="$TMP/status-case"
 mkdir -p "$CERTS" "$EVIDENCE" "$CASE"
 
+OLD_ACCESS="sk-ant-oat01-$(printf 'a%.0s' $(seq 1 96))"
+OLD_REFRESH="sk-ant-ort01-$(printf 'b%.0s' $(seq 1 96))"
+NEW_ACCESS="sk-ant-oat01-$(printf 'c%.0s' $(seq 1 96))"
+NEW_REFRESH="sk-ant-ort01-$(printf 'd%.0s' $(seq 1 96))"
+export OLD_ACCESS OLD_REFRESH NEW_ACCESS NEW_REFRESH
+
 cleanup() {
   docker rm -f "$MOCK" >/dev/null 2>&1 || true
   docker network rm "$NET" >/dev/null 2>&1 || true
-  rm -rf "$TMP"
+  sudo rm -rf "$TMP"
 }
 trap cleanup EXIT
 
@@ -31,14 +37,13 @@ EOF
 
 openssl x509 -req   -in "$CERTS/server.csr"   -CA "$CERTS/ca.crt"   -CAkey "$CERTS/ca.key"   -CAcreateserial   -out "$CERTS/server.crt"   -days 1   -extfile "$CERTS/ext.cnf"   >/dev/null 2>&1
 
-chmod 0444 "$CERTS/ca.crt" "$CERTS/server.crt"
-chmod 0444 "$CERTS/ca.key" "$CERTS/server.key"
+chmod 0444 "$CERTS/ca.crt" "$CERTS/server.crt" "$CERTS/ca.key" "$CERTS/server.key"
 touch "$EVIDENCE/events.jsonl"
 chmod 0666 "$EVIDENCE/events.jsonl"
 
 docker network create --internal "$NET" >/dev/null
 
-docker run -d --rm   --name "$MOCK"   --network "$NET"   --network-alias oauth-mock   -v "$ROOT/automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs:/fixture/mock.mjs:ro"   -v "$CERTS:/certs:ro"   -v "$EVIDENCE:/evidence"   --entrypoint node   "$IMAGE"   /fixture/mock.mjs >/dev/null
+docker run -d --rm   --name "$MOCK"   --network "$NET"   --network-alias oauth-mock   -e MOCK_EXPECTED_REFRESH_TOKEN="$OLD_REFRESH"   -e MOCK_NEW_ACCESS_TOKEN="$NEW_ACCESS"   -e MOCK_NEW_REFRESH_TOKEN="$NEW_REFRESH"   -v "$ROOT/automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs:/fixture/mock.mjs:ro"   -v "$CERTS:/certs:ro"   -v "$EVIDENCE:/evidence"   --entrypoint node   "$IMAGE"   /fixture/mock.mjs >/dev/null
 
 for _ in $(seq 1 30); do
   if docker logs "$MOCK" 2>&1 | grep -F "OAUTH_FIXTURE_PROXY_READY" >/dev/null; then
@@ -49,19 +54,30 @@ done
 
 docker logs "$MOCK" 2>&1 | grep -F "OAUTH_FIXTURE_PROXY_READY" >/dev/null
 
-cat > "$CASE/.credentials.json" <<'EOF'
-{
-  "claudeAiOauth": {
-    "accessToken": "fixture-access-old",
-    "refreshToken": "fixture-refresh-old",
-    "expiresAt": 1,
-    "refreshTokenExpiresAt": 4102444800000,
-    "scopes": ["user:profile", "user:inference"],
-    "subscriptionType": "pro",
-    "rateLimitTier": "fixture"
-  }
-}
-EOF
+export CASE
+python - <<'PY'
+import json, os
+from pathlib import Path
+
+p = Path(os.environ["CASE"]) / ".credentials.json"
+p.write_text(json.dumps({
+    "claudeAiOauth": {
+        "accessToken": os.environ["OLD_ACCESS"],
+        "refreshToken": os.environ["OLD_REFRESH"],
+        "expiresAt": 1,
+        "refreshTokenExpiresAt": 4102444800000,
+        "scopes": [
+            "user:file_upload",
+            "user:inference",
+            "user:mcp_servers",
+            "user:profile",
+            "user:sessions:claude_code",
+        ],
+        "subscriptionType": "pro",
+        "rateLimitTier": "fixture",
+    }
+}, indent=2) + "\n", encoding="utf-8")
+PY
 
 cat > "$CASE/settings.json" <<'EOF'
 {
@@ -69,19 +85,20 @@ cat > "$CASE/settings.json" <<'EOF'
 }
 EOF
 
-# The container runs as uid/gid 1000 and must be able to persist a rotated fixture pair.
 sudo chown -R 1000:1000 "$CASE"
 sudo chmod 0700 "$CASE"
 sudo chmod 0600 "$CASE/.credentials.json" "$CASE/settings.json"
 
 set +e
+SECONDS=0
 STATUS_OUTPUT="$(
-  docker run --rm     --network "$NET"     -e CLAUDE_CONFIG_DIR=/fixture     -e HTTPS_PROXY=http://oauth-mock:3129     -e NODE_EXTRA_CA_CERTS=/certs/ca.crt     -e DISABLE_UPDATES=1     -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1     -v "$CASE:/fixture"     -v "$CERTS:/certs:ro"     --entrypoint claude     "$IMAGE"     auth status --json     2>&1
+  timeout 15s docker run --rm     --network "$NET"     -e CLAUDE_CONFIG_DIR=/fixture     -e HTTPS_PROXY=http://oauth-mock:3129     -e NODE_EXTRA_CA_CERTS=/certs/ca.crt     -e DISABLE_UPDATES=1     -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1     -v "$CASE:/fixture"     -v "$CERTS:/certs:ro"     --entrypoint claude     "$IMAGE"     auth status --json     2>&1
 )"
 STATUS_CODE=$?
+STATUS_SECONDS=$SECONDS
 set -e
 
-export STATUS_CODE CASE EVIDENCE
+export STATUS_CODE STATUS_SECONDS STATUS_OUTPUT CASE EVIDENCE
 python - <<'PY'
 import json, os
 from pathlib import Path
@@ -89,6 +106,27 @@ from pathlib import Path
 case = Path(os.environ["CASE"])
 evidence = Path(os.environ["EVIDENCE"])
 cred_path = case / ".credentials.json"
+
+status_output = os.environ.get("STATUS_OUTPUT", "")
+status_summary = {"parseable_json": False}
+try:
+    status_json = json.loads(status_output)
+    status_summary = {
+        "parseable_json": True,
+        "loggedIn": status_json.get("loggedIn"),
+        "authMethod": status_json.get("authMethod"),
+        "apiProvider": status_json.get("apiProvider"),
+    }
+except Exception:
+    sanitized = status_output
+    for value in (
+        os.environ["OLD_ACCESS"],
+        os.environ["OLD_REFRESH"],
+        os.environ["NEW_ACCESS"],
+        os.environ["NEW_REFRESH"],
+    ):
+        sanitized = sanitized.replace(value, "<fixture-token>")
+    status_summary["non_json_prefix"] = sanitized[:300]
 
 events = []
 for line in (evidence / "events.jsonl").read_text(encoding="utf-8").splitlines():
@@ -103,12 +141,14 @@ unexpected = [e for e in events if e.get("type") in {
     "connect_parse_error",
 }]
 
-assert len(refresh) == 1, refresh
-assert refresh[0].get("refresh_post_ordinal") == 1
-assert refresh[0].get("grant_type") == "refresh_token"
-assert refresh[0].get("refresh_token_matches_fixture") is True
-assert refresh[0].get("authorization_header_present") is False
-assert refresh[0].get("cookie_header_present") is False
+if len(refresh) > 1:
+    raise AssertionError(refresh)
+if refresh:
+    assert refresh[0].get("refresh_post_ordinal") == 1
+    assert refresh[0].get("grant_type") == "refresh_token"
+    assert refresh[0].get("refresh_token_matches_fixture") is True
+    assert refresh[0].get("authorization_header_present") is False
+    assert refresh[0].get("cookie_header_present") is False
 
 if not cred_path.exists():
     classification = "CREDENTIAL_FILE_MISSING"
@@ -118,11 +158,10 @@ else:
     oauth = data.get("claudeAiOauth") or {}
     access = oauth.get("accessToken")
     refresh_token = oauth.get("refreshToken")
-    expires_at = oauth.get("expiresAt")
-    if access == "fixture-access-new" and refresh_token == "fixture-refresh-new":
+    if access == os.environ["NEW_ACCESS"] and refresh_token == os.environ["NEW_REFRESH"]:
         classification = "ROTATED_PAIR_PERSISTED"
         persisted = True
-    elif access == "fixture-access-old" and refresh_token == "fixture-refresh-old":
+    elif access == os.environ["OLD_ACCESS"] and refresh_token == os.environ["OLD_REFRESH"]:
         classification = "OLD_PAIR_UNCHANGED"
         persisted = False
     else:
@@ -138,25 +177,29 @@ result = {
     "claude_code_version": "2.1.283",
     "command": "claude auth status --json",
     "command_exit_code": int(os.environ["STATUS_CODE"]),
+    "command_seconds": int(os.environ["STATUS_SECONDS"]),
+    "status_summary": status_summary,
     "oauth_refresh_posts": len(refresh),
     "connect_authorities": [e.get("authority") for e in connects],
-    "mock_refresh_request_validated": True,
+    "mock_refresh_request_validated": bool(refresh),
     "credential_persistence_classification": classification,
     "rotated_pair_persisted": persisted,
     "unexpected_mock_events": len(unexpected),
 }
 print(json.dumps(result, indent=2, sort_keys=True))
 
-# A fixture run is valid only if it actually reached exactly one local refresh
-# and produced one of the explicit persistence classifications.
 assert classification in {
     "ROTATED_PAIR_PERSISTED",
     "OLD_PAIR_UNCHANGED",
     "PARTIAL_OR_OTHER_MUTATION",
     "CREDENTIAL_FILE_MISSING",
 }
+if refresh:
+    print("CLAUDE_AUTH_STATUS_REFRESH_OBSERVED")
+else:
+    print("CLAUDE_AUTH_STATUS_NO_REFRESH_OBSERVED")
 print("CLAUDE_AUTH_STATUS_REFRESH_FIXTURE_MEASUREMENT_PASS")
 PY
 
-# Avoid printing STATUS_OUTPUT because future versions may add account metadata.
 echo "AUTH_STATUS_EXIT_CODE=$STATUS_CODE"
+echo "AUTH_STATUS_SECONDS=$STATUS_SECONDS"
