@@ -111,8 +111,8 @@ def validate_request(request: dict[str, Any], *, now: datetime | None = None) ->
     return request
 
 
-def build_jules_prompt(request: dict[str, Any]) -> str:
-    validate_request(request)
+def build_jules_prompt(request: dict[str, Any], *, now: datetime | None = None) -> str:
+    validate_request(request, now=now)
     allowed = "\n".join(f"- {path}" for path in request["allowed_paths"])
     return f"""Multi-AI Council Phase 0 — bounded Chat->Jules API task.
 
