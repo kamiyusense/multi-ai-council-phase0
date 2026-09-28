@@ -25,6 +25,26 @@ Claude structured verdict
 記録を作る。Bは既存executor request schemaが要求する具体的tree identityと
 path policyを必須にする。
 
+## 2026-09-28 current status
+
+- PR #25 was merged to `main` after the bounded REAL Claude Gate proof passed.
+- B / `CLAUDE_BACKEND`: the one-request REAL proof is live-green. The proof
+  remains bounded evidence, not standing authorization for another Claude run.
+- A / `JULES_BACKEND`: the historical Jules API transport has live smoke
+  evidence, but the complete Claude-verdict -> Jules closed-loop correlation has
+  not yet been run live. Treat integrated A as **LIVE UNKNOWN**.
+- `prepare_jules_closed_loop_command()` is the static bridge from the existing
+  JULES_BACKEND executor preparation to the existing `JULES_API_CLOSED_LOOP`
+  command contract. It returns an in-memory artifact only; it does not persist a
+  command, move durable state to RUNNING, dispatch a workflow, start Jules, or
+  start Claude.
+- The bridge narrows authority rather than widening it: exact file paths only,
+  `ADD`/`MODIFY` only, explicit non-default starting branch, pinned
+  head/tree, retry=0, fallback=disabled. Glob paths, destructive operations,
+  duplicate paths, default-branch targets, or tampered live flags fail closed.
+- Persisting/activating the returned live-capable Jules command remains a
+  separate LIVE boundary requiring explicit authorization and fresh preflight.
+
 ## 共通machine gate
 
 - `round <= max_rounds <= 6`
