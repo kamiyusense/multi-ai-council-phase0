@@ -22,6 +22,40 @@ This rule is durable project policy and must be carried into every new Chat hand
 Canonical detail:
 `docs/CHAT_WORK_AUTONOMY_RULES.md`
 
+## 0.1 2026-09-28 current override — Control Tower v2
+
+The current Signal/Status presentation direction is **Multi-loop Control Tower**.
+
+Before further Signal presentation work, fresh-read:
+
+- PR #72: `docs(status): add Control Tower v2 and Windows companion roadmap`
+- `docs/PHASE0_CONTROL_TOWER_V2_ROADMAP.md`
+- `docs/SIGNAL_DEVELOPER_CONTROL_TOWER_V2_CHANGE_REQUEST.md`
+
+If PR #72 is still open and those files are not on `main`, read them from the
+fresh PR #72 head. GitHub current state overrides remembered PR numbers/SHA.
+
+Immediate implementation priority is **CT-1 static foundation** only:
+
+- bounded presentation registry/schema;
+- `config/` explicitly STATIC in validation scope;
+- pure multi-loop aggregation/renderer;
+- aggregate count title;
+- HUMAN NEEDED summary;
+- human table + machine-readable snapshot from the same in-memory projection;
+- fixtures/unit/regression tests and exact-head CI evidence.
+
+Control Tower presentation metadata (`mode`, `controller_kind`, `worker_kind`,
+`display_name`) is not durable owner/liveness truth. Existing state/owner
+chain/receipt/evidence/provider observation/fresh target/authority/fencing remain
+the correctness source.
+
+Do not live-migrate Issue #33 during CT-1. The live single-loop -> multi-loop
+Issue migration is the next major boundary after CT-1 is green.
+
+Takeover/authority code remains a durable-control-plane concern and must not be
+reimplemented inside the Control Tower renderer.
+
 ## 0.1 2026-09-25 current override — Jules API route adopted
 
 This section supersedes older Jules-launch / API-key statements below when they
