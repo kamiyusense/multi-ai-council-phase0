@@ -23,6 +23,7 @@ from automation.command_bus.tests.test_loop_status_issue import state
 
 ROOT = Path(__file__).parents[1]
 REGISTRY_PATH = ROOT / "config" / "control_tower_registry.json"
+FIXTURE_DIR = ROOT / "tests" / "fixtures" / "control_tower_schedule"
 
 
 def registry():
@@ -247,6 +248,39 @@ class ControlTowerSemiAutoTimingTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, snap)
 
+
+    def test_control_tower_generated_at_refreshes_stale_eta_state(self):
+        hint = schedule("2026-09-28T13:20:00+09:00")
+        self.assertEqual(hint.eta_state, "WITHIN_WINDOW")
+        raw = {"schema_version": 1, "loops": [registry()["loops"][0]]}
+        tower = build_control_tower(
+            raw,
+            {"chatgpt-semi-auto": semi_input(hint)},
+            generated_at="2026-09-28T04:26:00+00:00",
+        )
+        self.assertEqual(tower.lanes[0].display_state, "SEMI_AUTO")
+        self.assertEqual(tower.lanes[0].schedule_hint.eta_state, "OVERDUE")
+
+    def test_schedule_fixtures_match_machine_snapshot_contract(self):
+        verified = json.loads(
+            (FIXTURE_DIR / "verified_medium_overdue.json").read_text(encoding="utf-8")
+        )
+        unknown = json.loads(
+            (FIXTURE_DIR / "unknown_acceptance.json").read_text(encoding="utf-8")
+        )
+        hint = schedule("2026-09-28T13:26:00+09:00")
+        self.assertEqual(schedule_snapshot(hint), verified)
+
+        unknown_hint = build_semi_auto_schedule_hint(
+            loop_number=39,
+            acceptance_state="UNKNOWN",
+            accepted_at=None,
+            task_size="MEDIUM",
+            eta_start=None,
+            eta_end=None,
+            now="2026-09-28T13:26:00+09:00",
+        )
+        self.assertEqual(schedule_snapshot(unknown_hint), unknown)
 
 if __name__ == "__main__":
     unittest.main()
