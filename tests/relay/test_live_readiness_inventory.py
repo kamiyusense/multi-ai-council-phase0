@@ -235,6 +235,38 @@ class TestLiveReadinessInventory(unittest.TestCase):
                 self.assertEqual(proofs[provider][key]["status"], "CONFIRMED")
                 self.assertEqual(proofs[provider][key]["evidence_ref"], f"ref_{provider}_{key}")
 
+        # Mutated normalized results must not be trusted by the conversion helper.
+        tampered_state = copy.deepcopy(result)
+        tampered_state["state"] = "UNRESOLVED"
+        self.assertEqual(convert_to_live_readiness_proofs(tampered_state), {})
+
+        tampered_safety = copy.deepcopy(result)
+        tampered_safety["dispatch_allowed"] = True
+        self.assertEqual(convert_to_live_readiness_proofs(tampered_safety), {})
+
+        tampered_hash = copy.deepcopy(result)
+        tampered_hash["packet_sha256"] = "0" * 64
+        self.assertEqual(convert_to_live_readiness_proofs(tampered_hash), {})
+
+        extra_top_level = copy.deepcopy(result)
+        extra_top_level["extra"] = True
+        self.assertEqual(convert_to_live_readiness_proofs(extra_top_level), {})
+
+    def test_renderer_fails_closed_on_untrusted_status_and_count(self) -> None:
+        result = build_empty_inventory()
+        key = next(iter(result["inventory"]["openai"]))
+        result["inventory"]["openai"][key]["status"] = "https://secret.example/token"
+        result["unresolved_count"] = "https://secret.example/count"
+
+        rendered = render_inventory_ja(result)
+
+        self.assertIn("未解決の証拠総数: UNKNOWN", rendered)
+        self.assertIn(f"[不明] {key}", rendered)
+        self.assertNotIn("https://", rendered)
+
+        rendered_non_mapping = render_inventory_ja([])  # type: ignore[arg-type]
+        self.assertIn("未解決の証拠総数: UNKNOWN", rendered_non_mapping)
+
     def test_ast_no_ambient_io(self) -> None:
         import ast
         from pathlib import Path
