@@ -636,3 +636,67 @@ Cycle members:
 - retry=0 / fallback=disabled / merge=human-only
 - live provider/model/API execution: no
 - required invariant: static preflight PASS alone never means live readiness; even a fully synthetic complete inventory may reach only READY_FOR_HUMAN_APPROVAL with live_ready=false / dispatch_allowed=false
+
+### Loop 049 — long — COMPLETE / ACCEPTED AFTER USER-REQUESTED STOP + CHAT CORRECTION
+- task: static readiness snapshot connecting explicit provider configs -> validate_provider_static -> readiness pipeline
+- Jules session: `2187049476280685317`
+- Jules PR: #118
+- isolated base: `jules-work/relay-dev-loop-049-readiness-snapshot`
+- canonical snapshot parent: `672033b9ab0ff91829b2595617b5ae120aceb6b1`
+- initial Jules candidate: `289e153f39b69d689e958f844b86400c0fa1793b`
+- corrected isolated candidate: `76fdd75f9c3423e1e79c8b7e461d0a55d5e8e7c2`
+- accepted canonical head: `35a55ae5cb7aa849d28b7b83f2c468f39a398ce2`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- prolonged-session handling:
+  - session exceeded the expected long-task window and entered `AWAITING_USER_FEEDBACK`
+  - one bounded continuation message was accepted without replacement session
+  - session later remained `IN_PROGRESS` with no published branch changes for too long
+  - user explicitly requested stop + inspection
+  - bounded stop-message run `36465873973`: SUCCESS; exactly one stop/preserve-partial message accepted
+  - session subsequently reached `COMPLETED` and published PR #118; no destructive DELETE/cancel API was used
+- initial semantic gaps found despite green initial tests:
+  - preflight `reasons` was not restricted to list[str]
+  - retry_count checks admitted bool-equivalent zero semantics
+  - pipeline result cross-field validation was incomplete
+  - fail-closed `pipeline_packet_sha256=null` contradicted the initial schema's mandatory string-only rule
+  - preflight snapshot schema was too permissive at nested fixed layers
+  - required malformed-dependency, mutation-isolation, renderer-sanitization, and AST boundary tests were incomplete
+- initial exact validation run `36466196608`: SUCCESS; 350 tests PASS; compileall PASS; diff-check PASS, but semantic review still rejected the candidate
+- Chat correction commits on isolated candidate: 4
+- corrected implementation now:
+  - validates full input structure before any dependency call
+  - calls static preflight in canonical provider order exactly once per provider
+  - validates exact/tamper-resistant preflight snapshots including policy identity and list[str] reasons
+  - validates fail-closed and ready pipeline semantics, provider/count maps, canonical blockers, and lowercase SHA-256 fields
+  - deep-copies input and dependency outputs before trust/use
+  - sanitizes Japanese summary rendering
+  - pins schema fixed layers and nullable fail-closed pipeline hash semantics
+  - adds regression/negative/AST/static-boundary coverage
+- corrected candidate exact validation run `36467566843`: SUCCESS
+- canonical exact validation run `36467726612`: SUCCESS
+- exact validation: 363 tests PASS; compileall PASS; diff-check PASS
+- canonical publication: exact six validated blobs copied into one normal fast-forward canonical commit; Jules history was not pointed directly at canonical
+- candidate/canonical six-file blob equality after publication: PASS
+- correction_commits_on_isolated_candidate: 4
+- rejules_sessions: 0
+- actions_dispatch: 1
+- actions_validation: 3
+- actions_status_feedback: 8
+- actions_total: 12
+- retry=0 / fallback=disabled
+- real live proofs confirmed: none
+- live provider/model/API execution: no
+- merge: no
+- isolation result: PASS
+
+## Experiment cycle 4 current result
+- Loop 047 medium: accepted after correction
+- Loop 048 medium: accepted after correction
+- Loop 049 long: accepted after user-requested stop + Chat correction
+- final acceptance: 3/3 = 100%
+- untouched first pass: 0/3 = 0%
+- re-Jules replacement sessions: 0
+- observation: Loop 049 exceeded its expected window and paused for feedback; stopping and harvesting the partial PR was more efficient than continuing to wait. Green repository tests alone were not sufficient because independent semantic review found contract/schema gaps.
+
