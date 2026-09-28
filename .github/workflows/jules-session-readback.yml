@@ -52,6 +52,7 @@ jobs:
           set -euo pipefail
           session_id="$(jq -er '.session_id' "${STATUS_PATH}")"
           [[ "${session_id}" =~ ^[0-9]+$ ]] || { echo "Invalid session_id." >&2; exit 1; }
+
           response_file="${RUNNER_TEMP}/jules-session.json"
           http_code="$(curl --silent --show-error --fail-with-body --retry 0 \
             --output "${response_file}" \
@@ -59,13 +60,27 @@ jobs:
             -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
             "https://jules.googleapis.com/v1alpha/sessions/${session_id}")"
           [[ "${http_code}" =~ ^2[0-9][0-9]$ ]] || { echo "Unexpected Jules HTTP status ${http_code}." >&2; exit 1; }
+
           name="$(jq -r '.name // "UNKNOWN"' "${response_file}")"
           state="$(jq -r '.state // "UNKNOWN"' "${response_file}")"
           pr_url="$(jq -r '[.outputs[]? | .pullRequest?.url // empty] | first // ""' "${response_file}")"
           echo "Jules session readback: name=${name} state=${state} pr_url=${pr_url:-NONE}"
+
+          activities_file="${RUNNER_TEMP}/jules-activities.json"
+          activities_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${activities_file}" \
+            --write-out '%{http_code}' \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            "https://jules.googleapis.com/v1alpha/sessions/${session_id}/activities?pageSize=100")"
+          [[ "${activities_code}" =~ ^2[0-9][0-9]$ ]] || { echo "Unexpected Jules activities HTTP status ${activities_code}." >&2; exit 1; }
+
+          latest_agent_message_json="$(jq -c '[.activities[]? | select(.originator == "agent" and .agentMessaged.agentMessage != null) | .agentMessaged.agentMessage] | last // ""' "${activities_file}")"
+          echo "Jules latest agent message JSON: ${latest_agent_message_json}"
+
           {
             echo "## Jules session readback"
-            echo "- session_id: \`${session_id}\`"
-            echo "- state: \`${state}\`"
-            echo "- pull_request: \`${pr_url:-NONE}\`"
+            echo "- session_id: `${session_id}`"
+            echo "- state: `${state}`"
+            echo "- pull_request: `${pr_url:-NONE}`"
+            echo "- latest_agent_message_json: `${latest_agent_message_json}`"
           } >> "${GITHUB_STEP_SUMMARY}"
