@@ -201,30 +201,66 @@ Interpretation: 15-20 minute tasks improved final acceptance, but most still nee
 - live_turn_executed=false / retry_count=0 / fallback_state=disabled
 - PR #4 checkpoint docs head after proof: e3414e46581492dc11e6cd03762e7773d1441b74
 
-### Loop 041 — long — DISPATCHED / IN PROGRESS
+### Loop 041 — long — COMPLETE / ACCEPTED WITH CONTROL-PLANE INCIDENT
 - task: real pinned Core PR #3 negative-path provider-isolation matrix
 - target duration class: ~25-35 min
 - canonical Relay parent: e3414e46581492dc11e6cd03762e7773d1441b74
 - pinned Core PR #3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9
 - Jules session: 4781088550264311675
-- verified Jules session accepted: 2026-09-28 14:16:06 JST
-- scenarios requested: timeout_openai; collect_error_anthropic; invalid_output_google
-- actions_dispatch_so_far: 1
-- retry: 0
-- fallback: disabled
-- live execution: no
-- result: pending
+- Jules PR: #85
+- initial Jules head: 8c8e32e98e4f156f25a360063de191385403a4a2
+- corrected candidate head: fa8b822590e3c9488126ae3c7c32526a8c4220ba
+- canonical accepted content commit: 565ba16ed59d5ff979552e7c6524559caa4cf423
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial semantic issue: provider outcome states were overwritten from hard-coded scenario expectations instead of derived from Core checkpoint evidence
+- correction_commits: 2
+- rejules_sessions: 0
+- candidate exact validation run: 36383704880 SUCCESS
+- exact validation: 232 tests PASS; compileall PASS; diff-check PASS
+- real negative matrix run: 36383797774 SUCCESS
+- scenarios:
+  - timeout_openai -> openai TIMEOUT; healthy Anthropic/Google RAW preserved exactly
+  - collect_error_anthropic -> anthropic ERROR_UNKNOWN; healthy OpenAI/Google RAW preserved exactly
+  - invalid_output_google -> google INVALID_OUTPUT; healthy OpenAI/Anthropic RAW preserved and malformed Google RAW retained exactly
+- every scenario: participant_count=2; agreement_count=2; human_required=true; formal_consensus=false
+- retry_count=0 / fallback_state=disabled / live_turn_executed=false
 
-## Experiment cycle 2 interim totals after long-task dispatch
-- completed medium tasks: 2/2 accepted = 100%
-- untouched medium first pass: 0/2
+### Loop 041 canonical-branch incident
+- severity: CONTROL_PLANE_SAFETY_FAILURE
+- direct Jules-bot commits observed on canonical PR #4 branch after dispatch:
+  - 1d65538452242e1084a6124eeace0e6870754a10
+  - db0014a0159c0536ea20734db8d22f83770b339e
+  - 7d106616e110dc32ccc7182181b97c2f0312e6a9
+- each direct commit broadly removed/replaced canonical Relay source/docs/tests and was rejected
+- recovery used append-only normal commits only; no force push/history rewrite
+- first verified recovery: f7a6b5fa606ac01c892a76993ddf5c23dcbedfa3
+- second recovery: 96e9d454b77be50a3775d917ab2e0a70f698ef70
+- third recovery: c3312b73f91eff45593ebf6472d1460614ae8617
+- intended recovered tree: 3b706e31739b1b36cdd3882ea9e4cb0cd264bfc9
+- recovery validation run 36383576613: 217 tests PASS; compileall PASS; diff-check PASS
+- Jules session readback at run 36384791910 reported state=COMPLETED, but commit 7d106616... arrived afterward
+- conclusion: Jules API state=COMPLETED is not sufficient proof that GitHub publication activity has quiesced
+- root cause of direct canonical writes: UNKNOWN
+- safety response: canonical branch is no longer permitted as Jules starting branch
+
+## Experiment cycle 2 final totals
+- completed tasks: 3/3 accepted = 100%
+- untouched first pass: 0/3 = 0%
 - re-Jules replacement sessions: 0
-- Loop 039 Actions: 2
-- Loop 040 Actions: 6
-- Loop 041 dispatch Actions so far: 1
-- cycle Actions so far: 9
-- status-poll Actions: 0
-- long-task result not yet scored
-- important confounders:
-  - one Loop 040 exact validation failure was caused by Chat-added test expectation mistakes
-  - one Loop 040 real overlay failure was a genuine test-only integration defect exposed only by the real exact cross-branch run
+- functional result: both happy-path and negative-path real Core PR3 x Relay static/mock overlays PASS
+- quality result: long scope did not improve untouched-first-pass precision
+- safety result: long Loop 041 exposed a severe canonical-branch publication hazard; task-size comparison is secondary until branch isolation is proven
+
+## Isolation V2 control-plane checkpoint
+- semi-auto request profile upgraded to JULES_CHAT_SEMIAUTO_V2
+- every new command requires a distinct exact per-command work branch: jules-work/<command_id>
+- canonical target branch remains a read-only identity/checkpoint
+- workflow verifies canonical target head/tree and isolated work branch head/tree both equal the expected snapshot before Jules invocation
+- Jules REST startingBranch is the isolated work branch only
+- exact control-plane validation run 36384738693: SUCCESS
+- command-bus suite: 298 tests PASS; compileall PASS; diff-check PASS
+- first isolation canary command was blocked before Jules invocation because canonical head had changed from 96e9d454... to 7d106616...
+- this stale-target block proves the V2 pre-dispatch guard failed closed; no Jules canary session was created
+- next condition: recover canonical tree, confirm a stable fresh head, create a fresh per-command snapshot branch, then issue a new command_id; never replay the blocked command
