@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 const DISPATCH_HEADER = "X-Phase0-Dispatch-ID";
 const REQUIRED_ENV = Object.freeze({
   ANTHROPIC_BASE_URL: "http://gate:8080",
+  HTTPS_PROXY: "http://oauth-egress:8081",
   PHASE0_TRANSPORT_MODE: "CONTAINER_INTERNAL",
   CLAUDE_CODE_MAX_RETRIES: "0",
   CLAUDE_CODE_MAX_TURNS: "1",
@@ -30,8 +31,12 @@ const FORBIDDEN_ENV = new Set([
   "CLAUDE_CODE_OAUTH_TOKEN",
   "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
   "HTTP_PROXY",
-  "HTTPS_PROXY",
   "ALL_PROXY",
+  "NO_PROXY",
+  "http_proxy",
+  "https_proxy",
+  "all_proxy",
+  "no_proxy",
   "NODE_OPTIONS",
   "NODE_PATH",
 ]);
