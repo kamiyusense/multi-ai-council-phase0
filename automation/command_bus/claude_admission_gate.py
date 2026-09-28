@@ -712,7 +712,7 @@ def validate_container_topology(manifest: dict) -> dict:
         "bootstrap_has_no_injected_credentials": not (set(auth_env) & forbidden_env_names),
         "runtime_cli_contract_explicit": runtime_contract == {
             "mode": "runnable-packaging-static-unexecuted",
-            "argv": ["-p", "--bare", "--no-session-persistence", "--max-turns", "1", "--tools", "", "--mcp-config", "{\"mcpServers\":{}}", "--strict-mcp-config", "--permission-prompts", "none"],
+            "argv": ["-p", "--safe-mode", "--no-session-persistence", "--max-turns", "1", "--tools", "", "--mcp-config", "{\"mcpServers\":{}}", "--strict-mcp-config", "--permission-prompts", "none"],
             "automatic_model_fallback": "not_proven_disabled; the Admission Gate is the one-upstream-request boundary",
             "tool_scope": "all_builtin_tools_disabled; MCP denied by separate config requirement",
             "live_execution_gate": "PHASE0_LIVE_EXECUTION=1 plus dispatch metadata; absent from Compose environment",
@@ -783,7 +783,7 @@ def validate_container_artifacts() -> dict:
         "claude_context_is_exact_allowlist": files["claude_ignore"] == claude_ignore_expected,
         "gate_context_is_exact_allowlist": files["gate_ignore"] == gate_ignore_expected,
         "launcher_has_explicit_live_gate": 'env.PHASE0_LIVE_EXECUTION !== "1"' in launcher and "default_launcher_result" in json.dumps(manifest),
-        "compose_and_launcher_both_require_bare_mode": "--bare" in manifest["x-phase0-runtime-contract"]["argv"] and '"--bare"' in launcher_args,
+        "compose_and_launcher_both_require_oauth_compatible_safe_mode": "--safe-mode" in manifest["x-phase0-runtime-contract"]["argv"] and '"--safe-mode"' in launcher_args and "--bare" not in manifest["x-phase0-runtime-contract"]["argv"] and '"--bare"' not in launcher_args,
         "launcher_preserves_bounded_cli_flags": all(fragment in launcher_args for fragment in (
             '"--no-session-persistence"', '"--max-turns", "1"', '"--tools", ""',
             '"--mcp-config", JSON.stringify({ mcpServers: {} })', '"--strict-mcp-config"',

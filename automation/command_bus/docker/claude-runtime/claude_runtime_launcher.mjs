@@ -72,7 +72,7 @@ export function prepareClaudeInvocation(env = process.env, args = process.argv.s
     executable: "claude",
     args: [
       "-p",
-      "--bare",
+      "--safe-mode",
       "--no-session-persistence",
       "--max-turns", "1",
       "--tools", "",

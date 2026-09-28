@@ -596,9 +596,12 @@ class AdmissionGateTests(unittest.TestCase):
         declared = manifest["x-phase0-runtime-contract"]["argv"]
         launcher_path = Path(__file__).resolve().parents[1] / "docker" / "claude-runtime" / "claude_runtime_launcher.mjs"
         launcher = launcher_path.read_text(encoding="utf-8")
-        self.assertIn("--bare", declared)
+        self.assertIn("--safe-mode", declared)
+        self.assertNotIn("--bare", declared)
         self.assertIn('env.PHASE0_LIVE_EXECUTION !== "1"', launcher)
-        self.assertIn('"--bare"', launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0])
+        launcher_args = launcher.split("args: [", 1)[1].split("],\n    env:", 1)[0]
+        self.assertIn('"--safe-mode"', launcher_args)
+        self.assertNotIn('"--bare"', launcher_args)
         for fragment in (
             '"--tools", ""',
             '"--mcp-config", JSON.stringify({ mcpServers: {} })',
@@ -609,7 +612,7 @@ class AdmissionGateTests(unittest.TestCase):
             with self.subTest(fragment=fragment):
                 self.assertIn(fragment, launcher)
         artifact_checks = validate_container_artifacts()["checks"]
-        self.assertTrue(artifact_checks["compose_and_launcher_both_require_bare_mode"])
+        self.assertTrue(artifact_checks["compose_and_launcher_both_require_oauth_compatible_safe_mode"])
         self.assertTrue(artifact_checks["launcher_preserves_bounded_cli_flags"])
 
     def test_lifecycle_prepares_then_fake_terminal_receipt_blocks_replay(self):

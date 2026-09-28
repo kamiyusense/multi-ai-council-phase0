@@ -1,6 +1,16 @@
 # Claude Loop live-proof handover (CURRENT)
 
-更新日: 2026-09-27 JST
+## 2026-09-28 LIVE追記（先に読む）
+
+この追記より下の `--bare` / 実行回数0 / STATIC直前の記述は、2026-09-27時点の履歴であり、現在の実行状態ではない。
+
+- PR #25 の2026-09-28再試行は、`phase0-runs/real-claude-proof-20260928-r2/terminal-receipt.json` に `FAILED` として終端保存済み。dispatch `d384c645-cf10-433f-a44e-d2d41130efa7`、Claude起動1回、再起動0、Gateが観測した `/v1/messages` 送信0回。Gate DBには累計dispatch 2件、evidence 0件、terminal receipt 2件。GateとClaude runtimeは停止済み。
+- `claude auth status` は既存auth volumeで `claude.ai` のログイン済みとPro subscriptionを示した。一方、実runtimeは `Not logged in` でGate到達前に終了した。再認証・再dispatch・再送は行っていない。
+- Anthropic公式CLI資料と同社リポジトリの報告では、`--bare` は保存済みOAuthを読まない。旧launcherの `--bare` が今回の失敗の有力原因。公式資料でOAuthを維持し追加機能を止める `--safe-mode` が確認できたため、launcherとCompose contractを `--safe-mode` へ変更した。既存のtool無効化、MCP遮断、1 turn、retry 0、Gate経由の条件は維持した。
+- この修正に対する本物Claudeの再実行は**未実施**。今回の1回許可は消費済み。次のgenerationには新たな明示許可とfresh preflightが必要。
+- 参照: https://code.claude.com/docs/en/cli-reference 、https://github.com/anthropics/claude-code/issues/73926
+
+初版: 2026-09-27 JST / LIVE追記: 2026-09-28 JST
 
 ## 最優先ルール
 
