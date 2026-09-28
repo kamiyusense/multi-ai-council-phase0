@@ -68,19 +68,26 @@ class RelayCoreAdapter:
 
         if val_res.get("static_configuration_status") != "PASS":
             fail_result["reasons"].extend(val_res.get("reasons", []))
+            fail_result["provider_preflight"] = deepcopy(val_res)
             for k in ("provider_id", "external_agent", "pinned_version", "retry_count", "fallback_state"):
                 if k in val_res:
                     fail_result[k] = val_res[k]
             return fail_result
 
-        val_res.update({
+        return {
             "ok": True,
             "mode": "static_mock",
             "live_ready": False,
             "live_readiness": "BLOCKED",
-            "static_configuration_status": "PASS"
-        })
-        return val_res
+            "static_configuration_status": "PASS",
+            "provider_preflight": deepcopy(val_res),
+            "provider_id": val_res.get("provider_id"),
+            "external_agent": val_res.get("external_agent"),
+            "pinned_version": val_res.get("pinned_version"),
+            "retry_count": val_res.get("retry_count"),
+            "fallback_state": val_res.get("fallback_state"),
+            "reasons": deepcopy(val_res.get("reasons", [])),
+        }
 
     def dispatch(self, prepared_context: dict[str, Any]) -> dict[str, Any]:
         return self.bridge.dispatch(prepared_context)
