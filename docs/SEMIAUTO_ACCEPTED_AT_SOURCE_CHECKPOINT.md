@@ -161,15 +161,30 @@ evidence if practical and remain retry=0/fail-closed.
 - no credentials/API-key change;
 - no permissions change.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- live Jules execution: MUST REMAIN NONE
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `5eb471d2e7efb67da776cdb661ab38e73f53b167`
+- GitHub Actions run:
+  `36379502077` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **250/250 PASS**
+- full command-bus suite:
+  **537/537 PASS**
+- command-bus JSON schemas parsed:
+  **20/20 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative accepted-at tests were present in the exact-head CI log:
+  - createTime -> canonical UTC/JST;
+  - missing/naive createTime rejection;
+  - single Jules POST + retry=0 retention;
+  - GitHub/commit/shell clocks forbidden as acceptance source.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- live Jules execution:
+  **NONE**
+- Issue #33 live mutation:
+  **NONE**
