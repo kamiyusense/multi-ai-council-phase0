@@ -90,7 +90,6 @@ class PerLoopProjectionInput:
     last_event_kind: str | None
     last_event_id: str | None
     schedule_hint: SemiAutoScheduleHint | None = None
-    identity_state: str = "DURABLE"
 
 
 @dataclass(frozen=True)
@@ -110,6 +109,7 @@ class ControlTowerLane:
     human_action: str
     reason: str
     schedule_hint: SemiAutoScheduleHint | None = None
+    identity_state: str = "DURABLE"
 
 
 @dataclass(frozen=True)
