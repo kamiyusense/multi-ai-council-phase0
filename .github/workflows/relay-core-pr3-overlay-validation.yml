@@ -1,0 +1,158 @@
+name: Core PR3 Overlay Validation
+
+on:
+  push:
+    branches:
+      - feature/relay-transport-7070955470193506982
+    paths:
+      - automation/command_bus/relay_overlay_validation_requests/*.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relay-core-pr3-overlay-validation
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact triggering commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify one append-only request
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
+
+          [[ "$(jq '.files | length' <<<"${response}")" == "1" ]] || {
+            echo "Expected exactly one changed file." >&2
+            exit 1
+          }
+          [[ "$(jq -r '.files[0].status' <<<"${response}")" == "added" ]] || {
+            echo "Request must be append-only." >&2
+            exit 1
+          }
+          request_path="$(jq -r '.files[0].filename' <<<"${response}")"
+          [[ "${request_path}" =~ ^automation/command_bus/relay_overlay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]] || {
+            echo "Unexpected request path: ${request_path}" >&2
+            exit 1
+          }
+          [[ -f "${request_path}" ]] || {
+            echo "Request file is missing from exact triggering checkout." >&2
+            exit 1
+          }
+
+          [[ "$(jq '.parents | length' <<<"${response}")" == "1" ]] || {
+            echo "Triggering commit must have exactly one parent." >&2
+            exit 1
+          }
+          parent_sha="$(jq -r '.parents[0].sha' <<<"${response}")"
+
+          relay_sha="$(jq -er '.relay_sha | select(type == "string")' "${request_path}")"
+          core_sha="$(jq -er '.core_sha | select(type == "string")' "${request_path}")"
+          purpose="$(jq -er '.purpose | select(type == "string" and length > 0)' "${request_path}")"
+
+          [[ "${relay_sha}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Invalid relay_sha." >&2
+            exit 1
+          }
+          [[ "${core_sha}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Invalid core_sha." >&2
+            exit 1
+          }
+          [[ "${core_sha}" == "494b7296f32dce1c173a7699e4bd2d87f70d31a9" ]] || {
+            echo "core_sha does not match pinned Core PR #3." >&2
+            exit 1
+          }
+          [[ "${relay_sha}" == "${parent_sha}" ]] || {
+            echo "relay_sha must equal the triggering commit's sole parent." >&2
+            exit 1
+          }
+
+          echo "relay_sha=${relay_sha}" >> "${GITHUB_OUTPUT}"
+          echo "core_sha=${core_sha}" >> "${GITHUB_OUTPUT}"
+          echo "purpose=${purpose}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout pinned Core PR #3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.request.outputs.core_sha }}
+          path: core
+          persist-credentials: false
+
+      - name: Checkout exact Relay parent
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.request.outputs.relay_sha }}
+          path: relay
+          persist-credentials: false
+
+      - name: Run static mock overlay
+        env:
+          CORE_SHA: ${{ steps.request.outputs.core_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=relay/src python relay/tests/relay/core_pr3_overlay_runner.py \
+            --core-root core \
+            --relay-root relay \
+            --core-head "${CORE_SHA}" > overlay_result.json
+
+      - name: Validate overlay evidence
+        env:
+          CORE_SHA: ${{ steps.request.outputs.core_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e --arg core_sha "${CORE_SHA}" '
+            .relay_compatibility == "PASS"
+            and .core_head == $core_sha
+            and .provider_order == ["openai", "anthropic", "google"]
+            and .participant_count == 3
+            and .agreement_count == 3
+            and .formal_consensus == false
+            and .human_required == true
+            and .report_contains_human_final == true
+            and .checkpoint == {
+              "live_turn_executed": false,
+              "retry_count": 0,
+              "fallback_state": "disabled",
+              "fail_count": 0,
+              "unknown_count": 0
+            }
+            and .dispatch_counts == {"openai": 1, "anthropic": 1, "google": 1}
+            and .collect_counts == {"openai": 1, "anthropic": 1, "google": 1}
+            and .abort_counts == {"openai": 0, "anthropic": 0, "google": 0}
+            and (.raw_sha256 | keys) == ["anthropic", "google", "openai"]
+            and ([.raw_sha256[] | select(type == "string" and test("^[0-9a-f]{64}$"))] | length) == 3
+          ' overlay_result.json > /dev/null
+
+      - name: Record static overlay result
+        shell: bash
+        run: |
+          {
+            echo "## Core PR3 Overlay Validation"
+            echo "- trigger_commit: `${{ github.sha }}`"
+            echo "- relay_sha: `${{ steps.request.outputs.relay_sha }}`"
+            echo "- core_sha: `${{ steps.request.outputs.core_sha }}`"
+            echo "- static_mock_overlay: `PASS`"
+            echo "- live_execution: `BLOCKED`"
+            echo "- retry: `0`"
+            echo "- fallback: `disabled`"
+          } >> "${GITHUB_STEP_SUMMARY}"
