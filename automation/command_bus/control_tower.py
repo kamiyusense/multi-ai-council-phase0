@@ -38,11 +38,12 @@ _MAX_LOOPS = 8
 _REGISTRY_KEYS = {"schema_version", "loops"}
 _ENTRY_KEYS = {
     "loop_id", "display_name", "mode", "controller_kind", "worker_kind",
-    "display_order", "enabled", "safe_detail_ref",
+    "display_order", "enabled", "safe_detail_ref", "identity_state",
 }
 _MODES = {"SEMI_AUTO", "AUTO"}
 _CONTROLLERS = {"CHATGPT", "CLAUDE", "WORK", "OTHER"}
 _WORKERS = {"JULES", "GEMINI", "CLAUDE", "OTHER"}
+_IDENTITY_STATES = {"PLACEHOLDER", "DURABLE"}
 
 _LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+()/>-]{0,63}$")
@@ -76,6 +77,7 @@ class RegistryEntry:
     display_order: int
     enabled: bool
     safe_detail_ref: str
+    identity_state: str
 
 
 @dataclass(frozen=True)
@@ -107,6 +109,7 @@ class ControlTowerLane:
     human_action: str
     reason: str
     schedule_hint: SemiAutoScheduleHint | None = None
+    identity_state: str = "DURABLE"
 
 
 @dataclass(frozen=True)
@@ -152,6 +155,7 @@ def validate_registry(registry: dict[str, Any]) -> tuple[RegistryEntry, ...]:
         order = raw["display_order"]
         enabled = raw["enabled"]
         detail = raw["safe_detail_ref"]
+        identity_state = raw["identity_state"]
 
         if not isinstance(loop_id, str) or not _LOOP_ID.fullmatch(loop_id):
             raise ValueError("invalid Control Tower loop_id")
@@ -173,11 +177,14 @@ def validate_registry(registry: dict[str, Any]) -> tuple[RegistryEntry, ...]:
             raise ValueError("invalid Control Tower enabled flag")
         if not isinstance(detail, str) or not _SAFE_DETAIL.fullmatch(detail) or "://" in detail:
             raise ValueError("invalid Control Tower safe_detail_ref")
+        if identity_state not in _IDENTITY_STATES:
+            raise ValueError("invalid Control Tower identity_state")
 
         seen_loop_ids.add(loop_id)
         seen_orders.add(order)
         entries.append(RegistryEntry(
-            loop_id, display_name, mode, controller, worker, order, enabled, detail
+            loop_id, display_name, mode, controller, worker, order, enabled, detail,
+            identity_state,
         ))
 
     return tuple(sorted(entries, key=lambda item: (item.display_order, item.loop_id)))
@@ -234,6 +241,7 @@ def render_snapshot(model: ControlTowerModel) -> str:
                 "schedule_hint": schedule_snapshot(lane.schedule_hint),
                 "human_action": lane.human_action,
                 "safe_detail_ref": lane.safe_detail_ref,
+                "identity_state": lane.identity_state,
             }
             for lane in model.lanes
         ],
@@ -343,6 +351,7 @@ def _verified_lane(
         schedule_hint=schedule_hint,
         human_action=human_action,
         reason=_single_line(projection.reason),
+        identity_state=entry.identity_state,
     )
 
 
@@ -363,6 +372,7 @@ def _unknown_lane(entry: RegistryEntry, reason: str) -> ControlTowerLane:
         schedule_hint=None,
         human_action="REVIEW REQUIRED",
         reason=_single_line(reason),
+        identity_state=entry.identity_state,
     )
 
 

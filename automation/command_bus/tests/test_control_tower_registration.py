@@ -20,7 +20,7 @@ def registry():
     return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
 
 
-def one_lane_registry(loop_id="loop-015"):
+def one_lane_registry(loop_id="loop-015", *, identity_state="DURABLE"):
     return {
         "schema_version": 1,
         "loops": [
@@ -33,6 +33,7 @@ def one_lane_registry(loop_id="loop-015"):
                 "display_order": 10,
                 "enabled": True,
                 "safe_detail_ref": "issue:33",
+                "identity_state": identity_state,
             }
         ],
     }
@@ -67,12 +68,13 @@ def verified_result(loop_id, *, status="VALID", display_state="SEMI_AUTO"):
 
 
 class ControlTowerRegistrationReadinessTests(unittest.TestCase):
-    def test_repository_registry_without_verified_inventory_is_not_wired(self):
+    def test_repository_registry_placeholders_are_not_wired(self):
         result = assess_registration_readiness(registry(), None)
         self.assertEqual(result.status, "NOT_WIRED")
         self.assertEqual(result.ready_loop_ids, ())
+        self.assertEqual(result.missing_loop_ids, ())
         self.assertEqual(
-            result.missing_loop_ids,
+            result.placeholder_loop_ids,
             (
                 "chatgpt-semi-auto",
                 "claude-gemini",
@@ -80,6 +82,19 @@ class ControlTowerRegistrationReadinessTests(unittest.TestCase):
                 "work-gemini",
             ),
         )
+        self.assertIn("PLACEHOLDER", result.reason)
+
+
+    def test_placeholder_identity_never_becomes_ready_even_with_matching_transition(self):
+        raw = one_lane_registry("loop-015", identity_state="PLACEHOLDER")
+        result = assess_registration_readiness(
+            raw,
+            {"loop-015": verified_result("loop-015")},
+        )
+        self.assertEqual(result.status, "NOT_WIRED")
+        self.assertEqual(result.ready_loop_ids, ())
+        self.assertEqual(result.placeholder_loop_ids, ("loop-015",))
+        self.assertIn("PLACEHOLDER", result.reason)
 
     def test_registry_id_by_itself_never_counts_as_ready(self):
         raw = one_lane_registry("loop-015")
@@ -170,6 +185,7 @@ class ControlTowerRegistrationReadinessTests(unittest.TestCase):
                     "display_order": 10,
                     "enabled": True,
                     "safe_detail_ref": "issue:33",
+                    "identity_state": "DURABLE",
                 },
                 {
                     "loop_id": "loop-b",
@@ -180,6 +196,7 @@ class ControlTowerRegistrationReadinessTests(unittest.TestCase):
                     "display_order": 20,
                     "enabled": True,
                     "safe_detail_ref": "issue:33",
+                    "identity_state": "DURABLE",
                 },
             ],
         }

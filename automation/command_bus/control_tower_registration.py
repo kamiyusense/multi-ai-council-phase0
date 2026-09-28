@@ -24,6 +24,7 @@ class ControlTowerRegistrationReadiness:
     ready_loop_ids: tuple[str, ...]
     missing_loop_ids: tuple[str, ...]
     unknown_loop_ids: tuple[str, ...]
+    placeholder_loop_ids: tuple[str, ...] = ()
 
 
 def assess_registration_readiness(
@@ -39,6 +40,19 @@ def assess_registration_readiness(
     entries = validate_registry(registry)
     enabled = tuple(entry for entry in entries if entry.enabled)
     enabled_ids = tuple(entry.loop_id for entry in enabled)
+    placeholder_ids = tuple(
+        entry.loop_id for entry in enabled if entry.identity_state == "PLACEHOLDER"
+    )
+    if placeholder_ids:
+        return ControlTowerRegistrationReadiness(
+            "NOT_WIRED",
+            "enabled Control Tower lane identity is still PLACEHOLDER: "
+            + ",".join(placeholder_ids),
+            (),
+            (),
+            (),
+            placeholder_ids,
+        )
 
     if verified_transitions is None:
         return ControlTowerRegistrationReadiness(

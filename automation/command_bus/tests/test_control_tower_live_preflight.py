@@ -32,7 +32,13 @@ def repository_registry():
     return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
 
 
-def one_lane_registry(loop_id="loop-015", *, enabled=True, mode="SEMI_AUTO"):
+def one_lane_registry(
+    loop_id="loop-015",
+    *,
+    enabled=True,
+    mode="SEMI_AUTO",
+    identity_state="DURABLE",
+):
     return {
         "schema_version": 1,
         "loops": [
@@ -45,6 +51,7 @@ def one_lane_registry(loop_id="loop-015", *, enabled=True, mode="SEMI_AUTO"):
                 "display_order": 10,
                 "enabled": enabled,
                 "safe_detail_ref": "issue:33",
+                "identity_state": identity_state,
             }
         ],
     }
@@ -119,6 +126,45 @@ class ControlTowerLivePreflightTests(unittest.TestCase):
         )
         self.assertEqual((result.status, result.stage), ("NOT_WIRED", "registration"))
         self.assertIsNone(result.model)
+        self.assertIsNone(result.issue_plan)
+
+
+    def test_repository_placeholders_stay_not_wired_even_with_matching_transitions(self):
+        transitions = {
+            "chatgpt-semi-auto": transition(
+                "chatgpt-semi-auto",
+                display_state="SEMI_AUTO",
+            ),
+            "claude-gemini": transition(
+                "claude-gemini",
+                display_state="AUTO",
+            ),
+            "claude-claude": transition(
+                "claude-claude",
+                display_state="AUTO",
+            ),
+            "work-gemini": transition(
+                "work-gemini",
+                display_state="AUTO",
+            ),
+        }
+        result = prepare_verified_control_tower_migration(
+            registry=repository_registry(),
+            verified_transitions=transitions,
+            lane_presentation={},
+            generated_at=NOW,
+            issue_readback=issue(),
+        )
+        self.assertEqual((result.status, result.stage), ("NOT_WIRED", "registration"))
+        self.assertEqual(
+            result.registration.placeholder_loop_ids,
+            (
+                "chatgpt-semi-auto",
+                "claude-gemini",
+                "claude-claude",
+                "work-gemini",
+            ),
+        )
         self.assertIsNone(result.issue_plan)
 
     def test_all_enabled_lanes_must_have_exact_durable_transition_before_plan(self):
