@@ -1,10 +1,11 @@
 name: Core PR3 Overlay Validation
+
 on:
   push:
     branches:
-      - 'feature/relay-transport-7070955470193506982'
+      - feature/relay-transport-7070955470193506982
     paths:
-      - 'automation/command_bus/relay_overlay_validation_requests/*.json'
+      - automation/command_bus/relay_overlay_validation_requests/*.json
 
 permissions:
   contents: read
@@ -18,129 +19,140 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout triggering commit
+      - name: Checkout exact triggering commit
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Verify added request file
-        id: verify_request
+      - name: Verify one append-only request
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
         run: |
-          RESPONSE=$(curl -s --retry 0 -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}")
+          set -euo pipefail
+          response="$(curl --silent --show-error --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
 
-          FILE_COUNT=$(echo "$RESPONSE" | jq '[.files[] | select(.status == "added" and (.filename | test("^automation/command_bus/relay_overlay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\\.json$")))] | length')
-
-          if [ "$FILE_COUNT" -ne 1 ]; then
-            echo "Error: Exactly one JSON request file must be added."
+          [[ "$(jq '.files | length' <<<"${response}")" == "1" ]] || {
+            echo "Expected exactly one changed file." >&2
             exit 1
-          fi
-
-          ADDED_FILE=$(echo "$RESPONSE" | jq -r '.files[] | select(.status == "added" and (.filename | test("^automation/command_bus/relay_overlay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\\.json$"))) | .filename')
-          echo "file_path=$ADDED_FILE" >> $GITHUB_ENV
-
-      - name: Parse and validate request
-        id: parse_request
-        run: |
-          RELAY_SHA=$(jq -r '.relay_sha' "$file_path")
-          CORE_SHA=$(jq -r '.core_sha' "$file_path")
-          PURPOSE=$(jq -r '.purpose' "$file_path")
-
-          if ! [[ "$RELAY_SHA" =~ ^[0-9a-f]{40}$ ]] || ! [[ "$CORE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Error: SHAs must be 40 lowercase hex characters."
+          }
+          [[ "$(jq -r '.files[0].status' <<<"${response}")" == "added" ]] || {
+            echo "Request must be append-only." >&2
             exit 1
-          fi
-
-          if [ "$CORE_SHA" != "494b7296f32dce1c173a7699e4bd2d87f70d31a9" ]; then
-            echo "Error: core_sha must exactly match pinned Core PR #3 (494b7296f32dce1c173a7699e4bd2d87f70d31a9)."
+          }
+          request_path="$(jq -r '.files[0].filename' <<<"${response}")"
+          [[ "${request_path}" =~ ^automation/command_bus/relay_overlay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]] || {
+            echo "Unexpected request path: ${request_path}" >&2
             exit 1
-          fi
-
-          echo "relay_sha=$RELAY_SHA" >> $GITHUB_ENV
-          echo "core_sha=$CORE_SHA" >> $GITHUB_ENV
-          echo "purpose=$PURPOSE" >> $GITHUB_ENV
-
-      - name: Verify parent binding
-        run: |
-          RESPONSE=$(curl -s --retry 0 -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}")
-          PARENT_COUNT=$(echo "$RESPONSE" | jq '.parents | length')
-          if [ "$PARENT_COUNT" -ne 1 ]; then
-            echo "Error: Commits must have exactly one parent."
+          }
+          [[ -f "${request_path}" ]] || {
+            echo "Request file is missing from exact triggering checkout." >&2
             exit 1
-          fi
+          }
 
-          PARENT_SHA=$(echo "$RESPONSE" | jq -r '.parents[0].sha')
-          if [ "$PARENT_SHA" != "${{ env.relay_sha }}" ]; then
-            echo "Error: relay_sha must exactly match the parent SHA of the triggering commit."
+          [[ "$(jq '.parents | length' <<<"${response}")" == "1" ]] || {
+            echo "Triggering commit must have exactly one parent." >&2
             exit 1
-          fi
+          }
+          parent_sha="$(jq -r '.parents[0].sha' <<<"${response}")"
 
-      - name: Checkout Core PR #3
+          relay_sha="$(jq -er '.relay_sha | select(type == "string")' "${request_path}")"
+          core_sha="$(jq -er '.core_sha | select(type == "string")' "${request_path}")"
+          purpose="$(jq -er '.purpose | select(type == "string" and length > 0)' "${request_path}")"
+
+          [[ "${relay_sha}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Invalid relay_sha." >&2
+            exit 1
+          }
+          [[ "${core_sha}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Invalid core_sha." >&2
+            exit 1
+          }
+          [[ "${core_sha}" == "494b7296f32dce1c173a7699e4bd2d87f70d31a9" ]] || {
+            echo "core_sha does not match pinned Core PR #3." >&2
+            exit 1
+          }
+          [[ "${relay_sha}" == "${parent_sha}" ]] || {
+            echo "relay_sha must equal the triggering commit's sole parent." >&2
+            exit 1
+          }
+
+          echo "relay_sha=${relay_sha}" >> "${GITHUB_OUTPUT}"
+          echo "core_sha=${core_sha}" >> "${GITHUB_OUTPUT}"
+          echo "purpose=${purpose}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout pinned Core PR #3
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ env.core_sha }}
+          ref: ${{ steps.request.outputs.core_sha }}
           path: core
           persist-credentials: false
 
-      - name: Checkout Relay
+      - name: Checkout exact Relay parent
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ env.relay_sha }}
+          ref: ${{ steps.request.outputs.relay_sha }}
           path: relay
           persist-credentials: false
 
-      - name: Run overlay runner
+      - name: Run static mock overlay
+        env:
+          CORE_SHA: ${{ steps.request.outputs.core_sha }}
+        shell: bash
         run: |
-          PYTHONPATH=relay/src python relay/tests/relay/core_pr3_overlay_runner.py --core-root core --relay-root relay --core-head "${{ env.core_sha }}" > overlay_result.json
+          set -euo pipefail
+          PYTHONPATH=relay/src python relay/tests/relay/core_pr3_overlay_runner.py \
+            --core-root core \
+            --relay-root relay \
+            --core-head "${CORE_SHA}" > overlay_result.json
 
-      - name: Validate overlay result
+      - name: Validate overlay evidence
+        env:
+          CORE_SHA: ${{ steps.request.outputs.core_sha }}
+        shell: bash
         run: |
-          COMPATIBILITY=$(jq -r '.relay_compatibility' overlay_result.json)
-          CORE_HEAD=$(jq -r '.core_head' overlay_result.json)
-          PROVIDER_ORDER=$(jq -c '.provider_order' overlay_result.json)
-          PARTICIPANT_COUNT=$(jq -r '.participant_count' overlay_result.json)
-          AGREEMENT_COUNT=$(jq -r '.agreement_count' overlay_result.json)
-          FORMAL_CONSENSUS=$(jq -r '.formal_consensus' overlay_result.json)
-          HUMAN_REQUIRED=$(jq -r '.human_required' overlay_result.json)
-          CHECKPOINT=$(jq -c '.checkpoint' overlay_result.json)
-          EACH_DISPATCH=$(jq -r '.each_dispatch_count' overlay_result.json)
-          COLLECT_COUNT=$(jq -r '.collect_count' overlay_result.json)
-          ABORT_COUNT=$(jq -r '.abort_count' overlay_result.json)
-          RAW_SHA256=$(jq -c '.raw_sha256' overlay_result.json)
+          set -euo pipefail
+          jq -e --arg core_sha "${CORE_SHA}" '
+            .relay_compatibility == "PASS"
+            and .core_head == $core_sha
+            and .provider_order == ["openai", "anthropic", "google"]
+            and .participant_count == 3
+            and .agreement_count == 3
+            and .formal_consensus == false
+            and .human_required == true
+            and .report_contains_human_final == true
+            and .checkpoint == {
+              "live_turn_executed": false,
+              "retry_count": 0,
+              "fallback_state": "disabled",
+              "fail_count": 0,
+              "unknown_count": 0
+            }
+            and .dispatch_counts == {"openai": 1, "anthropic": 1, "google": 1}
+            and .collect_counts == {"openai": 1, "anthropic": 1, "google": 1}
+            and .abort_counts == {"openai": 0, "anthropic": 0, "google": 0}
+            and (.raw_sha256 | keys) == ["anthropic", "google", "openai"]
+            and ([.raw_sha256[] | select(type == "string" and test("^[0-9a-f]{64}$"))] | length) == 3
+          ' overlay_result.json > /dev/null
 
-          if [ "$COMPATIBILITY" != "PASS" ]; then exit 1; fi
-          if [ "$CORE_HEAD" != "${{ env.core_sha }}" ]; then exit 1; fi
-          if [ "$PROVIDER_ORDER" != '["openai","anthropic","google"]' ]; then exit 1; fi
-          if [ "$PARTICIPANT_COUNT" -ne 3 ]; then exit 1; fi
-          if [ "$AGREEMENT_COUNT" -ne 3 ]; then exit 1; fi
-          if [ "$FORMAL_CONSENSUS" != "false" ]; then exit 1; fi
-          if [ "$HUMAN_REQUIRED" != "true" ]; then exit 1; fi
-
-          CHECK_LIVE=$(echo "$CHECKPOINT" | jq -r '.live_turn_executed')
-          CHECK_RETRY=$(echo "$CHECKPOINT" | jq -r '.retry_count')
-          CHECK_FALLBACK=$(echo "$CHECKPOINT" | jq -r '.fallback_state')
-          CHECK_FAIL=$(echo "$CHECKPOINT" | jq -r '.fail_count')
-          CHECK_UNKNOWN=$(echo "$CHECKPOINT" | jq -r '.unknown_count')
-
-          if [ "$CHECK_LIVE" != "false" ]; then exit 1; fi
-          if [ "$CHECK_RETRY" -ne 0 ]; then exit 1; fi
-          if [ "$CHECK_FALLBACK" != "disabled" ]; then exit 1; fi
-          if [ "$CHECK_FAIL" -ne 0 ]; then exit 1; fi
-          if [ "$CHECK_UNKNOWN" -ne 0 ]; then exit 1; fi
-
-          if [ "$EACH_DISPATCH" -ne 1 ]; then exit 1; fi
-          if [ "$COLLECT_COUNT" -ne 1 ]; then exit 1; fi
-          if [ "$ABORT_COUNT" -ne 0 ]; then exit 1; fi
-
-          HASH_COUNT=$(echo "$RAW_SHA256" | jq 'length')
-          if [ "$HASH_COUNT" -ne 3 ]; then exit 1; fi
-
-          HASH_EMPTY=$(echo "$RAW_SHA256" | jq 'map(select(. == "")) | length')
-          if [ "$HASH_EMPTY" -ne 0 ]; then exit 1; fi
-
-      - name: Write step summary
+      - name: Record static overlay result
+        shell: bash
         run: |
-          echo "## Core PR3 Overlay Validation" >> $GITHUB_STEP_SUMMARY
-          echo "- **Trigger Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Relay SHA:** ${{ env.relay_sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Core SHA:** ${{ env.core_sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Result:** PASS" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Core PR3 Overlay Validation"
+            echo "- trigger_commit: `${{ github.sha }}`"
+            echo "- relay_sha: `${{ steps.request.outputs.relay_sha }}`"
+            echo "- core_sha: `${{ steps.request.outputs.core_sha }}`"
+            echo "- static_mock_overlay: `PASS`"
+            echo "- live_execution: `BLOCKED`"
+            echo "- retry: `0`"
+            echo "- fallback: `disabled`"
+          } >> "${GITHUB_STEP_SUMMARY}"
