@@ -208,14 +208,34 @@ Added regression coverage for:
 - no GitHub write capability for Windows;
 - no Merge in this batch.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `62951fa9955f87c39d0df0af9d75e4b1f40e9e9e`
+- GitHub Actions run:
+  `36388458286` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **260/260 PASS**
+- full command-bus suite:
+  **585/585 PASS**
+- command-bus JSON schemas parsed:
+  **21/21 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative snapshot-contract tests were present in the exact-head CI log:
+  - renderer output round-trips through the strict read-only parser;
+  - missing/multiple snapshot start markers fail closed;
+  - private/URL-like values fail closed;
+  - unrelated managed HTML comment closers after the snapshot are accepted.
+- initial failed run:
+  `36388369726` failed because the parser incorrectly treated unrelated managed
+  block comment closers as duplicate snapshot closers. No write/retry was
+  performed against live Issue #33. The parser was corrected to scope the
+  closing marker to the unique Control Tower start marker and the new exact
+  head was re-tested.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- Issue #33 live mutation:
+  **NONE required; fresh readback must remain the deployed single-loop STOPPED display.**
