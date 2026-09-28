@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "verification_kind": "AUTHORITY_GRANT",
+  "source_id": "authority-source-1",
+  "source_ref": "automation/command_bus/evidence/loop-015/authority-1.json",
+  "verification_state": "VERIFIED",
+  "observed_at": "2026-09-27T09:01:00+00:00",
+  "expires_at": "2026-09-27T11:00:00+00:00",
+  "authority_id": "authority-1",
+  "loop_id": "loop-015",
+  "owner_role": "SEMI_AUTO",
+  "holder_id": "controller-1",
+  "generation": 1,
+  "fencing_token": 1,
+  "previous_generation": null,
+  "event_type": "ACQUIRE",
+  "expected_repo": "kamiyusense/multi-ai-council-phase0",
+  "expected_pr": 4,
+  "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "command_id": "cmd-015-g1",
+  "correlation_id": "corr-015-g1",
+  "proof_refs": ["attestation:authority-1"]
+}
