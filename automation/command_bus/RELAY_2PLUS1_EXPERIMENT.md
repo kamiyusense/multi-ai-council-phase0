@@ -619,3 +619,20 @@ Cycle members:
 - untouched first pass so far: 0/2
 - re-Jules replacement sessions: 0
 - Loop 049 long is next
+
+
+### Loop 049 — long — DISPATCHED / IN PROGRESS
+- task: static readiness snapshot connecting explicit provider configs -> validate_provider_static -> readiness pipeline
+- target duration class: ~25-35 min
+- canonical Relay snapshot head: `672033b9ab0ff91829b2595617b5ae120aceb6b1`
+- canonical Relay snapshot tree: `b6ae90003b21a0adea1adae1a547f0426d7915b7`
+- isolated starting branch: `jules-work/relay-dev-loop-049-readiness-snapshot`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36451600438`
+- Jules session: `2187049476280685317`
+- accepted_at: 2026-09-29 01:31:11 JST
+- dispatch workflow conclusion at checkpoint: `success`
+- canonical PR #4 head immediately after dispatch: `672033b9ab0ff91829b2595617b5ae120aceb6b1` unchanged
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: static preflight PASS alone never means live readiness; even a fully synthetic complete inventory may reach only READY_FOR_HUMAN_APPROVAL with live_ready=false / dispatch_allowed=false
