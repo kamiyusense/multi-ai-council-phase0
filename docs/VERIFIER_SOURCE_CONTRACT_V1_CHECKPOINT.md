@@ -75,3 +75,23 @@ Fixtures are test material only and do not establish production trust.
 The real independently trustworthy source for authority and provider verification
 is still unresolved. This branch intentionally defines only the contract and
 fail-closed integration points.
+
+## Exact-head verification
+
+- Exact tested code head:
+  `f5093122bd2de93f09aee460b12767769bb116e5`.
+- GitHub Actions run:
+  `36371154522` — **SUCCESS**.
+- Focused Status/runtime/validation suite:
+  **154/154 PASS**.
+- Full command-bus suite:
+  **441/441 PASS**.
+- Command-bus JSON schemas parsed:
+  **18/18 PASS**.
+- Python compileall:
+  **PASS**.
+- `git diff --check`:
+  **PASS**.
+- PR #69 was OPEN / mergeable=true at exact-head readback.
+- Any commit after this exact tested head must be documentation-only and compared
+  before Merge.
