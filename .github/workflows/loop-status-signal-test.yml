@@ -12,6 +12,7 @@ on:
       - automation/command_bus/control_tower_live_preflight.py
       - automation/command_bus/control_tower_snapshot.py
       - automation/command_bus/control_tower_durable_collector.py
+      - automation/command_bus/jules_provider_verification_source.py
       - automation/command_bus/jules_direct_readback_authenticator.py
       - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
@@ -47,6 +48,7 @@ on:
       - automation/command_bus/tests/test_control_tower_live_preflight.py
       - automation/command_bus/tests/test_control_tower_snapshot.py
       - automation/command_bus/tests/test_control_tower_durable_collector.py
+      - automation/command_bus/tests/test_jules_provider_verification_source.py
       - automation/command_bus/tests/test_jules_direct_readback_authenticator.py
       - automation/command_bus/tests/test_claude_loop.py
       - automation/command_bus/tests/test_loop_status_development.py
@@ -100,6 +102,7 @@ jobs:
             automation.command_bus.tests.test_control_tower_live_preflight
             automation.command_bus.tests.test_control_tower_snapshot
             automation.command_bus.tests.test_control_tower_durable_collector
+            automation.command_bus.tests.test_jules_provider_verification_source
             automation.command_bus.tests.test_jules_direct_readback_authenticator
             automation.command_bus.tests.test_claude_loop
             automation.command_bus.tests.test_loop_status_development
