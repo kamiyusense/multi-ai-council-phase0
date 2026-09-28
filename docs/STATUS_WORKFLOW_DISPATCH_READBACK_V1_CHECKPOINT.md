@@ -69,6 +69,26 @@ The existing Status test workflow is extended so the new module and test file
 trigger the workflow and the new test is part of the focused suite. The full
 command-bus suite still runs with zero-failure policy.
 
+## Exact-head verification
+
+- Exact tested code head:
+  `3bfca1fa5321a0f2d978b456efbe43f7b5a889e6`.
+- GitHub Actions run:
+  `36370576064` — **SUCCESS**.
+- Focused Status/runtime/validation suite:
+  **155/155 PASS**.
+- Full command-bus suite:
+  **442/442 PASS**.
+- Command-bus JSON schemas parsed:
+  **16/16 PASS**.
+- Python compileall:
+  **PASS**.
+- `git diff --check`:
+  **PASS**.
+- PR #68 was OPEN / mergeable=true at exact-head readback.
+- The commit after this exact tested code head is documentation-only checkpoint
+  evidence and must be compared before Merge.
+
 ## Explicitly not performed
 
 - no real `workflow_dispatch`;
