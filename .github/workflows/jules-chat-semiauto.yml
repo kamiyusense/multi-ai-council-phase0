@@ -68,35 +68,59 @@ jobs:
             "${COMMAND_PATH}" \
             --github-output "${GITHUB_OUTPUT}"
 
-      - name: Verify exact target branch head and tree
+      - name: Verify exact target and isolated work branch snapshots
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          WORK_BRANCH: ${{ steps.validate.outputs.work_branch }}
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
         shell: bash
         run: |
           set -euo pipefail
-          encoded_branch="$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["TARGET_BRANCH"], safe=""))')"
-          branch_json="$(curl --fail-with-body --retry 0 \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${REPOSITORY}/branches/${encoded_branch}")"
-          actual_head="$(jq -r '.commit.sha' <<<"${branch_json}")"
-          if [[ "${actual_head}" != "${EXPECTED_HEAD}" ]]; then
-            echo "Target head mismatch: expected ${EXPECTED_HEAD}, observed ${actual_head}." >&2
+
+          read_branch_head() {
+            local branch="$1"
+            local encoded
+            encoded="$(python -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$branch")"
+            curl --fail-with-body --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPOSITORY}/branches/${encoded}" |
+              jq -er '.commit.sha'
+          }
+
+          read_tree() {
+            local head="$1"
+            curl --fail-with-body --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPOSITORY}/git/commits/${head}" |
+              jq -er '.tree.sha'
+          }
+
+          target_head="$(read_branch_head "${TARGET_BRANCH}")"
+          work_head="$(read_branch_head "${WORK_BRANCH}")"
+          if [[ "${target_head}" != "${EXPECTED_HEAD}" ]]; then
+            echo "Canonical target head mismatch: expected ${EXPECTED_HEAD}, observed ${target_head}." >&2
             exit 1
           fi
-          commit_json="$(curl --fail-with-body --retry 0 \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${REPOSITORY}/git/commits/${actual_head}")"
-          actual_tree="$(jq -r '.tree.sha' <<<"${commit_json}")"
-          if [[ "${actual_tree}" != "${EXPECTED_TREE}" ]]; then
-            echo "Target tree mismatch: expected ${EXPECTED_TREE}, observed ${actual_tree}." >&2
+          if [[ "${work_head}" != "${EXPECTED_HEAD}" ]]; then
+            echo "Isolated work head mismatch: expected ${EXPECTED_HEAD}, observed ${work_head}." >&2
+            exit 1
+          fi
+
+          target_tree="$(read_tree "${target_head}")"
+          work_tree="$(read_tree "${work_head}")"
+          if [[ "${target_tree}" != "${EXPECTED_TREE}" ]]; then
+            echo "Canonical target tree mismatch: expected ${EXPECTED_TREE}, observed ${target_tree}." >&2
+            exit 1
+          fi
+          if [[ "${work_tree}" != "${EXPECTED_TREE}" ]]; then
+            echo "Isolated work tree mismatch: expected ${EXPECTED_TREE}, observed ${work_tree}." >&2
             exit 1
           fi
 
@@ -104,7 +128,7 @@ jobs:
         id: payload
         env:
           REPOSITORY: ${{ github.repository }}
-          TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          WORK_BRANCH: ${{ steps.validate.outputs.work_branch }}
           PROMPT: ${{ steps.validate.outputs.prompt }}
         shell: bash
         run: |
@@ -112,7 +136,7 @@ jobs:
           jq -n \
             --arg prompt "${PROMPT}" \
             --arg source "sources/github/${REPOSITORY}" \
-            --arg starting_branch "${TARGET_BRANCH}" \
+            --arg starting_branch "${WORK_BRANCH}" \
             '{
               prompt: $prompt,
               sourceContext: {
@@ -127,7 +151,7 @@ jobs:
         id: invoke
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          EXPECTED_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          EXPECTED_BRANCH: ${{ steps.validate.outputs.work_branch }}
         shell: bash
         run: |
           set -euo pipefail
@@ -164,6 +188,7 @@ jobs:
         env:
           COMMAND_ID: ${{ steps.validate.outputs.command_id }}
           TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+          WORK_BRANCH: ${{ steps.validate.outputs.work_branch }}
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
           SESSION_ID: ${{ steps.invoke.outputs.session_id }}
@@ -172,8 +197,9 @@ jobs:
           {
             echo "## Phase 0 Chat -> Jules semi-auto dispatch"
             echo "- command_id: \`${COMMAND_ID:-UNKNOWN}\`"
-            echo "- target_branch: \`${TARGET_BRANCH:-UNKNOWN}\`"
-            echo "- expected_target_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
+            echo "- canonical_target_branch: \`${TARGET_BRANCH:-UNKNOWN}\`"
+            echo "- isolated_work_branch: \`${WORK_BRANCH:-UNKNOWN}\`"
+            echo "- expected_snapshot_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
             echo "- expected_target_tree: \`${EXPECTED_TREE:-UNKNOWN}\`"
             echo "- jules_session_id: \`${SESSION_ID:-UNKNOWN}\`"
             echo "- retry: \`0\`"
