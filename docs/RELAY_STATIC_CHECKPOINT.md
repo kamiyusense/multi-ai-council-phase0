@@ -52,6 +52,12 @@ A runner capable of executing repository tests may:
 - The profile -> adapter factory boundary is strictly mock/static only.
 - Core PR #3 integration remains a separate checkpoint.
 
+## Live Readiness Bundle Static Checkpoint
+- Implemented static live readiness bundle for three-provider readiness packaging.
+- Bundle construction enforces exact `openai`, `anthropic`, and `google` mapping.
+- Bundle summarizes readiness but strictly preserves `live_ready=false` and `dispatch_allowed=false`.
+- This checkpoint is strictly `PREPARED/static` bundle status only. Real live blockers remain unresolved.
+
 ## Live boundary
 
 All provider live blockers in `RELAY_LIVE_BLOCKERS.md` remain in force.

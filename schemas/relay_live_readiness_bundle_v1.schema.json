@@ -1,0 +1,125 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Relay Live Readiness Bundle",
+    "type": "object",
+    "properties": {
+        "state": {
+            "type": "string",
+            "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+            ]
+        },
+        "live_ready": {
+            "type": "boolean",
+            "const": false
+        },
+        "dispatch_allowed": {
+            "type": "boolean",
+            "const": false
+        },
+        "human_approval_required": {
+            "type": "boolean",
+            "const": true
+        },
+        "retry_count": {
+            "type": "integer",
+            "const": 0
+        },
+        "fallback_state": {
+            "type": "string",
+            "const": "disabled"
+        },
+        "provider_order": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "openai",
+                    "anthropic",
+                    "google"
+                ]
+            },
+            "prefixItems": [
+                {
+                    "const": "openai"
+                },
+                {
+                    "const": "anthropic"
+                },
+                {
+                    "const": "google"
+                }
+            ],
+            "minItems": 3,
+            "maxItems": 3
+        },
+        "provider_states": {
+            "type": "object",
+            "properties": {
+                "openai": {
+                    "type": "string",
+                    "enum": [
+                        "BLOCKED_UNKNOWN",
+                        "READY_FOR_HUMAN_APPROVAL"
+                    ]
+                },
+                "anthropic": {
+                    "type": "string",
+                    "enum": [
+                        "BLOCKED_UNKNOWN",
+                        "READY_FOR_HUMAN_APPROVAL"
+                    ]
+                },
+                "google": {
+                    "type": "string",
+                    "enum": [
+                        "BLOCKED_UNKNOWN",
+                        "READY_FOR_HUMAN_APPROVAL"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "openai",
+                "anthropic",
+                "google"
+            ]
+        },
+        "blocking_providers": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "openai",
+                    "anthropic",
+                    "google"
+                ]
+            },
+            "uniqueItems": true,
+            "maxItems": 3
+        },
+        "evidence": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "packet_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+        }
+    },
+    "required": [
+        "state",
+        "live_ready",
+        "dispatch_allowed",
+        "human_approval_required",
+        "retry_count",
+        "fallback_state",
+        "provider_order",
+        "provider_states",
+        "blocking_providers",
+        "evidence",
+        "packet_sha256"
+    ],
+    "additionalProperties": false
+}
