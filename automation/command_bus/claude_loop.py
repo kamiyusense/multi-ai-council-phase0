@@ -10,11 +10,13 @@ Claude-only coding step for the no-Jules contingency.  There is no fallback.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
+from .jules_api_request import PROFILE as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,
@@ -282,6 +284,72 @@ def prepare_jules_closed_loop_command(
             "expires_at": prepared_request["expires_at"],
         }
         return LoopResult("PREPARED", "unpersisted Jules closed-loop command artifact created", command)
+    except (KeyError, TypeError, ValueError) as exc:
+        return LoopResult("UNKNOWN", str(exc))
+
+
+def prepare_jules_semiauto_request(
+    prepared_request: dict[str, Any], *, target_branch: str, default_branch: str,
+    created_at: str, command_id: str | None = None,
+) -> LoopResult:
+    """Convert one JULES_BACKEND preparation to the current live semi-auto request.
+
+    This is a pure conversion. It does not persist the request under
+    jules_api_requests/, trigger GitHub Actions, start Jules, or mutate GitHub.
+    The real workflow performs a fresh branch head/tree check again before the
+    single Jules API call.
+    """
+    try:
+        internal = prepare_jules_closed_loop_command(
+            prepared_request,
+            starting_branch=target_branch,
+            default_branch=default_branch,
+            command_id=command_id,
+        )
+        if internal.status != "PREPARED" or internal.request is None:
+            return internal
+        command = internal.request
+        if not isinstance(created_at, str) or not created_at:
+            return LoopResult("BLOCKED", "semi-auto created_at is required")
+        try:
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            return LoopResult("BLOCKED", f"invalid semi-auto created_at: {exc}")
+        if created.tzinfo is None or created.utcoffset() is None:
+            return LoopResult("BLOCKED", "semi-auto created_at must include timezone")
+
+        operation_bounds = []
+        for item in command["path_policy"]:
+            operation_bounds.append(
+                f"- {item['path']}: permitted operations {','.join(item['allowed_ops'])}"
+            )
+        prompt = prepared_request["objective"].strip()
+        bounded_prompt = (
+            prompt
+            + "\n\nOperation bounds inherited from the Claude verdict:\n"
+            + "\n".join(operation_bounds)
+            + "\nDo not perform DELETE or RENAME. If an operation cannot stay within these bounds, make no edit and report BLOCKED."
+        )
+
+        request = {
+            "schema_version": 1,
+            "profile": JULES_SEMIAUTO_PROFILE,
+            "command_id": command["command_id"],
+            "target_repo": command["expected_repo"],
+            "target_branch": command["starting_branch"],
+            "expected_target_head": command["expected_target_head"],
+            "expected_target_tree": command["expected_target_tree"],
+            "allowed_paths": list(command["allowed_paths"]),
+            "prompt": bounded_prompt,
+            "created_at": created_at,
+            "expires_at": command["expires_at"],
+            "retry": 0,
+            "fallback": "disabled",
+            "merge_allowed": False,
+            "force_push_allowed": False,
+        }
+        validate_jules_semiauto_request(request, now=created)
+        return LoopResult("PREPARED", "unpersisted Jules semi-auto request artifact created", request)
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
 
