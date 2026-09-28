@@ -176,15 +176,34 @@ The exact production trust source / authenticator remains:
 
 This is a real trust-boundary blocker and is not guessed in this PR.
 
-## Evidence to fill after exact-head CI
+## Exact-head verification
 
-- exact tested PR head: PENDING
-- GitHub Actions run: PENDING
-- focused tests: PENDING
-- full command-bus tests: PENDING
-- schema parse: PENDING
-- compileall: PENDING
-- git diff --check: PENDING
-- tested head -> current head compare: PENDING
-- live Jules execution: MUST REMAIN NONE
-- Issue #33 live mutation: MUST REMAIN NONE
+- exact tested PR head:
+  `46fd3880a58b20022d7b1f35c63d61d404175545`
+- GitHub Actions run:
+  `36399389271` — **SUCCESS**
+- focused Status/runtime/validation suite:
+  **299/299 PASS**
+- full command-bus suite:
+  **728/728 PASS**
+- command-bus JSON schemas parsed:
+  **22/22 PASS**
+- Python compileall:
+  **PASS**
+- `git diff --check`:
+  **PASS**
+- representative tests present in the exact-head CI log:
+  - normalized Jules source starts UNKNOWN;
+  - missing authenticator fails before source read;
+  - caller-mutated VERIFIED source still fails without authenticator;
+  - caller-supplied verified observation is rejected.
+- initial failed run:
+  `36399263613` failed only because the test expected one source-reader call.
+  The generic verifier actually fails earlier when the authenticator is absent,
+  so the test was corrected to require zero reader calls.
+- tested head -> current head compare:
+  to be read back after this documentation-only evidence commit.
+- live Jules execution:
+  **NONE**
+- Issue #33 live mutation:
+  **NONE**
