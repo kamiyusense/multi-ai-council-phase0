@@ -24,7 +24,10 @@
   "properties": {
     "state": {
       "type": "string",
-      "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"]
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "READY_FOR_HUMAN_APPROVAL"
+      ]
     },
     "live_ready": {
       "type": "boolean",
@@ -48,47 +51,119 @@
     },
     "inventory_state": {
       "type": "string",
-      "enum": ["BLOCKED_UNKNOWN", "UNRESOLVED", "PROOF_RECORDS_COMPLETE"]
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "UNRESOLVED",
+        "PROOF_RECORDS_COMPLETE"
+      ]
     },
     "unresolved_count": {
       "type": "integer",
       "minimum": -1
     },
     "unresolved_by_provider": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "integer",
-        "minimum": 0
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "anthropic": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "google": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
     },
     "inventory_packet_sha256": {
-      "type": ["string", "null"],
-      "pattern": "^([a-f0-9]{64})?$"
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
     },
     "provider_states": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "openai": { "type": "string", "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"] },
-        "anthropic": { "type": "string", "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"] },
-        "google": { "type": "string", "enum": ["BLOCKED_UNKNOWN", "READY_FOR_HUMAN_APPROVAL"] }
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            },
+            "anthropic": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            },
+            "google": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            }
+          }
+        }
+      ]
     },
     "blocking_providers": {
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["openai", "anthropic", "google"]
+        "enum": [
+          "openai",
+          "anthropic",
+          "google"
+        ]
       },
-      "uniqueItems": true
+      "uniqueItems": true,
+      "maxItems": 3
     },
     "bundle_packet_sha256": {
-      "type": ["string", "null"],
-      "pattern": "^([a-f0-9]{64})?$"
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
     },
     "pipeline_packet_sha256": {
-      "type": ["string", "null"],
-      "pattern": "^([a-f0-9]{64})?$"
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   }
 }
