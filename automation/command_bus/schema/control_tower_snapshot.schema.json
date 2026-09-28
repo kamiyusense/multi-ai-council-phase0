@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 0 Control Tower machine snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project", "generated_at", "loops"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project": {"const": "phase0"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "loops": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "loop_id",
+          "display_name",
+          "mode",
+          "display_state",
+          "controller_kind",
+          "worker_kind",
+          "generation",
+          "target_ref",
+          "last_event_kind",
+          "last_event_id",
+          "schedule_hint",
+          "human_action",
+          "safe_detail_ref",
+          "identity_state"
+        ],
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "mode": {"enum": ["SEMI_AUTO", "AUTO"]},
+          "display_state": {
+            "enum": ["SEMI_AUTO", "AUTO", "IDLE", "BLOCKED", "STOPPED", "UNKNOWN"]
+          },
+          "controller_kind": {
+            "enum": ["CHATGPT", "CLAUDE", "WORK", "OTHER"]
+          },
+          "worker_kind": {
+            "enum": ["JULES", "GEMINI", "CLAUDE", "OTHER"]
+          },
+          "generation": {
+            "oneOf": [
+              {"type": "null"},
+              {"type": "integer", "minimum": 1}
+            ]
+          },
+          "target_ref": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "string",
+                "pattern": "^(issue|pr):[1-9][0-9]{0,9}$"
+              }
+            ]
+          },
+          "last_event_kind": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]{0,31}$"
+              }
+            ]
+          },
+          "last_event_id": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              }
+            ]
+          },
+          "schedule_hint": {
+            "oneOf": [
+              {"type": "null"},
+              {"$ref": "control_tower_schedule_hint.schema.json"}
+            ]
+          },
+          "human_action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "safe_detail_ref": {
+            "type": "string",
+            "pattern": "^(issue|pr):[1-9][0-9]{0,9}$"
+          },
+          "identity_state": {
+            "enum": ["PLACEHOLDER", "DURABLE"]
+          }
+        }
+      }
+    }
+  }
+}
