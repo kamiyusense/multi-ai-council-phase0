@@ -6,6 +6,18 @@ from typing import Any
 from .live_readiness import COMMON_PROOFS, PROVIDER_PROOFS
 
 PROVIDER_ORDER = ["openai", "anthropic", "google"]
+_RESULT_KEYS = {
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "retry_count",
+    "fallback_state",
+    "unresolved_count",
+    "unresolved_by_provider",
+    "inventory",
+    "packet_sha256",
+}
 
 def _get_sorted_proof_keys(provider: str) -> list[str]:
     common = sorted(list(COMMON_PROOFS))
@@ -117,8 +129,16 @@ def render_inventory_ja(inventory_result: dict[str, Any]) -> str:
         "人間承認が必要",
     ]
 
-    unresolved_count = inventory_result.get("unresolved_count", "UNKNOWN")
-    lines.append(f"未解決の証拠総数: {unresolved_count}")
+    if not isinstance(inventory_result, dict):
+        lines.append("未解決の証拠総数: UNKNOWN")
+        return "\n".join(lines)
+
+    unresolved_count = inventory_result.get("unresolved_count")
+    if not isinstance(unresolved_count, int) or isinstance(unresolved_count, bool) or unresolved_count < 0:
+        unresolved_count_text = "UNKNOWN"
+    else:
+        unresolved_count_text = str(unresolved_count)
+    lines.append(f"未解決の証拠総数: {unresolved_count_text}")
 
     inventory = inventory_result.get("inventory")
     if isinstance(inventory, dict):
@@ -130,7 +150,13 @@ def render_inventory_ja(inventory_result: dict[str, Any]) -> str:
                 for key in keys:
                     record = provider_inventory.get(key)
                     if isinstance(record, dict):
-                        status_str = "未解決" if record.get("status") == "UNKNOWN" else "確認済"
+                        status = record.get("status")
+                        if status == "UNKNOWN":
+                            status_str = "未解決"
+                        elif status == "CONFIRMED":
+                            status_str = "確認済"
+                        else:
+                            status_str = "不明"
                         lines.append(f"  - [{status_str}] {key}")
                     else:
                         lines.append(f"  - [不明] {key}")
@@ -140,29 +166,29 @@ def render_inventory_ja(inventory_result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 def convert_to_live_readiness_proofs(inventory_result: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(inventory_result, dict):
-        return {}
-
-    if inventory_result.get("state") != "PROOF_RECORDS_COMPLETE":
+    if not isinstance(inventory_result, dict) or set(inventory_result) != _RESULT_KEYS:
         return {}
 
     inventory = inventory_result.get("inventory")
     if not isinstance(inventory, dict):
         return {}
 
-    result = {}
-    for provider in PROVIDER_ORDER:
-        provider_inventory = inventory.get(provider)
-        if not isinstance(provider_inventory, dict):
-            return {}
+    normalized = normalize_inventory(inventory)
+    if normalized["state"] != "PROOF_RECORDS_COMPLETE":
+        return {}
 
-        provider_proofs = {}
-        expected_keys = _get_sorted_proof_keys(provider)
-        for key in expected_keys:
-            record = provider_inventory.get(key)
-            if not isinstance(record, dict):
-                return {}
-            if record.get("status") != "CONFIRMED":
+    # A caller/result mutation after normalization must fail closed rather than
+    # being trusted as an approval-record source.
+    if inventory_result != normalized:
+        return {}
+
+    result: dict[str, Any] = {}
+    for provider in PROVIDER_ORDER:
+        provider_inventory = normalized["inventory"][provider]
+        provider_proofs: dict[str, Any] = {}
+        for key in _get_sorted_proof_keys(provider):
+            record = provider_inventory[key]
+            if record["status"] != "CONFIRMED":
                 return {}
             provider_proofs[key] = copy.deepcopy(record)
         result[provider] = provider_proofs
