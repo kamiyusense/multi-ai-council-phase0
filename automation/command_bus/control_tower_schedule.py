@@ -111,6 +111,24 @@ def build_semi_auto_schedule_hint(
     )
 
 
+
+def refresh_schedule_hint(
+    hint: SemiAutoScheduleHint,
+    *,
+    now: str,
+) -> SemiAutoScheduleHint:
+    """Recompute only presentation eta_state at the Control Tower render time."""
+    validate_schedule_hint(hint)
+    return build_semi_auto_schedule_hint(
+        loop_number=hint.loop_number,
+        acceptance_state=hint.acceptance_state,
+        accepted_at=hint.accepted_at,
+        task_size=hint.task_size,
+        eta_start=hint.eta_start,
+        eta_end=hint.eta_end,
+        now=now,
+    )
+
 def schedule_snapshot(hint: SemiAutoScheduleHint | None) -> dict[str, Any] | None:
     if hint is None:
         return None
