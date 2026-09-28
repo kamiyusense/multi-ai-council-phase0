@@ -303,3 +303,38 @@ Until those production trust sources are wired:
   **NONE**
 - Issue #33 live mutation:
   **NONE**
+
+
+## Current-main conflict-resolution revalidation
+
+After PR #93 advanced `main`, the branch's focused-CI workflow edit conflicted
+with newer main coverage. The implementation files themselves did not conflict.
+
+The branch workflow was therefore restored byte-for-byte to current main and
+focused registration was deferred to a separate current-main follow-up PR.
+
+The resulting exact implementation head was re-tested:
+
+- exact tested head:
+  `6bb87e8def44b792444db8284bbbf465da1bd973`
+- GitHub Actions run:
+  `36395888630` — **SUCCESS**
+- focused suite available on that exact head:
+  **284/284 PASS**
+- full command-bus suite:
+  **709/709 PASS**
+- schemas:
+  **22/22 PASS**
+- compileall:
+  **PASS**
+- git diff --check:
+  **PASS**
+- full-suite log explicitly contains the new PREPARED initializer and durable
+  Semi-Auto ACQUIRE tests.
+- live Jules execution:
+  **NONE**
+- Issue #33 mutation:
+  **NONE**
+
+The commit adding this section is documentation-only relative to the exact
+tested head above.
