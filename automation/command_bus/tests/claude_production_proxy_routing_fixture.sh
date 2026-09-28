@@ -88,6 +88,7 @@ PY
 run_case() {
   local name="$1"
   local use_proxy="$2"
+  local use_no_proxy_gate="$3"
   local log="$TMP/$name.log"
 
   write_fixture_credentials
@@ -104,6 +105,11 @@ run_case() {
     env_args+=(
       -e HTTPS_PROXY=http://auth-control-proxy:3128
       -e CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1
+    )
+  fi
+  if [ "$use_no_proxy_gate" = "1" ]; then
+    env_args+=(
+      -e NO_PROXY=gate
     )
   fi
 
@@ -134,13 +140,19 @@ PY
 
 # Control: no proxy. This must reach the local Gate mock.
 : > "$EVIDENCE/model-events.jsonl"
-run_case "direct-control" 0
+run_case "direct-control" 0 0
 cp "$EVIDENCE/model-events.jsonl" "$EVIDENCE/direct-events.jsonl"
 
 # Production-shaped proxy case.
 : > "$EVIDENCE/model-events.jsonl"
-run_case "with-production-https-proxy" 1
+run_case "with-production-https-proxy" 1 0
 cp "$EVIDENCE/model-events.jsonl" "$EVIDENCE/proxy-events.jsonl"
+
+# Candidate split-routing case: proxy remains for external HTTPS, but the exact
+# internal Gate hostname bypasses it.
+: > "$EVIDENCE/model-events.jsonl"
+run_case "with-proxy-no-proxy-gate" 1 1
+cp "$EVIDENCE/model-events.jsonl" "$EVIDENCE/no-proxy-gate-events.jsonl"
 
 export TMP
 python - <<'PY'
@@ -162,8 +174,10 @@ def read_log(name):
 
 direct=read_events("direct-events.jsonl")
 proxied=read_events("proxy-events.jsonl")
+no_proxy_gate=read_events("no-proxy-gate-events.jsonl")
 direct_log=read_log("direct-control")
 proxy_log=read_log("with-production-https-proxy")
+no_proxy_gate_log=read_log("with-proxy-no-proxy-gate")
 
 result={
   "proof":"claude-2.1.283-production-proxy-routing-fixture",
@@ -177,15 +191,24 @@ result={
   "proxy_case_gate_requests":len(proxied),
   "proxy_case_cli_405":"405" in proxy_log,
   "proxy_case_fixture_response_seen":"PHASE0_MODEL_FIXTURE_OK" in proxy_log,
+  "no_proxy_gate_case_gate_requests":len(no_proxy_gate),
+  "no_proxy_gate_case_new_access_requests":sum(1 for e in no_proxy_gate if e.get("new_access_used")),
+  "no_proxy_gate_case_cli_405":"405" in no_proxy_gate_log,
 }
 print(json.dumps(result, indent=2, sort_keys=True))
 
 assert len(direct) >= 1, direct
 assert any(e.get("new_access_used") for e in direct), direct
-assert "PHASE0_MODEL_FIXTURE_OK" in direct_log
 
-# The proxy case is observational: we require either a Gate hit or the concrete
-# proxy-denial signature so the fixture cannot silently pass without evidence.
-assert len(proxied) >= 1 or "405" in proxy_log, proxy_log[:500]
+# Current production-shaped proxy configuration must reproduce the observed
+# routing failure: no Gate request and a concrete 405 from the auth proxy.
+assert len(proxied) == 0, proxied
+assert "405" in proxy_log, proxy_log[:500]
+
+# Candidate fix: exact NO_PROXY=gate restores direct Gate routing while keeping
+# HTTPS_PROXY configured for external auth-control traffic.
+assert len(no_proxy_gate) >= 1, no_proxy_gate
+assert any(e.get("new_access_used") for e in no_proxy_gate), no_proxy_gate
+assert "405" not in no_proxy_gate_log, no_proxy_gate_log[:500]
 print("CLAUDE_PRODUCTION_PROXY_ROUTING_FIXTURE_MEASUREMENT_PASS")
 PY
