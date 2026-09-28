@@ -75,7 +75,11 @@ class JulesProviderVerificationSourceTests(unittest.TestCase):
             prepared.source_receipt,
         )
         self.assertIsNone(result)
-        self.assertEqual(reader.calls, [source["source_ref"]])
+        self.assertEqual(
+            reader.calls,
+            [],
+            "missing authenticator must fail before reading untrusted source material",
+        )
 
     def test_even_caller_modified_verified_source_does_not_pass_without_authenticator(self):
         prepared, source = prepared_source()
