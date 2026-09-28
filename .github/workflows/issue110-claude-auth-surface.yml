@@ -1,0 +1,43 @@
+name: Issue 110 Claude 2.1.283 auth surface discovery
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-fixture-refresh-v1
+    paths:
+      - .github/workflows/issue110-claude-auth-surface.yml
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact discovery head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Build exact pinned Claude runtime image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build             -t phase0-claude-runtime:2.1.283             -f automation/command_bus/docker/claude-runtime/Dockerfile             automation/command_bus
+
+      - name: Read CLI/auth help with network disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== VERSION ==='
+          docker run --rm --network none             --entrypoint claude             phase0-claude-runtime:2.1.283             --version
+
+          echo '=== AUTH HELP ==='
+          docker run --rm --network none             --entrypoint claude             phase0-claude-runtime:2.1.283             auth --help
+
+          echo '=== AUTH STATUS HELP ==='
+          docker run --rm --network none             --entrypoint claude             phase0-claude-runtime:2.1.283             auth status --help || true
+
+          echo 'CLAUDE_AUTH_SURFACE_DISCOVERY_PASS'
