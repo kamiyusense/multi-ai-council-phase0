@@ -32,7 +32,7 @@ EOF
 openssl x509 -req   -in "$CERTS/server.csr"   -CA "$CERTS/ca.crt"   -CAkey "$CERTS/ca.key"   -CAcreateserial   -out "$CERTS/server.crt"   -days 1   -extfile "$CERTS/ext.cnf"   >/dev/null 2>&1
 
 chmod 0444 "$CERTS/ca.crt" "$CERTS/server.crt"
-chmod 0400 "$CERTS/ca.key" "$CERTS/server.key"
+chmod 0444 "$CERTS/ca.key" "$CERTS/server.key"
 touch "$EVIDENCE/events.jsonl"
 chmod 0666 "$EVIDENCE/events.jsonl"
 
