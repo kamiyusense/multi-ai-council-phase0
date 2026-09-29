@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   buildGenerationAttemptRecord,
   buildGenerationPendingReceipt,
+  buildGenerationTerminalRecord,
   generationStatePaths,
   validateRefreshAuthorizationId,
 } from "./claude_oauth_refresh_generation.mjs";
@@ -244,6 +245,113 @@ export function stageGenerationPending({
     pending_credential_sha256: pendingSha,
     pending_path: paths.pending,
     pending_receipt_path: paths.pending_receipt,
+    network_allowed: false,
+  });
+}
+
+function fileSha256(filePath) {
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+}
+
+function canonicalPendingReceipt(record) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    throw new Error("BLOCKED: canonical generation pending receipt is required");
+  }
+  const canonical = buildGenerationPendingReceipt({
+    authorizationId: record.authorization_id,
+    generation: record.generation,
+    oldCredentialSha256: record.old_credential_sha256,
+    pendingCredentialSha256: record.pending_credential_sha256,
+  });
+  if (JSON.stringify(record) !== JSON.stringify(canonical)) {
+    throw new Error("BLOCKED: generation pending receipt is not canonical");
+  }
+  return canonical;
+}
+
+export function commitGenerationPending({
+  credentialPath,
+  generation,
+  authorizationId,
+  recoveredWithoutNetwork = false,
+}) {
+  assertPrivateRegularFileNoRead(credentialPath);
+  const authorization = validateRefreshAuthorizationId(authorizationId);
+  const paths = generationStatePaths(credentialPath, generation);
+
+  assertPrivateDirectory(paths.root, "refresh state root");
+  assertPrivateDirectory(paths.dir, "refresh generation directory");
+  for (const [filePath, label] of [
+    [paths.attempt, "generation attempt"],
+    [paths.pending, "pending credential"],
+    [paths.pending_receipt, "pending receipt"],
+  ]) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`BLOCKED: ${label} is missing`);
+    }
+    assertPrivateRegularStateFile(filePath, label);
+  }
+  if (fs.existsSync(paths.terminal)) {
+    throw new Error("BLOCKED: generation terminal already exists");
+  }
+
+  const attempt = canonicalAttemptRecord(readJson(paths.attempt));
+  const receipt = canonicalPendingReceipt(readJson(paths.pending_receipt));
+  if (
+    attempt.authorization_id !== authorization ||
+    receipt.authorization_id !== authorization ||
+    attempt.generation !== generation ||
+    receipt.generation !== generation ||
+    receipt.old_credential_sha256 !== attempt.old_credential_sha256
+  ) {
+    throw new Error("BLOCKED: generation commit identity mismatch");
+  }
+
+  const currentSha = fileSha256(credentialPath);
+  if (currentSha !== attempt.old_credential_sha256) {
+    throw new Error("BLOCKED: active credential changed after generation attempt");
+  }
+
+  const pendingText = fs.readFileSync(paths.pending, "utf8");
+  const canonicalPendingText = canonicalRotatedCredentialText(pendingText);
+  if (pendingText !== canonicalPendingText) {
+    throw new Error("BLOCKED: pending credential text is not canonical");
+  }
+  const pendingSha = sha256Text(pendingText);
+  if (pendingSha !== receipt.pending_credential_sha256) {
+    throw new Error("BLOCKED: pending credential SHA-256 does not match receipt");
+  }
+
+  fs.renameSync(paths.pending, credentialPath);
+  fsyncDir(path.dirname(credentialPath));
+
+  const newSha = fileSha256(credentialPath);
+  if (newSha !== receipt.pending_credential_sha256) {
+    throw new Error("UNKNOWN: active credential readback hash mismatch after atomic rename");
+  }
+
+  const terminal = buildGenerationTerminalRecord({
+    authorizationId: authorization,
+    generation,
+    oldCredentialSha256: attempt.old_credential_sha256,
+    newCredentialSha256: newSha,
+    recoveredWithoutNetwork,
+  });
+  try {
+    writeExclusiveDurable(paths.terminal, stableJson(terminal));
+  } catch (error) {
+    throw new Error(
+      `UNKNOWN: credential replaced but terminal receipt write failed: ${error?.code || "write_error"}`,
+    );
+  }
+
+  return Object.freeze({
+    state: "COMPLETE",
+    generation,
+    old_credential_sha256: attempt.old_credential_sha256,
+    new_credential_sha256: newSha,
+    recovered_without_network: recoveredWithoutNetwork,
+    terminal_path: paths.terminal,
     network_allowed: false,
   });
 }
