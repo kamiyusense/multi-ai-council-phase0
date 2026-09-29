@@ -6,7 +6,7 @@ This file is the durable recovery note for the 💛 yellow lane.
 
 - repository: `kamiyusense/multi-ai-council-phase0`
 - carrier branch: `cloud-work/carrier-yellow-v1`
-- carrier PR: assigned by GitHub; after PR creation the PR body is authoritative
+- carrier PR: #165
 - required PR label: `cloud-yellow`
 - command review prefix: `[CW_YELLOW_V1]`
 - receipt comment prefix: `[CW_YELLOW_RECEIPT_V1]`
