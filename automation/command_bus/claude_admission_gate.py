@@ -833,7 +833,11 @@ def validate_container_artifacts() -> dict:
             "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
             "DISABLE_UPDATES", "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK",
         )),
-        "launcher_has_no_client_retry": "spawnSync(invocation.executable" in launcher and "no retry will be attempted" in launcher,
+        "launcher_has_no_client_retry": all(fragment in launcher for fragment in (
+            "spawn = spawnSync",
+            "spawn(invocation.executable",
+            "no retry will be attempted",
+        )),
         "launcher_constructs_dispatch_header": "X-Phase0-Dispatch-ID" in launcher and "ANTHROPIC_CUSTOM_HEADERS" in launcher,
         "gate_open_existing_only_no_bootstrap_or_retry": "DispatchStore.open_production" in gate_entrypoint and "OPEN_EXISTING_ONLY" in gate_entrypoint and "initialize_production_store_once" not in gate_entrypoint and "prepare_production_store_bootstrap" not in gate_entrypoint and "no bootstrap or retry" in gate_entrypoint,
         "gate_bootstrap_fixed_paths_confirmation_and_contract": all(fragment in gate_bootstrap_entrypoint for fragment in (
