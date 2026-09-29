@@ -57,3 +57,75 @@ export function generationStatePaths(credentialPath, generation) {
     terminal: path.join(dir, "terminal.json"),
   });
 }
+
+const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+
+export function validateCredentialSha256(value, label = "credential SHA-256") {
+  if (typeof value !== "string" || !SHA256_PATTERN.test(value)) {
+    throw new Error(`BLOCKED: ${label} must be 64 lowercase hex characters`);
+  }
+  return value;
+}
+
+export function validateGenerationStart({
+  generation,
+  currentCredentialSha256,
+  expectedOldCredentialSha256,
+  predecessorTerminal = null,
+}) {
+  validateRefreshGeneration(generation);
+  const current = validateCredentialSha256(
+    currentCredentialSha256,
+    "current credential SHA-256",
+  );
+  const expected = validateCredentialSha256(
+    expectedOldCredentialSha256,
+    "expected old credential SHA-256",
+  );
+  if (current !== expected) {
+    throw new Error("BLOCKED: current credential SHA-256 does not match authorization expectation");
+  }
+
+  if (generation === 1) {
+    if (predecessorTerminal !== null && predecessorTerminal !== undefined) {
+      throw new Error("BLOCKED: generation 1 must not have a predecessor terminal");
+    }
+    return Object.freeze({
+      status: "READY",
+      generation,
+      predecessor_generation: null,
+      credential_sha256: current,
+    });
+  }
+
+  if (!predecessorTerminal || typeof predecessorTerminal !== "object") {
+    throw new Error("BLOCKED: predecessor terminal is required");
+  }
+  if (predecessorTerminal.state !== "COMPLETE") {
+    throw new Error("BLOCKED: predecessor generation is not terminal COMPLETE");
+  }
+  if (predecessorTerminal.generation !== generation - 1) {
+    throw new Error("BLOCKED: predecessor generation is not exactly generation - 1");
+  }
+  if (predecessorTerminal.retry !== 0 || predecessorTerminal.fallback !== "disabled") {
+    throw new Error("BLOCKED: predecessor retry/fallback contract mismatch");
+  }
+  if (predecessorTerminal.credential_values_recorded !== false) {
+    throw new Error("BLOCKED: predecessor terminal does not prove secret-free evidence");
+  }
+
+  const predecessorNew = validateCredentialSha256(
+    predecessorTerminal.new_credential_sha256,
+    "predecessor new credential SHA-256",
+  );
+  if (predecessorNew !== current) {
+    throw new Error("BLOCKED: current credential SHA-256 does not match predecessor terminal");
+  }
+
+  return Object.freeze({
+    status: "READY",
+    generation,
+    predecessor_generation: generation - 1,
+    credential_sha256: current,
+  });
+}
