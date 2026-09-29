@@ -1415,3 +1415,25 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 060 — medium — DISPATCHED / IN PROGRESS
+- task: tests/docs-only sensitive fan-out static inventory
+- loop-ID claim: `automation/command_bus/loop_id_claims/060.json`
+- claim readback: PASS
+- canonical Relay snapshot head: `2678d0a653110045ddd8956c0581ee0b2c0a11ba`
+- canonical Relay snapshot tree: `89ea2b87fde8d8abf3949216ba838e4aacf65c8b`
+- isolated starting branch: `jules-work/relay-dev-loop-060-sensitive-fanout-static-inventory`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36556516616`
+- Jules session: `12172443077098188425`
+- accepted_at: 2026-09-29 19:35:43 JST
+- task size: medium (~15-25 minute class)
+- canonical PR #4 head immediately after dispatch: `2678d0a653110045ddd8956c0581ee0b2c0a11ba` unchanged
+- allowed paths: sensitive-fanout inventory test/doc/checkpoint only; no production/schema/workflow changes
+- mission: prove exactly what current control-plane payload guards/copy/hash/raw-response boundaries do and do not establish for secret/PII/private-code fan-out, using synthetic markers only
+- real secrets / real PII / private user data used: no
+- production sensitive-data filter added: no
+- common_sensitive_fanout resolved: no
+- retry=0 / fallback=disabled / merge=human-only
+- workflow permission/auth/billing/settings changes: no
+- live provider/model/API/network execution: no
+
