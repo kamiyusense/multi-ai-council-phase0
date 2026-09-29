@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "loop_id": "chat-work-writeback-proof-20260930-001",
-  "state": "RUNNING",
+  "state": "UNKNOWN",
   "round": 0,
   "max_rounds": 6,
   "expires_at": "2026-09-30T03:32:00+09:00",
@@ -9,5 +9,6 @@
   "last_command_id": "chat-work-writeback-proof-20260930-001-000001",
   "last_receipt_id": null,
   "expected_target": "work",
-  "retry_policy": 0
+  "retry_policy": 0,
+  "failure_reason": "UNKNOWN: PR #6 wake comment 5895367550 did not start Phase 0 PR6 Command Bus; no terminal receipt was produced. Historical trigger was PR #6 commit-update, while PR #6 is already merged/closed. retry=0; do not replay."
 }
