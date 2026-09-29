@@ -44,9 +44,9 @@ The provider set and exact order is `openai`, `anthropic`, `google`.
 
 | provider_id | requested_model_state | executed_model_state | independent_evidence_state | evidence_source_state | correlation_binding_state | mismatch_policy | missing_evidence | blocker_state |
 |-------------|-----------------------|----------------------|----------------------------|-----------------------|---------------------------|-----------------|------------------|---------------|
-| openai | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | TERMINAL_FAIL_CLOSED | FAIL_CLOSED | BLOCKED_UNKNOWN |
-| anthropic | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | TERMINAL_FAIL_CLOSED | FAIL_CLOSED | BLOCKED_UNKNOWN |
-| google | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | TERMINAL_FAIL_CLOSED | FAIL_CLOSED | BLOCKED_UNKNOWN |
+| openai | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | BLOCKED_UNKNOWN | EVIDENCE_REQUIRED | BLOCKED_UNKNOWN |
+| anthropic | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | BLOCKED_UNKNOWN | EVIDENCE_REQUIRED | BLOCKED_UNKNOWN |
+| google | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | EVIDENCE_REQUIRED | BLOCKED_UNKNOWN | EVIDENCE_REQUIRED | BLOCKED_UNKNOWN |
 
 ## Fail-Closed Evaluation Rules
 
