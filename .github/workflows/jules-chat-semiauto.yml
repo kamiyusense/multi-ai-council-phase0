@@ -68,6 +68,18 @@ jobs:
             "${COMMAND_PATH}" \
             --github-output "${GITHUB_OUTPUT}"
 
+      - name: Verify durable numbered Loop claim
+        id: claim
+        env:
+          COMMAND_PATH: ${{ steps.locate.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m automation.command_bus.loop_id_claim \
+            "${COMMAND_PATH}" \
+            --claims-dir automation/command_bus/loop_id_claims \
+            --github-output "${GITHUB_OUTPUT}"
+
       - name: Verify exact target and isolated work branch snapshots
         env:
           GH_TOKEN: ${{ github.token }}
@@ -192,6 +204,10 @@ jobs:
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
           SESSION_ID: ${{ steps.invoke.outputs.session_id }}
+          LOOP_CLAIM_REQUIRED: ${{ steps.claim.outputs.loop_claim_required }}
+          LOOP_ID: ${{ steps.claim.outputs.loop_id }}
+          LANE_ID: ${{ steps.claim.outputs.lane_id }}
+          LANE_DISPLAY: ${{ steps.claim.outputs.lane_display }}
         shell: bash
         run: |
           {
@@ -202,6 +218,12 @@ jobs:
             echo "- expected_snapshot_head: \`${EXPECTED_HEAD:-UNKNOWN}\`"
             echo "- expected_target_tree: \`${EXPECTED_TREE:-UNKNOWN}\`"
             echo "- jules_session_id: \`${SESSION_ID:-UNKNOWN}\`"
+            echo "- loop_claim_required: \`${LOOP_CLAIM_REQUIRED:-UNKNOWN}\`"
+            if [[ "${LOOP_CLAIM_REQUIRED:-false}" == "true" ]]; then
+              echo "- loop_id: \`${LOOP_ID:-UNKNOWN}\`"
+              echo "- lane_id: \`${LANE_ID:-UNKNOWN}\`"
+              echo "- lane_display: \`${LANE_DISPLAY:-UNKNOWN}\`"
+            fi
             echo "- retry: \`0\`"
             echo "- fallback: \`disabled\`"
             echo "- merge: \`human-only\`"
