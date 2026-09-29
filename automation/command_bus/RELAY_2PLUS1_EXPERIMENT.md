@@ -1183,3 +1183,45 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 057 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: tests/docs-only live evidence-acquisition planning
+- Jules session: `5601087063626235492`
+- Jules PR: #146
+- isolated base: `jules-work/relay-dev-loop-057-evidence-acquisition-plan`
+- canonical snapshot parent: `995a16e65b9aa700122167c90a3b73989bbd53b6`
+- initial Jules candidate: `e480ad61f66d1d9f7c2ff339bd266cb628be8462`
+- frozen accepted candidate: `bb3f804c78053cb8ced1bdd150555cba64fd6aa5`
+- accepted canonical head: `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5`
+- prompt contract: `docs/JULES_TASK_PROMPT_SPEC.md` read and applied before dispatch
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (evidence-plan doc, checkpoint, test only)
+- initial exact validation request already existed and was read back rather than blindly recreated: run `36532668280` SUCCESS
+- semantic review corrections:
+  - bound exact 30 gap_id set to Loop 056 source
+  - bound current_gap_class and completion_evidence_required to Loop 056 source values
+  - split evidence stages into STATIC_PREPARATION_ONLY / READ_ONLY_EVIDENCE_CANDIDATE / REQUIRES_BOUNDED_LIVE_PROOF / HUMAN_ARCHITECTURE_DECISION / FINAL_HUMAN_APPROVAL / DEFERRED_NOT_SELECTED
+  - kept runtime-sensitive retry/replay/model/cancel/quota behavior out of static-only resolution
+  - preserved Actions readback as transport evidence only / insufficient authenticator
+  - preserved OIDC and Artifact Attestation as NOT_AUTHORIZED
+  - preserved Gemini CLI as DEFERRED_NOT_SELECTED
+  - preserved first real provider/model turn as FINAL_HUMAN_APPROVAL
+  - made zero-evidence-acquisition / no-readback / no-real-blocker-resolution boundary durable in docs/tests
+- intermediate exact validation on `6d591ca45ad58b3204f863940762a7f3e0654084`: run `36532967165` SUCCESS, but branch advanced afterwards so it was not treated as final evidence
+- exact validation on `49e659da08fad38faf6508033339eae1bf6f64f6`: run `36533106503` FAIL due to test/doc wording mismatch after evidence-stage refinement
+- latest-head validation on `9e1c357a7a0857effe5fc44672b36c9ebb25e7a1`: run `36533253646` FAIL on one missing "separately authorized" phrase for common_confinement
+- frozen final candidate exact validation `bb3f804c78053cb8ced1bdd150555cba64fd6aa5`: run `36533375702` SUCCESS
+- canonical exact validation `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5`: run `36533503271` SUCCESS
+- exact validation: 590 tests PASS; compileall PASS; diff-check PASS
+- canonical publication was detected as already completed by another safe path; no duplicate write was sent
+- frozen candidate/canonical three-file blob equality: PASS
+- external/provider/GitHub evidence acquisition performed: no
+- workflow permission/auth/billing changes: no
+- real live blockers resolved: no
+- provenance verified: no
+- execution authorized: no
+- live provider/model/API execution: no
+- retry=0 for Jules dispatch / fallback=disabled
+- merge: no
+- isolation result: PASS
+
