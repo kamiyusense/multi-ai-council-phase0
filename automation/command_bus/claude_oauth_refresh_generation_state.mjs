@@ -355,3 +355,155 @@ export function commitGenerationPending({
     network_allowed: false,
   });
 }
+
+function canonicalTerminalRecord(record) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    throw new Error("UNKNOWN: canonical generation terminal record is required");
+  }
+  const canonical = buildGenerationTerminalRecord({
+    authorizationId: record.authorization_id,
+    generation: record.generation,
+    oldCredentialSha256: record.old_credential_sha256,
+    newCredentialSha256: record.new_credential_sha256,
+    recoveredWithoutNetwork: record.recovered_without_network,
+  });
+  if (JSON.stringify(record) !== JSON.stringify(canonical)) {
+    throw new Error("UNKNOWN: generation terminal record is not canonical");
+  }
+  return canonical;
+}
+
+export function recoverGeneration({
+  credentialPath,
+  generation,
+  authorizationId,
+}) {
+  assertPrivateRegularFileNoRead(credentialPath);
+  const authorization = validateRefreshAuthorizationId(authorizationId);
+  const paths = generationStatePaths(credentialPath, generation);
+
+  if (!fs.existsSync(paths.dir)) {
+    return Object.freeze({
+      state: "NOT_STARTED",
+      generation,
+      network_allowed: false,
+    });
+  }
+
+  assertPrivateDirectory(paths.root, "refresh state root");
+  assertPrivateDirectory(paths.dir, "refresh generation directory");
+
+  if (!fs.existsSync(paths.attempt)) {
+    throw new Error(
+      "UNKNOWN: generation directory exists without durable attempt; do not retry automatically",
+    );
+  }
+  assertPrivateRegularStateFile(paths.attempt, "generation attempt");
+  const attempt = canonicalAttemptRecord(readJson(paths.attempt));
+  if (
+    attempt.authorization_id !== authorization ||
+    attempt.generation !== generation
+  ) {
+    throw new Error("UNKNOWN: recovery attempt identity mismatch");
+  }
+
+  const currentSha = fileSha256(credentialPath);
+
+  if (fs.existsSync(paths.terminal)) {
+    assertPrivateRegularStateFile(paths.terminal, "generation terminal");
+    const terminal = canonicalTerminalRecord(readJson(paths.terminal));
+    if (
+      terminal.authorization_id !== authorization ||
+      terminal.generation !== generation ||
+      terminal.old_credential_sha256 !== attempt.old_credential_sha256
+    ) {
+      throw new Error("UNKNOWN: recovery terminal identity mismatch");
+    }
+    if (terminal.new_credential_sha256 !== currentSha) {
+      throw new Error("UNKNOWN: terminal receipt does not match active credential");
+    }
+    if (fs.existsSync(paths.pending)) {
+      throw new Error("UNKNOWN: terminal generation unexpectedly retains pending credential");
+    }
+    return Object.freeze({
+      state: "COMPLETE",
+      generation,
+      terminal,
+      network_allowed: false,
+    });
+  }
+
+  if (!fs.existsSync(paths.pending_receipt)) {
+    throw new Error(
+      "UNKNOWN: refresh may have consumed the old token before durable pending receipt; do not retry",
+    );
+  }
+  assertPrivateRegularStateFile(paths.pending_receipt, "pending receipt");
+  const receipt = canonicalPendingReceipt(readJson(paths.pending_receipt));
+  if (
+    receipt.authorization_id !== authorization ||
+    receipt.generation !== generation ||
+    receipt.old_credential_sha256 !== attempt.old_credential_sha256
+  ) {
+    throw new Error("UNKNOWN: recovery pending receipt identity mismatch");
+  }
+
+  if (currentSha === attempt.old_credential_sha256) {
+    if (!fs.existsSync(paths.pending)) {
+      throw new Error(
+        "UNKNOWN: pending receipt exists but pending credential is missing while active credential is still old",
+      );
+    }
+    assertPrivateRegularStateFile(paths.pending, "pending credential");
+    const pendingText = fs.readFileSync(paths.pending, "utf8");
+    const canonicalPendingText = canonicalRotatedCredentialText(pendingText);
+    if (pendingText !== canonicalPendingText) {
+      throw new Error("UNKNOWN: recovery pending credential text is not canonical");
+    }
+    const pendingSha = sha256Text(pendingText);
+    if (pendingSha !== receipt.pending_credential_sha256) {
+      throw new Error("UNKNOWN: recovery pending credential hash mismatch");
+    }
+    return commitGenerationPending({
+      credentialPath,
+      generation,
+      authorizationId: authorization,
+      recoveredWithoutNetwork: true,
+    });
+  }
+
+  if (currentSha === receipt.pending_credential_sha256) {
+    if (fs.existsSync(paths.pending)) {
+      throw new Error(
+        "UNKNOWN: active credential matches pending receipt but pending file still exists",
+      );
+    }
+    const terminal = buildGenerationTerminalRecord({
+      authorizationId: authorization,
+      generation,
+      oldCredentialSha256: attempt.old_credential_sha256,
+      newCredentialSha256: currentSha,
+      recoveredWithoutNetwork: true,
+    });
+    try {
+      writeExclusiveDurable(paths.terminal, stableJson(terminal));
+    } catch (error) {
+      throw new Error(
+        `UNKNOWN: active credential is rotated but terminal recovery write failed: ${error?.code || "write_error"}`,
+      );
+    }
+    return Object.freeze({
+      state: "RECOVERED_AFTER_RENAME",
+      generation,
+      old_credential_sha256: attempt.old_credential_sha256,
+      new_credential_sha256: currentSha,
+      recovered_without_network: true,
+      terminal_path: paths.terminal,
+      network_allowed: false,
+    });
+  }
+
+  throw new Error(
+    "UNKNOWN: active credential hash matches neither old nor pending generation state",
+  );
+}
