@@ -260,5 +260,7 @@ This signifies the PREPARED static pipeline checkpoint.
 - Implemented PREPARED static minimum-permissions-inventory status.
 - This checkpoint is strictly PREPARED/static minimum-permissions-inventory status only.
 - No live execution is performed.
-- No permission changes are authorized.
-- common_min_permissions remains unresolved.
+- No permission/auth/billing/settings changes are performed or authorized by this batch.
+- No exact whole-path minimum-permission profile is selected.
+- common_min_permissions remains unresolved / BLOCKED_UNKNOWN.
+- First live provider/model turn remains separately human-approved.
