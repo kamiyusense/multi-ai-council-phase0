@@ -151,6 +151,12 @@ one user input
 
 Phase 0 is intended to remove human copy/paste relay work while preserving explicit safety boundaries and evidence.
 
+## 0.2 Jules task prompt contract — MANDATORY
+
+Before creating or dispatching **any** new Jules task, read `docs/JULES_TASK_PROMPT_SPEC.md`. It is the canonical contract for task sizing, prompt order, exact allowed paths, reuse-first behavior, Do Not Touch boundaries, semantic acceptance criteria, negative/tamper cases, vacuous-test prohibition, validation commands, publication conditions, and stop conditions.
+
+A green Jules test suite or Jules self-report is evidence only. The controller/reviewer must independently inspect semantics, ancestry, changed paths, exact-head validation, and durable evidence after Jules returns.
+
 ## 2. Repositories
 
 ### Council record / design source
@@ -396,6 +402,6 @@ A new chat should:
 7. preserve all fixed safety decisions
 8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
 9. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
-10. before using the Chat -> Jules semi-auto loop, read `docs/CHAT_JULES_API_SEMIAUTO.md` and obey its mandatory task-time footer
+10. before using the Chat -> Jules semi-auto loop, read `docs/CHAT_JULES_API_SEMIAUTO.md` and `docs/JULES_TASK_PROMPT_SPEC.md`; obey both the prompt contract and mandatory task-time footer
 11. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
 12. keep GitHub writes within this private repository and authorized feature branches/PR scope

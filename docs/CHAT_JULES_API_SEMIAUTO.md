@@ -22,6 +22,14 @@ human asks Chat to inspect/continue
 This is deliberately **not** an unattended loop. No result automatically creates
 the next Jules command.
 
+## Mandatory Jules prompt contract
+
+Before Chat writes any new `jules_api_requests/<command_id>.json`, it MUST fresh-read and follow `docs/JULES_TASK_PROMPT_SPEC.md`.
+
+The prompt must be a bounded execution contract: one mission, exact allowed paths, reuse-first instructions, explicit Do Not Touch rules, machine-checkable semantic acceptance criteria, concrete negative/tamper cases, no vacuous tests, exact finite validation commands, publication conditions, and explicit stop conditions.
+
+A green Jules suite is evidence only. Chat must independently review semantics after the result returns.
+
 ## Durable command path
 
 Append-only commands live at:
@@ -81,8 +89,7 @@ Chat should then:
 1. fresh-read the current target PR/branch and any Jules-created PR/result;
 2. independently inspect ancestry, changed paths, diff, tests/checks, and prior
    command evidence;
-3. if a bounded next implementation task is justified, generate one new command
-   ID and one command JSON using the fresh target HEAD/tree;
+3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, construct the task with its mandatory prompt structure, then generate one new command ID and one command JSON using the fresh target HEAD/tree;
 4. write that one command file to PR #6 branch and read back the new carrier head;
 5. do not resend if the write or subsequent workflow/Jules submission is
    ambiguous;
