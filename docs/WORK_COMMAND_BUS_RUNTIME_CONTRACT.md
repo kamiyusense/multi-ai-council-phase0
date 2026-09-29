@@ -1,5 +1,12 @@
 # Work Command Bus Runtime Contract
 
+> **Scope:** This contract describes a command-bus runtime and historical
+> Work/Jules transport checkpoints. It is not the current development-worker
+> router. For new Chat development, first read main
+> [DEVELOPMENT_EXECUTION_ROUTER.md](DEVELOPMENT_EXECUTION_ROUTER.md);
+> discover the current semi-auto workflow or Green carrier from GitHub.
+>
+
 
 > ## 2026-09-25 Jules API route override
 >

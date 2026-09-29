@@ -1,5 +1,12 @@
 # Relay Executor Sol Chat V2 Handover
 
+> **Historical handover (2026-09-23):** PR identities and Work/BrowserHook
+> execution roles below describe that checkpoint. For current development
+> worker routing, start at main
+> [DEVELOPMENT_EXECUTION_ROUTER.md](DEVELOPMENT_EXECUTION_ROUTER.md), then
+> fresh-read the selected route. Do not use this snapshot as current policy.
+>
+
 
 > ## 2026-09-25 current Jules route update
 >

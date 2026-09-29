@@ -1,6 +1,9 @@
 # Chat -> Jules API -> GitHub -> Human semi-auto loop
 
-Status: development route on PR #6; human-triggered only.
+Status: canonical Chat-driven development worker route on current main; human-triggered only.
+Enter from [development execution router](DEVELOPMENT_EXECUTION_ROUTER.md). A user may say
+`Jules半Loopで続けて` without knowing a PR number. PR #6 is implementation history,
+not the operational carrier identity.
 
 ## Goal
 
@@ -10,7 +13,7 @@ keeping the human as the final decision-maker:
 ```text
 human asks Chat to inspect/continue
   -> Chat fresh-reads GitHub and reviews the current result
-  -> Chat creates exactly one durable Jules command JSON on PR #6 branch
+  -> Chat discovers the current carrier from the workflow on main and appends one command JSON
   -> GitHub push workflow validates command + target HEAD/tree
   -> bounded GitHub workflow submits exactly one direct Jules REST request
   -> Jules works from the exact non-default branch and creates its normal PR
@@ -21,6 +24,21 @@ human asks Chat to inspect/continue
 
 This is deliberately **not** an unattended loop. No result automatically creates
 the next Jules command.
+
+## Fresh carrier and target discovery
+
+Read `.github/workflows/jules-chat-semiauto.yml` from current main. Its
+`push.branches` and `push.paths` give the **current** carrier branch and
+append-only command pattern; read `automation/command_bus/jules_api_request.py`
+for the exact request schema. Fresh-read that carrier branch, its command
+records/workflow evidence, and the intended target PR/branch/HEAD/tree.
+Never require the user to remember PR #6, a carrier branch or a session ID.
+If multiple plausible active targets remain after GitHub discovery, report
+UNKNOWN and do not dispatch. Do not assume the carrier branch is the target.
+
+For ordinary Chat-driven development choose `JULES_CHAT_SEMIAUTO_V1`.
+`JULES_CHAT_SEMIAUTO_V2` records Claude-origin integrated work and is not the
+default human `次Loop` profile. The future AUTO runtime is a separate concern.
 
 ## Durable command path
 
@@ -57,8 +75,10 @@ Each command binds:
 
 ## Dispatch gates
 
-The workflow `.github/workflows/jules-chat-semiauto.yml` runs only for command
-JSON pushes on `feature/chat-work-command-bus`.
+The workflow `.github/workflows/jules-chat-semiauto.yml` currently runs for
+command JSON pushes on the branch named in its `push.branches` filter. Read
+that filter fresh before every dispatch; the branch name is not a timeless
+correctness input.
 
 Before the Jules API call it requires:
 
@@ -83,7 +103,8 @@ Chat should then:
    command evidence;
 3. if a bounded next implementation task is justified, generate one new command
    ID and one command JSON using the fresh target HEAD/tree;
-4. write that one command file to PR #6 branch and read back the new carrier head;
+4. write that one command file to the branch freshly discovered from the
+   workflow and read back the new carrier head;
 5. do not resend if the write or subsequent workflow/Jules submission is
    ambiguous;
 6. on the next user check-in, fresh-read GitHub rather than relying on remembered

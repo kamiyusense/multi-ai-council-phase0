@@ -2,25 +2,27 @@
 
 Updated: 2026-09-28
 
-## 0. 2026-09-28 current override — Chat-first / Work fallback
+## 0. Current development worker routing — read this first
 
-This rule is durable project policy and must be carried into every new Chat handover.
+Before selecting an implementation worker, read
+[docs/DEVELOPMENT_EXECUTION_ROUTER.md](docs/DEVELOPMENT_EXECUTION_ROUTER.md)
+from current main. It supersedes the former Chat-first / Work fallback
+**development worker** rule. A user need not know carrier or target PR numbers.
 
-- Continue in the current Chat whenever Chat + GitHub can perform the work safely.
-- Do not move work to Work merely because the task is long or implementation-heavy.
-- Use Work only when:
-  - the user explicitly requests Work;
-  - an already-running Work is being continued; or
-  - the remaining task is genuinely impossible from Chat and Work is required.
-- When Chat cannot do the remaining task and Work is required:
-  1. explain the concrete reason Work is necessary;
-  2. write **「🔵Workに貼り付けてください」**;
-  3. provide the complete Work instruction inside a code block;
-  4. require no manual summarization or rewriting by the user.
-- This rule does not weaken system approval, Merge, billing, permission, live-model, or other safety boundaries.
+- Chat retains supervision, independent GitHub inspection, task design, review
+  and PASS / FAIL / UNKNOWN judgment.
+- Ordinary GitHub code, tests and docs development uses Chat-driven Jules
+  semi-auto by default; read `docs/CHAT_JULES_API_SEMIAUTO.md` and discover
+  its live carrier from the workflow on main.
+- Explicit Work / Cloud Work / Green / 緑LINE requests, or Jules-unsuitable
+  cloud-safe work, use the uniquely discovered `cloud-green` Cloud Work carrier.
+- User-machine-local dependencies require a complete 🔵 Local Work prompt
+  for the user to paste; do not auto-handoff or send them to Green lane.
+- Ambiguous identity or capability is UNKNOWN and blocks dispatch. No Merge,
+  default-branch direct write, force push, retry or fallback is implied.
 
-Canonical detail:
-`docs/CHAT_WORK_AUTONOMY_RULES.md`
+The future Claude-origin AUTO runtime is separate from this development
+worker choice. Claude auto-loop *development* uses this router.
 
 ## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
 
@@ -319,11 +321,11 @@ This development Git workflow does **not** change the Phase 0 runtime rule: the 
 
 Do not assume Work handoff is available from the current ChatGPT Project.
 
-The Windows desktop app has shown the red error:
+A historical Local Work handoff attempt in the Windows desktop app showed:
 
 `Could not use this project for a local chat`
 
-The symptom is consistent with reported Windows ChatGPT Project -> local Work context-sync failures. Continue in Chat + GitHub unless the user explicitly chooses to test Work again.
+This is a historical Local Work context-sync limitation, not the current development worker policy. Use the router above; give the user a complete Local Work prompt when a local dependency exists.
 
 ## 10. Chat ⇄ Work autonomy rules
 
@@ -388,14 +390,15 @@ UNKNOWN on a safety boundary blocks live execution, not static implementation.
 A new chat should:
 
 1. read this handover
-2. read the implementation spec and checklist
-3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-4. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
-5. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use and preserve the Chat-first / Work fallback rule
-6. inspect the current open PR / branch before changing files
-7. preserve all fixed safety decisions
-8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
-9. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
-10. before using the Chat -> Jules semi-auto loop, read `docs/CHAT_JULES_API_SEMIAUTO.md` and obey its mandatory task-time footer
-11. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-12. keep GitHub writes within this private repository and authorized feature branches/PR scope
+2. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` from current main and select the development route
+4. read the implementation spec and checklist
+4. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
+5. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
+6. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` before worker selection, then `docs/CHAT_WORK_AUTONOMY_RULES.md` for Work/Closed Loop safety
+7. inspect the current open PR / branch before changing files
+8. preserve all fixed safety decisions
+9. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
+10. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
+11. before using the Chat -> Jules semi-auto loop, read `docs/CHAT_JULES_API_SEMIAUTO.md` and obey its mandatory task-time footer
+12. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+13. keep GitHub writes within this private repository and authorized feature branches/PR scope
