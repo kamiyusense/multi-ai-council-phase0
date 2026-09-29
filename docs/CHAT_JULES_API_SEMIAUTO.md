@@ -39,7 +39,7 @@ Append-only commands live at:
 A command commit must add exactly one file and change nothing else. Updating an
 existing command does not dispatch.
 
-Required profile: `JULES_CHAT_SEMIAUTO_V1`.
+Required profile: `JULES_CHAT_SEMIAUTO_V2`.
 
 Each command binds:
 
