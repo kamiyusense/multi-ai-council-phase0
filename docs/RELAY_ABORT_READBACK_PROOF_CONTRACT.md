@@ -64,4 +64,4 @@ This is a conceptual record design, not a production schema:
 | post_abort_readback_evidence | Yes | Durable evidence proving no output/turn after abort. |
 | evidence_locator_or_hash | Yes | Hash or locator for the external proof payload. |
 | captured_at | Yes | Timestamp of the readback capture. |
-| verification_state | Yes | Final evaluation state (e.g., BLOCKED_UNKNOWN or PASS). |
+| verification_state | Yes | Evaluation state remains BLOCKED_UNKNOWN until separately authorized future evidence is actually validated; this static contract does not authorize a positive live state. |
