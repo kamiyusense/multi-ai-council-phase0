@@ -44,6 +44,26 @@ class JulesSemiAutoWorkflowIsolationTests(unittest.TestCase):
             self.text,
         )
 
+    def test_numbered_loop_claim_is_verified_before_jules_dispatch(self):
+        self.assertIn("Verify durable numbered Loop claim", self.text)
+        self.assertIn(
+            "python -m automation.command_bus.loop_id_claim",
+            self.text,
+        )
+        claim_index = self.text.index("Verify durable numbered Loop claim")
+        invoke_index = self.text.index("Invoke Jules REST exactly once")
+        self.assertLess(claim_index, invoke_index)
+        self.assertIn(
+            "--claims-dir automation/command_bus/loop_id_claims",
+            self.text,
+        )
+        self.assertIn(
+            "LOOP_CLAIM_REQUIRED: ${{ steps.claim.outputs.loop_claim_required }}",
+            self.text,
+        )
+        self.assertIn("LANE_ID: ${{ steps.claim.outputs.lane_id }}", self.text)
+        self.assertIn("LANE_DISPLAY: ${{ steps.claim.outputs.lane_display }}", self.text)
+
     def test_workflow_remains_read_only_and_retry_zero(self):
         self.assertIn("permissions:\n  contents: read", self.text)
         self.assertIn("curl --silent --show-error --fail-with-body --retry 0", self.text)
