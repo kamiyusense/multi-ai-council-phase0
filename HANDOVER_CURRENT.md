@@ -16,8 +16,13 @@ from current main. It supersedes the former Chat-first / Work fallback
   Task Prompt, claim ledger and workflow specifications on the discovered
   carrier branch. `JA/JB/JC/JD/JG` or a heart-color start request selects only
   a Jules lane, not a task or Loop number.
-- Explicit Work / Cloud Work / Green / 緑LINE requests, or Jules-unsuitable
-  cloud-safe work, use the uniquely discovered `cloud-green` Cloud Work carrier.
+- Explicit Cloud Work color requests use the selected 💛/💚/💙/❤️ lane; an
+  unqualified Work / 緑LINE request or Jules-unsuitable cloud-safe work uses
+  Green as the default lane. The [Cloud Work lane and replacement index](docs/CLOUD_WORK_LANES_INDEX.md)
+  links the current carrier, protocol, worker-state and exchange manuals.
+- `Cloud Workを交換したい` / `Workが壊れた` / `Loop先を作り直したい`:
+  use that index to read the ChatGPT replacement support manual **first**;
+  derive the active generation from GitHub, never user memory.
 - User-machine-local dependencies require a complete 🔵 Local Work prompt
   for the user to paste; do not auto-handoff or send them to Green lane.
 - Ambiguous identity or capability is UNKNOWN and blocks dispatch. No Merge,

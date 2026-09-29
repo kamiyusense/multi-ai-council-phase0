@@ -4,7 +4,8 @@
 > [DEVELOPMENT_EXECUTION_ROUTER.md](DEVELOPMENT_EXECUTION_ROUTER.md) before
 > implementing any AUTO Loop feature. Static/mock/docs development defaults
 > to Chat-driven Jules semi-auto; cloud-safe Jules-unsuitable work may use the
-> uniquely discovered Green lane; local Docker/credential/Windows/WSL proof
+> selected [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md), with Green as
+> the unqualified default; local Docker/credential/Windows/WSL proof
 > requires a complete user-pasted Local Work prompt. This routing does not
 > change the future Claude-origin AUTO runtime. The dated snapshots and old
 > handoff instructions below are historical evidence, not current worker
@@ -22,7 +23,8 @@
 - Chat supervises; for normal STATIC/MOCK implementation, use the Chat-driven
   Jules semi-auto route in [the router](DEVELOPMENT_EXECUTION_ROUTER.md).
 - If Jules is unsuitable but the task is cloud-safe, use the uniquely
-  discovered Green lane. For local runtime, Docker or credential access,
+  discovered [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md) (Green when
+  no color was specified). For local runtime, Docker or credential access,
   provide a complete 🔵 Local Work prompt for the user to paste. Never
   auto-handoff to Local Work or route local proof through Green.
 - GitHub fresh readback is canonical; SHAs below are historical snapshots.

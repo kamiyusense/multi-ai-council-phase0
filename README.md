@@ -61,7 +61,7 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 ## Start here
 
 1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md)
-2. [Development execution router](docs/DEVELOPMENT_EXECUTION_ROUTER.md) — Jules色Lane / 半Loop / 緑LINE Cloud Work / Local Workの入口（Jules正本と[PR履歴索引](docs/JULES_SEMIAUTO_PR_INDEX.md)へ）
+2. [Development execution router](docs/DEVELOPMENT_EXECUTION_ROUTER.md) — Jules半Loop / [Cloud Work 4色lane・交換](docs/CLOUD_WORK_LANES_INDEX.md) / Local Workの入口（[Jules PR履歴索引](docs/JULES_SEMIAUTO_PR_INDEX.md)へ）
 3. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
 4. [docs/PHASE0_IMPLEMENTATION_CHECKLIST.md](docs/PHASE0_IMPLEMENTATION_CHECKLIST.md)
 5. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary

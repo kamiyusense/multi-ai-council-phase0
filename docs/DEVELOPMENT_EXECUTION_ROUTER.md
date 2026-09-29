@@ -18,13 +18,18 @@ It does not change the future Claude-origin AUTO loop's runtime semantics.
 | Condition | Development route |
 | --- | --- |
 | Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Chat-driven Jules semi-auto (selected color lane) |
-| User explicitly says Work / Cloud Work / Green lane / 緑LINE | Cloud Work Green lane, provided the task is cloud-safe |
-| Jules is unsuitable and cloud GitHub/Web/connected-service work can finish it | Cloud Work Green lane |
+| User explicitly names 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Red **Cloud Work** | Matching [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md), when cloud-safe |
+| User says Work / Cloud Work / Green lane / 緑LINE without another color | Cloud Work Green lane as the unqualified default, when cloud-safe |
+| Jules is unsuitable and cloud GitHub/Web/connected-service work can finish it | Cloud Work Green lane as the default, or the user's explicit Cloud Work color |
+| User asks to replace/recreate a Cloud Work, or says the Work is broken | [Cloud Work replacement support manual](CLOUD_WORK_LANES_INDEX.md#replacement-and-recovery) first; no dispatch from shorthand alone |
 | Windows, WSL, local checkout, Docker, GUI, local process or credential dependency | Complete 🔵 Local Work prompt for the user to paste |
 | Identity, capability, target or evidence cannot be verified | UNKNOWN; do not dispatch |
 
-`Green lane`, `緑LINE`, and `Cloud Work半Loop` mean the Cloud Work
-route. A heart emoji **by itself** with `で開始して` selects a Jules lane;
+`緑LINE` and `Cloud Work半Loop` mean the Cloud Work route; a bare
+`💚で開始して` selects Jules J-GREEN. An explicit `Cloud Workの💚` selects
+Cloud Work Green. Cloud Work has **four independent lanes**, not only Green.
+Use the [4-lane index](CLOUD_WORK_LANES_INDEX.md) for identities and replacement.
+A heart emoji **by itself** with `で開始して` selects a Jules lane;
 `緑LINE` / `Work` explicitly selects Cloud Work. If the intended worker is
 still ambiguous, ask instead of dispatching. An explicit Work request does
 not override a local-only capability boundary. Do not silently hand off a
@@ -80,45 +85,61 @@ Chat must use current branch/claim/command/session/HEAD/tree evidence rather
 than remembered PR, Chat or session numbers. Do not start a Jules task solely
 because a color alias was supplied without a bounded task and safe target.
 
-## Cloud Work Green lane discovery
+## Cloud Work four-lane discovery
 
-1. Search the repository's **OPEN PRs** with label `cloud-green`; inspect
-   the entire result set, including pagination. Do not select by a remembered
-   PR number or by the newest date. Require **exactly one** carrier whose PR
-   metadata/body and protocol identify Green lane v1, command review prefix
-   `[CW_GREEN_V1]`, receipt Conversation comment prefix
-   `[CW_GREEN_RECEIPT_V1]`, and protocol version 1. Check open/unmerged
-   state, label, PR head branch, body, submitted reviews and Conversation
-   comments. Zero, multiple, incomplete, or conflicting identities → UNKNOWN
-   and no dispatch.
-2. From that PR's **current head branch**, read its complete
-   `automation/cloud_work_lanes/carriers/green_v1.md`. Require the same label,
-   version, command and receipt identities. Read the informational
-   `[CW_GREEN_ENTRY_V1]` and `[CW_GREEN_CAPABILITY_BOUNDARY_V1]` comments
-   if present; neither is a command. Existing smoke reviews and their matching
-   receipts are evidence, not permission to replay a command.
-3. Fresh-read the actual target PR, branch and HEAD. Require a non-default
-   target and an exact expected head. Check local-only dependencies **before**
-   dispatch. Follow the carrier protocol: submit exactly one newly created
-   `COMMENT` review whose first line is `[CW_GREEN_V1]`, with a new unique
-   command ID, bounded task, expiry, path scope and required safety fields.
-   A PR Conversation comment or inline comment is not a command. Do not
-   submit a review merely to discover the carrier.
-4. Read back the triggering review, matching terminal
-   `[CW_GREEN_RECEIPT_V1]` Conversation comment and target GitHub state;
-   independently verify paths, diff and tests. A receipt's self-reported PASS
-   alone is insufficient. Never Merge the permanent carrier.
+Read the [Cloud Work 4-lane and replacement index](CLOUD_WORK_LANES_INDEX.md).
+It links all four durable carrier PRs, their current branch protocols and
+worker-state files. Its PR numbers and branch links are recovery snapshots,
+not lookup keys or proof that a worker is active.
 
-Cloud Work is cloud-only. Its current service availability and capabilities
-must also be verified; this document does not create a trigger or prove one
-is running.
+1. Select the user's explicit Cloud Work color; otherwise use Green for an
+   unqualified Work / 緑LINE request or a Jules-unsuitable cloud-safe task.
+   If the intended worker or lane remains ambiguous, clarify before dispatch.
+2. Search **all OPEN PRs** for the selected `cloud-<lane>` label, including
+   pagination. Require exactly one open/unmerged carrier with matching PR
+   body, lane v1 protocol, command review prefix, receipt Conversation comment
+   prefix, branch and worker-state lane identity. Zero, multiple, missing or
+   conflicting candidates → UNKNOWN; never pick one by remembered PR number.
+3. Fresh-read the current carrier head's complete
+   `automation/cloud_work_lanes/carriers/<lane>_v1.md` and
+   `<lane>_worker_state_v1.json`, submitted reviews, terminal receipts,
+   and the target PR/branch/HEAD. For a command, verify
+   `WORKER_GENERATION`, state `active_generation`, and
+   `command.worker_generation` according to the protocol. Do not invent a
+   Work's availability or fixed generation from GitHub state alone.
+4. Only after the cloud-only capability and exact target gates pass, submit
+   one newly created `COMMENT` review with the selected lane's command prefix
+   and required fields. A Conversation/inline comment or a historical smoke
+   review is not a command to replay. Read back the review, matching terminal
+   receipt and target diff/tests independently. Never Merge a carrier PR.
+
+These are **Cloud Work**, not Local Work. Local Windows/WSL/Docker/GUI/
+credential dependencies follow the Local Work boundary below.
+
+## Cloud Work replacement and recovery
+
+For `Cloud Workを交換したい`, `Workが壊れた`,
+`Loop先のWorkを作り直したい`, or `やり方を忘れた`, begin with the
+[ChatGPT replacement support manual](CLOUD_WORK_LANES_INDEX.md#replacement-and-recovery)
+linked from the 4-lane index, **before** the technical runbook. The manual
+leads to the runbook, the selected lane's worker-state and carrier, and the
+read-only proof target. The user need not supply a PR number, generation, SHA,
+label, automation ID or old prompt. Determine them from fresh GitHub/product
+readback; if lane remains unknown, ask only for the color.
+
+Generation cutover is not an ordinary dispatch: verify the new Work first;
+update only that lane's non-default worker-state with guarded write/readback;
+then perform the runbook's one read-only proof and verify the terminal receipt.
+If verification is unavailable, UNKNOWN and no cutover. This router does not
+authorize settings changes, live proof in this documentation task, or blind
+retry.
 
 ## Local Work boundary
 
 Direct user-machine resources include Windows/WSL files, a local checkout or
 worktree, Docker Desktop/daemon/containers, terminal processes, desktop GUI,
 installed apps, saved Claude credentials and credential volumes. Never route
-their proof or execution through Green lane or infer their state from GitHub.
+their proof or execution through any Cloud Work lane or infer their state from GitHub.
 
 Chat should first perform available GitHub fresh readback and review. Then
 provide one complete, directly pasteable prompt under the exact heading
@@ -136,8 +157,12 @@ push/branch deletion. Do not claim a Local Work handoff occurred.
   → claim ledger/validators/workflow → fresh command/work branch/target HEAD/tree.
   A lane-only instruction does not authorize guessing the task or current Loop.
 - `引き継ぎ読んで。Workに投げて、緑LINE使って` → main handover
-  → this router → discover unique Green carrier without PR number
-  → protocol and fresh target → one review command when cloud-safe.
+  → this router → 4-lane index → discover unique Green carrier without PR
+  number → protocol, worker-state and fresh target → one review command when cloud-safe.
+  `Cloud Workの💙で` instead selects Blue, with the same gates.
+- `Cloud Workを交換したい` / `Workが壊れた` / `Loop先を作り直したい`
+  → main handover → router → 4-lane index → ChatGPT replacement support
+  manual **first** → runbook → state/carrier → read-only proof.
 - `これローカル情報必要？` → classify capabilities → if local-only,
   perform available GitHub checks and return the complete 🔵 Local Work prompt.
 
@@ -160,6 +185,6 @@ UNKNOWN with no dispatch.
 
 Current examples and old implementation PR numbers may change. The canonical
 lookup is current main → these linked specifications → current workflow or
-uniquely identified OPEN Green carrier → fresh target and evidence. No PR
+uniquely identified OPEN Cloud Work color carrier → fresh target and evidence. No PR
 number, branch name, Chat/thread/session ID or stored SHA is a correctness
 prerequisite for starting discovery.

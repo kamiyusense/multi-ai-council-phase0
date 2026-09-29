@@ -43,9 +43,12 @@ ChatはGitHubのfresh readback、独立検品、設計、次タスク作成、PA
 UNKNOWN判定と人間のMerge境界を維持する。
 
 - 通常のGitHub実装・test・docs変更: Chat-driven Jules半Loopをデフォルトにする。
-- ユーザーがWork / Cloud Work / Green / 緑LINEを明示した場合、または
-  Julesに不向きでcloud-safeの場合: cloud-green carrierを一意にfresh discovery
-  してGreen laneへ送る。
+- 明示されたCloud Work色laneはそのlaneへ。色指定なしのWork / 緑LINE、
+  またはJulesに不向きでcloud-safeな作業はGreenをdefaultとする。
+  [4-lane・交換索引](CLOUD_WORK_LANES_INDEX.md)から選択laneのcarrierを一意に
+  fresh discoveryし、protocolとworker-stateを確認してから送る。
+- Work交換・故障・再作成は同索引からChatGPT support manualを先に読む。
+  PR番号・generation・SHA・automation IDをユーザーの記憶に依存させない。
 - Windows/WSL/Docker/ローカル認証情報などPC固有資源が必要な場合:
   Green laneを使用せず、GitHub側で可能な確認後、ユーザーがそのまま貼れる
   完全なLocal Work用指示文を
@@ -421,9 +424,12 @@ worker選択と復旧手順は
 - 通常開発のデフォルト実装担当。正確なnon-default branchと範囲で
   静的実装、tests、docs、GitHub checkpointを作る。
 
-### Cloud Work Green lane
-- 明示指定、またはJules不向きでcloud-safeな作業のみ。
-- 固有のcarrier/protocolをfresh discovery。Local Work固有資源は扱わない。
+### Cloud Work 4色lane
+- 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Redは独立したCloud Work carrier。
+  色指定がなければGreenをdefaultとする。現在の一覧と交換入口は
+  [4-lane・交換索引](CLOUD_WORK_LANES_INDEX.md)。
+- 選択laneのcarrier/protocol/worker-stateをfresh discovery。
+  Local Work固有資源は扱わない。carrier PRはMergeしない。
 
 ### Local Work
 - ユーザーPC固有資源が必要なときのみ、Chatから完全な🔵promptを渡し、
@@ -437,7 +443,7 @@ transport / dispatch担当。Council最終判断をしない。
 
 1. current main の README.md と HANDOVER_CURRENT.md
 2. [development execution router](DEVELOPMENT_EXECUTION_ROUTER.md)
-3. 選択したJulesまたはGreen lane仕様とcurrent GitHub target identity
+3. 選択したJulesまたは[Cloud Work 4色lane仕様](CLOUD_WORK_LANES_INDEX.md)とcurrent GitHub target identity（交換依頼ではChatGPT support manualを最初に読む）
 4. docs/PHASE0_IMPLEMENTATION_SPEC.md、checklist、architectureなどのtask資料
 5. このWork自律処理文書（Work / Closed Loopを使う場合）
 
