@@ -216,6 +216,12 @@ This signifies the PREPARED static pipeline checkpoint.
 - human provenance remains unverified.
 - first live provider turn remains unauthorized.
 
+## Static-to-Live Gap Audit Checkpoint
+- Implemented static-to-live gap audit.
+- This checkpoint is strictly PREPARED/static gap-audit status only.
+- No real live blocker is resolved.
+- First live provider turn remains unauthorized.
+
 ## Provenance Trust Source Decision Support Static Checkpoint
 - Implemented static decision support matrix for provenance trust source.
 - This checkpoint is strictly PREPARED/static decision-support status only.
