@@ -255,3 +255,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - No external/read-only/live evidence was acquired.
 - No real live blocker is resolved.
 - First live provider turn remains unauthorized.
+
+## Minimum Permissions Static Inventory Checkpoint
+- Implemented PREPARED static minimum-permissions-inventory status.
+- This checkpoint is strictly PREPARED/static minimum-permissions-inventory status only.
+- No live execution is performed.
+- No permission changes are authorized.
+- common_min_permissions remains unresolved.
