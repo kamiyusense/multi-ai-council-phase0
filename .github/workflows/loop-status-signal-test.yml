@@ -27,6 +27,9 @@ on:
       - automation/command_bus/jules_direct_readback_authenticator.py
       - automation/command_bus/semiauto_stable_identity.py
       - automation/command_bus/github_oidc_claims_policy.py
+      - automation/command_bus/github_oidc_proof_policy_cli.py
+      - automation/command_bus/github_oidc_workflow_evidence_link.py
+      - automation/command_bus/github_oidc_signature_proof.mjs
       - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
       - automation/command_bus/loop_status_development.py
@@ -68,6 +71,9 @@ on:
       - automation/command_bus/tests/test_jules_direct_readback_authenticator.py
       - automation/command_bus/tests/test_semiauto_stable_identity_static_e2e.py
       - automation/command_bus/tests/test_github_oidc_claims_policy.py
+      - automation/command_bus/tests/test_github_oidc_proof_policy_cli.py
+      - automation/command_bus/tests/test_github_oidc_workflow_evidence_link.py
+      - automation/command_bus/tests/test_github_oidc_signature_proof.mjs
       - automation/command_bus/tests/test_claude_loop.py
       - automation/command_bus/tests/test_loop_status_development.py
       - automation/command_bus/tests/test_loop_owner.py
@@ -92,6 +98,8 @@ on:
       - .github/workflows/loop-status-development.yml
       - .github/workflows/loop-status-signal-test.yml
       - docs/LOOP_STATUS_SIGNAL.md
+      - .github/workflows/github-oidc-proof.yml
+      - docs/GITHUB_OIDC_BOUNDED_PROOF_CHECKPOINT.md
 
 permissions:
   contents: read
@@ -128,6 +136,8 @@ jobs:
             automation.command_bus.tests.test_jules_direct_readback_authenticator
             automation.command_bus.tests.test_semiauto_stable_identity_static_e2e
             automation.command_bus.tests.test_github_oidc_claims_policy
+            automation.command_bus.tests.test_github_oidc_proof_policy_cli
+            automation.command_bus.tests.test_github_oidc_workflow_evidence_link
             automation.command_bus.tests.test_claude_loop
             automation.command_bus.tests.test_loop_status_development
             automation.command_bus.tests.test_loop_owner
@@ -172,6 +182,8 @@ jobs:
           node --check automation/command_bus/docker/auth-control-plane/auth_control_plane_proxy.mjs
           node --check automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
           node --test automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+          node --check automation/command_bus/github_oidc_signature_proof.mjs
+          node --test automation/command_bus/tests/test_github_oidc_signature_proof.mjs
           python -m compileall -q automation/command_bus
 
       - name: Parse command-bus JSON schemas

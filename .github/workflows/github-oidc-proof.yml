@@ -1,0 +1,61 @@
+name: Phase 0 bounded OIDC identity proof
+
+# A new branch-only workflow cannot use workflow_dispatch until it exists on
+# default. The reviewed, exact branch push that adds this file is the sole run.
+on:
+  push:
+    branches:
+      - feature/github-oidc-claims-policy-v1
+    paths:
+      - .github/workflows/github-oidc-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  offline-preflight:
+    if: "github.run_attempt == 1 && github.event.head_commit.message == 'feat(security): add bounded one-shot OIDC proof'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Static signature and claims-policy tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          node --check automation/command_bus/github_oidc_signature_proof.mjs
+          node --test automation/command_bus/tests/test_github_oidc_signature_proof.mjs
+          python3 -m unittest \
+            automation.command_bus.tests.test_github_oidc_claims_policy \
+            automation.command_bus.tests.test_github_oidc_proof_policy_cli -v
+
+  proof:
+    needs: offline-preflight
+    if: "github.run_attempt == 1 && github.event.head_commit.message == 'feat(security): add bounded one-shot OIDC proof'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout exact commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Request once, verify GitHub signature and context in memory
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: node automation/command_bus/github_oidc_signature_proof.mjs
+      - name: Save sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: oidc-identity-proof-${{ github.run_id }}
+          path: ${{ runner.temp }}/oidc-proof-evidence.json
+          if-no-files-found: error
+          retention-days: 7
