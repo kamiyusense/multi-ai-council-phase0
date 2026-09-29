@@ -1,0 +1,53 @@
+name: Issue 110 OAuth refresh production plan static proof
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-refresh-production-plan-v1
+    paths:
+      - .github/workflows/issue110-oauth-refresh-production-plan.yml
+      - automation/command_bus/claude_oauth_refresh_production_plan.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_production_plan.mjs
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact plan head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run fixed production-plan tests
+        shell: bash
+        run: |
+          node --test automation/command_bus/tests/test_claude_oauth_refresh_production_plan.mjs
+
+      - name: Verify helper remains network-unwired
+        shell: bash
+        run: |
+          set +e
+          node automation/command_bus/claude_oauth_refresh_helper.mjs run             >/tmp/helper-run.out 2>/tmp/helper-run.err
+          code=$?
+          set -e
+          test "$code" = "78"
+          grep -F "production OAuth transport is not wired" /tmp/helper-run.err
+          grep -F "no network request was attempted" /tmp/helper-run.err
+          echo "OAUTH_REFRESH_PRODUCTION_PLAN_HELPER_UNWIRED_PASS"
+
+      - name: Syntax and diff checks
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_production_plan.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_production_plan.mjs
+          git diff --check
