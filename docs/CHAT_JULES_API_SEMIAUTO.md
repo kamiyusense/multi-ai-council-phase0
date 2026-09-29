@@ -30,10 +30,10 @@ The command prompt must be a bounded execution contract, not an open-ended reque
 
 A green Jules suite is evidence only. Chat must independently review semantics after the result returns.
 
-## Mandatory Loop ID reservation
+## Mandatory Loop ID reservation and parallel lanes
 
-Before creating a new Jules command JSON, Chat MUST first reserve its numeric
-Loop ID by creating exactly one append-only
+Before creating any numbered Relay/Jules command JSON, Chat MUST first reserve
+its numeric Loop ID by creating exactly one append-only
 `automation/command_bus/loop_id_claims/<NNN>.json`.
 
 The reservation is create-only and never recycled. Chat must fresh-read existing
@@ -41,6 +41,28 @@ claims, command records, and matching Jules work branches first. If a claim
 already exists, the number is taken. If claim creation is ambiguous, Chat reads
 back the exact claim path and does not retry blindly. Only after a matching
 claim is durably readable may Chat create the work branch/command for that Loop.
+
+All Jules lanes share one global Loop-number namespace. Lane-local counters are
+forbidden. Parallel examples are `🟥 J-A / Loop 064`,
+`🟦 J-B / Loop 065`, and `🟩 J-C / Loop 066`; the colors and lane IDs are
+presentation/routing metadata only. Correctness does not depend on color.
+
+New claims use schema version 2 and add:
+- `lane_id` (for example `J-A`);
+- `lane_display` (one of `🟥`, `🟦`, `🟩`, `🟨`);
+- `expected_target_tree`.
+
+The durable correctness binding remains the unique Loop claim plus
+`command_id`, `work_branch`, exact target HEAD/tree, and the Jules session
+read back from the dispatch workflow. The command JSON remains
+`JULES_CHAT_SEMIAUTO_V2`; lane metadata is deliberately not added to that
+schema.
+
+Claims 059/060 are retained as legacy schema-v1 records. Claims 061/062/063 are
+schema-v2 `HISTORICAL_BACKFILL` records created only to permanently reserve
+numbers that had already been dispatched before claim enforcement was restored.
+A `HISTORICAL_BACKFILL` record is archival and MUST NOT authorize a new
+dispatch. New numbered dispatches require a schema-v2 `CLAIMED` record.
 
 ## Durable command path
 
@@ -78,9 +100,13 @@ Before the Jules API call it requires:
 2. that file is a newly-added command JSON at the exact command path;
 3. the strict request schema validates;
 4. the request is not expired;
-5. target branch is non-default and safe;
-6. fresh GitHub target HEAD equals `expected_target_head`;
-7. fresh GitHub target tree equals `expected_target_tree`.
+5. for a numbered Relay Loop, the exact `loop_id_claims/<NNN>.json` exists,
+   validates as schema v2, is in `CLAIMED` state, and matches
+   `command_id`, `work_branch`, target branch, expected HEAD/tree,
+   retry=0, and fallback=disabled;
+6. target branch is non-default and safe;
+7. fresh GitHub target HEAD equals `expected_target_head`;
+8. fresh GitHub target tree equals `expected_target_tree`.
 
 Any mismatch stops before Jules submission. There is no workflow retry/fallback.
 
@@ -93,7 +119,7 @@ Chat should then:
 1. fresh-read the current target PR/branch and any Jules-created PR/result;
 2. independently inspect ancestry, changed paths, diff, tests/checks, and prior
    command evidence;
-3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, fresh-read existing Loop-ID claims/commands/work branches, atomically create a new create-only `loop_id_claims/<NNN>.json`, read it back, then construct the task and generate one matching command ID/JSON using the fresh target HEAD/tree;
+3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, fresh-read existing Loop-ID claims/commands/work branches, select the globally unused Loop number, atomically create a new schema-v2 create-only `loop_id_claims/<NNN>.json` with lane metadata and exact target HEAD/tree, read it back, then construct the task and generate one matching command ID/JSON using that same snapshot;
 4. write that one command file to PR #6 branch and read back the new carrier head;
 5. do not resend if the write or subsequent workflow/Jules submission is
    ambiguous;
