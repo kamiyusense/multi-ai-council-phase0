@@ -12,8 +12,10 @@ from current main. It supersedes the former Chat-first / Work fallback
 - Chat retains supervision, independent GitHub inspection, task design, review
   and PASS / FAIL / UNKNOWN judgment.
 - Ordinary GitHub code, tests and docs development uses Chat-driven Jules
-  semi-auto by default; read `docs/CHAT_JULES_API_SEMIAUTO.md` and discover
-  its live carrier from the workflow on main.
+  semi-auto by default. The router leads to the current Color Lane, Semi-Auto,
+  Task Prompt, claim ledger and workflow specifications on the discovered
+  carrier branch. `JA/JB/JC/JD/JG` or a heart-color start request selects only
+  a Jules lane, not a task or Loop number.
 - Explicit Work / Cloud Work / Green / 緑LINE requests, or Jules-unsuitable
   cloud-safe work, use the uniquely discovered `cloud-green` Cloud Work carrier.
 - User-machine-local dependencies require a complete 🔵 Local Work prompt
@@ -31,13 +33,16 @@ semi-auto loop.
 
 Before using the semi-auto route, fresh-read:
 
-- `docs/CHAT_JULES_API_SEMIAUTO.md`
+- [Jules Semi-Auto entry](docs/CHAT_JULES_API_SEMIAUTO.md) and its linked
+  current carrier [Color Lane specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md).
+  First verify the workflow's current carrier branch; this URL is a snapshot.
 
 When a Jules task is successfully accepted and the Chat returns control to the
 human before the result is available, the **last line of the user-facing reply**
 must show:
 
-- Loop number;
+- canonical Jules lane ID and heart-color display for numbered tasks;
+- globally unique Loop number from a read-back schema-v3 claim;
 - verified Jules `session accepted` time in JST;
 - task-size label: `短`, `中`, or `長`;
 - estimated completion window.
@@ -45,7 +50,7 @@ must show:
 Required shape:
 
 ```text
-## **🟣🕒 Loop 039投入：12:59 ／投入タスク目安：中／ 推定完了目安：13:15〜13:25ごろ**
+## **❤️ J-RED / Loop 064投入：06:30 ／委託先：Jules ／投入タスク目安：中 ／推定完了目安：06:46〜06:56ごろ**
 ```
 
 Do not add prose after this footer. Do not append

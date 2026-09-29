@@ -9,7 +9,10 @@ The default implementation worker for ordinary GitHub development is
 Chat-driven Jules semi-auto; Chat independently verifies each result. A Green
 lane request uses Cloud Work only for cloud-safe tasks, and local-machine
 work receives a complete user-pasted Local Work prompt. The user does not need
-to remember PR numbers.
+to remember PR numbers. For numbered Jules tasks, follow the router's
+[Color Lane → Semi-Auto → Task Prompt path](DEVELOPMENT_EXECUTION_ROUTER.md#jules-semi-auto-discovery)
+and its [historical PR index](JULES_SEMIAUTO_PR_INDEX.md); resolve the current
+carrier from the main workflow before reading the carrier-branch protocol.
 
 ## Normal flow
 
