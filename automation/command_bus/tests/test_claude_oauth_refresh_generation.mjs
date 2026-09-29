@@ -8,6 +8,10 @@ import {
   validateRefreshGeneration,
   validateGenerationStart,
   validateCredentialSha256,
+  validateRefreshAuthorizationId,
+  buildGenerationAttemptRecord,
+  buildGenerationPendingReceipt,
+  buildGenerationTerminalRecord,
 } from "../claude_oauth_refresh_generation.mjs";
 
 test("generation names are fixed-width and monotonic", () => {
@@ -157,4 +161,136 @@ test("credential SHA-256 values are strict lowercase hex", () => {
   ]) {
     assert.throws(() => validateCredentialSha256(bad), /64 lowercase hex/);
   }
+});
+
+test("authorization ids use bounded safe characters", () => {
+  for (const good of ["AUTH-1", "issue110.oauth_refresh-001", "A"]) {
+    assert.equal(validateRefreshAuthorizationId(good), good);
+  }
+  for (const bad of [
+    "",
+    " has-space",
+    "contains space",
+    "../escape",
+    "slash/value",
+    "x".repeat(65),
+    null,
+    undefined,
+  ]) {
+    assert.throws(() => validateRefreshAuthorizationId(bad), /authorization id/);
+  }
+});
+
+test("generation records are secret-free and identity-bound", () => {
+  const attempt = buildGenerationAttemptRecord({
+    authorizationId: "AUTH-001",
+    generation: 2,
+    oldCredentialSha256: SHA_A,
+  });
+  const pending = buildGenerationPendingReceipt({
+    authorizationId: "AUTH-001",
+    generation: 2,
+    oldCredentialSha256: SHA_A,
+    pendingCredentialSha256: SHA_B,
+  });
+  const terminal = buildGenerationTerminalRecord({
+    authorizationId: "AUTH-001",
+    generation: 2,
+    oldCredentialSha256: SHA_A,
+    newCredentialSha256: SHA_B,
+    recoveredWithoutNetwork: false,
+  });
+
+  assert.deepEqual(attempt, {
+    schema_version: 2,
+    authorization_id: "AUTH-001",
+    generation: 2,
+    predecessor_generation: 1,
+    state: "STARTED",
+    old_credential_sha256: SHA_A,
+    credential_values_recorded: false,
+    retry: 0,
+    fallback: "disabled",
+  });
+  assert.equal(pending.state, "PENDING_DURABLE");
+  assert.equal(pending.pending_credential_sha256, SHA_B);
+  assert.equal(terminal.state, "COMPLETE");
+  assert.equal(terminal.new_credential_sha256, SHA_B);
+  assert.equal(terminal.recovered_without_network, false);
+  assert.equal(Object.isFrozen(attempt), true);
+  assert.equal(Object.isFrozen(pending), true);
+  assert.equal(Object.isFrozen(terminal), true);
+
+  for (const record of [attempt, pending, terminal]) {
+    const text = JSON.stringify(record).toLowerCase();
+    for (const forbidden of [
+      "access_token",
+      "refresh_token",
+      "authorization_header",
+      "cookie",
+      "request_body",
+      "response_body",
+      "client_secret",
+    ]) {
+      assert.equal(text.includes(forbidden), false, forbidden);
+    }
+  }
+});
+
+test("generation 1 records have no predecessor", () => {
+  const attempt = buildGenerationAttemptRecord({
+    authorizationId: "AUTH-G1",
+    generation: 1,
+    oldCredentialSha256: SHA_A,
+  });
+  const terminal = buildGenerationTerminalRecord({
+    authorizationId: "AUTH-G1",
+    generation: 1,
+    oldCredentialSha256: SHA_A,
+    newCredentialSha256: SHA_B,
+    recoveredWithoutNetwork: true,
+  });
+  assert.equal(attempt.predecessor_generation, null);
+  assert.equal(terminal.predecessor_generation, null);
+  assert.equal(terminal.recovered_without_network, true);
+});
+
+test("record builders reject malformed identity fields", () => {
+  assert.throws(
+    () => buildGenerationAttemptRecord({
+      authorizationId: "../bad",
+      generation: 1,
+      oldCredentialSha256: SHA_A,
+    }),
+    /authorization id/,
+  );
+  assert.throws(
+    () => buildGenerationPendingReceipt({
+      authorizationId: "AUTH",
+      generation: 0,
+      oldCredentialSha256: SHA_A,
+      pendingCredentialSha256: SHA_B,
+    }),
+    /refresh generation/,
+  );
+  assert.throws(
+    () => buildGenerationTerminalRecord({
+      authorizationId: "AUTH",
+      generation: 1,
+      oldCredentialSha256: SHA_A,
+      newCredentialSha256: "B".repeat(64),
+      recoveredWithoutNetwork: false,
+    }),
+    /lowercase hex/,
+  );
+  assert.throws(
+    () => buildGenerationTerminalRecord({
+      authorizationId: "AUTH",
+      generation: 1,
+      oldCredentialSha256: SHA_A,
+      newCredentialSha256: SHA_B,
+      recoveredWithoutNetwork: "false",
+    }),
+    /must be boolean/,
+  );
 });
