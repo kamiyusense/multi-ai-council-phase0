@@ -1,0 +1,39 @@
+name: "Jules Parallel Lane Claims V2 Verification"
+
+on:
+  push:
+    branches:
+      - "verify/jules-parallel-lane-claims-v2-9e67e911"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jules-parallel-lane-claims-v2-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact verification commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 50
+          persist-credentials: false
+
+      - name: Run focused Loop claim tests
+        run: |
+          python -m unittest automation.command_bus.tests.test_loop_id_claim -v
+          python -m unittest automation.command_bus.tests.test_jules_semiauto_workflow -v
+          python -m unittest automation.command_bus.tests.test_jules_api_request -v
+
+      - name: Run command bus regression suite
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+
+      - name: Compile command bus
+        run: python -m compileall -q automation/command_bus
+
+      - name: Diff whitespace check
+        run: git diff --check 0e0ef5919444eb4d6205a9263754fa6aee579dc3 9e67e911e5f7e2d62fb431bbd3f5865bafc05980
