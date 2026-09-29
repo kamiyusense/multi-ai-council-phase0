@@ -5,6 +5,8 @@ import { pathToFileURL } from "node:url";
 const DISPATCH_HEADER = "X-Phase0-Dispatch-ID";
 const REQUIRED_ENV = Object.freeze({
   ANTHROPIC_BASE_URL: "http://gate:8080",
+  HTTPS_PROXY: "http://auth-control-proxy:3128",
+  CLAUDE_CODE_PROXY_RESOLVES_HOSTS: "1",
   PHASE0_TRANSPORT_MODE: "CONTAINER_INTERNAL",
   CLAUDE_CODE_MAX_RETRIES: "0",
   CLAUDE_CODE_MAX_TURNS: "1",
@@ -30,8 +32,8 @@ const FORBIDDEN_ENV = new Set([
   "CLAUDE_CODE_OAUTH_TOKEN",
   "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
   "HTTP_PROXY",
-  "HTTPS_PROXY",
   "ALL_PROXY",
+  "NO_PROXY",
   "NODE_OPTIONS",
   "NODE_PATH",
 ]);
@@ -48,8 +50,12 @@ export function prepareClaudeInvocation(env = process.env, args = process.argv.s
   for (const [name, expected] of Object.entries(REQUIRED_ENV)) {
     if (env[name] !== expected) blocked(`required setting mismatch: ${name}`);
   }
-  for (const name of FORBIDDEN_ENV) {
-    if (Object.hasOwn(env, name)) blocked(`credential, proxy, or Node injection variable is forbidden: ${name}`);
+  for (const name of Object.keys(env)) {
+    const normalizedName = name.toUpperCase();
+    if (FORBIDDEN_ENV.has(normalizedName)
+        || (normalizedName === "HTTPS_PROXY" && name !== "HTTPS_PROXY")) {
+      blocked(`credential, proxy, or Node injection variable is forbidden: ${name}`);
+    }
   }
   if (Object.hasOwn(env, "ANTHROPIC_CUSTOM_HEADERS") || Object.hasOwn(env, "CLAUDE_CODE_GATEWAY_HINT_HEADERS")) {
     blocked("dispatch headers are launcher-owned and must not be injected");

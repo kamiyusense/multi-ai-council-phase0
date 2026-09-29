@@ -1,5 +1,10 @@
 # Claude Phase 0 Admission Gate — static design and evidence
 
+Issue #110's OAuth control-plane proxy candidate and its limits are documented
+in [`CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md`](CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md).
+That candidate keeps this Gate as the only model API route; it is static and
+not approved for LIVE use.
+
 Status: static implementation and local fake-provider regression only. This is
 not approval or readiness for Claude, Anthropic, Jules, or any external model.
 
@@ -116,8 +121,20 @@ The deterministic validator requires:
   `privileged: false`, binds only to internal address `172.29.247.2:8080`
   (never `0.0.0.0`), production store and production upstream. It cannot use
   the fake upstream factory in container mode.
+* Auth control-plane proxy: internal and egress bridge networks, no published
+  ports, non-root, no mounts or environment overrides. It accepts only the
+  exact `platform.claude.com:443` CONNECT authority; it explicitly denies the
+  model API authority `api.anthropic.com:443`.
 * Internal network: bridge with `internal: true`; Claude is not attached to
-  the separate egress network. Gate alone joins both.
+  the separate egress network. Gate and the narrow auth proxy join both.
+
+Claude's only proxy environment is the exact internal `HTTPS_PROXY` URL for
+the auth control-plane sidecar. The launcher blocks HTTP_PROXY, ALL_PROXY,
+NO_PROXY, and proxy URL overrides. Its model API base remains the Gate.
+This hostname-level CONNECT policy cannot inspect an encrypted request path or
+TLS SNI/Host mismatch; the static candidate therefore remains **not live-ready**
+until a reviewed enforcement design resolves that limitation. See the linked
+Issue #110 design for evidence levels and the A/B comparison.
 
 This follows Docker's documented Compose networking ([networking guide](https://docs.docker.com/compose/how-tos/networking/),
 [network reference](https://docs.docker.com/reference/compose-file/networks/)).

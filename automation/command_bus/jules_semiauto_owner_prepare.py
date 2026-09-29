@@ -63,6 +63,7 @@ def prepare_jules_semiauto_acquire(
 ) -> JulesSemiAutoAcquireBundle:
     validate_request(request, now=now)
     context = _validate_context(durable_context)
+    _validate_origin_correlation(request, context)
     target = _normalize_target(target_pr_readback)
 
     if target["repo"] != request["target_repo"]:
@@ -216,6 +217,25 @@ def prepare_jules_semiauto_acquire(
         provider_observation_input=provider_observation_input,
         transition_request=transition_request,
     )
+
+
+def _validate_origin_correlation(
+    request: dict[str, Any],
+    context: dict[str, Any],
+) -> None:
+    """Bind V2 durable origin correlation without promoting its loop identity.
+
+    JULES_CHAT_SEMIAUTO_V2 carries the Claude/controller origin correlation.
+    The durable ACQUIRE must use that exact correlation_id.  origin_loop_id is
+    deliberately *not* treated as proof of the Control Tower stable loop_id;
+    durable loop identity still requires the separate adoption contract.
+    """
+
+    if request.get("profile") != "JULES_CHAT_SEMIAUTO_V2":
+        return
+    origin_correlation = request.get("origin_correlation_id")
+    if origin_correlation != context["correlation_id"]:
+        raise ValueError("durable correlation_id must match V2 origin_correlation_id")
 
 
 def _validate_context(value: dict[str, Any]) -> dict[str, Any]:

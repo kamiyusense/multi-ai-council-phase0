@@ -185,6 +185,50 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
             request()["command_id"],
         )
 
+    def test_v2_origin_correlation_is_bound_to_durable_context(self):
+        req = request(
+            profile="JULES_CHAT_SEMIAUTO_V2",
+            origin_loop_id="claude-night-loop",
+            origin_round=3,
+            origin_correlation_id="semi-durable-001",
+            origin_generation=1,
+        )
+        prepared = bundle(request=req)
+        self.assertEqual(
+            prepared.owner_event["correlation_id"],
+            req["origin_correlation_id"],
+        )
+        self.assertEqual(
+            prepared.owner_event["loop_id"],
+            "chatgpt-semi-auto-v1",
+        )
+
+    def test_v2_origin_correlation_mismatch_fails_closed(self):
+        req = request(
+            profile="JULES_CHAT_SEMIAUTO_V2",
+            origin_loop_id="claude-night-loop",
+            origin_round=3,
+            origin_correlation_id="origin-correlation-002",
+            origin_generation=1,
+        )
+        with self.assertRaisesRegex(ValueError, "origin_correlation_id"):
+            bundle(request=req)
+
+    def test_v2_origin_loop_id_is_not_promoted_to_durable_loop_id(self):
+        req = request(
+            profile="JULES_CHAT_SEMIAUTO_V2",
+            origin_loop_id="claude-origin-loop",
+            origin_round=3,
+            origin_correlation_id="semi-durable-001",
+            origin_generation=1,
+        )
+        prepared = bundle(request=req)
+        self.assertEqual(prepared.owner_event["loop_id"], "chatgpt-semi-auto-v1")
+        self.assertNotEqual(
+            prepared.owner_event["loop_id"],
+            req["origin_loop_id"],
+        )
+
     def test_human_loop_number_is_not_used_as_durable_round_or_loop_id(self):
         prepared = bundle()
         self.assertEqual(prepared.initial_state["round"], 0)
