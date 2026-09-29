@@ -39,9 +39,22 @@ class TestModelVerificationProofContract(unittest.TestCase):
             # blocker_state is the last column
             self.assertEqual(columns[-1], "BLOCKED_UNKNOWN")
 
-            # check EVIDENCE_REQUIRED where appropriate
+            # All current evidence requirement columns remain conservative.
             for state_col in columns[1:6]:
                 self.assertEqual(state_col, "EVIDENCE_REQUIRED")
+            self.assertEqual(columns[6], "BLOCKED_UNKNOWN")
+            self.assertEqual(columns[7], "EVIDENCE_REQUIRED")
+
+    def test_state_vocabulary_is_bounded(self):
+        provider_rows = [
+            line for line in self.contract_text.split("\n")
+            if "| openai |" in line or "| anthropic |" in line or "| google |" in line
+        ]
+        allowed = {"UNKNOWN", "STATIC_PREPARED", "EVIDENCE_REQUIRED", "BLOCKED_UNKNOWN"}
+        for row in provider_rows:
+            columns = [col.strip() for col in row.split("|")[1:-1]]
+            for value in columns[1:]:
+                self.assertIn(value, allowed)
 
     def test_requested_identity_insufficient(self):
         # tests must assert requested/configured identity is explicitly insufficient by itself
