@@ -6,6 +6,7 @@ const DISPATCH_HEADER = "X-Phase0-Dispatch-ID";
 const REQUIRED_ENV = Object.freeze({
   ANTHROPIC_BASE_URL: "http://gate:8080",
   HTTPS_PROXY: "http://auth-control-proxy:3128",
+  NO_PROXY: "gate",
   CLAUDE_CODE_PROXY_RESOLVES_HOSTS: "1",
   PHASE0_TRANSPORT_MODE: "CONTAINER_INTERNAL",
   CLAUDE_CODE_MAX_RETRIES: "0",
@@ -33,7 +34,6 @@ const FORBIDDEN_ENV = new Set([
   "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
   "HTTP_PROXY",
   "ALL_PROXY",
-  "NO_PROXY",
   "NODE_OPTIONS",
   "NODE_PATH",
 ]);
@@ -53,7 +53,8 @@ export function prepareClaudeInvocation(env = process.env, args = process.argv.s
   for (const name of Object.keys(env)) {
     const normalizedName = name.toUpperCase();
     if (FORBIDDEN_ENV.has(normalizedName)
-        || (normalizedName === "HTTPS_PROXY" && name !== "HTTPS_PROXY")) {
+        || (normalizedName === "HTTPS_PROXY" && name !== "HTTPS_PROXY")
+        || (normalizedName === "NO_PROXY" && name !== "NO_PROXY")) {
       blocked(`credential, proxy, or Node injection variable is forbidden: ${name}`);
     }
   }
