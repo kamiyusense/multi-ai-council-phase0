@@ -59,7 +59,10 @@ function readJson(filePath) {
 }
 
 function assertPrivateRegularFile(filePath) {
-  const stat = fs.statSync(filePath);
+  const stat = fs.lstatSync(filePath);
+  if (stat.isSymbolicLink()) {
+    throw new Error("BLOCKED: credential path must not be a symbolic link");
+  }
   if (!stat.isFile()) throw new Error("BLOCKED: credential path is not a regular file");
   if ((stat.mode & 0o077) !== 0) {
     throw new Error("BLOCKED: credential file must not be group/world accessible");
