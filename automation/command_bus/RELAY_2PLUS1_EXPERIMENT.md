@@ -836,3 +836,49 @@ Cycle members:
 - live provider/model/API execution: no
 - purpose: close the current static readiness chain with an independent regression gate; STATIC complete must not imply human provenance, execution authorization, or first-live permission
 
+### Loop 052 — medium — COMPLETE / ACCEPTED AFTER AUDIT TEST CORRECTION
+- task: static end-to-end readiness-chain regression/audit across snapshot -> approval packet -> structural approval receipt
+- Jules session: `6731871966890280678`
+- Jules PR: #125
+- isolated base: `jules-work/relay-dev-loop-052-readiness-chain-audit`
+- canonical snapshot parent: `fdb09bfadc5c9f699900facd8aa55a271c05d240`
+- initial Jules candidate: `96461706e1e8245e2d4db2f3a1a9f5e9b78a6ced`
+- corrected isolated candidate: `102673afab68483289a8346d45efd033e6f945e2`
+- accepted canonical head: `d64345d67a52cd135858a667dce1d3e709e8127c`
+- final_accept: yes
+- production implementation changes: none
+- allowed-path result: PASS (tests/docs/checkpoint only)
+- initial semantic audit gaps despite green tests:
+  - snapshot tamper was not injected directly into the approval boundary
+  - approval provider-key tamper was not independently exercised
+  - receipt timestamp/target-hash tamper matrix was incomplete
+  - the no-real-world-claim test was vacuous (assertTrue(True)) rather than checking durable docs
+  - hash binding did not recompute every output digest independently
+- initial exact validation run `36507344054`: SUCCESS; 482 tests PASS; compileall PASS; diff-check PASS, but semantic review rejected the audit as incomplete
+- Chat correction commits on isolated candidate: 1
+- corrected candidate exact validation run `36507497631`: SUCCESS
+- canonical exact validation run `36507594139`: SUCCESS
+- exact validation: 484 tests PASS; compileall PASS; diff-check PASS
+- corrected audit now directly verifies:
+  - unresolved inventory remains blocked end-to-end
+  - synthetic complete evidence stops at READY_FOR_HUMAN_APPROVAL / REQUEST_HUMAN_APPROVAL / STRUCTURALLY_VALID_APPROVAL_RECORD only
+  - reject/defer produce NO_LIVE_ACTION
+  - APPROVE requires one_shot=true
+  - snapshot, approval, and receipt digests recompute exactly
+  - direct snapshot tamper is rejected at the approval boundary
+  - direct approval tamper is rejected at the receipt boundary
+  - receipt scope/timestamp/target-hash tamper fails closed
+  - equivalent dict ordering and identical inputs are deterministic
+  - evidence_ref changes hashes without renderer leakage
+  - renderers preserve static/no-live/no-provenance/no-authorization wording
+  - runtime mappings never expose true execution/dispatch/live/approval/provenance flags
+  - durable docs explicitly deny real-world completion or blocker resolution
+- canonical publication: exact three validated blobs copied into one normal fast-forward canonical commit
+- candidate/canonical three-file blob equality after publication: PASS
+- retry=0 / fallback=disabled
+- live provider/model/API execution: no
+- human provenance verified: no
+- execution authorized: no
+- merge: no
+- isolation result: PASS
+
