@@ -1,0 +1,70 @@
+name: Issue 110 OAuth helper Compose candidate contract
+
+on:
+  push:
+    branches:
+      - static/issue110-oauth-helper-compose-candidate-v1
+    paths:
+      - .github/workflows/issue110-oauth-helper-compose-candidate.yml
+      - automation/command_bus/claude_oauth_refresh_compose_candidate.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_compose_candidate.mjs
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+      - automation/command_bus/claude_oauth_refresh_topology_contract.mjs
+      - automation/command_bus/claude_oauth_refresh_runtime_observer.mjs
+  pull_request:
+    branches:
+      - observe/issue110-oauth-readonly-runtime-preflight-v1
+    paths:
+      - .github/workflows/issue110-oauth-helper-compose-candidate.yml
+      - automation/command_bus/claude_oauth_refresh_compose_candidate.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_compose_candidate.mjs
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+      - automation/command_bus/claude_oauth_refresh_topology_contract.mjs
+      - automation/command_bus/claude_oauth_refresh_runtime_observer.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+
+      - name: Run candidate and PR 155-160 regression tests
+        shell: bash
+        run: >-
+          node --test
+          automation/command_bus/tests/test_claude_oauth_refresh_compose_candidate.mjs
+          automation/command_bus/tests/test_claude_oauth_refresh_helper.mjs
+          automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs
+          automation/command_bus/tests/test_claude_oauth_refresh_mock_preflight.mjs
+          automation/command_bus/tests/test_claude_oauth_refresh_runtime_observer.mjs
+          automation/command_bus/tests/test_claude_oauth_refresh_production_adapter.mjs
+          automation/command_bus/tests/test_claude_oauth_generation_transport_contract.mjs
+          automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs
+
+      - name: Verify candidate-only boundaries
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_compose_candidate.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_compose_candidate.mjs
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          compose = json.loads(Path("automation/command_bus/claude_gate_compose.yaml").read_text())
+          assert "oauth-refresh-helper" not in compose["services"]
+          print("PRODUCTION_COMPOSE_HELPER_ABSENT_PASS")
+          PY
+          git diff --check
