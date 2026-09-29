@@ -142,11 +142,12 @@ def safe_failure_code(
         if reason == "OIDC claim mismatch: workflow_ref":
             return "OIDC_WORKFLOW_CLAIM_REF_REJECTED"
         if reason == "unexpected job_workflow_ref; explicit job_workflow_ref is required":
-            return (
-                "OIDC_WORKFLOW_JOB_REF_EMPTY_REJECTED"
-                if claims["job_workflow_ref"] == ""
-                else "OIDC_WORKFLOW_JOB_REF_PRESENT_REJECTED"
-            )
+            job_ref = claims.get("job_workflow_ref")
+            if job_ref == "":
+                return "OIDC_WORKFLOW_JOB_REF_EMPTY_REJECTED"
+            if job_ref == claims.get("workflow_ref"):
+                return "OIDC_WORKFLOW_JOB_REF_MATCHES_WORKFLOW_REF_REJECTED"
+            return "OIDC_WORKFLOW_JOB_REF_DIFFERS_FROM_WORKFLOW_REF_REJECTED"
     if stage == "REF_SHA" and reason == "OIDC claim mismatch: workflow_sha":
         return "OIDC_REF_SHA_CLAIM_WORKFLOW_SHA_REJECTED"
     return generic
