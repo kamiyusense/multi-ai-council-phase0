@@ -43,10 +43,12 @@ class JulesDirectReadbackAuthenticator:
         session_reader: JulesSessionReader | None,
         target_reader: JulesTargetReader | None,
         clock: JulesAuthenticatorClock | None,
+        expected_session_create_time: str | None = None,
     ):
         self.session_reader = session_reader
         self.target_reader = target_reader
         self.clock = clock
+        self.expected_session_create_time = expected_session_create_time
 
     def authenticate(
         self,
@@ -91,12 +93,22 @@ class JulesDirectReadbackAuthenticator:
                 return None
             if "id" in session and session.get("id") != session_id:
                 return None
-            if session.get("createTime") != source["observed_at"]:
+            # A later GET is bound to its updateTime. Acceptance-time sources
+            # without updateTime remain bound to createTime only.
+            if self.expected_session_create_time is not None and (
+                _time(session.get("createTime")) != _time(self.expected_session_create_time)
+            ):
+                return None
+            update_time = session.get("updateTime")
+            if update_time is None:
+                if session.get("createTime") != source["observed_at"]:
+                    return None
+            elif _time(update_time) != observed or _time(session.get("createTime")) > observed:
                 return None
 
             state = session.get("state")
             if source["provider_state"] == "RUNNING":
-                if state not in _RUNNING_JULES_STATES:
+                if state not in _RUNNING_JULES_STATES | {"RUNNING"}:
                     return None
             else:
                 return None
