@@ -106,7 +106,6 @@ args=(
   --entrypoint claude
   "$IMAGE"
   --safe-mode
-  --no-session-persistence
   --tools ""
   --mcp-config '{"mcpServers":{}}'
   --strict-mcp-config
