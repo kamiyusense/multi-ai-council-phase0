@@ -1,6 +1,11 @@
 # Cloud Work replacement handover v1
 
-This is the canonical support/runbook for replacing a Cloud Work lane without depending on an old Chat, thread, browser session, or old Work instance.
+This is the canonical execution/runbook for replacing a Cloud Work lane without depending on an old Chat, thread, browser session, or old Work instance.
+
+For **ChatGPT-side user guidance, lane discovery, exact blue-heading copy/paste wording, prompt generation, and support behavior when the user remembers nothing**, read first:
+`automation/cloud_work_lanes/CHATGPT_CLOUD_WORK_REPLACEMENT_SUPPORT_V1.md`
+
+The Chat-support manual owns the user-facing guidance. This file owns the replacement execution mechanics. GitHub current state remains authoritative.
 
 ## Goal
 
