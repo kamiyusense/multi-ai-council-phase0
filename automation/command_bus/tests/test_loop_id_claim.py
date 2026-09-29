@@ -193,6 +193,27 @@ class LoopIdClaimTests(unittest.TestCase):
             self.assertEqual(loaded["lane_id"], "J-A")
             self.assertEqual(loaded["lane_display"], "🟥")
 
+    def test_historical_backfills_match_existing_commands(self):
+        claims_dir = Path("automation/command_bus/loop_id_claims")
+        commands_dir = Path("automation/command_bus/jules_api_requests")
+        for loop_id in ("061", "062", "063"):
+            loaded_claim = json.loads(
+                (claims_dir / f"{loop_id}.json").read_text(encoding="utf-8")
+            )
+            command_path = commands_dir / f"{loaded_claim['command_id']}.json"
+            self.assertTrue(command_path.is_file())
+            loaded_command = json.loads(command_path.read_text(encoding="utf-8"))
+            for key in (
+                "command_id",
+                "target_branch",
+                "expected_target_head",
+                "expected_target_tree",
+                "work_branch",
+                "retry",
+                "fallback",
+            ):
+                self.assertEqual(loaded_claim[key], loaded_command[key])
+
     def test_non_numbered_command_does_not_require_loop_claim(self):
         with tempfile.TemporaryDirectory() as tmp:
             command_path = Path(tmp) / "command.json"
