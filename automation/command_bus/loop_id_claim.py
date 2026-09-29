@@ -11,8 +11,28 @@ LOOP_COMMAND_RE = re.compile(
     r"^relay-dev-loop-(?P<loop_id>[0-9]{3,6})-(?P<task_id>[a-z0-9][a-z0-9._-]{0,63})$"
 )
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-LANE_ID_RE = re.compile(r"^J-[A-Z0-9][A-Z0-9-]{0,15}$")
-LANE_DISPLAYS = {"🟥", "🟦", "🟩", "🟨"}
+LEGACY_LANE_ID_RE = re.compile(r"^J-[A-Z0-9][A-Z0-9-]{0,15}$")
+LEGACY_LANE_DISPLAYS = {"🟥", "🟦", "🟩", "🟨"}
+LANE_DISPLAY_BY_ID = {
+    "J-RED": "❤️",
+    "J-BLUE": "💙",
+    "J-YELLOW": "💛",
+    "J-GREEN": "💚",
+}
+LANE_ALIASES = {
+    "JA": "J-RED",
+    "JB": "J-BLUE",
+    "JC": "J-YELLOW",
+    "RED": "J-RED",
+    "BLUE": "J-BLUE",
+    "YELLOW": "J-YELLOW",
+    "GREEN": "J-GREEN",
+    "❤️": "J-RED",
+    "💙": "J-BLUE",
+    "💛": "J-YELLOW",
+    "💚": "J-GREEN",
+}
+DISPATCH_CLAIM_SCHEMA_VERSION = 3
 DUPLICATE_GUARD = "one file per loop number; create-only; if exists choose a new number"
 
 V1_REQUIRED_KEYS = {
@@ -36,6 +56,7 @@ V2_REQUIRED_KEYS = V1_REQUIRED_KEYS | {
     "lane_display",
     "expected_target_tree",
 }
+V3_REQUIRED_KEYS = V2_REQUIRED_KEYS
 
 DISPATCHABLE_STATE = "CLAIMED"
 ARCHIVAL_STATES = {"CLAIMED", "HISTORICAL_BACKFILL"}
@@ -57,6 +78,26 @@ def _validate_sha(value: Any, field: str) -> str:
     if not isinstance(value, str) or not SHA_RE.fullmatch(value):
         raise ValueError(f"invalid {field}")
     return value
+
+
+def normalize_lane_alias(value: Any) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("lane alias must be a non-empty string")
+    normalized = value.strip().upper()
+    if value.strip() in LANE_ALIASES:
+        return LANE_ALIASES[value.strip()]
+    if normalized in LANE_ALIASES:
+        return LANE_ALIASES[normalized]
+    if normalized in LANE_DISPLAY_BY_ID:
+        return normalized
+    raise ValueError("unknown Jules lane alias")
+
+
+def lane_display_for(lane_id: str) -> str:
+    try:
+        return LANE_DISPLAY_BY_ID[lane_id]
+    except KeyError as exc:
+        raise ValueError("unknown Jules lane_id") from exc
 
 
 def extract_numbered_loop(command_id: Any) -> tuple[str, str] | None:
@@ -83,6 +124,8 @@ def validate_claim(claim: dict[str, Any]) -> dict[str, Any]:
         required = V1_REQUIRED_KEYS
     elif schema_version == 2:
         required = V2_REQUIRED_KEYS
+    elif schema_version == 3:
+        required = V3_REQUIRED_KEYS
     else:
         raise ValueError("unsupported claim schema_version")
 
@@ -119,12 +162,24 @@ def validate_claim(claim: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("claim target_branch required")
 
     _validate_sha(claim["expected_target_head"], "expected_target_head")
-    if schema_version == 2:
+    if schema_version in {2, 3}:
         _validate_sha(claim["expected_target_tree"], "expected_target_tree")
-        if not isinstance(claim["lane_id"], str) or not LANE_ID_RE.fullmatch(claim["lane_id"]):
+
+    if schema_version == 2:
+        if (
+            not isinstance(claim["lane_id"], str)
+            or not LEGACY_LANE_ID_RE.fullmatch(claim["lane_id"])
+        ):
+            raise ValueError("invalid legacy lane_id")
+        if claim["lane_display"] not in LEGACY_LANE_DISPLAYS:
+            raise ValueError("invalid legacy lane_display")
+
+    if schema_version == 3:
+        lane_id = claim["lane_id"]
+        if lane_id not in LANE_DISPLAY_BY_ID:
             raise ValueError("invalid lane_id")
-        if claim["lane_display"] not in LANE_DISPLAYS:
-            raise ValueError("invalid lane_display")
+        if claim["lane_display"] != lane_display_for(lane_id):
+            raise ValueError("lane_id/lane_display mismatch")
 
     if claim["state"] not in ARCHIVAL_STATES:
         raise ValueError("invalid claim state")
@@ -142,7 +197,7 @@ def verify_command_claim(
     request: dict[str, Any],
     claim: dict[str, Any],
     *,
-    require_dispatchable_v2: bool = True,
+    require_dispatchable_current: bool = True,
 ) -> dict[str, Any]:
     parsed = extract_numbered_loop(request.get("command_id"))
     if parsed is None:
@@ -164,9 +219,12 @@ def verify_command_claim(
     if validated["retry"] != request.get("retry") or validated["fallback"] != request.get("fallback"):
         raise ValueError("command/claim retry/fallback mismatch")
 
-    if require_dispatchable_v2:
-        if validated["schema_version"] != 2:
-            raise ValueError("numbered dispatch requires claim schema_version 2")
+    if require_dispatchable_current:
+        if validated["schema_version"] != DISPATCH_CLAIM_SCHEMA_VERSION:
+            raise ValueError(
+                f"numbered dispatch requires claim schema_version "
+                f"{DISPATCH_CLAIM_SCHEMA_VERSION}"
+            )
         if validated["state"] != DISPATCHABLE_STATE:
             raise ValueError("numbered dispatch requires a pre-dispatch CLAIMED claim")
         if validated["expected_target_tree"] != request.get("expected_target_tree"):
@@ -179,7 +237,7 @@ def verify_claim_file(
     request_path: str | Path,
     claims_dir: str | Path,
     *,
-    require_dispatchable_v2: bool = True,
+    require_dispatchable_current: bool = True,
 ) -> dict[str, Any] | None:
     request_path = Path(request_path)
     claims_dir = Path(claims_dir)
@@ -202,7 +260,7 @@ def verify_claim_file(
     return verify_command_claim(
         request,
         claim,
-        require_dispatchable_v2=require_dispatchable_v2,
+        require_dispatchable_current=require_dispatchable_current,
     )
 
 
@@ -238,7 +296,7 @@ def main() -> int:
     claim = verify_claim_file(
         args.request_path,
         args.claims_dir,
-        require_dispatchable_v2=not args.allow_legacy_or_backfill,
+        require_dispatchable_current=not args.allow_legacy_or_backfill,
     )
     if args.github_output:
         _write_github_output(args.github_output, claim)
