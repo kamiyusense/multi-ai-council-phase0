@@ -1088,3 +1088,41 @@ Cycle members:
 - workflow permission/auth/billing changes: no
 - live provider/model/API execution: no
 
+### Loop 056 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: tests/docs-only static-to-live remaining-gap audit
+- Jules session: `7291340694326065413`
+- Jules PR: #139
+- isolated base: `jules-work/relay-dev-loop-056-static-to-live-gap-audit`
+- canonical snapshot parent: `79e2daab289df52052773712135c269c60920735`
+- initial Jules candidate: `e1bbda72796de0d40cce8cd791b075d61b73cdde`
+- corrected isolated candidate: `926369882adfab7991e7c612467688d3097d2717`
+- accepted canonical head: `995a16e65b9aa700122167c90a3b73989bbd53b6`
+- prompt contract: `docs/JULES_TASK_PROMPT_SPEC.md` read and applied before dispatch
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (gap-audit doc, checkpoint, test only)
+- initial exact validation run `36521683976`: SUCCESS, but semantic review rejected the audit because provider-specific blocker rows were not individually source-bound and common blocker matching used lossy string transformations
+- Chat corrections:
+  - expanded to exact 30 gap_id rows covering 8 common blockers, 4 OpenAI/Codex blockers, 6 Claude blockers, 6 Antigravity blockers, Gemini CLI deferred boundary, 4 provenance trust-source decision rows, and the final first-live human approval gate
+  - bound each common/provider blocker row to exact checked-in canonical source wording
+  - parsed trust-source candidate rows directly instead of testing category names only
+  - added exact expected gap-id set to make missing/extra audit rows fail visibly
+  - added explicit current_state/class/source/forbidden checks
+  - normalized Markdown whitespace in tests so semantic checks do not fail on line wrapping
+- first corrected exact validation run `36521827060`: FAIL because new tests assumed contiguous Markdown text and backtick-free trust-source wording
+- second corrected exact validation run `36521904276`: FAIL on one remaining Actions classification wording difference
+- failure causes were read back before further validation; only proven test/doc wording issues were corrected
+- corrected candidate exact validation run `36521971640`: SUCCESS
+- canonical exact validation run `36522072989`: SUCCESS
+- exact validation: 578 tests PASS; compileall PASS; diff-check PASS
+- canonical publication: exact three validated blobs copied into one normal fast-forward canonical commit
+- candidate/canonical three-file blob equality after publication: PASS
+- current audit is checked-in evidence only; no fresh external/provider verification
+- real live blockers resolved: no
+- provenance architecture choice: no
+- workflow permission/auth/billing changes: no
+- live provider/model/API execution: no
+- retry=0 for Jules dispatch / fallback=disabled
+- merge: no
+- isolation result: PASS
+
