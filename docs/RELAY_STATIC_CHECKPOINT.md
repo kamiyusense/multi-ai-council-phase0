@@ -240,4 +240,8 @@ This signifies the PREPARED static pipeline checkpoint.
 ## Timeout Static Inventory Checkpoint
 - Implemented PREPARED static timeout-inventory status.
 - This checkpoint is strictly PREPARED/static timeout-inventory status only.
-- No live execution is performed, and provider-specific exact finite live timeout values remain UNKNOWN.
+- No live execution is performed.
+- No production/provider timeout value is selected or authorized.
+- common_timeout remains unresolved.
+- provider-specific exact finite live timeout values remain UNKNOWN.
+- First live provider/model turn remains separately human-approved.
