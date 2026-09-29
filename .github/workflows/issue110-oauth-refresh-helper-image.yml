@@ -1,0 +1,93 @@
+name: Issue 110 OAuth refresh helper image static proof
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-refresh-helper-image-v1
+    paths:
+      - .github/workflows/issue110-oauth-refresh-helper-image.yml
+      - automation/command_bus/docker/oauth-refresh-helper/Dockerfile
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact image head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Build dedicated helper image
+        shell: bash
+        run: |
+          docker build             -t phase0-oauth-refresh-helper:test             -f automation/command_bus/docker/oauth-refresh-helper/Dockerfile             automation/command_bus
+
+      - name: Verify image identity and no Claude package
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          raw=subprocess.check_output([
+              "docker","image","inspect","phase0-oauth-refresh-helper:test"
+          ], text=True)
+          image=json.loads(raw)[0]
+          config=image["Config"]
+          assert config["User"] == "1000:1000", config["User"]
+          assert config["Entrypoint"] == ["node", "/opt/phase0/claude_oauth_refresh_helper.mjs"]
+          assert not config.get("ExposedPorts")
+          env=config.get("Env") or []
+          forbidden=("ANTHROPIC_API_KEY","ANTHROPIC_AUTH_TOKEN","CLAUDE_CODE_OAUTH_TOKEN")
+          assert not any(any(item.startswith(name+"=") for name in forbidden) for item in env)
+          print("OAUTH_REFRESH_HELPER_IMAGE_IDENTITY_PASS")
+          PY
+
+          set +e
+          docker run --rm --network none             --entrypoint sh             phase0-oauth-refresh-helper:test             -c 'command -v claude >/dev/null 2>&1'
+          claude_code=$?
+          docker run --rm --network none             --entrypoint sh             phase0-oauth-refresh-helper:test             -c 'npm list -g --depth=0 @anthropic-ai/claude-code >/dev/null 2>&1'
+          npm_code=$?
+          set -e
+          test "$claude_code" != "0"
+          test "$npm_code" != "0"
+          echo "OAUTH_REFRESH_HELPER_NO_CLAUDE_PACKAGE_PASS"
+
+      - name: Verify hardened prepare-only execution
+        shell: bash
+        run: |
+          docker run --rm             --network none             --read-only             --cap-drop ALL             --security-opt no-new-privileges:true             phase0-oauth-refresh-helper:test             plan >/tmp/helper-plan.json
+
+          python - <<'PY'
+          import json
+          p=json.load(open("/tmp/helper-plan.json"))
+          assert p["mode"] == "PREPARE_ONLY"
+          assert p["production_transport_wired"] is False
+          assert p["retry"] == 0
+          assert p["fallback"] == "disabled"
+          assert p["secret_values_logged"] is False
+          print("OAUTH_REFRESH_HELPER_IMAGE_PREPARE_ONLY_PASS")
+          PY
+
+          set +e
+          docker run --rm             --network none             --read-only             --cap-drop ALL             --security-opt no-new-privileges:true             phase0-oauth-refresh-helper:test             run >/tmp/helper-run.out 2>/tmp/helper-run.err
+          code=$?
+          set -e
+          test "$code" = "78"
+          grep -F "production OAuth transport is not wired" /tmp/helper-run.err
+          grep -F "no network request was attempted" /tmp/helper-run.err
+          echo "OAUTH_REFRESH_HELPER_IMAGE_UNWIRED_PASS"
+
+      - name: Syntax and diff checks
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_helper.mjs
+          git diff --check
