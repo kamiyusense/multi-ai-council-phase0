@@ -236,3 +236,9 @@ This signifies the PREPARED static pipeline checkpoint.
 - Zero evidence was acquired, no provider/network/GitHub readback is performed here.
 - No real live blocker is resolved.
 - No provenance is verified, no execution is authorized.
+
+## Static-to-Live Gap Audit Checkpoint
+- Implemented static-to-live gap audit.
+- This checkpoint is strictly PREPARED/static evidence-preparation-audit status only.
+- No real live blocker is resolved.
+- First live provider turn remains unauthorized.
