@@ -156,6 +156,50 @@ export function validatePersistentHelperCandidate(candidate, compose) {
   });
 }
 
+export function validateOneShotMountCandidate(candidate) {
+  const keys = [
+    "one_shot", "container_removal_after_execution",
+    "persistent_compose_credential_mount", "credential_mount_target",
+    "credential_mount_access", "credential_volume_identity",
+    "guessed_or_default_volume_name_allowed", "extra_mounts_allowed",
+    "retry", "fallback", "authorization_required",
+    "production_transport_wired", "real_credential_read",
+    "real_oauth_network", "execution_capability_present",
+  ];
+  rejectUnless(exactObject(candidate, keys), "one-shot mount candidate fields must be exact");
+  rejectUnless(candidate.one_shot === true, "credential RW mount must be one-shot only");
+  rejectUnless(candidate.container_removal_after_execution === "required",
+    "one-shot container removal is required");
+  rejectUnless(candidate.persistent_compose_credential_mount === false,
+    "persistent Compose credential mount is forbidden");
+  rejectUnless(candidate.credential_mount_target === "/home/node/.claude",
+    "credential mount target drift");
+  rejectUnless(candidate.credential_mount_access === "read-write-required-for-token-rotation",
+    "token rotation requires read/write access");
+  rejectUnless(exactObject(candidate.credential_volume_identity,
+    ["status", "compose_key", "docker_volume_name", "source"]) &&
+    candidate.credential_volume_identity.compose_key === "claude-auth" &&
+    candidate.credential_volume_identity.status === "UNKNOWN" &&
+    candidate.credential_volume_identity.docker_volume_name === null &&
+    candidate.credential_volume_identity.source === "not-observed",
+  "unresolved volume identity must remain UNKNOWN and unnamed");
+  rejectUnless(candidate.guessed_or_default_volume_name_allowed === false,
+    "guessed/default volume names are forbidden");
+  rejectUnless(candidate.extra_mounts_allowed === false, "extra mounts are forbidden");
+  rejectUnless(candidate.retry === 0 && candidate.fallback === "disabled",
+    "retry/fallback contract drift");
+  rejectUnless(candidate.authorization_required === true, "explicit authorization is required");
+  rejectUnless(candidate.production_transport_wired === false &&
+    candidate.real_credential_read === false && candidate.real_oauth_network === false &&
+    candidate.execution_capability_present === false,
+  "one-shot candidate must remain non-executable and offline");
+  return Object.freeze({
+    status: "UNKNOWN",
+    reason: "credential volume identity has not been observed",
+    execution_allowed: false,
+  });
+}
+
 /**
  * Parse an independently collected identity as data. This helper is pure;
  * MOCK_ONLY observations never satisfy a real execution precondition.
