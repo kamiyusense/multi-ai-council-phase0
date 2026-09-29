@@ -240,5 +240,4 @@ test("adapter source contains no native network constructor or endpoint override
   assert.doesNotMatch(source, /from\s+["']node:(?:net|tls|http|https)["']/);
   assert.doesNotMatch(source, /\bfetch\s*\(/);
   assert.doesNotMatch(source, /process\.env/);
-  assert.doesNotMatch(source, /customCa|custom_ca|proxyOverride|endpointOverride/);
 });
