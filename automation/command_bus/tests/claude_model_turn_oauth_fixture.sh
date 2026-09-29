@@ -100,7 +100,7 @@ sudo chmod 0600 "$CASE/.credentials.json" "$CASE/settings.json"
 CLI_LOG="$TMP/claude.log"
 set +e
 SECONDS=0
-timeout 25s docker run --rm   --network "$NET"   -e CLAUDE_CONFIG_DIR=/fixture   -e HTTPS_PROXY=http://oauth-mock:3129   -e CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1   -e NODE_EXTRA_CA_CERTS=/certs/ca.crt   -e ANTHROPIC_BASE_URL=http://model-mock:8080   -e CLAUDE_CODE_MAX_RETRIES=0   -e CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK=1   -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1   -e DISABLE_UPDATES=1   -v "$CASE:/fixture"   -v "$CERTS:/certs:ro"   --entrypoint claude   "$IMAGE"   -p   --safe-mode   --no-session-persistence   --max-turns 1   --tools ""   --mcp-config '{"mcpServers":{}}'   --strict-mcp-config   --permission-prompts none   --verbose   "Return exactly PHASE0_MODEL_FIXTURE_OK"   >"$CLI_LOG" 2>&1
+timeout 25s docker run --rm   --network "$NET"   -e CLAUDE_CONFIG_DIR=/fixture   -e HTTPS_PROXY=http://oauth-mock:3129   -e NO_PROXY=model-mock   -e CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1   -e NODE_EXTRA_CA_CERTS=/certs/ca.crt   -e ANTHROPIC_BASE_URL=http://model-mock:8080   -e CLAUDE_CODE_MAX_RETRIES=0   -e CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK=1   -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1   -e DISABLE_UPDATES=1   -v "$CASE:/fixture"   -v "$CERTS:/certs:ro"   --entrypoint claude   "$IMAGE"   -p   --safe-mode   --no-session-persistence   --max-turns 1   --tools ""   --mcp-config '{"mcpServers":{}}'   --strict-mcp-config   --permission-prompts none   --verbose   "Return exactly PHASE0_MODEL_FIXTURE_OK"   >"$CLI_LOG" 2>&1
 CLI_EXIT=$?
 CLI_SECONDS=$SECONDS
 set -e
