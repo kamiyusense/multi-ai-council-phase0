@@ -1,0 +1,48 @@
+name: Issue 110 OAuth refresh generation prepare-only proof
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-refresh-generation-prepare-v1
+    paths:
+      - .github/workflows/issue110-oauth-refresh-generation-prepare.yml
+      - automation/command_bus/claude_oauth_refresh_generation_prepare.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_generation_prepare.mjs
+      - automation/command_bus/claude_oauth_refresh_generation.mjs
+      - automation/command_bus/claude_oauth_refresh_production_plan.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact prepare head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run generation prepare-only tests
+        shell: bash
+        run: node --test automation/command_bus/tests/test_claude_oauth_refresh_generation_prepare.mjs
+
+      - name: Verify no network implementation
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_generation_prepare.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_generation_prepare.mjs
+          python - <<'PY'
+          from pathlib import Path
+          text=Path("automation/command_bus/claude_oauth_refresh_generation_prepare.mjs").read_text()
+          forbidden=("node:net","node:tls","node:http","node:https","fetch(")
+          assert all(item not in text for item in forbidden)
+          print("OAUTH_REFRESH_GENERATION_PREPARE_NO_NETWORK_PASS")
+          PY
+          git diff --check
