@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "chat-work-writeback-proof-20260930-001",
+  "state": "PREPARED",
+  "round": 0,
+  "max_rounds": 6,
+  "expires_at": "2026-09-30T03:32:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "chat-work-writeback-proof-20260930-001-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0
+}
