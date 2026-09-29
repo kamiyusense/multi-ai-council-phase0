@@ -245,3 +245,13 @@ This signifies the PREPARED static pipeline checkpoint.
 - common_timeout remains unresolved.
 - provider-specific exact finite live timeout values remain UNKNOWN.
 - First live provider/model turn remains separately human-approved.
+
+## Static Evidence Preparation Checkpoint
+- Implemented repository-only static evidence preparation audit for common_timeout, common_min_permissions, and common_sensitive_fanout.
+- This checkpoint is strictly PREPARED/static evidence-preparation-audit status only.
+- common_timeout: PARTIAL_STATIC_EVIDENCE / BLOCKED_UNKNOWN.
+- common_min_permissions: PARTIAL_STATIC_EVIDENCE / BLOCKED_UNKNOWN.
+- common_sensitive_fanout: MISSING_STATIC_EVIDENCE / BLOCKED_UNKNOWN.
+- No external/read-only/live evidence was acquired.
+- No real live blocker is resolved.
+- First live provider turn remains unauthorized.
