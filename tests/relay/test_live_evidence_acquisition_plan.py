@@ -113,6 +113,14 @@ class TestLiveEvidenceAcquisitionPlan(unittest.TestCase):
                     audit_row["class"],
                 )
 
+    def test_completion_evidence_is_copied_exactly_from_loop056(self) -> None:
+        for gap_id, audit_row in self.audit_rows.items():
+            with self.subTest(gap_id=gap_id):
+                self.assertEqual(
+                    self.plan_rows[gap_id]["completion_evidence_required"],
+                    audit_row["missing_evidence_or_decision"],
+                )
+
     def test_every_row_has_allowed_stage_and_nonempty_contract_fields(self) -> None:
         for gap_id, row in self.plan_rows.items():
             with self.subTest(gap_id=gap_id):
@@ -125,13 +133,24 @@ class TestLiveEvidenceAcquisitionPlan(unittest.TestCase):
                 ):
                     self.assertTrue(row[field], field)
 
-    def test_unproven_result_states_never_claim_success(self) -> None:
+    def test_unproven_result_states_are_exact_fail_closed_values(self) -> None:
+        allowed_states = {
+            "BLOCKED_UNKNOWN",
+            "KEEP_NOT_WIRED",
+            "TRANSPORT_EVIDENCE_ONLY",
+            "NOT_AUTHORIZED",
+            "DEFERRED",
+            "EXPLICIT_HUMAN_APPROVAL_REQUIRED",
+        }
         for gap_id, row in self.plan_rows.items():
             with self.subTest(gap_id=gap_id):
-                self.assertNotIn(
-                    row["result_state_if_not_proven"].upper(),
-                    FORBIDDEN_UNPROVEN_STATES,
-                )
+                state = row["result_state_if_not_proven"]
+                self.assertIn(state, allowed_states)
+                if state != "NOT_AUTHORIZED":
+                    self.assertNotIn(
+                        state.upper(),
+                        FORBIDDEN_UNPROVEN_STATES,
+                    )
 
     def test_runtime_sensitive_gaps_are_never_static_only(self) -> None:
         runtime_sensitive = {
