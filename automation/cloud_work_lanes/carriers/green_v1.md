@@ -14,6 +14,24 @@ This file is the durable recovery note for the 💚 green lane.
 
 A ChatGPT conversation/thread/session ID is never a correctness input. A replacement chat must fresh-read this carrier PR, this file, the target PR/branch, and current GitHub state before submitting work.
 
+
+## Execution environment boundary
+
+This lane is executed by **Cloud Work**, not Local Work.
+
+A submitting chat MUST NOT assign work that requires capabilities available only in Local Work or on the user's local machine. In particular, do not require direct access to the user's Windows/WSL filesystem, local checkout/worktree, local Docker Desktop/daemon, local terminal/process state, local desktop GUI, locally stored credentials, or other machine-local resources that Cloud Work cannot directly access.
+
+Use this Green lane only for work that Cloud Work can complete from its own cloud execution environment and connected services such as the authorized GitHub connector/cloud browser capabilities available to that run.
+
+If a requested task contains a Local-Work-only dependency:
+- do not pretend Cloud Work can perform it;
+- do not silently substitute or invent a local result;
+- isolate that dependency as BLOCKED or UNKNOWN;
+- complete any independent Cloud-safe work that remains within the command;
+- record the capability boundary in the terminal receipt.
+
+The submitting chat is responsible for routing Local-Work-only tasks elsewhere instead of sending them to PR #166.
+
 ## How a chat submits work
 
 Submit exactly one GitHub pull-request review with action COMMENT to this carrier PR. Do not use PR Conversation comments, inline/diff comments, commit updates, or merges as the command trigger.
