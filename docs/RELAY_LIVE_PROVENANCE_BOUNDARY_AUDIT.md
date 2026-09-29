@@ -37,3 +37,18 @@ This audit does **not** add a production implementation. It does **not** choose 
 ## Source Static Verification
 - Parses `src/providers/live_provenance_request.py` via Python AST in the test boundary to guarantee no `os`, `pathlib`, `subprocess`, `socket`, `http`, `urllib`, `requests`, `github`, `time`, or `random` imports are present.
 - Guarantees no hidden live network or disk reads during the bounding step.
+
+## Synthetic Evidence Boundary
+
+The complete-evidence path used by this audit is **synthetic fixture data** only.
+No real live blocker is resolved by these fixtures, and no actual human approval,
+GitHub durable provenance, provider authorization, billing state, or first live
+execution permission is established.
+
+The current terminal meaning remains:
+
+`PROVENANCE_VERIFICATION_REQUIRED`
+!= human provenance verified
+!= execution authorized
+!= first live provider turn authorized
+
