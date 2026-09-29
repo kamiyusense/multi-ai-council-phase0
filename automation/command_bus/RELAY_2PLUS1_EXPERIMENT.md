@@ -1306,3 +1306,42 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 058 — medium — COMPLETE / ACCEPTED AFTER CORRECTION (static evidence preparation lane)
+- task: tests/docs-only repository evidence audit for common_timeout / common_min_permissions / common_sensitive_fanout
+- Jules session: `3365475565043308879`
+- Jules PR: #153
+- isolated base: `jules-work/relay-dev-loop-058-static-evidence-prep-audit`
+- canonical snapshot parent: `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5`
+- initial Jules candidate: `67c92a7ffc214e20719e1c7fd9acf7aed24449ab`
+- frozen accepted candidate: `6d7655afe61d8fce5fd38164fb000c036effb3d5`
+- accepted canonical head: `8846b83804fe9c1c7a62036536a6ac2f4fdebf6e`
+- duplicate loop number note: another independently dispatched Loop 058 timeout-inventory lane also existed; branch/session/task remained distinct and both were handled without mixing evidence
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (static-evidence doc, checkpoint, test only)
+- initial exact validation run `36541565443`: SUCCESS, but semantic review corrected:
+  - common_timeout from MISSING_STATIC_EVIDENCE to PARTIAL_STATIC_EVIDENCE because validate_timeout / envelope / lifecycle static evidence already exists
+  - minimum-permission evidence remained PARTIAL and explicitly Claude/static only
+  - generic payload override validation is not counted as secret/PII/private-code fan-out filtering evidence
+  - evidence refs are verified against repository bytes
+  - all three blockers remain BLOCKED_UNKNOWN
+- first corrected validation run `36541825284`: FAIL because a markdown-table evidence ref contained an escaped pipe and the parser treated it as a column separator
+- second corrected validation run `36541981097`: FAIL only because the safety phrase was line-wrapped in Markdown while the test required contiguous text
+- both proven test-only causes were fixed without weakening safety semantics
+- final corrected candidate exact validation run `36542193279`: SUCCESS
+- canonical publication preserved the newer timeout-inventory checkpoint instead of copying the stale candidate checkpoint wholesale
+- candidate doc/test blob equality on canonical: PASS
+- canonical checkpoint contains both Timeout Static Inventory and Static Evidence Preparation sections
+- canonical exact validation run `36542483925`: SUCCESS
+- exact validation: 610 tests PASS; compileall PASS; diff-check PASS
+- common_timeout: PARTIAL_STATIC_EVIDENCE / BLOCKED_UNKNOWN
+- common_min_permissions: PARTIAL_STATIC_EVIDENCE / BLOCKED_UNKNOWN
+- common_sensitive_fanout: MISSING_STATIC_EVIDENCE / BLOCKED_UNKNOWN
+- external/read-only/live evidence acquired: no
+- real live blockers resolved: no
+- workflow permission/auth/billing changes: no
+- live provider/model/API execution: no
+- retry=0 for Jules dispatch / fallback=disabled
+- merge: no
+- isolation result: PASS
+
