@@ -1,0 +1,37 @@
+name: Issue 110 Claude 2.1.283 PTY idle OAuth refresh fixture
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-pty-refresh-v1
+    paths:
+      - .github/workflows/issue110-claude-oauth-pty-idle.yml
+      - automation/command_bus/tests/claude_oauth_pty_idle_fixture.sh
+      - automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs
+      - automation/command_bus/docker/claude-runtime/Dockerfile
+
+permissions:
+  contents: read
+
+jobs:
+  pty-idle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MOCK_DELAY_MS: 3000
+    steps:
+      - name: Checkout exact fixture head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run PTY idle OAuth refresh fixture
+        shell: bash
+        run: |
+          chmod +x automation/command_bus/tests/claude_oauth_pty_idle_fixture.sh
+          automation/command_bus/tests/claude_oauth_pty_idle_fixture.sh
