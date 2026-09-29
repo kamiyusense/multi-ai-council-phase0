@@ -1,0 +1,69 @@
+name: Issue 110 OAuth helper topology contract
+
+on:
+  push:
+    branches:
+      - static/issue110-oauth-generation-adapter-topology-v1
+    paths:
+      - .github/workflows/issue110-oauth-generation-adapter-topology.yml
+      - automation/command_bus/claude_oauth_refresh_topology_contract.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/docker/oauth-refresh-helper/Dockerfile
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+  pull_request:
+    branches:
+      - test/issue110-generation-production-adapter-integration-v1
+    paths:
+      - .github/workflows/issue110-oauth-generation-adapter-topology.yml
+      - automation/command_bus/claude_oauth_refresh_topology_contract.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/docker/oauth-refresh-helper/Dockerfile
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  topology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact topology head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+
+      - name: Run pure topology and adapter contract tests
+        shell: bash
+        run: >-
+          node --test
+          automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs
+          automation/command_bus/tests/test_claude_oauth_refresh_production_adapter.mjs
+          automation/command_bus/tests/test_claude_oauth_generation_transport_contract.mjs
+          automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs
+
+      - name: Verify this job does not start Docker or access credentials
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          workflow = Path(".github/workflows/issue110-oauth-generation-adapter-topology.yml").read_text()
+          assert "docker compose up" not in workflow
+          assert "docker run" not in workflow
+          assert "docker/build-push-action" not in workflow
+          source = Path("automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs").read_text()
+          assert "docker.sock" not in source
+          assert "claude-auth" in source
+          assert "workspace" in source
+          print("OAUTH_REFRESH_TOPOLOGY_STATIC_ONLY_PASS")
+          PY
+          node --check automation/command_bus/claude_oauth_refresh_topology_contract.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs
+          git diff --check
