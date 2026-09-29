@@ -1379,3 +1379,39 @@ Cycle members:
 - permission/auth/billing/settings changes: no
 - live provider/model/API execution: no
 
+### Loop 059 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: tests/docs-only minimum-permissions static inventory
+- loop-ID claim: `automation/command_bus/loop_id_claims/059.json`
+- Jules session: `4069488345829912341`
+- Jules PR: #158
+- isolated base: `jules-work/relay-dev-loop-059-minimum-permissions-static-inventory`
+- canonical snapshot parent: `8846b83804fe9c1c7a62036536a6ac2f4fdebf6e`
+- initial Jules candidate: `28fd4de94cb1a6bcdddce87f1349ea3e82e5c51f`
+- frozen accepted candidate: `58dc1b2911e7042e01094e9f482f9473db05942c`
+- accepted canonical head: `2678d0a653110045ddd8956c0581ee0b2c0a11ba`
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (minimum-permissions inventory doc, checkpoint, test only)
+- initial exact validation run `36554939631`: SUCCESS, but semantic review strengthened:
+  - direct per-flag UNKNOWN reason checks for OpenAI / Anthropic / Google route and permission controls
+  - exact Claude session metadata boundary and mismatched-meta fail-closed behavior
+  - wrong auth kind fail-closed behavior for every provider
+  - Relay control-plane override rejection without falsely treating it as secret/PII filtering
+  - exact inventory surface set/state parsing
+  - whole-path minimum-permission profile remains BLOCKED_UNKNOWN
+  - static route controls are not treated as proof of live identity, billing route, or runtime effective permissions
+- first corrected validation run `36555183528`: FAIL only because checkpoint wording was strengthened while the test still required the old phrase
+- proven test-only wording mismatch fixed without weakening safety semantics
+- corrected candidate exact validation run `36555345577`: SUCCESS
+- canonical exact validation run `36555624792`: SUCCESS
+- exact validation: 620 tests PASS; compileall PASS; diff-check PASS
+- frozen candidate/canonical three-file blob equality: PASS
+- common_min_permissions remains unresolved / BLOCKED_UNKNOWN
+- exact whole-path minimum permission profile selected: no
+- permission/auth/billing/settings changes: no
+- external/read-only/live evidence acquired: no
+- live provider/model/API execution: no
+- retry=0 / fallback=disabled
+- merge: no
+- isolation result: PASS
+
