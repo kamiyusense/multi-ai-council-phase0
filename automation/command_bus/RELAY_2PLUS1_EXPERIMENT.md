@@ -1022,3 +1022,51 @@ Cycle members:
 - workflow permission changes: no
 - OIDC/attestation issuance: no
 
+### Loop 055 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: tests/docs-only provenance trust-source decision support
+- Jules session: `12906242195831847`
+- Jules PR: #129
+- isolated base: `jules-work/relay-dev-loop-055-trust-source-decision-support`
+- original canonical snapshot parent: `1e62d2343da2e1102852fcaf63f600e0aa8b4551`
+- initial Jules candidate: `2abed7a9f0a882f32c175a1d20d6afd6289844b9`
+- corrected isolated candidate: `2f6c3a9761c5f5471e620fb1f2c5e4b7cfa8cba1`
+- accepted canonical head: `79e2daab289df52052773712135c269c60920735`
+- canonical also retained independently-added `docs/JULES_TASK_PROMPT_SPEC.md`
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (decision-support doc, checkpoint, test only)
+- initial semantic gaps despite green tests:
+  - candidate table put candidates in columns although the contract required candidate rows
+  - OIDC and Artifact Attestation were described as independently authenticating "Execution/Human Provenance", overclaiming what those mechanisms establish
+  - permission/readback distinctions were too coarse
+  - tests checked token presence rather than exact candidate-row structure and overclaim boundaries
+- initial exact validation run `36516882442`: SUCCESS, but semantic review rejected the candidate
+- correction grounded against current main trust-source decision boundary and current GitHub documentation:
+  - OIDC `id-token: write` allows requesting a signed OIDC JWT but does not itself prove a human intended a specific Relay approval
+  - artifact attestation generation documents `id-token: write`, `attestations: write`, and `contents: read`; meaningful verification still requires signature/timestamp/signer-identity validation
+  - Actions readback remains transport evidence only
+- first corrected validation run `36517019026`: FAIL due to a test-only false positive matching forbidden literal text inside a prohibition sentence
+- failure cause read back before any further validation request; safety wording was rewritten to require flags remain false
+- corrected candidate exact validation run `36517101132`: SUCCESS
+- canonical exact validation run `36517214612`: SUCCESS
+- exact validation: 564 tests PASS; compileall PASS; diff-check PASS
+- corrected decision support now:
+  - has exactly four candidate rows
+  - makes ZERO architecture choice / ZERO permission change
+  - preserves KEEP_NOT_WIRED as safe default
+  - classifies Actions readback as transport evidence only / insufficient authenticator
+  - classifies OIDC as candidate / NOT_AUTHORIZED
+  - classifies Artifact Attestation as strong candidate / NOT_AUTHORIZED
+  - does not claim OIDC or attestation proves human intent
+  - keeps provenance verification separate from execution authorization and first-live dispatch
+- canonical publication: exact three validated Loop 055 blobs copied atop the newer canonical head without removing the Jules prompt specification
+- candidate/canonical three-file blob equality after publication: PASS
+- retry=0 for Jules dispatch / fallback=disabled
+- validation rerun occurred only after confirmed test-only false-positive cause and a new corrected target SHA
+- OIDC permission change: no
+- Artifact Attestation permission change: no
+- human architecture choice: not made
+- live provider/model/API execution: no
+- merge: no
+- isolation result: PASS
+
