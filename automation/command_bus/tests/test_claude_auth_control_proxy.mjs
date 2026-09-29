@@ -11,7 +11,7 @@ import {
   inspectTlsClientHello,
   isPublicAddress,
 } from "../docker/auth-control-plane/auth_control_plane_proxy.mjs";
-import { prepareClaudeInvocation } from "../docker/claude-runtime/claude_runtime_launcher.mjs";
+import { main as claudeLauncherMain, prepareClaudeInvocation } from "../docker/claude-runtime/claude_runtime_launcher.mjs";
 
 const requiredRuntimeEnv = {
   ANTHROPIC_BASE_URL: "http://gate:8080",
@@ -267,6 +267,63 @@ test("launcher pins HTTPS_PROXY and keeps model traffic bound to Admission Gate"
   }
   const overridden = { ...env, HTTPS_PROXY: "http://attacker.example:3128" };
   assert.throws(() => prepareClaudeInvocation(overridden, ["synthetic prompt"]), /HTTPS_PROXY/);
+});
+
+test("launcher freshness preflight blocks before spawn and fresh state permits one spawn", () => {
+  const env = {
+    ...requiredRuntimeEnv,
+    PHASE0_LIVE_EXECUTION: "1",
+    PHASE0_DISPATCH_ID: "7fbd7a75-4895-4caf-8d79-81dc06e39cc2",
+  };
+
+  let spawnCalls = 0;
+  const fakeSpawn = () => {
+    spawnCalls += 1;
+    return { status: 0, signal: null };
+  };
+
+  const blockedStatus = claudeLauncherMain(env, ["synthetic prompt"], {
+    spawn: fakeSpawn,
+    inspectCredentials: () => ({
+      status: "BLOCKED",
+      reason: "ACCESS_TOKEN_EXPIRED_OR_NEAR_EXPIRY",
+    }),
+    credentialPath: "/synthetic/.credentials.json",
+  });
+  assert.equal(blockedStatus, 78);
+  assert.equal(spawnCalls, 0);
+
+  const freshStatus = claudeLauncherMain(env, ["synthetic prompt"], {
+    spawn: fakeSpawn,
+    inspectCredentials: () => ({
+      status: "PASS",
+      reason: "ACCESS_TOKEN_FRESH",
+      minimum_remaining_ms: 600000,
+    }),
+    credentialPath: "/synthetic/.credentials.json",
+  });
+  assert.equal(freshStatus, 0);
+  assert.equal(spawnCalls, 1);
+});
+
+test("launcher freshness inspection exception fails closed before spawn", () => {
+  const env = {
+    ...requiredRuntimeEnv,
+    PHASE0_LIVE_EXECUTION: "1",
+    PHASE0_DISPATCH_ID: "7fbd7a75-4895-4caf-8d79-81dc06e39cc2",
+  };
+  let spawnCalls = 0;
+  const status = claudeLauncherMain(env, ["synthetic prompt"], {
+    spawn: () => {
+      spawnCalls += 1;
+      return { status: 0, signal: null };
+    },
+    inspectCredentials: () => {
+      throw new Error("synthetic inspection failure");
+    },
+  });
+  assert.equal(status, 78);
+  assert.equal(spawnCalls, 0);
 });
 
 test("proxy source has no request-data logging", async () => {

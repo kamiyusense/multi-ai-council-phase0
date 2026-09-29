@@ -1,6 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  DEFAULT_CREDENTIAL_PATH,
+  inspectClaudeOauthCredentialFile,
+} from "./claude_oauth_freshness_preflight.mjs";
 
 const DISPATCH_HEADER = "X-Phase0-Dispatch-ID";
 const REQUIRED_ENV = Object.freeze({
@@ -94,7 +98,15 @@ export function prepareClaudeInvocation(env = process.env, args = process.argv.s
   };
 }
 
-export function main(env = process.env, args = process.argv.slice(2)) {
+export function main(
+  env = process.env,
+  args = process.argv.slice(2),
+  {
+    spawn = spawnSync,
+    inspectCredentials = inspectClaudeOauthCredentialFile,
+    credentialPath = DEFAULT_CREDENTIAL_PATH,
+  } = {},
+) {
   let invocation;
   try {
     invocation = prepareClaudeInvocation(env, args);
@@ -103,7 +115,20 @@ export function main(env = process.env, args = process.argv.slice(2)) {
     return 78;
   }
 
-  const result = spawnSync(invocation.executable, invocation.args, {
+  let freshness;
+  try {
+    freshness = inspectCredentials(credentialPath);
+  } catch {
+    freshness = { status: "BLOCKED" };
+  }
+  if (!freshness || freshness.status !== "PASS") {
+    console.error(
+      "BLOCKED: saved Claude OAuth access token is missing, malformed, expired, or too close to expiry; re-authentication is required before any Claude process is started",
+    );
+    return 78;
+  }
+
+  const result = spawn(invocation.executable, invocation.args, {
     cwd: invocation.cwd,
     env: invocation.env,
     stdio: "inherit",

@@ -1,0 +1,45 @@
+name: Issue 110 OAuth credential freshness preflight
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-freshness-preflight-v1
+    paths:
+      - .github/workflows/issue110-oauth-freshness-preflight.yml
+      - automation/command_bus/docker/claude-runtime/claude_oauth_freshness_preflight.mjs
+      - automation/command_bus/tests/test_claude_oauth_freshness_preflight.mjs
+      - automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+      - automation/command_bus/docker/claude-runtime/Dockerfile
+      - automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact preflight head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Syntax and unit tests
+        shell: bash
+        run: |
+          node --check automation/command_bus/docker/claude-runtime/claude_oauth_freshness_preflight.mjs
+          node --check automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+          node --test automation/command_bus/tests/test_claude_oauth_freshness_preflight.mjs
+          node --test automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+          git diff --check
+
+      - name: Build pinned runtime image with preflight packaged
+        shell: bash
+        run: |
+          docker build             -t phase0-claude-runtime:preflight             -f automation/command_bus/docker/claude-runtime/Dockerfile             automation/command_bus
