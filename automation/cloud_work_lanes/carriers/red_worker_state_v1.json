@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "lane": "red",
+  "carrier_pr": 171,
+  "carrier_branch": "cloud-work/carrier-red-v1",
+  "active_generation": 1,
+  "active_worker_title": "Red PR Review Lane",
+  "active_worker_automation_id": "6abc3302b0e88191ad236cf7256a030e",
+  "replacement_proof_pr": 172,
+  "replacement_proof_branch": "cloud-work/replacement-proof-v1",
+  "updated_at": "2026-09-29T22:03:41Z",
+  "note": "active_generation is the fencing authority. automation_id is metadata only and is not a correctness input."
+}
