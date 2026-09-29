@@ -49,15 +49,14 @@ jobs:
           automation/command_bus/tests/test_claude_oauth_generation_transport_contract.mjs
           automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs
 
-      - name: Verify this job does not start Docker or access credentials
+      - name: Verify workflow uses read-only checkout only
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          workflow = Path(".github/workflows/issue110-oauth-generation-adapter-topology.yml").read_text()
-          assert "docker compose up" not in workflow
-          assert "docker run" not in workflow
-          assert "docker/build-push-action" not in workflow
+          workflow = Path(".github/workflows/issue110-oauth-generation-adapter-topology.yml").read_text().splitlines()
+          actions = [line.strip() for line in workflow if line.strip().startswith("uses:")]
+          assert actions == ["uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"]
           source = Path("automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs").read_text()
           assert "docker.sock" not in source
           assert "claude-auth" in source
