@@ -206,3 +206,8 @@ This signifies the PREPARED static pipeline checkpoint.
 - This checkpoint is strictly PREPARED/static request construction only.
 - No GitHub readback is performed here.
 - `provenance_verified=false` remains fixed.
+## Live Provenance Boundary Audit Static Checkpoint
+- Implemented static end-to-end provenance boundary audit.
+- This checkpoint is strictly PREPARED/static provenance-boundary-audit status only.
+- PROVENANCE_VERIFICATION_REQUIRED is terminal for current static Relay code.
+- No live execution is authorized, and production authenticators remain NOT_WIRED.
