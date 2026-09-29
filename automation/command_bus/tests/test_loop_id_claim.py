@@ -1,0 +1,186 @@
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import tempfile
+import unittest
+
+from automation.command_bus.loop_id_claim import (
+    DUPLICATE_GUARD,
+    extract_numbered_loop,
+    validate_claim,
+    verify_claim_file,
+    verify_command_claim,
+)
+
+NOW = "2026-09-30T05:30:00+09:00"
+HEAD = "a" * 40
+TREE = "b" * 40
+COMMAND_ID = "relay-dev-loop-064-parallel-lane-proof"
+WORK_BRANCH = f"jules-work/{COMMAND_ID}"
+
+
+def request(**changes):
+    value = {
+        "schema_version": 2,
+        "profile": "JULES_CHAT_SEMIAUTO_V2",
+        "command_id": COMMAND_ID,
+        "target_repo": "kamiyusense/multi-ai-council-phase0",
+        "target_branch": "feature/relay-transport-7070955470193506982",
+        "work_branch": WORK_BRANCH,
+        "expected_target_head": HEAD,
+        "expected_target_tree": TREE,
+        "allowed_paths": ["tests/example.py"],
+        "prompt": "bounded",
+        "created_at": NOW,
+        "expires_at": "2026-09-30T06:30:00+09:00",
+        "retry": 0,
+        "fallback": "disabled",
+        "merge_allowed": False,
+        "force_push_allowed": False,
+    }
+    value.update(changes)
+    return value
+
+
+def claim(**changes):
+    value = {
+        "schema_version": 2,
+        "loop_number": 64,
+        "loop_id": "064",
+        "lane_id": "J-A",
+        "lane_display": "🟥",
+        "task_id": "parallel-lane-proof",
+        "command_id": COMMAND_ID,
+        "target_branch": "feature/relay-transport-7070955470193506982",
+        "expected_target_head": HEAD,
+        "expected_target_tree": TREE,
+        "work_branch": WORK_BRANCH,
+        "state": "CLAIMED",
+        "claimed_at": NOW,
+        "duplicate_guard": DUPLICATE_GUARD,
+        "retry": 0,
+        "fallback": "disabled",
+    }
+    value.update(changes)
+    return value
+
+
+class LoopIdClaimTests(unittest.TestCase):
+    def test_extract_numbered_loop(self):
+        self.assertEqual(
+            extract_numbered_loop(COMMAND_ID),
+            ("064", "parallel-lane-proof"),
+        )
+        self.assertIsNone(extract_numbered_loop("chat-jules-001"))
+
+    def test_valid_v2_claim_matches_command(self):
+        verified = verify_command_claim(request(), claim())
+        self.assertEqual(verified["loop_id"], "064")
+        self.assertEqual(verified["lane_id"], "J-A")
+        self.assertEqual(verified["lane_display"], "🟥")
+
+    def test_lane_metadata_is_not_command_correctness(self):
+        verified = verify_command_claim(
+            request(),
+            claim(lane_id="J-B", lane_display="🟦"),
+        )
+        self.assertEqual(verified["command_id"], COMMAND_ID)
+
+    def test_claim_binds_task_id_to_command_id(self):
+        with self.assertRaisesRegex(ValueError, "task_id/command_id"):
+            validate_claim(claim(task_id="other-task"))
+
+    def test_claim_binds_work_branch_to_command_id(self):
+        with self.assertRaisesRegex(ValueError, "work_branch/command_id"):
+            validate_claim(claim(work_branch="jules-work/other"))
+
+    def test_claim_binds_head_and_tree_to_command(self):
+        with self.assertRaisesRegex(ValueError, "expected_target_head"):
+            verify_command_claim(
+                request(),
+                claim(expected_target_head="c" * 40),
+            )
+        with self.assertRaisesRegex(ValueError, "expected_target_tree"):
+            verify_command_claim(
+                request(),
+                claim(expected_target_tree="d" * 40),
+            )
+
+    def test_invalid_lane_metadata_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "invalid lane_id"):
+            validate_claim(claim(lane_id="red"))
+        with self.assertRaisesRegex(ValueError, "invalid lane_display"):
+            validate_claim(claim(lane_display="🔴"))
+
+    def test_retry_fallback_are_fixed(self):
+        with self.assertRaisesRegex(ValueError, "retry/fallback"):
+            validate_claim(claim(retry=1))
+
+    def test_unknown_keys_are_rejected(self):
+        value = claim()
+        value["correctness_by_color"] = True
+        with self.assertRaisesRegex(ValueError, "keys mismatch"):
+            validate_claim(value)
+
+    def test_historical_backfill_is_valid_for_archive_but_not_dispatch(self):
+        archived = claim(state="HISTORICAL_BACKFILL")
+        self.assertEqual(validate_claim(archived)["state"], "HISTORICAL_BACKFILL")
+        with self.assertRaisesRegex(ValueError, "pre-dispatch CLAIMED"):
+            verify_command_claim(request(), archived)
+
+    def test_legacy_v1_is_readable_but_not_dispatchable(self):
+        legacy = {
+            "schema_version": 1,
+            "loop_number": 60,
+            "loop_id": "060",
+            "task_id": "legacy",
+            "command_id": "relay-dev-loop-060-legacy",
+            "target_branch": "feature/relay-transport-7070955470193506982",
+            "expected_target_head": HEAD,
+            "work_branch": "jules-work/relay-dev-loop-060-legacy",
+            "state": "CLAIMED",
+            "claimed_at": NOW,
+            "duplicate_guard": DUPLICATE_GUARD,
+            "retry": 0,
+            "fallback": "disabled",
+        }
+        self.assertEqual(validate_claim(legacy)["schema_version"], 1)
+        legacy_request = request(
+            command_id="relay-dev-loop-060-legacy",
+            work_branch="jules-work/relay-dev-loop-060-legacy",
+        )
+        with self.assertRaisesRegex(ValueError, "schema_version 2"):
+            verify_command_claim(legacy_request, legacy)
+
+    def test_missing_claim_file_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            command_path = Path(tmp) / "command.json"
+            command_path.write_text(json.dumps(request()), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "missing durable Loop claim"):
+                verify_claim_file(command_path, Path(tmp) / "claims")
+
+    def test_exact_claim_file_is_required_and_read_back(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            command_path = root / "command.json"
+            claims = root / "claims"
+            claims.mkdir()
+            command_path.write_text(json.dumps(request()), encoding="utf-8")
+            (claims / "064.json").write_text(json.dumps(claim()), encoding="utf-8")
+            verified = verify_claim_file(command_path, claims)
+            self.assertEqual(verified["command_id"], COMMAND_ID)
+
+    def test_non_numbered_command_does_not_require_loop_claim(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            command_path = Path(tmp) / "command.json"
+            command_path.write_text(
+                json.dumps(request(command_id="chat-jules-001", work_branch="jules-work/chat-jules-001")),
+                encoding="utf-8",
+            )
+            self.assertIsNone(
+                verify_claim_file(command_path, Path(tmp) / "missing-claims")
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()
