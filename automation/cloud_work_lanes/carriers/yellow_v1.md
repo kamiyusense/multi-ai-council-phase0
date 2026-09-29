@@ -28,6 +28,7 @@ Before any command processing, the worker must fresh-read `automation/cloud_work
 - If the worker is active but `command.worker_generation != active_generation`, do not modify the target; return one terminal STALE receipt.
 - Only when WORKER_GENERATION, active_generation, and command.worker_generation all match may normal validation/execution continue.
 - Worker replacement must follow `automation/cloud_work_lanes/WORK_REPLACEMENT_HANDOVER_V1.md`.
+- A Chat guiding a user through replacement must first read `automation/cloud_work_lanes/CHATGPT_CLOUD_WORK_REPLACEMENT_SUPPORT_V1.md`; the user must not be expected to remember generations, PR numbers, labels, SHAs, automation IDs, or prompt text.
 
 This prevents an old Cloud Work from acting if it wakes after a replacement.
 
