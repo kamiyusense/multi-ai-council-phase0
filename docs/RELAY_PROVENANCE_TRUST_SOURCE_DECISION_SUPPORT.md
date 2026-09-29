@@ -48,10 +48,10 @@ Future provenance verification must remain separate from:
 - first-live dispatch;
 - provider/model execution.
 
-Even a future successful provenance verification result must not itself set:
-- `execution_authorized=true`;
-- `dispatch_allowed=true`;
-- `live_ready=true`.
+Even a future successful provenance verification result must keep:
+- `execution_authorized` false;
+- `dispatch_allowed` false;
+- `live_ready` false.
 
 The first live provider turn remains a separate bounded action requiring explicit human approval.
 
