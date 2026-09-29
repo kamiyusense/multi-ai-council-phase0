@@ -33,6 +33,7 @@ class GitHubOidcExpectedContext:
     run_id: str
     repository_visibility: str
     job_workflow_ref: str | None = None
+    job_workflow_sha: str | None = None
 
 
 @dataclass(frozen=True)
@@ -81,6 +82,7 @@ def evaluate_github_oidc_claims_policy(
         }
         if expected.job_workflow_ref is not None:
             exact["job_workflow_ref"] = expected.job_workflow_ref
+            exact["job_workflow_sha"] = expected.job_workflow_sha
 
         missing = [key for key in exact if key not in claims]
         if missing:
@@ -92,9 +94,11 @@ def evaluate_github_oidc_claims_policy(
             if claims.get(key) != value:
                 raise ValueError(f"OIDC claim mismatch: {key}")
 
-        if expected.job_workflow_ref is None and "job_workflow_ref" in claims:
+        if expected.job_workflow_ref is None and (
+            "job_workflow_ref" in claims or "job_workflow_sha" in claims
+        ):
             raise ValueError(
-                "unexpected job_workflow_ref; explicit job_workflow_ref is required"
+                "unexpected job workflow identity; explicit ref and sha are required"
             )
 
         for field in ("nbf", "iat", "exp"):
@@ -164,7 +168,16 @@ def _validate_expected(expected: GitHubOidcExpectedContext) -> None:
         ):
             raise ValueError(f"expected {field} must be a lowercase full SHA")
 
+    if (expected.job_workflow_ref is None) != (expected.job_workflow_sha is None):
+        raise ValueError("expected job workflow ref and sha must be paired")
     if expected.job_workflow_ref is not None:
         value = expected.job_workflow_ref
         if not isinstance(value, str) or not value or "\n" in value or "\r" in value:
             raise ValueError("expected job_workflow_ref is invalid")
+        value = expected.job_workflow_sha
+        if (
+            not isinstance(value, str)
+            or len(value) != 40
+            or any(ch not in _SHA40 for ch in value)
+        ):
+            raise ValueError("expected job_workflow_sha must be a lowercase full SHA")

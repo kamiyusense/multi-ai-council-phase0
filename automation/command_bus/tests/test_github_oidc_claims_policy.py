@@ -27,6 +27,7 @@ def expected(**changes):
         run_id="424242",
         repository_visibility="public",
         job_workflow_ref=None,
+        job_workflow_sha=None,
     )
     value.update(changes)
     return GitHubOidcExpectedContext(**value)
@@ -162,11 +163,12 @@ class GitHubOidcClaimsPolicyTests(unittest.TestCase):
             "MATCH",
         )
 
-    def test_reusable_workflow_identity_must_be_explicit(self):
+    def test_reusable_workflow_identity_must_be_explicit_ref_sha_pair(self):
+        reusable_ref = "owner/reusable/.github/workflows/verify.yml@refs/heads/main"
+        reusable_sha = "c" * 40
         value = claims(
-            job_workflow_ref=(
-                "owner/reusable/.github/workflows/verify.yml@refs/heads/main"
-            )
+            job_workflow_ref=reusable_ref,
+            job_workflow_sha=reusable_sha,
         )
         result = evaluate_github_oidc_claims_policy(
             value,
@@ -174,12 +176,23 @@ class GitHubOidcClaimsPolicyTests(unittest.TestCase):
             now_epoch=NOW,
         )
         self.assertEqual(result.status, "BLOCKED")
-        self.assertIn("explicit job_workflow_ref", result.reason)
+        self.assertIn("explicit ref and sha", result.reason)
+
+        for incomplete in (
+            expected(job_workflow_ref=reusable_ref),
+            expected(job_workflow_sha=reusable_sha),
+        ):
+            with self.subTest(incomplete=incomplete):
+                self.assertEqual(
+                    evaluate_github_oidc_claims_policy(
+                        value, incomplete, now_epoch=NOW,
+                    ).status,
+                    "BLOCKED",
+                )
 
         exp = expected(
-            job_workflow_ref=(
-                "owner/reusable/.github/workflows/verify.yml@refs/heads/main"
-            )
+            job_workflow_ref=reusable_ref,
+            job_workflow_sha=reusable_sha,
         )
         self.assertEqual(
             evaluate_github_oidc_claims_policy(
@@ -190,18 +203,22 @@ class GitHubOidcClaimsPolicyTests(unittest.TestCase):
             "MATCH",
         )
 
-        wrong = claims(
-            job_workflow_ref=(
-                "owner/reusable/.github/workflows/other.yml@refs/heads/main"
-            )
-        )
-        result = evaluate_github_oidc_claims_policy(
-            wrong,
-            exp,
-            now_epoch=NOW,
-        )
-        self.assertEqual(result.status, "BLOCKED")
-        self.assertIn("job_workflow_ref", result.reason)
+        for field, changed in (
+            ("job_workflow_ref", "owner/reusable/.github/workflows/other.yml@refs/heads/main"),
+            ("job_workflow_sha", "d" * 40),
+        ):
+            with self.subTest(field=field):
+                result = evaluate_github_oidc_claims_policy(
+                    claims(
+                        job_workflow_ref=reusable_ref,
+                        job_workflow_sha=reusable_sha,
+                        **{field: changed},
+                    ),
+                    exp,
+                    now_epoch=NOW,
+                )
+                self.assertEqual(result.status, "BLOCKED")
+                self.assertIn(field, result.reason)
 
     def test_subject_is_exact_policy_input_not_inferred(self):
         immutable_style = (

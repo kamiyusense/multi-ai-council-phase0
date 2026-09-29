@@ -63,6 +63,8 @@ def expected_from_runner(env: dict[str, str]) -> GitHubOidcExpectedContext:
         event_name="push",
         run_id=env.get("GITHUB_RUN_ID", ""),
         repository_visibility="private",
+        job_workflow_ref=WORKFLOW_REF,
+        job_workflow_sha=sha,
     )
 
 
@@ -97,7 +99,8 @@ def diagnose_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: in
         ("AUDIENCE", ("aud",), ("OIDC claim mismatch: aud",)),
         ("TIME", ("nbf", "iat", "exp"), ("OIDC temporal", "OIDC nbf", "OIDC token", "OIDC exp")),
         ("REPOSITORY", ("sub", "repository", "repository_id", "repository_owner_id", "repository_visibility"), ()),
-        ("WORKFLOW", ("workflow_ref", "job_workflow_ref"), ("unexpected job_workflow_ref",)),
+        ("WORKFLOW", ("workflow_ref", "job_workflow_ref", "job_workflow_sha"),
+         ("unexpected job workflow identity",)),
         ("REF_SHA", ("ref", "sha", "workflow_sha"), ()),
         ("RUN_ID", ("run_id", "run_attempt"), ()),
     )
@@ -141,20 +144,16 @@ def safe_failure_code(
     if stage == "WORKFLOW":
         if reason == "OIDC claim mismatch: workflow_ref":
             return "OIDC_WORKFLOW_CLAIM_REF_REJECTED"
-        if reason == "unexpected job_workflow_ref; explicit job_workflow_ref is required":
-            job_ref = claims.get("job_workflow_ref")
-            if job_ref == "":
-                return "OIDC_WORKFLOW_JOB_REF_EMPTY_REJECTED"
-            if job_ref != claims.get("workflow_ref"):
-                return "OIDC_WORKFLOW_JOB_REF_DIFFERS_FROM_WORKFLOW_REF_REJECTED"
-            if "job_workflow_sha" not in claims:
-                return "OIDC_WORKFLOW_JOB_SHA_MISSING_REJECTED"
-            job_sha = claims.get("job_workflow_sha")
-            if job_sha == "":
-                return "OIDC_WORKFLOW_JOB_SHA_EMPTY_REJECTED"
-            if job_sha == claims.get("workflow_sha"):
-                return "OIDC_WORKFLOW_JOB_IDENTITY_MATCHES_WORKFLOW_REJECTED"
-            return "OIDC_WORKFLOW_JOB_SHA_DIFFERS_FROM_WORKFLOW_SHA_REJECTED"
+        if reason == "OIDC claim mismatch: job_workflow_ref":
+            return "OIDC_WORKFLOW_JOB_REF_CLAIM_REJECTED"
+        if reason == "OIDC claim mismatch: job_workflow_sha":
+            return "OIDC_WORKFLOW_JOB_SHA_CLAIM_REJECTED"
+        if reason.startswith("required OIDC claims are missing: "):
+            missing = set(reason.split(": ", 1)[1].split(","))
+            if missing.intersection({"job_workflow_ref", "job_workflow_sha"}):
+                return "OIDC_WORKFLOW_JOB_IDENTITY_MISSING_REJECTED"
+        if reason == "unexpected job workflow identity; explicit ref and sha are required":
+            return "OIDC_WORKFLOW_UNEXPECTED_JOB_IDENTITY_REJECTED"
     if stage == "REF_SHA" and reason == "OIDC claim mismatch: workflow_sha":
         return "OIDC_REF_SHA_CLAIM_WORKFLOW_SHA_REJECTED"
     return generic

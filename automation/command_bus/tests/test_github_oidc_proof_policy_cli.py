@@ -62,8 +62,14 @@ def claims(**changes):
 
 class OidcProofPolicyTests(unittest.TestCase):
     def test_signed_claims_matching_bounded_runner_context_pass_policy(self):
-        self.assertEqual(expected_from_runner(runner()).workflow_ref, WORKFLOW_REF)
-        self.assertTrue(evaluate_verified_claims(claims(), runner(), now_epoch=NOW))
+        exp = expected_from_runner(runner())
+        self.assertEqual(exp.workflow_ref, WORKFLOW_REF)
+        self.assertEqual(exp.job_workflow_ref, WORKFLOW_REF)
+        self.assertEqual(exp.job_workflow_sha, SHA)
+        self.assertTrue(evaluate_verified_claims(
+            claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha=SHA),
+            runner(), now_epoch=NOW,
+        ))
 
     def test_runner_context_drift_is_rejected_before_claims(self):
         for field, changed in (
@@ -112,10 +118,12 @@ class OidcProofPolicyTests(unittest.TestCase):
         self.assertEqual(diagnose_verified_claims(claims(), runner(GITHUB_RUN_ID=""), now_epoch=NOW), "RUN_ID")
 
     def test_official_workflow_identity_fixture_and_fixed_failure_codes(self):
-        valid_claims = claims()
+        valid_claims = claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha=SHA)
         valid_runner = runner()
         self.assertEqual(valid_claims["workflow_ref"], WORKFLOW_REF)
         self.assertEqual(valid_claims["workflow_sha"], valid_runner["GITHUB_WORKFLOW_SHA"])
+        self.assertEqual(valid_claims["job_workflow_ref"], valid_claims["workflow_ref"])
+        self.assertEqual(valid_claims["job_workflow_sha"], valid_claims["workflow_sha"])
         self.assertEqual(valid_claims["workflow"], valid_runner["GITHUB_WORKFLOW"])
         self.assertTrue(evaluate_verified_claims(valid_claims, valid_runner, now_epoch=NOW))
         cases = (
@@ -127,24 +135,18 @@ class OidcProofPolicyTests(unittest.TestCase):
              runner(), "OIDC_WORKFLOW_CLAIM_REF_REJECTED"),
             ("WORKFLOW", claims(workflow_ref=WORKFLOW_REF.replace(BRANCH_REF, "refs/heads/other")),
              runner(), "OIDC_WORKFLOW_CLAIM_REF_REJECTED"),
+            ("WORKFLOW", claims(job_workflow_sha=SHA),
+             runner(), "OIDC_WORKFLOW_JOB_IDENTITY_MISSING_REJECTED"),
             ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF),
-             runner(), "OIDC_WORKFLOW_JOB_SHA_MISSING_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha=""),
-             runner(), "OIDC_WORKFLOW_JOB_SHA_EMPTY_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha=SHA),
-             runner(), "OIDC_WORKFLOW_JOB_IDENTITY_MATCHES_WORKFLOW_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha="b" * 40),
-             runner(), "OIDC_WORKFLOW_JOB_SHA_DIFFERS_FROM_WORKFLOW_SHA_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF,
-                                job_workflow_sha="bearer header.payload.signature secret"),
-             runner(), "OIDC_WORKFLOW_JOB_SHA_DIFFERS_FROM_WORKFLOW_SHA_REJECTED"),
+             runner(), "OIDC_WORKFLOW_JOB_IDENTITY_MISSING_REJECTED"),
             ("WORKFLOW", claims(job_workflow_ref="other/reusable.yml@refs/heads/main",
                                 job_workflow_sha=SHA),
-             runner(), "OIDC_WORKFLOW_JOB_REF_DIFFERS_FROM_WORKFLOW_REF_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref=""),
-             runner(), "OIDC_WORKFLOW_JOB_REF_EMPTY_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref="bearer header.payload.signature secret"),
-             runner(), "OIDC_WORKFLOW_JOB_REF_DIFFERS_FROM_WORKFLOW_REF_REJECTED"),
+             runner(), "OIDC_WORKFLOW_JOB_REF_CLAIM_REJECTED"),
+            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha="b" * 40),
+             runner(), "OIDC_WORKFLOW_JOB_SHA_CLAIM_REJECTED"),
+            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF,
+                                job_workflow_sha="bearer header.payload.signature secret"),
+             runner(), "OIDC_WORKFLOW_JOB_SHA_CLAIM_REJECTED"),
             ("REF_SHA", claims(), runner(GITHUB_WORKFLOW_SHA="b" * 40),
              "OIDC_REF_SHA_RUNNER_WORKFLOW_SHA_REJECTED"),
             ("REF_SHA", claims(workflow_sha="b" * 40), runner(),
