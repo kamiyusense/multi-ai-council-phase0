@@ -175,8 +175,6 @@ test("durable generation attempt binds the injected adapter to one synthetic ref
       recoveredWithoutNetwork: false,
     });
     assert.equal(complete.state, "COMPLETE");
-    assert.equal(complete.retry, 0);
-    assert.equal(complete.fallback, "disabled");
     const persisted = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
     assert.equal(persisted.claudeAiOauth.accessToken, NEW_ACCESS);
     assert.equal(persisted.claudeAiOauth.refreshToken, NEW_REFRESH);
@@ -185,6 +183,8 @@ test("durable generation attempt binds the injected adapter to one synthetic ref
     const terminalText = fs.readFileSync(complete.terminal_path, "utf8");
     const terminal = JSON.parse(terminalText);
     assert.equal(terminal.state, "COMPLETE");
+    assert.equal(terminal.retry, 0);
+    assert.equal(terminal.fallback, "disabled");
     assert.equal(terminal.credential_values_recorded, false);
     for (const secret of [OLD_ACCESS, OLD_REFRESH, NEW_ACCESS, NEW_REFRESH]) {
       assert.equal(terminalText.includes(secret), false);
