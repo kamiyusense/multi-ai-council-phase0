@@ -4,8 +4,10 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 IMAGE="phase0-claude-runtime:2.1.283"
 DELAY_MS="${MOCK_DELAY_MS:-3000}"
+export DELAY_MS
 NET="phase0-oauth-pty-${GITHUB_RUN_ID:-local}"
 MOCK="phase0-oauth-pty-mock-${GITHUB_RUN_ID:-local}"
+MODEL_MOCK="phase0-oauth-pty-model-${GITHUB_RUN_ID:-local}"
 CLI="phase0-oauth-pty-cli-${GITHUB_RUN_ID:-local}"
 TMP="$(mktemp -d)"
 CERTS="$TMP/certs"
@@ -22,7 +24,7 @@ NEW_REFRESH="sk-ant-ort01-$(printf 'd%.0s' $(seq 1 96))"
 export OLD_ACCESS OLD_REFRESH NEW_ACCESS NEW_REFRESH
 
 cleanup() {
-  docker rm -f "$CLI" "$MOCK" >/dev/null 2>&1 || true
+  docker rm -f "$CLI" "$MOCK" "$MODEL_MOCK" >/dev/null 2>&1 || true
   docker network rm "$NET" >/dev/null 2>&1 || true
   sudo rm -rf "$TMP"
 }
@@ -42,20 +44,38 @@ EOF
 openssl x509 -req   -in "$CERTS/server.csr"   -CA "$CERTS/ca.crt"   -CAkey "$CERTS/ca.key"   -CAcreateserial   -out "$CERTS/server.crt"   -days 1   -extfile "$CERTS/ext.cnf" >/dev/null 2>&1
 
 chmod 0444 "$CERTS/ca.crt" "$CERTS/server.crt" "$CERTS/ca.key" "$CERTS/server.key"
-touch "$EVIDENCE/events.jsonl"
-chmod 0666 "$EVIDENCE/events.jsonl"
+touch "$EVIDENCE/events.jsonl" "$EVIDENCE/model-events.jsonl"
+chmod 0666 "$EVIDENCE/events.jsonl" "$EVIDENCE/model-events.jsonl"
 
 docker network create --internal "$NET" >/dev/null
 
 docker run -d --rm   --name "$MOCK"   --network "$NET"   --network-alias oauth-mock   -e MOCK_EXPECTED_REFRESH_TOKEN="$OLD_REFRESH"   -e MOCK_NEW_ACCESS_TOKEN="$NEW_ACCESS"   -e MOCK_NEW_REFRESH_TOKEN="$NEW_REFRESH"   -e MOCK_RESPONSE_DELAY_MS="$DELAY_MS"   -v "$ROOT/automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs:/fixture/mock.mjs:ro"   -v "$CERTS:/certs:ro"   -v "$EVIDENCE:/evidence"   --entrypoint node   "$IMAGE"   /fixture/mock.mjs >/dev/null
 
+docker run -d --rm \
+  --name "$MODEL_MOCK" \
+  --network "$NET" \
+  --network-alias model-mock \
+  -e MODEL_OLD_ACCESS="$OLD_ACCESS" \
+  -e MODEL_NEW_ACCESS="$NEW_ACCESS" \
+  -e MODEL_EVIDENCE_PATH=/evidence/model-events.jsonl \
+  -v "$ROOT/automation/command_bus/tests/fixtures/claude_model_auth_mock.mjs:/fixture/model.mjs:ro" \
+  -v "$EVIDENCE:/evidence" \
+  --entrypoint node \
+  "$IMAGE" \
+  /fixture/model.mjs >/dev/null
+
 for _ in $(seq 1 40); do
-  if docker logs "$MOCK" 2>&1 | grep -F "OAUTH_FIXTURE_PROXY_READY" >/dev/null; then
+  oauth_ready=0
+  model_ready=0
+  docker logs "$MOCK" 2>&1 | grep -F "OAUTH_FIXTURE_PROXY_READY" >/dev/null && oauth_ready=1 || true
+  docker logs "$MODEL_MOCK" 2>&1 | grep -F "MODEL_FIXTURE_READY" >/dev/null && model_ready=1 || true
+  if [ "$oauth_ready" = "1" ] && [ "$model_ready" = "1" ]; then
     break
   fi
   sleep 0.2
 done
 docker logs "$MOCK" 2>&1 | grep -F "OAUTH_FIXTURE_PROXY_READY" >/dev/null
+docker logs "$MODEL_MOCK" 2>&1 | grep -F "MODEL_FIXTURE_READY" >/dev/null
 
 export CASE
 python - <<'PY'
@@ -98,6 +118,11 @@ args=(
   -e TERM=xterm-256color
   -e CLAUDE_CONFIG_DIR=/fixture
   -e HTTPS_PROXY=http://oauth-mock:3129
+  -e NO_PROXY=model-mock
+  -e CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1
+  -e ANTHROPIC_BASE_URL=http://model-mock:8080
+  -e CLAUDE_CODE_MAX_RETRIES=0
+  -e CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK=1
   -e NODE_EXTRA_CA_CERTS=/certs/ca.crt
   -e DISABLE_UPDATES=1
   -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
