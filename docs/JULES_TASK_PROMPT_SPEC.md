@@ -11,6 +11,18 @@ Relay loops returned green suites while independent semantic review still found
 contract gaps. The goal is therefore not "make Jules try harder"; the goal is
 to make each task narrow, observable, bounded, and independently reviewable.
 
+## 0. Loop ID uniqueness before prompt composition
+
+For numbered Relay/Jules loops, the controller MUST NOT infer that "last loop + 1"
+is available from memory.
+
+Before composing the task, fresh-read the durable command-bus state and obtain a
+create-only claim at `automation/command_bus/loop_id_claims/<NNN>.json`.
+A claimed number is never recycled. If the path exists, select a different
+unused number. Ambiguous claim writes require readback, not retry.
+
+The eventual work branch and Jules command ID must match the durable claim.
+
 ## 1. Mandatory pre-dispatch rule
 
 Before creating any new Jules task, the controller MUST:
