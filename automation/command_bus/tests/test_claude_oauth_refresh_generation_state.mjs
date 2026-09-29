@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,6 +11,7 @@ import {
 import {
   createGenerationAttempt,
   stageGenerationPending,
+  commitGenerationPending,
 } from "../claude_oauth_refresh_generation_state.mjs";
 
 const SHA_A = "a".repeat(64);
@@ -327,6 +329,166 @@ test("malformed rotated credential blocks before pending write", () => {
     }
     const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
     assert.equal(fs.existsSync(path.join(generationDir, "pending.credentials.json")), false);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+function fileSha(filePath) {
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+}
+
+function createAttemptForCurrentCredential({ credentialPath, generation = 1, authorizationId = "AUTH-COMMIT" }) {
+  const attemptRecord = buildGenerationAttemptRecord({
+    authorizationId,
+    generation,
+    oldCredentialSha256: fileSha(credentialPath),
+  });
+  createGenerationAttempt({ credentialPath, generation, attemptRecord });
+  return attemptRecord;
+}
+
+test("commits pending credential by atomic rename and writes secret-free terminal", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    const attempt = createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+
+    const result = commitGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+    });
+
+    assert.equal(result.state, "COMPLETE");
+    assert.equal(result.network_allowed, false);
+    assert.equal(result.recovered_without_network, false);
+    assert.equal(result.old_credential_sha256, attempt.old_credential_sha256);
+
+    const activeText = fs.readFileSync(credentialPath, "utf8");
+    assert.match(activeText, new RegExp(NEW_ACCESS));
+    assert.match(activeText, new RegExp(NEW_REFRESH));
+    assert.equal(result.new_credential_sha256, fileSha(credentialPath));
+
+    const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
+    assert.equal(fs.existsSync(path.join(generationDir, "pending.credentials.json")), false);
+    const terminalPath = path.join(generationDir, "terminal.json");
+    assert.equal(fs.statSync(terminalPath).mode & 0o077, 0);
+    const terminalText = fs.readFileSync(terminalPath, "utf8");
+    const terminal = JSON.parse(terminalText);
+    assert.equal(terminal.state, "COMPLETE");
+    assert.equal(terminal.authorization_id, "AUTH-COMMIT");
+    assert.equal(terminal.old_credential_sha256, attempt.old_credential_sha256);
+    assert.equal(terminal.new_credential_sha256, result.new_credential_sha256);
+    assert.equal(terminal.credential_values_recorded, false);
+    assert.doesNotMatch(terminalText, new RegExp(NEW_ACCESS));
+    assert.doesNotMatch(terminalText, new RegExp(NEW_REFRESH));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("active credential drift blocks commit and preserves pending", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+    fs.writeFileSync(credentialPath, "{\"drift\":true}\n", { mode: 0o600 });
+    fs.chmodSync(credentialPath, 0o600);
+
+    assert.throws(
+      () => commitGenerationPending({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-COMMIT",
+      }),
+      /active credential changed after generation attempt/,
+    );
+    assert.equal(
+      fs.existsSync(path.join(dir, ".phase0-oauth-refresh", "000001", "pending.credentials.json")),
+      true,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("pending tamper blocks commit before active replacement", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+    const activeBefore = fs.readFileSync(credentialPath, "utf8");
+    const pendingPath = path.join(
+      dir,
+      ".phase0-oauth-refresh",
+      "000001",
+      "pending.credentials.json",
+    );
+    const pending = JSON.parse(fs.readFileSync(pendingPath, "utf8"));
+    pending.preserved.keep = false;
+    fs.writeFileSync(pendingPath, JSON.stringify(pending, null, 2) + "\n", { mode: 0o600 });
+    fs.chmodSync(pendingPath, 0o600);
+
+    assert.throws(
+      () => commitGenerationPending({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-COMMIT",
+      }),
+      /pending credential SHA-256 does not match receipt/,
+    );
+    assert.equal(fs.readFileSync(credentialPath, "utf8"), activeBefore);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("commit requires matching authorization and no preexisting terminal", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+    assert.throws(
+      () => commitGenerationPending({
+        credentialPath,
+        generation: 1,
+        authorizationId: "OTHER-AUTH",
+      }),
+      /commit identity mismatch/,
+    );
+
+    const terminalPath = path.join(dir, ".phase0-oauth-refresh", "000001", "terminal.json");
+    fs.writeFileSync(terminalPath, "{}\n", { mode: 0o600 });
+    fs.chmodSync(terminalPath, 0o600);
+    assert.throws(
+      () => commitGenerationPending({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-COMMIT",
+      }),
+      /terminal already exists/,
+    );
   } finally {
     cleanup(dir);
   }
