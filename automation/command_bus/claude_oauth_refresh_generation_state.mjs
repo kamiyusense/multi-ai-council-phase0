@@ -1,9 +1,12 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 import {
   buildGenerationAttemptRecord,
+  buildGenerationPendingReceipt,
   generationStatePaths,
+  validateRefreshAuthorizationId,
 } from "./claude_oauth_refresh_generation.mjs";
 
 function stableJson(value) {
@@ -124,6 +127,123 @@ export function createGenerationAttempt({
     generation,
     generation_dir: paths.dir,
     attempt_path: paths.attempt,
+    network_allowed: false,
+  });
+}
+
+const MAX_PENDING_CREDENTIAL_BYTES = 256 * 1024;
+
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function sha256Text(text) {
+  return crypto.createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex");
+}
+
+function canonicalRotatedCredentialText(text) {
+  if (typeof text !== "string" || !text) {
+    throw new Error("BLOCKED: rotated credential JSON text is required");
+  }
+  if (Buffer.byteLength(text, "utf8") > MAX_PENDING_CREDENTIAL_BYTES) {
+    throw new Error("BLOCKED: rotated credential exceeds fixed size limit");
+  }
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    throw new Error("BLOCKED: rotated credential is not valid JSON");
+  }
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
+    throw new Error("BLOCKED: rotated credential document is malformed");
+  }
+  const oauth = doc.claudeAiOauth;
+  if (!oauth || typeof oauth !== "object" || Array.isArray(oauth)) {
+    throw new Error("BLOCKED: rotated credential claudeAiOauth object is missing");
+  }
+  if (typeof oauth.accessToken !== "string" || oauth.accessToken.length < 16) {
+    throw new Error("BLOCKED: rotated access token is missing or malformed");
+  }
+  if (typeof oauth.refreshToken !== "string" || oauth.refreshToken.length < 16) {
+    throw new Error("BLOCKED: rotated refresh token is missing or malformed");
+  }
+  if (!Number.isInteger(oauth.expiresAt) || oauth.expiresAt <= 0) {
+    throw new Error("BLOCKED: rotated access-token expiry is missing or malformed");
+  }
+  return stableJson(doc);
+}
+
+function assertPrivateRegularStateFile(filePath, label) {
+  const stat = fs.lstatSync(filePath);
+  if (stat.isSymbolicLink()) {
+    throw new Error(`BLOCKED: ${label} must not be a symbolic link`);
+  }
+  if (!stat.isFile()) {
+    throw new Error(`BLOCKED: ${label} is not a regular file`);
+  }
+  if ((stat.mode & 0o077) !== 0) {
+    throw new Error(`BLOCKED: ${label} must not be group/world accessible`);
+  }
+}
+
+export function stageGenerationPending({
+  credentialPath,
+  generation,
+  authorizationId,
+  rotatedCredentialText,
+}) {
+  assertPrivateRegularFileNoRead(credentialPath);
+  const authorization = validateRefreshAuthorizationId(authorizationId);
+  const paths = generationStatePaths(credentialPath, generation);
+
+  assertPrivateDirectory(paths.root, "refresh state root");
+  assertPrivateDirectory(paths.dir, "refresh generation directory");
+  if (!fs.existsSync(paths.attempt)) {
+    throw new Error("BLOCKED: durable generation attempt is missing");
+  }
+  assertPrivateRegularStateFile(paths.attempt, "generation attempt");
+  const attempt = canonicalAttemptRecord(readJson(paths.attempt));
+  if (attempt.generation !== generation || attempt.authorization_id !== authorization) {
+    throw new Error("BLOCKED: generation attempt identity mismatch");
+  }
+  for (const existing of [paths.pending, paths.pending_receipt, paths.terminal]) {
+    if (fs.existsSync(existing)) {
+      throw new Error("BLOCKED: generation already has pending or terminal state");
+    }
+  }
+
+  const pendingText = canonicalRotatedCredentialText(rotatedCredentialText);
+  let pendingSha;
+  try {
+    writeExclusiveDurable(paths.pending, pendingText);
+    pendingSha = sha256Text(pendingText);
+  } catch (error) {
+    throw new Error(
+      `UNKNOWN: durable pending credential write failed: ${error?.code || "write_error"}`,
+    );
+  }
+
+  const receipt = buildGenerationPendingReceipt({
+    authorizationId: authorization,
+    generation,
+    oldCredentialSha256: attempt.old_credential_sha256,
+    pendingCredentialSha256: pendingSha,
+  });
+
+  try {
+    writeExclusiveDurable(paths.pending_receipt, stableJson(receipt));
+  } catch (error) {
+    throw new Error(
+      `UNKNOWN: pending credential may be durable but pending receipt write failed: ${error?.code || "write_error"}`,
+    );
+  }
+
+  return Object.freeze({
+    state: "PENDING_DURABLE",
+    generation,
+    pending_credential_sha256: pendingSha,
+    pending_path: paths.pending,
+    pending_receipt_path: paths.pending_receipt,
     network_allowed: false,
   });
 }
