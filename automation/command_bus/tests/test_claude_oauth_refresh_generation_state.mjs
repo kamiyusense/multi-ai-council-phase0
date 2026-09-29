@@ -12,6 +12,7 @@ import {
   createGenerationAttempt,
   stageGenerationPending,
   commitGenerationPending,
+  recoverGeneration,
 } from "../claude_oauth_refresh_generation_state.mjs";
 
 const SHA_A = "a".repeat(64);
@@ -488,6 +489,170 @@ test("commit requires matching authorization and no preexisting terminal", () =>
         authorizationId: "AUTH-COMMIT",
       }),
       /terminal already exists/,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("recovery reads back terminal COMPLETE with zero network", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+    const committed = commitGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+    });
+
+    const recovered = recoverGeneration({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+    });
+    assert.equal(recovered.state, "COMPLETE");
+    assert.equal(recovered.network_allowed, false);
+    assert.equal(recovered.terminal.new_credential_sha256, committed.new_credential_sha256);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("recovery completes durable pending state by local rename only", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+
+    const recovered = recoverGeneration({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+    });
+    assert.equal(recovered.state, "COMPLETE");
+    assert.equal(recovered.network_allowed, false);
+    assert.equal(recovered.recovered_without_network, true);
+    const activeText = fs.readFileSync(credentialPath, "utf8");
+    assert.match(activeText, new RegExp(NEW_ACCESS));
+    assert.match(activeText, new RegExp(NEW_REFRESH));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("recovery recreates terminal after rename crash with zero network", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+    const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
+    const pendingPath = path.join(generationDir, "pending.credentials.json");
+    const terminalPath = path.join(generationDir, "terminal.json");
+
+    fs.renameSync(pendingPath, credentialPath);
+    assert.equal(fs.existsSync(terminalPath), false);
+
+    const recovered = recoverGeneration({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+    });
+    assert.equal(recovered.state, "RECOVERED_AFTER_RENAME");
+    assert.equal(recovered.network_allowed, false);
+    assert.equal(recovered.recovered_without_network, true);
+    assert.equal(fs.existsSync(terminalPath), true);
+
+    const terminal = JSON.parse(fs.readFileSync(terminalPath, "utf8"));
+    assert.equal(terminal.recovered_without_network, true);
+    assert.equal(terminal.new_credential_sha256, fileSha(credentialPath));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("attempt without durable pending receipt remains UNKNOWN and no-retry", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    assert.throws(
+      () => recoverGeneration({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-COMMIT",
+      }),
+      /may have consumed the old token.*do not retry/,
+    );
+    assert.equal(fs.readFileSync(credentialPath, "utf8"), "{}\n");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("recovery returns NOT_STARTED only when generation directory is absent", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    const result = recoverGeneration({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+    });
+    assert.deepEqual(result, {
+      state: "NOT_STARTED",
+      generation: 1,
+      network_allowed: false,
+    });
+
+    const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
+    fs.mkdirSync(generationDir, { recursive: true, mode: 0o700 });
+    assert.throws(
+      () => recoverGeneration({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-COMMIT",
+      }),
+      /directory exists without durable attempt/,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("recovery fails UNKNOWN when active hash matches neither old nor pending", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createAttemptForCurrentCredential({ credentialPath });
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-COMMIT",
+      rotatedCredentialText: rotatedText(),
+    });
+    fs.writeFileSync(credentialPath, "{\"drift\":true}\n", { mode: 0o600 });
+    fs.chmodSync(credentialPath, 0o600);
+
+    assert.throws(
+      () => recoverGeneration({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-COMMIT",
+      }),
+      /matches neither old nor pending/,
     );
   } finally {
     cleanup(dir);
