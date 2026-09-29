@@ -897,3 +897,50 @@ Cycle members:
 - live provider/model/API execution: no
 - required invariant: this layer only constructs a durable provenance readback request; provenance_verified=false / execution_authorized=false / dispatch_allowed=false / live_ready=false remain fixed
 
+### Loop 053 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: static durable-provenance verification-request contract
+- Jules session: `13814988757249161316`
+- Jules PR: #126
+- isolated base: `jules-work/relay-dev-loop-053-provenance-request`
+- canonical snapshot parent: `d64345d67a52cd135858a667dce1d3e709e8127c`
+- initial Jules candidate: `9740e24629516d1c599fa8e0107ecf5e39007d6e`
+- corrected isolated candidate: `685b390adf22555f6ed49b17aaadabb029dd4eda`
+- accepted canonical head: `48036a4b4cd726652ca7c220f869e6c51394a9cc`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial semantic gaps despite green tests:
+  - ref validation rejected the explicitly-listed dangerous forms but still admitted non-conservative Git-ref characters such as colon, tilde, caret, question mark, asterisk, and bracket
+  - ref component edge cases such as hidden components, trailing dot, and .lock suffix were not fail-closed
+  - locator digest sensitivity was tested only for path, not ref and expected record hash
+  - no AST/static proof existed to exclude ambient GitHub/network/process/wall-clock/random/live-provider operations
+  - schema tests did not assert exact property set or explicitly guard against authorizing/live state strings
+- initial exact validation run `36510775864`: SUCCESS; 507 tests PASS; compileall PASS; diff-check PASS, but semantic review rejected the candidate
+- Chat correction commits on isolated candidate: 4
+- first corrected validation run `36510923357`: FAIL due to the new AST test falsely treating ordinary `dict.get()` as an HTTP GET operation; implementation itself was not implicated
+- failure cause was read back before any further validation request; the AST test was narrowed while preserving network/GitHub import bans
+- corrected candidate exact validation run `36510983557`: SUCCESS
+- canonical exact validation run `36511096997`: SUCCESS
+- exact validation: 516 tests PASS; compileall PASS; diff-check PASS
+- corrected provenance-request layer now:
+  - validates exact structural approval receipt and recomputes its approval_record_sha256
+  - validates conservative owner/repo, Git ref, relative JSON path, and expected-record SHA-256 locator structure
+  - rejects non-conservative/invalid ref component forms and traversal-like locator forms
+  - never echoes repository/ref/path/source_kind raw locator strings into output
+  - binds locator and safe request with deterministic lowercase SHA-256 digests
+  - keeps provenance_verified=false / execution_authorized=false / dispatch_allowed=false / live_ready=false always
+  - renderer exposes only safe static/readback-required wording
+  - includes AST/static proof against ambient I/O/network/GitHub/process/wall-clock/random/live-provider operations
+- canonical publication: exact six validated blobs copied into one normal fast-forward canonical commit
+- candidate/canonical six-file blob equality after publication: PASS
+- correction_commits_on_isolated_candidate: 4
+- rejules_sessions: 0
+- retry=0 for Jules dispatch / fallback=disabled
+- validation rerun occurred only after a confirmed test-only false-positive cause and a new corrected target SHA; no ambiguous write was blindly retried
+- GitHub durable provenance readback actually performed: no
+- human provenance verified: no
+- execution authorized: no
+- live provider/model/API execution: no
+- merge: no
+- isolation result: PASS
+
