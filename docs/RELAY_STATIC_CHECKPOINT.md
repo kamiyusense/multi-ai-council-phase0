@@ -279,3 +279,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - common_model_verification remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
 - First live provider turn remains unauthorized.
+
+## Abort Readback Proof Contract Static Checkpoint
+- Implemented static abort readback proof contract.
+- This checkpoint is strictly PREPARED/static abort-readback-proof-contract status only.
+- Zero live abort/readback evidence was acquired.
+- common_abort_readback remains unresolved/BLOCKED_UNKNOWN.
+- No real live blocker is resolved.
