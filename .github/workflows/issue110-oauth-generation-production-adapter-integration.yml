@@ -37,12 +37,12 @@ jobs:
       - name: Checkout exact composition head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Verify exact checked-out head
         shell: bash
-        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
 
       - name: Run fixed adapter and generation composition tests
         shell: bash
