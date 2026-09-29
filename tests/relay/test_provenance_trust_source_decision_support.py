@@ -1,87 +1,239 @@
-import unittest
 import os
+import re
+import unittest
+
 
 class TestProvenanceTrustSourceDecisionSupport(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
-        cls.doc_path = os.path.join("docs", "RELAY_PROVENANCE_TRUST_SOURCE_DECISION_SUPPORT.md")
-        cls.checkpoint_path = os.path.join("docs", "RELAY_STATIC_CHECKPOINT.md")
+    def setUpClass(cls) -> None:
+        base = os.path.join(os.path.dirname(__file__), "..", "..")
+        with open(
+            os.path.join(
+                base,
+                "docs",
+                "RELAY_PROVENANCE_TRUST_SOURCE_DECISION_SUPPORT.md",
+            ),
+            "r",
+            encoding="utf-8",
+        ) as stream:
+            cls.doc = stream.read()
+        with open(
+            os.path.join(base, "docs", "RELAY_STATIC_CHECKPOINT.md"),
+            "r",
+            encoding="utf-8",
+        ) as stream:
+            cls.checkpoint = stream.read()
 
-        with open(cls.doc_path, 'r', encoding='utf-8') as f:
-            cls.doc_content = f.read()
+    def _matrix_rows(self) -> dict[str, str]:
+        rows = {}
+        for line in self.doc.splitlines():
+            if not line.startswith("| "):
+                continue
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            if cells and cells[0] in {
+                "KEEP_NOT_WIRED",
+                "GITHUB_ACTIONS_READBACK_ONLY",
+                "GITHUB_OIDC_AUTHENTICATOR",
+                "GITHUB_ARTIFACT_ATTESTATION",
+            }:
+                rows[cells[0]] = line
+        return rows
 
-        with open(cls.checkpoint_path, 'r', encoding='utf-8') as f:
-            cls.checkpoint_content = f.read()
+    def test_exact_candidate_rows_exist_once(self) -> None:
+        rows = self._matrix_rows()
+        self.assertEqual(
+            set(rows),
+            {
+                "KEEP_NOT_WIRED",
+                "GITHUB_ACTIONS_READBACK_ONLY",
+                "GITHUB_OIDC_AUTHENTICATOR",
+                "GITHUB_ARTIFACT_ATTESTATION",
+            },
+        )
+        for candidate in rows:
+            self.assertEqual(
+                sum(
+                    1
+                    for line in self.doc.splitlines()
+                    if line.startswith(f"| {candidate} |")
+                ),
+                1,
+            )
 
-    def test_candidates_and_classifications_present(self):
-        # 9. Assert durable presence of every candidate row/classification
-        self.assertIn("KEEP_NOT_WIRED", self.doc_content)
-        self.assertIn("current safe default", self.doc_content)
-        self.assertIn("no provenance advancement", self.doc_content)
+    def test_project_classifications_are_exactly_preserved(self) -> None:
+        rows = self._matrix_rows()
+        self.assertIn(
+            "current safe default / no provenance advancement",
+            rows["KEEP_NOT_WIRED"],
+        )
+        self.assertIn(
+            "transport evidence only / insufficient as authenticator",
+            rows["GITHUB_ACTIONS_READBACK_ONLY"],
+        )
+        self.assertIn(
+            "candidate / NOT_AUTHORIZED",
+            rows["GITHUB_OIDC_AUTHENTICATOR"],
+        )
+        self.assertIn(
+            "strong candidate / NOT_AUTHORIZED",
+            rows["GITHUB_ARTIFACT_ATTESTATION"],
+        )
 
-        self.assertIn("GITHUB_ACTIONS_READBACK_ONLY", self.doc_content)
-        self.assertIn("transport evidence only", self.doc_content)
-        self.assertIn("insufficient as authenticator", self.doc_content)
+    def test_zero_choice_and_zero_permission_boundary_is_explicit(self) -> None:
+        self.assertIn("ZERO ARCHITECTURE CHOICE / ZERO PERMISSION CHANGE", self.doc)
+        self.assertIn("does not choose a trust source", self.doc)
+        self.assertIn("does not add workflow permissions", self.doc)
+        self.assertIn("does not request an OIDC token", self.doc)
+        self.assertIn("does not create an artifact attestation", self.doc)
 
-        self.assertIn("GITHUB_OIDC_AUTHENTICATOR", self.doc_content)
-        self.assertIn("candidate / NOT_AUTHORIZED", self.doc_content)
+    def test_permission_names_are_confined_to_candidate_rows_and_explanation(self) -> None:
+        rows = self._matrix_rows()
+        self.assertNotIn("id-token: write", rows["KEEP_NOT_WIRED"])
+        self.assertNotIn("id-token: write", rows["GITHUB_ACTIONS_READBACK_ONLY"])
+        self.assertIn("id-token: write", rows["GITHUB_OIDC_AUTHENTICATOR"])
+        self.assertIn("id-token: write", rows["GITHUB_ARTIFACT_ATTESTATION"])
+        self.assertNotIn("attestations: write", rows["GITHUB_OIDC_AUTHENTICATOR"])
+        self.assertIn(
+            "attestations: write",
+            rows["GITHUB_ARTIFACT_ATTESTATION"],
+        )
+        self.assertIn(
+            "contents: read",
+            rows["GITHUB_ARTIFACT_ATTESTATION"],
+        )
+        self.assertNotIn("id-token: write", self.checkpoint)
+        self.assertNotIn("attestations: write", self.checkpoint)
 
-        self.assertIn("GITHUB_ARTIFACT_ATTESTATION", self.doc_content)
-        self.assertIn("strong candidate / NOT_AUTHORIZED", self.doc_content)
+    def test_oidc_and_attestation_do_not_overclaim_human_intent(self) -> None:
+        rows = self._matrix_rows()
+        self.assertIn(
+            "does **not** by itself prove a human intentionally approved",
+            rows["GITHUB_OIDC_AUTHENTICATOR"],
+        )
+        self.assertIn(
+            "does **not** by itself prove human intent",
+            rows["GITHUB_ARTIFACT_ATTESTATION"],
+        )
+        self.assertNotIn(
+            "Independently Authenticates Execution/Human Provenance | Yes",
+            self.doc,
+        )
 
-    def test_zero_choice_boundary(self):
-        # 9. Assert the zero-choice/zero-permission boundary
-        self.assertIn("ZERO ARCHITECTURE CHOICE", self.doc_content)
-        self.assertIn("ZERO PERMISSION CHANGE", self.doc_content)
+    def test_actions_readback_is_transport_evidence_only(self) -> None:
+        row = self._matrix_rows()["GITHUB_ACTIONS_READBACK_ONLY"]
+        self.assertIn("transport evidence only", row)
+        self.assertIn("insufficient as authenticator", row)
+        self.assertIn(
+            "does **not** independently authenticate human intent",
+            row,
+        )
+        self.assertIn(
+            "does **not** authenticate itself",
+            self.doc,
+        )
 
-    def test_permissions_isolated(self):
-        # 10. Assert id-token: write only in OIDC/Attestation, attestations: write only in Artifact Attestation
-        lines = self.doc_content.split('\n')
-        for line in lines:
-            if "id-token: write" in line:
-                self.assertTrue("GITHUB_OIDC_AUTHENTICATOR" in line or "GITHUB_ARTIFACT_ATTESTATION" in line or "OIDC" in line or "Attestation" in line or "Documented Permissions Needed" in line, f"Found id-token: write outside allowed context: {line}")
-            if "attestations: write" in line:
-                self.assertTrue("GITHUB_ARTIFACT_ATTESTATION" in line or "Artifact Attestation" in line or "Documented Permissions Needed" in line, f"Found attestations: write outside allowed context: {line}")
+    def test_attestation_verification_boundary_is_explicit(self) -> None:
+        self.assertIn(
+            "attestation signature/timestamps and signer identity must be verified",
+            self.doc,
+        )
+        self.assertIn(
+            "Merely retrieving an attestation record is not enough",
+            self.doc,
+        )
 
-        # Make sure they are actually there
-        self.assertIn("id-token: write", self.doc_content)
-        self.assertIn("attestations: write", self.doc_content)
+    def test_exact_remaining_human_decision_is_durable(self) -> None:
+        self.assertIn("## Exact remaining human decision", self.doc)
+        self.assertIn(
+            "Choose whether to keep production provenance NOT_WIRED or authorize a narrowly scoped signed trust mechanism",
+            self.doc,
+        )
+        self.assertIn(
+            "separately choose OIDC vs Artifact Attestation",
+            self.doc,
+        )
+        self.assertIn("This document does not make that choice", self.doc)
 
-        # Verify they don't appear in RELAY_STATIC_CHECKPOINT.md
-        self.assertNotIn("id-token: write", self.checkpoint_content)
-        self.assertNotIn("attestations: write", self.checkpoint_content)
+    def test_provenance_verification_remains_separate_from_execution(self) -> None:
+        self.assertIn(
+            "Future provenance verification must remain separate from",
+            self.doc,
+        )
+        self.assertIn("execution authorization", self.doc)
+        self.assertIn("first-live dispatch", self.doc)
+        self.assertIn("provider/model execution", self.doc)
+        self.assertIn(
+            "first live provider turn remains a separate bounded action requiring explicit human approval",
+            self.doc,
+        )
 
-    def test_no_false_provenance_claims(self):
-        # 11. Assert no language claims provenance_verified=true, etc.
-        false_claims = [
+    def test_no_authorized_or_wired_claims_exist(self) -> None:
+        for claim in (
             "provenance_verified=true",
             "execution_authorized=true",
             "dispatch_allowed=true",
             "live_ready=true",
-            "production authenticator wired"
-        ]
+            "production authenticator wired",
+        ):
+            self.assertNotIn(claim.lower(), self.doc.lower())
+            self.assertNotIn(claim.lower(), self.checkpoint.lower())
 
-        lower_doc = self.doc_content.lower()
-        lower_check = self.checkpoint_content.lower()
-        for claim in false_claims:
-            # Need to be careful because 'provenance_verified=false' might exist
-            self.assertNotIn(claim.lower(), lower_doc)
-            self.assertNotIn(claim.lower(), lower_check)
+        self.assertIn("Production authenticators remain **NOT_WIRED**", self.doc)
 
-    def test_actions_readback_classification(self):
-        # 12. Assert GitHub Actions readback is explicitly classified as transport evidence only / insufficient independent authenticator
-        self.assertIn("transport evidence only", self.doc_content)
-        self.assertIn("insufficient as authenticator", self.doc_content)
+    def test_no_real_live_blocker_claim(self) -> None:
+        self.assertIn(
+            "does not resolve any real live blocker",
+            self.doc,
+        )
+        self.assertIn(
+            "No synthetic fixture",
+            self.doc,
+        )
+        self.assertIn(
+            "No real live blocker is resolved",
+            self.checkpoint,
+        )
 
-    def test_provenance_verification_remains_separate(self):
-        # 13. Assert future provenance verification remains separate from provider execution
-        self.assertIn("keep provenance verification separate from execution authorization", self.doc_content)
-        self.assertIn("first-live dispatch", self.doc_content)
+    def test_checkpoint_stays_prepared_static_only(self) -> None:
+        self.assertIn(
+            "PREPARED/static decision-support status only",
+            self.checkpoint,
+        )
+        self.assertIn(
+            "production authenticators remain NOT_WIRED",
+            self.checkpoint,
+        )
 
-    def test_no_real_blocker_resolved(self):
-        # 14. Assert docs explicitly say no real live blocker is resolved
-        self.assertIn("No real live blocker is resolved by this matrix or any synthetic fixtures", self.doc_content)
+    def test_matrix_has_required_comparison_dimensions(self) -> None:
+        header = next(
+            line
+            for line in self.doc.splitlines()
+            if line.startswith("| Candidate |")
+        )
+        required = (
+            "Project classification",
+            "Evidence strength",
+            "Independent authentication capability",
+            "Documented permissions needed",
+            "Repository/workflow mutation required",
+            "New secret/key",
+            "Offline/static testability",
+            "Implementation complexity",
+            "Blast radius",
+            "What it still does NOT prove",
+            "Explicit human authorization before implementation",
+        )
+        for dimension in required:
+            self.assertIn(dimension, header)
 
-    def test_checkpoint_status(self):
-        # 16. Update RELAY_STATIC_CHECKPOINT.md with PREPARED/static decision-support status only.
-        self.assertIn("PREPARED/static decision-support status only", self.checkpoint_content)
+    def test_no_accidental_permission_yaml_or_live_command(self) -> None:
+        self.assertIsNone(
+            re.search(r"(?m)^\s*permissions:\s*$", self.doc),
+        )
+        for forbidden in (
+            "gh attestation verify ",
+            "curl ",
+            "ACTIONS_ID_TOKEN_REQUEST_URL",
+            "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+        ):
+            self.assertNotIn(forbidden, self.doc)
