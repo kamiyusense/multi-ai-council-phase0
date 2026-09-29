@@ -10,15 +10,18 @@ Base/checkpoint commit: `230026f53f412cd52d8e2eac45457236c916b64d`
 Before changing code, read the following from the same repository/checkpoint:
 
 0. `AGENTS.md` — repository-wide user communication and operating rules
-1. `HANDOVER_CURRENT.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/PHASE0_IMPLEMENTATION_SPEC.md`
-4. `docs/PHASE0_IMPLEMENTATION_CHECKLIST.md`
-5. `docs/DEVELOPMENT_WORKFLOW.md`
-6. `docs/CHAT_WORK_AUTONOMY_RULES.md`
-7. `docs/PIONEER_OSS_RESEARCH_HANDOVER.md`
+1. `docs/JULES_TASK_PROMPT_SPEC.md` — MANDATORY task/prompt contract; read before doing any task work
+2. `HANDOVER_CURRENT.md`
+3. `docs/ARCHITECTURE.md`
+4. `docs/PHASE0_IMPLEMENTATION_SPEC.md`
+5. `docs/PHASE0_IMPLEMENTATION_CHECKLIST.md`
+6. `docs/DEVELOPMENT_WORKFLOW.md`
+7. `docs/CHAT_WORK_AUTONOMY_RULES.md`
+8. `docs/PIONEER_OSS_RESEARCH_HANDOVER.md`
 
 If this handoff conflicts with the formal Phase 0 spec/architecture, do not silently resolve it. Preserve the formal Phase 0 boundary and report the conflict.
+
+Every Jules assignment must also obey `docs/JULES_TASK_PROMPT_SPEC.md`: exact file fence, reuse-first, direct semantic assertions, explicit negative cases, no vacuous tests, bounded commands, and stop/report instead of silently widening scope.
 
 ## 1. Mission
 
