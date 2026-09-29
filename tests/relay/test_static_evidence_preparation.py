@@ -162,7 +162,7 @@ class TestStaticEvidencePreparation(unittest.TestCase):
             "No provider/model turn is authorized",
             "first real provider/model turn remains separately human-approved",
         ):
-            self.assertIn(phrase, self.doc)
+            self.assertIn(phrase, " ".join(self.doc.split()))
 
     def test_checkpoint_preserves_prepared_static_boundary(self) -> None:
         section = self.checkpoint.split(
