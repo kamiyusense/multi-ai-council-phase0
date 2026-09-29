@@ -6,7 +6,7 @@ This file is the durable recovery note for the 💙 blue lane.
 
 - repository: `kamiyusense/multi-ai-council-phase0`
 - carrier branch: `cloud-work/carrier-blue-v1`
-- carrier PR: assigned by GitHub; after PR creation the PR body is authoritative
+- carrier PR: #167
 - required PR label: `cloud-blue`
 - command review prefix: `[CW_BLUE_V1]`
 - receipt comment prefix: `[CW_BLUE_RECEIPT_V1]`
