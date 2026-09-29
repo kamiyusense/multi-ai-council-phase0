@@ -22,6 +22,12 @@ one user input
 
 Phase 0 is intended to remove human copy/paste relay work while preserving explicit safety boundaries and evidence.
 
+## 0. Jules task prompt contract — MANDATORY
+
+Before creating or dispatching **any** new Jules task, read `docs/JULES_TASK_PROMPT_SPEC.md`. It is the canonical contract for task sizing, prompt order, exact allowed paths, reuse-first behavior, Do Not Touch boundaries, semantic acceptance criteria, negative/tamper cases, vacuous-test prohibition, validation commands, publication conditions, and stop conditions.
+
+Do not treat a green Jules test suite or Jules self-report as acceptance. The controller/reviewer must independently inspect semantics and evidence after Jules returns.
+
 ## 2. Repositories
 
 ### Council record / design source
@@ -259,13 +265,14 @@ UNKNOWN on a safety boundary blocks live execution, not static implementation.
 A new chat should:
 
 1. read this handover
-2. read the implementation spec and checklist
-3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-4. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
-5. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
-6. inspect the current open PR / branch before changing files
-7. preserve all fixed safety decisions
-8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
-9. continue static implementation without live provider calls
-10. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-11. keep GitHub writes within this private repository and authorized feature branches/PR scope
+2. **before any Jules dispatch, read `docs/JULES_TASK_PROMPT_SPEC.md`**
+3. read the implementation spec and checklist
+4. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
+5. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
+6. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
+7. inspect the current open PR / branch before changing files
+8. preserve all fixed safety decisions
+9. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
+10. continue static implementation without live provider calls
+11. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+12. keep GitHub writes within this private repository and authorized feature branches/PR scope
