@@ -87,11 +87,13 @@ class LoopIdClaimTests(unittest.TestCase):
         self.assertEqual(normalize_lane_alias("JA"), "J-RED")
         self.assertEqual(normalize_lane_alias("JB"), "J-BLUE")
         self.assertEqual(normalize_lane_alias("JC"), "J-YELLOW")
+        self.assertEqual(normalize_lane_alias("JD"), "J-GREEN")
+        self.assertEqual(normalize_lane_alias("JG"), "J-GREEN")
         self.assertEqual(normalize_lane_alias("green"), "J-GREEN")
         self.assertEqual(normalize_lane_alias("💚"), "J-GREEN")
         self.assertEqual(lane_display_for("J-GREEN"), "💚")
         with self.assertRaisesRegex(ValueError, "unknown Jules lane alias"):
-            normalize_lane_alias("JD")
+            normalize_lane_alias("PURPLE")
 
     def test_green_lane_is_dispatchable_without_blue_or_yellow_claims(self):
         verified = verify_command_claim(request(), claim())
