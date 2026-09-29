@@ -1,0 +1,46 @@
+name: Issue 110 OAuth refresh generation records static proof
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-refresh-generation-records-v1
+    paths:
+      - .github/workflows/issue110-oauth-refresh-generation-records.yml
+      - automation/command_bus/claude_oauth_refresh_generation.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_generation.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact generation-record head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run generation record tests
+        shell: bash
+        run: node --test automation/command_bus/tests/test_claude_oauth_refresh_generation.mjs
+
+      - name: Verify purity and diff
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_generation.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_generation.mjs
+          python - <<'PY'
+          from pathlib import Path
+          text=Path("automation/command_bus/claude_oauth_refresh_generation.mjs").read_text()
+          for marker in ("node:fs","node:net","node:tls","fetch("):
+              assert marker not in text, marker
+          print("OAUTH_REFRESH_GENERATION_RECORDS_PURE_PASS")
+          PY
+          git diff --check

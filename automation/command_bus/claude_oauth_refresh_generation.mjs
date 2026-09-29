@@ -129,3 +129,105 @@ export function validateGenerationStart({
     credential_sha256: current,
   });
 }
+
+const AUTHORIZATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+
+export function validateRefreshAuthorizationId(value) {
+  if (typeof value !== "string" || !AUTHORIZATION_ID_PATTERN.test(value)) {
+    throw new Error("BLOCKED: authorization id must use 1-64 safe characters");
+  }
+  return value;
+}
+
+function freezeRecord(record) {
+  return Object.freeze(record);
+}
+
+export function buildGenerationAttemptRecord({
+  authorizationId,
+  generation,
+  oldCredentialSha256,
+}) {
+  const authorization = validateRefreshAuthorizationId(authorizationId);
+  validateRefreshGeneration(generation);
+  const oldSha = validateCredentialSha256(
+    oldCredentialSha256,
+    "old credential SHA-256",
+  );
+  return freezeRecord({
+    schema_version: 2,
+    authorization_id: authorization,
+    generation,
+    predecessor_generation: generation === 1 ? null : generation - 1,
+    state: "STARTED",
+    old_credential_sha256: oldSha,
+    credential_values_recorded: false,
+    retry: 0,
+    fallback: "disabled",
+  });
+}
+
+export function buildGenerationPendingReceipt({
+  authorizationId,
+  generation,
+  oldCredentialSha256,
+  pendingCredentialSha256,
+}) {
+  const authorization = validateRefreshAuthorizationId(authorizationId);
+  validateRefreshGeneration(generation);
+  const oldSha = validateCredentialSha256(
+    oldCredentialSha256,
+    "old credential SHA-256",
+  );
+  const pendingSha = validateCredentialSha256(
+    pendingCredentialSha256,
+    "pending credential SHA-256",
+  );
+  return freezeRecord({
+    schema_version: 2,
+    authorization_id: authorization,
+    generation,
+    predecessor_generation: generation === 1 ? null : generation - 1,
+    state: "PENDING_DURABLE",
+    old_credential_sha256: oldSha,
+    pending_credential_sha256: pendingSha,
+    credential_values_recorded: false,
+    retry: 0,
+    fallback: "disabled",
+  });
+}
+
+export function buildGenerationTerminalRecord({
+  authorizationId,
+  generation,
+  oldCredentialSha256,
+  newCredentialSha256,
+  recoveredWithoutNetwork,
+}) {
+  const authorization = validateRefreshAuthorizationId(authorizationId);
+  validateRefreshGeneration(generation);
+  const oldSha = validateCredentialSha256(
+    oldCredentialSha256,
+    "old credential SHA-256",
+  );
+  const newSha = validateCredentialSha256(
+    newCredentialSha256,
+    "new credential SHA-256",
+  );
+  if (typeof recoveredWithoutNetwork !== "boolean") {
+    throw new Error("BLOCKED: recoveredWithoutNetwork must be boolean");
+  }
+  return freezeRecord({
+    schema_version: 2,
+    authorization_id: authorization,
+    generation,
+    predecessor_generation: generation === 1 ? null : generation - 1,
+    state: "COMPLETE",
+    old_credential_sha256: oldSha,
+    new_credential_sha256: newSha,
+    recovered_without_network: recoveredWithoutNetwork,
+    credential_values_recorded: false,
+    retry: 0,
+    fallback: "disabled",
+  });
+}
