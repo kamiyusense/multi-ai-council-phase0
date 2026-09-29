@@ -6,7 +6,7 @@ This file is the durable recovery note for the ❤️ red lane.
 
 - repository: `kamiyusense/multi-ai-council-phase0`
 - carrier branch: `cloud-work/carrier-red-v1`
-- carrier PR: assigned by GitHub; after PR creation the PR body is authoritative
+- carrier PR: #171
 - required PR label: `cloud-red`
 - command review prefix: `[CW_RED_V1]`
 - receipt comment prefix: `[CW_RED_RECEIPT_V1]`
