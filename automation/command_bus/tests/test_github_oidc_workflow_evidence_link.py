@@ -41,6 +41,23 @@ def evidence(**changes):
     return value
 
 
+def evidence_v2(**changes):
+    value = {
+        "schema_version": 2,
+        "proof_kind": "GITHUB_HOSTED_OIDC_WORKFLOW_IDENTITY",
+        "status": "PASS",
+        "terminal_stage": "COMPLETE",
+        "safe_error_code": "NONE",
+        "run_id": RUN_ID,
+        "exact_commit_sha": SHA,
+        "expected_workflow_identity": WORKFLOW_REF,
+    }
+    value.update(changes)
+    canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    value["evidence_payload_sha256"] = hashlib.sha256(canonical.encode()).hexdigest()
+    return value
+
+
 def unknown_source():
     return provider_source(verification_state="UNKNOWN")
 
@@ -99,5 +116,26 @@ class OidcWorkflowEvidenceLinkTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     prepare_oidc_provider_source_link(
                         evidence=altered, source=unknown_source(),
+                        expected_run_id=RUN_ID, expected_sha=SHA,
+                    )
+
+    def test_v2_pass_is_prepare_only_and_v2_failure_is_rejected(self):
+        proof = evidence_v2()
+        linked = prepare_oidc_provider_source_link(
+            evidence=proof, source=unknown_source(),
+            expected_run_id=RUN_ID, expected_sha=SHA,
+        )
+        self.assertEqual(linked.verification_state, "UNKNOWN")
+        self.assertEqual(linked.evidence_sha256, proof["evidence_payload_sha256"])
+        for bad in (
+            evidence_v2(status="FAIL", safe_error_code="OIDC_SIGNATURE_REJECTED"),
+            evidence_v2(terminal_stage="SIGNATURE"),
+            evidence_v2(expected_workflow_identity="other"),
+            evidence_v2(jwt="secret"),
+        ):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    prepare_oidc_provider_source_link(
+                        evidence=bad, source=unknown_source(),
                         expected_run_id=RUN_ID, expected_sha=SHA,
                     )

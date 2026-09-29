@@ -73,13 +73,54 @@ def evaluate_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: in
     ).status == "MATCH"
 
 
+def diagnose_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: int) -> str:
+    """Return only a fixed stage, never raw claims or exception text."""
+    try:
+        expected = expected_from_runner(env)
+    except (ValueError, TypeError, KeyError) as exc:
+        reason = str(exc)
+        if any(name in reason for name in ("RUN_ID", "RUN_ATTEMPT")):
+            return "RUN_ID"
+        if any(name in reason for name in ("GITHUB_REF", "GITHUB_SHA", "WORKFLOW_SHA", "triggering SHA")):
+            return "REF_SHA"
+        if "GITHUB_REPOSITORY" in reason:
+            return "REPOSITORY"
+        return "WORKFLOW"
+    if not isinstance(claims, dict):
+        return "ISSUER"
+    decision = evaluate_github_oidc_claims_policy(claims, expected, now_epoch=now_epoch)
+    if decision.status == "MATCH":
+        return "PASS"
+    reason = decision.reason
+    checks = (
+        ("ISSUER", ("iss",), ("OIDC claim mismatch: iss",)),
+        ("AUDIENCE", ("aud",), ("OIDC claim mismatch: aud",)),
+        ("TIME", ("nbf", "iat", "exp"), ("OIDC temporal", "OIDC nbf", "OIDC token", "OIDC exp")),
+        ("REPOSITORY", ("sub", "repository", "repository_id", "repository_owner_id", "repository_visibility"), ()),
+        ("WORKFLOW", ("workflow_ref", "job_workflow_ref"), ("reusable-workflow",)),
+        ("REF_SHA", ("ref", "sha", "workflow_sha"), ()),
+        ("RUN_ID", ("run_id", "run_attempt"), ()),
+    )
+    for stage, fields, fragments in checks:
+        if any(fragment in reason for fragment in fragments):
+            return stage
+        if any(reason.endswith(": " + field) for field in fields):
+            return stage
+        if reason.startswith("required OIDC claims are missing: "):
+            missing = set(reason.split(": ", 1)[1].split(","))
+            if missing.intersection(fields):
+                return stage
+    return "COMPLETE"
+
+
 def main() -> int:
     try:
         claims = json.load(sys.stdin)
-        accepted = evaluate_verified_claims(claims, os.environ, now_epoch=int(time.time()))
+        stage = diagnose_verified_claims(claims, os.environ, now_epoch=int(time.time()))
     except (ValueError, TypeError, KeyError, json.JSONDecodeError):
-        accepted = False
-    sys.stdout.write(json.dumps({"status": "PASS" if accepted else "BLOCKED"}))
+        stage = "COMPLETE"
+    accepted = stage == "PASS"
+    sys.stdout.write(json.dumps({"status": "PASS" if accepted else "BLOCKED", "terminal_stage": "COMPLETE" if accepted else stage}))
     return 0 if accepted else 1
 
 

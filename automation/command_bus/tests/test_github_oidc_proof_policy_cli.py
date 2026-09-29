@@ -4,7 +4,7 @@ import unittest
 
 from automation.command_bus.github_oidc_proof_policy_cli import (
     AUDIENCE, BRANCH_REF, OWNER_ID, REPOSITORY, REPOSITORY_ID,
-    SUBJECT, WORKFLOW_REF, evaluate_verified_claims, expected_from_runner,
+    SUBJECT, WORKFLOW_REF, diagnose_verified_claims, evaluate_verified_claims, expected_from_runner,
 )
 
 NOW = 1_800_000_100
@@ -88,3 +88,23 @@ class OidcProofPolicyTests(unittest.TestCase):
                 self.assertFalse(evaluate_verified_claims(
                     claims(**{field: changed}), runner(), now_epoch=NOW,
                 ))
+
+    def test_each_claim_failure_has_a_fixed_stage(self):
+        cases = (
+            ("ISSUER", "iss", "other"),
+            ("AUDIENCE", "aud", "other"),
+            ("TIME", "exp", NOW),
+            ("REPOSITORY", "repository", "other/repo"),
+            ("WORKFLOW", "workflow_ref", "other"),
+            ("REF_SHA", "sha", "b" * 40),
+            ("RUN_ID", "run_id", "999"),
+            ("COMPLETE", "jti", ""),
+        )
+        for stage, field, value in cases:
+            with self.subTest(stage=stage):
+                self.assertEqual(
+                    diagnose_verified_claims(claims(**{field: value}), runner(), now_epoch=NOW),
+                    stage,
+                )
+        self.assertEqual(diagnose_verified_claims(claims(), runner(), now_epoch=NOW), "PASS")
+        self.assertEqual(diagnose_verified_claims(claims(), runner(GITHUB_RUN_ID=""), now_epoch=NOW), "RUN_ID")

@@ -47,38 +47,62 @@ def prepare_oidc_provider_source_link(
     expected_run_id: str, expected_sha: str,
 ) -> PreparedOidcProviderLink:
     """Add only opaque workflow proof references; never issue attestation."""
-    if not isinstance(evidence, dict) or set(evidence) != _EVIDENCE_KEYS:
-        raise ValueError("sanitized OIDC evidence shape mismatch")
+    if not isinstance(evidence, dict):
+        raise ValueError("sanitized OIDC evidence must be an object")
     if not isinstance(expected_run_id, str) or not expected_run_id.isdigit():
         raise ValueError("expected workflow run ID is invalid")
     if not isinstance(expected_sha, str) or not _SHA.fullmatch(expected_sha):
         raise ValueError("expected workflow SHA is invalid")
-    if evidence["schema_version"] != 1 or evidence["proof_kind"] != "GITHUB_HOSTED_OIDC_WORKFLOW_IDENTITY":
-        raise ValueError("OIDC evidence version/kind mismatch")
-    for field in (
-        "status", "signature_verification", "issuer_binding", "audience_binding",
-        "timestamp_validation", "repository_binding", "workflow_ref_sha_run_binding",
-    ):
-        if evidence[field] != "PASS":
-            raise ValueError(f"OIDC evidence is not PASS: {field}")
-    if evidence["issuer"] != "https://token.actions.githubusercontent.com":
-        raise ValueError("OIDC issuer mismatch")
-    for field, expected in (
-        ("repository", REPOSITORY), ("ref", BRANCH_REF),
-        ("workflow_ref", WORKFLOW_REF), ("run_id", expected_run_id),
-        ("exact_commit_sha", expected_sha),
-    ):
-        if evidence[field] != expected:
-            raise ValueError(f"OIDC evidence context mismatch: {field}")
-    if evidence["token_retained"] is not False or evidence["provider_fact_verified"] is not False or evidence["owner_authority_issued"] is not False:
-        raise ValueError("OIDC evidence overclaims trust or retains token")
-    names = evidence["claim_names"]
-    if not isinstance(names, list) or not names or len(names) != len(set(names)) or not set(names) <= _SAFE_CLAIM_NAMES:
-        raise ValueError("OIDC evidence claim names are unsafe")
-    claimed_digest = evidence["evidence_sha256"]
+    if evidence.get("schema_version") == 2:
+        required = {
+            "schema_version", "proof_kind", "status", "terminal_stage",
+            "safe_error_code", "run_id", "exact_commit_sha",
+            "expected_workflow_identity", "evidence_payload_sha256",
+        }
+        if set(evidence) != required:
+            raise ValueError("OIDC v2 evidence shape mismatch")
+        if (evidence["proof_kind"] != "GITHUB_HOSTED_OIDC_WORKFLOW_IDENTITY"
+                or evidence["status"] != "PASS"
+                or evidence["terminal_stage"] != "COMPLETE"
+                or evidence["safe_error_code"] != "NONE"):
+            raise ValueError("OIDC v2 evidence is not a complete PASS")
+        for field, expected in (
+            ("run_id", expected_run_id), ("exact_commit_sha", expected_sha),
+            ("expected_workflow_identity", WORKFLOW_REF),
+        ):
+            if evidence[field] != expected:
+                raise ValueError(f"OIDC v2 context mismatch: {field}")
+        digest_field = "evidence_payload_sha256"
+    else:
+        if set(evidence) != _EVIDENCE_KEYS:
+            raise ValueError("sanitized OIDC evidence shape mismatch")
+        if evidence["schema_version"] != 1 or evidence["proof_kind"] != "GITHUB_HOSTED_OIDC_WORKFLOW_IDENTITY":
+            raise ValueError("OIDC evidence version/kind mismatch")
+        for field in (
+            "status", "signature_verification", "issuer_binding", "audience_binding",
+            "timestamp_validation", "repository_binding", "workflow_ref_sha_run_binding",
+        ):
+            if evidence[field] != "PASS":
+                raise ValueError(f"OIDC evidence is not PASS: {field}")
+        if evidence["issuer"] != "https://token.actions.githubusercontent.com":
+            raise ValueError("OIDC issuer mismatch")
+        for field, expected in (
+            ("repository", REPOSITORY), ("ref", BRANCH_REF),
+            ("workflow_ref", WORKFLOW_REF), ("run_id", expected_run_id),
+            ("exact_commit_sha", expected_sha),
+        ):
+            if evidence[field] != expected:
+                raise ValueError(f"OIDC evidence context mismatch: {field}")
+        if evidence["token_retained"] is not False or evidence["provider_fact_verified"] is not False or evidence["owner_authority_issued"] is not False:
+            raise ValueError("OIDC evidence overclaims trust or retains token")
+        names = evidence["claim_names"]
+        if not isinstance(names, list) or not names or len(names) != len(set(names)) or not set(names) <= _SAFE_CLAIM_NAMES:
+            raise ValueError("OIDC evidence claim names are unsafe")
+        digest_field = "evidence_sha256"
+    claimed_digest = evidence[digest_field]
     if not isinstance(claimed_digest, str) or not _DIGEST.fullmatch(claimed_digest):
         raise ValueError("OIDC evidence digest is malformed")
-    body = {key: value for key, value in evidence.items() if key != "evidence_sha256"}
+    body = {key: value for key, value in evidence.items() if key != digest_field}
     canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     actual_digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     if actual_digest != claimed_digest:
