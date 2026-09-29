@@ -1263,3 +1263,46 @@ Cycle members:
 - workflow permission/auth/billing changes: no
 - live provider/model/API execution: no
 
+### Loop 058 — medium — COMPLETE / ACCEPTED AFTER CORRECTION (timeout static inventory lane)
+- task: tests/docs-only timeout static inventory
+- Jules session: `3277074397239188266`
+- Jules PR: #154
+- isolated base: `jules-work/relay-dev-loop-058-timeout-static-inventory`
+- canonical snapshot parent: `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5`
+- initial Jules candidate: `3957f539a2abdb23c42eeccec18d45e441eacb23`
+- frozen accepted candidate: `8a37893e4b4bf924185af73675b40fcd156e5c19`
+- accepted canonical head: `16d718d0fe98c2b974835c247f22dab4abffa50a`
+- prompt contract: `docs/JULES_TASK_PROMPT_SPEC.md` read and applied before dispatch
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (timeout inventory doc, checkpoint, test only)
+- initial exact validation run `36540560704`: SUCCESS, but semantic review rejected the initial candidate because:
+  - lifecycle row overclaimed mock/static evidence as bounding live execution
+  - DispatchEnvelope/transport rows could be read as choosing or proving a live timeout
+  - docs/checkpoint tests could vacuously return when files were missing
+  - dispatcher / ACPClient / provider factory boundaries were not directly tested strongly enough
+- corrections:
+  - separated static input validation/forwarding from real provider enforcement
+  - explicitly preserved `None` defaults at envelope/transport/ACP mock boundaries
+  - directly tested dispatcher forwarding of the exact timeout value
+  - directly tested one prompt attempt, one cancel and one close on mock timeout
+  - directly tested ProviderPolicy / ProviderStaticProfile / preflight / factory lack of a dedicated provider timeout contract
+  - parsed an exact required inventory surface-id set
+  - excluded unrelated workflow/command-bus/probe timeout values from provider-live conclusions
+  - removed vacuous file-missing PASS paths
+  - kept openai/anthropic/google exact finite provider live timeout values UNKNOWN
+- first corrected validation run `36540855976`: FAIL due to test-only `inspect.getsource(ACPClient.prompt)` indentation before AST parsing
+- proven test-only cause fixed with `textwrap.dedent`; no safety requirement weakened
+- corrected candidate exact validation run `36540997113`: SUCCESS
+- canonical exact validation run `36541193344`: SUCCESS
+- exact validation: 603 tests PASS; compileall PASS; diff-check PASS
+- frozen candidate/canonical three-file blob equality: PASS
+- provider-specific production/live timeout values selected: none
+- common_timeout resolved: no
+- external/provider evidence acquired: no
+- workflow permission/auth/billing changes: no
+- live provider/model/API execution: no
+- retry=0 for Jules dispatch / fallback=disabled
+- merge: no
+- isolation result: PASS
+
