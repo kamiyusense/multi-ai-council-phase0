@@ -224,7 +224,7 @@ result={
   "script_exit_code":int(os.environ["SCRIPT_EXIT"]),
   "credential_persistence_classification":persistence,
   "rotated_pair_persisted":rotated,
-  "cli_log_sanitized_prefix":raw[:600].replace("\n","\\n"),
+  "cli_log_sanitized_payload_prefix":payload[:1200].replace("\n","\\n"),
 }
 print(json.dumps(result, indent=2, sort_keys=True))
 
