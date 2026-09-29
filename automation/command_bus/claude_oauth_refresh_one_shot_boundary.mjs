@@ -13,7 +13,7 @@ const RECEIPT_KEYS = Object.freeze([
   "expected_execution_head",
   "receipt_added_by_head",
   "expected_source_blobs",
-  "expected_credential_volume_id",
+  "expected_credential_volume",
   "issued_at",
   "expires_at",
   "run_attempt",
@@ -198,7 +198,11 @@ export function oauthAuthorizationReceiptFixture() {
       "automation/command_bus/claude_gate_compose.yaml": "dddddddddddddddddddddddddddddddddddddddd",
       "automation/command_bus/docker/oauth-refresh-helper/Dockerfile": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     }),
-    expected_credential_volume_id: "fixture-only-volume-identity",
+    expected_credential_volume: Object.freeze({
+      compose_key: "claude-auth",
+      project: "fixture-project-only",
+      docker_volume_name: "fixture-only-volume-identity",
+    }),
     issued_at: "2026-09-30T00:00:00Z",
     expires_at: "2026-09-30T00:15:00Z",
     run_attempt: 1,
@@ -241,9 +245,16 @@ export function validateAuthorizationReceipt(receipt, context) {
       !Number.isFinite(Date.parse(context?.now)) ||
       Date.parse(receipt.issued_at) > Date.parse(context.now) ||
       Date.parse(receipt.expires_at) <= Date.parse(context.now)) return fail("STALE_OR_INVALID_TIME");
-  if (typeof receipt.expected_credential_volume_id !== "string" ||
-      receipt.expected_credential_volume_id.length < 8 ||
-      receipt.expected_credential_volume_id !== context?.credential_volume_id) {
+  const volume = context?.credential_volume_identity;
+  if (!volume || volume.status !== "OBSERVED_EXISTING" || volume.execution_allowed !== false) {
+    return Object.freeze({ status: "UNKNOWN", reason: "CREDENTIAL_VOLUME_IDENTITY_UNRESOLVED", execution_allowed: false });
+  }
+  if (!exactObject(receipt.expected_credential_volume,
+      ["compose_key", "project", "docker_volume_name"]) ||
+      receipt.expected_credential_volume.compose_key !== "claude-auth" ||
+      receipt.expected_credential_volume.project !== volume.project ||
+      receipt.expected_credential_volume.docker_volume_name !== volume.docker_volume_name ||
+      volume.compose_key !== "claude-auth") {
     return fail("CREDENTIAL_VOLUME_IDENTITY_MISMATCH");
   }
   return Object.freeze({
