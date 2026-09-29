@@ -118,6 +118,10 @@ function handleTlsHttp(socket) {
       method,
       path,
       grant_type: parsed.grant_type || null,
+      client_id:
+        typeof parsed.client_id === "string" && parsed.client_id.length <= 256
+          ? parsed.client_id
+          : null,
       refresh_token_matches_fixture:
         parsed.refresh_token === EXPECTED_REFRESH_TOKEN,
       authorization_header_present: Boolean(headers.authorization),
