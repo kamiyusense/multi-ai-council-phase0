@@ -200,6 +200,12 @@ raw=Path(os.environ["CLI_LOG"]).read_text(encoding="utf-8", errors="replace")
 for key in ("OLD_ACCESS","OLD_REFRESH","NEW_ACCESS","NEW_REFRESH"):
     raw=raw.replace(os.environ[key], "<fixture-token>")
 raw=re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]", "", raw)
+lines=[
+    line for line in raw.splitlines()
+    if not line.startswith("Script started on ")
+    and not line.startswith("Script done on ")
+]
+payload="\n".join(lines).strip()
 
 result={
   "proof":"claude-2.1.283-pty-idle-oauth-refresh-fixture",
