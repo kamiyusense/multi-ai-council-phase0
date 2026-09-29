@@ -208,12 +208,13 @@ class GitHubOidcClaimsPolicyTests(unittest.TestCase):
             ("job_workflow_sha", "d" * 40),
         ):
             with self.subTest(field=field):
+                candidate = {
+                    "job_workflow_ref": reusable_ref,
+                    "job_workflow_sha": reusable_sha,
+                }
+                candidate[field] = changed
                 result = evaluate_github_oidc_claims_policy(
-                    claims(
-                        job_workflow_ref=reusable_ref,
-                        job_workflow_sha=reusable_sha,
-                        **{field: changed},
-                    ),
+                    claims(**candidate),
                     exp,
                     now_epoch=NOW,
                 )

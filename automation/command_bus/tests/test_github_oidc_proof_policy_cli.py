@@ -45,6 +45,8 @@ def claims(**changes):
         "sha": SHA,
         "workflow_ref": WORKFLOW_REF,
         "workflow_sha": SHA,
+        "job_workflow_ref": WORKFLOW_REF,
+        "job_workflow_sha": SHA,
         "workflow": "Phase 0 bounded OIDC identity proof",
         "event_name": "push",
         "run_id": "424242",
@@ -118,7 +120,7 @@ class OidcProofPolicyTests(unittest.TestCase):
         self.assertEqual(diagnose_verified_claims(claims(), runner(GITHUB_RUN_ID=""), now_epoch=NOW), "RUN_ID")
 
     def test_official_workflow_identity_fixture_and_fixed_failure_codes(self):
-        valid_claims = claims(job_workflow_ref=WORKFLOW_REF, job_workflow_sha=SHA)
+        valid_claims = claims()
         valid_runner = runner()
         self.assertEqual(valid_claims["workflow_ref"], WORKFLOW_REF)
         self.assertEqual(valid_claims["workflow_sha"], valid_runner["GITHUB_WORKFLOW_SHA"])
@@ -126,6 +128,10 @@ class OidcProofPolicyTests(unittest.TestCase):
         self.assertEqual(valid_claims["job_workflow_sha"], valid_claims["workflow_sha"])
         self.assertEqual(valid_claims["workflow"], valid_runner["GITHUB_WORKFLOW"])
         self.assertTrue(evaluate_verified_claims(valid_claims, valid_runner, now_epoch=NOW))
+        missing_job_ref = claims()
+        missing_job_ref.pop("job_workflow_ref")
+        missing_job_sha = claims()
+        missing_job_sha.pop("job_workflow_sha")
         cases = (
             ("WORKFLOW", claims(), runner(GITHUB_WORKFLOW_REF="other"),
              "OIDC_WORKFLOW_RUNNER_REF_REJECTED"),
@@ -135,9 +141,9 @@ class OidcProofPolicyTests(unittest.TestCase):
              runner(), "OIDC_WORKFLOW_CLAIM_REF_REJECTED"),
             ("WORKFLOW", claims(workflow_ref=WORKFLOW_REF.replace(BRANCH_REF, "refs/heads/other")),
              runner(), "OIDC_WORKFLOW_CLAIM_REF_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_sha=SHA),
+            ("WORKFLOW", missing_job_ref,
              runner(), "OIDC_WORKFLOW_JOB_IDENTITY_MISSING_REJECTED"),
-            ("WORKFLOW", claims(job_workflow_ref=WORKFLOW_REF),
+            ("WORKFLOW", missing_job_sha,
              runner(), "OIDC_WORKFLOW_JOB_IDENTITY_MISSING_REJECTED"),
             ("WORKFLOW", claims(job_workflow_ref="other/reusable.yml@refs/heads/main",
                                 job_workflow_sha=SHA),
