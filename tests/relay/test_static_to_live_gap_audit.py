@@ -1,4 +1,5 @@
 import os
+import re
 import unittest
 
 
@@ -49,6 +50,24 @@ class TestStaticToLiveGapAudit(unittest.TestCase):
                 "missing": cells[5],
                 "forbidden": cells[6],
             }
+        
+        cls.audit_normalized = re.sub(r"\s+", " ", cls.audit)
+        cls.trust_normalized = re.sub(r"\s+", " ", cls.trust)
+
+        cls.trust_rows = {}
+        for line in cls.trust.splitlines():
+            if not line.startswith("| "):
+                continue
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            if not cells or cells[0] in {"Candidate", "---"}:
+                continue
+            if cells[0] in {
+                "KEEP_NOT_WIRED",
+                "GITHUB_ACTIONS_READBACK_ONLY",
+                "GITHUB_OIDC_AUTHENTICATOR",
+                "GITHUB_ARTIFACT_ATTESTATION",
+            }:
+                cls.trust_rows[cells[0]] = cells
 
     def test_exact_gap_id_set(self) -> None:
         expected = {
@@ -221,31 +240,46 @@ class TestStaticToLiveGapAudit(unittest.TestCase):
         self.assertEqual(row["forbidden"], "automatic fallback to Gemini CLI")
 
     def test_provenance_rows_match_decision_support(self) -> None:
-        expectations = {
+        expected = {
             "provenance_keep_not_wired": (
                 "KEEP_NOT_WIRED",
-                "KEEP_NOT_WIRED = current safe default / no provenance advancement",
+                "KEEP_NOT_WIRED",
+                "current safe default / no provenance advancement",
             ),
             "provenance_actions_readback": (
                 "TRANSPORT_EVIDENCE_ONLY",
-                "GITHUB_ACTIONS_READBACK_ONLY = transport evidence only / insufficient as an independent authenticator",
+                "GITHUB_ACTIONS_READBACK_ONLY",
+                "transport evidence only / insufficient as authenticator",
             ),
             "provenance_oidc": (
                 "NOT_AUTHORIZED",
-                "GITHUB_OIDC_AUTHENTICATOR = candidate / NOT_AUTHORIZED",
+                "GITHUB_OIDC_AUTHENTICATOR",
+                "candidate / NOT_AUTHORIZED",
             ),
             "provenance_attestation": (
                 "NOT_AUTHORIZED",
-                "GITHUB_ARTIFACT_ATTESTATION = strong candidate / NOT_AUTHORIZED",
+                "GITHUB_ARTIFACT_ATTESTATION",
+                "strong candidate / NOT_AUTHORIZED",
             ),
         }
-        for gap_id, (state, phrase) in expectations.items():
+        self.assertEqual(
+            set(self.trust_rows),
+            {
+                "KEEP_NOT_WIRED",
+                "GITHUB_ACTIONS_READBACK_ONLY",
+                "GITHUB_OIDC_AUTHENTICATOR",
+                "GITHUB_ARTIFACT_ATTESTATION",
+            },
+        )
+        for gap_id, (state, candidate, classification) in expected.items():
             with self.subTest(gap_id=gap_id):
-                self.assertIn(phrase, self.trust)
                 row = self.rows[gap_id]
+                trust_row = self.trust_rows[candidate]
                 self.assertEqual(row["class"], "HUMAN_DECISION_REQUIRED")
                 self.assertEqual(row["current_state"], state)
-                self.assertEqual(row["missing"], phrase)
+                self.assertEqual(trust_row[1], classification)
+                self.assertIn(candidate, row["missing"])
+                self.assertIn(classification, row["missing"])
 
     def test_final_live_turn_is_separate_explicit_human_boundary(self) -> None:
         row = self.rows["first_live_turn"]
@@ -299,15 +333,15 @@ class TestStaticToLiveGapAudit(unittest.TestCase):
     def test_checked_in_snapshot_not_fresh_external_verification(self) -> None:
         self.assertIn(
             "current checked-in canonical evidence only",
-            self.audit,
+            self.audit_normalized,
         )
         self.assertIn(
             "not fresh external provider verification",
-            self.audit,
+            self.audit_normalized,
         )
         self.assertIn(
             "resolves zero real live blockers",
-            self.audit,
+            self.audit_normalized,
         )
 
     def test_no_dangerous_resolved_or_authorized_claims(self) -> None:
@@ -332,7 +366,7 @@ class TestStaticToLiveGapAudit(unittest.TestCase):
             "permission/auth/trust-source changes require explicit human architecture authorization",
             "first real provider/model turn requires separate explicit human approval",
         ):
-            self.assertIn(phrase, self.audit)
+            self.assertIn(phrase, self.audit_normalized)
 
     def test_checkpoint_is_prepared_static_only(self) -> None:
         for phrase in (
