@@ -58,8 +58,9 @@ jobs:
           actions = [line.strip() for line in workflow if line.strip().startswith("uses:")]
           assert actions == ["uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"]
           source = Path("automation/command_bus/tests/test_claude_oauth_refresh_topology_contract.mjs").read_text()
+          contract = Path("automation/command_bus/claude_oauth_refresh_topology_contract.mjs").read_text()
           assert "docker.sock" not in source
-          assert "claude-auth" in source
+          assert "claude-auth:/home/node/.claude" in contract
           assert "workspace" in source
           print("OAUTH_REFRESH_TOPOLOGY_STATIC_ONLY_PASS")
           PY
