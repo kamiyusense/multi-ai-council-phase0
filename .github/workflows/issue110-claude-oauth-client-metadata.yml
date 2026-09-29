@@ -1,0 +1,37 @@
+name: Issue 110 Claude OAuth client metadata fixture
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-client-metadata-v1
+    paths:
+      - .github/workflows/issue110-claude-oauth-client-metadata.yml
+      - automation/command_bus/tests/claude_oauth_refresh_fixture.sh
+      - automation/command_bus/tests/fixtures/claude_oauth_refresh_mock_proxy.mjs
+      - automation/command_bus/docker/claude-runtime/Dockerfile
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MOCK_DELAY_MS: 0
+    steps:
+      - name: Checkout exact metadata head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Read synthetic refresh request metadata
+        shell: bash
+        run: |
+          chmod +x automation/command_bus/tests/claude_oauth_refresh_fixture.sh
+          automation/command_bus/tests/claude_oauth_refresh_fixture.sh
