@@ -312,7 +312,9 @@ class TestMinimumPermissionsStaticInventory(unittest.TestCase):
         for phrase in (
             "PREPARED/static minimum-permissions-inventory status only",
             "No live execution is performed",
-            "No permission changes are authorized",
-            "common_min_permissions remains unresolved",
+            "No permission/auth/billing/settings changes are performed or authorized by this batch",
+            "No exact whole-path minimum-permission profile is selected",
+            "common_min_permissions remains unresolved / BLOCKED_UNKNOWN",
+            "First live provider/model turn remains separately human-approved",
         ):
             self.assertIn(phrase, section)
