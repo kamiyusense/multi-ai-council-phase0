@@ -91,15 +91,35 @@ export const DIAGNOSTIC_STAGES = Object.freeze([
   'REF_SHA', 'RUN_ID', 'COMPLETE',
 ]);
 const WORKFLOW_IDENTITY = 'kamiyusense/multi-ai-council-phase0/.github/workflows/github-oidc-proof.yml@refs/heads/feature/github-oidc-claims-policy-v1';
+const SPECIFIC_SAFE_CODES = Object.freeze({
+  WORKFLOW: new Set([
+    'OIDC_WORKFLOW_RUNNER_REF_REJECTED',
+    'OIDC_WORKFLOW_RUNNER_NAME_REJECTED',
+    'OIDC_WORKFLOW_CLAIM_REF_REJECTED',
+    'OIDC_WORKFLOW_REUSABLE_REF_REJECTED',
+  ]),
+  REF_SHA: new Set([
+    'OIDC_REF_SHA_RUNNER_WORKFLOW_SHA_REJECTED',
+    'OIDC_REF_SHA_CLAIM_WORKFLOW_SHA_REJECTED',
+  ]),
+});
+
+export function boundedSafeCode(stage, candidate) {
+  const generic = `OIDC_${stage}_REJECTED`;
+  if (candidate === generic || SPECIFIC_SAFE_CODES[stage]?.has(candidate)) return candidate;
+  return generic;
+}
+
 
 export async function runDiagnosticPipeline(handlers) {
   for (const stage of DIAGNOSTIC_STAGES) {
     try {
       if (typeof handlers?.[stage] !== 'function') fail();
       await handlers[stage]();
-    } catch {
+    } catch (error) {
       // Exception text may contain a token, bearer credential or request URL.
-      return { status: 'FAIL', terminal_stage: stage, safe_error_code: `OIDC_${stage}_REJECTED` };
+      return { status: 'FAIL', terminal_stage: stage,
+        safe_error_code: boundedSafeCode(stage, error?.safe_error_code) };
     }
   }
   return { status: 'PASS', terminal_stage: 'COMPLETE', safe_error_code: 'NONE' };
@@ -128,9 +148,13 @@ function postSignaturePolicy(claims) {
   try {
     const decision = JSON.parse(child.stdout);
     if (decision.status === 'PASS' && child.status === 0 &&
-        decision.terminal_stage === 'COMPLETE') return decision;
+        decision.terminal_stage === 'COMPLETE' &&
+        decision.safe_error_code === 'NONE') return decision;
     if (decision.status === 'BLOCKED' && child.status === 1 &&
-        DIAGNOSTIC_STAGES.includes(decision.terminal_stage)) return decision;
+        DIAGNOSTIC_STAGES.includes(decision.terminal_stage)) {
+      return { status: 'BLOCKED', terminal_stage: decision.terminal_stage,
+        safe_error_code: boundedSafeCode(decision.terminal_stage, decision.safe_error_code) };
+    }
   } catch {
     // No raw child output, exception or claims may be logged.
   }
@@ -142,7 +166,8 @@ export function sanitizedEvidence(diagnostic, runId, sha) {
     DIAGNOSTIC_STAGES.includes(diagnostic.terminal_stage) &&
     (diagnostic.status === 'PASS'
       ? diagnostic.terminal_stage === 'COMPLETE' && diagnostic.safe_error_code === 'NONE'
-      : diagnostic.safe_error_code === `OIDC_${diagnostic.terminal_stage}_REJECTED`);
+      : diagnostic.safe_error_code === boundedSafeCode(
+        diagnostic.terminal_stage, diagnostic.safe_error_code));
   const result = valid ? diagnostic :
     { status: 'UNKNOWN', terminal_stage: 'COMPLETE', safe_error_code: 'OIDC_COMPLETE_REJECTED' };
   const body = {
@@ -190,7 +215,11 @@ async function main() {
   for (const stage of DIAGNOSTIC_STAGES.slice(4)) {
     handlers[stage] = () => {
       if (stage === 'ISSUER') policy = postSignaturePolicy(claims);
-      if (policy.status !== 'PASS' && policy.terminal_stage === stage) fail();
+      if (policy.status !== 'PASS' && policy.terminal_stage === stage) {
+        const rejection = new Error('OIDC proof rejected');
+        rejection.safe_error_code = policy.safe_error_code;
+        throw rejection;
+      }
       if (stage === 'COMPLETE' && policy.status !== 'PASS') fail();
     };
   }

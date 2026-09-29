@@ -5,6 +5,7 @@ import unittest
 from automation.command_bus.github_oidc_proof_policy_cli import (
     AUDIENCE, BRANCH_REF, OWNER_ID, REPOSITORY, REPOSITORY_ID,
     SUBJECT, WORKFLOW_REF, diagnose_verified_claims, evaluate_verified_claims, expected_from_runner,
+    safe_failure_code,
 )
 
 NOW = 1_800_000_100
@@ -44,6 +45,7 @@ def claims(**changes):
         "sha": SHA,
         "workflow_ref": WORKFLOW_REF,
         "workflow_sha": SHA,
+        "workflow": "Phase 0 bounded OIDC identity proof",
         "event_name": "push",
         "run_id": "424242",
         "run_attempt": "1",
@@ -108,3 +110,44 @@ class OidcProofPolicyTests(unittest.TestCase):
                 )
         self.assertEqual(diagnose_verified_claims(claims(), runner(), now_epoch=NOW), "PASS")
         self.assertEqual(diagnose_verified_claims(claims(), runner(GITHUB_RUN_ID=""), now_epoch=NOW), "RUN_ID")
+
+    def test_official_workflow_identity_fixture_and_fixed_failure_codes(self):
+        valid_claims = claims()
+        valid_runner = runner()
+        self.assertEqual(valid_claims["workflow_ref"], WORKFLOW_REF)
+        self.assertEqual(valid_claims["workflow_sha"], valid_runner["GITHUB_WORKFLOW_SHA"])
+        self.assertEqual(valid_claims["workflow"], valid_runner["GITHUB_WORKFLOW"])
+        self.assertTrue(evaluate_verified_claims(valid_claims, valid_runner, now_epoch=NOW))
+        cases = (
+            ("WORKFLOW", claims(), runner(GITHUB_WORKFLOW_REF="other"),
+             "OIDC_WORKFLOW_RUNNER_REF_REJECTED"),
+            ("WORKFLOW", claims(), runner(GITHUB_WORKFLOW="other"),
+             "OIDC_WORKFLOW_RUNNER_NAME_REJECTED"),
+            ("WORKFLOW", claims(workflow_ref=WORKFLOW_REF.replace("github-oidc-proof.yml", "other.yml")),
+             runner(), "OIDC_WORKFLOW_CLAIM_REF_REJECTED"),
+            ("WORKFLOW", claims(workflow_ref=WORKFLOW_REF.replace(BRANCH_REF, "refs/heads/other")),
+             runner(), "OIDC_WORKFLOW_CLAIM_REF_REJECTED"),
+            ("WORKFLOW", claims(job_workflow_ref="other/reusable.yml@refs/heads/main"),
+             runner(), "OIDC_WORKFLOW_REUSABLE_REF_REJECTED"),
+            ("REF_SHA", claims(), runner(GITHUB_WORKFLOW_SHA="b" * 40),
+             "OIDC_REF_SHA_RUNNER_WORKFLOW_SHA_REJECTED"),
+            ("REF_SHA", claims(workflow_sha="b" * 40), runner(),
+             "OIDC_REF_SHA_CLAIM_WORKFLOW_SHA_REJECTED"),
+            ("REF_SHA", claims(sha="b" * 40), runner(), "OIDC_REF_SHA_REJECTED"),
+            ("RUN_ID", claims(run_id="999"), runner(), "OIDC_RUN_ID_REJECTED"),
+        )
+        for stage, signed, context, code in cases:
+            with self.subTest(code=code):
+                self.assertEqual(diagnose_verified_claims(signed, context, now_epoch=NOW), stage)
+                self.assertEqual(
+                    safe_failure_code(stage, signed, context, now_epoch=NOW), code,
+                )
+                self.assertNotIn("other/reusable.yml", code)
+
+    def test_failure_code_never_contains_claim_or_runner_secret(self):
+        secret = "bearer header.payload.signature private-token-value"
+        signed = claims(workflow_ref=secret)
+        stage = diagnose_verified_claims(signed, runner(), now_epoch=NOW)
+        code = safe_failure_code(stage, signed, runner(), now_epoch=NOW)
+        self.assertEqual(code, "OIDC_WORKFLOW_CLAIM_REF_REJECTED")
+        self.assertNotIn(secret, code)

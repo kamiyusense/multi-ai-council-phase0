@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import {
-  DIAGNOSTIC_STAGES, ISSUER, JWKS_URL, runDiagnosticPipeline, sanitizedEvidence, validateMetadata, verifySignedJwt,
+  DIAGNOSTIC_STAGES, ISSUER, JWKS_URL, boundedSafeCode, runDiagnosticPipeline, sanitizedEvidence, validateMetadata, verifySignedJwt,
 } from '../github_oidc_signature_proof.mjs';
 
 const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -77,4 +77,41 @@ test('malformed diagnostic object cannot inject a secret into evidence', () => {
   assert.equal(evidence.status, 'UNKNOWN');
   assert.equal(evidence.terminal_stage, 'COMPLETE');
   assert.equal(JSON.stringify(evidence).includes('bearer secret'), false);
+});
+
+test('workflow subcodes are bounded and do not reveal supplied values', async () => {
+  const allowed = [
+    'OIDC_WORKFLOW_RUNNER_REF_REJECTED',
+    'OIDC_WORKFLOW_RUNNER_NAME_REJECTED',
+    'OIDC_WORKFLOW_CLAIM_REF_REJECTED',
+    'OIDC_WORKFLOW_REUSABLE_REF_REJECTED',
+    'OIDC_REF_SHA_RUNNER_WORKFLOW_SHA_REJECTED',
+    'OIDC_REF_SHA_CLAIM_WORKFLOW_SHA_REJECTED',
+  ];
+  for (const code of allowed) {
+    const stage = code.startsWith('OIDC_WORKFLOW_') ? 'WORKFLOW' : 'REF_SHA';
+    const handlers = Object.fromEntries(DIAGNOSTIC_STAGES.map(name => [
+      name, async () => {
+        if (name === stage) {
+          const error = new Error('bearer header.payload.signature private credential');
+          error.safe_error_code = code;
+          throw error;
+        }
+      },
+    ]));
+    const result = await runDiagnosticPipeline(handlers);
+    assert.equal(result.terminal_stage, stage);
+    assert.equal(result.safe_error_code, code);
+    const evidence = sanitizedEvidence(result, '123', 'a'.repeat(40));
+    assert.equal(evidence.safe_error_code, code);
+    assert.equal(JSON.stringify(evidence).includes('private credential'), false);
+  }
+  const malicious = 'OIDC_WORKFLOW_CLAIM_REF_REJECTED bearer header.payload.signature';
+  assert.equal(boundedSafeCode('WORKFLOW', malicious), 'OIDC_WORKFLOW_REJECTED');
+  assert.equal(boundedSafeCode('ISSUER', allowed[0]), 'OIDC_ISSUER_REJECTED');
+  const invalid = sanitizedEvidence({
+    status: 'FAIL', terminal_stage: 'WORKFLOW', safe_error_code: malicious,
+  }, '123', 'a'.repeat(40));
+  assert.equal(invalid.status, 'UNKNOWN');
+  assert.equal(JSON.stringify(invalid).includes(malicious), false);
 });

@@ -113,14 +113,56 @@ def diagnose_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: in
     return "COMPLETE"
 
 
+
+def safe_failure_code(
+    stage: str, claims: object, env: dict[str, str], *, now_epoch: int,
+) -> str:
+    """Expose only the first known mismatch category, never raw values."""
+    generic = f"OIDC_{stage}_REJECTED"
+    if stage not in {"WORKFLOW", "REF_SHA"}:
+        return generic
+    try:
+        expected = expected_from_runner(env)
+    except (ValueError, TypeError, KeyError) as exc:
+        reason = str(exc)
+        if stage == "WORKFLOW":
+            if reason == "runner context mismatch: GITHUB_WORKFLOW_REF":
+                return "OIDC_WORKFLOW_RUNNER_REF_REJECTED"
+            if reason == "runner context mismatch: GITHUB_WORKFLOW":
+                return "OIDC_WORKFLOW_RUNNER_NAME_REJECTED"
+        if stage == "REF_SHA" and reason == "workflow SHA differs from triggering SHA":
+            return "OIDC_REF_SHA_RUNNER_WORKFLOW_SHA_REJECTED"
+        return generic
+    if not isinstance(claims, dict):
+        return generic
+    reason = evaluate_github_oidc_claims_policy(
+        claims, expected, now_epoch=now_epoch,
+    ).reason
+    if stage == "WORKFLOW":
+        if reason == "OIDC claim mismatch: workflow_ref":
+            return "OIDC_WORKFLOW_CLAIM_REF_REJECTED"
+        if reason == "unexpected reusable-workflow identity; explicit job_workflow_ref is required":
+            return "OIDC_WORKFLOW_REUSABLE_REF_REJECTED"
+    if stage == "REF_SHA" and reason == "OIDC claim mismatch: workflow_sha":
+        return "OIDC_REF_SHA_CLAIM_WORKFLOW_SHA_REJECTED"
+    return generic
+
+
 def main() -> int:
+    claims: object = {}
+    now_epoch = int(time.time())
     try:
         claims = json.load(sys.stdin)
-        stage = diagnose_verified_claims(claims, os.environ, now_epoch=int(time.time()))
+        stage = diagnose_verified_claims(claims, os.environ, now_epoch=now_epoch)
     except (ValueError, TypeError, KeyError, json.JSONDecodeError):
         stage = "COMPLETE"
     accepted = stage == "PASS"
-    sys.stdout.write(json.dumps({"status": "PASS" if accepted else "BLOCKED", "terminal_stage": "COMPLETE" if accepted else stage}))
+    code = "NONE" if accepted else safe_failure_code(stage, claims, os.environ, now_epoch=now_epoch)
+    sys.stdout.write(json.dumps({
+        "status": "PASS" if accepted else "BLOCKED",
+        "terminal_stage": "COMPLETE" if accepted else stage,
+        "safe_error_code": code,
+    }))
     return 0 if accepted else 1
 
 
