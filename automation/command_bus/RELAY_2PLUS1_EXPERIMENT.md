@@ -777,3 +777,46 @@ Cycle members:
 - live provider/model/API execution: no
 - required invariant: structural approval-record validity never proves human provenance and never authorizes execution; provenance_verified=false / execution_authorized=false / dispatch_allowed=false / live_ready=false remain fixed
 
+### Loop 051 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: static approval-receipt contract for future durable human live-approval evidence
+- Jules session: `10431598339778891411`
+- Jules PR: #123
+- isolated base: `jules-work/relay-dev-loop-051-approval-receipt`
+- canonical snapshot parent: `56d561093108064dddf14d298f0fc24bc4145ec8`
+- initial Jules candidate: `b1b91d11402b388de3692cd7f1b8ed598349a5b4`
+- corrected isolated candidate: `f4bf8e85425a565634b2ef7967f0fec919993d13`
+- accepted canonical head: `fdb09bfadc5c9f699900facd8aa55a271c05d240`
+- final_accept: yes
+- untouched_first_pass: no
+- structural_error: yes
+- initial semantic gaps despite green tests:
+  - preflight/provider maps checked only by length, so arbitrary three-key maps could pass
+  - recorded_at used regex-only validation and could admit nonexistent dates or invalid timezone offsets
+  - fail-closed helper mutated an existing receipt instead of rebuilding the full canonical safe state
+  - packet/record tamper matrix and AST no-ambient/live-operation proof were incomplete
+  - renderer wording could more clearly separate a structural approval candidate from verified human provenance
+- initial exact validation run `36504774420`: SUCCESS; 422 tests PASS; compileall PASS; diff-check PASS, but semantic review rejected the candidate
+- Chat correction commits on isolated candidate: 3
+- corrected candidate exact validation run `36504991010`: SUCCESS
+- canonical exact validation run `36505110256`: SUCCESS
+- exact validation: 447 tests PASS; compileall PASS; diff-check PASS
+- corrected receipt layer now:
+  - pins exact openai/anthropic/google maps rather than count-only validation
+  - parses timezone-aware ISO-8601 deterministically without wall-clock reads
+  - rebuilds the canonical fail-closed output on every invalid path
+  - requires exact ready approval-packet semantics and digest binding
+  - requires exact record decision/scope/one-shot/hash binding
+  - keeps provenance_verified=false / execution_authorized=false / dispatch_allowed=false / live_ready=false always
+  - never echoes recorded_at or raw record/config/evidence payloads
+  - includes AST/static proof against ambient I/O/network/process/wall-clock/random/live-provider operations
+- canonical publication: exact six validated blobs copied into one normal fast-forward canonical commit
+- candidate/canonical six-file blob equality after publication: PASS
+- correction_commits_on_isolated_candidate: 3
+- rejules_sessions: 0
+- retry=0 / fallback=disabled
+- live provider/model/API execution: no
+- human provenance verified: no
+- execution authorized: no
+- merge: no
+- isolation result: PASS
+
