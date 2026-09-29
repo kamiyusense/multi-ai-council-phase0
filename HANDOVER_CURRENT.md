@@ -267,12 +267,12 @@ A new chat should:
 1. read this handover
 2. **before any Jules dispatch, read `docs/JULES_TASK_PROMPT_SPEC.md`**
 3. read the implementation spec and checklist
-3. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-4. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
-5. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
-6. inspect the current open PR / branch before changing files
-7. preserve all fixed safety decisions
-8. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
-9. continue static implementation without live provider calls
-10. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-11. keep GitHub writes within this private repository and authorized feature branches/PR scope
+4. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
+5. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
+6. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
+7. inspect the current open PR / branch before changing files
+8. preserve all fixed safety decisions
+9. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
+10. continue static implementation without live provider calls
+11. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+12. keep GitHub writes within this private repository and authorized feature branches/PR scope
