@@ -882,3 +882,18 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 053 — medium — DISPATCHED / IN PROGRESS
+- task: static durable-provenance verification-request contract
+- canonical Relay snapshot head: `d64345d67a52cd135858a667dce1d3e709e8127c`
+- canonical Relay snapshot tree: `438e17b9c9b8e7e57b7bfdab24ff523bbfee6cca`
+- isolated starting branch: `jules-work/relay-dev-loop-053-provenance-request`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36507787337`
+- Jules session: `13814988757249161316`
+- accepted_at: 2026-09-29 10:25:09 JST
+- task size: medium (~15-25 minute class)
+- canonical PR #4 head immediately after dispatch: `d64345d67a52cd135858a667dce1d3e709e8127c` unchanged
+- retry=0 / fallback=disabled / merge=human-only
+- live provider/model/API execution: no
+- required invariant: this layer only constructs a durable provenance readback request; provenance_verified=false / execution_authorized=false / dispatch_allowed=false / live_ready=false remain fixed
+
