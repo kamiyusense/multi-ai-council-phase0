@@ -1,0 +1,56 @@
+name: Issue 110 generation and production adapter composition contract
+
+on:
+  push:
+    branches:
+      - test/issue110-generation-production-adapter-integration-v1
+    paths:
+      - .github/workflows/issue110-oauth-generation-production-adapter-integration.yml
+      - automation/command_bus/claude_oauth_refresh_production_adapter.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_production_adapter.mjs
+      - automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+      - automation/command_bus/claude_oauth_refresh_production_plan.mjs
+      - automation/command_bus/claude_oauth_refresh_generation_prepare.mjs
+      - automation/command_bus/claude_oauth_refresh_generation_state.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  composition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact composition head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run fixed adapter and generation composition tests
+        shell: bash
+        run: >-
+          node --test
+          automation/command_bus/tests/test_claude_oauth_refresh_production_adapter.mjs
+          automation/command_bus/tests/test_claude_oauth_generation_transport_contract.mjs
+          automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs
+
+      - name: Verify the integration fixture uses no real network
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path("automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs").read_text()
+          forbidden = ("net.connect(", "tls.connect(", "fetch(", "node:https")
+          assert not any(item in source for item in forbidden)
+          assert "FakeSecure" in source
+          print("OAUTH_GENERATION_ADAPTER_INTEGRATION_NO_REAL_NETWORK_PASS")
+          PY
+          node --check automation/command_bus/claude_oauth_refresh_production_adapter.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_generation_production_adapter_integration.mjs
+          git diff --check
