@@ -119,14 +119,22 @@ script -qfec "$cmd" "$CLI_LOG" <"$FIFO" >/dev/null 2>&1 &
 SCRIPT_PID=$!
 exec 3>"$FIFO"
 
+# The PTY wrapper and docker CLI start asynchronously. Do not treat the brief
+# pre-create window as a terminal container exit.
+CONTAINER_SEEN=0
+for _ in $(seq 1 50); do
+  if docker inspect "$CLI" >/dev/null 2>&1; then
+    CONTAINER_SEEN=1
+    break
+  fi
+  sleep 0.1
+done
+test "$CONTAINER_SEEN" = "1"
+
 RESPONSE_SEEN=0
 for _ in $(seq 1 80); do
   if grep -F '"type":"oauth_refresh_response_sent"' "$EVIDENCE/events.jsonl" >/dev/null 2>&1; then
     RESPONSE_SEEN=1
-    break
-  fi
-  # Stop early only if the container has already exited.
-  if ! docker inspect "$CLI" >/dev/null 2>&1; then
     break
   fi
   if [ "$(docker inspect -f '{{.State.Running}}' "$CLI" 2>/dev/null || echo false)" != "true" ]; then
@@ -149,6 +157,14 @@ set +e
 wait "$SCRIPT_PID"
 SCRIPT_EXIT=$?
 set -e
+
+# Let the local mock's delayed timer record response-sent vs client-gone before
+# evidence readback.
+python - <<'PY'
+import os, time
+delay=max(0, int(os.environ.get("DELAY_MS","0")))
+time.sleep(delay/1000 + 0.5)
+PY
 
 sudo chmod 0755 "$CASE" 2>/dev/null || true
 sudo chmod 0644 "$CASE/.credentials.json" 2>/dev/null || true
