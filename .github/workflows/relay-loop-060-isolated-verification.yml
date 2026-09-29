@@ -1,0 +1,36 @@
+name: "Relay Loop 060 Isolated Verification"
+
+on:
+  push:
+    branches:
+      - "verify/relay-loop-060-sensitive-fanout-1b7e044c"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relay-loop-060-isolated-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact verification commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Compile changed Python test
+        run: python -m compileall -q tests/relay/test_sensitive_fanout_static_inventory.py
+
+      - name: Run Loop 060 focused unit tests
+        env:
+          PYTHONPATH: src
+        run: python -m unittest tests.relay.test_sensitive_fanout_static_inventory
+
+      - name: Run Relay regression suite
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests/relay -p 'test_*.py'
