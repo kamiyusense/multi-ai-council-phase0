@@ -1,6 +1,6 @@
 name: Phase 0 bounded OIDC identity proof
 
-# Branch-only bounded proof. This reviewed workflow-file update is the sole authorized third live OIDC run.
+# Branch-only bounded proof. This reviewed workflow-file update is the sole authorized fourth live OIDC run.
 # retry=0; later unrelated pushes do not match both the path and exact commit-message guards.
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   offline-preflight:
-    if: "github.run_attempt == 1 && github.event.head_commit.message == 'test(security): run bounded OIDC diagnostic proof third once'"
+    if: "github.run_attempt == 1 && github.event.head_commit.message == 'test(security): run bounded OIDC diagnostic proof fourth once'"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -35,7 +35,7 @@ jobs:
 
   proof:
     needs: offline-preflight
-    if: "github.run_attempt == 1 && github.event.head_commit.message == 'test(security): run bounded OIDC diagnostic proof third once'"
+    if: "github.run_attempt == 1 && github.event.head_commit.message == 'test(security): run bounded OIDC diagnostic proof fourth once'"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
