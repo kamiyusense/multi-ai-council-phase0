@@ -391,7 +391,7 @@ A new chat should:
 
 1. read this handover
 2. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` from current main and select the development route
-4. read the implementation spec and checklist
+3. read the implementation spec and checklist
 4. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
 5. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
 6. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` before worker selection, then `docs/CHAT_WORK_AUTONOMY_RULES.md` for Work/Closed Loop safety

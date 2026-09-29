@@ -62,7 +62,7 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 
 1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md)
 2. [Development execution router](docs/DEVELOPMENT_EXECUTION_ROUTER.md) — Jules半Loop / 緑LINE Cloud Work / Local Workの入口
-4. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
+3. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
 4. [docs/PHASE0_IMPLEMENTATION_CHECKLIST.md](docs/PHASE0_IMPLEMENTATION_CHECKLIST.md)
 5. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary
 6. [docs/PIONEER_OSS_RESEARCH_HANDOVER.md](docs/PIONEER_OSS_RESEARCH_HANDOVER.md) — 先駆者/OSS調査・流用候補・監査方針
