@@ -346,7 +346,7 @@ function sendFixtureHttpRequest({
     ].join("\r\n");
 
     secure.write(requestHead);
-    secure.end(bodyText);
+    secure.write(bodyText);
   });
 }
 
