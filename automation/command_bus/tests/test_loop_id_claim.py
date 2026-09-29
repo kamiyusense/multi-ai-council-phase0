@@ -1,18 +1,21 @@
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 import tempfile
 import unittest
 
 from automation.command_bus.loop_id_claim import (
+    DISPATCH_CLAIM_SCHEMA_VERSION,
     DUPLICATE_GUARD,
+    LANE_DISPLAY_BY_ID,
     extract_numbered_loop,
+    lane_display_for,
+    normalize_lane_alias,
     validate_claim,
     verify_claim_file,
     verify_command_claim,
 )
 
-NOW = "2026-09-30T05:30:00+09:00"
+NOW = "2026-09-30T06:00:00+09:00"
 HEAD = "a" * 40
 TREE = "b" * 40
 COMMAND_ID = "relay-dev-loop-064-parallel-lane-proof"
@@ -32,7 +35,7 @@ def request(**changes):
         "allowed_paths": ["tests/example.py"],
         "prompt": "bounded",
         "created_at": NOW,
-        "expires_at": "2026-09-30T06:30:00+09:00",
+        "expires_at": "2026-09-30T07:00:00+09:00",
         "retry": 0,
         "fallback": "disabled",
         "merge_allowed": False,
@@ -44,11 +47,11 @@ def request(**changes):
 
 def claim(**changes):
     value = {
-        "schema_version": 2,
+        "schema_version": 3,
         "loop_number": 64,
         "loop_id": "064",
-        "lane_id": "J-A",
-        "lane_display": "🟥",
+        "lane_id": "J-GREEN",
+        "lane_display": "💚",
         "task_id": "parallel-lane-proof",
         "command_id": COMMAND_ID,
         "target_branch": "feature/relay-transport-7070955470193506982",
@@ -66,6 +69,59 @@ def claim(**changes):
 
 
 class LoopIdClaimTests(unittest.TestCase):
+    def test_current_dispatch_schema_is_v3(self):
+        self.assertEqual(DISPATCH_CLAIM_SCHEMA_VERSION, 3)
+
+    def test_color_lane_registry_is_exact(self):
+        self.assertEqual(
+            LANE_DISPLAY_BY_ID,
+            {
+                "J-RED": "❤️",
+                "J-BLUE": "💙",
+                "J-YELLOW": "💛",
+                "J-GREEN": "💚",
+            },
+        )
+
+    def test_lane_aliases_are_user_friendly(self):
+        self.assertEqual(normalize_lane_alias("JA"), "J-RED")
+        self.assertEqual(normalize_lane_alias("JB"), "J-BLUE")
+        self.assertEqual(normalize_lane_alias("JC"), "J-YELLOW")
+        self.assertEqual(normalize_lane_alias("green"), "J-GREEN")
+        self.assertEqual(normalize_lane_alias("💚"), "J-GREEN")
+        self.assertEqual(lane_display_for("J-GREEN"), "💚")
+        with self.assertRaisesRegex(ValueError, "unknown Jules lane alias"):
+            normalize_lane_alias("JD")
+
+    def test_green_lane_is_dispatchable_without_blue_or_yellow_claims(self):
+        verified = verify_command_claim(request(), claim())
+        self.assertEqual(verified["lane_id"], "J-GREEN")
+        self.assertEqual(verified["lane_display"], "💚")
+
+    def test_each_color_lane_is_independently_dispatchable(self):
+        for lane_id, display in LANE_DISPLAY_BY_ID.items():
+            with self.subTest(lane_id=lane_id):
+                verified = verify_command_claim(
+                    request(),
+                    claim(lane_id=lane_id, lane_display=display),
+                )
+                self.assertEqual(verified["lane_id"], lane_id)
+
+    def test_lane_metadata_is_not_command_correctness(self):
+        red = verify_command_claim(
+            request(),
+            claim(lane_id="J-RED", lane_display="❤️"),
+        )
+        green = verify_command_claim(request(), claim())
+        self.assertEqual(red["command_id"], green["command_id"])
+        self.assertEqual(red["expected_target_head"], green["expected_target_head"])
+
+    def test_lane_id_and_display_must_match(self):
+        with self.assertRaisesRegex(ValueError, "lane_id/lane_display mismatch"):
+            validate_claim(claim(lane_id="J-GREEN", lane_display="💙"))
+        with self.assertRaisesRegex(ValueError, "invalid lane_id"):
+            validate_claim(claim(lane_id="J-D", lane_display="💚"))
+
     def test_extract_numbered_loop(self):
         self.assertEqual(
             extract_numbered_loop(COMMAND_ID),
@@ -73,44 +129,15 @@ class LoopIdClaimTests(unittest.TestCase):
         )
         self.assertIsNone(extract_numbered_loop("chat-jules-001"))
 
-    def test_valid_v2_claim_matches_command(self):
-        verified = verify_command_claim(request(), claim())
-        self.assertEqual(verified["loop_id"], "064")
-        self.assertEqual(verified["lane_id"], "J-A")
-        self.assertEqual(verified["lane_display"], "🟥")
-
-    def test_lane_metadata_is_not_command_correctness(self):
-        verified = verify_command_claim(
-            request(),
-            claim(lane_id="J-B", lane_display="🟦"),
-        )
-        self.assertEqual(verified["command_id"], COMMAND_ID)
-
-    def test_claim_binds_task_id_to_command_id(self):
+    def test_claim_binds_task_branch_head_and_tree(self):
         with self.assertRaisesRegex(ValueError, "task_id/command_id"):
             validate_claim(claim(task_id="other-task"))
-
-    def test_claim_binds_work_branch_to_command_id(self):
         with self.assertRaisesRegex(ValueError, "work_branch/command_id"):
             validate_claim(claim(work_branch="jules-work/other"))
-
-    def test_claim_binds_head_and_tree_to_command(self):
         with self.assertRaisesRegex(ValueError, "expected_target_head"):
-            verify_command_claim(
-                request(),
-                claim(expected_target_head="c" * 40),
-            )
+            verify_command_claim(request(), claim(expected_target_head="c" * 40))
         with self.assertRaisesRegex(ValueError, "expected_target_tree"):
-            verify_command_claim(
-                request(),
-                claim(expected_target_tree="d" * 40),
-            )
-
-    def test_invalid_lane_metadata_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "invalid lane_id"):
-            validate_claim(claim(lane_id="red"))
-        with self.assertRaisesRegex(ValueError, "invalid lane_display"):
-            validate_claim(claim(lane_display="🔴"))
+            verify_command_claim(request(), claim(expected_target_tree="d" * 40))
 
     def test_retry_fallback_are_fixed(self):
         with self.assertRaisesRegex(ValueError, "retry/fallback"):
@@ -122,14 +149,14 @@ class LoopIdClaimTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "keys mismatch"):
             validate_claim(value)
 
-    def test_historical_backfill_is_valid_for_archive_but_not_dispatch(self):
+    def test_historical_backfill_is_archival_not_dispatch_authority(self):
         archived = claim(state="HISTORICAL_BACKFILL")
         self.assertEqual(validate_claim(archived)["state"], "HISTORICAL_BACKFILL")
         with self.assertRaisesRegex(ValueError, "pre-dispatch CLAIMED"):
             verify_command_claim(request(), archived)
 
-    def test_legacy_v1_is_readable_but_not_dispatchable(self):
-        legacy = {
+    def test_legacy_v1_and_v2_are_readable_but_not_dispatchable(self):
+        legacy_v1 = {
             "schema_version": 1,
             "loop_number": 60,
             "loop_id": "060",
@@ -144,13 +171,25 @@ class LoopIdClaimTests(unittest.TestCase):
             "retry": 0,
             "fallback": "disabled",
         }
-        self.assertEqual(validate_claim(legacy)["schema_version"], 1)
-        legacy_request = request(
-            command_id="relay-dev-loop-060-legacy",
-            work_branch="jules-work/relay-dev-loop-060-legacy",
-        )
-        with self.assertRaisesRegex(ValueError, "schema_version 2"):
-            verify_command_claim(legacy_request, legacy)
+        self.assertEqual(validate_claim(legacy_v1)["schema_version"], 1)
+
+        legacy_v2 = {
+            **claim(),
+            "schema_version": 2,
+            "lane_id": "J-A",
+            "lane_display": "🟥",
+        }
+        self.assertEqual(validate_claim(legacy_v2)["schema_version"], 2)
+
+        for legacy in (legacy_v1, legacy_v2):
+            req = request(
+                command_id=legacy["command_id"],
+                work_branch=legacy["work_branch"],
+            )
+            if "expected_target_tree" not in legacy:
+                req["expected_target_tree"] = TREE
+            with self.assertRaisesRegex(ValueError, "schema_version 3"):
+                verify_command_claim(req, legacy)
 
     def test_missing_claim_file_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -182,7 +221,7 @@ class LoopIdClaimTests(unittest.TestCase):
             loop_ids.append(validated["loop_id"])
         self.assertEqual(len(loop_ids), len(set(loop_ids)))
 
-    def test_061_through_063_are_explicit_historical_backfills(self):
+    def test_061_through_063_remain_legacy_historical_backfills(self):
         claims_dir = Path("automation/command_bus/loop_id_claims")
         for loop_id in ("061", "062", "063"):
             loaded = json.loads(
@@ -218,7 +257,12 @@ class LoopIdClaimTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             command_path = Path(tmp) / "command.json"
             command_path.write_text(
-                json.dumps(request(command_id="chat-jules-001", work_branch="jules-work/chat-jules-001")),
+                json.dumps(
+                    request(
+                        command_id="chat-jules-001",
+                        work_branch="jules-work/chat-jules-001",
+                    )
+                ),
                 encoding="utf-8",
             )
             self.assertIsNone(
