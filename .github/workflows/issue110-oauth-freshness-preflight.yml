@@ -8,6 +8,9 @@ on:
       - .github/workflows/issue110-oauth-freshness-preflight.yml
       - automation/command_bus/docker/claude-runtime/claude_oauth_freshness_preflight.mjs
       - automation/command_bus/tests/test_claude_oauth_freshness_preflight.mjs
+      - automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+      - automation/command_bus/docker/claude-runtime/Dockerfile
+      - automation/command_bus/tests/test_claude_auth_control_proxy.mjs
 
 permissions:
   contents: read
@@ -31,5 +34,12 @@ jobs:
         shell: bash
         run: |
           node --check automation/command_bus/docker/claude-runtime/claude_oauth_freshness_preflight.mjs
+          node --check automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
           node --test automation/command_bus/tests/test_claude_oauth_freshness_preflight.mjs
+          node --test automation/command_bus/tests/test_claude_auth_control_proxy.mjs
           git diff --check
+
+      - name: Build pinned runtime image with preflight packaged
+        shell: bash
+        run: |
+          docker build             -t phase0-claude-runtime:preflight             -f automation/command_bus/docker/claude-runtime/Dockerfile             automation/command_bus
