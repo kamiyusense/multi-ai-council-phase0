@@ -94,7 +94,7 @@ def evaluate_github_oidc_claims_policy(
 
         if expected.job_workflow_ref is None and "job_workflow_ref" in claims:
             raise ValueError(
-                "unexpected reusable-workflow identity; explicit job_workflow_ref is required"
+                "unexpected job_workflow_ref; explicit job_workflow_ref is required"
             )
 
         for field in ("nbf", "iat", "exp"):
