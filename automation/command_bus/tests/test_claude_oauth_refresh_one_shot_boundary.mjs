@@ -12,7 +12,8 @@ import {
   persistentHelperCandidate,
   profileSelection,
   resolveCredentialVolumeIdentity,
-  validateAuthorizationReceipt,\n  validateOneShotMountCandidate,
+  validateAuthorizationReceipt,
+  validateOneShotMountCandidate,
   validatePersistentHelperCandidate,
 } from "../claude_oauth_refresh_one_shot_boundary.mjs";
 
