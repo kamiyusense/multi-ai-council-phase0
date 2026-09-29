@@ -169,6 +169,10 @@ async function startLocalTlsFixture({
     request_json: null,
   };
 
+  const originSockets = new Set();
+  const proxySockets = new Set();
+  const upstreamSockets = new Set();
+
   const origin = tls.createServer(
     {
       key: certs.key,
@@ -221,9 +225,15 @@ async function startLocalTlsFixture({
       });
     },
   );
+  origin.on("connection", (socket) => {
+    originSockets.add(socket);
+    socket.once("close", () => originSockets.delete(socket));
+  });
   const originPort = await listen(origin);
 
   const proxy = net.createServer((client) => {
+    proxySockets.add(client);
+    client.once("close", () => proxySockets.delete(client));
     let preface = Buffer.alloc(0);
     let connected = false;
 
@@ -261,6 +271,8 @@ async function startLocalTlsFixture({
           upstream.pipe(client);
         },
       );
+      upstreamSockets.add(upstream);
+      upstream.once("close", () => upstreamSockets.delete(upstream));
       upstream.once("error", () => client.destroy());
       client.once("error", () => upstream.destroy());
       client.once("close", () => upstream.destroy());
@@ -275,6 +287,11 @@ async function startLocalTlsFixture({
     proxyPort,
     observed,
     async close() {
+      for (const socket of upstreamSockets) socket.destroy();
+      for (const socket of proxySockets) socket.destroy();
+      for (const socket of originSockets) socket.destroy();
+      proxy.closeAllConnections?.();
+      origin.closeAllConnections?.();
       await closeServer(proxy);
       await closeServer(origin);
       fs.rmSync(certs.dir, { recursive: true, force: true });
