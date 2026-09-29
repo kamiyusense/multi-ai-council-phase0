@@ -1145,3 +1145,41 @@ Cycle members:
 - workflow permission/auth/billing changes: no
 - live provider/model/API execution: no
 
+### Loop 057 — medium — COMPLETE / ACCEPTED AFTER CORRECTION
+- task: tests/docs-only live evidence-acquisition planning
+- Jules session: `5601087063626235492`
+- Jules PR: #146
+- isolated base: `jules-work/relay-dev-loop-057-evidence-acquisition-plan`
+- canonical snapshot parent: `995a16e65b9aa700122167c90a3b73989bbd53b6`
+- initial Jules candidate: `e480ad61f66d1d9f7c2ff339bd266cb628be8462`
+- corrected isolated candidate: `bb3f804c78053cb8ced1bdd150555cba64fd6aa5`
+- accepted canonical head: `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5`
+- final_accept: yes
+- production/schema/workflow changes: none
+- allowed-path result: PASS (evidence-plan doc, checkpoint, test only)
+- initial exact validation run `36532668280`: SUCCESS; 587 tests PASS; semantic review still rejected the plan because nearly all technical gaps were collapsed into REQUIRES_BOUNDED_LIVE_PROOF and Loop 056 gap classes/evidence were not directly bound in tests
+- Chat corrections:
+  - preserved the exact 30 gap IDs and current gap classes from Loop 056
+  - bound each plan row's completion evidence directly to Loop 056 missing_evidence_or_decision
+  - separated safe evidence stages into 3 STATIC_PREPARATION_ONLY rows, 5 READ_ONLY_EVIDENCE_CANDIDATE rows, 16 REQUIRES_BOUNDED_LIVE_PROOF rows, 4 HUMAN_ARCHITECTURE_DECISION rows, 1 DEFERRED_NOT_SELECTED row, and 1 FINAL_HUMAN_APPROVAL row
+  - kept static/read-only preparation fail-closed; no plan row claims that preparation resolves a real blocker
+  - preserved Actions readback as transport evidence only / insufficient authenticator
+  - preserved OIDC/Artifact Attestation NOT_AUTHORIZED, Gemini CLI deferred, and first live turn explicit-human-approved
+  - strengthened tests to parse both Loop 056 and Loop 057 tables and compare exact gap IDs, classes, and required evidence
+- several older validation request names already existed from prior attempts; retry=0 was preserved by readback and then using SHA-qualified unique validation request names rather than overwriting/reusing ambiguous requests
+- reconciled current candidate validation run `36533175707`: FAIL only because common_confinement live boundary wording omitted the explicit "separately authorized" phrase
+- corrected candidate exact validation run `36533262945`: SUCCESS
+- canonical exact validation run `36533442501`: SUCCESS
+- exact validation: 590 tests PASS; compileall PASS; diff-check PASS
+- canonical publication: exact three validated blobs copied into one normal fast-forward canonical commit
+- candidate/canonical three-file blob equality after publication: PASS
+- this loop acquired zero external/provider/GitHub evidence
+- real live blockers resolved: no
+- provenance verified: no
+- execution authorized: no
+- workflow permission/auth/billing changes: no
+- live provider/model/API execution: no
+- retry=0 for Jules dispatch / fallback=disabled
+- merge: no
+- isolation result: PASS
+
