@@ -21,16 +21,21 @@ create-only claim at `automation/command_bus/loop_id_claims/<NNN>.json`.
 A claimed number is never recycled. If the path exists, select a different
 unused number. Ambiguous claim writes require readback, not retry.
 
-New numbered dispatches MUST use claim schema version 2. The claim binds the
-numeric Loop to the command/work branch and exact target snapshot, and carries
-`lane_id` plus `lane_display` as presentation/routing metadata. Lane metadata
-must never substitute for `command_id`, `work_branch`, Jules session, or exact
-HEAD/tree verification.
+New numbered dispatches MUST use claim schema version 3 and follow
+`docs/JULES_PARALLEL_COLOR_LANES.md`. The canonical lane IDs are
+`J-RED`, `J-BLUE`, `J-YELLOW`, and `J-GREEN`, displayed as
+❤️, 💙, 💛, and 💚. Each lane is independent: using `J-GREEN` does not require
+`J-BLUE` or `J-YELLOW` to exist or run.
+
+The claim binds the numeric Loop to the command/work branch and exact target
+snapshot, and carries `lane_id` plus `lane_display` as presentation/routing
+metadata. Lane metadata must never substitute for `command_id`, `work_branch`,
+Jules session, or exact HEAD/tree verification.
 
 The order is mandatory:
 
 1. fresh-read globally used Loop numbers;
-2. create-only schema-v2 claim with state `CLAIMED`;
+2. create-only schema-v3 claim with state `CLAIMED`;
 3. read back the exact claim;
 4. create the exact isolated work branch from the claimed HEAD/tree;
 5. append one matching Jules command;
