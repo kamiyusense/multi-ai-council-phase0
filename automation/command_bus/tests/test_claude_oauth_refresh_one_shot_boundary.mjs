@@ -12,7 +12,7 @@ import {
   persistentHelperCandidate,
   profileSelection,
   resolveCredentialVolumeIdentity,
-  validateAuthorizationReceipt,
+  validateAuthorizationReceipt,\n  validateOneShotMountCandidate,
   validatePersistentHelperCandidate,
 } from "../claude_oauth_refresh_one_shot_boundary.mjs";
 
@@ -27,7 +27,13 @@ function receiptContext(receipt = oauthAuthorizationReceiptFixture()) {
     receipt_count: 1,
     run_attempt: 1,
     current_source_blobs: { ...receipt.expected_source_blobs },
-    credential_volume_id: receipt.expected_credential_volume_id,
+    credential_volume_identity: {
+      status: "OBSERVED_EXISTING",
+      compose_key: "claude-auth",
+      project: receipt.expected_credential_volume.project,
+      docker_volume_name: receipt.expected_credential_volume.docker_volume_name,
+      execution_allowed: false,
+    },
     now: "2026-09-30T00:05:00Z",
   };
 }
@@ -79,6 +85,20 @@ test("persistent candidate rejects credential volumes, extra mounts, and weakene
 
 test("one-shot mount is transient, RW only for rotation, and has no guessed volume", () => {
   const oneShot = oneShotMountCandidate();
+  assert.deepEqual(validateOneShotMountCandidate(oneShot), {
+    status: "UNKNOWN",
+    reason: "credential volume identity has not been observed",
+    execution_allowed: false,
+  });
+  assert.throws(() => validateOneShotMountCandidate({ ...oneShot, one_shot: false }), /one-shot only/);
+  assert.throws(() => validateOneShotMountCandidate({
+    ...oneShot,
+    credential_volume_identity: {
+      ...oneShot.credential_volume_identity,
+      docker_volume_name: "guessed-name",
+      status: "OBSERVED_EXISTING",
+    },
+  }), /unresolved volume identity/);
   assert.equal(oneShot.one_shot, true);
   assert.equal(oneShot.container_removal_after_execution, "required");
   assert.equal(oneShot.persistent_compose_credential_mount, false);
@@ -116,6 +136,18 @@ test("volume identity resolver accepts only a structurally complete independent 
   assert.equal(resolved.status, "OBSERVED_EXISTING");
   assert.equal(resolved.execution_allowed, false);
   assert.equal(resolved.docker_volume_name, "fixture-only-volume-identity");
+  const oneShot = oneShotMountCandidate();
+  const resolvedOneShot = {
+    ...oneShot,
+    credential_volume_identity: {
+      status: "OBSERVED_EXISTING",
+      compose_key: "claude-auth",
+      docker_volume_name: resolved.docker_volume_name,
+      source: "independent-readback",
+    },
+  };
+  assert.throws(() => validateOneShotMountCandidate(resolvedOneShot),
+    /unresolved volume identity/);
 });
 
 test("authorization fixture is in-memory schema only and binds exact source blobs", () => {
@@ -152,8 +184,13 @@ test("absent, malformed, stale, duplicate, replayed, or mismatched authorization
     ...context.current_source_blobs,
     [AUTHORIZATION_SOURCE_PATHS[0]]: "f".repeat(40),
   } }).reason, "SOURCE_BLOB_MISMATCH");
-  assert.equal(validateAuthorizationReceipt(receipt, { ...context, credential_volume_id: "different-volume" }).reason,
-    "CREDENTIAL_VOLUME_IDENTITY_MISMATCH");
+  assert.equal(validateAuthorizationReceipt(receipt, { ...context, credential_volume_identity: {
+    ...context.credential_volume_identity,
+    docker_volume_name: "different-volume",
+  } }).reason, "CREDENTIAL_VOLUME_IDENTITY_MISMATCH");
+  assert.equal(validateAuthorizationReceipt(receipt, { ...context, credential_volume_identity: {
+    status: "UNKNOWN",
+  } }).status, "UNKNOWN");
   assert.equal(validateAuthorizationReceipt({ ...receipt, authorized: false }, context).reason,
     "RECEIPT_CONTRACT_MISMATCH");
 });
