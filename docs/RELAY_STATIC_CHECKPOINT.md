@@ -264,3 +264,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - No exact whole-path minimum-permission profile is selected.
 - common_min_permissions remains unresolved / BLOCKED_UNKNOWN.
 - First live provider/model turn remains separately human-approved.
+
+## Sensitive Fan-out Static Inventory Checkpoint
+- Implemented static sensitive-fanout-inventory.
+- This checkpoint is strictly PREPARED/static sensitive-fanout-inventory status only.
+- No real sensitive data is used.
+- No external evidence, no provider send, no production filter, no blocker resolution.
+- common_sensitive_fanout remains MISSING_STATIC_EVIDENCE / BLOCKED_UNKNOWN.
