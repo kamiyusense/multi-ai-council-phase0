@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "loop_number": 61,
+  "loop_id": "061",
+  "lane_id": "J-A",
+  "lane_display": "🟥",
+  "task_id": "model-verification-proof-contract",
+  "command_id": "relay-dev-loop-061-model-verification-proof-contract",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "1b7e044c166df27f33919ab98db5dc4859c262bf",
+  "expected_target_tree": "787765f107e0919b2014f752c919e0262aff40e4",
+  "work_branch": "jules-work/relay-dev-loop-061-model-verification-proof-contract",
+  "state": "HISTORICAL_BACKFILL",
+  "claimed_at": "2026-09-30T05:36:53+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
