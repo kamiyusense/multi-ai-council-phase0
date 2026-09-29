@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "loop_id": "chat-work-writeback-proof-20260930-001",
+  "command_id": "chat-work-writeback-proof-20260930-001-000001",
+  "observed_at": "2026-09-30T02:36:06+09:00",
+  "wake_comment_id": 5895367550,
+  "work_task_title": "Phase 0 PR6 Command Bus",
+  "work_last_run_time_observed": "2026-09-24T22:17:57.253701Z",
+  "terminal_receipt_present": false,
+  "state_before_close": "RUNNING",
+  "classification": "UNKNOWN",
+  "reason": "The current Phase 0 PR6 Command Bus task did not run after the new PR #6 Conversation wake comment. Historical setup bound this task to PR #6 commit-update events. PR #6 is already merged/closed, so this comment did not prove a matching wake route. No external/model execution or target mutation was observed.",
+  "retry_count": 0,
+  "fallback_used": false
+}
