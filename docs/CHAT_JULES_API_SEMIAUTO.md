@@ -43,13 +43,24 @@ back the exact claim path and does not retry blindly. Only after a matching
 claim is durably readable may Chat create the work branch/command for that Loop.
 
 All Jules lanes share one global Loop-number namespace. Lane-local counters are
-forbidden. Parallel examples are `🟥 J-A / Loop 064`,
-`🟦 J-B / Loop 065`, and `🟩 J-C / Loop 066`; the colors and lane IDs are
-presentation/routing metadata only. Correctness does not depend on color.
+forbidden. The active lane specification is
+`docs/JULES_PARALLEL_COLOR_LANES.md`.
 
-New claims use schema version 2 and add:
-- `lane_id` (for example `J-A`);
-- `lane_display` (one of `🟥`, `🟦`, `🟩`, `🟨`);
+Canonical Jules lanes are:
+
+- ❤️ `J-RED`
+- 💙 `J-BLUE`
+- 💛 `J-YELLOW`
+- 💚 `J-GREEN`
+
+The lanes are independent. For example, 💚 `J-GREEN` may run while 💙/💛 are
+unused. User shorthand such as `JA`, `JB`, `JC`, `JD`/`JG`, or a heart
+color selects a lane only; it does not replace GitHub fresh-read or correctness
+checks.
+
+New claims use schema version 3 and add:
+- `lane_id` (one of `J-RED`, `J-BLUE`, `J-YELLOW`, `J-GREEN`);
+- matching `lane_display` (❤️, 💙, 💛, 💚);
 - `expected_target_tree`.
 
 The durable correctness binding remains the unique Loop claim plus
@@ -62,7 +73,7 @@ Claims 059/060 are retained as legacy schema-v1 records. Claims 061/062/063 are
 schema-v2 `HISTORICAL_BACKFILL` records created only to permanently reserve
 numbers that had already been dispatched before claim enforcement was restored.
 A `HISTORICAL_BACKFILL` record is archival and MUST NOT authorize a new
-dispatch. New numbered dispatches require a schema-v2 `CLAIMED` record.
+dispatch. New numbered dispatches require a schema-v3 `CLAIMED` record.
 
 ## Durable command path
 
@@ -101,7 +112,7 @@ Before the Jules API call it requires:
 3. the strict request schema validates;
 4. the request is not expired;
 5. for a numbered Relay Loop, the exact `loop_id_claims/<NNN>.json` exists,
-   validates as schema v2, is in `CLAIMED` state, and matches
+   validates as schema v3, is in `CLAIMED` state, and matches
    `command_id`, `work_branch`, target branch, expected HEAD/tree,
    retry=0, and fallback=disabled;
 6. target branch is non-default and safe;
@@ -119,7 +130,7 @@ Chat should then:
 1. fresh-read the current target PR/branch and any Jules-created PR/result;
 2. independently inspect ancestry, changed paths, diff, tests/checks, and prior
    command evidence;
-3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, fresh-read existing Loop-ID claims/commands/work branches, select the globally unused Loop number, atomically create a new schema-v2 create-only `loop_id_claims/<NNN>.json` with lane metadata and exact target HEAD/tree, read it back, then construct the task and generate one matching command ID/JSON using that same snapshot;
+3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, fresh-read existing Loop-ID claims/commands/work branches, select the globally unused Loop number, atomically create a new schema-v3 create-only `loop_id_claims/<NNN>.json` with canonical color-lane metadata and exact target HEAD/tree, read it back, then construct the task and generate one matching command ID/JSON using that same snapshot;
 4. write that one command file to PR #6 branch and read back the new carrier head;
 5. do not resend if the write or subsequent workflow/Jules submission is
    ambiguous;
