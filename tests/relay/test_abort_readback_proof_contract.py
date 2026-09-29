@@ -5,8 +5,11 @@ from pathlib import Path
 class TestAbortReadbackProofContract(unittest.TestCase):
     def setUp(self):
         self.doc_path = Path("docs/RELAY_ABORT_READBACK_PROOF_CONTRACT.md")
+        self.checkpoint_path = Path("docs/RELAY_STATIC_CHECKPOINT.md")
         self.assertTrue(self.doc_path.exists(), "Contract document must exist")
+        self.assertTrue(self.checkpoint_path.exists(), "Static checkpoint document must exist")
         self.content = self.doc_path.read_text(encoding="utf-8")
+        self.checkpoint = self.checkpoint_path.read_text(encoding="utf-8")
 
     def test_provider_order_and_states(self):
         # tests must parse the contract and assert exact provider order/set openai, anthropic, google;
@@ -108,3 +111,14 @@ class TestAbortReadbackProofContract(unittest.TestCase):
         # tests must assert zero live abort/readback evidence acquired and common_abort_readback unresolved/BLOCKED_UNKNOWN;
         self.assertIn("Zero live abort/readback evidence is acquired by this batch", self.content)
         self.assertIn("`common_abort_readback` blocker remains completely unresolved / BLOCKED_UNKNOWN", self.content)
+        self.assertIn("Zero live abort/readback evidence was acquired", self.checkpoint)
+        self.assertIn("common_abort_readback remains unresolved/BLOCKED_UNKNOWN", self.checkpoint)
+
+    def test_no_positive_live_state_claim(self):
+        self.assertNotIn("or PASS", self.content)
+        for forbidden in ("| PASS |", "| VERIFIED |", "| READY |", "| RESOLVED |", "| LIVE_AUTHORIZED |"):
+            self.assertNotIn(forbidden, self.content)
+        self.assertIn(
+            "this static contract does not authorize a positive live state",
+            self.content,
+        )
