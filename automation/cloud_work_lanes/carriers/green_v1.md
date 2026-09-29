@@ -6,7 +6,7 @@ This file is the durable recovery note for the 💚 green lane.
 
 - repository: `kamiyusense/multi-ai-council-phase0`
 - carrier branch: `cloud-work/carrier-green-v1`
-- carrier PR: assigned by GitHub; after PR creation the PR body is authoritative
+- carrier PR: #166
 - required PR label: `cloud-green`
 - command review prefix: `[CW_GREEN_V1]`
 - receipt comment prefix: `[CW_GREEN_RECEIPT_V1]`
