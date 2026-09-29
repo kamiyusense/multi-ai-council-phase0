@@ -286,3 +286,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - Zero live abort/readback evidence was acquired.
 - common_abort_readback remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
+
+## Subscription Route Read-Only Checklist Static Checkpoint
+- Implemented static subscription-route-readonly-checklist document.
+- This checkpoint is strictly PREPARED/static subscription-route-readonly-checklist status only.
+- Zero external/read-only account or billing evidence is acquired by this batch.
+- common_subscription_route remains unresolved/BLOCKED_UNKNOWN.
+- No real live blocker is resolved.
