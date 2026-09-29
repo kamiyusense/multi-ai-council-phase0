@@ -115,6 +115,8 @@ def prepare_jules_provider_readback_candidate(
     proof_refs = (
         f"jules-api:sessions/{bundle.acceptance_session_id}",
         source_ref,
+        f"github-pr:{event['expected_pr']}",
+        f"github-head:{event['expected_target_head']}",
     )
     candidate = JulesProviderReadbackCandidate(
         source_id=source_id,
