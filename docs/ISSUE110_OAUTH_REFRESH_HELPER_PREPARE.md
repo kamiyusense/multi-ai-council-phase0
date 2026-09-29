@@ -143,21 +143,22 @@ Branch:
 
 Validation head:
 
-`37eb6a0fffb9acc3892da851bc6cda92191d3bbb`
+`aa820a18ab9a5649e67192b8fde4344ad95c0331`
 
 GitHub Actions:
 
-`36513191702` — **SUCCESS**
+`36515607778` — **SUCCESS**
 
 Results:
 
-- 9 Node tests PASS / 0 FAIL;
+- 10 Node tests PASS / 0 FAIL;
 - success path: one transport call and atomic rotated-pair persistence;
 - duplicate state: blocks second transport call;
 - injected crash after transport: UNKNOWN / no retry;
 - injected crash after pending: UNKNOWN / no retry;
 - injected crash after durable pending receipt: local recovery, zero network;
 - injected crash after atomic rename: local recovery, zero network;
+- symbolic-link credential path: blocks before transport;
 - insecure credential-file mode: blocks before transport;
 - `plan`: PREPARE_ONLY;
 - CLI `run`: exit 78 before network because production transport is not wired;
