@@ -44,3 +44,17 @@
 | provenance_oidc | HUMAN_DECISION_REQUIRED | HUMAN_ARCHITECTURE_DECISION | architectural review | production provenance advancement | GITHUB_OIDC_AUTHENTICATOR = candidate / NOT_AUTHORIZED | NOT_AUTHORIZED |
 | provenance_attestation | HUMAN_DECISION_REQUIRED | HUMAN_ARCHITECTURE_DECISION | architectural review | production provenance advancement | GITHUB_ARTIFACT_ATTESTATION = strong candidate / NOT_AUTHORIZED | NOT_AUTHORIZED |
 | first_live_turn | FINAL_HUMAN_APPROVAL | FINAL_HUMAN_APPROVAL | none | first real provider/model turn | the first real provider/model turn remains a separate explicit-user-approval boundary | EXPLICIT_HUMAN_APPROVAL_REQUIRED |
+
+## Fixed safety boundaries
+
+- This file performs **zero evidence acquisition**.
+- This batch performs **no provider/network/GitHub readback**.
+- GitHub Actions readback remains **transport evidence only / insufficient as authenticator**.
+- OIDC remains **NOT_AUTHORIZED**.
+- Artifact Attestation remains **NOT_AUTHORIZED**.
+- Gemini CLI remains **DEFERRED_NOT_SELECTED** and is not an automatic fallback.
+- The first real provider/model turn remains **FINAL_HUMAN_APPROVAL** and cannot be satisfied automatically by this plan.
+- No real live blocker is resolved.
+- No provenance is verified.
+- No execution is authorized.
+
