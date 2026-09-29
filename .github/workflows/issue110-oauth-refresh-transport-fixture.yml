@@ -1,0 +1,66 @@
+name: Issue 110 OAuth refresh local TLS transport fixture
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-refresh-transport-fixture-v1
+    paths:
+      - .github/workflows/issue110-oauth-refresh-transport-fixture.yml
+      - automation/command_bus/claude_oauth_refresh_helper.mjs
+      - automation/command_bus/claude_oauth_refresh_transport.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_helper.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_transport.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact transport-fixture head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run helper and loopback TLS transport tests
+        shell: bash
+        run: |
+          node --test             automation/command_bus/tests/test_claude_oauth_refresh_helper.mjs             automation/command_bus/tests/test_claude_oauth_refresh_transport.mjs
+
+      - name: Verify helper CLI remains transport-unwired
+        shell: bash
+        run: |
+          set +e
+          node automation/command_bus/claude_oauth_refresh_helper.mjs run             >/tmp/phase0-helper-run.out 2>/tmp/phase0-helper-run.err
+          code=$?
+          set -e
+          test "$code" = "78"
+          grep -F "production OAuth transport is not wired" /tmp/phase0-helper-run.err
+          grep -F "no network request was attempted" /tmp/phase0-helper-run.err
+          echo "OAUTH_REFRESH_HELPER_STILL_UNWIRED_PASS"
+
+      - name: Verify fixture transport is loopback-only by construction
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text=Path("automation/command_bus/claude_oauth_refresh_transport.mjs").read_text()
+          assert 'FIXTURE_PROXY_HOST = "127.0.0.1"' in text
+          assert 'PROXY_HOST = "auth-control-proxy"' not in text
+          assert 'PROXY_HOST = "172.29.247.3"' not in text
+          print("OAUTH_REFRESH_TRANSPORT_LOOPBACK_ONLY_PASS")
+          PY
+
+      - name: Syntax and diff checks
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_transport.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_transport.mjs
+          git diff --check
