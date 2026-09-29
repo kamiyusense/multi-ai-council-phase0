@@ -1,117 +1,281 @@
-import unittest
 import os
+import unittest
+
 
 class TestLiveEvidenceAcquisitionPlan(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        cls.audit_path = os.path.join(base_dir, "docs", "RELAY_STATIC_TO_LIVE_GAP_AUDIT.md")
-        cls.plan_path = os.path.join(base_dir, "docs", "RELAY_LIVE_EVIDENCE_ACQUISITION_PLAN.md")
-        cls.checkpoint_path = os.path.join(base_dir, "docs", "RELAY_STATIC_CHECKPOINT.md")
+    def setUpClass(cls) -> None:
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "docs")
+        with open(
+            os.path.join(base, "RELAY_STATIC_TO_LIVE_GAP_AUDIT.md"),
+            "r",
+            encoding="utf-8",
+        ) as stream:
+            cls.audit_content = stream.read()
+        with open(
+            os.path.join(base, "RELAY_LIVE_EVIDENCE_ACQUISITION_PLAN.md"),
+            "r",
+            encoding="utf-8",
+        ) as stream:
+            cls.plan_content = stream.read()
+        with open(
+            os.path.join(base, "RELAY_STATIC_CHECKPOINT.md"),
+            "r",
+            encoding="utf-8",
+        ) as stream:
+            cls.checkpoint_content = stream.read()
 
-        with open(cls.audit_path, "r", encoding="utf-8") as f:
-            cls.audit_content = f.read()
+        cls.audit_rows = cls._parse_table(
+            cls.audit_content,
+            expected_header=(
+                "gap_id",
+                "scope/provider",
+                "class",
+                "current_state",
+                "canonical_source",
+                "missing_evidence_or_decision",
+                "forbidden_until_resolved",
+            ),
+        )
+        cls.plan_rows = cls._parse_table(
+            cls.plan_content,
+            expected_header=(
+                "gap_id",
+                "current_gap_class",
+                "evidence_stage",
+                "safe_now_action",
+                "external_or_live_boundary",
+                "completion_evidence_required",
+                "result_state_if_not_proven",
+            ),
+        )
 
-        with open(cls.plan_path, "r", encoding="utf-8") as f:
-            cls.plan_content = f.read()
+    @staticmethod
+    def _parse_table(content: str, *, expected_header: tuple[str, ...]) -> dict[str, dict[str, str]]:
+        header = None
+        rows: dict[str, dict[str, str]] = {}
+        for line in content.splitlines():
+            if not line.startswith("| "):
+                continue
+            cells = tuple(cell.strip() for cell in line.strip("|").split("|"))
+            if cells == expected_header:
+                header = cells
+                continue
+            if not header:
+                continue
+            if all(set(cell) <= {"-", ":"} for cell in cells):
+                continue
+            if len(cells) != len(header):
+                continue
+            row = dict(zip(header, cells))
+            gap_id = row["gap_id"]
+            if gap_id in rows:
+                raise AssertionError(f"duplicate gap_id: {gap_id}")
+            rows[gap_id] = row
+        if header != expected_header:
+            raise AssertionError(f"expected table header not found: {expected_header}")
+        return rows
 
-        with open(cls.checkpoint_path, "r", encoding="utf-8") as f:
-            cls.checkpoint_content = f.read()
+    def test_exact_gap_id_set_is_preserved(self) -> None:
+        self.assertEqual(len(self.audit_rows), 30)
+        self.assertEqual(len(self.plan_rows), 30)
+        self.assertEqual(set(self.plan_rows), set(self.audit_rows))
 
-        cls.audit_rows = [l.strip() for l in cls.audit_content.splitlines() if l.strip().startswith("|") and "gap_id" not in l and "---" not in l]
-        cls.plan_rows = [l.strip() for l in cls.plan_content.splitlines() if l.strip().startswith("|") and "gap_id" not in l and "---" not in l]
+    def test_current_gap_class_matches_loop056_source_exactly(self) -> None:
+        for gap_id, audit in self.audit_rows.items():
+            with self.subTest(gap_id=gap_id):
+                self.assertEqual(
+                    self.plan_rows[gap_id]["current_gap_class"],
+                    audit["class"],
+                )
 
-    def test_identical_gap_ids(self):
-        audit_ids = [r.split("|")[1].strip() for r in self.audit_rows if r.strip()]
-        plan_ids = [r.split("|")[1].strip() for r in self.plan_rows if r.strip()]
+    def test_completion_evidence_matches_loop056_source_exactly(self) -> None:
+        for gap_id, audit in self.audit_rows.items():
+            with self.subTest(gap_id=gap_id):
+                self.assertEqual(
+                    self.plan_rows[gap_id]["completion_evidence_required"],
+                    audit["missing_evidence_or_decision"],
+                )
 
-        self.assertEqual(len(audit_ids), 30)
-        self.assertEqual(len(plan_ids), 30)
-        self.assertEqual(set(audit_ids), set(plan_ids))
+    def test_every_plan_row_has_nonempty_action_boundary_evidence_and_fail_state(self) -> None:
+        for gap_id, row in self.plan_rows.items():
+            with self.subTest(gap_id=gap_id):
+                for field in (
+                    "safe_now_action",
+                    "external_or_live_boundary",
+                    "completion_evidence_required",
+                    "result_state_if_not_proven",
+                ):
+                    self.assertTrue(row[field], field)
 
-    def test_evidence_stage_allowed_values(self):
-        allowed_stages = {
+    def test_evidence_stage_uses_only_allowed_values(self) -> None:
+        allowed = {
             "STATIC_PREPARATION_ONLY",
             "READ_ONLY_EVIDENCE_CANDIDATE",
             "REQUIRES_BOUNDED_LIVE_PROOF",
             "HUMAN_ARCHITECTURE_DECISION",
             "FINAL_HUMAN_APPROVAL",
-            "DEFERRED_NOT_SELECTED"
+            "DEFERRED_NOT_SELECTED",
         }
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|")]
-            stage = parts[3]
-            self.assertIn(stage, allowed_stages)
+        for gap_id, row in self.plan_rows.items():
+            with self.subTest(gap_id=gap_id):
+                self.assertIn(row["evidence_stage"], allowed)
 
-    def test_no_success_state_in_fail_closed(self):
-        forbidden_exact = {"READY", "LIVE", "AUTHORIZED", "VERIFIED", "PASS", "RESOLVED"}
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|")]
-            fail_closed = parts[7].upper()
-
-            # NOT_AUTHORIZED is valid fail_closed
-            if fail_closed == "NOT_AUTHORIZED":
-                continue
-
-            for forbidden in forbidden_exact:
-                self.assertNotIn(forbidden, fail_closed)
-
-    def test_runtime_behavior_gaps_not_static_preparation_only(self):
-        runtime_gaps = {
-            "common_timeout", "common_min_permissions", "common_model_verification",
-            "common_subscription_route", "common_abort_readback", "common_sensitive_fanout",
-            "common_confinement", "common_hidden_retry", "openai_request_retry",
-            "openai_stream_replay", "openai_auth_replay", "openai_single_request_evidence",
-            "claude_retry", "claude_fallback", "claude_recovery", "claude_account_auth",
-            "claude_permissions", "claude_model_verification", "antigravity_account_route",
-            "antigravity_billing_route", "antigravity_retry_fallback", "antigravity_model_verification",
-            "antigravity_cancel", "antigravity_quota_billing"
+    def test_fail_closed_states_never_claim_success(self) -> None:
+        dangerous_tokens = {
+            "READY",
+            "LIVE",
+            "AUTHORIZED",
+            "VERIFIED",
+            "PASS",
+            "RESOLVED",
         }
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|")]
-            gap_id = parts[1]
-            stage = parts[3]
-            if gap_id in runtime_gaps:
-                self.assertNotEqual(stage, "STATIC_PREPARATION_ONLY")
-                self.assertIn(stage, ["REQUIRES_BOUNDED_LIVE_PROOF", "READ_ONLY_EVIDENCE_CANDIDATE"])
+        allowed_exact = {
+            "NOT_AUTHORIZED",
+            "KEEP_NOT_WIRED",
+            "TRANSPORT_EVIDENCE_ONLY",
+            "EXPLICIT_HUMAN_APPROVAL_REQUIRED",
+            "BLOCKED_UNKNOWN",
+            "DEFERRED",
+            "UNKNOWN",
+        }
+        for gap_id, row in self.plan_rows.items():
+            with self.subTest(gap_id=gap_id):
+                state = row["result_state_if_not_proven"]
+                self.assertIn(state, allowed_exact)
+                if state == "NOT_AUTHORIZED":
+                    continue
+                for token in dangerous_tokens:
+                    self.assertNotIn(token, state)
 
-    def test_provenance_rows_states(self):
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|")]
-            gap_id = parts[1]
-            stage = parts[3]
-            fail_closed = parts[7]
+    def test_runtime_sensitive_gaps_are_never_static_only(self) -> None:
+        runtime_sensitive = {
+            "common_model_verification",
+            "common_subscription_route",
+            "common_abort_readback",
+            "common_hidden_retry",
+            "openai_request_retry",
+            "openai_stream_replay",
+            "openai_auth_replay",
+            "openai_single_request_evidence",
+            "claude_retry",
+            "claude_fallback",
+            "claude_recovery",
+            "claude_model_verification",
+            "antigravity_account_route",
+            "antigravity_billing_route",
+            "antigravity_retry_fallback",
+            "antigravity_model_verification",
+            "antigravity_cancel",
+            "antigravity_quota_billing",
+        }
+        for gap_id in runtime_sensitive:
+            with self.subTest(gap_id=gap_id):
+                self.assertIn(
+                    self.plan_rows[gap_id]["evidence_stage"],
+                    {
+                        "READ_ONLY_EVIDENCE_CANDIDATE",
+                        "REQUIRES_BOUNDED_LIVE_PROOF",
+                    },
+                )
 
-            if gap_id.startswith("provenance_"):
-                self.assertEqual(stage, "HUMAN_ARCHITECTURE_DECISION")
+    def test_provenance_rows_remain_human_architecture_decisions(self) -> None:
+        expected = {
+            "provenance_keep_not_wired": (
+                "KEEP_NOT_WIRED",
+                "KEEP_NOT_WIRED = current safe default / no provenance advancement",
+            ),
+            "provenance_actions_readback": (
+                "TRANSPORT_EVIDENCE_ONLY",
+                "GITHUB_ACTIONS_READBACK_ONLY = transport evidence only / insufficient as authenticator",
+            ),
+            "provenance_oidc": (
+                "NOT_AUTHORIZED",
+                "GITHUB_OIDC_AUTHENTICATOR = candidate / NOT_AUTHORIZED",
+            ),
+            "provenance_attestation": (
+                "NOT_AUTHORIZED",
+                "GITHUB_ARTIFACT_ATTESTATION = strong candidate / NOT_AUTHORIZED",
+            ),
+        }
+        for gap_id, (fail_state, evidence) in expected.items():
+            with self.subTest(gap_id=gap_id):
+                row = self.plan_rows[gap_id]
+                self.assertEqual(row["evidence_stage"], "HUMAN_ARCHITECTURE_DECISION")
+                self.assertEqual(row["result_state_if_not_proven"], fail_state)
+                self.assertEqual(row["completion_evidence_required"], evidence)
+                self.assertEqual(row["safe_now_action"], "architectural review")
 
-                if gap_id == "provenance_actions_readback":
-                    self.assertEqual(fail_closed, "TRANSPORT_EVIDENCE_ONLY")
-                elif gap_id in ["provenance_oidc", "provenance_attestation"]:
-                    self.assertEqual(fail_closed, "NOT_AUTHORIZED")
-                elif gap_id == "provenance_keep_not_wired":
-                    self.assertEqual(fail_closed, "KEEP_NOT_WIRED")
+    def test_actions_readback_never_becomes_authenticator(self) -> None:
+        row = self.plan_rows["provenance_actions_readback"]
+        self.assertIn("transport evidence only", row["completion_evidence_required"])
+        self.assertIn("insufficient as authenticator", row["completion_evidence_required"])
+        self.assertEqual(row["result_state_if_not_proven"], "TRANSPORT_EVIDENCE_ONLY")
 
-    def test_gemini_cli_state(self):
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|")]
-            if parts[1] == "gemini_cli":
-                self.assertEqual(parts[3], "DEFERRED_NOT_SELECTED")
+    def test_oidc_and_attestation_remain_not_authorized(self) -> None:
+        for gap_id in ("provenance_oidc", "provenance_attestation"):
+            with self.subTest(gap_id=gap_id):
+                row = self.plan_rows[gap_id]
+                self.assertEqual(row["evidence_stage"], "HUMAN_ARCHITECTURE_DECISION")
+                self.assertEqual(row["result_state_if_not_proven"], "NOT_AUTHORIZED")
+                self.assertIn("NOT_AUTHORIZED", row["completion_evidence_required"])
 
-    def test_first_live_turn_state(self):
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|")]
-            if parts[1] == "first_live_turn":
-                self.assertEqual(parts[3], "FINAL_HUMAN_APPROVAL")
+    def test_gemini_cli_remains_deferred_and_never_fallback(self) -> None:
+        row = self.plan_rows["gemini_cli"]
+        self.assertEqual(row["evidence_stage"], "DEFERRED_NOT_SELECTED")
+        self.assertEqual(row["result_state_if_not_proven"], "DEFERRED")
+        self.assertEqual(row["safe_now_action"], "none")
+        self.assertEqual(
+            row["external_or_live_boundary"],
+            "automatic fallback to Gemini CLI",
+        )
 
-    def test_non_empty_fields(self):
-        for row in self.plan_rows:
-            parts = [p.strip() for p in row.split("|") if p]
-            self.assertEqual(len(parts), 7)
-            for part in parts:
-                self.assertTrue(bool(part))
+    def test_first_live_turn_cannot_be_satisfied_by_this_plan(self) -> None:
+        row = self.plan_rows["first_live_turn"]
+        self.assertEqual(row["evidence_stage"], "FINAL_HUMAN_APPROVAL")
+        self.assertEqual(
+            row["result_state_if_not_proven"],
+            "EXPLICIT_HUMAN_APPROVAL_REQUIRED",
+        )
+        self.assertEqual(row["safe_now_action"], "none")
+        self.assertEqual(
+            row["external_or_live_boundary"],
+            "first real provider/model turn",
+        )
 
-    def test_checkpoint_explicitly_states_no_evidence_acquired_or_blocker_resolved(self):
-        plan_checkpoint_section = self.checkpoint_content.split("## Live Evidence Acquisition Plan Checkpoint")[1]
-        self.assertIn("Zero evidence was acquired", plan_checkpoint_section)
-        self.assertIn("No real live blocker is resolved.", plan_checkpoint_section)
+    def test_safe_work_queue_categories_exist_without_ranking(self) -> None:
+        for phrase in (
+            "static preparation/audits",
+            "separately authorized read-only evidence gathering",
+            "bounded live proof requiring explicit authorization",
+            "human architecture decision",
+            "final human approval",
+        ):
+            self.assertIn(phrase, self.plan_content)
+
+        for ranking_word in ("best", "winner", "recommended", "priority 1"):
+            self.assertNotIn(ranking_word, self.plan_content.lower())
+
+    def test_plan_explicitly_performs_zero_evidence_acquisition(self) -> None:
+        for phrase in (
+            "zero evidence acquisition",
+            "no provider/network/GitHub readback is performed by this batch",
+            "no real live blocker is resolved",
+            "no provenance is verified",
+            "no execution is authorized",
+        ):
+            self.assertIn(phrase, self.plan_content)
+
+    def test_checkpoint_is_prepared_static_only(self) -> None:
+        marker = "## Live Evidence Acquisition Plan Checkpoint"
+        self.assertIn(marker, self.checkpoint_content)
+        section = self.checkpoint_content.split(marker, 1)[1]
+        for phrase in (
+            "strictly PREPARED/static evidence-acquisition-plan status only",
+            "Zero evidence was acquired",
+            "no provider/network/GitHub readback is performed here",
+            "No real live blocker is resolved",
+            "No provenance is verified",
+            "no execution is authorized",
+        ):
+            self.assertIn(phrase, section)
