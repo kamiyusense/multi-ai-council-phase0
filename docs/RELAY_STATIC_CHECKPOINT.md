@@ -229,3 +229,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - No real live blocker is resolved by the synthetic fixture data.
 - human provenance remains unverified.
 - first live provider turn remains unauthorized.
+
+## Live Evidence Acquisition Plan Checkpoint
+- Implemented static live-evidence acquisition plan.
+- This checkpoint is strictly PREPARED/static evidence-acquisition-plan status only.
+- Zero evidence was acquired, no provider/network/GitHub readback is performed here.
+- No real live blocker is resolved.
+- No provenance is verified, no execution is authorized.
