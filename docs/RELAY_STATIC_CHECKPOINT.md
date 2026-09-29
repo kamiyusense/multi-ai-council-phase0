@@ -211,3 +211,8 @@ This signifies the PREPARED static pipeline checkpoint.
 - This checkpoint is strictly PREPARED/static provenance-boundary-audit status only.
 - PROVENANCE_VERIFICATION_REQUIRED is terminal for current static Relay code.
 - No live execution is authorized, and production authenticators remain NOT_WIRED.
+
+- No real live blocker is resolved by the synthetic fixture data.
+- human provenance remains unverified.
+- first live provider turn remains unauthorized.
+
