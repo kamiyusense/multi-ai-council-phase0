@@ -122,6 +122,11 @@ function handleTlsHttp(socket) {
         typeof parsed.client_id === "string" && parsed.client_id.length <= 256
           ? parsed.client_id
           : null,
+      scope:
+        typeof parsed.scope === "string" && parsed.scope.length <= 1024
+          ? parsed.scope
+          : null,
+      content_type: String(headers["content-type"] || "").slice(0, 128),
       refresh_token_matches_fixture:
         parsed.refresh_token === EXPECTED_REFRESH_TOKEN,
       authorization_header_present: Boolean(headers.authorization),
