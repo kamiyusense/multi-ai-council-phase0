@@ -1345,3 +1345,37 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop ID collision 058 — RECORDED / PREVENTION INSTALLED
+- classification: NUMBER_COLLISION_ONLY
+- same-task retry: no
+- duplicate Jules dispatch: no
+- 058-A: static-evidence-prep-audit / session `3365475565043308879` / PR #153
+- 058-B: timeout-static-inventory / session `3277074397239188266` / PR #154
+- both lanes used distinct command IDs, branches, sessions, PRs, validation evidence, and publication paths
+- root cause: two independent controller paths inferred the same next numeric Loop ID without an atomic durable reservation
+- impact: durable numbering ambiguity; no evidence mixing or duplicate execution of the same task
+- durable incident: `automation/command_bus/loop_id_incidents/058.json`
+- prevention installed:
+  - mandatory create-only `automation/command_bus/loop_id_claims/<NNN>.json`
+  - claimed IDs are never recycled
+  - ambiguous claim writes require readback, not retry
+  - command-bus README / semi-auto operating procedure / Jules prompt specification updated
+- first protected claim: `loop_id_claims/059.json`
+
+### Loop 059 — medium — DISPATCHED / IN PROGRESS
+- task: tests/docs-only minimum-permissions static inventory
+- loop-ID claim: `automation/command_bus/loop_id_claims/059.json`
+- claim readback: PASS
+- canonical Relay snapshot head: `8846b83804fe9c1c7a62036536a6ac2f4fdebf6e`
+- canonical Relay snapshot tree: `b9ec6ca211bfbc6c0505b2f353110ca38a5eea15`
+- isolated starting branch: `jules-work/relay-dev-loop-059-minimum-permissions-static-inventory`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36553196884`
+- Jules session: `4069488345829912341`
+- accepted_at: 2026-09-29 19:04:02 JST
+- task size: medium (~15-25 minute class)
+- mission: inventory current static minimum-permission/auth-route controls without selecting or authorizing a whole-path production minimum-permission profile
+- retry=0 / fallback=disabled / merge=human-only
+- permission/auth/billing/settings changes: no
+- live provider/model/API execution: no
+
