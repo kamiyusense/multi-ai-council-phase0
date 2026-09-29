@@ -30,6 +30,18 @@ The command prompt must be a bounded execution contract, not an open-ended reque
 
 A green Jules suite is evidence only. Chat must independently review semantics after the result returns.
 
+## Mandatory Loop ID reservation
+
+Before creating a new Jules command JSON, Chat MUST first reserve its numeric
+Loop ID by creating exactly one append-only
+`automation/command_bus/loop_id_claims/<NNN>.json`.
+
+The reservation is create-only and never recycled. Chat must fresh-read existing
+claims, command records, and matching Jules work branches first. If a claim
+already exists, the number is taken. If claim creation is ambiguous, Chat reads
+back the exact claim path and does not retry blindly. Only after a matching
+claim is durably readable may Chat create the work branch/command for that Loop.
+
 ## Durable command path
 
 Append-only commands live at:
@@ -81,7 +93,7 @@ Chat should then:
 1. fresh-read the current target PR/branch and any Jules-created PR/result;
 2. independently inspect ancestry, changed paths, diff, tests/checks, and prior
    command evidence;
-3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, construct the task with its mandatory prompt structure, then generate one new command ID and one command JSON using the fresh target HEAD/tree;
+3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, fresh-read existing Loop-ID claims/commands/work branches, atomically create a new create-only `loop_id_claims/<NNN>.json`, read it back, then construct the task and generate one matching command ID/JSON using the fresh target HEAD/tree;
 4. write that one command file to PR #6 branch and read back the new carrier head;
 5. do not resend if the write or subsequent workflow/Jules submission is
    ambiguous;
