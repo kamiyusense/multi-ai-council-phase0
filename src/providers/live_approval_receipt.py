@@ -1,12 +1,30 @@
 import copy
 import hashlib
 import json
-import re
+from datetime import datetime
 from typing import Any
 
-
+PROVIDER_ORDER = ("openai", "anthropic", "google")
 
 _EXPECTED_INPUT_KEYS = {"approval_packet", "approval_record"}
+_EXPECTED_PACKET_KEYS = {
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "approval_granted",
+    "retry_count",
+    "fallback_state",
+    "next_action",
+    "snapshot_state",
+    "snapshot_packet_sha256",
+    "preflight_states",
+    "inventory_state",
+    "unresolved_count",
+    "provider_states",
+    "blocking_providers",
+    "approval_packet_sha256",
+}
 _EXPECTED_RECORD_KEYS = {
     "decision",
     "scope",
@@ -15,7 +33,12 @@ _EXPECTED_RECORD_KEYS = {
     "target_approval_packet_sha256",
     "target_snapshot_packet_sha256",
 }
-_ALLOWED_DECISIONS = {"APPROVE_FIRST_LIVE_POC", "REJECT", "DEFER"}
+_ALLOWED_DECISIONS = {
+    "APPROVE_FIRST_LIVE_POC",
+    "REJECT",
+    "DEFER",
+}
+_ALLOWED_PREFLIGHT_STATES = {"PASS", "UNKNOWN"}
 
 
 def _canonical_json(data: Any) -> str:
@@ -27,8 +50,12 @@ def _canonical_json(data: Any) -> str:
     )
 
 
-def _is_sha256(val: Any) -> bool:
-    return isinstance(val, str) and len(val) == 64 and val.islower() and all(c in "0123456789abcdef" for c in val)
+def _is_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdef" for ch in value)
+    )
 
 
 def _base_receipt() -> dict[str, Any]:
@@ -50,12 +77,6 @@ def _base_receipt() -> dict[str, Any]:
     }
 
 
-def _fail_closed(receipt: dict[str, Any]) -> dict[str, Any]:
-    receipt["state"] = "BLOCKED_UNKNOWN"
-    receipt["next_action"] = "RESOLVE_BLOCKERS"
-    return _finalize_receipt(receipt)
-
-
 def _finalize_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
     payload = {
         key: value
@@ -68,114 +89,162 @@ def _finalize_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
     return receipt
 
 
-def _is_valid_iso8601_offset(val: Any) -> bool:
-    if not isinstance(val, str) or not val:
+def _fail_closed() -> dict[str, Any]:
+    return _finalize_receipt(_base_receipt())
+
+
+def _is_valid_iso8601_offset(value: Any) -> bool:
+    if not isinstance(value, str) or not value or "T" not in value:
         return False
-    # Basic deterministic regex for timezone-aware ISO-8601 without reading current time
-    # e.g., 2026-09-21T12:00:00Z or 2026-09-21T12:00:00+09:00
-    pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
-    return bool(re.match(pattern, val))
+
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return False
+
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return False
+
+    return True
+
+
+def _valid_exact_provider_map(
+    value: Any,
+    *,
+    allowed_values: set[str],
+) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) == set(PROVIDER_ORDER)
+        and all(value[provider] in allowed_values for provider in PROVIDER_ORDER)
+    )
+
+
+def _valid_ready_approval_packet(packet: Any) -> bool:
+    if not isinstance(packet, dict) or set(packet) != _EXPECTED_PACKET_KEYS:
+        return False
+
+    if packet["state"] != "READY_FOR_HUMAN_APPROVAL":
+        return False
+    if packet["next_action"] != "REQUEST_HUMAN_APPROVAL":
+        return False
+    if packet["snapshot_state"] != "READY_FOR_HUMAN_APPROVAL":
+        return False
+
+    if packet["live_ready"] is not False:
+        return False
+    if packet["dispatch_allowed"] is not False:
+        return False
+    if packet["human_approval_required"] is not True:
+        return False
+    if packet["approval_granted"] is not False:
+        return False
+    if type(packet["retry_count"]) is not int or packet["retry_count"] != 0:
+        return False
+    if packet["fallback_state"] != "disabled":
+        return False
+
+    if not _valid_exact_provider_map(
+        packet["preflight_states"],
+        allowed_values=_ALLOWED_PREFLIGHT_STATES,
+    ):
+        return False
+
+    if packet["inventory_state"] != "PROOF_RECORDS_COMPLETE":
+        return False
+    if type(packet["unresolved_count"]) is not int or packet["unresolved_count"] != 0:
+        return False
+
+    if not _valid_exact_provider_map(
+        packet["provider_states"],
+        allowed_values={"READY_FOR_HUMAN_APPROVAL"},
+    ):
+        return False
+
+    if packet["blocking_providers"] != []:
+        return False
+
+    snapshot_hash = packet["snapshot_packet_sha256"]
+    approval_hash = packet["approval_packet_sha256"]
+    if not _is_sha256(snapshot_hash) or not _is_sha256(approval_hash):
+        return False
+
+    payload = {
+        key: value
+        for key, value in packet.items()
+        if key != "approval_packet_sha256"
+    }
+    expected_hash = hashlib.sha256(
+        _canonical_json(payload).encode("utf-8")
+    ).hexdigest()
+    return approval_hash == expected_hash
+
+
+def _valid_approval_record(
+    record: Any,
+    *,
+    packet: dict[str, Any],
+) -> bool:
+    if not isinstance(record, dict) or set(record) != _EXPECTED_RECORD_KEYS:
+        return False
+
+    decision = record["decision"]
+    if decision not in _ALLOWED_DECISIONS:
+        return False
+
+    if record["scope"] != "FIRST_LIVE_POC_ONLY":
+        return False
+
+    one_shot = record["one_shot"]
+    if type(one_shot) is not bool:
+        return False
+    if decision == "APPROVE_FIRST_LIVE_POC" and one_shot is not True:
+        return False
+
+    if not _is_valid_iso8601_offset(record["recorded_at"]):
+        return False
+
+    target_approval_hash = record["target_approval_packet_sha256"]
+    target_snapshot_hash = record["target_snapshot_packet_sha256"]
+    if not _is_sha256(target_approval_hash):
+        return False
+    if not _is_sha256(target_snapshot_hash):
+        return False
+
+    if target_approval_hash != packet["approval_packet_sha256"]:
+        return False
+    if target_snapshot_hash != packet["snapshot_packet_sha256"]:
+        return False
+
+    return True
 
 
 def build_live_approval_receipt(input_data: Any) -> dict[str, Any]:
-    receipt = _base_receipt()
-
-    if type(input_data) is not dict or set(input_data) != _EXPECTED_INPUT_KEYS:
-        return _fail_closed(receipt)
+    if not isinstance(input_data, dict) or set(input_data) != _EXPECTED_INPUT_KEYS:
+        return _fail_closed()
 
     try:
         safe_input = copy.deepcopy(input_data)
         _canonical_json(safe_input)
     except (TypeError, ValueError, OverflowError):
-        return _fail_closed(receipt)
+        return _fail_closed()
 
     packet = safe_input["approval_packet"]
     record = safe_input["approval_record"]
 
-    # Re-validate the packet structurally via the builder pattern
-    # It must equal a newly built approval packet based on its own snapshot.
-    # Note: `build_live_readiness_approval_packet` expects explicit input shape: {"provider_configs": ..., "inventory": ...}
-    # We must ensure the `approval_packet` itself structurally matches an accepted Loop 050 packet.
-    if type(packet) is not dict:
-        return _fail_closed(receipt)
-
-    expected_packet_keys = {
-        "state", "live_ready", "dispatch_allowed", "human_approval_required", "approval_granted",
-        "retry_count", "fallback_state", "next_action", "snapshot_state", "snapshot_packet_sha256",
-        "preflight_states", "inventory_state", "unresolved_count", "provider_states",
-        "blocking_providers", "approval_packet_sha256"
-    }
-    if set(packet) != expected_packet_keys:
-        return _fail_closed(receipt)
-
-    # Check fixed ready conditions
-    if packet["state"] != "READY_FOR_HUMAN_APPROVAL" or packet["next_action"] != "REQUEST_HUMAN_APPROVAL":
-        return _fail_closed(receipt)
-    if packet["approval_granted"] is not False or packet["live_ready"] is not False or packet["dispatch_allowed"] is not False:
-        return _fail_closed(receipt)
-    if packet["human_approval_required"] is not True:
-        return _fail_closed(receipt)
-    if type(packet["retry_count"]) is not int or packet["retry_count"] != 0:
-        return _fail_closed(receipt)
-    if packet["fallback_state"] != "disabled":
-        return _fail_closed(receipt)
-    if packet["snapshot_state"] != "READY_FOR_HUMAN_APPROVAL":
-        return _fail_closed(receipt)
-
-    preflights = packet["preflight_states"]
-    if type(preflights) is not dict or len(preflights) != 3 or any(v not in {"PASS", "UNKNOWN"} for v in preflights.values()):
-        return _fail_closed(receipt)
-
-    if packet["inventory_state"] != "PROOF_RECORDS_COMPLETE" or packet["unresolved_count"] != 0:
-        return _fail_closed(receipt)
-
-    providers = packet["provider_states"]
-    if type(providers) is not dict or len(providers) != 3 or any(v != "READY_FOR_HUMAN_APPROVAL" for v in providers.values()):
-        return _fail_closed(receipt)
-
-    if packet["blocking_providers"] != []:
-        return _fail_closed(receipt)
-
-    if not _is_sha256(packet["snapshot_packet_sha256"]):
-        return _fail_closed(receipt)
-
-    # Recompute approval packet hash
-    packet_payload = {k: v for k, v in packet.items() if k != "approval_packet_sha256"}
-    expected_approval_hash = hashlib.sha256(_canonical_json(packet_payload).encode("utf-8")).hexdigest()
-    if packet["approval_packet_sha256"] != expected_approval_hash:
-        return _fail_closed(receipt)
-
-    # Validate the record
-    if type(record) is not dict or set(record) != _EXPECTED_RECORD_KEYS:
-        return _fail_closed(receipt)
+    if not _valid_ready_approval_packet(packet):
+        return _fail_closed()
+    if not _valid_approval_record(record, packet=packet):
+        return _fail_closed()
 
     decision = record["decision"]
-    scope = record["scope"]
-    one_shot = record["one_shot"]
-    recorded_at = record["recorded_at"]
-    target_approval_hash = record["target_approval_packet_sha256"]
-    target_snapshot_hash = record["target_snapshot_packet_sha256"]
-
-    if decision not in _ALLOWED_DECISIONS:
-        return _fail_closed(receipt)
-    if scope != "FIRST_LIVE_POC_ONLY":
-        return _fail_closed(receipt)
-    if type(one_shot) is not bool:
-        return _fail_closed(receipt)
-    if decision == "APPROVE_FIRST_LIVE_POC" and one_shot is not True:
-        return _fail_closed(receipt)
-    if not _is_valid_iso8601_offset(recorded_at):
-        return _fail_closed(receipt)
-
-    if target_approval_hash != packet["approval_packet_sha256"] or target_snapshot_hash != packet["snapshot_packet_sha256"]:
-        return _fail_closed(receipt)
-
-    # Valid structural record applies
+    receipt = _base_receipt()
     receipt["decision"] = decision
-    receipt["scope"] = scope
-    receipt["one_shot"] = one_shot
-    receipt["approval_packet_sha256"] = target_approval_hash
-    receipt["snapshot_packet_sha256"] = target_snapshot_hash
+    receipt["scope"] = "FIRST_LIVE_POC_ONLY"
+    receipt["one_shot"] = record["one_shot"]
+    receipt["approval_packet_sha256"] = packet["approval_packet_sha256"]
+    receipt["snapshot_packet_sha256"] = packet["snapshot_packet_sha256"]
 
     if decision == "APPROVE_FIRST_LIVE_POC":
         receipt["state"] = "STRUCTURALLY_VALID_APPROVAL_RECORD"
@@ -190,13 +259,17 @@ def build_live_approval_receipt(input_data: Any) -> dict[str, Any]:
 def render_approval_receipt_ja(receipt: Any) -> str:
     state = "BLOCKED_UNKNOWN"
     decision = "UNKNOWN"
-    next_action = "RESOLVE_BLOCKERS"
+    action = "RESOLVE_BLOCKERS"
     scope = "UNKNOWN"
     one_shot = False
 
     if isinstance(receipt, dict):
         candidate_state = receipt.get("state")
-        if candidate_state in {"BLOCKED_UNKNOWN", "STRUCTURALLY_VALID_APPROVAL_RECORD", "NON_APPROVAL_DECISION"}:
+        if candidate_state in {
+            "BLOCKED_UNKNOWN",
+            "STRUCTURALLY_VALID_APPROVAL_RECORD",
+            "NON_APPROVAL_DECISION",
+        }:
             state = candidate_state
 
         candidate_decision = receipt.get("decision")
@@ -204,12 +277,15 @@ def render_approval_receipt_ja(receipt: Any) -> str:
             decision = candidate_decision
 
         candidate_action = receipt.get("next_action")
-        if candidate_action in {"RESOLVE_BLOCKERS", "VERIFY_DURABLE_HUMAN_PROVENANCE", "NO_LIVE_ACTION"}:
-            next_action = candidate_action
+        if candidate_action in {
+            "RESOLVE_BLOCKERS",
+            "VERIFY_DURABLE_HUMAN_PROVENANCE",
+            "NO_LIVE_ACTION",
+        }:
+            action = candidate_action
 
-        candidate_scope = receipt.get("scope")
-        if candidate_scope == "FIRST_LIVE_POC_ONLY":
-            scope = candidate_scope
+        if receipt.get("scope") == "FIRST_LIVE_POC_ONLY":
+            scope = "FIRST_LIVE_POC_ONLY"
 
         candidate_one_shot = receipt.get("one_shot")
         if type(candidate_one_shot) is bool:
@@ -217,38 +293,35 @@ def render_approval_receipt_ja(receipt: Any) -> str:
 
     state_ja = {
         "BLOCKED_UNKNOWN": "ブロッカー解消待ち・不明",
-        "STRUCTURALLY_VALID_APPROVAL_RECORD": "構造的に有効な承認記録（準備・静的確認のみ）",
+        "STRUCTURALLY_VALID_APPROVAL_RECORD": "承認記録の構造のみ確認済み（人間由来は未検証）",
         "NON_APPROVAL_DECISION": "非承認の決定",
     }[state]
-
-    action_ja = {
-        "RESOLVE_BLOCKERS": "ブロッカーの解消が必要",
-        "VERIFY_DURABLE_HUMAN_PROVENANCE": "永続的な人間由来の証明が必要",
-        "NO_LIVE_ACTION": "ライブアクションなし",
-    }[next_action]
-
     decision_ja = {
-        "APPROVE_FIRST_LIVE_POC": "初回ライブPOC承認",
+        "APPROVE_FIRST_LIVE_POC": "初回ライブPOCの承認記録候補",
         "REJECT": "拒否",
         "DEFER": "保留",
         "UNKNOWN": "不明",
     }[decision]
-
+    action_ja = {
+        "RESOLVE_BLOCKERS": "ブロッカーの解消が必要",
+        "VERIFY_DURABLE_HUMAN_PROVENANCE": "永続記録から人間由来を別途検証する",
+        "NO_LIVE_ACTION": "ライブ操作を行わない",
+    }[action]
     scope_ja = {
         "FIRST_LIVE_POC_ONLY": "初回ライブPOC限定",
         "UNKNOWN": "不明",
     }[scope]
 
-    lines = [
-        "状態: STATIC / PREPARED",
-        "ライブ実行: 禁止",
-        "人間由来の証明: 未検証",
-        "実行認可: 未認可",
-        f"記録状態: {state_ja}",
-        f"決定: {decision_ja}",
-        f"スコープ: {scope_ja}",
-        f"単発実行: {'はい' if one_shot else 'いいえ'}",
-        f"次アクション: {action_ja}",
-    ]
-
-    return "\n".join(lines)
+    return "\n".join(
+        [
+            "状態: STATIC / PREPARED",
+            "ライブ実行: 禁止",
+            "人間由来の証明: 未検証",
+            "実行認可: 未認可",
+            f"記録状態: {state_ja}",
+            f"決定: {decision_ja}",
+            f"スコープ: {scope_ja}",
+            f"単発記録: {'はい' if one_shot else 'いいえ'}",
+            f"次アクション: {action_ja}",
+        ]
+    )
