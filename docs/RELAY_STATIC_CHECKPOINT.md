@@ -236,3 +236,12 @@ This signifies the PREPARED static pipeline checkpoint.
 - Zero evidence was acquired, no provider/network/GitHub readback is performed here.
 - No real live blocker is resolved.
 - No provenance is verified, no execution is authorized.
+
+## Timeout Static Inventory Checkpoint
+- Implemented PREPARED static timeout-inventory status.
+- This checkpoint is strictly PREPARED/static timeout-inventory status only.
+- No live execution is performed.
+- No production/provider timeout value is selected or authorized.
+- common_timeout remains unresolved.
+- provider-specific exact finite live timeout values remain UNKNOWN.
+- First live provider/model turn remains separately human-approved.
