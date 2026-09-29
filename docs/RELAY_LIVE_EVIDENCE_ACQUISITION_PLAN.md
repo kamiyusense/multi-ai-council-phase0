@@ -82,3 +82,15 @@ permission, or settings state is changed.
 No real live blocker is resolved. Human provenance remains unverified.
 Execution remains unauthorized. The first real provider/model turn remains a
 separate explicit-human-approved bounded action.
+
+## Fixed safety boundaries
+
+- GitHub Actions readback remains **transport evidence only / insufficient as authenticator**.
+- OIDC remains **NOT_AUTHORIZED**.
+- Artifact Attestation remains **NOT_AUTHORIZED**.
+- Gemini CLI remains **DEFERRED_NOT_SELECTED** and is not an automatic fallback.
+- The first real provider/model turn remains **FINAL_HUMAN_APPROVAL** and cannot be satisfied automatically by this plan.
+- No real live blocker is resolved.
+- No provenance is verified.
+- No execution is authorized.
+
