@@ -1,7 +1,7 @@
 # Jules Task Prompt Specification
 
 Status: MANDATORY for every new Jules task in this repository.
-Updated: 2026-09-29
+Updated: 2026-09-30
 
 This document is the canonical prompt-writing contract for Chat/Work/other
 controllers that dispatch implementation work to Jules.
