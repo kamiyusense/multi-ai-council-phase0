@@ -1,0 +1,48 @@
+name: Issue 110 OAuth refresh generation paths static proof
+
+on:
+  push:
+    branches:
+      - prepare/issue110-oauth-refresh-generation-paths-v1
+    paths:
+      - .github/workflows/issue110-oauth-refresh-generation-paths.yml
+      - automation/command_bus/claude_oauth_refresh_generation.mjs
+      - automation/command_bus/tests/test_claude_oauth_refresh_generation.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  generation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact generation-path head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run generation path tests
+        shell: bash
+        run: node --test automation/command_bus/tests/test_claude_oauth_refresh_generation.mjs
+
+      - name: Static purity and diff checks
+        shell: bash
+        run: |
+          node --check automation/command_bus/claude_oauth_refresh_generation.mjs
+          node --check automation/command_bus/tests/test_claude_oauth_refresh_generation.mjs
+          python - <<'PY'
+          from pathlib import Path
+          text=Path("automation/command_bus/claude_oauth_refresh_generation.mjs").read_text()
+          assert 'node:fs' not in text
+          assert 'node:net' not in text
+          assert 'node:tls' not in text
+          assert 'fetch(' not in text
+          print("OAUTH_REFRESH_GENERATION_PATHS_PURE_PASS")
+          PY
+          git diff --check
