@@ -1,7 +1,7 @@
 name: Phase 0 bounded OIDC identity proof
 
-# A new branch-only workflow cannot use workflow_dispatch until it exists on
-# default. The reviewed, exact branch push that adds this file is the sole run.
+# Branch-only bounded proof. This reviewed workflow-file update is the sole authorized second live OIDC run.
+# retry=0; later unrelated pushes do not match both the path and exact commit-message guards.
 on:
   push:
     branches:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   offline-preflight:
-    if: "github.run_attempt == 1 && github.event.head_commit.message == 'feat(security): add bounded one-shot OIDC proof'"
+    if: "github.run_attempt == 1 && github.event.head_commit.message == 'test(security): run bounded OIDC diagnostic proof once'"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -35,7 +35,7 @@ jobs:
 
   proof:
     needs: offline-preflight
-    if: "github.run_attempt == 1 && github.event.head_commit.message == 'feat(security): add bounded one-shot OIDC proof'"
+    if: "github.run_attempt == 1 && github.event.head_commit.message == 'test(security): run bounded OIDC diagnostic proof once'"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
