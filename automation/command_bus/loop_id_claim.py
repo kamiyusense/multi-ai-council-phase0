@@ -23,6 +23,8 @@ LANE_ALIASES = {
     "JA": "J-RED",
     "JB": "J-BLUE",
     "JC": "J-YELLOW",
+    "JD": "J-GREEN",
+    "JG": "J-GREEN",
     "RED": "J-RED",
     "BLUE": "J-BLUE",
     "YELLOW": "J-YELLOW",
