@@ -53,10 +53,11 @@ function exactKeys(value, expected) {
     Object.keys(value).sort().join("\n") === [...expected].sort().join("\n");
 }
 
-function unknown(reason) {
+function unknown(reason, mode = "READ_ONLY_OBSERVER_CANDIDATE") {
   return Object.freeze({
     status: "UNKNOWN",
-    source: "DOCKER_PS_READ_ONLY",
+    mode,
+    source: mode === "MOCK_ONLY" ? "FAKE_RUNNER" : "DOCKER_PS_READ_ONLY",
     reason,
     observation_complete: false,
     runtime_observed: false,
@@ -194,6 +195,8 @@ export async function observeDockerExclusivity({
   clock = () => new Date(),
 } = {}) {
   if (typeof runner !== "function") return unknown("RUNNER_UNAVAILABLE");
+  const mockMode = runner !== executeReadOnlyDockerCommand;
+  const mode = mockMode ? "MOCK_ONLY" : "READ_ONLY_OBSERVATION";
 
   let result;
   try {
@@ -207,11 +210,12 @@ export async function observeDockerExclusivity({
       error?.code === "EACCES" || error?.code === "EPERM"
         ? "PERMISSION_DENIED"
         : "RUNNER_FAILED",
+      mode,
     );
   }
 
   const runnerFailure = validateRunnerResult(result);
-  if (runnerFailure) return unknown(runnerFailure);
+  if (runnerFailure) return unknown(runnerFailure, mode);
 
   let records;
   try {
@@ -221,11 +225,11 @@ export async function observeDockerExclusivity({
       /^[A-Z_]+$/.test(error.message)
       ? error.message
       : "PARSER_ERROR";
-    return unknown(reason);
+    return unknown(reason, mode);
   }
 
   const timestamp = safeTimestamp(clock);
-  if (!timestamp) return unknown("OBSERVATION_TIME_INVALID");
+  if (!timestamp) return unknown("OBSERVATION_TIME_INVALID", mode);
 
   const relevantServices = [];
   const blockers = [];
@@ -243,15 +247,16 @@ export async function observeDockerExclusivity({
   }
 
   const decision = evaluateMockExclusivePreflight(relevantServices);
-  if (decision.status === "UNKNOWN") return unknown("SHARED_POLICY_UNKNOWN");
+  if (decision.status === "UNKNOWN") return unknown("SHARED_POLICY_UNKNOWN", mode);
 
   if (decision.status === "BLOCKED") {
     return Object.freeze({
       status: "BLOCKED",
-      source: "DOCKER_PS_READ_ONLY",
+      mode,
+      source: mockMode ? "FAKE_RUNNER" : "DOCKER_PS_READ_ONLY",
       observed_at: timestamp,
       observation_complete: true,
-      runtime_observed: true,
+      runtime_observed: !mockMode,
       containers: Object.freeze(blockers),
       retry: 0,
       fallback: "disabled",
@@ -260,11 +265,12 @@ export async function observeDockerExclusivity({
   }
 
   return Object.freeze({
-    status: "OBSERVED_CLEAR_CANDIDATE",
-    source: "DOCKER_PS_READ_ONLY",
+    status: mockMode ? "MOCK_CLEAR" : "OBSERVED_CLEAR_CANDIDATE",
+    mode,
+    source: mockMode ? "FAKE_RUNNER" : "DOCKER_PS_READ_ONLY",
     observed_at: timestamp,
     observation_complete: true,
-    runtime_observed: true,
+    runtime_observed: !mockMode,
     containers: Object.freeze([]),
     scanned_compose_service_count: records.length,
     retry: 0,
