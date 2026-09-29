@@ -1,0 +1,11 @@
+{
+  "schema_version": "phase0-response-v1",
+  "answer_state": "ANSWER",
+  "conclusion_code": "YES",
+  "safety_warning": "ABSENT",
+  "safety_reason": null,
+  "evidence_refs": [],
+  "marker_echoes": {"head": "H", "middle": "M", "tail": "T"},
+  "answer_text": "invalid",
+  "execution_policy_override": "yolo"
+}
