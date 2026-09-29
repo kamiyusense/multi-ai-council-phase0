@@ -1225,3 +1225,22 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 058 — medium — DISPATCHED / IN PROGRESS
+- task: tests/docs-only static evidence preparation audit for common_timeout / common_min_permissions / common_sensitive_fanout
+- prompt contract: `docs/JULES_TASK_PROMPT_SPEC.md` read and applied before dispatch
+- canonical Relay snapshot head: `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5`
+- canonical Relay snapshot tree: `b086961e1092c561920263b2f4e42559b3117ee3`
+- isolated starting branch: `jules-work/relay-dev-loop-058-static-evidence-prep-audit`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36533817710`
+- Jules session: `3365475565043308879`
+- accepted_at: 2026-09-29 15:57:22 JST
+- task size: medium (~15-25 minute class)
+- canonical PR #4 head immediately after dispatch: `eb3ff34f9acdb360ce597c89809c70f0fb6df2c5` unchanged
+- allowed paths: static-evidence audit test/doc/checkpoint only; no production/schema/workflow changes
+- mission: inventory checked-in evidence for the three STATIC_PREPARATION_ONLY gaps, verify evidence refs against repository bytes, and report missing/partial evidence without claiming any live blocker resolved
+- retry=0 / fallback=disabled / merge=human-only
+- external/provider/GitHub evidence acquisition performed: no
+- workflow permission/auth/billing changes: no
+- live provider/model/API execution: no
+
