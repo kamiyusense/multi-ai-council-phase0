@@ -9,9 +9,12 @@ import {
 } from "../claude_oauth_refresh_generation.mjs";
 import {
   createGenerationAttempt,
+  stageGenerationPending,
 } from "../claude_oauth_refresh_generation_state.mjs";
 
 const SHA_A = "a".repeat(64);
+const NEW_ACCESS = "fixture-new-access-token-abcdefghijklmnopqrstuvwxyz";
+const NEW_REFRESH = "fixture-new-refresh-token-abcdefghijklmnopqrstuvwxyz";
 
 function makeCase() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "phase0-generation-attempt-"));
@@ -180,6 +183,150 @@ test("generation mismatch blocks before state creation", () => {
       /does not match requested generation/,
     );
     assert.equal(fs.existsSync(path.join(dir, ".phase0-oauth-refresh")), false);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+function rotatedText() {
+  return JSON.stringify({
+    claudeAiOauth: {
+      accessToken: NEW_ACCESS,
+      refreshToken: NEW_REFRESH,
+      expiresAt: 2000000000000,
+      scopes: ["user:profile", "user:inference"],
+      subscriptionType: "pro",
+    },
+    preserved: { keep: true },
+  }, null, 2) + "\n";
+}
+
+test("stages rotated credential separately and writes secret-free pending receipt", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createGenerationAttempt({
+      credentialPath,
+      generation: 1,
+      attemptRecord: record(1),
+    });
+    const activeBefore = fs.readFileSync(credentialPath, "utf8");
+    const result = stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-1",
+      rotatedCredentialText: rotatedText(),
+    });
+
+    assert.equal(result.state, "PENDING_DURABLE");
+    assert.equal(result.network_allowed, false);
+    assert.equal(fs.readFileSync(credentialPath, "utf8"), activeBefore);
+
+    const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
+    const pendingPath = path.join(generationDir, "pending.credentials.json");
+    const receiptPath = path.join(generationDir, "pending-receipt.json");
+    assert.equal(fs.statSync(pendingPath).mode & 0o077, 0);
+    assert.equal(fs.statSync(receiptPath).mode & 0o077, 0);
+
+    const pendingText = fs.readFileSync(pendingPath, "utf8");
+    assert.match(pendingText, new RegExp(NEW_ACCESS));
+    assert.match(pendingText, new RegExp(NEW_REFRESH));
+
+    const receiptText = fs.readFileSync(receiptPath, "utf8");
+    const receipt = JSON.parse(receiptText);
+    assert.equal(receipt.state, "PENDING_DURABLE");
+    assert.equal(receipt.authorization_id, "AUTH-1");
+    assert.equal(receipt.generation, 1);
+    assert.equal(receipt.old_credential_sha256, SHA_A);
+    assert.equal(receipt.pending_credential_sha256, result.pending_credential_sha256);
+    assert.equal(receipt.credential_values_recorded, false);
+    assert.doesNotMatch(receiptText, new RegExp(NEW_ACCESS));
+    assert.doesNotMatch(receiptText, new RegExp(NEW_REFRESH));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("pending stage is single-write and does not replace active credential", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createGenerationAttempt({
+      credentialPath,
+      generation: 1,
+      attemptRecord: record(1),
+    });
+    const activeBefore = fs.readFileSync(credentialPath, "utf8");
+    stageGenerationPending({
+      credentialPath,
+      generation: 1,
+      authorizationId: "AUTH-1",
+      rotatedCredentialText: rotatedText(),
+    });
+    assert.throws(
+      () => stageGenerationPending({
+        credentialPath,
+        generation: 1,
+        authorizationId: "AUTH-1",
+        rotatedCredentialText: rotatedText(),
+      }),
+      /already has pending or terminal state/,
+    );
+    assert.equal(fs.readFileSync(credentialPath, "utf8"), activeBefore);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("pending stage requires durable matching attempt identity", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createGenerationAttempt({
+      credentialPath,
+      generation: 1,
+      attemptRecord: record(1),
+    });
+    assert.throws(
+      () => stageGenerationPending({
+        credentialPath,
+        generation: 1,
+        authorizationId: "OTHER-AUTH",
+        rotatedCredentialText: rotatedText(),
+      }),
+      /attempt identity mismatch/,
+    );
+    const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
+    assert.equal(fs.existsSync(path.join(generationDir, "pending.credentials.json")), false);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("malformed rotated credential blocks before pending write", () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    createGenerationAttempt({
+      credentialPath,
+      generation: 1,
+      attemptRecord: record(1),
+    });
+    for (const bad of [
+      "",
+      "not-json",
+      JSON.stringify({}),
+      JSON.stringify({ claudeAiOauth: { accessToken: "short", refreshToken: "short", expiresAt: 1 } }),
+      JSON.stringify({ claudeAiOauth: { accessToken: NEW_ACCESS, refreshToken: NEW_REFRESH, expiresAt: 0 } }),
+    ]) {
+      assert.throws(
+        () => stageGenerationPending({
+          credentialPath,
+          generation: 1,
+          authorizationId: "AUTH-1",
+          rotatedCredentialText: bad,
+        }),
+        /BLOCKED:/,
+      );
+    }
+    const generationDir = path.join(dir, ".phase0-oauth-refresh", "000001");
+    assert.equal(fs.existsSync(path.join(generationDir, "pending.credentials.json")), false);
   } finally {
     cleanup(dir);
   }
