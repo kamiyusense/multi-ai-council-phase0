@@ -1,6 +1,75 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-28
+Updated: 2026-09-29
+
+## 0.0.0 2026-09-29 current override — Claude OAuth / Gate split routing
+
+Fresh GitHub state at this handover checkpoint:
+
+- current main: `6d1e9b02a89faee2387009079b2485d5c9705f1b`
+- PR #127: OPEN / unmerged / mergeable
+- PR #127 exact verified head: `660b19e013ba00b08b02b1e5af099a9551af61e7`
+- Issue #110: CLOSED; latest OAuth/routing evidence is preserved in its comments
+- no real saved OAuth credential refresh has been executed under the latest work
+- no real Anthropic model turn, Jules execution, Merge, retry, or fallback is authorized by these fixture results
+
+PR #127 fixes a production-shaped routing defect discovered with actual Claude
+Code 2.1.283. With `HTTPS_PROXY=http://auth-control-proxy:3128` and no Gate
+bypass, model traffic was intercepted by the auth-control proxy and returned
+HTTP 405 while the Gate received zero requests. The candidate fix requires the
+exact pair:
+
+- `HTTPS_PROXY=http://auth-control-proxy:3128`
+- `NO_PROXY=gate`
+
+Wildcard/additional NO_PROXY values and case-variant proxy variables are
+rejected. The runtime remains internal-network-only and the model base URL
+remains `http://gate:8080`.
+
+Exact-head verification:
+
+- actual 2.1.283 routing fixture run `36511202073`: SUCCESS
+- without Gate bypass: Gate requests 0 / HTTP 405 observed
+- with exact `NO_PROXY=gate`: Gate requests 1 / HTTP 405 absent
+- full PR CI run `36511272243`: SUCCESS
+- full command-bus suite: 761 PASS / 1 skipped
+- auth proxy / launcher Node tests: 10 PASS / 0 fail
+- schema parse / compileall / diff check: PASS
+
+Post-routing actual-client OAuth fixture:
+
+- branch: `prepare/issue110-oauth-model-after-routing-v1`
+- exact head: `8245b10de0edd4d61adcd8fc9587311228f674b4`
+- Actions run `36514780317`: SUCCESS, run_attempt=1
+- actual Claude Code 2.1.283
+- synthetic expired claude.ai OAuth pair only
+- Docker internal-only network
+- local OAuth mock + local model mock only
+- 0 ms and 500 ms OAuth-response conditions both produced:
+  - OAuth refresh POSTs = 0
+  - model HTTP requests = 1
+  - model request used the old access token
+  - rotated/new access token use = 0
+  - credential pair remained unchanged
+  - Claude exited on local 401
+
+Interpretation boundary:
+
+- `claude auth status --json` is not a safe refresh preflight because delayed
+  refresh responses can be abandoned while the command still exits 0.
+- the normal one-turn `claude -p` path must not be assumed to refresh an
+  expired saved claude.ai OAuth credential before the model request.
+- Issue #102's historical 401 is therefore consistent with a stale saved access
+  token, but the historical real credential state remains UNKNOWN and this does
+  not prove a unique root cause.
+
+Next safe direction is STATIC/MOCK only: design or implement a dedicated refresh
+helper that has no model execution capability, only the OAuth control-plane
+path, atomic credential persistence, no secret-bearing logs/evidence, no API-key
+fallback, retry=0, and fallback disabled.
+
+**Do not use a real saved credential, perform a real OAuth refresh, start a real
+Claude/provider turn, or Merge PR #127 without a new explicit user approval.**
 
 ## 0. 2026-09-28 current override — Chat-first / Work fallback
 
