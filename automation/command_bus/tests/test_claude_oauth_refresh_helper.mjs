@@ -314,6 +314,29 @@ test("crash after atomic rename recovers terminal receipt with zero network", as
   }
 });
 
+test("symbolic-link credential path blocks before transport", async () => {
+  const { dir, credentialPath } = makeCase();
+  try {
+    const symlinkPath = path.join(dir, "credential-link.json");
+    fs.symlinkSync(credentialPath, symlinkPath);
+    let calls = 0;
+    await assert.rejects(
+      executeRefreshWithTransport({
+        credentialPath: symlinkPath,
+        authorizationId: "fixture-symlink",
+        transport: async () => {
+          calls += 1;
+          return successResponse();
+        },
+      }),
+      /must not be a symbolic link/,
+    );
+    assert.equal(calls, 0);
+  } finally {
+    cleanup(dir);
+  }
+});
+
 test("non-private credential file blocks before transport", async () => {
   const { dir, credentialPath } = makeCase();
   try {
