@@ -1,6 +1,7 @@
 import ast
 import inspect
 import os
+import textwrap
 import unittest
 from dataclasses import fields
 
@@ -130,7 +131,7 @@ class TestTimeoutStaticInventory(unittest.TestCase):
         acp_sig = inspect.signature(ACPClient.prompt)
         self.assertIsNone(acp_sig.parameters["timeout_seconds"].default)
 
-        tree = ast.parse(inspect.getsource(ACPClient.prompt))
+        tree = ast.parse(textwrap.dedent(inspect.getsource(ACPClient.prompt)))
         timeout_name_uses = [
             node
             for node in ast.walk(tree)
