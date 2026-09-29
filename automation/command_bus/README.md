@@ -1,5 +1,7 @@
 # Chat/Work GitHub command bus
 
+> **MANDATORY BEFORE JULES DISPATCH:** read `docs/JULES_TASK_PROMPT_SPEC.md` before creating any new `automation/command_bus/jules_api_requests/*.json`. The prompt contract requires bounded scope, exact allowed paths, reuse-first, semantic acceptance criteria, negative/tamper tests, no vacuous tests, exact validation commands, and explicit stop conditions. Green Jules tests alone are not acceptance.
+
 GitHub is the durable control plane. Commands and receipts are append-only; only loop state is mutable.
 The processor validates the repository, the target PR, `expected_target_head` (the current head of `expected_pr`), correlation, expiry, STOP, terminal receipts, and the six-round ceiling before processing.
 The carrier/implementation PR head is separate metadata and is never compared through `expected_target_head`.
