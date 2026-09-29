@@ -1,8 +1,11 @@
+import ast
 import copy
 import hashlib
+import inspect
 import json
 import unittest
 
+import providers.live_provenance_request as provenance_mod
 from providers.live_provenance_request import (
     build_live_provenance_request,
     render_provenance_request_ja,
@@ -241,3 +244,185 @@ class TestLiveProvenanceRequest(unittest.TestCase):
         self.assertIn("execution: 未認可", rendered)
         self.assertIn("durable readback is required", rendered)
         self.assertIn("ライブ実行: 禁止", rendered)
+
+    def test_reject_and_defer_receipts_cannot_advance(self):
+        for decision in ("REJECT", "DEFER"):
+            with self.subTest(decision=decision):
+                input_data = copy.deepcopy(self.valid_input)
+                receipt = input_data["approval_receipt"]
+                receipt["state"] = "NON_APPROVAL_DECISION"
+                receipt["decision"] = decision
+                receipt["next_action"] = "NO_LIVE_ACTION"
+                payload = {
+                    k: v
+                    for k, v in receipt.items()
+                    if k != "approval_record_sha256"
+                }
+                receipt["approval_record_sha256"] = hashlib.sha256(
+                    _canonical_json(payload).encode("utf-8")
+                ).hexdigest()
+
+                result = build_live_provenance_request(input_data)
+                self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+                self.assertEqual(result["next_action"], "RESOLVE_BLOCKERS")
+                self.assertFalse(result["provenance_verified"])
+                self.assertFalse(result["execution_authorized"])
+
+    def test_additional_nonconservative_ref_formats_are_rejected(self):
+        invalid_refs = [
+            "refs/heads/main:evil",
+            "refs/heads/main~1",
+            "refs/heads/main^",
+            "refs/heads/ma?in",
+            "refs/heads/ma*in",
+            "refs/heads/ma[in",
+            ".hidden",
+            "feature/.hidden",
+            "feature/name.",
+            "feature/name.lock",
+            "@",
+        ]
+        for ref in invalid_refs:
+            with self.subTest(ref=ref):
+                input_data = copy.deepcopy(self.valid_input)
+                input_data["durable_locator"]["ref"] = ref
+                result = build_live_provenance_request(input_data)
+                self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+
+    def test_dot_only_repository_segments_are_rejected(self):
+        for repository in (".", ".."):
+            for value in (f"{repository}/repo", f"owner/{repository}"):
+                with self.subTest(repository=value):
+                    input_data = copy.deepcopy(self.valid_input)
+                    input_data["durable_locator"]["repository_full_name"] = value
+                    result = build_live_provenance_request(input_data)
+                    self.assertEqual(result["state"], "BLOCKED_UNKNOWN")
+
+    def test_locator_ref_and_expected_hash_changes_rebind_digests_without_leakage(self):
+        baseline = build_live_provenance_request(
+            copy.deepcopy(self.valid_input)
+        )
+
+        variants = []
+        ref_changed = copy.deepcopy(self.valid_input)
+        ref_changed["durable_locator"]["ref"] = "feature/provenance-check"
+        variants.append(("feature/provenance-check", ref_changed))
+
+        hash_changed = copy.deepcopy(self.valid_input)
+        hash_changed["durable_locator"]["expected_record_sha256"] = "d" * 64
+        variants.append(("d" * 64, hash_changed))
+
+        path_changed = copy.deepcopy(self.valid_input)
+        path_changed["durable_locator"]["path"] = "other/approval-record.json"
+        variants.append(("other/approval-record.json", path_changed))
+
+        for marker, variant in variants:
+            with self.subTest(marker=marker):
+                result = build_live_provenance_request(variant)
+                self.assertEqual(
+                    result["state"],
+                    "PROVENANCE_VERIFICATION_REQUIRED",
+                )
+                self.assertNotEqual(
+                    result["durable_locator_sha256"],
+                    baseline["durable_locator_sha256"],
+                )
+                self.assertNotEqual(
+                    result["provenance_request_sha256"],
+                    baseline["provenance_request_sha256"],
+                )
+                rendered = render_provenance_request_ja(result)
+                self.assertNotIn(marker, rendered)
+                self.assertNotIn(
+                    variant["durable_locator"]["repository_full_name"],
+                    rendered,
+                )
+
+    def test_source_and_result_are_independent_after_return(self):
+        source = copy.deepcopy(self.valid_input)
+        result = build_live_provenance_request(source)
+        original_digest = result["provenance_request_sha256"]
+        original_locator_digest = result["durable_locator_sha256"]
+
+        source["approval_receipt"]["decision"] = "REJECT"
+        source["durable_locator"]["path"] = "mutated/record.json"
+        result["state"] = "BLOCKED_UNKNOWN"
+
+        fresh = build_live_provenance_request(
+            copy.deepcopy(self.valid_input)
+        )
+        self.assertEqual(
+            fresh["provenance_request_sha256"],
+            original_digest,
+        )
+        self.assertEqual(
+            fresh["durable_locator_sha256"],
+            original_locator_digest,
+        )
+        self.assertEqual(
+            fresh["state"],
+            "PROVENANCE_VERIFICATION_REQUIRED",
+        )
+
+    def test_ast_static_boundary_excludes_ambient_github_and_live_operations(self):
+        source = inspect.getsource(provenance_mod)
+        tree = ast.parse(source)
+
+        banned_import_roots = {
+            "os",
+            "pathlib",
+            "subprocess",
+            "socket",
+            "urllib",
+            "requests",
+            "http",
+            "time",
+            "random",
+            "github",
+        }
+        banned_calls = {
+            "open",
+            "exec",
+            "eval",
+            "__import__",
+            "now",
+            "today",
+            "utcnow",
+            "time",
+            "request",
+            "urlopen",
+            "get",
+            "post",
+            "put",
+            "delete",
+            "patch",
+            "validate_provider_static",
+            "build_live_readiness_pipeline",
+            "evaluate_live_readiness",
+            "build_live_readiness_snapshot",
+            "build_live_readiness_approval_packet",
+            "build_live_approval_receipt",
+        }
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    self.assertNotIn(
+                        alias.name.split(".")[0],
+                        banned_import_roots,
+                    )
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    self.assertNotIn(
+                        node.module.split(".")[0],
+                        banned_import_roots,
+                    )
+            elif isinstance(node, ast.Call):
+                name = None
+                if isinstance(node.func, ast.Name):
+                    name = node.func.id
+                elif isinstance(node.func, ast.Attribute):
+                    name = node.func.attr
+                if name is not None:
+                    self.assertNotIn(name, banned_calls)
+
