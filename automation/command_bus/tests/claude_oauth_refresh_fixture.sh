@@ -201,6 +201,8 @@ result = {
     "mock_refresh_request_validated": bool(refresh),
     "oauth_request_body_keys": refresh[0].get("body_keys") if refresh else [],
     "oauth_public_client_id": refresh[0].get("client_id") if refresh else None,
+    "oauth_scope": refresh[0].get("scope") if refresh else None,
+    "oauth_content_type": refresh[0].get("content_type") if refresh else None,
     "mock_response_scheduled": len(scheduled),
     "mock_response_sent": len(response_sent),
     "mock_response_client_gone": len(client_gone),
