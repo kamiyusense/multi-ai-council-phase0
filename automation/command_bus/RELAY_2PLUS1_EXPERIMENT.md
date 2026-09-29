@@ -1126,3 +1126,22 @@ Cycle members:
 - merge: no
 - isolation result: PASS
 
+### Loop 057 — medium — DISPATCHED / IN PROGRESS
+- task: tests/docs-only live evidence-acquisition planning
+- prompt contract: `docs/JULES_TASK_PROMPT_SPEC.md` read and applied before dispatch
+- canonical Relay snapshot head: `995a16e65b9aa700122167c90a3b73989bbd53b6`
+- canonical Relay snapshot tree: `6ffe358e612a3fe1660529e34c177228764a7f22`
+- isolated starting branch: `jules-work/relay-dev-loop-057-evidence-acquisition-plan`
+- pre-dispatch compare: identical; ahead=0; behind=0
+- dispatch run: `36522277239`
+- Jules session: `5601087063626235492`
+- accepted_at: 2026-09-29 13:35:15 JST
+- task size: medium (~15-25 minute class)
+- canonical PR #4 head immediately after dispatch: `995a16e65b9aa700122167c90a3b73989bbd53b6` unchanged
+- allowed paths: evidence-plan test/doc/checkpoint only; no production/schema/workflow changes
+- mission: classify each accepted Loop 056 gap into conservative evidence-acquisition stages without acquiring evidence or authorizing any action
+- retry=0 / fallback=disabled / merge=human-only
+- external/provider/GitHub evidence acquisition performed: no
+- workflow permission/auth/billing changes: no
+- live provider/model/API execution: no
+
