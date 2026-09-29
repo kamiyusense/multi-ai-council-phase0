@@ -4,6 +4,7 @@ This repository is the implementation workspace for Multi-AI Council Phase 0.
 
 Before changing code, read and follow:
 - `HANDOVER_CURRENT.md`
+- `docs/JULES_TASK_PROMPT_SPEC.md` — mandatory before composing or executing any Jules task
 - `docs/ARCHITECTURE.md`
 - `docs/PHASE0_IMPLEMENTATION_SPEC.md`
 - `docs/PHASE0_IMPLEMENTATION_CHECKLIST.md`
@@ -25,6 +26,10 @@ If this file conflicts with a formal Phase 0 specification or safety boundary, t
 - When the user must copy/paste text, put the copyable text in a fenced code block.
 - When the user personally must perform an action, make that requirement visually obvious.
 - Avoid asking for confirmation at ordinary progress boundaries. Continue safe, authorized work until completion criteria or a real blocker.
+
+## Jules task dispatch — mandatory prompt contract
+
+Before any new Jules task is composed, dispatched, or accepted for execution, read `docs/JULES_TASK_PROMPT_SPEC.md`. Its task structure, allowlist, reuse-first, semantic acceptance, negative-test, vacuous-test prohibition, bounded validation, publication, and stop-condition rules are mandatory. A green Jules test suite alone is never acceptance.
 
 ## Working style
 
