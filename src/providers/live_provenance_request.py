@@ -86,7 +86,10 @@ def _valid_locator(locator: Any) -> bool:
         return False
     if repo.count("/") != 1:
         return False
-    if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", repo):
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        return False
+    owner, name = repo.split("/", 1)
+    if owner in {".", ".."} or name in {".", ".."}:
         return False
 
     ref = locator["ref"]
@@ -95,9 +98,20 @@ def _valid_locator(locator: Any) -> bool:
     # Reject whitespace/control characters, backslash, leading/trailing slash, repeated //, "..", "@{", and leading "-"
     if re.search(r"[\s\x00-\x1f\x7f\\]", ref):
         return False
+    if not re.fullmatch(r"[A-Za-z0-9._/-]+", ref):
+        return False
     if ref.startswith("/") or ref.endswith("/") or "//" in ref:
         return False
-    if ".." in ref or "@{" in ref or ref.startswith("-"):
+    if ".." in ref or "@{" in ref or ref.startswith("-") or ref == "@":
+        return False
+    ref_segments = ref.split("/")
+    if any(
+        segment in {"", "."}
+        or segment.startswith(".")
+        or segment.endswith(".")
+        or segment.endswith(".lock")
+        for segment in ref_segments
+    ):
         return False
 
     path = locator["path"]
