@@ -170,6 +170,29 @@ class LoopIdClaimTests(unittest.TestCase):
             verified = verify_claim_file(command_path, claims)
             self.assertEqual(verified["command_id"], COMMAND_ID)
 
+    def test_repository_claim_files_are_unique_and_valid(self):
+        claims_dir = Path("automation/command_bus/loop_id_claims")
+        paths = sorted(claims_dir.glob("*.json"))
+        self.assertGreaterEqual(len(paths), 5)
+        loop_ids = []
+        for path in paths:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            validated = validate_claim(loaded)
+            self.assertEqual(path.name, f"{validated['loop_id']}.json")
+            loop_ids.append(validated["loop_id"])
+        self.assertEqual(len(loop_ids), len(set(loop_ids)))
+
+    def test_061_through_063_are_explicit_historical_backfills(self):
+        claims_dir = Path("automation/command_bus/loop_id_claims")
+        for loop_id in ("061", "062", "063"):
+            loaded = json.loads(
+                (claims_dir / f"{loop_id}.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(loaded["schema_version"], 2)
+            self.assertEqual(loaded["state"], "HISTORICAL_BACKFILL")
+            self.assertEqual(loaded["lane_id"], "J-A")
+            self.assertEqual(loaded["lane_display"], "🟥")
+
     def test_non_numbered_command_does_not_require_loop_claim(self):
         with tempfile.TemporaryDirectory() as tmp:
             command_path = Path(tmp) / "command.json"
