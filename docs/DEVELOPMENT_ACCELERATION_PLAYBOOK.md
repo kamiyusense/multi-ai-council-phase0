@@ -27,13 +27,15 @@ A fresh development Chat should read in this order:
 2. current `HANDOVER_CURRENT.md`
 3. current `docs/DEVELOPMENT_EXECUTION_ROUTER.md`
 4. **this file**
-5. selected route specification:
+5. when the mission is Signal / Status / Control Tower:
+   `docs/SIGNAL_FOUNDATION_ROADMAP.md`
+6. selected route specification:
    - Jules: `docs/CHAT_JULES_API_SEMIAUTO.md`, then current carrier branch
      Color Lane / Semi-Auto / Task Prompt specs and validators
    - Cloud Work: `docs/CLOUD_WORK_LANES_INDEX.md`
    - Local dependency: Local Work boundary from the router
-6. task-specific design / handover / current canonical branch
-7. `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` only when deeper prior-art detail is
+7. task-specific design / handover / current canonical branch
+8. `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` only when deeper prior-art detail is
    needed
 
 GitHub current state is authority. Historical PR numbers, SHA values, Chat IDs,
