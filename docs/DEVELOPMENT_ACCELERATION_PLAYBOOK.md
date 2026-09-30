@@ -1,7 +1,7 @@
 # Development Acceleration Playbook
 
 Updated: 2026-10-01
-Status: canonical execution policy candidate / documentation-only until merged to main
+Status: canonical execution policy / documentation layer
 
 ## 1. Purpose
 
@@ -229,6 +229,17 @@ Unless a current formal requirement or observed failure demands it, defer:
 A future Chat must not turn this deferred list into a backlog automatically.
 Only promote an item when evidence shows the current smaller path is
 insufficient.
+
+## 5.1 Relationship to the Controller Operating Guide
+
+The current carrier-side `docs/JULES_CONTROLLER_OPERATING_GUIDE.md` is the
+authority for adaptive task sizing, safe Controller repairs, repeated FAIL
+cause analysis, WORK escalation/color continuity and planning ETA.
+
+This playbook answers a different question: **how to avoid unnecessary new
+architecture and reach the next implementation boundary faster**. Where both
+apply, use this playbook to choose the smallest implementation and the
+Controller Guide to choose/operate the worker and repair path.
 
 ## 6. Jules usage policy
 

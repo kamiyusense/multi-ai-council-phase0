@@ -40,11 +40,14 @@
 [canonical execution router](DEVELOPMENT_EXECUTION_ROUTER.md) が現在の開発worker選択の正本。
 旧「Chat-first / Work fallback」は開発worker選択についてsuperseded。
 ChatはGitHubのfresh readback、独立検品、設計、次タスク作成、PASS / FAIL /
-UNKNOWN判定と人間のMerge境界を維持する。
+UNKNOWN判定と人間のMerge境界を維持する。FAIL後は安全な小修正を先に評価し、
+修正したChat自身もtest・semantic review・exact HEAD・remote readbackで検証する。
+詳細はdiscovered carrierの [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md)。
 
 - 通常のGitHub実装・test・docs変更: Chat-driven Jules半Loopをデフォルトにする。
-- 明示されたCloud Work色laneはそのlaneへ。色指定なしのWork / 緑LINE、
-  またはJulesに不向きでcloud-safeな作業はGreenをdefaultとする。
+- 明示されたCloud Work色laneはそのlaneへ。緑LINEはGreenを指定する。
+  色指定なしのWorkやJulesに不向きなcloud-safe missionへのescalationは
+  assigned heart colorを維持し、色未選択の場合のみGreenをdefaultとする。
   [4-lane・交換索引](CLOUD_WORK_LANES_INDEX.md)から選択laneのcarrierを一意に
   fresh discoveryし、protocolとworker-stateを確認してから送る。
 - Work交換・故障・再作成は同索引からChatGPT support manualを先に読む。
@@ -55,6 +58,10 @@ UNKNOWN判定と人間のMerge境界を維持する。
   「## **🔵【以下をLocal Workへそのまま貼り付けてください】**」
   の見出しと1つのコードブロックで渡す。ChatからLocal Workへ勝手にhandoffしない。
 - identityまたは能力を確認できない場合: UNKNOWN、dispatchしない。
+
+WORKを前回使ったことだけで次もWORKにしない。毎missionでfresh routingし、
+Julesを標準候補へ戻す。routing resetはJulesへの強制dispatchではなく、
+難所・強結合などのWORK条件が続けばbounded WORKの連続利用を認める。
 
 これらのworker選択は、Work内の自律処理ルールや将来のClaude-origin
 AUTO Loopのruntimeを変更しない。
@@ -417,6 +424,7 @@ worker選択と復旧手順は
 ### Chat
 - GitHub current stateのfresh readback、設計と次のbounded task
 - Jules/Cloud Work成果の独立検品（diff、ancestry、tests、evidence）
+- Controller-safe small repairと再検証（詳細は上記Guide）
 - PASS / FAIL / UNKNOWN、安全・Merge等の人間判断境界
 - 許可済みfeature branch / PR範囲のwriteとremote readback
 
@@ -426,7 +434,7 @@ worker選択と復旧手順は
 
 ### Cloud Work 4色lane
 - 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Redは独立したCloud Work carrier。
-  色指定がなければGreenをdefaultとする。現在の一覧と交換入口は
+  escalationではassigned heart colorを維持し、色未選択時のみGreenをdefaultとする。現在の一覧と交換入口は
   [4-lane・交換索引](CLOUD_WORK_LANES_INDEX.md)。
 - 選択laneのcarrier/protocol/worker-stateをfresh discovery。
   Local Work固有資源は扱わない。carrier PRはMergeしない。

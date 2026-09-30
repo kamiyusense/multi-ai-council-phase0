@@ -38,7 +38,8 @@ At this checkpoint, the carrier branch has:
 1. [Color Lane specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md) — aliases, independent use, global Loop number, schema-v3 claim and parallel/canonical boundary;
 2. [carrier Semi-Auto specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/CHAT_JULES_API_SEMIAUTO.md) — numbered command and workflow gates;
 3. [mandatory Task Prompt specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_TASK_PROMPT_SPEC.md) — one mission, exact allowed paths, Do Not Touch, semantic/negative tests, validation and stop rules;
-4. [claim validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/loop_id_claim.py), [global claim ledger](https://github.com/kamiyusense/multi-ai-council-phase0/tree/feature/chat-work-command-bus/automation/command_bus/loop_id_claims), [request validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/jules_api_request.py), and [dispatch workflow](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/.github/workflows/jules-chat-semiauto.yml).
+4. [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md) — safe small repair, adaptive sizing, repeated FAIL, fresh WORK routing and heuristic ETA;
+5. [claim validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/loop_id_claim.py), [global claim ledger](https://github.com/kamiyusense/multi-ai-council-phase0/tree/feature/chat-work-command-bus/automation/command_bus/loop_id_claims), [request validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/jules_api_request.py), and [dispatch workflow](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/.github/workflows/jules-chat-semiauto.yml).
 
 These links point to the observed carrier branch for navigation. The workflow
 filter and freshly read carrier state, not the link's branch spelling, are the
@@ -64,37 +65,24 @@ Jules tasks can run in parallel; API dispatch is serialized by the workflow,
 and canonical adoption is separately serialized with fresh ancestry, diff,
 allowed-path, semantic, test and fast-forward checks.
 
-## Reuse-first prompt and review repair policy
+## Reuse-first implementation boundary
 
-Before composing a new implementation task, read
+Before composing a new implementation mission, read
 [Development Acceleration Playbook](DEVELOPMENT_ACCELERATION_PLAYBOOK.md).
+Name the existing repo helper or upstream primitive to reuse and forbid
+speculative frameworks/features outside the bounded mission. The Controller
+Operating Guide remains authoritative for repair, adaptive sizing, repeated
+FAIL handling, WORK escalation and ETA.
 
-A Jules task should name the existing accepted helper or upstream primitive to
-reuse and explicitly forbid speculative frameworks/features outside the bounded
-mission. Prefer "connect/adapt this known primitive" over "research and design a
-better system".
+## Controller decisions before another dispatch
 
-Independent review FAIL does not automatically mean a full redo.
-
-Chat may make a direct small repair on the candidate feature branch when the
-cause is exact, local, reversible, inside the authorized scope, does not weaken
-semantics, and can be verified with bounded tests. After the patch, Chat must
-read back the diff/path fence, run focused/full validation and exact-head
-validation when available before adoption.
-
-Examples of eligible small repair:
-- typo/import/path error;
-- deterministic fixture/timestamp correction;
-- incorrect assertion text;
-- shallow-checkout/remote-ref test-environment bug;
-- one-line escaping error;
-- small documentation mismatch.
-
-Return to Jules when the implementation is dummy/missing, semantics or
-architecture are wrong, negative tests are vacuous by design, broad rewriting
-is required, or Chat would need to perform most of the original task. Reuse the
-same nonterminal Jules session when it is still safe/authorized; otherwise use a
-fresh numbered Loop from unchanged canonical.
+Read the discovered carrier's Controller Operating Guide (linked above).
+After FAIL, evaluate safe Controller repair first, then independent tests/semantic
+review/diff/exact-HEAD readback. Substantial or ambiguous corrections may return
+to Jules; broad coupled cloud-safe work may suit WORK. Jules normally starts from
+MEDIUM, with adaptive SHORT/LONG and fresh sizing after a hard section passes.
+WORK is not sticky: each next mission is freshly routed. Routing reset is not
+forced Jules dispatch; WORK conditions may remain true for consecutive missions.
 
 ## Mandatory task-time footer
 
@@ -117,7 +105,10 @@ Rules:
    - `長`
 4. Estimate a completion window from the accepted-session time and the actual
    bounded task scope. The window is a human checking guide only; it is not a
-   correctness claim or SLA.
+   correctness claim or SLA. Official Jules ETA absence alone is not UNKNOWN.
+   With verified acceptance/time and rational size, normally use recent similar
+   measurements, same-size measurements, or the Controller Guide's conservative
+   initial heuristic. Keep its estimate provenance and non-guaranteed status.
 5. For a numbered color-lane task, prefix the H2-sized bold footer with the
    verified heart color and canonical Jules lane ID. The heart color is lane
    metadata, distinct from the usual 🔴🔵🟡🟢🟣 meaning symbols.

@@ -17,8 +17,10 @@ merge candidates**. This index does not create a Work or submit a command.
 | 💙 Blue | [#167](https://github.com/kamiyusense/multi-ai-council-phase0/pull/167) | `cloud-blue` | `[CW_BLUE_V1]` / `[CW_BLUE_RECEIPT_V1]` | [protocol](https://github.com/kamiyusense/multi-ai-council-phase0/blob/cloud-work/carrier-blue-v1/automation/cloud_work_lanes/carriers/blue_v1.md) · [state](https://github.com/kamiyusense/multi-ai-council-phase0/blob/cloud-work/carrier-blue-v1/automation/cloud_work_lanes/carriers/blue_worker_state_v1.json) |
 | ❤️ Red | [#171](https://github.com/kamiyusense/multi-ai-council-phase0/pull/171) | `cloud-red` | `[CW_RED_V1]` / `[CW_RED_RECEIPT_V1]` | [protocol](https://github.com/kamiyusense/multi-ai-council-phase0/blob/cloud-work/carrier-red-v1/automation/cloud_work_lanes/carriers/red_v1.md) · [state](https://github.com/kamiyusense/multi-ai-council-phase0/blob/cloud-work/carrier-red-v1/automation/cloud_work_lanes/carriers/red_worker_state_v1.json) |
 
-**Dispatch discovery:** choose the explicit Cloud Work color. Unqualified
-Work / 緑LINE or Jules-unsuitable cloud-safe work defaults to Green; a bare
+**Dispatch discovery:** choose the explicit Cloud Work color.
+緑LINE selects Green. Mission-based escalation preserves an assigned heart color;
+unqualified Work or Jules-unsuitable cloud-safe work defaults to Green only when
+no color is assigned; a bare
 `💚で開始して` selects *Jules* J-GREEN, not Cloud Work. Search all OPEN PRs
 with the selected lane label, including pagination. Require **exactly one**
 open/unmerged carrier whose PR body, protocol version 1, branch, label,
@@ -32,6 +34,19 @@ Cloud Work can use its cloud environment and authorized connected services.
 Windows/WSL files, local checkout, Docker daemon, local terminal/GUI and local
 credentials require the [Local Work route](DEVELOPMENT_EXECUTION_ROUTER.md#local-work-boundary).
 Never send those dependencies to any Cloud Work color.
+
+## Mission-local WORK selection
+
+A Jules Controller may select WORK for a cloud-safe mission whose broad context,
+strong coupling or unsafe decomposition meets the discovered carrier's
+[Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md).
+Previous WORK use or success alone does not authorize next WORK. Every new mission
+gets fresh routing with Jules as the standard candidate; routing reset is **not**
+a forced Jules dispatch. If the next mission still suits WORK, consecutive bounded
+WORK use is normal, including one difficult coupled batch to its safe terminal point.
+Jules claims/sessions and WORK carriers/generations/receipts remain separate,
+even when escalation preserves the same heart color. Protocol and generation
+gates below are unchanged.
 
 ## Replacement and recovery
 
