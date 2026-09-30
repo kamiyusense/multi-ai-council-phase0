@@ -39,6 +39,10 @@ def validate_semiauto_stable_identity(
         raise ValueError("ChatGPT Semi-Auto lane identity is not DURABLE")
     loop_id = durable_context.get("loop_id")
     runtime_state_path(loop_id)
+    from .semiauto_runtime_identity import get_canonical_semiauto_loop_id
+    canonical_id = get_canonical_semiauto_loop_id()
+    if loop_id != canonical_id:
+        raise ValueError("durable context loop_id does not match canonical identity source")
     if loop_id != lane.loop_id:
         raise ValueError("durable context loop_id does not match adopted registry lane")
     if loop_id == request.get("origin_loop_id"):

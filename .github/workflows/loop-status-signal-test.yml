@@ -69,6 +69,8 @@ on:
       - automation/command_bus/tests/test_jules_provider_readback_candidate.py
       - automation/command_bus/tests/test_jules_provider_verification_source.py
       - automation/command_bus/tests/test_jules_direct_readback_authenticator.py
+      - automation/command_bus/semiauto_runtime_identity.py
+      - automation/command_bus/tests/test_semiauto_runtime_identity.py
       - automation/command_bus/tests/test_semiauto_stable_identity_static_e2e.py
       - automation/command_bus/tests/test_github_oidc_claims_policy.py
       - automation/command_bus/tests/test_github_oidc_proof_policy_cli.py
@@ -134,6 +136,7 @@ jobs:
             automation.command_bus.tests.test_jules_provider_readback_candidate
             automation.command_bus.tests.test_jules_provider_verification_source
             automation.command_bus.tests.test_jules_direct_readback_authenticator
+            automation.command_bus.tests.test_semiauto_runtime_identity
             automation.command_bus.tests.test_semiauto_stable_identity_static_e2e
             automation.command_bus.tests.test_github_oidc_claims_policy
             automation.command_bus.tests.test_github_oidc_proof_policy_cli
