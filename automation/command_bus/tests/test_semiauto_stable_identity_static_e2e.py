@@ -24,7 +24,7 @@ from automation.command_bus.tests.test_jules_semiauto_owner_prepare import (
 )
 from automation.command_bus.tests.test_runtime_transition_publisher import Client
 
-LOOP_ID = "fixture-chatgpt-semi-auto-lane"
+LOOP_ID = "chatgpt-semi-auto-v1"
 READBACK_TIME = "2026-09-28T04:05:00Z"
 CURRENT_TIME = "2026-09-28T04:10:00+00:00"
 REGISTRY_PATH = Path(__file__).parents[1] / "config" / "control_tower_registry.json"
