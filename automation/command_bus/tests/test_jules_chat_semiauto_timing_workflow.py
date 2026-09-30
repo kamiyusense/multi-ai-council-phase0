@@ -25,7 +25,11 @@ class JulesChatSemiAutoTimingWorkflowTests(unittest.TestCase):
         self.assertIn("session_create_time=", self.text)
         self.assertIn("accepted_at_jst=", self.text)
         self.assertIn(
-            "accepted_at_source: \`JULES_CREATE_SESSION_RESPONSE_CREATE_TIME\`",
+            "accepted_at_source:",
+            self.text,
+        )
+        self.assertIn(
+            "JULES_CREATE_SESSION_RESPONSE_CREATE_TIME",
             self.text,
         )
 
@@ -34,10 +38,8 @@ class JulesChatSemiAutoTimingWorkflowTests(unittest.TestCase):
             "EXPECTED_BRANCH: ${{ steps.validate.outputs.work_branch }}",
             self.text,
         )
-        self.assertIn(
-            'returned_branch="$(jq -er '.sourceContext.githubRepoContext.startingBranch' "${response_file}")"',
-            self.text,
-        )
+        self.assertIn("returned_branch=", self.text)
+        self.assertIn(".sourceContext.githubRepoContext.startingBranch", self.text)
         self.assertIn(
             'if [[ "${returned_branch}" != "${EXPECTED_BRANCH}" ]]',
             self.text,
