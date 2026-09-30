@@ -16,20 +16,21 @@ class JulesChatSemiAutoTimingWorkflowTests(unittest.TestCase):
         self.assertIn("--retry 0", self.text)
         self.assertIn("Invoke Jules REST exactly once", self.text)
 
-    def test_acceptance_time_comes_from_jules_create_response(self):
+    def test_acceptance_time_comes_from_exact_session_get_readback(self):
+        self.assertIn("Read back Jules session timing once", self.text)
         self.assertIn(
             "python -m automation.command_bus.jules_session_acceptance",
             self.text,
         )
-        self.assertIn('"${response_file}" "${EXPECTED_BRANCH}"', self.text)
+        self.assertIn("--expected-session-id", self.text)
+        self.assertIn(
+            "https://jules.googleapis.com/v1alpha/sessions/${SESSION_ID}",
+            self.text,
+        )
         self.assertIn("session_create_time=", self.text)
         self.assertIn("accepted_at_jst=", self.text)
         self.assertIn(
-            "accepted_at_source:",
-            self.text,
-        )
-        self.assertIn(
-            "JULES_CREATE_SESSION_RESPONSE_CREATE_TIME",
+            "JULES_SESSION_GET_CREATE_TIME_READBACK",
             self.text,
         )
 
@@ -47,11 +48,11 @@ class JulesChatSemiAutoTimingWorkflowTests(unittest.TestCase):
 
     def test_summary_exposes_timing_evidence(self):
         self.assertIn(
-            "SESSION_CREATE_TIME: ${{ steps.invoke.outputs.session_create_time }}",
+            "SESSION_CREATE_TIME: ${{ steps.timing.outputs.session_create_time }}",
             self.text,
         )
         self.assertIn(
-            "ACCEPTED_AT_JST: ${{ steps.invoke.outputs.accepted_at_jst }}",
+            "ACCEPTED_AT_JST: ${{ steps.timing.outputs.accepted_at_jst }}",
             self.text,
         )
         self.assertIn("jules_session_create_time:", self.text)
