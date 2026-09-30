@@ -323,3 +323,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - `antigravity_account_route` remains unresolved/BLOCKED_UNKNOWN.
 - `antigravity_billing_route` remains separate and unresolved/BLOCKED_UNKNOWN.
 - No live blocker becomes resolved.
+
+## Antigravity Billing-Route Read-Only Checklist Static Checkpoint
+- Implemented static antigravity-billing-route-readonly-checklist document.
+- This checkpoint is strictly PREPARED/static Antigravity billing-route checklist status only.
+- Zero external/read-only billing-route evidence is acquired by this batch.
+- `antigravity_billing_route` remains unresolved/BLOCKED_UNKNOWN.
+- No live blocker becomes resolved.
