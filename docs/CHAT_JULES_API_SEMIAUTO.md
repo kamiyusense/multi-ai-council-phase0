@@ -64,6 +64,38 @@ Jules tasks can run in parallel; API dispatch is serialized by the workflow,
 and canonical adoption is separately serialized with fresh ancestry, diff,
 allowed-path, semantic, test and fast-forward checks.
 
+## Reuse-first prompt and review repair policy
+
+Before composing a new implementation task, read
+[Development Acceleration Playbook](DEVELOPMENT_ACCELERATION_PLAYBOOK.md).
+
+A Jules task should name the existing accepted helper or upstream primitive to
+reuse and explicitly forbid speculative frameworks/features outside the bounded
+mission. Prefer "connect/adapt this known primitive" over "research and design a
+better system".
+
+Independent review FAIL does not automatically mean a full redo.
+
+Chat may make a direct small repair on the candidate feature branch when the
+cause is exact, local, reversible, inside the authorized scope, does not weaken
+semantics, and can be verified with bounded tests. After the patch, Chat must
+read back the diff/path fence, run focused/full validation and exact-head
+validation when available before adoption.
+
+Examples of eligible small repair:
+- typo/import/path error;
+- deterministic fixture/timestamp correction;
+- incorrect assertion text;
+- shallow-checkout/remote-ref test-environment bug;
+- one-line escaping error;
+- small documentation mismatch.
+
+Return to Jules when the implementation is dummy/missing, semantics or
+architecture are wrong, negative tests are vacuous by design, broad rewriting
+is required, or Chat would need to perform most of the original task. Reuse the
+same nonterminal Jules session when it is still safe/authorized; otherwise use a
+fresh numbered Loop from unchanged canonical.
+
 ## Mandatory task-time footer
 
 Every Chat that uses this semi-auto loop and returns control to the human after
