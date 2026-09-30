@@ -1,0 +1,30 @@
+name: "Verify Jules timing readback v2"
+
+on:
+  push:
+    branches:
+      - "verify/jules-session-timing-readback-v2-c900183e"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 50
+          persist-credentials: false
+      - name: Focused timing tests
+        run: |
+          python -m unittest automation.command_bus.tests.test_jules_session_acceptance -v
+          python -m unittest automation.command_bus.tests.test_jules_chat_semiauto_timing_workflow -v
+          python -m unittest automation.command_bus.tests.test_jules_semiauto_workflow -v
+      - name: Command bus regression
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+      - name: Compile
+        run: python -m compileall -q automation/command_bus
+      - name: Diff check
+        run: git diff --check 4bc970afefef6d08abef1d303ac158fc6b1deb43 c900183ec4bd79e0fb0284962ea87cccb850b169
