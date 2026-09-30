@@ -71,6 +71,9 @@ on:
       - automation/command_bus/tests/test_jules_direct_readback_authenticator.py
       - automation/command_bus/semiauto_identity_bootstrap.py
       - automation/command_bus/tests/test_semiauto_identity_bootstrap.py
+            automation.command_bus.tests.test_semiauto_bootstrap_persistence
+      - automation/command_bus/semiauto_bootstrap_persistence.py
+      - automation/command_bus/tests/test_semiauto_bootstrap_persistence.py
       - automation/command_bus/semiauto_runtime_identity.py
       - automation/command_bus/tests/test_semiauto_runtime_identity.py
       - automation/command_bus/tests/test_semiauto_stable_identity_static_e2e.py
@@ -139,6 +142,7 @@ jobs:
             automation.command_bus.tests.test_jules_provider_verification_source
             automation.command_bus.tests.test_jules_direct_readback_authenticator
             automation.command_bus.tests.test_semiauto_identity_bootstrap
+            automation.command_bus.tests.test_semiauto_bootstrap_persistence
             automation.command_bus.tests.test_semiauto_runtime_identity
             automation.command_bus.tests.test_semiauto_stable_identity_static_e2e
             automation.command_bus.tests.test_github_oidc_claims_policy

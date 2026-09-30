@@ -13,3 +13,6 @@ The explicit state machine for first adoption is:
 6. normal adopted path
 
 **Note:** All steps after prepare-only (steps 3-6) are strictly NOT_WIRED / not executed in this task. No live writes or registry promotion occurred.
+
+## Bootstrap Persistence Integration
+The prepare-only bundle is persisted by the bootstrap persistence adapter into a non-default branch, writing exactly the PREPARED state and canonical source receipt (refer to `docs/SEMIAUTO_BOOTSTRAP_PERSISTENCE_V1_CHECKPOINT.md`).
