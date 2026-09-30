@@ -308,3 +308,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - Zero external/read-only account or billing evidence is acquired by this batch.
 - claude_account_auth remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
+
+## Claude Permissions Read-Only Checklist Static Checkpoint
+- Implemented static claude-permissions-readonly-checklist document.
+- This checkpoint is strictly PREPARED/static claude-permissions-readonly-checklist status only.
+- Zero external/read-only permission evidence is acquired by this batch.
+- claude_permissions remains unresolved/BLOCKED_UNKNOWN.
+- No real live blocker is resolved.
