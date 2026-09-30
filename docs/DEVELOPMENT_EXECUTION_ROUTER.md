@@ -13,11 +13,33 @@ decides PASS / FAIL / UNKNOWN. Worker selection below does not remove Chat's
 GitHub readback, ancestry/diff/test/evidence checks, or human Merge boundary.
 It does not change the future Claude-origin AUTO loop's runtime semantics.
 
+## Before selecting/dispatching a development worker
+
+Read [Development Acceleration Playbook](DEVELOPMENT_ACCELERATION_PLAYBOOK.md)
+before designing a new subsystem or composing a Jules implementation task.
+
+The default is **reuse-first / minimum-implementation-first**:
+
+- existing accepted repo code first;
+- official platform/provider implementation pattern second;
+- small permissively licensed OSS primitive third;
+- large framework/dependency only after measured evidence shows the smaller
+  route is insufficient.
+
+Do not create speculative queue/retry/DLQ/dashboard/state-machine/framework work
+as a side effect of an otherwise bounded task.
+
+When reviewing a Jules result, a small exact reversible defect may be patched by
+Chat on the candidate feature branch and independently revalidated. A semantic,
+architectural or substantial defect goes back to Jules (same nonterminal
+session when safe, otherwise a fresh numbered Loop from unchanged canonical).
+A review FAIL does **not** automatically mean redo the entire task.
+
 ## Route selection
 
 | Condition | Development route |
 | --- | --- |
-| Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Chat-driven Jules semi-auto (selected color lane) |
+| Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Read the acceleration playbook, then Chat-driven Jules semi-auto (selected color lane) |
 | User explicitly names 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Red **Cloud Work** | Matching [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md), when cloud-safe |
 | User says Work / Cloud Work / Green lane / 緑LINE without another color | Cloud Work Green lane as the unqualified default, when cloud-safe |
 | Jules is unsuitable and cloud GitHub/Web/connected-service work can finish it | Cloud Work Green lane as the default, or the user's explicit Cloud Work color |
@@ -167,8 +189,9 @@ push/branch deletion. Do not claim a Local Work handoff occurred.
   perform available GitHub checks and return the complete 🔵 Local Work prompt.
 
 For a new Chat: read current main `README.md`, `HANDOVER_CURRENT.md`,
-this router, then the selected route's spec and current target GitHub state.
-Read task-specific design/handover documents afterward. Historical PRs and
+this router, then `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md`, then the selected
+route's spec and current target GitHub state. Read task-specific
+design/handover documents afterward. Historical PRs and
 checkpoint SHAs help locate evidence, never authorize a write.
 
 ## Fail-closed safety and snapshots
