@@ -1,5 +1,19 @@
 # Phase 0 Control Tower v2 + Windows Signal Companion Roadmap
 
+> **2026-10-01 execution-order override after PR #192**
+>
+> For current Signal / Status / Control Tower implementation order, read
+> [SIGNAL_FOUNDATION_ROADMAP.md](SIGNAL_FOUNDATION_ROADMAP.md) first.
+>
+> This document remains the design source for the final verified multi-loop
+> Control Tower. The newer execution roadmap allows a clearly separated
+> read-only **Observed Signal** to be built from direct Jules/GitHub facts before
+> all durable runtime lanes are adopted. That observed layer is not owner,
+> authority, takeover, registry-DURABLE or verified-runtime truth.
+>
+> The strict durable contracts in this document still apply before dangerous
+> runtime mutation and before the final verified Runtime migration.
+>
 > **2026-09-28 implementation status override**
 >
 > This roadmap remains the design source, but current main has advanced beyond
@@ -25,7 +39,7 @@
 > identity and live-migration gates are satisfied.
 
 
-Status: DESIGN / ROADMAP ONLY  
+Status: DESIGN / ROADMAP ONLY
 Baseline main at creation: `472f2d2ee4539581eb9c17c022d32d70330c1859`
 
 This document changes presentation/observability architecture only. It does not

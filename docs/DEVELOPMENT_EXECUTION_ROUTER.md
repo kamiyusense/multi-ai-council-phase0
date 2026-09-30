@@ -27,11 +27,27 @@ WORK escalation, color continuity and planning ETA.
 Do not create speculative queue/retry/DLQ/dashboard/state-machine/framework work
 as a side effect of an otherwise bounded task.
 
+## Signal / Status / Control Tower route
+
+When the mission is Signal, Status, Control Tower or the Windows-facing Signal
+foundation, read [Signal Foundation Roadmap](SIGNAL_FOUNDATION_ROADMAP.md)
+immediately after the acceleration playbook.
+
+That roadmap decides **which Signal boundary comes next**. Worker routing still
+follows this router. Ordinary bounded GitHub implementation remains Jules
+semi-auto by default unless the normal capability/escalation rules choose
+another route.
+
+Do not resume from the historical Signal feature branch by memory. Fresh-read
+current main and the historical branch, then use the roadmap's SF-0 recovery
+rule.
+
 ## Route selection
 
 | Condition | Development route |
 | --- | --- |
 | Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Read the acceleration playbook, then Chat-driven Jules semi-auto (selected color lane) |
+| Signal / Status / Control Tower implementation | Read the acceleration playbook + Signal foundation roadmap, then use the normal bounded worker route (Jules default) |
 | User explicitly names 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Red **Cloud Work** | Matching [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md), when cloud-safe |
 | User says Work / Cloud Work; explicit Green lane / 緑LINE | Cloud Work when cloud-safe: explicit Green selects Green; otherwise preserve assigned color, or default to Green when none |
 | Jules is unsuitable for the current mission and it is cloud-safe | Cloud Work: user's explicit color, otherwise assigned heart color; Green only when neither is specified |
