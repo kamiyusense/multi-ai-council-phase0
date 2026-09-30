@@ -332,3 +332,9 @@ route, or takeover work is authorized by this checkpoint.
 - PR #187 / Loop 079: rejected/not adopted. (commit `83ef2143a2cf5b0b6c058951c41777e76493a4b8`). Fresh GitHub readback showed the committed result contradicted Jules' own summary: the main test file was only a dummy pass, compatibility doc was empty, handover was unchanged, and three repo-root scratch files were committed.
 
 Next safe boundary = architecture choice + STATIC implementation of durable AUTO-origin binding. No integrated live activation authorized. J-GREEN development lane is not automatically future AUTO runtime lane.
+
+## 2026-10-01 STATIC Binding V1 added (Loop 092)
+
+Loop 092 introduces `CLAUDE_AUTO_ORIGIN_BINDING_V1` as a pure, static origin cross-binding module. It statically resolves the identity linkage without mutating the current carrier V2 request schema or V3 claim schema logic.
+
+This contract strictly evaluates exact-key binding and fails closed on mismatches. It does not dictate a durable file location and makes no changes to the carrier workflows. Integrated live execution from Claude-verdict to Jules LIVE remains explicitly UNKNOWN and not authorized.
