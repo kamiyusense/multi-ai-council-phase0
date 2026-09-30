@@ -67,6 +67,12 @@ only until measured pain justifies larger infrastructure.
 Read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` for deeper prior-art details,
 not as a prerequisite to every implementation task.
 
+For Relay work, next read
+[docs/RELAY_MINIMAL_REUSE_ROADMAP.md](docs/RELAY_MINIMAL_REUSE_ROADMAP.md).
+It converts the reuse-first policy into bounded migrations such as “adapt this
+named upstream ACP primitive into these existing Relay files”; it explicitly
+stops the pattern of asking Jules to design a complete mechanism first.
+
 ## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
 
 This rule is durable project policy for every Chat that uses the Chat -> Jules
