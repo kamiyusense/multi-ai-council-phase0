@@ -191,14 +191,36 @@ jobs:
             exit 1
           fi
           session_id="${session_name#sessions/}"
-          acceptance_json="$(python -m automation.command_bus.jules_session_acceptance "${response_file}" "${EXPECTED_BRANCH}")"
-          session_create_time="$(jq -er '.session_create_time' <<<"${acceptance_json}")"
-          accepted_at_jst="$(jq -er '.accepted_at_jst' <<<"${acceptance_json}")"
           echo "session_id=${session_id}" >> "${GITHUB_OUTPUT}"
           echo "session_name=${session_name}" >> "${GITHUB_OUTPUT}"
+          echo "Jules session accepted: ${session_name}"
+
+      - name: Read back Jules session timing once
+        id: timing
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          SESSION_ID: ${{ steps.invoke.outputs.session_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${SESSION_ID}" =~ ^[0-9]+$ ]] || { echo "Invalid Jules session_id." >&2; exit 1; }
+          response_file="${RUNNER_TEMP}/jules-session-timing-readback.json"
+          http_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${response_file}" \
+            --write-out '%{http_code}' \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            "https://jules.googleapis.com/v1alpha/sessions/${SESSION_ID}")"
+          if [[ ! "${http_code}" =~ ^2[0-9][0-9]$ ]]; then
+            echo "Unexpected Jules timing readback HTTP status ${http_code}." >&2
+            exit 1
+          fi
+          timing_json="$(python -m automation.command_bus.jules_session_acceptance \
+            "${response_file}" --expected-session-id "${SESSION_ID}")"
+          session_create_time="$(jq -er '.session_create_time' <<<"${timing_json}")"
+          accepted_at_jst="$(jq -er '.accepted_at_jst' <<<"${timing_json}")"
           echo "session_create_time=${session_create_time}" >> "${GITHUB_OUTPUT}"
           echo "accepted_at_jst=${accepted_at_jst}" >> "${GITHUB_OUTPUT}"
-          echo "Jules session accepted: ${session_name} at ${accepted_at_jst}"
+          echo "Jules session timing read back: sessions/${SESSION_ID} at ${accepted_at_jst}"
 
       - name: Record dispatch boundary in job summary
         if: always()
@@ -209,8 +231,8 @@ jobs:
           EXPECTED_HEAD: ${{ steps.validate.outputs.expected_target_head }}
           EXPECTED_TREE: ${{ steps.validate.outputs.expected_target_tree }}
           SESSION_ID: ${{ steps.invoke.outputs.session_id }}
-          SESSION_CREATE_TIME: ${{ steps.invoke.outputs.session_create_time }}
-          ACCEPTED_AT_JST: ${{ steps.invoke.outputs.accepted_at_jst }}
+          SESSION_CREATE_TIME: ${{ steps.timing.outputs.session_create_time }}
+          ACCEPTED_AT_JST: ${{ steps.timing.outputs.accepted_at_jst }}
           LOOP_CLAIM_REQUIRED: ${{ steps.claim.outputs.loop_claim_required }}
           LOOP_ID: ${{ steps.claim.outputs.loop_id }}
           LANE_ID: ${{ steps.claim.outputs.lane_id }}
@@ -227,7 +249,7 @@ jobs:
             echo "- jules_session_id: \`${SESSION_ID:-UNKNOWN}\`"
             echo "- jules_session_create_time: \`${SESSION_CREATE_TIME:-UNKNOWN}\`"
             echo "- accepted_at_jst: \`${ACCEPTED_AT_JST:-UNKNOWN}\`"
-            echo "- accepted_at_source: \`JULES_CREATE_SESSION_RESPONSE_CREATE_TIME\`"
+            echo "- accepted_at_source: \`JULES_SESSION_GET_CREATE_TIME_READBACK\`"
             echo "- loop_claim_required: \`${LOOP_CLAIM_REQUIRED:-UNKNOWN}\`"
             if [[ "${LOOP_CLAIM_REQUIRED:-false}" == "true" ]]; then
               echo "- loop_id: \`${LOOP_ID:-UNKNOWN}\`"
