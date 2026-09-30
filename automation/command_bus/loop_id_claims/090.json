@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 90,
+  "loop_id": "090",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-semiauto-bootstrap-persistence",
+  "command_id": "relay-dev-loop-090-signal-semiauto-bootstrap-persistence",
+  "target_branch": "feature/signal-semiauto-stable-id-adoption-v1",
+  "expected_target_head": "7f413b4620459efbeb314fb042e73dd1c236d970",
+  "expected_target_tree": "54b0e4aec29bd1d2246b27c7a408b422a1f2fac5",
+  "work_branch": "jules-work/relay-dev-loop-090-signal-semiauto-bootstrap-persistence",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T03:24:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
