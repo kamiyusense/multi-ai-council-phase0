@@ -315,3 +315,11 @@ This signifies the PREPARED static pipeline checkpoint.
 - Zero external/read-only permission evidence is acquired by this batch.
 - claude_permissions remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
+
+## Antigravity Account-Route Read-Only Checklist Static Checkpoint
+- Implemented static antigravity-account-route-readonly-checklist document.
+- This checkpoint is strictly PREPARED/static Antigravity account-route checklist status only.
+- Zero external/read-only account-route evidence is acquired by this batch.
+- `antigravity_account_route` remains unresolved/BLOCKED_UNKNOWN.
+- `antigravity_billing_route` remains separate and unresolved/BLOCKED_UNKNOWN.
+- No live blocker becomes resolved.
