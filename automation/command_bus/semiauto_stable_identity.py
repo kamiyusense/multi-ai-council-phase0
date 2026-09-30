@@ -14,6 +14,7 @@ from .jules_semiauto_owner_prepare import (
 
 from .control_tower import validate_registry
 from .runtime_state_initializer import runtime_state_path
+from .semiauto_runtime_identity import inject_semiauto_durable_identity
 
 
 def validate_semiauto_stable_identity(
@@ -66,12 +67,14 @@ def prepare_adopted_semiauto_acquire(
 
     This adapter does not create a durable identity, grant owner authority,
     read a live provider, or publish runtime state.
+    Caller-supplied durable_context must NOT include loop_id.
     """
+    injected_context = inject_semiauto_durable_identity(durable_context=durable_context)
     validate_semiauto_stable_identity(
-        registry=registry, request=request, durable_context=durable_context,
+        registry=registry, request=request, durable_context=injected_context,
     )
     return prepare_jules_semiauto_acquire(
-        request=request, durable_context=durable_context,
+        request=request, durable_context=injected_context,
         session_response=session_response, target_pr_readback=target_pr_readback,
         now=now,
     )
