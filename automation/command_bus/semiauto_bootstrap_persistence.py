@@ -14,6 +14,7 @@ from .jules_semiauto_owner_prepare import JulesSemiAutoAcquireBundle
 from .github_backend import GitHubContentsClient
 from .runtime_state_initializer import RuntimeStateInitializer
 from .runtime_transition_receipt import CanonicalOwnerReceiptGitHubBackend
+from .semiauto_runtime_identity import get_canonical_semiauto_loop_id
 
 
 @dataclass(frozen=True)
@@ -34,7 +35,7 @@ def persist_semiauto_bootstrap_bundle(
         raise ValueError("bundle must be a JulesSemiAutoAcquireBundle")
 
     # 1. Validate bundle internal identity and bindings
-    loop_id = "chatgpt-semi-auto-v1"
+    loop_id = get_canonical_semiauto_loop_id()
 
     if bundle.initial_state.get("loop_id") != loop_id:
         raise ValueError("invalid initial_state loop_id")
