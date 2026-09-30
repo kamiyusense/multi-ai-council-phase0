@@ -323,3 +323,12 @@ path.
 Next task is static/mock/unit implementation of the Phase 0 admission gate only.
 No live Claude/provider/Jules call, real credential read, new API key, billing
 route, or takeover work is authorized by this checkpoint.
+
+## 2026-09-30 compatibility audit rejected attempts
+
+- PR #177 / Loop 065: rejected/not adopted.
+- PR #180 / Loop 068: rejected/not adopted due to vacuous negatives.
+- PR #183 / Loop 078: rejected/not adopted. Mostly useful reference (commit `ca2dd7eaead38b002f5445e324a3a0f13d0fd1d2`), but its `work_branch` cross-binding negative stopped at claim internal validation; it lacked direct real target-side bridge-output proof and required blob-SHA evidence.
+- PR #187 / Loop 079: rejected/not adopted. (commit `83ef2143a2cf5b0b6c058951c41777e76493a4b8`). Fresh GitHub readback showed the committed result contradicted Jules' own summary: the main test file was only a dummy pass, compatibility doc was empty, handover was unchanged, and three repo-root scratch files were committed.
+
+Next safe boundary = architecture choice + STATIC implementation of durable AUTO-origin binding. No integrated live activation authorized. J-GREEN development lane is not automatically future AUTO runtime lane.
