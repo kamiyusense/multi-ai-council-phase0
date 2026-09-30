@@ -104,6 +104,30 @@ report UNKNOWN instead. The absence of an official Jules ETA alone does not
 make an estimate UNKNOWN: with verified acceptance/time, use the Controller Guide's
 recent measurements or conservative heuristic range as a non-guaranteed planning hint.
 
+## 0.0.2 2026-10-01 current override — Signal foundation execution order
+
+For any Signal / Status / Control Tower implementation task, after reading the
+Development Acceleration Playbook, read
+[docs/SIGNAL_FOUNDATION_ROADMAP.md](docs/SIGNAL_FOUNDATION_ROADMAP.md).
+
+That roadmap is the current execution order after PR #192:
+
+- build a clearly labeled **Observed Signal** first from direct Jules Session and
+  GitHub PR/check facts;
+- reuse the existing Development/Status/Control Tower presentation code instead
+  of creating another dashboard backend;
+- keep Observed Signal separate from verified durable runtime ownership;
+- return to stable loop ID / state / owner / receipt / evidence / authority /
+  collector wiring only when real runtime mutation or DURABLE promotion needs it;
+- the historical `feature/signal-semiauto-stable-id-adoption-v1` branch is
+  parts/evidence only because it diverged from current main; port validated
+  pieces onto a fresh current-main integration branch rather than rewriting
+  history.
+
+The older Control Tower v2 roadmap below remains the final verified-runtime
+design source. The new Signal roadmap changes implementation order, not the
+safety contract for dangerous runtime mutation.
+
 ## 0.1 2026-09-28 current override — Control Tower v2
 
 The current Signal/Status presentation direction is **Multi-loop Control Tower**.
