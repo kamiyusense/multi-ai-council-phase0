@@ -151,19 +151,35 @@ class TestClaudeJulesOriginBinding(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, pattern):
                 build_binding_record(**kwargs)
 
+    def test_identity_string_length_bound(self):
+        kwargs = copy.deepcopy(self.origin_kwargs)
+        kwargs["origin_correlation_id"] = "x" * 1025
+        with self.assertRaisesRegex(ValueError, "origin_correlation_id exceeds maximum length"):
+            build_binding_record(**kwargs)
+
     def test_malformed_hashes_and_ids(self):
         record = build_binding_record(**self.origin_kwargs)
 
-        bad_head = dict(record)
-        bad_head["expected_target_head"] = "g" * 40
-        bad_head["binding_sha256"] = compute_binding_sha256(bad_head)
-        with self.assertRaisesRegex(ValueError, "expected_target_head format is invalid"):
-            validate_binding_record(bad_head)
+        hash_cases = [
+            ("expected_target_head", "g" * 40, "expected_target_head format is invalid"),
+            ("expected_target_head", "a" * 39, "expected_target_head format is invalid"),
+            ("expected_target_head", "A" * 40, "expected_target_head format is invalid"),
+            ("expected_target_tree", "g" * 40, "expected_target_tree format is invalid"),
+            ("expected_target_tree", "b" * 39, "expected_target_tree format is invalid"),
+            ("expected_target_tree", "B" * 40, "expected_target_tree format is invalid"),
+        ]
+        for field, value, error in hash_cases:
+            bad = dict(record)
+            bad[field] = value
+            bad["binding_sha256"] = compute_binding_sha256(bad)
+            with self.assertRaisesRegex(ValueError, error):
+                validate_binding_record(bad)
 
-        bad_sha = dict(record)
-        bad_sha["binding_sha256"] = "A" * 64
-        with self.assertRaisesRegex(ValueError, "binding_sha256 format is invalid"):
-            validate_binding_record(bad_sha)
+        for value in ("A" * 64, "a" * 63):
+            bad_sha = dict(record)
+            bad_sha["binding_sha256"] = value
+            with self.assertRaisesRegex(ValueError, "binding_sha256 format is invalid"):
+                validate_binding_record(bad_sha)
 
     def test_digest_mismatch_on_mutation(self):
         record = build_binding_record(**self.origin_kwargs)
