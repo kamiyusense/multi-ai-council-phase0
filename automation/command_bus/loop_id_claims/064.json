@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 64,
+  "loop_id": "064",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "confinement-proof-prep",
+  "command_id": "relay-dev-loop-064-confinement-proof-prep",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "0798af2a94c965f5a683948b5eb5792657ff8f35",
+  "expected_target_tree": "5d7d05608ddfda74813e5d14b7c95af9ca9549c3",
+  "work_branch": "jules-work/relay-dev-loop-064-confinement-proof-prep",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-30T11:52:11+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
