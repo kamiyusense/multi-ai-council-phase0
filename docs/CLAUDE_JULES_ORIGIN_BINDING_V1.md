@@ -17,5 +17,6 @@ This pure module enforces the following strict linkages before emitting a standa
 - The carrier request and claim refer to the same logical action (`command_id`, branches, target commits).
 - The action maintains static `retry=0` and `fallback=disabled` boundaries.
 - The binding binds the valid carrier payload to the strictly-typed Claude AUTO origin fields.
+- Generic identity strings are capped at 1024 characters; command IDs and hashes retain their stricter field-specific limits.
 
 Any mismatch results in immediate fail-closed state without leaking missing keys or internal structural gaps.
