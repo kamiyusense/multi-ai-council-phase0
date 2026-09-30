@@ -1,0 +1,29 @@
+name: "Verify Jules accepted_at restore v2"
+
+on:
+  push:
+    branches:
+      - "verify/jules-accepted-at-restore-76cce609"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Focused timing tests
+        run: |
+          python -m unittest automation.command_bus.tests.test_jules_session_acceptance -v
+          python -m unittest automation.command_bus.tests.test_jules_chat_semiauto_timing_workflow -v
+          python -m unittest automation.command_bus.tests.test_jules_semiauto_workflow -v
+      - name: Command bus regression
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+      - name: Compile
+        run: python -m compileall -q automation/command_bus
+      - name: Diff check
+        run: git diff --check c263a25eaab341ebb6e3d2ecc04d198d5aeb5654 76cce609ef84aa0951dc6ea1c348b9823470300a
