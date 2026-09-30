@@ -1,9 +1,9 @@
 # Pioneer / OSS Multi-Agent Development Research Handover
 
-Updated: 2026-10-01  
+Updated: 2026-10-01
 Status: research handover / adoption candidates only
 
-> この文書は、現Chatで行った「先駆者はどうやって複数AIで開発しているか」「既存OSSを流用できないか」の調査内容を、新しいChatへ引き継ぐためのもの。  
+> この文書は、現Chatで行った「先駆者はどうやって複数AIで開発しているか」「既存OSSを流用できないか」の調査内容を、新しいChatへ引き継ぐためのもの。
 > ここに挙げる仕組みは **まだPhase 0正式採用ではない**。実装へ取り込む前に、license / safety / Windows / auth / retry / permission / GitHub副作用をコードレベルで監査する。
 
 ---
