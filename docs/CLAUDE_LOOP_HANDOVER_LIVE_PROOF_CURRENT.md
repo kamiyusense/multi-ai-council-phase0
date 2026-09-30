@@ -1,5 +1,12 @@
 # Claude Loop live-proof handover (CURRENT)
 
+> **Development route:** For new implementation work, read
+> [DEVELOPMENT_EXECUTION_ROUTER.md](DEVELOPMENT_EXECUTION_ROUTER.md) from
+> current main before choosing Jules, Green Cloud Work or a Local Work prompt.
+> The live proof and recorded one-shot approvals below are historical,
+> consumed evidence; they do not authorize another live execution.
+>
+
 ## 2026-09-28 最新LIVE結果（先に読む）
 
 - 人間がIssue #23 comment `5864265631` で追加許可した1回のREAL再試験は**成功して終端済み**。新dispatch `e80d615b-9e87-4b20-9bad-2812a76adee6`、対象PR head `1373bf5512f7208ca88452b0bda12632bd5dbd05`、tree `a28c42d33f23c391b634bafddf36b6c436604de9`。このSHAは履歴であり、次回の正本にはしない。

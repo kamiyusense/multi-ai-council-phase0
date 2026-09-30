@@ -1,6 +1,9 @@
 # Chat -> Jules API -> GitHub -> Human semi-auto loop
 
-Status: development route on PR #6; human-triggered only.
+Status: main-branch recovery entry; current carrier-branch protocol controls new numbered dispatch. Human-triggered only.
+Enter from [development execution router](DEVELOPMENT_EXECUTION_ROUTER.md). A user may say
+`Jules半Loopで続けて` without knowing a PR number. PR #6 is implementation history,
+not the operational carrier identity.
 
 ## Goal
 
@@ -10,7 +13,7 @@ keeping the human as the final decision-maker:
 ```text
 human asks Chat to inspect/continue
   -> Chat fresh-reads GitHub and reviews the current result
-  -> Chat creates exactly one durable Jules command JSON on PR #6 branch
+  -> Chat discovers the carrier, reads current specs, reserves one global Loop claim, then appends one matching command
   -> GitHub push workflow validates command + target HEAD/tree
   -> bounded GitHub workflow submits exactly one direct Jules REST request
   -> Jules works from the exact non-default branch and creates its normal PR
@@ -22,73 +25,44 @@ human asks Chat to inspect/continue
 This is deliberately **not** an unattended loop. No result automatically creates
 the next Jules command.
 
-## Durable command path
+## Fresh carrier and target discovery (mandatory)
 
-Append-only commands live at:
+Start at the [development router](DEVELOPMENT_EXECUTION_ROUTER.md).
+Read main's workflow `.github/workflows/jules-chat-semiauto.yml` to discover
+its current `push.branches` command carrier and `push.paths`. Then read the
+**carrier branch's current** workflow, validators and specifications. Do not
+construct a new command from this main document's historical V1 description.
 
-`automation/command_bus/jules_api_requests/<command_id>.json`
+At this checkpoint, the carrier branch has:
 
-A command commit must add exactly one file and change nothing else. Updating an
-existing command does not dispatch.
+1. [Color Lane specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md) — aliases, independent use, global Loop number, schema-v3 claim and parallel/canonical boundary;
+2. [carrier Semi-Auto specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/CHAT_JULES_API_SEMIAUTO.md) — numbered command and workflow gates;
+3. [mandatory Task Prompt specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_TASK_PROMPT_SPEC.md) — one mission, exact allowed paths, Do Not Touch, semantic/negative tests, validation and stop rules;
+4. [claim validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/loop_id_claim.py), [global claim ledger](https://github.com/kamiyusense/multi-ai-council-phase0/tree/feature/chat-work-command-bus/automation/command_bus/loop_id_claims), [request validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/jules_api_request.py), and [dispatch workflow](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/.github/workflows/jules-chat-semiauto.yml).
 
-Required profiles:
-- `JULES_CHAT_SEMIAUTO_V1`: existing Chat-driven semi-auto tasks.
-- `JULES_CHAT_SEMIAUTO_V2`: Claude-origin integrated tasks; additionally requires
-  `origin_loop_id`, `origin_round`, `origin_correlation_id`, and
-  `origin_generation`.
+These links point to the observed carrier branch for navigation. The workflow
+filter and freshly read carrier state, not the link's branch spelling, are the
+discovery authority. See the [PR history index](JULES_SEMIAUTO_PR_INDEX.md)
+for provenance, not command authorization. PR #6 is a historical implementation
+PR and not a required carrier lookup key.
 
-Both profiles use the same bounded single-submit workflow. V2 adds durable
-origin correlation only; it does not add retry, fallback, merge authority, or
-extra provider calls.
+The current carrier requires `JULES_CHAT_SEMIAUTO_V2` for new numbered
+commands and a create-only schema-v3 `CLAIMED` Loop claim before the isolated
+work branch and one append-only command. Its current workflow checks claim,
+target and work-branch HEAD/tree before one Jules REST submit.
+The main snapshot predates these gates; do not silently downgrade to V1.
+059/060 (schema v1) and 061/062/063 (schema v2
+`HISTORICAL_BACKFILL`) remain reserved historical records, not new-dispatch
+authority.
 
-Each command binds:
-
-- unique `command_id`
-- exact repository
-- exact non-default target branch
-- exact target HEAD and tree
-- explicit allowed changed paths
-- bounded task prompt
-- timezone-aware creation/expiry timestamps, lifetime <= 2 hours
-- `retry = 0`
-- `fallback = disabled`
-- `merge_allowed = false`
-- `force_push_allowed = false`
-
-## Dispatch gates
-
-The workflow `.github/workflows/jules-chat-semiauto.yml` runs only for command
-JSON pushes on `feature/chat-work-command-bus`.
-
-Before the Jules API call it requires:
-
-1. the command commit changed exactly one file;
-2. that file is a newly-added command JSON at the exact command path;
-3. the strict request schema validates;
-4. the request is not expired;
-5. target branch is non-default and safe;
-6. fresh GitHub target HEAD equals `expected_target_head`;
-7. fresh GitHub target tree equals `expected_target_tree`.
-
-Any mismatch stops before Jules submission. There is no workflow retry/fallback.
-
-## Human-awake operating procedure
-
-The user can say, for example, `検品して、問題なければ次へ進めて`.
-
-Chat should then:
-
-1. fresh-read the current target PR/branch and any Jules-created PR/result;
-2. independently inspect ancestry, changed paths, diff, tests/checks, and prior
-   command evidence;
-3. if a bounded next implementation task is justified, generate one new command
-   ID and one command JSON using the fresh target HEAD/tree;
-4. write that one command file to PR #6 branch and read back the new carrier head;
-5. do not resend if the write or subsequent workflow/Jules submission is
-   ambiguous;
-6. on the next user check-in, fresh-read GitHub rather than relying on remembered
-   session state;
-7. never Merge without explicit human approval.
+A short alias such as `JA`, `JB`, `JC`, `JD`, `JG`, or `💚で開始して`
+selects only the Jules lane. Fresh-read claims, commands, work branches,
+current target and task evidence; do not infer a Loop number or task from
+Chat memory. If ambiguous, UNKNOWN and no dispatch. A claim collision
+requires exact readback and a different unused number, not a blind retry.
+Jules tasks can run in parallel; API dispatch is serialized by the workflow,
+and canonical adoption is separately serialized with fresh ancestry, diff,
+allowed-path, semantic, test and fast-forward checks.
 
 ## Mandatory task-time footer
 
@@ -112,7 +86,9 @@ Rules:
 4. Estimate a completion window from the accepted-session time and the actual
    bounded task scope. The window is a human checking guide only; it is not a
    correctness claim or SLA.
-5. Render the footer as an H2-sized bold line using `🟣🕒`.
+5. For a numbered color-lane task, prefix the H2-sized bold footer with the
+   verified heart color and canonical Jules lane ID. The heart color is lane
+   metadata, distinct from the usual 🔴🔵🟡🟢🟣 meaning symbols.
 6. It must be the **last line of the Chat reply**. Do not put any prose after it.
 7. Do not append wording such as
    `→ この時間以降なら結果確認おすすめ`.
@@ -122,7 +98,7 @@ Rules:
 Canonical display shape:
 
 ```text
-## **🟣🕒 Loop 039投入：12:59 ／投入タスク目安：中／ 推定完了目安：13:15〜13:25ごろ**
+## **❤️ J-RED / Loop 064投入：06:30 ／委託先：Jules ／投入タスク目安：中 ／推定完了目安：06:46〜06:56ごろ**
 ```
 
 The Loop number, accepted time, task size, and estimated window must be replaced
