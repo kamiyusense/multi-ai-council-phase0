@@ -301,3 +301,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - common_confinement remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
 - First live provider turn remains unauthorized.
+
+## Claude Account-Auth Read-Only Checklist Static Checkpoint
+- Implemented static claude-account-auth-readonly-checklist document.
+- This checkpoint is strictly PREPARED/static claude-account-auth-readonly-checklist status only.
+- Zero external/read-only account or billing evidence is acquired by this batch.
+- claude_account_auth remains unresolved/BLOCKED_UNKNOWN.
+- No real live blocker is resolved.
