@@ -1,6 +1,6 @@
 # Development Acceleration Playbook
 
-Updated: 2026-10-01  
+Updated: 2026-10-01
 Status: canonical execution policy candidate / documentation-only until merged to main
 
 ## 1. Purpose
