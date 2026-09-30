@@ -1,6 +1,6 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-28
+Updated: 2026-10-01
 
 ## 0. Current development worker routing — read this first
 
