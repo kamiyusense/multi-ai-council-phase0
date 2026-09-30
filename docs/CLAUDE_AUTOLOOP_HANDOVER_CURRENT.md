@@ -323,3 +323,8 @@ path.
 Next task is static/mock/unit implementation of the Phase 0 admission gate only.
 No live Claude/provider/Jules call, real credential read, new API key, billing
 route, or takeover work is authorized by this checkpoint.
+
+
+## Loop 068 correction
+
+PR #180 (Loop 068) was rejected and not adopted because its claim negative tests were vacuous. PR #177 (Loop 065) was also rejected/not adopted. Dropping origin identity is not a safe option; the current carrier cannot securely carry it. This confirms a durable BLOCKED_UNKNOWN state for origin binding until the architecture resolves it natively.
