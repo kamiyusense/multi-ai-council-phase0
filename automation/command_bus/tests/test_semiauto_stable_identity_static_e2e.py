@@ -90,7 +90,9 @@ def build_chain(*, registry=None, req=None, ctx=None, session_get=None, rich_tar
         profile="JULES_CHAT_SEMIAUTO_V2", origin_loop_id="human-origin-039",
         origin_round=3, origin_correlation_id="semi-durable-001", origin_generation=1,
     )
-    ctx = ctx or context(loop_id=LOOP_ID)
+    if ctx is None:
+        ctx = context()
+        ctx.pop("loop_id", None)
     rich_target = rich_target or target()
     prepared = prepare_adopted_semiauto_acquire(
         registry=registry,
@@ -173,12 +175,14 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
             profile="JULES_CHAT_SEMIAUTO_V2", origin_loop_id="human-origin-039",
             origin_round=3, origin_correlation_id="semi-durable-001", origin_generation=1,
         )
+        # Any caller-provided loop_id is rejected by the adopted prepare path.
         for bad_context in (
             context(loop_id="other-lane"), context(loop_id="human-origin-039"),
             context(loop_id=req["command_id"]), context(loop_id="semi-durable-001"),
+            context(loop_id=LOOP_ID),
         ):
             with self.subTest(bad_context=bad_context):
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, "caller cannot supply loop_id"):
                     build_chain(req=req, ctx=bad_context)
         with self.assertRaisesRegex(ValueError, "not DURABLE"):
             build_chain(registry=fixture_registry(identity_state="PLACEHOLDER"))
@@ -279,14 +283,48 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
 
     def test_identity_is_lane_scoped_across_request_turns(self):
         registry = fixture_registry()
-        first = request(command_id="static-command-001")
-        second = request(command_id="static-command-002")
-        for req in (first, second):
-            self.assertEqual(validate_semiauto_stable_identity(
-                registry=registry, request=req,
-                durable_context=context(loop_id=LOOP_ID),
-            ), LOOP_ID)
-        self.assertNotEqual(first["command_id"], second["command_id"])
+        cases = (
+            (
+                request(
+                    command_id="static-command-001",
+                    profile="JULES_CHAT_SEMIAUTO_V2",
+                    origin_loop_id="human-origin-039",
+                    origin_round=3,
+                    origin_correlation_id="semi-durable-001",
+                    origin_generation=1,
+                ),
+                context(correlation_id="semi-durable-001"),
+            ),
+            (
+                request(
+                    command_id="static-command-002",
+                    profile="JULES_CHAT_SEMIAUTO_V2",
+                    origin_loop_id="human-origin-040",
+                    origin_round=4,
+                    origin_correlation_id="semi-durable-002",
+                    origin_generation=2,
+                ),
+                context(correlation_id="semi-durable-002"),
+            ),
+        )
+        observed_correlations = []
+        for req, ctx in cases:
+            ctx.pop("loop_id", None)
+            bundle = prepare_adopted_semiauto_acquire(
+                registry=registry, request=req, durable_context=ctx,
+                session_response=session(), target_pr_readback=target(), now=NOW,
+            )
+            self.assertEqual(bundle.owner_event["loop_id"], LOOP_ID)
+            self.assertEqual(
+                bundle.owner_event["correlation_id"],
+                req["origin_correlation_id"],
+            )
+            observed_correlations.append(bundle.owner_event["correlation_id"])
+        self.assertNotEqual(cases[0][0]["command_id"], cases[1][0]["command_id"])
+        self.assertEqual(
+            observed_correlations,
+            ["semi-durable-001", "semi-durable-002"],
+        )
 
     def test_numeric_session_or_human_number_cannot_be_adopted(self):
         for numeric in ("039", "31415926535897932384", "4"):
