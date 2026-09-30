@@ -39,7 +39,7 @@
 > identity and live-migration gates are satisfied.
 
 
-Status: DESIGN / ROADMAP ONLY  
+Status: DESIGN / ROADMAP ONLY
 Baseline main at creation: `472f2d2ee4539581eb9c17c022d32d70330c1859`
 
 This document changes presentation/observability architecture only. It does not
