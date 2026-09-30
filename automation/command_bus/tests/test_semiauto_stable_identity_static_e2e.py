@@ -283,17 +283,48 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
 
     def test_identity_is_lane_scoped_across_request_turns(self):
         registry = fixture_registry()
-        first = request(command_id="static-command-001")
-        second = request(command_id="static-command-002")
-        for req in (first, second):
-            ctx = context()
+        cases = (
+            (
+                request(
+                    command_id="static-command-001",
+                    profile="JULES_CHAT_SEMIAUTO_V2",
+                    origin_loop_id="human-origin-039",
+                    origin_round=3,
+                    origin_correlation_id="semi-durable-001",
+                    origin_generation=1,
+                ),
+                context(correlation_id="semi-durable-001"),
+            ),
+            (
+                request(
+                    command_id="static-command-002",
+                    profile="JULES_CHAT_SEMIAUTO_V2",
+                    origin_loop_id="human-origin-040",
+                    origin_round=4,
+                    origin_correlation_id="semi-durable-002",
+                    origin_generation=2,
+                ),
+                context(correlation_id="semi-durable-002"),
+            ),
+        )
+        observed_correlations = []
+        for req, ctx in cases:
             ctx.pop("loop_id", None)
             bundle = prepare_adopted_semiauto_acquire(
                 registry=registry, request=req, durable_context=ctx,
                 session_response=session(), target_pr_readback=target(), now=NOW,
             )
             self.assertEqual(bundle.owner_event["loop_id"], LOOP_ID)
-        self.assertNotEqual(first["command_id"], second["command_id"])
+            self.assertEqual(
+                bundle.owner_event["correlation_id"],
+                req["origin_correlation_id"],
+            )
+            observed_correlations.append(bundle.owner_event["correlation_id"])
+        self.assertNotEqual(cases[0][0]["command_id"], cases[1][0]["command_id"])
+        self.assertEqual(
+            observed_correlations,
+            ["semi-durable-001", "semi-durable-002"],
+        )
 
     def test_numeric_session_or_human_number_cannot_be_adopted(self):
         for numeric in ("039", "31415926535897932384", "4"):
