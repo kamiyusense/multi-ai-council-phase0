@@ -323,3 +323,11 @@ path.
 Next task is static/mock/unit implementation of the Phase 0 admission gate only.
 No live Claude/provider/Jules call, real credential read, new API key, billing
 route, or takeover work is authorized by this checkpoint.
+
+# Loop 068 Corrective Compatibility Audit
+
+The prior Loop 065 candidate (PR #177) was rejected and not adopted because its compatibility audit missed direct negative tests and suggested dropping origin identity.
+
+The corrected compatibility audit is located in `docs/CLAUDE_JULES_CURRENT_CARRIER_COMPATIBILITY.md`.
+
+The next safe boundary is an architecture choice + static implementation of durable AUTO origin binding. No live activation is authorized.
