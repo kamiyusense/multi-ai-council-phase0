@@ -1,0 +1,36 @@
+name: "Relay Loop 063 Exact Candidate Verification"
+
+on:
+  push:
+    branches:
+      - "verify/relay-loop-063-0798af2a"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relay-loop-063-exact-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 50
+          persist-credentials: false
+
+      - name: Focused Loop 063 tests
+        run: PYTHONPATH=src python -m unittest tests.relay.test_subscription_route_readonly_checklist -v
+
+      - name: Full Relay tests
+        run: PYTHONPATH=src python -m unittest discover -s tests/relay -t . -v
+
+      - name: Compile
+        run: python -m compileall -q src tests
+
+      - name: Diff whitespace check
+        run: git diff --check 6884c33288ed3adf8ea338179e29b33fac690df1 0798af2a94c965f5a683948b5eb5792657ff8f35
