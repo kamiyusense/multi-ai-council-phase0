@@ -1,6 +1,11 @@
 # Chat -> Jules API -> GitHub -> Human semi-auto loop
 
-Status: development route on PR #6; human-triggered only.
+Status: current carrier-branch protocol; human-triggered only.
+
+Start from the [current main development router](https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/docs/DEVELOPMENT_EXECUTION_ROUTER.md).
+Discover the carrier from main workflow's `push.branches`, then fresh-read its
+specifications and target. PR #6 is historical implementation provenance,
+not the carrier lookup key.
 
 ## Goal
 
@@ -10,7 +15,7 @@ keeping the human as the final decision-maker:
 ```text
 human asks Chat to inspect/continue
   -> Chat fresh-reads GitHub and reviews the current result
-  -> Chat creates exactly one durable Jules command JSON on PR #6 branch
+  -> Chat creates exactly one durable Jules command JSON on the freshly discovered carrier branch
   -> GitHub push workflow validates command + target HEAD/tree
   -> bounded GitHub workflow submits exactly one direct Jules REST request
   -> Jules works from the exact non-default branch and creates its normal PR
@@ -121,6 +126,38 @@ Before the Jules API call it requires:
 
 Any mismatch stops before Jules submission. There is no workflow retry/fallback.
 
+## Controller repair, adaptive sizing and WORK routing
+
+Read the [Controller Operating Guide](JULES_CONTROLLER_OPERATING_GUIDE.md)
+before designing a next task or handling a FAIL. Chat is Controller / independent
+Reviewer / Small-repair Integrator; Jules is the standard bounded implementation
+worker, normally MEDIUM with adaptive SHORT/LONG sizing.
+
+After FAIL, diagnose the cause and evaluate Controller-safe small repair **first**.
+If safe, repair on an authorized non-default branch within allowed paths, then
+focused/full required tests, semantic review, diff and exact-HEAD remote readback.
+Substantial or ambiguous work may need a redesigned Jules corrective mission;
+Jules-unsuitable cloud-safe work may need WORK. Repeated corrective failures
+require cause/prompt analysis, not identical resubmission or permanent SHORT.
+
+Each new mission is freshly routed. Previous WORK use/success does not authorize
+automatic continuation. Jules returns as the standard **candidate**, not a forced
+dispatch: **routing reset != forced Jules dispatch**. WORK suitability may remain
+true across coupled difficult missions, allowing consecutive bounded WORK use.
+Preserve the assigned heart color when escalating, but Jules claims/sessions and
+WORK carriers/generations/receipts remain separate control planes.
+
+## ETA planning policy
+
+**Official ETA absence alone != UNKNOWN.** With verified Jules session acceptance
+time, known dispatch state and a rational bounded task size, normally show a
+non-guaranteed completion range. Prefer recent similar-task measurements, then
+same-size measurements, then the Guide's conservative initial heuristic ranges.
+ETA is a human planning hint, never correctness evidence or a completion signal.
+If acceptance/time, dispatch or size is unverifiable, do not invent a time/range;
+report UNKNOWN. Read the Guide for estimate provenance and UNKNOWN conditions.
+Preserve the [main entry's mandatory JST task-time footer](https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/docs/CHAT_JULES_API_SEMIAUTO.md#mandatory-task-time-footer).
+
 ## Human-awake operating procedure
 
 The user can say, for example, `検品して、問題なければ次へ進めて`.
@@ -131,7 +168,7 @@ Chat should then:
 2. independently inspect ancestry, changed paths, diff, tests/checks, and prior
    command evidence;
 3. if a bounded next implementation task is justified, read `docs/JULES_TASK_PROMPT_SPEC.md`, fresh-read existing Loop-ID claims/commands/work branches, select the globally unused Loop number, atomically create a new schema-v3 create-only `loop_id_claims/<NNN>.json` with canonical color-lane metadata and exact target HEAD/tree, read it back, then construct the task and generate one matching command ID/JSON using that same snapshot;
-4. write that one command file to PR #6 branch and read back the new carrier head;
+4. write that one command file to the freshly discovered carrier branch and read back the new carrier head;
 5. do not resend if the write or subsequent workflow/Jules submission is
    ambiguous;
 6. on the next user check-in, fresh-read GitHub rather than relying on remembered

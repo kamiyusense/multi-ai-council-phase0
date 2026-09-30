@@ -366,6 +366,23 @@ The controller MUST independently verify:
 - durable evidence/checkpoint is recorded;
 - retry/fallback/Merge/live boundaries were preserved.
 
+## Adaptive sizing, repeated failure and worker escalation
+
+Use [Controller Operating Guide](JULES_CONTROLLER_OPERATING_GUIDE.md) for the
+detailed decision policy. MEDIUM is the normal bounded-mission baseline;
+SHORT and LONG are valid when justified. Size is adaptive, not a lane setting.
+Repeated failures require cause/prompt analysis, clearer Read first/allowed paths/
+negative cases and, where useful, temporary decomposition. After the hard section
+passes, freshly evaluate the next normal mission's size; never remain SHORT
+permanently because of past failures.
+
+Evaluate Controller-safe small repair before a corrective task. Substantial or
+ambiguous corrections may return to Jules; broad, strongly coupled cloud-safe
+missions may use WORK when decomposition would harm consistency. Select per
+mission: previous WORK success is not routing authority, and fresh routing may
+choose WORK again without a ceremonial Jules dispatch. None of these judgments
+relaxes this prompt contract or the claim/HEAD/tree/retry/fallback safety gates.
+
 ## 18. Rule precedence
 
 This prompt specification does not override:
