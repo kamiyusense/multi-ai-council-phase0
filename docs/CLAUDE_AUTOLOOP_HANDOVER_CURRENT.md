@@ -338,3 +338,11 @@ Next safe boundary = architecture choice + STATIC implementation of durable AUTO
 Loop 092 introduces `CLAUDE_AUTO_ORIGIN_BINDING_V1` as a pure, static origin cross-binding module. It statically resolves the identity linkage without mutating the current carrier V2 request schema or V3 claim schema logic.
 
 This contract strictly evaluates exact-key binding and fails closed on mismatches. It does not dictate a durable file location and makes no changes to the carrier workflows. Integrated live execution from Claude-verdict to Jules LIVE remains explicitly UNKNOWN and not authorized.
+
+## 2026-10-02 STATIC Durable Binding Store added (Loop 093)
+
+Loop 093 introduces the immutable store for the binding in `automation.command_bus.claude_jules_origin_binding_store`. It strictly reuses the existing `GitHubContentsClient` create-only, verify-readback pattern from the backend systems.
+
+No new database, general persistence framework, or workflow was created. The module securely cross-binds valid carrier requests and claims to origin identities. It fails closed (UNKNOWN) upon missing or unmatched cross-binding fields, and handles retry/recovery strictly by blocking on changed existing state and recovering identical state without re-creating.
+
+This is **STATIC PREP of the durable storage boundary only**. Current carrier request/claim schemas and workflows are required preconditions. Integrated Claude->Jules LIVE execution remains explicitly UNKNOWN and not authorized.
