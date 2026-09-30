@@ -38,6 +38,7 @@ SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 BINDING_SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 
 MAX_LIFETIME = timedelta(hours=2)
+MAX_IDENTITY_CHARS = 1024
 
 
 def _check_string(val: Any, name: str, regex: re.Pattern | None = None) -> None:
@@ -45,6 +46,8 @@ def _check_string(val: Any, name: str, regex: re.Pattern | None = None) -> None:
         raise ValueError(f"{name} must be a string")
     if not val:
         raise ValueError(f"{name} cannot be empty")
+    if len(val) > MAX_IDENTITY_CHARS:
+        raise ValueError(f"{name} exceeds maximum length")
     if not SAFE_STRING_RE.match(val):
         raise ValueError(f"{name} contains control characters or ambiguous whitespace")
     if regex and not regex.match(val):
