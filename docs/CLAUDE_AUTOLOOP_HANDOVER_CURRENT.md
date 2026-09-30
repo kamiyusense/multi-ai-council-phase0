@@ -323,3 +323,9 @@ path.
 Next task is static/mock/unit implementation of the Phase 0 admission gate only.
 No live Claude/provider/Jules call, real credential read, new API key, billing
 route, or takeover work is authorized by this checkpoint.
+
+## Claude AUTO JULES_BACKEND Carrier Compatibility (2026-09-30)
+
+A static inspection against the current carrier branch `feature/chat-work-command-bus` confirms structural mismatches between the `main` branch JULES_BACKEND bridge and the carrier protocol (e.g., schema version differences, missing `work_branch`, and an `ORIGIN_BINDING_GAP` regarding origin durability fields).
+
+The exact static incompatibility and machine-checkable migration checkpoint are documented in `docs/CLAUDE_JULES_CURRENT_CARRIER_COMPATIBILITY.md`. This marks the next implementation boundary.
