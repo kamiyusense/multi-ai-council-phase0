@@ -38,7 +38,8 @@ At this checkpoint, the carrier branch has:
 1. [Color Lane specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md) — aliases, independent use, global Loop number, schema-v3 claim and parallel/canonical boundary;
 2. [carrier Semi-Auto specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/CHAT_JULES_API_SEMIAUTO.md) — numbered command and workflow gates;
 3. [mandatory Task Prompt specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_TASK_PROMPT_SPEC.md) — one mission, exact allowed paths, Do Not Touch, semantic/negative tests, validation and stop rules;
-4. [claim validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/loop_id_claim.py), [global claim ledger](https://github.com/kamiyusense/multi-ai-council-phase0/tree/feature/chat-work-command-bus/automation/command_bus/loop_id_claims), [request validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/jules_api_request.py), and [dispatch workflow](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/.github/workflows/jules-chat-semiauto.yml).
+4. [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md) — safe small repair, adaptive sizing, repeated FAIL, fresh WORK routing and heuristic ETA;
+5. [claim validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/loop_id_claim.py), [global claim ledger](https://github.com/kamiyusense/multi-ai-council-phase0/tree/feature/chat-work-command-bus/automation/command_bus/loop_id_claims), [request validator](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/jules_api_request.py), and [dispatch workflow](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/.github/workflows/jules-chat-semiauto.yml).
 
 These links point to the observed carrier branch for navigation. The workflow
 filter and freshly read carrier state, not the link's branch spelling, are the
@@ -64,6 +65,16 @@ Jules tasks can run in parallel; API dispatch is serialized by the workflow,
 and canonical adoption is separately serialized with fresh ancestry, diff,
 allowed-path, semantic, test and fast-forward checks.
 
+## Controller decisions before another dispatch
+
+Read the discovered carrier's Controller Operating Guide (linked above).
+After FAIL, evaluate safe Controller repair first, then independent tests/semantic
+review/diff/exact-HEAD readback. Substantial or ambiguous corrections may return
+to Jules; broad coupled cloud-safe work may suit WORK. Jules normally starts from
+MEDIUM, with adaptive SHORT/LONG and fresh sizing after a hard section passes.
+WORK is not sticky: each next mission is freshly routed. Routing reset is not
+forced Jules dispatch; WORK conditions may remain true for consecutive missions.
+
 ## Mandatory task-time footer
 
 Every Chat that uses this semi-auto loop and returns control to the human after
@@ -85,7 +96,10 @@ Rules:
    - `長`
 4. Estimate a completion window from the accepted-session time and the actual
    bounded task scope. The window is a human checking guide only; it is not a
-   correctness claim or SLA.
+   correctness claim or SLA. Official Jules ETA absence alone is not UNKNOWN.
+   With verified acceptance/time and rational size, normally use recent similar
+   measurements, same-size measurements, or the Controller Guide's conservative
+   initial heuristic. Keep its estimate provenance and non-guaranteed status.
 5. For a numbered color-lane task, prefix the H2-sized bold footer with the
    verified heart color and canonical Jules lane ID. The heart color is lane
    metadata, distinct from the usual 🔴🔵🟡🟢🟣 meaning symbols.

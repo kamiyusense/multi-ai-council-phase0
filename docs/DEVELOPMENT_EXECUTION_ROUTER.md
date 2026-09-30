@@ -8,7 +8,7 @@ This is the main-branch entrypoint for choosing the **development worker** in
 carrier branch, Chat/thread ID, or Jules session ID. Fresh GitHub state is
 authoritative; a numbered PR or SHA in a checkpoint is only a snapshot.
 
-Chat supervises, reviews independently, designs the next bounded task, and
+Chat is Controller / Reviewer / Small-repair Integrator: it supervises, reviews independently, designs the next bounded task, and
 decides PASS / FAIL / UNKNOWN. Worker selection below does not remove Chat's
 GitHub readback, ancestry/diff/test/evidence checks, or human Merge boundary.
 It does not change the future Claude-origin AUTO loop's runtime semantics.
@@ -19,8 +19,8 @@ It does not change the future Claude-origin AUTO loop's runtime semantics.
 | --- | --- |
 | Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Chat-driven Jules semi-auto (selected color lane) |
 | User explicitly names 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Red **Cloud Work** | Matching [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md), when cloud-safe |
-| User says Work / Cloud Work / Green lane / 緑LINE without another color | Cloud Work Green lane as the unqualified default, when cloud-safe |
-| Jules is unsuitable and cloud GitHub/Web/connected-service work can finish it | Cloud Work Green lane as the default, or the user's explicit Cloud Work color |
+| User says Work / Cloud Work; explicit Green lane / 緑LINE | Cloud Work when cloud-safe: explicit Green selects Green; otherwise preserve assigned color, or default to Green when none |
+| Jules is unsuitable for the current mission and it is cloud-safe | Cloud Work: user's explicit color, otherwise assigned heart color; Green only when neither is specified |
 | User asks to replace/recreate a Cloud Work, or says the Work is broken | [Cloud Work replacement support manual](CLOUD_WORK_LANES_INDEX.md#replacement-and-recovery) first; no dispatch from shorthand alone |
 | Windows, WSL, local checkout, Docker, GUI, local process or credential dependency | Complete 🔵 Local Work prompt for the user to paste |
 | Identity, capability, target or evidence cannot be verified | UNKNOWN; do not dispatch |
@@ -35,6 +35,22 @@ still ambiguous, ask instead of dispatching. An explicit Work request does
 not override a local-only capability boundary. Do not silently hand off a
 Chat to Local Work.
 
+## Adaptive Controller operating policy
+
+Jules is the standard candidate for each new bounded mission, normally MEDIUM.
+Read the discovered carrier's [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md)
+for safe small repairs, adaptive sizing, repeated failures, WORK escalation and
+non-guaranteed ETA. After FAIL, evaluate Controller-safe repair before issuing a
+corrective task; substantial/ambiguous work may return to Jules or suit WORK.
+Broad context/strong coupling/unsafe decomposition can justify WORK from the outset.
+
+WORK is **not sticky**: previous WORK use or success does not authorize continuation.
+Each new mission gets fresh routing with Jules restored as the standard candidate.
+**routing reset != forced Jules dispatch**; if WORK suitability remains true,
+consecutive bounded WORK missions are valid. Do not split one difficult coupled
+batch with a formal Jules round trip. Assigned heart color is normally preserved
+on escalation; Jules and WORK identities remain separate control planes.
+
 ## Jules semi-auto discovery
 
 1. From current main, read [the Jules semi-auto entry](CHAT_JULES_API_SEMIAUTO.md),
@@ -45,7 +61,8 @@ Chat to Local Work.
    copy. At this checkpoint it is
    [Color Lane spec](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md)
    → [carrier Semi-Auto spec](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/CHAT_JULES_API_SEMIAUTO.md)
-   → [carrier Task Prompt spec](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_TASK_PROMPT_SPEC.md).
+   → [carrier Task Prompt spec](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_TASK_PROMPT_SPEC.md)
+   → [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md).
    The linked branch is a navigation snapshot; verify the workflow filter and
    fetch the current carrier branch before relying on it.
 2. Resolve `JA/RED/❤️` → `J-RED`; `JB/BLUE/💙` → `J-BLUE`;
@@ -92,8 +109,10 @@ It links all four durable carrier PRs, their current branch protocols and
 worker-state files. Its PR numbers and branch links are recovery snapshots,
 not lookup keys or proof that a worker is active.
 
-1. Select the user's explicit Cloud Work color; otherwise use Green for an
-   unqualified Work / 緑LINE request or a Jules-unsuitable cloud-safe task.
+1. Respect an explicit Cloud Work color (`緑LINE` / Green names Green).
+   On mission-based escalation, otherwise preserve the Controller's assigned
+   heart color. With no assigned/explicit color, use Green for unqualified Work
+   or Jules-unsuitable cloud-safe work.
    If the intended worker or lane remains ambiguous, clarify before dispatch.
 2. Search **all OPEN PRs** for the selected `cloud-<lane>` label, including
    pagination. Require exactly one open/unmerged carrier with matching PR
@@ -154,7 +173,7 @@ push/branch deletion. Do not claim a Local Work handoff occurred.
 
 - `引き継ぎ読んで。Jules半Loopで続けて`, `次Loop`, or `JA/JB/JC/JD/JG/💚で開始して`
   → main handover → this router → Color Lane → carrier Semi-Auto → Task Prompt
-  → claim ledger/validators/workflow → fresh command/work branch/target HEAD/tree.
+  → Controller Operating Guide → claim ledger/validators/workflow → fresh command/work branch/target HEAD/tree.
   A lane-only instruction does not authorize guessing the task or current Loop.
 - `引き継ぎ読んで。Workに投げて、緑LINE使って` → main handover
   → this router → 4-lane index → discover unique Green carrier without PR

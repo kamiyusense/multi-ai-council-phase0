@@ -1,6 +1,6 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-28
+Updated: 2026-09-30
 
 ## 0. Current development worker routing — read this first
 
@@ -9,24 +9,30 @@ Before selecting an implementation worker, read
 from current main. It supersedes the former Chat-first / Work fallback
 **development worker** rule. A user need not know carrier or target PR numbers.
 
-- Chat retains supervision, independent GitHub inspection, task design, review
+- Chat is Controller / Reviewer / Small-repair Integrator: it retains supervision,
+  independent GitHub inspection, task design, safe small repairs with tests/readback,
   and PASS / FAIL / UNKNOWN judgment.
 - Ordinary GitHub code, tests and docs development uses Chat-driven Jules
   semi-auto by default. The router leads to the current Color Lane, Semi-Auto,
-  Task Prompt, claim ledger and workflow specifications on the discovered
+  Task Prompt, [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md), claim ledger and workflow specifications on the discovered
   carrier branch. `JA/JB/JC/JD/JG` or a heart-color start request selects only
   a Jules lane, not a task or Loop number.
 - Explicit Cloud Work color requests use the selected 💛/💚/💙/❤️ lane; an
-  unqualified Work / 緑LINE request or Jules-unsuitable cloud-safe work uses
-  Green as the default lane. The [Cloud Work lane and replacement index](docs/CLOUD_WORK_LANES_INDEX.md)
+  explicit 緑LINE request selects Green. Mission-based escalation preserves an
+  assigned heart color; without an assigned/explicit color, Work defaults to Green. The [Cloud Work lane and replacement index](docs/CLOUD_WORK_LANES_INDEX.md)
   links the current carrier, protocol, worker-state and exchange manuals.
 - `Cloud Workを交換したい` / `Workが壊れた` / `Loop先を作り直したい`:
   use that index to read the ChatGPT replacement support manual **first**;
   derive the active generation from GitHub, never user memory.
 - User-machine-local dependencies require a complete 🔵 Local Work prompt
-  for the user to paste; do not auto-handoff or send them to Green lane.
+  for the user to paste; do not auto-handoff or send them to any Cloud Work lane.
 - Ambiguous identity or capability is UNKNOWN and blocks dispatch. No Merge,
   default-branch direct write, force push, retry or fallback is implied.
+
+Previous WORK use does not authorize automatic WORK continuation. Each new mission
+is freshly routed with Jules as the standard candidate. Fresh routing may still
+choose WORK again when its escalation conditions remain true; routing reset is
+not forced Jules dispatch. Detailed repair/sizing/ETA policy lives in the Guide.
 
 The future Claude-origin AUTO runtime is separate from this development
 worker choice. Claude auto-loop *development* uses this router.
@@ -64,7 +70,9 @@ Do not add prose after this footer. Do not append
 The dispatch time is not the command commit time or Action queue time. It is the
 verified Jules API session-acceptance time converted to Asia/Tokyo/JST. If Jules
 acceptance is not verifiable, do not invent the time or completion estimate;
-report UNKNOWN instead.
+report UNKNOWN instead. The absence of an official Jules ETA alone does not
+make an estimate UNKNOWN: with verified acceptance/time, use the Controller Guide's
+recent measurements or conservative heuristic range as a non-guaranteed planning hint.
 
 ## 0.1 2026-09-28 current override — Control Tower v2
 
@@ -409,6 +417,6 @@ A new chat should:
 8. preserve all fixed safety decisions
 9. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
 10. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
-11. before using the Chat -> Jules semi-auto loop, read `docs/CHAT_JULES_API_SEMIAUTO.md` and obey its mandatory task-time footer
+11. before using the Chat -> Jules semi-auto loop, follow the router to current carrier Color Lane → Semi-Auto → Task Prompt → Controller Operating Guide and obey the mandatory task-time footer
 12. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
 13. keep GitHub writes within this private repository and authorized feature branches/PR scope
