@@ -293,3 +293,11 @@ This signifies the PREPARED static pipeline checkpoint.
 - Zero external/read-only account or billing evidence is acquired by this batch.
 - common_subscription_route remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
+
+## Confinement Proof Preparation Static Checkpoint
+- Implemented static confinement-proof-prep.
+- This checkpoint is strictly PREPARED/static confinement-proof-prep status only.
+- Zero live evidence was acquired, no model execution occurred.
+- common_confinement remains unresolved/BLOCKED_UNKNOWN.
+- No real live blocker is resolved.
+- First live provider turn remains unauthorized.
