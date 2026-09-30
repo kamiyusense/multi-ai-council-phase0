@@ -65,6 +65,15 @@ Jules tasks can run in parallel; API dispatch is serialized by the workflow,
 and canonical adoption is separately serialized with fresh ancestry, diff,
 allowed-path, semantic, test and fast-forward checks.
 
+## Reuse-first implementation boundary
+
+Before composing a new implementation mission, read
+[Development Acceleration Playbook](DEVELOPMENT_ACCELERATION_PLAYBOOK.md).
+Name the existing repo helper or upstream primitive to reuse and forbid
+speculative frameworks/features outside the bounded mission. The Controller
+Operating Guide remains authoritative for repair, adaptive sizing, repeated
+FAIL handling, WORK escalation and ETA.
+
 ## Controller decisions before another dispatch
 
 Read the discovered carrier's Controller Operating Guide (linked above).

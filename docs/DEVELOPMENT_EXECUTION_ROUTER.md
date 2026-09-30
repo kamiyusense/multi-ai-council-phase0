@@ -13,11 +13,25 @@ decides PASS / FAIL / UNKNOWN. Worker selection below does not remove Chat's
 GitHub readback, ancestry/diff/test/evidence checks, or human Merge boundary.
 It does not change the future Claude-origin AUTO loop's runtime semantics.
 
+## Acceleration policy before worker selection
+
+Read [Development Acceleration Playbook](DEVELOPMENT_ACCELERATION_PLAYBOOK.md)
+before designing a new subsystem or composing a new implementation task.
+
+This layer is about **what to build**: repo reuse → official example → smallest
+mature reusable primitive → only then new code. It does not replace the
+carrier-side Controller Operating Guide, which remains authoritative for
+repair-first review, adaptive SHORT/MEDIUM/LONG sizing, repeated FAIL analysis,
+WORK escalation, color continuity and planning ETA.
+
+Do not create speculative queue/retry/DLQ/dashboard/state-machine/framework work
+as a side effect of an otherwise bounded task.
+
 ## Route selection
 
 | Condition | Development route |
 | --- | --- |
-| Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Chat-driven Jules semi-auto (selected color lane) |
+| Ordinary GitHub code, tests, or docs implementation; `JA/JB/JC/JD/JG` or `❤️/💙/💛/💚で開始して` | Read the acceleration playbook, then Chat-driven Jules semi-auto (selected color lane) |
 | User explicitly names 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Red **Cloud Work** | Matching [Cloud Work color lane](CLOUD_WORK_LANES_INDEX.md), when cloud-safe |
 | User says Work / Cloud Work; explicit Green lane / 緑LINE | Cloud Work when cloud-safe: explicit Green selects Green; otherwise preserve assigned color, or default to Green when none |
 | Jules is unsuitable for the current mission and it is cloud-safe | Cloud Work: user's explicit color, otherwise assigned heart color; Green only when neither is specified |
@@ -186,8 +200,10 @@ push/branch deletion. Do not claim a Local Work handoff occurred.
   perform available GitHub checks and return the complete 🔵 Local Work prompt.
 
 For a new Chat: read current main `README.md`, `HANDOVER_CURRENT.md`,
-this router, then the selected route's spec and current target GitHub state.
-Read task-specific design/handover documents afterward. Historical PRs and
+this router, then `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md`, then the selected
+route's spec, the current carrier Controller Operating Guide when Jules/WORK
+routing is relevant, and current target GitHub state. Read task-specific
+design/handover documents afterward. Historical PRs and
 checkpoint SHAs help locate evidence, never authorize a write.
 
 ## Fail-closed safety and snapshots

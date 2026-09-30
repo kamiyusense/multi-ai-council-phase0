@@ -1,6 +1,6 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-30
+Updated: 2026-10-01
 
 ## 0. Current development worker routing — read this first
 
@@ -36,6 +36,36 @@ not forced Jules dispatch. Detailed repair/sizing/ETA policy lives in the Guide.
 
 The future Claude-origin AUTO runtime is separate from this development
 worker choice. Claude auto-loop *development* uses this router.
+
+## 0.0.0 2026-10-01 current override — Development acceleration / reuse-first fast path
+
+Before designing or implementing a new development subsystem, read
+[docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md](docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md).
+
+This is the default execution style for ordinary Phase 0 development and
+**complements**, rather than replaces, the carrier-side Controller Operating
+Guide introduced by PR #191:
+
+- repo reuse first, then official provider/platform examples, then the smallest
+  mature permissively licensed primitive;
+- implement only what is needed to reach the next real integration boundary;
+- do not add queue/DLQ/retry engine/general orchestration/dashboard/new database
+  merely because they may become useful later;
+- preserve every already-fixed Phase 0 safety boundary;
+- follow the Controller Guide for safe small repair, adaptive task sizing,
+  repeated-FAIL cause analysis, WORK escalation and planning ETA;
+- Jules prompts should name the existing helper/upstream pattern to reuse and
+  explicitly forbid speculative architecture/features outside the bounded task.
+
+Current high-value shortcuts recorded in the playbook include GitHub's official
+webhook HMAC + `X-GitHub-Delivery` dedupe pattern, Trigger.dev-style
+deterministic SHA-256 idempotency when an existing stable ID is insufficient,
+Standard Webhooks/Svix raw-body verification semantics, CloudEvents
+`source + id` identity semantics, and Temporal/Inngest as design references
+only until measured pain justifies larger infrastructure.
+
+Read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` for deeper prior-art details,
+not as a prerequisite to every implementation task.
 
 ## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
 
@@ -351,11 +381,17 @@ This is a historical Local Work context-sync limitation, not the current develop
 
 ## 11. Pioneer / OSS reuse research
 
-Generic Relay / multi-agent infrastructureを1から再実装する前に、`docs/PIONEER_OSS_RESEARCH_HANDOVER.md` を読む。
+日常の実装判断では、まず `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md` を読む。
+そこで「今すぐ使う小さい答え」が見つからない場合だけ、
+`docs/PIONEER_OSS_RESEARCH_HANDOVER.md` の詳細調査へ降りる。
 
-現在の方針は **OSS-first / reuse-first**。ACP / OpenHands / worktree orchestrators / AGENTS.md / stacked PR / CAID等を先にコードレベルで監査し、license・Windows・subscription auth・permission bypass・retry/restart・GitHub副作用・secret handling・test coverageを確認してから採否を決める。
+現在の方針は **reuse-first / minimum-implementation-first**。既存repo →
+公式例 → 小さい成熟OSS部品の順に探し、必要な部分だけ流用する。
+大きな基盤を採用する前に license / auth / retry / permission /
+GitHub副作用 / secret handling / test coverage を確認する。
 
-これは採用済み仕様ではなく研究候補。Phase 0固定安全境界は変更しない。
+研究候補を見つけても、それ自体を新しい開発バックログにしない。
+Phase 0固定安全境界とController Operating Guideの現行routing/repair規則は変更しない。
 
 ## 12. Next safe implementation batch
 
@@ -409,14 +445,15 @@ A new chat should:
 
 1. read this handover
 2. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` from current main and select the development route
-3. read the implementation spec and checklist
-4. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-5. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
-6. read `docs/CHAT_WORK_AUTONOMY_RULES.md` when Work / Closed Loop rules are relevant
-7. inspect the current open PR / branch before changing files
-8. preserve all fixed safety decisions
-9. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
-10. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
-11. before using the Chat -> Jules semi-auto loop, follow the router to current carrier Color Lane → Semi-Auto → Task Prompt → Controller Operating Guide and obey the mandatory task-time footer
-12. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-13. keep GitHub writes within this private repository and authorized feature branches/PR scope
+3. read `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md` and use its reuse-first / minimum-implementation fast path
+4. read the implementation spec and checklist
+5. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
+6. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` only when deeper prior-art detail is needed
+7. read `docs/CHAT_WORK_AUTONOMY_RULES.md` when Work / Closed Loop rules are relevant
+8. inspect the current open PR / branch before changing files
+9. preserve all fixed safety decisions
+10. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
+11. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
+12. before using the Chat -> Jules semi-auto loop, follow the router to current carrier Color Lane → Semi-Auto → Task Prompt → Controller Operating Guide and obey the mandatory task-time footer
+13. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+14. keep GitHub writes within this private repository and authorized feature branches/PR scope
