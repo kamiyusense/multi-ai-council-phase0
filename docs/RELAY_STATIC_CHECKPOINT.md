@@ -301,3 +301,10 @@ This signifies the PREPARED static pipeline checkpoint.
 - common_confinement remains unresolved/BLOCKED_UNKNOWN.
 - No real live blocker is resolved.
 - First live provider turn remains unauthorized.
+
+## Hidden Retry Proof Contract Static Checkpoint
+- Implemented static hidden retry proof contract.
+- This checkpoint is strictly PREPARED/static hidden-retry-proof-contract status only.
+- Zero live evidence was acquired, no model execution occurred.
+- common_hidden_retry remains unresolved/BLOCKED_UNKNOWN.
+- No real live blocker is resolved.
