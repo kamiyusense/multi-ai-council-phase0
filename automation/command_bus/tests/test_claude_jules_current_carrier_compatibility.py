@@ -29,7 +29,7 @@ class TestClaudeJulesCurrentCarrierCompatibility(unittest.TestCase):
 
         def git_blob_sha(text):
             data = text.encode("utf-8")
-            header = f"blob {len(data)}\\0".encode("ascii")
+            header = f"blob {len(data)}\0".encode("ascii")
             return hashlib.sha1(header + data).hexdigest()
 
         if git_blob_sha(req_src) != expected_req_blob:
