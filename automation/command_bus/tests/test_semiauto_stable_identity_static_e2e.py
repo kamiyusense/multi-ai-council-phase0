@@ -170,6 +170,78 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
         production_registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
         self.assertEqual(assess_registration_readiness(production_registry, None).status, "NOT_WIRED")
 
+    def test_bootstrap_path_preserves_not_wired_for_production_registry(self):
+        from automation.command_bus.semiauto_identity_bootstrap import prepare_bootstrap_semiauto_acquire
+        production_registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+        req = request(
+            profile="JULES_CHAT_SEMIAUTO_V2", origin_loop_id="human-origin-039",
+            origin_round=3, origin_correlation_id="semi-durable-001", origin_generation=1,
+            target_repo=REPO, expected_target_head=HEAD, target_branch=BRANCH
+        )
+        ctx = context()
+        ctx.pop("loop_id", None)
+        rich_target = target(repo=REPO, pr=4, branch=BRANCH, head=HEAD)
+
+        prepared = prepare_bootstrap_semiauto_acquire(
+            registry=production_registry,
+            request=req, durable_context=ctx, session_response=session(),
+            target_pr_readback=rich_target, now=NOW,
+        )
+
+        session_get = {
+            **session(), "state": "RUNNING", "updateTime": READBACK_TIME,
+            "sourceContext": {
+                "source": f"sources/github/{REPO}",
+                "githubRepoContext": {"startingBranch": BRANCH},
+            },
+        }
+
+        candidate = prepare_jules_provider_readback_candidate(
+            bundle=prepared, session_readback=session_get,
+        )
+        binding = bind_jules_active_provider_readback(bundle=prepared, candidate=candidate)
+        normalized = prepare_jules_provider_verification_source(
+            provider_observation_input=binding.provider_observation_input,
+            evidence_document=binding.evidence_document,
+            source_receipt=prepared.source_receipt,
+            session_id=prepared.acceptance_session_id,
+            proof_refs=list(candidate.proof_refs),
+        )
+        source = {**normalized, "verification_state": "VERIFIED"}
+
+        client = Client()
+        RuntimeStateInitializer(client, branch="fixture/runtime-data").create(prepared.initial_state)
+        client.put(prepared.owner_event["source_receipt_ref"], prepared.source_receipt)
+
+        flat_target = {"repo": REPO, "pr": 4, "head": HEAD, "state": "open", "merged": False}
+        target_reader = TargetReader(rich_target)
+        authenticator = JulesDirectReadbackAuthenticator(
+            session_reader=SessionReader(session_get), target_reader=target_reader,
+            clock=Clock(), expected_session_create_time=prepared.owner_event["claimed_at"]
+        )
+
+        status_publisher = PrepareOnlyStatus()
+
+        publisher = RuntimeTransitionPublisher(
+            client=client, branch="fixture/runtime-data", target_reader=TargetReader(flat_target),
+            owner_authority=FixtureOwnerAuthority(),
+            provider_verifier=SourceBoundProviderVerifier(SourceReader(source), authenticator),
+            clock=Clock(),
+            status_boundary=status_publisher,
+        )
+
+        status = publisher.publish(binding.transition_request)
+        self.assertEqual(status.status, "READY")
+
+        collector = ControlTowerDurableCollector(
+            client, ref="fixture/runtime-data", target_reader=TargetReader(flat_target),
+            clock=Clock(),
+        )
+        collected = collector.collect_transition(LOOP_ID)
+        self.assertEqual(collected.status, "COLLECTED")
+
+        self.assertEqual(assess_registration_readiness(production_registry, {LOOP_ID: collected.transition}).status, "NOT_WIRED")
+
     def test_identity_is_injected_not_derived_from_request(self):
         req = request(
             profile="JULES_CHAT_SEMIAUTO_V2", origin_loop_id="human-origin-039",

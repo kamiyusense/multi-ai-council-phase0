@@ -11,3 +11,6 @@ This explicitly does NOT promote the live Control Tower registry entry.
 No live runtime durable records have been written or authorized.
 The Control Tower registry explicitly remains `PLACEHOLDER` and fails the static gate.
 Issue #33 was not mutated and no live runtime proof occurred.
+
+## Explicit Bootstrap Boundary
+The `semiauto_identity_bootstrap` path provides an explicit, PREPARE-ONLY boundary that solves the first-adoption cycle without performing any live write or relaxing the normal DURABLE check.
