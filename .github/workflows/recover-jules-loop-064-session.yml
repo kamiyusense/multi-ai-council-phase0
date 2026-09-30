@@ -1,0 +1,58 @@
+name: "Recover Jules Loop 064 session readback"
+
+on:
+  push:
+    branches:
+      - "readback/jules-loop-064-session-recovery"
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: List Jules sessions once and bind exact work branch
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          WORK_BRANCH: "jules-work/relay-dev-loop-064-confinement-proof-prep"
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="${RUNNER_TEMP}/jules-sessions.json"
+          http_code="$(curl --silent --show-error --fail-with-body --retry 0             --output "${response_file}"             --write-out '%{http_code}'             -H "X-Goog-Api-Key: ${JULES_API_KEY}"             'https://jules.googleapis.com/v1alpha/sessions?pageSize=100')"
+          [[ "${http_code}" =~ ^2[0-9][0-9]$ ]] || {
+            echo "Unexpected Jules list HTTP status ${http_code}." >&2
+            exit 1
+          }
+
+          match_count="$(jq --arg b "${WORK_BRANCH}"             '[.sessions[]? | select(.sourceContext.githubRepoContext.startingBranch == $b)] | length'             "${response_file}")"
+          [[ "${match_count}" == "1" ]] || {
+            echo "Expected exactly one Jules session for exact work branch; observed ${match_count}." >&2
+            exit 1
+          }
+
+          safe_json="$(jq -c --arg b "${WORK_BRANCH}" '
+            [.sessions[]?
+             | select(.sourceContext.githubRepoContext.startingBranch == $b)
+             | {
+                 name,
+                 id,
+                 state,
+                 createTime,
+                 updateTime,
+                 startingBranch: .sourceContext.githubRepoContext.startingBranch,
+                 pullRequest: ([.outputs[]? | .pullRequest?.url // empty] | first // "")
+               }
+            ][0]' "${response_file}")"
+          echo "Recovered Jules session: ${safe_json}"
+          {
+            echo "## Loop 064 Jules session recovery"
+            echo "```json"
+            echo "${safe_json}"
+            echo "```"
+          } >> "${GITHUB_STEP_SUMMARY}"
