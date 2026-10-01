@@ -356,21 +356,21 @@ class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
         script = (
             "import sys, json\n"
             "req1 = json.loads(sys.stdin.readline())\n"
-            "assert req1['method'] == 'initialize'\n"
+            "assert req1 == {\'jsonrpc\': \'2.0\', \'id\': 0, \'method\': \'initialize\', \'params\': {\'protocolVersion\': 1, \'clientCapabilities\': {}, \'clientInfo\': {\'name\': \'relay\', \'version\': \'0.1.0\'}}}, req1\\n"
             "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
             "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
             "sys.stdout.flush()\n"
             "req2 = json.loads(sys.stdin.readline())\n"
             "assert req2['method'] == 'session/new'\n"
             "assert req2['id'] == 1\n"
-            "assert req2['params']['cwd'] == '/tmp/cwd'\n"
+            f"assert req2['params']['cwd'] == {tempfile.gettempdir()!r}\n"
             "assert req2['params']['mcpServers'] == []\n"
             "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {'sessionId': 'session-123'}}\n"
             "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
             "sys.stdout.flush()\n"
         )
         from src.relay.acp_client import acp_open_session_wire
-        result = await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp/cwd")
+        result = await acp_open_session_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir())
         self.assertEqual(result, "session-123")
 
     async def test_missing_session_id(self):
@@ -387,7 +387,7 @@ class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
         )
         from src.relay.acp_client import acp_open_session_wire
         with self.assertRaisesRegex(ValueError, "missing valid sessionId"):
-            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp")
+            await acp_open_session_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir())
 
     async def test_blank_session_id(self):
         script = (
@@ -403,7 +403,7 @@ class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
         )
         from src.relay.acp_client import acp_open_session_wire
         with self.assertRaisesRegex(ValueError, "missing valid sessionId"):
-            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp")
+            await acp_open_session_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir())
 
     async def test_session_new_timeout(self):
         script = (
@@ -416,7 +416,7 @@ class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
         )
         from src.relay.acp_client import acp_open_session_wire
         with self.assertRaisesRegex(TimeoutError, "Timeout reading ACP session/new response"):
-            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp", timeout=0.1)
+            await acp_open_session_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), timeout=0.1)
 
     async def test_initialize_failure_aborts_early(self):
         script = (
@@ -431,7 +431,7 @@ class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
         )
         from src.relay.acp_client import acp_open_session_wire
         with self.assertRaisesRegex(RuntimeError, "ACP initialize returned error"):
-            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp")
+            await acp_open_session_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir())
 
     async def test_wrong_protocol_version(self):
         script = (
