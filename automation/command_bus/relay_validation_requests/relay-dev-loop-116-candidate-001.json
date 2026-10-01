@@ -1,0 +1,6 @@
+{
+  "target_sha": "e999b56ded292dbf32bb43ef3b296b7adf19c0af",
+  "loop_number": 116,
+  "scope": "exact-head full unit suite + Python compile + diff check, no live provider/model execution",
+  "candidate_pr": 216
+}
