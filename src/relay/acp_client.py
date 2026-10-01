@@ -239,36 +239,64 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) ->
         return result
 
 
+async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float) -> str:
+    """Internal helper to execute initialize and session/new against an existing transport."""
+    init_request = {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": 1,
+            "clientCapabilities": {},
+            "clientInfo": {"name": "relay", "version": "0.1.0"},
+        },
+    }
+    init_result = await _acp_exchange(stdout, stdin, init_request, 0, timeout, "initialize")
+    if type(init_result.get("protocolVersion")) is not int or init_result["protocolVersion"] != 1:
+        raise ValueError("ACP initialize response unsupported protocol version")
+
+    session_request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "session/new",
+        "params": {
+            "cwd": cwd,
+            "mcpServers": [],
+        },
+    }
+    session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new")
+
+    session_id = session_result.get("sessionId")
+    if not isinstance(session_id, str) or not session_id.strip():
+        raise ValueError("ACP session/new response missing valid sessionId")
+
+    return session_id
+
+
 async def acp_open_session_wire(command: str, *args: str, cwd: str, timeout: float = 2.0) -> str:
     """Execute initialize and session/new round-trips against a single local spawned process."""
     async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
-        init_request = {
+        return await _acp_handshake(stdout, stdin, cwd, timeout)
+
+
+async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0) -> str:
+    """Execute a single ACP v1 initialize -> session/new -> session/prompt terminal round-trip."""
+    async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
+        session_id = await _acp_handshake(stdout, stdin, cwd, timeout)
+
+        prompt_request = {
             "jsonrpc": "2.0",
-            "id": 0,
-            "method": "initialize",
+            "id": 2,
+            "method": "session/prompt",
             "params": {
-                "protocolVersion": 1,
-                "clientCapabilities": {},
-                "clientInfo": {"name": "relay", "version": "0.1.0"},
+                "sessionId": session_id,
+                "prompt": [{"type": "text", "text": prompt_text}],
             },
         }
-        init_result = await _acp_exchange(stdout, stdin, init_request, 0, timeout, "initialize")
-        if type(init_result.get("protocolVersion")) is not int or init_result["protocolVersion"] != 1:
-            raise ValueError("ACP initialize response unsupported protocol version")
 
-        session_request = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "session/new",
-            "params": {
-                "cwd": cwd,
-                "mcpServers": [],
-            },
-        }
-        session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new")
+        result = await _acp_exchange(stdout, stdin, prompt_request, 2, timeout, "session/prompt")
+        stop_reason = result.get("stopReason")
+        if not isinstance(stop_reason, str) or not stop_reason.strip():
+            raise ValueError("ACP session/prompt response missing valid stopReason")
 
-        session_id = session_result.get("sessionId")
-        if not isinstance(session_id, str) or not session_id.strip():
-            raise ValueError("ACP session/new response missing valid sessionId")
-
-        return session_id
+        return stop_reason
