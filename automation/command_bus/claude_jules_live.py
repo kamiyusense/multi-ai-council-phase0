@@ -257,28 +257,48 @@ class LiveResultFacts:
 
 
 class CarrierQuietGuard:
-    """Write to the shared carrier only while it is quiet.
+    """Write to the shared carrier only while it is quiet and the stream is ours.
 
     The carrier workflow runs in one concurrency group; GitHub keeps at most
     one pending run per group and cancels an older pending run when a newer
-    one queues.  So Claude never writes a claim or command while any carrier
-    run is unfinished, nor within ``quiet`` of the carrier's latest commit
-    (another controller may be between its claim and its command).  A busy
-    carrier is a WAIT with nothing written, never a failure.
+    one queues.  Immediately before each claim/command write Claude checks:
+
+    * no carrier workflow run is unfinished (REST);
+    * no other controller is mid-dispatch: every other Loop claim made within
+      ``pending_window`` already has its command file (a claim without its
+      command means someone is between the two writes);
+    * no foreign claim targets Claude's isolated target branches (the stream
+      ownership/target check; Claude's own commands are its dispatch intents);
+    * the carrier tip is at least ``quiet`` old (a margin, not the guarantee).
+
+    Busy -> WAIT with nothing written; foreign stream use -> BLOCKED;
+    unreadable -> UNKNOWN.
     """
 
     def __init__(self, *, git: GitLiveClient, rest: GitHubRestReader, carrier_branch: str,
                  workflow_file: str = CARRIER_WORKFLOW, quiet: timedelta = timedelta(minutes=5),
-                 clock: Any = None):
+                 pending_window: timedelta = timedelta(minutes=30), clock: Any = None,
+                 isolated_targets: tuple[str, ...] = (), data_branch: str | None = None):
         self.git, self.rest, self.branch, self.workflow = git, rest, carrier_branch, workflow_file
-        self.quiet = quiet
+        self.quiet, self.pending_window = quiet, pending_window
         self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self.isolated_targets, self.data_branch = tuple(isolated_targets), data_branch
 
-    def __call__(self) -> DispatchResult:
+    def _own_command_ids(self) -> set[str]:
+        if self.data_branch is None:
+            return set()
+        prefix = f"{EVIDENCE_ROOT}/claude-auto-dispatch-intents/"
+        return {json.loads(c.text)["carrier_request"]["command_id"] for c in self.git.list(prefix, self.data_branch)}
+
+    def __call__(self, command_id: str | None = None) -> DispatchResult:
         try:
             active = self.rest.active_workflow_runs(self.workflow)
             tip = self.git.remote_head(self.branch)
             committed = self.git.commit_time(tip) if tip else None
+            claims = [json.loads(c.text) for c in self.git.list("automation/command_bus/loop_id_claims/", self.branch)]
+            commands = {c.path.rsplit("/", 1)[-1][:-5] for c in
+                        self.git.list("automation/command_bus/jules_api_requests/", self.branch)}
+            own = self._own_command_ids()
         except Exception as exc:  # unreadable is never quiet
             return DispatchResult("UNKNOWN", f"carrier activity unverifiable: {exc}")
         if active:
@@ -286,11 +306,25 @@ class CarrierQuietGuard:
             return DispatchResult("WAIT", f"CARRIER_BUSY: carrier workflow run(s) unfinished: {ids}")
         if tip is None or committed is None:
             return DispatchResult("UNKNOWN", "carrier tip unavailable")
-        age = self.clock() - datetime.fromisoformat(committed)
+        now = self.clock()
+        for claim in claims:
+            other = claim.get("command_id")
+            if other == command_id:
+                continue
+            if claim.get("target_branch") in self.isolated_targets and other not in own:
+                return DispatchResult("BLOCKED", f"foreign claim {claim.get('loop_id')} targets the isolated stream")
+            try:
+                claimed = datetime.fromisoformat(str(claim.get("claimed_at")).replace("Z", "+00:00"))
+            except ValueError:
+                return DispatchResult("UNKNOWN", f"claim {claim.get('loop_id')} has an unreadable time")
+            if other not in commands and now - claimed < self.pending_window:
+                return DispatchResult("WAIT", f"CARRIER_BUSY: Loop {claim.get('loop_id')} claimed without its "
+                                              f"command yet (another controller mid-dispatch)")
+        age = now - datetime.fromisoformat(committed)
         if age < self.quiet:
             return DispatchResult("WAIT", f"CARRIER_BUSY: carrier changed {int(age.total_seconds())}s ago "
                                           f"(quiet window {int(self.quiet.total_seconds())}s)")
-        return DispatchResult("PASS", "carrier quiet: no unfinished run, no recent commit")
+        return DispatchResult("PASS", "carrier quiet: no unfinished run, no pending claim, no foreign stream use")
 
 
 def cancelled_carrier_runs(rest: GitHubRestReader, *, since: str,
@@ -408,7 +442,10 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
     loop = ClaudeJulesAutoLoop(client=git, refs=git, policy=policy,
                                owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
                                roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id,
-                               carrier_guard=CarrierQuietGuard(git=git, rest=rest, carrier_branch=policy["carrier_branch"]))
+                               carrier_guard=CarrierQuietGuard(
+                                   git=git, rest=rest, carrier_branch=policy["carrier_branch"],
+                                   isolated_targets=tuple(policy["allowed_target_branches"]),
+                                   data_branch=policy["data_branch"]))
     return loop, git, rest, policy
 
 
@@ -451,7 +488,9 @@ def main(argv: list[str] | None = None) -> int:
         stored = git.get(path, policy["data_branch"])
         out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}
     elif args.command == "carrier":
-        quiet = CarrierQuietGuard(git=git, rest=rest, carrier_branch=policy["carrier_branch"])()
+        quiet = CarrierQuietGuard(git=git, rest=rest, carrier_branch=policy["carrier_branch"],
+                                  isolated_targets=tuple(policy["allowed_target_branches"]),
+                                  data_branch=policy["data_branch"])()
         out = {"now": now, "quiet": quiet.status, "reason": quiet.reason}
         if args.file:  # --file holds an ISO timestamp: list carrier runs cancelled since then
             with open(args.file, encoding="utf-8") as handle:

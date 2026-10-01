@@ -323,7 +323,7 @@ class ClaudeJulesDispatcher:
         steps = (
             ("intent", lambda: self._create_once(intent_path(intent["intent_id"]), intent,
                                                  self.policy["data_branch"], "claude-auto dispatch intent")),
-            ("carrier", lambda: self._carrier_quiet(claim_path(claim["loop_id"]))),
+            ("carrier", lambda: self._carrier_quiet(claim_path(claim["loop_id"]), request["command_id"])),
             ("claim", lambda: self._create_once(claim_path(claim["loop_id"]), claim,
                                                 self.policy["carrier_branch"], "claim Loop for Claude AUTO", pretty=True)),
             ("work-branch", lambda: self._work_branch(request)),
@@ -341,7 +341,7 @@ class ClaudeJulesDispatcher:
             return fence
         if (stale := self._target_problem(request)):
             return self._receipt(intent, "BLOCKED", stale) if stale.startswith("STALE") else DispatchResult("UNKNOWN", stale)
-        if (quiet := self._carrier_quiet(command_path(request["command_id"]))).status != "PASS":
+        if (quiet := self._carrier_quiet(command_path(request["command_id"]), request["command_id"])).status != "PASS":
             return quiet
         # Consume one slot of the fixed total LIVE budget before the irreversible write.
         slot = self.budget.acquire(command_id=request["command_id"], intent_sha256=intent["intent_sha256"],
@@ -376,11 +376,11 @@ class ClaudeJulesDispatcher:
             return fence
         if (stale := self._target_problem(intent["carrier_request"])):
             return DispatchResult("BLOCKED" if stale.startswith("STALE") else "UNKNOWN", stale)
-        if (quiet := self._carrier_quiet(None)).status != "PASS":
+        if (quiet := self._carrier_quiet(None, intent["carrier_request"]["command_id"])).status != "PASS":
             return quiet
         return DispatchResult("PASS", "no-write preflight passed")
 
-    def _carrier_quiet(self, path: str | None) -> DispatchResult:
+    def _carrier_quiet(self, path: str | None, command_id: str) -> DispatchResult:
         """PASS when no guard is set, the record already exists (resume), or the carrier is quiet."""
         if self.carrier_guard is None:
             return DispatchResult("PASS", "no carrier guard")
@@ -391,10 +391,10 @@ class ClaudeJulesDispatcher:
             except Exception as exc:
                 return DispatchResult("UNKNOWN", f"carrier pre-read failed: {exc}")
         try:
-            verdict = self.carrier_guard()
+            verdict = self.carrier_guard(command_id)
         except Exception as exc:
             return DispatchResult("UNKNOWN", f"carrier guard failed: {exc}")
-        if verdict.status not in {"PASS", "WAIT"}:
+        if verdict.status not in {"PASS", "WAIT", "BLOCKED"}:
             return DispatchResult("UNKNOWN", verdict.reason)
         return verdict
 

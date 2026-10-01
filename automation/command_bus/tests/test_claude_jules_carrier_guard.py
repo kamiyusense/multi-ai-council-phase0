@@ -44,7 +44,7 @@ class Switch:
     def __init__(self, status="PASS"):
         self.status, self.calls = status, 0
 
-    def __call__(self):
+    def __call__(self, command_id=None):
         self.calls += 1
         return DispatchResult(self.status, "CARRIER_BUSY: test" if self.status == "WAIT" else "quiet")
 
@@ -59,9 +59,36 @@ class CarrierQuietGuardTests(unittest.TestCase):
     def tearDown(self):
         self.remote.close()
 
-    def guard(self, minutes):
+    def guard(self, minutes, command_id=None):
         return CarrierQuietGuard(git=self.remote.client, rest=self.rest, carrier_branch=CARRIER,
-                                 clock=self.later(minutes))()
+                                 clock=self.later(minutes), isolated_targets=("claude/iso",),
+                                 data_branch=DATA)(command_id)
+
+    def claim(self, loop, command_id, target="feature/other", minutes_after_tip=0):
+        tip = datetime.fromisoformat(self.remote.client.commit_time(self.remote.head(CARRIER)))
+        record = {"loop_id": loop, "command_id": command_id, "target_branch": target,
+                  "claimed_at": (tip + timedelta(minutes=minutes_after_tip)).isoformat()}
+        self.remote.client.create(f"automation/command_bus/loop_id_claims/{loop}.json", json.dumps(record),
+                                  f"claim {loop}", CARRIER)
+
+    def test_pending_claim_and_foreign_stream_use(self):
+        self.claim("130", "relay-dev-loop-130-gpt")
+        tip_later = lambda m: self.guard(m)  # noqa: E731
+        pending = tip_later(10)
+        self.assertEqual(pending.status, "WAIT")
+        self.assertIn("mid-dispatch", pending.reason)
+        self.assertEqual(self.guard(10, "relay-dev-loop-130-gpt").status, "PASS")  # our own claim is excluded
+        self.remote.client.create("automation/command_bus/jules_api_requests/relay-dev-loop-130-gpt.json", "{}",
+                                  "command 130", CARRIER)
+        # new commits move the tip; measure from the latest commit
+        self.later = (lambda base: (lambda minutes: (lambda: base + timedelta(minutes=minutes))))(
+            datetime.fromisoformat(self.remote.client.commit_time(self.remote.head(CARRIER))))
+        self.assertEqual(self.guard(10).status, "PASS")
+        self.claim("131", "relay-dev-loop-131-foreign", target="claude/iso")
+        self.later = (lambda base: (lambda minutes: (lambda: base + timedelta(minutes=minutes))))(
+            datetime.fromisoformat(self.remote.client.commit_time(self.remote.head(CARRIER))))
+        foreign = self.guard(60)
+        self.assertEqual(foreign.status, "BLOCKED", foreign.reason)
 
     def test_quiet_busy_recent_and_unreadable(self):
         self.assertEqual(self.guard(10).status, "PASS")
@@ -136,7 +163,7 @@ class GuardedDispatchTests(unittest.TestCase):
         self.assertIsNotNone(self.c.get(claim_path(loop_id), CARRIER))
 
     def test_guard_failure_is_unknown_not_pass(self):
-        def broken():
+        def broken(command_id=None):
             raise RuntimeError("boom")
         result = self.loop(broken).step(now=NOW)
         self.assertEqual((result.action, result.status), ("STOP", "UNKNOWN"), result.reason)
