@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 118,
+  "loop_id": "118",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "acp-fake-agent-text-update",
+  "command_id": "relay-dev-loop-118-acp-fake-agent-text-update",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "e999b56ded292dbf32bb43ef3b296b7adf19c0af",
+  "expected_target_tree": "3e08eb30384a1ebd479a3e1d49a326bb991a0b35",
+  "work_branch": "jules-work/relay-dev-loop-118-acp-fake-agent-text-update",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T21:02:43+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
