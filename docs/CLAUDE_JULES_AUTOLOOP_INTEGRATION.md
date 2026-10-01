@@ -256,3 +256,5 @@ superseded failed candidate no longer counts as an outstanding dispatch
   - The `## Session` body in the first proof note is the snapshot commit, not
     the Jules session id (the task did not specify it); noted, not failed.
   - PR #220 is still a draft and must be merged by a human (not done here).
+  - An owner RENEW while a dispatch intent is half-written is refused (the
+    exact generation is required for the irreversible command write).
