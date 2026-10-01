@@ -10,13 +10,13 @@ Claude-only coding step for the no-Jules contingency.  There is no fallback.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
-from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
+from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,
@@ -323,6 +323,20 @@ def prepare_jules_semiauto_request(
             return LoopResult("BLOCKED", f"invalid semi-auto created_at: {exc}")
         if created.tzinfo is None or created.utcoffset() is None:
             return LoopResult("BLOCKED", "semi-auto created_at must include timezone")
+        try:
+            expires = datetime.fromisoformat(
+                prepared_request["expires_at"].replace("Z", "+00:00")
+            )
+        except ValueError as exc:
+            return LoopResult("BLOCKED", f"invalid semi-auto expires_at: {exc}")
+        if expires.tzinfo is None or expires.utcoffset() is None:
+            return LoopResult("BLOCKED", "semi-auto expires_at must include timezone")
+        if expires <= created or expires - created > timedelta(hours=2):
+            return LoopResult("UNKNOWN", "invalid semi-auto request lifetime")
+        if command["expected_repo"] != "kamiyusense/multi-ai-council-phase0":
+            return LoopResult("UNKNOWN", "unexpected semi-auto target repository")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", command["command_id"]):
+            return LoopResult("BLOCKED", "invalid semi-auto command identity")
 
         operation_bounds = []
         for item in command["path_policy"]:
@@ -338,15 +352,12 @@ def prepare_jules_semiauto_request(
         )
 
         request = {
-            "schema_version": 1,
+            "schema_version": 2,
             "profile": JULES_SEMIAUTO_PROFILE,
             "command_id": command["command_id"],
-            "origin_loop_id": prepared_request["loop_id"],
-            "origin_round": prepared_request["round"],
-            "origin_correlation_id": prepared_request["correlation_id"],
-            "origin_generation": command["generation"],
             "target_repo": command["expected_repo"],
             "target_branch": command["starting_branch"],
+            "work_branch": f"jules-work/{command['command_id']}",
             "expected_target_head": command["expected_target_head"],
             "expected_target_tree": command["expected_target_tree"],
             "allowed_paths": list(command["allowed_paths"]),
@@ -358,7 +369,15 @@ def prepare_jules_semiauto_request(
             "merge_allowed": False,
             "force_push_allowed": False,
         }
-        validate_jules_semiauto_request(request, now=created)
+        current_carrier_keys = {
+            "schema_version", "profile", "command_id", "target_repo",
+            "target_branch", "work_branch", "expected_target_head",
+            "expected_target_tree", "allowed_paths", "prompt", "created_at",
+            "expires_at", "retry", "fallback", "merge_allowed",
+            "force_push_allowed",
+        }
+        if set(request) != current_carrier_keys:
+            return LoopResult("UNKNOWN", "current Jules carrier request shape mismatch")
         return LoopResult("PREPARED", "unpersisted Jules semi-auto request artifact created", request)
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
