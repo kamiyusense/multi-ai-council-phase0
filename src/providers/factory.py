@@ -63,8 +63,8 @@ def create_core_adapter(profile: ProviderStaticProfile, bridge: RelayProviderAda
     if profile.provider_id == "openai":
         if profile.session_meta is not None:
             raise ValueError("OpenAI profile must not have session_meta")
-        if profile.binary_name is not None:
-            raise ValueError("OpenAI profile must not have binary_name")
+        if profile.binary_name not in (None, "codex-acp"):
+            raise ValueError("OpenAI profile binary_name must be official codex-acp or None")
         if provider_meta is not None:
              raise ValueError("OpenAI config must not have provider_meta")
 
