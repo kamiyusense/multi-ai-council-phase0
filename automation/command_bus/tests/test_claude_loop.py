@@ -5,7 +5,8 @@ import unittest
 
 from automation.command_bus.claude_loop import (
     BackendMode, CONTAINER_INTERNAL, HOST_LOOPBACK, VerdictDecision, make_structured_verdict,
-    prepare_claude_transport, prepare_jules_closed_loop_command, prepare_jules_semiauto_request,
+    prepare_claude_transport, prepare_jules_closed_loop_command, prepare_jules_semiauto_bundle,
+    prepare_jules_semiauto_request,
     prepare_next_action, validate_machine_gate,
 )
 from automation.command_bus.jules_api_closed_loop import JulesApiClosedLoop
@@ -275,6 +276,58 @@ class ClaudeLoopTests(unittest.TestCase):
         self.assertEqual(request["fallback"], "disabled")
         self.assertFalse(request["merge_allowed"])
         self.assertFalse(request["force_push_allowed"])
+
+    def test_semiauto_bundle_returns_exact_request_and_origin_binding_without_io(self):
+        prepared = prepare_next_action(
+            verdict(), expected_repo="kamiyusense/multi-ai-council-phase0", expected_pr=4,
+            expires_at=EXP,
+            path_policy=[{"path":"tests/example.py","allowed_ops":["MODIFY"]}],
+        ).request
+        command_id = "claude-jules-bundle-001"
+        claim = {
+            "schema_version": 3,
+            "command_id": command_id,
+            "loop_id": "001",
+            "target_repo": "kamiyusense/multi-ai-council-phase0",
+            "target_branch": "feature/bounded-target",
+            "work_branch": f"jules-work/{command_id}",
+            "expected_target_head": "a" * 40,
+            "expected_target_tree": "b" * 40,
+            "state": "CLAIMED",
+            "claimed_at": NOW.isoformat(),
+            "retry": 0,
+            "fallback": "disabled",
+            "lane_id": "J-GREEN",
+            "lane_display": "green",
+            "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+        }
+        result = prepare_jules_semiauto_bundle(
+            prepared, claim,
+            target_branch="feature/bounded-target",
+            default_branch="main",
+            created_at=NOW.isoformat(),
+            command_id=command_id,
+        )
+        self.assertEqual(result.status, "PREPARED")
+        request = result.request["carrier_request"]
+        binding = result.request["origin_binding"]
+        self.assertEqual(len(request), 16)
+        self.assertEqual(request["profile"], "JULES_CHAT_SEMIAUTO_V2")
+        self.assertFalse(any(key.startswith("origin_") for key in request))
+        self.assertEqual(binding["profile"], "CLAUDE_AUTO_ORIGIN_BINDING_V1")
+        self.assertEqual(binding["origin_loop_id"], prepared["loop_id"])
+        self.assertEqual(binding["command_id"], request["command_id"])
+
+        mismatched = dict(claim, expected_target_head="c" * 40)
+        rejected = prepare_jules_semiauto_bundle(
+            prepared, mismatched,
+            target_branch="feature/bounded-target",
+            default_branch="main",
+            created_at=NOW.isoformat(),
+            command_id=command_id,
+        )
+        self.assertEqual(rejected.status, "UNKNOWN")
+        self.assertIsNone(rejected.request)
 
     def test_semiauto_bridge_fails_closed_on_wrong_repo_expiry_and_default_branch(self):
         wrong_repo = prepare_next_action(
