@@ -46,6 +46,7 @@ from .claude_jules_live_adapter import GitHubRestReader, GitLiveClient, fresh_pr
 from .claude_jules_handover import (
     SEMIAUTO_HOLDER, append_decision, decide_handback, decide_reclaim, decide_renew, decide_takeover, observe_stream,
 )
+from .claude_jules_inspection import InspectionStore
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
 from .loop_owner_backend import LoopOwnerGitHubBackend
@@ -347,18 +348,31 @@ def cancelled_carrier_runs(rest: GitHubRestReader, *, since: str,
 
 
 def outstanding_dispatches(git: GitLiveClient, policy: dict[str, Any], origin_loop_id: str) -> list[dict[str, Any]]:
+    """Dispatched commands whose result is still unsettled.
+
+    A dispatch is settled once it is adopted, or once Claude's inspection ordered a
+    Jules corrective (``JULES_CORRECTIVE*``) and a later round was dispatched, so a
+    superseded failed candidate never blocks a handback or keeps being polled.
+    """
     prefix = f"{EVIDENCE_ROOT}/claude-auto-dispatch-intents/"
-    found = []
+    mine = []
     for content in git.list(prefix, policy["data_branch"]):
         intent = validate_dispatch_intent(json.loads(content.text))
-        if intent["origin_loop_id"] != origin_loop_id:
-            continue
+        if intent["origin_loop_id"] == origin_loop_id:
+            mine.append(intent)
+    inspections = InspectionStore(git, data_branch=policy["data_branch"]).list_all()
+    found = []
+    for intent in mine:
         command_id = intent["carrier_request"]["command_id"]
         receipt = git.get(dispatch_receipt_path(command_id), policy["data_branch"])
         if receipt is None or json.loads(receipt.text).get("state") != "DISPATCHED":
             continue
         if git.get(adoption_receipt_path(command_id), policy["data_branch"]) is not None:
             continue
+        corrective = any(r["command_id"] == command_id and r["decision"].startswith("JULES_CORRECTIVE")
+                         for r in inspections)
+        if corrective and any(o["origin_round"] > intent["origin_round"] for o in mine):
+            continue  # superseded by a later dispatched round
         found.append(intent)
     return found
 

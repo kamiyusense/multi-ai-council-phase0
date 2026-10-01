@@ -298,6 +298,15 @@ class LiveControllerIntegrationTests(unittest.TestCase):
         inspected = self.loop().step(now=NOW)
         self.assertEqual((inspected.action, inspected.status, inspected.details["decision"]),
                          ("INSPECT", "FAIL_MAJOR", "JULES_CORRECTIVE"), inspected.reason)
+        # The failed candidate stays outstanding until its corrective round is dispatched; then only
+        # the new round is outstanding, so a handback is not blocked by the superseded candidate.
+        from automation.command_bus.claude_jules_live import outstanding_dispatches
+        self.assertEqual([i["carrier_request"]["command_id"] for i in
+                          outstanding_dispatches(self.c, self.policy, LOOP)], [command_id])
+        corrective = self.loop().step(now=NOW)
+        self.assertEqual((corrective.action, corrective.status), ("DISPATCH", "DISPATCHED"), corrective.reason)
+        self.assertEqual([i["carrier_request"]["command_id"] for i in
+                          outstanding_dispatches(self.c, self.policy, LOOP)], [corrective.details["command_id"]])
         # A tampered review (digest no longer matches) stops instead of being trusted.
         bad = dict(review, findings=[])
         with self.assertRaises(ValueError):

@@ -15,7 +15,7 @@
   "environment": "Claude Code cloud container, Python 3.11.15",
   "tests": {
     "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
-    "after_full_suite": "924 run, OK, 1 skipped (carrier guard, new-stream acquire, renew added)",
+    "after_full_suite": "924 run, OK, 1 skipped (+ superseded-dispatch settlement assertions)",
     "new_test_methods": {
       "e2e": 29,
       "dispatch_contract": 14,
@@ -28,20 +28,25 @@
     "git_diff_check": "PASS"
   },
   "live_actions": {
-    "jules_tasks_submitted": 0,
-    "carrier_writes": 0,
-    "workflow_runs_triggered_by_this_work": 0,
+    "jules_tasks_submitted": 4,
     "merges": 0,
+    "main_writes": 0,
+    "force_pushes": 0,
     "settings_or_secrets_changed": 0,
-    "note": "No Jules dispatch workflow was triggered. Pushing this branch / PR #220 runs only the repository's normal CI 'test' workflow.",
-    "branches_created": 0
+    "branches_created": [
+      "claude/autoloop-live-target",
+      "claude/claude-jules-autoloop-data"
+    ],
+    "carrier_writes": "8 single-file commits on feature/chat-work-command-bus (4 Loop claims 128-131 + 4 commands); no other controller's file touched",
+    "cancelled_carrier_runs_since_first_lap": 0,
+    "approval": "user messages 2026-10-01T18:09:52Z, 19:14:22Z, 19:30:50Z (project thread)"
   },
   "status": {
     "static_mock_e2e": "PASS",
     "production_adapters": "IMPLEMENTED_TESTED_ON_REAL_GIT_REMOTE",
-    "live_proof": "NOT_STARTED (0/10). 1st: gate refused the live policy write (2026-10-02 03:25 JST). 2nd, after the user chose the shared carrier: live policy/roadmap committed (8fe7bca); creating branches claude/autoloop-live-target and claude/claude-jules-autoloop-data was refused by the gate ('Interfere With Workloads'); not retried, no carrier write",
+    "live_proof": "PASS (4/10): 3 roadmap tasks, 1 Claude-found defect corrected by a Jules corrective, all adopted by non-force fast-forward of claude/autoloop-live-target (head 53f2caf); roadmap COMPLETE",
     "wake_mechanism": "POLL_ADAPTER_IMPLEMENTED (in-session); no scheduled routine created",
-    "handover_semiauto_auto": "IMPLEMENTED: mock + real-git round trip; read-only on real carrier both active streams correctly BLOCKED (Jules in flight)",
+    "handover_semiauto_auto": "PROVEN LIVE on the isolated stream: ACQUIRE(AUTO, gen1) -> 4 dispatches -> HANDOFF to SEMI_AUTO (gen2); the AUTO controller is then fenced (STOP BLOCKED owner fence)",
     "shared_carrier_guard": "IMPLEMENTED: CarrierQuietGuard (no unfinished carrier run, tip >=5 min old) before claim/command; real GitHub read-only check returned WAIT CARRIER_BUSY (carrier changed 41s ago); 0 cancelled carrier runs 2026-10-01/02"
   },
   "retry": 0,
@@ -57,8 +62,8 @@
   },
   "live_budget": {
     "cap": 10,
-    "used": 0,
-    "ledger": "claude/claude-jules-autoloop-data:automation/command_bus/evidence/claude-auto-live-budget/ (not created)"
+    "used": 4,
+    "slots": "claude/claude-jules-autoloop-data:automation/command_bus/evidence/claude-auto-live-budget/slot-01..04.json"
   },
   "stage_6_7_readonly_real_github_check": {
     "pr": 223,
@@ -66,5 +71,47 @@
     "normalized": "ACCEPTED",
     "session_consistent": true,
     "writes": 0
-  }
+  },
+  "live_runs": [
+    {
+      "loop": 128,
+      "command": "relay-dev-loop-128-autoloop-live-proof-note",
+      "carrier_run": 36916174486,
+      "jules_session": "16228878555691005955",
+      "pr": 230,
+      "candidate": "fc2ad82fb6dac0201f62db0d6c927bd90c985050",
+      "verdict": "PASS",
+      "adopted": true
+    },
+    {
+      "loop": 129,
+      "command": "relay-dev-loop-129-autoloop-budget-summary",
+      "carrier_run": 36917472072,
+      "jules_session": "9613854744580982311",
+      "pr": 231,
+      "candidate": "de325fc042d44dee31f7c8e31e6afb81cb032d3b",
+      "verdict": "FAIL_MAJOR (TypeError leak for mixed-type slot numbers, no test)",
+      "adopted": false
+    },
+    {
+      "loop": 130,
+      "command": "relay-dev-loop-130-autoloop-budget-summary-fix1",
+      "carrier_run": 36919432141,
+      "jules_session": "10117650476672833427",
+      "pr": 232,
+      "candidate": "2eb310cc535a664e74b1bce1e2bd65efee53ae67",
+      "verdict": "PASS",
+      "adopted": true
+    },
+    {
+      "loop": 131,
+      "command": "relay-dev-loop-131-autoloop-operator-quickstart",
+      "carrier_run": 36920736127,
+      "jules_session": "12222938286641699709",
+      "pr": 233,
+      "candidate": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+      "verdict": "PASS",
+      "adopted": true
+    }
+  ]
 }

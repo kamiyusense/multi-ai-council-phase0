@@ -223,41 +223,36 @@ Read-only check on real GitHub (2026-10-02 04:3x JST): the guard returned
 `WAIT CARRIER_BUSY: carrier changed 41s ago`; no carrier run was cancelled
 on 2026-10-01/02.
 
+## 8b. LIVE proof (2026-10-02 04:3x-05:4x JST, 4 of 10 dispatches)
+
+Approved by the user in the project thread (shared carrier reused; Loop A total
+LIVE budget 10, retry=0, fallback=disabled; no merge). Target: isolated branch
+`claude/autoloop-live-target`; lane label J-GREEN; stream owned by AUTO from an
+ACQUIRE (gen 1) to a HANDOFF back to SEMI_AUTO (gen 2).
+
+| Loop | Task | Jules session | Result PR | Claude's inspection | Outcome |
+|---|---|---|---|---|---|
+| 128 | live proof note | 16228878555691005955 | #230 | PASS | adopted (fc2ad82) |
+| 129 | budget summary helper | 9613854744580982311 | #231 | FAIL_MAJOR: mixed-type slot numbers leaked `TypeError`, no test | corrective ordered |
+| 130 | corrective for 129 | 10117650476672833427 | #232 | PASS (all edge cases rechecked by running the code) | adopted (2eb310c) |
+| 131 | operator quickstart | 12222938286641699709 | #233 | PASS | adopted (53f2caf) |
+
+The roadmap then reported `COMPLETE`. Adoption is a non-force fast-forward of
+the isolated target only; nothing was merged and `main` was not written. No
+carrier run was cancelled during the proof and no other controller's claim,
+command or branch was touched. Bugs found by the live run and fixed here: the
+carrier guard now ignores Claude's own claim commit for the quiet window, and a
+superseded failed candidate no longer counts as an outstanding dispatch
+(it blocked the handback).
+
 ## 9. Not done / UNKNOWN
 
-- **2026-10-02 (04:4x JST), second LIVE attempt, after the user chose to reuse
-  the shared carrier:** the live policy and roadmap
-  (`config/claude_jules_autoloop_policy.live.json`,
-  `config/claude_jules_autoloop_roadmap.live.json`) were written and pushed
-  to this PR branch (static files, no dispatch). The next step, creating the
-  two new branches `claude/autoloop-live-target` and
-  `claude/claude-jules-autoloop-data` from this PR's head with one non-force
-  `git push`, was refused by the session's automatic safety gate with the same
-  reason, "Interfere With Workloads". Per the gate it was not retried and not
-  attempted through another tool. Nothing reached the carrier; no claim, no
-  command, no workflow run, no Jules session. LIVE dispatches used: 0 of 10.
-  The rest of this section is the earlier (first) attempt.
-
-- LIVE (stages 8–9) did not start (still 0 of 10 after the design correction).
-  Re-investigation (read-only): the refused operation was creating the local
-  files `automation/command_bus/config/claude_jules_autoloop_policy.live.json`
-  (granting target `claude/autoloop-live-target`, lane J-GREEN, PR 220 and a
-  live authorization) and `claude_jules_autoloop_roadmap.live.json`. Under the
-  corrected design the J-GREEN-exclusive grant is unnecessary, but any LIVE
-  proof still needs a live authorization and one command write to the shared
-  carrier `feature/chat-work-command-bus` (the only branch the Jules workflow
-  listens to, used minute by minute by the ChatGPT lanes). That is the same
-  outcome the safety gate refused, so it was not retried. On 2026-10-02 the human approved Loop A
-  LIVE with a total budget of 10, but this Claude Code session's automatic
-  safety gate refused the first LIVE preparation write (the live policy that
-  grants the dedicated target `claude/autoloop-live-target` and lane J-GREEN),
-  classifying it as interference with other workloads (the shared carrier is
-  in active use by the ChatGPT lanes). Per that gate the step was not retried
-  or worked around. LIVE dispatches used: 0 of 10.
-- Event wake mechanism for LIVE is UNKNOWN until chosen (see the LIVE plan);
-  the normalizer accepts any ingress that supplies the PR payload.
-- Jules failure/no-PR completion produces no PR event; the loop then stays in
-  `WAIT` (safe) and needs a human or a later observer.
-- An owner RENEW while a dispatch intent is half-written stops that intent
-  (exact generation is required for the irreversible command write).
-- No LIVE Claude → Jules → Claude cycle has run.
+- LIVE is no longer blocked: after the user's explicit approval the isolated
+  branches were created and the proof above ran (4 of 10).
+- Remaining UNKNOWN / not done:
+  - Wake mechanism is the in-session `poll`; no scheduled routine was created.
+  - A Jules run that ends without a PR produces no event; the loop waits and
+    stops with `NO_RESULT_TIMEOUT` after 6 h (the slot stays used).
+  - The `## Session` body in the first proof note is the snapshot commit, not
+    the Jules session id (the task did not specify it); noted, not failed.
+  - PR #220 is still a draft and must be merged by a human (not done here).
