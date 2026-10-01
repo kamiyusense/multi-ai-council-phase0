@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 98,
+  "loop_id": "098",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-observed-jules-state-map",
+  "command_id": "relay-dev-loop-098-signal-observed-jules-state-map",
+  "target_branch": "feature/signal-observed-v1",
+  "expected_target_head": "a46d5e729b6156815c3790a25754b04e6f9ff968",
+  "expected_target_tree": "97c552ddcbf2cdafac9f08df452e9bafa12c6e02",
+  "work_branch": "jules-work/relay-dev-loop-098-signal-observed-jules-state-map",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T11:17:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
