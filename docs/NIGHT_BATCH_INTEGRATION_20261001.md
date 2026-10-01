@@ -164,5 +164,4 @@ SHAs read at start of batch: main `9f3e0f6`, carrier `7c83ae9`, Relay #4
 #226 `6eeea69`.
 
 Rehearsal branch: `claude/night-batch-carrier-rehearsal`
-(HEAD `f76ba61` locally at the time of writing; the pushed SHA is recorded in
-the thread report).
+pushed HEAD `9f3cfb8` (read back from GitHub: file list and commit list match).
