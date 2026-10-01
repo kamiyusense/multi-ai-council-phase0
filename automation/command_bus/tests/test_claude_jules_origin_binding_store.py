@@ -240,6 +240,31 @@ class TestClaudeJulesOriginBindingStore(unittest.TestCase):
         result = self.store.read(self.valid_request["command_id"], self.valid_request, self.valid_claim)
         self.assertEqual(result.status, "UNKNOWN")
 
+    def test_store_does_not_mutate_inputs_and_persists_no_lane_metadata(self) -> None:
+        record_before = copy.deepcopy(self.valid_record)
+        request_before = copy.deepcopy(self.valid_request)
+        claim_before = copy.deepcopy(self.valid_claim)
+
+        persisted = self.store.persist(
+            self.valid_record, self.valid_request, self.valid_claim
+        )
+        self.assertEqual(persisted.status, "ACCEPTED")
+        self.assertEqual(self.valid_record, record_before)
+        self.assertEqual(self.valid_request, request_before)
+        self.assertEqual(self.valid_claim, claim_before)
+        self.assertNotIn("lane_id", persisted.record)
+        self.assertNotIn("lane_display", persisted.record)
+
+        read_back = self.store.read(
+            self.valid_request["command_id"], self.valid_request, self.valid_claim
+        )
+        self.assertEqual(read_back.status, "READ")
+        self.assertEqual(self.valid_record, record_before)
+        self.assertEqual(self.valid_request, request_before)
+        self.assertEqual(self.valid_claim, claim_before)
+        self.assertNotIn("lane_id", read_back.record)
+        self.assertNotIn("lane_display", read_back.record)
+
     def test_read_invalid_cross_binding_returns_unknown(self) -> None:
         self.store.persist(self.valid_record, self.valid_request, self.valid_claim)
         bad_claim = copy.deepcopy(self.valid_claim)
