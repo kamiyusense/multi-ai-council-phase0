@@ -165,6 +165,51 @@ class ACPClient:
         return deepcopy(self._sessions[session_id]["evidence"])
 
 
+async def _acp_exchange(
+    stdout: asyncio.StreamReader,
+    stdin: asyncio.StreamWriter,
+    request: dict[str, Any],
+    expected_id: int,
+    timeout: float,
+    method_name: str,
+) -> dict[str, Any]:
+    """Internal helper to execute a single JSON-RPC request and validate its response."""
+    request_bytes = json.dumps(request).encode("utf-8") + b"\n"
+    stdin.write(request_bytes)
+    await stdin.drain()
+
+    try:
+        line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+    except asyncio.TimeoutError as e:
+        raise TimeoutError(f"Timeout reading ACP {method_name} response") from e
+
+    if not line:
+        raise EOFError(f"Unexpected EOF reading ACP {method_name} response")
+
+    try:
+        response = json.loads(line)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Malformed JSON in ACP {method_name} response") from e
+
+    if not isinstance(response, dict):
+        raise ValueError(f"ACP {method_name} response must be a JSON object")
+
+    if response.get("jsonrpc") != "2.0":
+        raise ValueError(f"ACP {method_name} response must have jsonrpc='2.0'")
+
+    if type(response.get("id")) is not int or response["id"] != expected_id:
+        raise ValueError(f"ACP {method_name} response id mismatch")
+
+    if "error" in response:
+        raise RuntimeError(f"ACP {method_name} returned error")
+
+    result = response.get("result")
+    if not isinstance(result, dict):
+        raise ValueError(f"ACP {method_name} response missing valid result object")
+
+    return result
+
+
 async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) -> dict[str, Any]:
     """Execute a single ACP v1 initialize round-trip against a local spawned process.
 
@@ -186,40 +231,44 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) ->
             },
         }
 
-        request_bytes = json.dumps(request).encode("utf-8") + b"\n"
-        stdin.write(request_bytes)
-        await stdin.drain()
-
-        try:
-            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
-        except asyncio.TimeoutError as e:
-            raise TimeoutError("Timeout reading ACP initialize response") from e
-
-        if not line:
-            raise EOFError("Unexpected EOF reading ACP initialize response")
-
-        try:
-            response = json.loads(line)
-        except json.JSONDecodeError as e:
-            raise ValueError("Malformed JSON in ACP initialize response") from e
-
-        if not isinstance(response, dict):
-            raise ValueError("ACP initialize response must be a JSON object")
-
-        if response.get("jsonrpc") != "2.0":
-            raise ValueError("ACP initialize response must have jsonrpc='2.0'")
-
-        if type(response.get("id")) is not int or response["id"] != 0:
-            raise ValueError("ACP initialize response id mismatch")
-
-        if "error" in response:
-            raise RuntimeError("ACP initialize returned error")
-
-        result = response.get("result")
-        if not isinstance(result, dict):
-            raise ValueError("ACP initialize response missing valid result object")
+        result = await _acp_exchange(stdout, stdin, request, 0, timeout, "initialize")
 
         if type(result.get("protocolVersion")) is not int or result["protocolVersion"] != 1:
             raise ValueError("ACP initialize response unsupported protocol version")
 
         return result
+
+
+async def acp_open_session_wire(command: str, *args: str, cwd: str, timeout: float = 2.0) -> str:
+    """Execute initialize and session/new round-trips against a single local spawned process."""
+    async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
+        init_request = {
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": 1,
+                "clientCapabilities": {},
+                "clientInfo": {"name": "relay", "version": "0.1.0"},
+            },
+        }
+        init_result = await _acp_exchange(stdout, stdin, init_request, 0, timeout, "initialize")
+        if type(init_result.get("protocolVersion")) is not int or init_result["protocolVersion"] != 1:
+            raise ValueError("ACP initialize response unsupported protocol version")
+
+        session_request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "session/new",
+            "params": {
+                "cwd": cwd,
+                "mcpServers": [],
+            },
+        }
+        session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new")
+
+        session_id = session_result.get("sessionId")
+        if not isinstance(session_id, str) or not session_id.strip():
+            raise ValueError("ACP session/new response missing valid sessionId")
+
+        return session_id
