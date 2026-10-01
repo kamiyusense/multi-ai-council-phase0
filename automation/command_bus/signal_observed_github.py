@@ -3,7 +3,7 @@ import re
 def _is_valid_sha(sha):
     if not isinstance(sha, str):
         return False
-    return bool(re.match(r'^[a-f0-9]{40}$', sha))
+    return bool(re.fullmatch(r'[a-f0-9]{40}', sha))
 
 def map_result_pr_head_to_observed_state(pr_head_sha):
     if pr_head_sha is None:
