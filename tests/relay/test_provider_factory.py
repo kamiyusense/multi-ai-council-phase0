@@ -1,5 +1,6 @@
 import unittest
 from copy import deepcopy
+from dataclasses import replace
 
 from providers.base import ProviderStaticProfile
 from providers.factory import create_core_adapter
@@ -72,7 +73,23 @@ class TestProviderFactory(unittest.TestCase):
                 "arbitrary_codex_config_present": False,
             },
         )
+        self.assertEqual(profile.binary_name, "codex-acp")
         self.assert_static_roundtrip(profile, "openai")
+
+    def test_factory_rejects_unapproved_openai_binary(self):
+        profile = build_codex_profile(
+            "account",
+            {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False,
+            },
+        )
+        wrong = replace(profile, binary_name="foreign-acp")
+        with self.assertRaisesRegex(ValueError, "OpenAI profile binary_name"):
+            create_core_adapter(wrong, RelayProviderAdapterBridge())
 
     def test_claude_factory_success(self):
         profile = build_claude_profile(
