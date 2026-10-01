@@ -51,6 +51,7 @@ class TestSignalObservedGithub(unittest.TestCase):
         self.assertEqual(map_exact_head_github_run_to_observed_check("short", h1, "completed", "success"), "UNKNOWN")
         self.assertEqual(map_exact_head_github_run_to_observed_check(h1, "short", "completed", "success"), "UNKNOWN")
         self.assertEqual(map_exact_head_github_run_to_observed_check("A" * 40, "A" * 40, "completed", "success"), "UNKNOWN")
+        self.assertEqual(map_exact_head_github_run_to_observed_check("a" * 40 + "\n", "a" * 40 + "\n", "completed", "success"), "UNKNOWN")
 
     def test_map_exact_head_unsupported_status(self):
         h1 = "a" * 40
@@ -72,5 +73,6 @@ class TestSignalObservedGithub(unittest.TestCase):
         self.assertEqual(map_result_pr_head_to_observed_state("a" * 41), "UNKNOWN")
         self.assertEqual(map_result_pr_head_to_observed_state("A" * 40), "UNKNOWN") # Uppercase
         self.assertEqual(map_result_pr_head_to_observed_state("g" * 40), "UNKNOWN") # Non-hex
+        self.assertEqual(map_result_pr_head_to_observed_state("a" * 40 + "\n"), "UNKNOWN")
         self.assertEqual(map_result_pr_head_to_observed_state(123), "UNKNOWN")
         self.assertEqual(map_result_pr_head_to_observed_state({}), "UNKNOWN")
