@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-106-signal-observed-result-pr-presence",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/signal-observed-v1",
+  "work_branch": "jules-work/relay-dev-loop-106-signal-observed-result-pr-presence",
+  "expected_target_head": "6de57143c3dfd253c383992c2950f562cd000897",
+  "expected_target_tree": "08f8394ca96cc2eb1f0e02530e8e7e20c0d6aca9",
+  "allowed_paths": [
+    "automation/command_bus/signal_observed_github.py",
+    "automation/command_bus/tests/test_signal_observed_github.py"
+  ],
+  "prompt": "Task / size class:\nLoop 106 — SHORT minimal-port result-PR presence mapper.\n\nGoal:\nAdd only the smallest pure mapper for the observed Jules result PR head. Do not design the complete Signal composition or PR scanner.\n\nUpstream / accepted source:\n- .github/workflows/loop-status-development.yml already reads GitHub PR .head.sha directly.\n- automation/command_bus/signal_observed_github.py already validates exact 40-char lowercase SHA equality for PR/run binding.\n\nSmall component to reuse:\nThe existing lowercase 40-hex PR head validation boundary.\n\nExisting local destination:\n- automation/command_bus/signal_observed_github.py\n- automation/command_bus/tests/test_signal_observed_github.py\n\nAllowed changed paths — EXACTLY these two files.\n\nRequired behavior:\nAdd one small pure function, for example:\nmap_result_pr_head_to_observed_state(pr_head_sha)\n\nRules:\n- no network/file/GitHub calls\n- valid result PR head = exactly 40 lowercase hex chars -> PR_READY\n- None -> NO_RESULT_PR\n- malformed values including empty string, short/long string, uppercase hex, non-hex string, non-string -> UNKNOWN\n- NO_RESULT_PR is an internal observed fact, not FAIL\n- PR_READY does not imply PASS\n- do not inspect mergeability, draft, timestamps, branch names or commit count\n- reuse a tiny local SHA helper if it reduces duplication, but do not create a generic validation framework\n- existing Loop 100/103 functions and behavior must remain unchanged\n\nTests:\n- valid lowercase 40-hex -> PR_READY\n- None -> NO_RESULT_PR\n- empty/short/long/uppercase/non-hex/non-string -> UNKNOWN\n- all existing signal_observed_github tests still pass\n\nDo NOT:\n- fetch/search PRs\n- modify workflows/readback transports\n- modify signal_observed_jules.py\n- compose Jules state + PR + check state in this task\n- modify Control Tower registry/schemas/snapshot/runtime code\n- modify Issue #33/status publisher\n- add docs/checkpoints/plan files\n- add dependencies\n- add speculative abstractions/features\n- run provider/model/API/network calls\n- Merge/rebase/force push/delete branches\n\nStop condition:\nIf this tiny mapper cannot fit in the two allowed files without broad redesign, STOP and report the incompatibility.\n\nValidation:\npython -m unittest automation.command_bus.tests.test_signal_observed_github -v\npython -m unittest discover -v automation/command_bus/tests\npython -m compileall -q automation/command_bus\ngit diff --check\n\nMandatory path fence:\nFinal changed-file set must be a subset of exactly:\n- automation/command_bus/signal_observed_github.py\n- automation/command_bus/tests/test_signal_observed_github.py\n\nPublication:\nPublish the normal isolated Jules PR only if path fence and validations are green. Do not Merge.\n\nretry=0\nfallback=disabled",
+  "created_at": "2026-10-01T14:35:17+09:00",
+  "expires_at": "2026-10-01T16:05:17+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
