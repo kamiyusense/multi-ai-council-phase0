@@ -80,6 +80,13 @@ wake adapter: Jules result → GitHub event → one Blue carrier review → Work
 reconciliation → next bounded J-BLUE mission. The roadmap is documentation and
 does not itself authorize live Jules dispatch or an unbounded autonomous loop.
 
+For Signal / Status / Control Tower work, next read
+[docs/SIGNAL_FOUNDATION_ROADMAP.md](docs/SIGNAL_FOUNDATION_ROADMAP.md).
+It applies the same small-component migration rule to Signal, starts with direct
+Jules/GitHub observed facts, keeps Jules/Cloud Work/durable runtime control
+planes separate, and serializes shared navigation/registry/Issue/snapshot seams
+to reduce merge friction between parallel lanes.
+
 ## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
 
 This rule is durable project policy for every Chat that uses the Chat -> Jules
