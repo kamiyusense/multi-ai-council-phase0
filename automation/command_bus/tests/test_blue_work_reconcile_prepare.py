@@ -66,7 +66,7 @@ class BlueReconciliationTests(unittest.TestCase):
         self.assertNotEqual(command["target_branch"], self.inputs["lineage"]["work_branch"])
         self.assertEqual(self.assess(command).purpose, "JULES_RESULT_REVIEW")
         self.assertEqual(self.assess(command).status, "VALIDATED")
-        self.assertEqual(self.prepare(comments=[self.receipt()]).status, "NO_OP")
+        self.assertEqual(self.prepare(reviews=[self.review()], comments=[self.receipt()]).status, "NO_OP")
         self.assertEqual(self.assess(comments=[self.receipt()]).status, "NO_OP")
 
     def test_existing_review_deduplicates_even_when_expired(self):
@@ -77,7 +77,7 @@ class BlueReconciliationTests(unittest.TestCase):
     def test_all_terminal_statuses_prevent_replay(self):
         for status in ("PASS", "FAIL", "BLOCKED", "UNKNOWN", "STALE", "NO_OP"):
             with self.subTest(status=status):
-                self.assertEqual(self.prepare(comments=[self.receipt(status=status)]).status, "NO_OP")
+                self.assertEqual(self.prepare(reviews=[self.review()], comments=[self.receipt(status=status)]).status, "NO_OP")
 
     def test_chat_command_and_result_request_share_prefix_without_rewriting_chat_task(self):
         c = self.command()
@@ -212,6 +212,29 @@ class BlueReconciliationTests(unittest.TestCase):
         for changes in ({"terminal": False}, {"status": "COMPLETE"}, {"target_pr": True},
                         {"worker_generation": True}, {"target_head_after": None}):
             self.assertEqual(self.assess(comments=[self.receipt(**changes)]).status, "UNKNOWN")
+
+    def test_receipt_must_match_submitted_command_and_reserved_read_only_head(self):
+        command = self.command()
+        tampering = (
+            {"target_repository": "other/repo"},
+            {"target_pr": command["target_pr"] + 1},
+            {"target_branch": "another/result-branch"},
+            {"target_head_before": "b" * 40},
+            {"target_head_after": "b" * 40},
+            {"worker_generation": 2},
+            {"protocol_version": 2},
+        )
+        for changes in tampering:
+            with self.subTest(changes=changes):
+                receipt = self.receipt(**changes)
+                self.assertEqual(self.prepare(reviews=[self.review(command)], comments=[receipt]).status, "UNKNOWN")
+                self.assertEqual(self.assess(command, comments=[receipt]).status, "UNKNOWN")
+
+    def test_terminal_receipt_without_submitted_command_or_with_duplicate_is_unknown(self):
+        receipt = self.receipt()
+        self.assertEqual(self.prepare(comments=[receipt]).status, "UNKNOWN")
+        self.assertEqual(self.assess(reviews=[], comments=[receipt]).status, "UNKNOWN")
+        self.assertEqual(self.assess(comments=[receipt, receipt]).status, "UNKNOWN")
 
     def test_changed_worker_target_is_stale_and_wrong_identity_is_unknown(self):
         target = {k: self.command()[k] for k in ("target_repository", "target_pr", "target_branch", "expected_target_head")}

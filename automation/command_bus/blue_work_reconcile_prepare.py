@@ -159,10 +159,12 @@ def _carrier(pr: Any, worker_state: Any, protocol: Any) -> CarrierSnapshot:
     return protocol
 
 
-def _records(reviews: Any, comments: Any, complete: Any, *, focus_id: str | None = None) -> set[str]:
+def _records(reviews: Any, comments: Any, complete: Any, *, focus_id: str | None = None) -> tuple[set[str], set[str]]:
     if complete is not True or not isinstance(reviews, list) or not isinstance(comments, list):
         raise ValueError("complete paginated reviews/comments required")
     identities: set[str] = set()
+    terminals: set[str] = set()
+    commands_by_id: dict[str, dict[str, Any]] = {}
     for row in reviews:
         if not isinstance(row, dict):
             raise ValueError("malformed review")
@@ -178,7 +180,10 @@ def _records(reviews: Any, comments: Any, complete: Any, *, focus_id: str | None
         # IDs can forbid resend, but never confer authority or a generation.
         if identity.startswith("blue-jules-result-") or identity == focus_id:
             _command(command)
-        identities.add(command["command_id"])
+            if identity in commands_by_id:
+                raise ValueError("duplicate submitted command identity")
+            commands_by_id[identity] = command
+        identities.add(identity)
     for row in comments:
         if not isinstance(row, dict):
             raise ValueError("malformed comment")
@@ -197,8 +202,21 @@ def _records(reviews: Any, comments: Any, complete: Any, *, focus_id: str | None
                 or receipt.get("status") not in STATUSES or receipt.get("terminal") is not True):
             raise ValueError("malformed terminal receipt")
         _target(receipt, receipt=True)
-        identities.add(receipt["command_id"])
-    return identities
+        submitted = commands_by_id.get(identity)
+        if submitted is None:
+            raise ValueError("terminal receipt lacks matching submitted command")
+        for field in ("protocol_version", "worker_generation", "target_repository", "target_pr", "target_branch"):
+            if receipt[field] != submitted[field] or type(receipt[field]) is not type(submitted[field]):
+                raise ValueError("terminal receipt/command identity mismatch: " + field)
+        if receipt["target_head_before"] != submitted["expected_target_head"]:
+            raise ValueError("terminal receipt/command initial head mismatch")
+        if identity.startswith("blue-jules-result-") and receipt["target_head_after"] != submitted["expected_target_head"]:
+            raise ValueError("read-only result receipt changed target head")
+        if identity in terminals:
+            raise ValueError("duplicate terminal receipt")
+        terminals.add(identity)
+        identities.add(identity)
+    return identities, terminals
 
 
 def prepare_reconciled_wake(*, event: Any, lineage: Any, result_pr: Any,
@@ -208,7 +226,7 @@ def prepare_reconciled_wake(*, event: Any, lineage: Any, result_pr: Any,
     """Compose BWJ-1/2 with current snapshots; no production transport exists."""
     try:
         carrier = _carrier(carrier_pr, worker_state, protocol)
-        seen = _records(reviews, comments, records_complete)
+        seen, _ = _records(reviews, comments, records_complete)
         classified = classify_blue_jules_result_event(event, lineage, seen)
         if classified.decision == EventDecision.IGNORE:
             return ReconciliationPlan("NO_OP", classified.reason or "ignored", classified.command_id)
@@ -257,8 +275,8 @@ def assess_blue_review(*, body: Any, active_generation: Any, fixed_generation: A
             return ReconciliationPlan("STALE", "command generation mismatch", command["command_id"])
         # Only terminal comments guard worker replay. The triggering review
         # itself must not cause NO_OP just because it is in the review list.
-        _records(reviews, [], records_complete, focus_id=command["command_id"])
-        if command["command_id"] in _records([], comments, records_complete, focus_id=command["command_id"]):
+        _, terminals = _records(reviews, comments, records_complete, focus_id=command["command_id"])
+        if command["command_id"] in terminals:
             return ReconciliationPlan("NO_OP", "terminal command", command["command_id"])
         matching = [parsed for row in reviews
                     if (parsed := _body(row["body"], PREFIX)) is not None
