@@ -56,6 +56,8 @@ def prepare_blue_work_wake(
 ) -> PrepareResult:
     if not isinstance(classification, EventClassificationResult):
         return _unknown()
+    if not isinstance(classification.decision, EventDecision):
+        return _unknown()
 
     if classification.decision == EventDecision.UNKNOWN:
         return _unknown()
