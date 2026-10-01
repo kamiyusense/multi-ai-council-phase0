@@ -385,3 +385,14 @@ Read first: [integration](CLAUDE_JULES_AUTOLOOP_INTEGRATION.md) and
 [LIVE proof plan](CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_PLAN.md). The committed policy
 grants no target branch, no lane and no live authorization. LIVE remains
 unauthorized; production adapters remain NOT_WIRED.
+
+## 2026-10-02 Claude × Jules AUTO loop LIVE-proven on an isolated target (supersedes the entry above)
+
+The statements "LIVE remains unauthorized; production adapters remain NOT_WIRED" in the
+previous entry are historical. After explicit human approval, the production adapters ran a
+real Claude → Jules → Claude cycle on `claude/autoloop-live-target`: 4 of the fixed total of
+10 dispatches (Loop 128 PASS/adopted, Loop 129 FAIL_MAJOR/not adopted, Loop 130 corrective
+PASS/adopted, Loop 131 PASS/adopted); the stream was handed back to SEMI_AUTO (generation 2).
+No merge, no `main` write, no force push. The committed policy still grants nothing; the
+one-off proof policy is evidence only (expired 2026-10-02T15:00Z). Remaining: scheduled
+auto-start/resume, human merge decisions. See `CLAUDE_JULES_AUTOLOOP_INTEGRATION.md` §8b, §9, §10.

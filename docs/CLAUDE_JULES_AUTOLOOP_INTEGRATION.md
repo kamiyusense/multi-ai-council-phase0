@@ -1,16 +1,24 @@
-# Claude × Jules AUTO loop — STATIC/mock integration (2026-10-01)
+# Claude × Jules AUTO loop — integration, LIVE-proven on an isolated target (2026-10-02)
 
 > 日本語要約: ClaudeがControllerとして「次の仕事の決定 → Jules命令の保存 →
 > Jules結果の受信 → 独立検品 → 小修正 or Jules修正依頼 → 安全な反映 → 次の仕事」
-> を回す仕組みを、既存部品の組み合わせで実装し、模擬環境（fake GitHub / fake Jules）
-> で一周させた。実際のJules投入・LIVE実行・Merge・設定変更は一切していない。
-> LIVE実証に必要な人間の承認事項は
-> [LIVE proof plan](CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_PLAN.md) に列挙した。
+> を回す仕組みを、既存部品の組み合わせで実装した。模擬環境での一周に加え、
+> 2026-10-02に本物のJulesで **4回（累計4/10）** のLIVE実証を行った。3件を採用、
+> 1件は不具合を検出して不採用にし、修正依頼（Loop 130）後に採用した。採用先は
+> 実証専用の非defaultブランチだけで、Merge・main書き込み・force pushはしていない。
+> 担当はChatGPT側（半自動）へ返却済み。自動起動・自動再開は未完成（§9）。
 
-Status: **STATIC/mock complete; stage 6/7 production adapters implemented and tested on real git
-(LIVE preparation stopped by the session's safety gate, see §8); no LIVE dispatch has run.**
-Branch: `claude/claude-jules-autoloop-integration` (base
-`feature/claude-auto-current-jules-protocol` @ `83b499a`).
+Status: **LIVE-proven (4 of 10 dispatches used); not merged.** Mock/static E2E, production
+adapters on real git, a SEMI_AUTO ⇄ AUTO handover and a real Claude → Jules → Claude cycle
+(including a Claude-found defect and its Jules correction) all pass. What is still missing
+is listed in §9; nothing here is on `main`.
+Branch: `claude/claude-jules-autoloop-integration` (Draft PR #220, base
+`feature/claude-auto-current-jules-protocol` @ `83b499a`, not `main`).
+
+LIVE proof inputs live in
+`docs/evidence/claude-jules-autoloop-20261001/live-proof-2026-10-02/` (evidence only;
+the normal policy in `config/` still grants nothing). See §8b for the run table and §10 for
+the merge order.
 
 ## 1. Shape
 
@@ -66,9 +74,12 @@ with the existing GitHub records, not an orchestrator. No OSS code was copied.
 | `claude_jules_autoloop.py` | 8–9 | resumable controller (`step`, `run_until_boundary`), roadmap planner |
 | `claude_jules_live_adapter.py` | 6 | production `GitHubContentsClient` + refs over git (single-file create-only commits, non-force pushes, fresh `ls-remote` heads, git compare) and a repository-scoped read-only REST reader |
 | `claude_jules_live_budget.py` | 6–8 | create-only LIVE budget ledger: fixed total of 10 real dispatches, slot taken before the command write, never released |
-| `claude_jules_live.py` | 6–7 | live facts collector (workflow run + session, fresh PR, tests on exact head in a worktree, Claude review record), PR poll wake adapter, CLI |
+| `claude_jules_live.py` | 6–7 | live facts collector (workflow run + session, fresh PR, tests on exact head in a worktree, Claude review record), PR poll wake adapter, `CarrierQuietGuard` (no write to the shared carrier while it is busy), CLI (`status step poll budget record-review record-observation observe takeover renew handback reclaim carrier`) |
+| `claude_jules_handover.py` | 8 | SEMI_AUTO ⇄ AUTO controller handover on the existing `loop_owner` chain (takeover, renew, handback, reclaim) |
+| `claude_jules_budget_summary.py` | proof | **Jules-made proof artifact** (Loop 130, adopted); a small pure helper, not used by the loop itself |
 | `config/claude_jules_autoloop_policy.json` | — | committed policy: **grants nothing**, no live authorization |
 | `config/claude_jules_autoloop_roadmap.proposed.json` | 10 | proposed one-task docs-only LIVE proof roadmap |
+| `docs/evidence/.../live-proof-2026-10-02/` | proof | the one-off proof policy (expired) and three-task roadmap, with a README; evidence only, never loaded by default |
 
 ## 4. Durable records (all create-only, never updated)
 
@@ -115,7 +126,9 @@ controller instance for every step).
 
 ## 6. Tests (this branch, cloud container, Python 3.11.15)
 
-- New: `test_claude_jules_handover.py` (8), `test_claude_jules_live_adapter.py` (15, real git remote),
+- New: `test_claude_jules_config_separation.py` (4), `test_claude_jules_carrier_guard.py` (9),
+  `test_claude_jules_budget_summary.py` (8, Jules-made, adopted),
+  `test_claude_jules_handover.py` (8), `test_claude_jules_live_adapter.py` (15, real git remote),
   `test_claude_jules_autoloop_e2e.py` (29 mock E2E scenarios),
   `test_claude_jules_dispatch_contract.py` (14), `test_claude_jules_result_inspection.py` (16);
   compatibility test switched to the reviewed bundle.
@@ -126,7 +139,8 @@ controller instance for every step).
   tampered stored inspection and result event (STOP UNKNOWN), fresh PR head ref
   or footer mismatch (BLOCKED).
 - Full suite: `python -m unittest discover -s automation/command_bus/tests -t .`
-  → see the checkpoint JSON for the exact count; compileall and `git diff --check` PASS.
+  → see the checkpoint JSON for the exact count (937 run, 1 skipped at the final head);
+  compileall and `git diff --check` PASS.
 - Mutation spot checks (remove re-fence, session check, exact-head test binding,
   lane grant, small-repair path, controller fence, dedup) each made a test fail.
   Removing the adoption `current != snapshot` check alone does not, because
@@ -295,3 +309,24 @@ superseded failed candidate no longer counts as an outstanding dispatch
   - PR #220 is still a draft and must be merged by a human (not done here).
   - An owner RENEW while a dispatch intent is half-written is refused (the
     exact generation is required for the irreversible command write).
+
+## 10. Merge order and what reaches `main`
+
+PR #220 targets `feature/claude-auto-current-jules-protocol` (17 commits / 11 files ahead of
+`main`: origin binding V1, binding store, carrier V2 bridge). `main` itself is 28 commits ahead
+of that base. A trial `git merge-tree` shows a clean merge both PR → base and PR head → `main`.
+
+1. Human: mark PR #220 ready, review, merge it into `feature/claude-auto-current-jules-protocol`
+   (42 files vs `main` become the base's content; nothing reaches `main` yet).
+2. Human: open/merge the base → `main` PR. It also carries the earlier 17 base commits that this
+   PR did not touch; review those separately. Re-run the full suite on the merged result.
+3. Afterwards close Jules PRs #230-#233 and delete the `jules-work/*`,
+   `claude/autoloop-live-target` and data branches only if the evidence is archived elsewhere
+   (the budget ledger and records on `claude/claude-jules-autoloop-data` are evidence).
+4. A new LIVE run needs a new approval, a new policy file (the proof policy is expired) and a
+   SEMI_AUTO → AUTO takeover; never copy the proof policy into `config/`.
+
+Checked for the merge: the four Jules-made files are byte-identical to the adopted candidates;
+the rejected Loop 129 candidate (PR 231) is not present (its `TypeError` leak is gone); no file
+under `.github/` is touched; the new modules do not overlap existing files except
+`claude_loop.py` and the compatibility test, which the PR already modifies on top of the base.

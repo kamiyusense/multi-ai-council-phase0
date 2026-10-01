@@ -15,14 +15,15 @@
   "environment": "Claude Code cloud container, Python 3.11.15",
   "tests": {
     "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
-    "after_full_suite": "933 run, OK, 1 skipped (after integrating the adopted LIVE results)",
+    "after_full_suite": "937 run, OK, 1 skipped (final head, incl. config separation, carrier guard, adopted Jules tests)",
     "new_test_methods": {
       "e2e": 29,
       "dispatch_contract": 14,
       "result_inspection": 16,
       "live_adapter_real_git": 15,
       "handover": 8,
-      "carrier_guard": 8
+      "carrier_guard": 8,
+      "config_separation": 4
     },
     "compileall": "PASS",
     "git_diff_check": "PASS"
@@ -126,5 +127,10 @@
     "owner": "SEMI_AUTO gen 2 (lease to 2026-10-02T08:30Z)",
     "extra_live_test": "NOT STARTED: owner fence + takeover BLOCKED (SEMI_AUTO lease valid, result PRs open); ownership not taken",
     "budget_used": 4
+  },
+  "config_separation": {
+    "normal_policy": "automation/command_bus/config/claude_jules_autoloop_policy.json (grants nothing)",
+    "live_proof_inputs": "docs/evidence/claude-jules-autoloop-20261001/live-proof-2026-10-02/{policy,roadmap}.live-proof.json (expired 2026-10-02T15:00Z, evidence only)",
+    "ledger_and_records": "untouched on claude/claude-jules-autoloop-data"
   }
 }

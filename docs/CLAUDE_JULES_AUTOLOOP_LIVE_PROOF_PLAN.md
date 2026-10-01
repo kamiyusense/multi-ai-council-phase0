@@ -1,10 +1,14 @@
-# Claude × Jules AUTO loop — minimal LIVE proof plan (NOT AUTHORIZED)
+# Claude × Jules AUTO loop — minimal LIVE proof plan (EXECUTED 2026-10-02; kept as history)
 
 > 日本語要約: これは「1回だけ」実際に Claude → Jules → Claude を通す実証の計画です。
 > 準備ができていることと、実行が許可されていることは別です。下の「必要な承認」が
 > すべて人間から明示されるまで、何も実行しません。
 
-Status: **prepared, not authorized, not executed.**
+Status: **executed (superseded).** The user approved a larger proof (Loop A total LIVE budget
+10; 4 used) on 2026-10-02; results are in `CLAUDE_JULES_AUTOLOOP_INTEGRATION.md` §8b and
+`docs/evidence/claude-jules-autoloop-20261001/checkpoint.json`. The original plan below is
+unchanged history (it assumed one dispatch and `max_dispatches: 1`); it does not authorize
+anything now.
 
 ## 1. Goal
 
