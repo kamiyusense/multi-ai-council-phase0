@@ -339,7 +339,7 @@ Loop 092 introduces `CLAUDE_AUTO_ORIGIN_BINDING_V1` as a pure, static origin cro
 
 This contract strictly evaluates exact-key binding and fails closed on mismatches. It does not dictate a durable file location and makes no changes to the carrier workflows. Integrated live execution from Claude-verdict to Jules LIVE remains explicitly UNKNOWN and not authorized.
 
-## 2026-10-02 STATIC Durable Binding Store added (Loop 093)
+## 2026-10-01 STATIC Durable Binding Store added (Loop 093)
 
 Loop 093 introduces the immutable store for the binding in `automation.command_bus.claude_jules_origin_binding_store`. It strictly reuses the existing `GitHubContentsClient` create-only, verify-readback pattern from the backend systems.
 
