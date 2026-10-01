@@ -9,9 +9,9 @@ class TestSignalObservedFeedbackRequest(unittest.TestCase):
             "observed_activity_name": "sessions/12345/activities/act_1",
             "expected_activity_name": "sessions/12345/activities/act_1",
             "jules_state": "AWAITING_USER_FEEDBACK",
-            "agent_message": "Can I merge?",
+            "agent_message": "Can I keep the existing filename?", 
             "controller_classification": "SMALL_REVERSIBLE_REPO",
-            "answer_text": "Yes, please merge.",
+            "answer_text": "Yes, keep the existing filename within the allowlist.",
             "already_answered": False,
             "prior_message_request_exists": False,
         }
@@ -21,7 +21,7 @@ class TestSignalObservedFeedbackRequest(unittest.TestCase):
         self.assertEqual(result, {
             "session_id": "12345",
             "expected_state": "AWAITING_USER_FEEDBACK",
-            "prompt": "Yes, please merge."
+            "prompt": "Yes, keep the existing filename within the allowlist."
         })
         # Assert exact keys length to 3
         self.assertEqual(len(result), 3)
@@ -66,6 +66,14 @@ class TestSignalObservedFeedbackRequest(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare_same_session_message_request(**args)
 
+    def test_activity_id_dot_segments_raise(self):
+        for activity_id in (".", ".."):
+            args = self.valid_args.copy()
+            args["observed_activity_name"] = f"sessions/12345/activities/{activity_id}"
+            args["expected_activity_name"] = args["observed_activity_name"]
+            with self.subTest(activity_id=activity_id), self.assertRaises(ValueError):
+                prepare_same_session_message_request(**args)
+
     def test_invalid_activity_id_whitespace_raises(self):
         args = self.valid_args.copy()
         args["observed_activity_name"] = "sessions/12345/activities/act 1"
@@ -82,6 +90,7 @@ class TestSignalObservedFeedbackRequest(unittest.TestCase):
 
     def test_human_only_classification_raises(self):
         args = self.valid_args.copy()
+        args["agent_message"] = "May I merge this PR into main?"
         args["controller_classification"] = "HUMAN_ONLY"
         with self.assertRaises(ValueError):
             prepare_same_session_message_request(**args)
