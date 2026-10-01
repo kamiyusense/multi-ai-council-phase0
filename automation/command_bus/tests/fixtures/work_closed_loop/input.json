@@ -1,0 +1,363 @@
+{
+  "source_mode": "MOCK",
+  "lane": "blue",
+  "source": {
+    "request": {
+      "schema_version": 2,
+      "profile": "JULES_CHAT_SEMIAUTO_V2",
+      "command_id": "relay-dev-loop-900-mock-source",
+      "target_repo": "kamiyusense/multi-ai-council-phase0",
+      "target_branch": "experiment/blue-work-autonomous-development",
+      "work_branch": "jules-work/relay-dev-loop-900-mock-source",
+      "expected_target_head": "cccccccccccccccccccccccccccccccccccccccc",
+      "expected_target_tree": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "allowed_paths": [
+        "automation/command_bus/tests/test_blue_receipt_binding.py"
+      ],
+      "prompt": "Loop candidate — bounded MEDIUM STATIC receipt regression.\nGoal:\nProve a receipt for another PR cannot terminate a command. No architecture expansion.\nRead first:\n- automation/command_bus/blue_work_reconcile_prepare.py\n- automation/command_bus/tests/test_blue_receipt_binding.py\nAllowed changed paths only:\n- automation/command_bus/tests/test_blue_receipt_binding.py\nHard scope / Do Not Touch:\n- retry=0; fallback=disabled; no Merge; no live provider, model, Work or Jules calls.\n- no default-branch write, force push, deletion, settings, credentials or billing changes.\nReuse-first:\nReuse the original BWJ fixture and existing receipt parser; do not duplicate policy.\nRequired semantics:\nAssert UNKNOWN when the same command ID has a receipt for another PR.\nNegative/tamper cases:\nWrong PR, HEAD and worker generation; malformed receipt; duplicate command.\nAcceptance criteria:\nDirect observable assertions; no vacuous tests; only the allowed test file changes.\nValidation:\npython -m unittest automation.command_bus.tests.test_blue_receipt_binding -v\npython -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\nPublication:\nNormal isolated Jules PR only after all required checks succeed; no Merge.\nStop and report instead of guessing if:\nTarget snapshot moved, paths need expansion, evidence is UNKNOWN or any approval boundary is reached.\n",
+      "created_at": "2026-10-01T10:00:00Z",
+      "expires_at": "2026-10-01T11:00:00Z",
+      "retry": 0,
+      "fallback": "disabled",
+      "merge_allowed": false,
+      "force_push_allowed": false
+    },
+    "claim": {
+      "schema_version": 3,
+      "loop_number": 900,
+      "loop_id": "900",
+      "task_id": "mock-source",
+      "command_id": "relay-dev-loop-900-mock-source",
+      "target_branch": "experiment/blue-work-autonomous-development",
+      "expected_target_head": "cccccccccccccccccccccccccccccccccccccccc",
+      "expected_target_tree": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "work_branch": "jules-work/relay-dev-loop-900-mock-source",
+      "state": "CLAIMED",
+      "claimed_at": "2026-10-01T09:59:00Z",
+      "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+      "retry": 0,
+      "fallback": "disabled",
+      "lane_id": "J-BLUE",
+      "lane_display": "💙"
+    },
+    "command_commit": {
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "files": [
+        {
+          "filename": "automation/command_bus/jules_api_requests/relay-dev-loop-900-mock-source.json",
+          "status": "added"
+        }
+      ]
+    },
+    "dispatch_run": {
+      "id": 50,
+      "head_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "path": ".github/workflows/jules-chat-semiauto.yml",
+      "event": "push",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "repository": {
+        "full_name": "kamiyusense/multi-ai-council-phase0"
+      }
+    },
+    "dispatch_job": {
+      "id": 51,
+      "run_id": 50,
+      "head_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "dispatch_log": "2026-10-01T10:01:00.000Z Jules session accepted: sessions/12345\n2026-10-01T10:01:01.000Z Jules session timing read back: sessions/12345 at 2026-10-01T19:01:00+09:00\n",
+    "acceptance": {
+      "name": "sessions/12345",
+      "createTime": "2026-10-01T10:01:00Z",
+      "sourceContext": {
+        "source": "sources/github/kamiyusense/multi-ai-council-phase0",
+        "githubRepoContext": {
+          "startingBranch": "jules-work/relay-dev-loop-900-mock-source"
+        }
+      }
+    },
+    "session_readback": {
+      "name": "sessions/12345",
+      "createTime": "2026-10-01T10:01:00Z",
+      "sourceContext": {
+        "source": "sources/github/kamiyusense/multi-ai-council-phase0",
+        "githubRepoContext": {
+          "startingBranch": "jules-work/relay-dev-loop-900-mock-source"
+        }
+      },
+      "state": "COMPLETED",
+      "outputs": [
+        {
+          "pullRequest": {
+            "url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/42"
+          }
+        }
+      ]
+    },
+    "result_pr": {
+      "number": 42,
+      "state": "open",
+      "merged": false,
+      "head": {
+        "ref": "jules-result/fixture",
+        "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "repo": {
+          "full_name": "kamiyusense/multi-ai-council-phase0"
+        }
+      },
+      "base": {
+        "ref": "jules-work/relay-dev-loop-900-mock-source",
+        "sha": "cccccccccccccccccccccccccccccccccccccccc",
+        "repo": {
+          "full_name": "kamiyusense/multi-ai-council-phase0"
+        }
+      }
+    },
+    "comparison": {
+      "status": "ahead",
+      "base_commit": {
+        "sha": "cccccccccccccccccccccccccccccccccccccccc"
+      },
+      "merge_base_commit": {
+        "sha": "cccccccccccccccccccccccccccccccccccccccc"
+      },
+      "total_commits": 1,
+      "commits": [
+        {
+          "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    }
+  },
+  "wake": {
+    "event": {
+      "action": "opened",
+      "repository": {
+        "full_name": "kamiyusense/multi-ai-council-phase0"
+      },
+      "pull_request": {
+        "number": 42,
+        "head": {
+          "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "base": {
+          "ref": "jules-work/relay-dev-loop-900-mock-source",
+          "sha": "cccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    "result_pr": {
+      "number": 42,
+      "state": "open",
+      "merged": false,
+      "head": {
+        "ref": "jules-result/fixture",
+        "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "repo": {
+          "full_name": "kamiyusense/multi-ai-council-phase0"
+        }
+      },
+      "base": {
+        "ref": "jules-work/relay-dev-loop-900-mock-source",
+        "sha": "cccccccccccccccccccccccccccccccccccccccc",
+        "repo": {
+          "full_name": "kamiyusense/multi-ai-council-phase0"
+        }
+      }
+    },
+    "carrier_pr": {
+      "number": 167,
+      "state": "open",
+      "merged": false,
+      "labels": [
+        {
+          "name": "cloud-blue"
+        }
+      ],
+      "head": {
+        "ref": "cloud-work/carrier-blue-v1",
+        "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "repo": {
+          "full_name": "kamiyusense/multi-ai-council-phase0"
+        }
+      }
+    },
+    "worker_state": {
+      "schema_version": 1,
+      "lane": "blue",
+      "carrier_pr": 167,
+      "carrier_branch": "cloud-work/carrier-blue-v1",
+      "active_generation": 1
+    },
+    "protocol": {
+      "protocol_version": 1,
+      "lane": "blue",
+      "command_prefix": "[CW_BLUE_V1]",
+      "worker_generation": 1
+    },
+    "reviews": [],
+    "comments": [],
+    "records_complete": true,
+    "expires_at": "2026-10-01T13:00:00Z"
+  },
+  "review": {
+    "current_result": {
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "tree": "dddddddddddddddddddddddddddddddddddddddd"
+    },
+    "evidence_refs": [
+      "fixture://diff",
+      "fixture://tests"
+    ],
+    "changed_files": [
+      {
+        "filename": "automation/command_bus/tests/test_blue_receipt_binding.py",
+        "status": "modified",
+        "symlink": false
+      }
+    ],
+    "files_complete": true,
+    "checks": [
+      {
+        "kind": "unit",
+        "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tree_sha": "dddddddddddddddddddddddddddddddddddddddd",
+        "status": "completed",
+        "conclusion": "success",
+        "evidence_ref": "fixture://unit"
+      },
+      {
+        "kind": "negative",
+        "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tree_sha": "dddddddddddddddddddddddddddddddddddddddd",
+        "status": "completed",
+        "conclusion": "success",
+        "evidence_ref": "fixture://negative"
+      },
+      {
+        "kind": "compile",
+        "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tree_sha": "dddddddddddddddddddddddddddddddddddddddd",
+        "status": "completed",
+        "conclusion": "success",
+        "evidence_ref": "fixture://compile"
+      },
+      {
+        "kind": "diff",
+        "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tree_sha": "dddddddddddddddddddddddddddddddddddddddd",
+        "status": "completed",
+        "conclusion": "success",
+        "evidence_ref": "fixture://diff"
+      }
+    ],
+    "implementer_id": "mock-jules-implementer",
+    "records": {
+      "requests": [
+        {
+          "schema_version": 1,
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "loop_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "round": 1,
+          "correlation_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expires_at": "2026-10-01T13:00:00Z",
+          "status": "OPEN",
+          "review_profile": "DURABLE_REVIEW_V2",
+          "expected_target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+          "reviewer_role": "reviewer",
+          "review_kind": "JULES_RESULT",
+          "evidence_refs": [
+            "fixture://diff",
+            "fixture://tests"
+          ],
+          "allowed_decisions": [
+            "PASS",
+            "FAIL",
+            "BLOCKED",
+            "UNKNOWN"
+          ],
+          "retry": 0,
+          "fallback": "disabled"
+        }
+      ],
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim_id": "mock-review-owner",
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "reviewer_instance_id": "mock-independent-work",
+          "reviewer_generation": 1,
+          "role": "reviewer",
+          "capability": "review",
+          "claimed_at": "2026-10-01T12:00:00+00:00",
+          "expires_at": "2026-10-01T13:00:00+00:00",
+          "status": "ACTIVE"
+        }
+      ],
+      "responses": [
+        {
+          "schema_version": 1,
+          "response_id": "mock-review-response",
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "loop_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "round": 1,
+          "correlation_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "reviewer_instance_id": "mock-independent-work",
+          "reviewer_generation": 1,
+          "decision": "PASS",
+          "evidence_refs": [
+            "fixture://diff",
+            "fixture://tests"
+          ],
+          "submitted_at": "2026-10-01T12:00:00+00:00",
+          "status": "AVAILABLE",
+          "review_profile": "DURABLE_REVIEW_V2",
+          "expected_target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+          "reviewer_role": "reviewer",
+          "review_kind": "JULES_RESULT",
+          "rationale_summary": "MOCK semantic review only: receipt binding and negative cases inspected.",
+          "next_command_proposal": {
+            "task_id": "mock-next",
+            "prompt": "Loop candidate — bounded MEDIUM STATIC receipt regression.\nGoal:\nProve a receipt for another PR cannot terminate a command. No architecture expansion.\nRead first:\n- automation/command_bus/blue_work_reconcile_prepare.py\n- automation/command_bus/tests/test_blue_receipt_binding.py\nAllowed changed paths only:\n- automation/command_bus/tests/test_blue_receipt_binding.py\nHard scope / Do Not Touch:\n- retry=0; fallback=disabled; no Merge; no live provider, model, Work or Jules calls.\n- no default-branch write, force push, deletion, settings, credentials or billing changes.\nReuse-first:\nReuse the original BWJ fixture and existing receipt parser; do not duplicate policy.\nRequired semantics:\nAssert UNKNOWN when the same command ID has a receipt for another PR.\nNegative/tamper cases:\nWrong PR, HEAD and worker generation; malformed receipt; duplicate command.\nAcceptance criteria:\nDirect observable assertions; no vacuous tests; only the allowed test file changes.\nValidation:\npython -m unittest automation.command_bus.tests.test_blue_receipt_binding -v\npython -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\nPublication:\nNormal isolated Jules PR only after all required checks succeed; no Merge.\nStop and report instead of guessing if:\nTarget snapshot moved, paths need expansion, evidence is UNKNOWN or any approval boundary is reached.\n",
+            "allowed_paths": [
+              "automation/command_bus/tests/test_blue_receipt_binding.py"
+            ],
+            "expires_at": "2026-10-01T13:00:00Z"
+          },
+          "model_route_evidence": {
+            "route": "MOCK",
+            "live_model_used": false
+          }
+        }
+      ],
+      "receipts": []
+    }
+  },
+  "next_snapshot": {
+    "target": {
+      "repository": "kamiyusense/multi-ai-council-phase0",
+      "branch": "experiment/blue-work-autonomous-development",
+      "head": "cccccccccccccccccccccccccccccccccccccccc",
+      "tree": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "expected_head": "cccccccccccccccccccccccccccccccccccccccc",
+      "expected_tree": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    },
+    "tree_entries": [
+      {
+        "path": "automation/command_bus/loop_id_claims/900.json",
+        "type": "blob"
+      }
+    ],
+    "branch_refs": [
+      {
+        "ref": "refs/heads/jules-work/relay-dev-loop-900-mock-source"
+      }
+    ],
+    "ledger_complete": true
+  }
+}

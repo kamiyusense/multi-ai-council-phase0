@@ -6,6 +6,8 @@ from enum import StrEnum
 from typing import Any, Iterable
 
 
+from .cloud_work_lanes import lane_identity
+
 EXPECTED_REPOSITORY = "kamiyusense/multi-ai-council-phase0"
 _SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -39,13 +41,18 @@ def _unknown(reason: str) -> EventClassificationResult:
     return EventClassificationResult(EventDecision.UNKNOWN, reason=reason)
 
 
-def classify_blue_jules_result_event(
+def classify_jules_result_event(
     event_payload: Any,
     explicit_lineage: Any,
     seen_command_ids: Iterable[str] | None,
+    *, lane: str = "blue",
 ) -> EventClassificationResult:
     """Classify one GitHub PR event without I/O or mutation."""
 
+    try:
+        lane_identity(lane)
+    except (ValueError, TypeError):
+        return _unknown("unknown lane")
     if not isinstance(event_payload, dict):
         return _unknown("malformed top-level payload")
 
@@ -121,7 +128,7 @@ def classify_blue_jules_result_event(
     if any(not isinstance(item, str) for item in seen):
         return _unknown("missing or malformed seen command identities")
 
-    command_id = f"blue-jules-result-pr{pr_number}-{head_sha}"
+    command_id = f"{lane}-jules-result-pr{pr_number}-{head_sha}"
     if command_id in seen:
         return EventClassificationResult(
             EventDecision.IGNORE,
@@ -134,3 +141,7 @@ def classify_blue_jules_result_event(
         command_id=command_id,
         reason="eligible for wake",
     )
+
+
+def classify_blue_jules_result_event(event_payload, explicit_lineage, seen_command_ids):
+    return classify_jules_result_event(event_payload, explicit_lineage, seen_command_ids, lane="blue")

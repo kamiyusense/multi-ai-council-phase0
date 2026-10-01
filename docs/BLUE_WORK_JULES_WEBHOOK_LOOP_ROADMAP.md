@@ -5,6 +5,18 @@ Status: proposed execution roadmap / documentation only
 Pilot lane: 💙 J-BLUE + 💙 Cloud Work Blue  
 Source policy: PR #191 Controller Operating Guide + PR #192 Development Acceleration Playbook + PR #193 Signal roadmap pattern + PR #194 Relay minimal-reuse roadmap + PR #115 Work-event-loop static research
 
+### PR #217 experimental STATIC checkpoint
+
+Read [the autonomous batch handover](BLUE_WORK_AUTONOMOUS_BATCH_20261001.md)
+before continuing this experiment. BWJ-1/2 now share only the necessary color
+metadata; Blue compatibility remains tested. Receipt replay protection binds
+command ID, target repository/PR/branch/HEAD and worker generation. Complete
+GitHub GET pagination and fail-closed source capture are implemented.
+BWJ-5 captured reviewer-contract consumption and BWJ-6 formal schema-v3
+next-task preparation are mock/static-ready. The next claim is NOT_RESERVED.
+BWJ-4 real transport proof is still NOT EXECUTED; these additions do not make
+M2/M3 or any live milestone complete. No change to the four carriers is made.
+
 ## 1. Purpose
 
 This roadmap defines the smallest path from the current human-triggered Jules semi-auto loop to a durable event-driven development loop in which:

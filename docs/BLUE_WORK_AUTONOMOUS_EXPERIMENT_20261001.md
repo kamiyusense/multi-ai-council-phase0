@@ -1,5 +1,7 @@
 # Blue Jules × Work 自律開発・隔離実験
 
+> Historical first checkpoint. Read [the subsequent autonomous batch handover](BLUE_WORK_AUTONOMOUS_BATCH_20261001.md) for receipt repairs, newly confirmed official task limits and formal schema-v3 STATIC preparation.
+
 2026-10-01 / STATIC only / independent review pending / LIVE not run
 
 ## 現在地と引き継ぎ入口

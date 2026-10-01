@@ -4,18 +4,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
+from .cloud_work_lanes import lane_identity, result_review_task, result_review_verification
 from .blue_jules_result_event import EventClassificationResult, EventDecision
 
 
 _SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
-RESULT_REVIEW_TASK = "fresh-read GitHub; verify exact J-BLUE claim/command/session/result lineage and current result head; independently inspect paths/semantics/negative tests/test evidence; return PASS/FAIL/BLOCKED/UNKNOWN plus one bounded next-task proposal; perform no target write and do not dispatch Jules."
-RESULT_REVIEW_VERIFICATION = (
-    "fresh result PR/branch/head readback",
-    "durable J-BLUE lineage verification",
-    "independent diff/test evidence inspection",
-    "confirmation no target write/Jules dispatch/live provider execution occurred",
-)
-
+RESULT_REVIEW_TASK = result_review_task("blue")
+RESULT_REVIEW_VERIFICATION = result_review_verification("blue")
 
 @dataclass(frozen=True)
 class CarrierSnapshot:
@@ -53,7 +48,7 @@ def _stale(command_id: str | None = None) -> PrepareResult:
     return PrepareResult("STALE", command_id=command_id)
 
 
-def prepare_blue_work_wake(
+def prepare_work_wake(
     classification: EventClassificationResult,
     carrier: CarrierSnapshot,
     target: TargetSnapshot,
@@ -75,11 +70,13 @@ def prepare_blue_work_wake(
     # Carrier validation
     if not isinstance(carrier, CarrierSnapshot):
         return _unknown()
-    if carrier.protocol_version != 1:
+    if type(carrier.protocol_version) is not int or carrier.protocol_version != 1:
         return _unknown()
-    if carrier.lane != "blue":
+    try:
+        identity = lane_identity(carrier.lane)
+    except (ValueError, TypeError):
         return _unknown()
-    if carrier.command_prefix != "[CW_BLUE_V1]":
+    if carrier.command_prefix != identity["command_prefix"]:
         return _unknown()
     if (
         isinstance(carrier.worker_generation, bool)
@@ -111,7 +108,7 @@ def prepare_blue_work_wake(
     # Identity validation
     if not isinstance(classification.command_id, str):
         return _unknown()
-    expected_command_id = f"blue-jules-result-pr{target.target_pr}-{target.expected_target_head}"
+    expected_command_id = f"{carrier.lane}-jules-result-pr{target.target_pr}-{target.expected_target_head}"
     if classification.command_id != expected_command_id:
         return _unknown()
 
@@ -162,9 +159,9 @@ def prepare_blue_work_wake(
         "target_branch": target.target_branch,
         "expected_target_head": target.expected_target_head,
         "expires_at": expires_at,
-        "task": RESULT_REVIEW_TASK,
+        "task": result_review_task(carrier.lane),
         "allowed_paths": [],
-        "verification": list(RESULT_REVIEW_VERIFICATION),
+        "verification": list(result_review_verification(carrier.lane)),
         "live_provider_or_model_allowed": False,
         "retry": 0,
         "fallback": "disabled",
@@ -184,3 +181,9 @@ def prepare_blue_work_wake(
         command_id=classification.command_id,
         review_body=review_body,
     )
+
+
+def prepare_blue_work_wake(classification, carrier, target, existing_command_ids, expires_at, now):
+    if not isinstance(carrier, CarrierSnapshot) or carrier.lane != "blue":
+        return _unknown()
+    return prepare_work_wake(classification, carrier, target, existing_command_ids, expires_at, now)
