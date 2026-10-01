@@ -145,23 +145,35 @@ class TestClaudeJulesCurrentCarrierCompatibility(unittest.TestCase):
         self.assertEqual(result.status, "PREPARED")
         req = result.request
 
-        # Output carries origin_loop_id, origin_round, origin_correlation_id, origin_generation
-        self.assertEqual(req["origin_loop_id"], "123")
-        self.assertEqual(req["origin_round"], 1)
-        self.assertEqual(req["origin_correlation_id"], "cor-1")
-        self.assertEqual(req["origin_generation"], 1)
+        # The bridge now emits the exact current carrier V2 request.
+        self.assertEqual(set(req), REQUIRED_KEYS)
+        self.assertEqual(req["schema_version"], 2)
+        self.assertEqual(req["profile"], "JULES_CHAT_SEMIAUTO_V2")
+        self.assertEqual(
+            req["work_branch"],
+            "jules-work/relay-dev-loop-123-compat-baseline",
+        )
+        for origin_key in (
+            "origin_loop_id", "origin_round", "origin_correlation_id",
+            "origin_generation",
+        ):
+            self.assertNotIn(origin_key, req)
+        self.assertIs(validate_request(req, now=self.now), req)
 
-        # Validate with current carrier validator, proves rejection
-        with self.assertRaises(ValueError) as cm:
-            validate_request(req, now=self.now)
-        self.assertIn("request keys mismatch", str(cm.exception))
-
-        # Change schema_version to 2, still rejected
-        req["schema_version"] = 2
-        with self.assertRaises(ValueError) as cm:
-            validate_request(req, now=self.now)
-        self.assertIn("request keys mismatch", str(cm.exception))
-        self.assertIn("'work_branch'", str(cm.exception))
+        # Claude AUTO origin identity stays in the existing companion binding,
+        # not in the carrier request or claim schemas.
+        from automation.command_bus.claude_jules_origin_binding import (
+            build_binding_record,
+        )
+        binding = build_binding_record(
+            "123", 1, "cor-1", 1, req, self.valid_claim
+        )
+        self.assertEqual(binding["origin_loop_id"], "123")
+        self.assertEqual(binding["origin_round"], 1)
+        self.assertEqual(binding["origin_correlation_id"], "cor-1")
+        self.assertEqual(binding["origin_generation"], 1)
+        self.assertEqual(binding["command_id"], req["command_id"])
+        self.assertEqual(binding["work_branch"], req["work_branch"])
 
     def test_request_schema_version_mismatch(self):
         from automation_compat.command_bus.jules_api_request import validate_request
