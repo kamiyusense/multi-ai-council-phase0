@@ -312,7 +312,7 @@ async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: 
         return stop_reason
 
 async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0) -> dict[str, str]:
-    """Execute an initialize -> session/new -> session/prompt request, extract one text update, and wait for terminal round-trip."""
+    """Mock-only ACP prompt: concatenate 1..3 text updates before the terminal response."""
     async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
         session_id = await _acp_handshake(stdout, stdin, cwd, timeout)
 
