@@ -63,14 +63,15 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md)
 2. [Development execution router](docs/DEVELOPMENT_EXECUTION_ROUTER.md) — Jules半Loop / [Cloud Work 4色lane・交換](docs/CLOUD_WORK_LANES_INDEX.md) / Local Workの入口（[Jules PR履歴索引](docs/JULES_SEMIAUTO_PR_INDEX.md)へ）
 3. [Development acceleration playbook](docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md) — **新Chat必読**。先駆者流用、作りすぎ禁止、Jules投入/独立検品/小修正、fast roadmap
-4. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
-5. [docs/PHASE0_IMPLEMENTATION_CHECKLIST.md](docs/PHASE0_IMPLEMENTATION_CHECKLIST.md)
-6. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary
-7. [docs/PIONEER_OSS_RESEARCH_HANDOVER.md](docs/PIONEER_OSS_RESEARCH_HANDOVER.md) — 詳細な先駆者/OSS調査。日常実行はAcceleration Playbookを先に読む
-8. [docs/CHAT_WORK_AUTONOMY_RULES.md](docs/CHAT_WORK_AUTONOMY_RULES.md) — Chat ⇄ Work長時間自律実行・承認境界
-9. [docs/CHAT_JULES_API_SEMIAUTO.md](docs/CHAT_JULES_API_SEMIAUTO.md) — Chat→Jules半ループ運用・必須投入時刻/タスク目安/推定完了表示
-10. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
-11. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
+4. [Signal foundation roadmap](docs/SIGNAL_FOUNDATION_ROADMAP.md) — Signal / Status / Control Tower開発の現在の実装順。Julesへ「この小部品を最小移植」で投げ、Observed Signalを先行
+5. [docs/PHASE0_IMPLEMENTATION_SPEC.md](docs/PHASE0_IMPLEMENTATION_SPEC.md)
+6. [docs/PHASE0_IMPLEMENTATION_CHECKLIST.md](docs/PHASE0_IMPLEMENTATION_CHECKLIST.md)
+7. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Council / Relay / Provider / Safety boundary
+8. [docs/PIONEER_OSS_RESEARCH_HANDOVER.md](docs/PIONEER_OSS_RESEARCH_HANDOVER.md) — 詳細な先駆者/OSS調査。日常実行はAcceleration Playbookを先に読む
+9. [docs/CHAT_WORK_AUTONOMY_RULES.md](docs/CHAT_WORK_AUTONOMY_RULES.md) — Chat ⇄ Work長時間自律実行・承認境界
+10. [docs/CHAT_JULES_API_SEMIAUTO.md](docs/CHAT_JULES_API_SEMIAUTO.md) — Chat→Jules半ループ運用・必須投入時刻/タスク目安/推定完了表示
+11. [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+12. [docs/GIT_GLOSSARY_JA.md](docs/GIT_GLOSSARY_JA.md)
 
 ## Repository roles
 
