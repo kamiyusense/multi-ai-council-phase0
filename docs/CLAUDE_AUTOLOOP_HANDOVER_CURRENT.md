@@ -346,3 +346,25 @@ Loop 093 introduces the immutable store for the binding in `automation.command_b
 No new database, general persistence framework, or workflow was created. The module securely cross-binds valid carrier requests and claims to origin identities. It fails closed (UNKNOWN) upon missing or unmatched cross-binding fields, and handles retry/recovery strictly by blocking on changed existing state and recovering identical state without re-creating.
 
 This is **STATIC PREP of the durable storage boundary only**. Current carrier request/claim schemas and workflows are required preconditions. Integrated Claude->Jules LIVE execution remains explicitly UNKNOWN and not authorized.
+
+## 2026-10-01 Current Jules carrier V2 bridge completed
+
+`prepare_jules_semiauto_request()` now emits the exact current
+`JULES_CHAT_SEMIAUTO_V2` 16-key carrier request: `schema_version=2`,
+canonical `target_branch`, isolated `work_branch=jules-work/<command_id>`,
+and no `origin_*` fields in the carrier request. The internal
+`prepare_jules_closed_loop_command()` schema remains unchanged.
+
+Claude AUTO origin loop/round/correlation/generation identity is preserved by
+the existing `CLAUDE_AUTO_ORIGIN_BINDING_V1` companion record through
+`build_binding_record()`; the compatibility proof validates the emitted request
+against the exact pinned current-carrier validator before building that binding.
+
+Cloud-safe isolated verification reconstructed the required modules and pinned
+fixtures from this branch: 68 targeted tests PASS across `test_claude_loop`,
+current-carrier compatibility, origin binding, and immutable binding store.
+Python compileall PASS and no trailing whitespace was found in changed Python
+files. A complete repository checkout was not exposed to this Cloud Work, and
+the branch HEAD had no workflow runs, so the full command-bus discovery result
+remains UNKNOWN rather than inferred. No Jules/provider/model call, workflow
+dispatch, merge, default-branch write, or local-machine access occurred.
