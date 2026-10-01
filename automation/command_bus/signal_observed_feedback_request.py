@@ -38,8 +38,8 @@ def prepare_same_session_message_request(
         raise ValueError("Activity name does not match expected session ID")
 
     activity_id = observed_activity_name[len(prefix):]
-    if not activity_id:
-        raise ValueError("Activity ID must be nonempty")
+    if activity_id in {"", ".", ".."}:
+        raise ValueError("Activity ID must be nonempty and not a dot segment")
 
     # nonempty ASCII letters/digits/dash/underscore/dot only
     if not re.fullmatch(r"[a-zA-Z0-9\-_.]+", activity_id):
