@@ -866,3 +866,36 @@ class TestACPMockTextUpdateWire(unittest.IsolatedAsyncioTestCase):
         from src.relay.acp_client import acp_mock_text_update_wire
         with self.assertRaisesRegex(ValueError, "content type must be 'text'"):
             await acp_mock_text_update_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+
+    async def test_second_chunk_wrong_session_fails_closed(self):
+        from src.relay.acp_client import acp_mock_text_update_wire
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "notif = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'valid first'}}}}\n"
+            "sys.stdout.write(json.dumps(notif) + '\\n')\n"
+            "notif['params']['sessionId'] = 'other-session'\n"
+            "sys.stdout.write(json.dumps(notif) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        with self.assertRaisesRegex(ValueError, "sessionId mismatch"):
+            await acp_mock_text_update_wire(
+                sys.executable, "-c", script,
+                cwd=tempfile.gettempdir(), prompt_text="hello fake",
+            )
+
+    async def test_eof_after_two_valid_chunks_fails_closed(self):
+        from src.relay.acp_client import acp_mock_text_update_wire
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "notif = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'valid first'}}}}\n"
+            "sys.stdout.write(json.dumps(notif) + '\\n')\n"
+            "notif['params']['update']['content']['text'] = 'valid second'\n"
+            "sys.stdout.write(json.dumps(notif) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        with self.assertRaisesRegex(EOFError, "Unexpected EOF reading ACP session/prompt response"):
+            await acp_mock_text_update_wire(
+                sys.executable, "-c", script,
+                cwd=tempfile.gettempdir(), prompt_text="hello fake",
+            )
