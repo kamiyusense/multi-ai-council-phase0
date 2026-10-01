@@ -368,3 +368,20 @@ files. A complete repository checkout was not exposed to this Cloud Work, and
 the branch HEAD had no workflow runs, so the full command-bus discovery result
 remains UNKNOWN rather than inferred. No Jules/provider/model call, workflow
 dispatch, merge, default-branch write, or local-machine access occurred.
+
+## 2026-10-01 Claude × Jules AUTO loop STATIC/mock integration
+
+Branch `claude/claude-jules-autoloop-integration` (Draft PR into
+`feature/claude-auto-current-jules-protocol`) composes the existing pieces into
+a resumable Claude controller: fenced dispatch through the unchanged carrier
+contract, durable result-event inbox, independent inspection with small-repair
+vs Jules-corrective decision, serialized fast-forward adoption, and roadmap
+planning. The reviewed `prepare_jules_semiauto_bundle` from
+`compare/green-ab-1-work` is adopted in hardened form. Mock E2E covers the full
+cycle plus duplicate/late/stale events, session loss, ambiguous writes,
+collisions, stale/foreign owners, HEAD/tree drift and max rounds.
+
+Read first: [integration](CLAUDE_JULES_AUTOLOOP_INTEGRATION.md) and
+[LIVE proof plan](CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_PLAN.md). The committed policy
+grants no target branch, no lane and no live authorization. LIVE remains
+unauthorized; production adapters remain NOT_WIRED.

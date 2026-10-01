@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "checkpoint": "claude-jules-autoloop-static-mock-20261001",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "branch": "claude/claude-jules-autoloop-integration",
+  "base_branch": "feature/claude-auto-current-jules-protocol",
+  "base_head": "83b499a25c1cce6ec8b4f29f268f194372321afa",
+  "carrier_branch_observed": "feature/chat-work-command-bus",
+  "carrier_head_observed": "59dc2f0",
+  "carrier_validator_blob_sha": {
+    "jules_api_request.py": "1aebad3469c2bfa629e97fd109541c236dc2244a",
+    "loop_id_claim.py": "d7aba1adfa60b0341d7db6df1b92b8c39bd8c822"
+  },
+  "reused_comparison_commit": "be683df2f513576b37108a41ca1202169867af41",
+  "environment": "Claude Code cloud container, Python 3.11.15",
+  "tests": {
+    "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
+    "after_full_suite": "884 run, OK, 1 skipped",
+    "new_test_methods": {"e2e": 22, "dispatch_contract": 14, "result_inspection": 14},
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "live_actions": {
+    "jules_tasks_submitted": 0,
+    "carrier_writes": 0,
+    "workflow_runs_triggered_by_this_work": 0,
+    "merges": 0,
+    "settings_or_secrets_changed": 0
+  },
+  "status": {
+    "static_mock_e2e": "PASS",
+    "production_adapters": "NOT_WIRED",
+    "live_proof": "NOT_AUTHORIZED",
+    "wake_mechanism": "UNKNOWN_PENDING_HUMAN_CHOICE"
+  },
+  "retry": 0,
+  "fallback": "disabled"
+}

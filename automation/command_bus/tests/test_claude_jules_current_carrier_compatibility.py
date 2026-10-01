@@ -107,7 +107,7 @@ class TestClaudeJulesCurrentCarrierCompatibility(unittest.TestCase):
         self.assertIsNotNone(verified)
 
     def test_real_target_side_bridge_proof(self):
-        from automation.command_bus.claude_loop import prepare_jules_semiauto_request, LoopResult
+        from automation.command_bus.claude_loop import prepare_jules_semiauto_bundle, LoopResult
         from automation_compat.command_bus.jules_api_request import validate_request, REQUIRED_KEYS
 
         prepared = {
@@ -135,15 +135,15 @@ class TestClaudeJulesCurrentCarrierCompatibility(unittest.TestCase):
             "live_start_permitted": False,
         }
 
-        result = prepare_jules_semiauto_request(
-            prepared,
+        result = prepare_jules_semiauto_bundle(
+            prepared, self.valid_claim,
             target_branch="feature/bounded-target",
             default_branch="main",
             created_at=self.created_at,
             command_id="relay-dev-loop-123-compat-baseline"
         )
         self.assertEqual(result.status, "PREPARED")
-        req = result.request
+        req = result.request["carrier_request"]
 
         # The bridge now emits the exact current carrier V2 request.
         self.assertEqual(set(req), REQUIRED_KEYS)
@@ -162,12 +162,7 @@ class TestClaudeJulesCurrentCarrierCompatibility(unittest.TestCase):
 
         # Claude AUTO origin identity stays in the existing companion binding,
         # not in the carrier request or claim schemas.
-        from automation.command_bus.claude_jules_origin_binding import (
-            build_binding_record,
-        )
-        binding = build_binding_record(
-            "123", 1, "cor-1", 1, req, self.valid_claim
-        )
+        binding = result.request["origin_binding"]
         self.assertEqual(binding["origin_loop_id"], "123")
         self.assertEqual(binding["origin_round"], 1)
         self.assertEqual(binding["origin_correlation_id"], "cor-1")
