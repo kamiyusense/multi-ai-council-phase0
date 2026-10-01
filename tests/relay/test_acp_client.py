@@ -908,6 +908,7 @@ class TestACPMockTextToPhase0Raw(unittest.TestCase):
         raw_bytes = acp_mock_text_to_phase0_raw(mock_result)
 
         parsed = json.loads(raw_bytes.decode("utf-8"))
+        self.assertEqual(set(parsed), {"schema_version", "answer_state", "conclusion_code", "safety_warning", "safety_reason", "evidence_refs", "marker_echoes", "answer_text"})
         self.assertEqual(parsed["schema_version"], "phase0-response-v1")
         self.assertEqual(parsed["answer_state"], "ANSWER")
         self.assertEqual(parsed["conclusion_code"], "SUCCESS")
