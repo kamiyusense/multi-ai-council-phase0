@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 130,
+  "loop_id": "130",
+  "lane_id": "J-GREEN",
+  "lane_display": "💚",
+  "task_id": "autoloop-budget-summary-fix1",
+  "command_id": "relay-dev-loop-130-autoloop-budget-summary-fix1",
+  "target_branch": "claude/autoloop-live-target",
+  "expected_target_head": "fc2ad82fb6dac0201f62db0d6c927bd90c985050",
+  "expected_target_tree": "c6abe385c01606ebf7c9734211f7b6158b037f31",
+  "work_branch": "jules-work/relay-dev-loop-130-autoloop-budget-summary-fix1",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T20:07:54+00:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
