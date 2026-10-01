@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-107-acp-initialize-wire-minimal",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "work_branch": "jules-work/relay-dev-loop-107-acp-initialize-wire-minimal",
+  "expected_target_head": "6921d27312861c5f4127459bc822f4fccab5b434",
+  "expected_target_tree": "74e25f2dd2e207de8b1df059fd488b60da242669",
+  "allowed_paths": [
+    "src/relay/acp_client.py",
+    "tests/relay/test_acp_client.py"
+  ],
+  "prompt": "Task / size class:\nLoop 107 — SHORT upstream ACP initialize wire primitive.\n\nGoal:\nAdapt only the smallest ACP v1 initialize request/response primitive from the official agentclientprotocol/python-sdk into the existing Relay ACP client file. Do not redesign Relay lifecycle or add a general ACP framework.\n\nUpstream source:\n- agentclientprotocol/python-sdk commit 9d07d7871ef4b220b8507e15fc4b1560f0950a64\n- src/acp/_transport.py::NdjsonTransport\n- src/acp/connection.py::Connection.send_request\n- src/acp/client/connection.py::ClientSideConnection.initialize\n- protocol method initialize; protocolVersion=1\nThese show newline-delimited JSON-RPC 2.0 over stdio.\n\nExisting local primitive:\n- src/relay/acp_stdio_transport.py::spawn_stdio_transport\nUse it. Do not duplicate subprocess lifecycle code.\n\nAllowed changed paths — EXACTLY:\n- src/relay/acp_client.py\n- tests/relay/test_acp_client.py\n\nDo:\n- preserve the existing synchronous ACPClient test-double behavior unchanged.\n- add one small async helper in src/relay/acp_client.py for a single ACP initialize round-trip against one spawned local process.\n- the helper must spawn exactly one process through existing spawn_stdio_transport.\n- write exactly one NDJSON JSON-RPC 2.0 request with id 0, method \"initialize\", and ACP v1 params using protocolVersion=1 plus empty/minimal client capabilities/info.\n- read one response frame with a bounded positive timeout.\n- require a dict response with jsonrpc=\"2.0\", matching id=0, no error, result dict, and result.protocolVersion=1.\n- return only the validated result data needed by the caller.\n- on malformed JSON, wrong id/version, error response, EOF, or timeout: fail closed by raising; no retry/relaunch/fallback.\n- no session/new, prompt, auth, provider selection, tool call, or model execution in this loop.\n- add focused tests using only a local fake Python child process. The fake child must assert/observe the initialize request and emit a deterministic response.\n- add concise negative tests for malformed/wrong response and prove no relaunch/retry where practical.\n- keep implementation compact and source-reference the official files/commit as behavioral inspiration without copying large upstream code.\n\nDo NOT:\n- change src/relay/acp_stdio_transport.py\n- change RelayTransport, lifecycle, dispatcher, envelopes, provider adapters, policies, readiness, Gate, receipts, command bus, docs, or schemas\n- add agent-client-protocol or any other dependency\n- add a sync/async bridge or background thread\n- add generalized JSON-RPC/ACP abstraction beyond this one initialize helper\n- add session/prompt support\n- run any provider/model/API/network call\n- change auth/billing/settings/permissions\n- merge/rebase/force-push/delete branches\n- create extra plan/notes/checkpoint files\n\nStop condition:\nIf a correct single initialize round-trip cannot fit in exactly the two allowed files while preserving existing ACPClient behavior, STOP and report the incompatibility instead of broadening scope.\n\nValidation:\nPYTHONPATH=src python -m unittest tests.relay.test_acp_client -v\nPYTHONPATH=src python -m unittest discover -s tests -t . -v\npython -m compileall -q src tests\ngit diff --check\n\nMandatory path fence:\nFinal changed-file set must equal exactly:\n- src/relay/acp_client.py\n- tests/relay/test_acp_client.py\n\nPublication:\nNormal isolated Jules PR only if exact path fence and all validations are green. Do not Merge.\n\nretry=0\nfallback=disabled",
+  "created_at": "2026-10-01T14:36:00+09:00",
+  "expires_at": "2026-10-01T16:06:00+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
