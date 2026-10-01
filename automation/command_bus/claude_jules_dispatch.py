@@ -113,8 +113,8 @@ def validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
         for key in ("approved_by", "approval_ref", "scope"):
             if not isinstance(auth[key], str) or not auth[key]:
                 raise ValueError(f"authorization {key} required")
-        if isinstance(auth["max_dispatches"], bool) or not isinstance(auth["max_dispatches"], int) or not 1 <= auth["max_dispatches"] <= 6:
-            raise ValueError("authorization max_dispatches must be 1..6")
+        if isinstance(auth["max_dispatches"], bool) or not isinstance(auth["max_dispatches"], int) or not 1 <= auth["max_dispatches"] <= 10:
+            raise ValueError("authorization max_dispatches must be 1..10 (Loop A total LIVE budget)")
         _time(auth["expires_at"], "authorization expires_at")
     return policy
 
@@ -291,8 +291,10 @@ class ClaudeJulesDispatcher:
     """Execute one dispatch intent through the existing carrier contract."""
 
     def __init__(self, *, client: GitHubContentsClient, refs: GitRefClient, policy: dict[str, Any],
-                 owner_reader: Any):
+                 owner_reader: Any, carrier_guard: Any = None):
         self.client, self.refs = client, refs
+        # Optional no-write check that the shared carrier is quiet (see CarrierQuietGuard).
+        self.carrier_guard = carrier_guard
         self.policy = validate_policy(policy)
         self.owner_reader = owner_reader
         self.binding_store = ClaudeJulesOriginBindingStore(client, self.policy["data_branch"])
@@ -321,6 +323,7 @@ class ClaudeJulesDispatcher:
         steps = (
             ("intent", lambda: self._create_once(intent_path(intent["intent_id"]), intent,
                                                  self.policy["data_branch"], "claude-auto dispatch intent")),
+            ("carrier", lambda: self._carrier_quiet(claim_path(claim["loop_id"]))),
             ("claim", lambda: self._create_once(claim_path(claim["loop_id"]), claim,
                                                 self.policy["carrier_branch"], "claim Loop for Claude AUTO", pretty=True)),
             ("work-branch", lambda: self._work_branch(request)),
@@ -330,7 +333,7 @@ class ClaudeJulesDispatcher:
             outcome = step()
             if outcome.status == "COLLISION":
                 return self._receipt(intent, "BLOCKED", f"{name}: {outcome.reason}; choose a new Loop number")
-            if outcome.status not in {"CREATED", "RECOVERED"}:
+            if outcome.status not in {"CREATED", "RECOVERED", "PASS"}:
                 return DispatchResult(outcome.status, f"{name}: {outcome.reason}")
 
         # Irreversible trigger: re-fence and re-read the target immediately before.
@@ -338,6 +341,8 @@ class ClaudeJulesDispatcher:
             return fence
         if (stale := self._target_problem(request)):
             return self._receipt(intent, "BLOCKED", stale) if stale.startswith("STALE") else DispatchResult("UNKNOWN", stale)
+        if (quiet := self._carrier_quiet(command_path(request["command_id"]))).status != "PASS":
+            return quiet
         # Consume one slot of the fixed total LIVE budget before the irreversible write.
         slot = self.budget.acquire(command_id=request["command_id"], intent_sha256=intent["intent_sha256"],
                                    origin_loop_id=intent["origin_loop_id"], acquired_at=now)
@@ -371,7 +376,27 @@ class ClaudeJulesDispatcher:
             return fence
         if (stale := self._target_problem(intent["carrier_request"])):
             return DispatchResult("BLOCKED" if stale.startswith("STALE") else "UNKNOWN", stale)
+        if (quiet := self._carrier_quiet(None)).status != "PASS":
+            return quiet
         return DispatchResult("PASS", "no-write preflight passed")
+
+    def _carrier_quiet(self, path: str | None) -> DispatchResult:
+        """PASS when no guard is set, the record already exists (resume), or the carrier is quiet."""
+        if self.carrier_guard is None:
+            return DispatchResult("PASS", "no carrier guard")
+        if path is not None:
+            try:
+                if self.client.get(path, self.policy["carrier_branch"]) is not None:
+                    return DispatchResult("PASS", "carrier record already written; readback decides")
+            except Exception as exc:
+                return DispatchResult("UNKNOWN", f"carrier pre-read failed: {exc}")
+        try:
+            verdict = self.carrier_guard()
+        except Exception as exc:
+            return DispatchResult("UNKNOWN", f"carrier guard failed: {exc}")
+        if verdict.status not in {"PASS", "WAIT"}:
+            return DispatchResult("UNKNOWN", verdict.reason)
+        return verdict
 
     # -- steps ------------------------------------------------------------
     def _static_problem(self, intent: dict[str, Any]) -> str | None:

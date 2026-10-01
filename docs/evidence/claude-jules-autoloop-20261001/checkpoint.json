@@ -15,13 +15,14 @@
   "environment": "Claude Code cloud container, Python 3.11.15",
   "tests": {
     "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
-    "after_full_suite": "916 run, OK, 1 skipped (handover added)",
+    "after_full_suite": "924 run, OK, 1 skipped (carrier guard, new-stream acquire, renew added)",
     "new_test_methods": {
       "e2e": 29,
       "dispatch_contract": 14,
       "result_inspection": 16,
       "live_adapter_real_git": 15,
-      "handover": 8
+      "handover": 8,
+      "carrier_guard": 8
     },
     "compileall": "PASS",
     "git_diff_check": "PASS"
@@ -39,7 +40,8 @@
     "production_adapters": "IMPLEMENTED_TESTED_ON_REAL_GIT_REMOTE",
     "live_proof": "NOT_STARTED (0/10): session safety gate refused live policy write; LIVE needs one shared-carrier command write, same outcome; not retried",
     "wake_mechanism": "POLL_ADAPTER_IMPLEMENTED (in-session); no scheduled routine created",
-    "handover_semiauto_auto": "IMPLEMENTED: mock + real-git round trip; read-only on real carrier both active streams correctly BLOCKED (Jules in flight)"
+    "handover_semiauto_auto": "IMPLEMENTED: mock + real-git round trip; read-only on real carrier both active streams correctly BLOCKED (Jules in flight)",
+    "shared_carrier_guard": "IMPLEMENTED: CarrierQuietGuard (no unfinished carrier run, tip >=5 min old) before claim/command; real GitHub read-only check returned WAIT CARRIER_BUSY (carrier changed 41s ago); 0 cancelled carrier runs 2026-10-01/02"
   },
   "retry": 0,
   "fallback": "disabled",

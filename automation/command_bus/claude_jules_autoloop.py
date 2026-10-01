@@ -102,13 +102,14 @@ def task_spec_path(task_id: str) -> str:
 class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
-                 lane_id: str):
+                 lane_id: str, carrier_guard: Any = None):
         self.client, self.refs, self.facts = client, refs, facts
         self.policy = validate_policy(policy)
         self.roadmap = validate_roadmap(roadmap)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
         self.data = self.policy["data_branch"]
-        self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader)
+        self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader,
+                                                carrier_guard=carrier_guard)
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
         self.adoption = SafeAdoption(client=client, refs=refs, policy=policy)
@@ -359,6 +360,8 @@ class ClaudeJulesAutoLoop:
         except (KeyError, TypeError, ValueError) as exc:
             return StepResult("STOP", "BLOCKED", f"cannot prepare dispatch: {exc}")
         pre = self.dispatcher.preflight(intent, now=now, dispatches_used=self._dispatches_used())
+        if pre.status == "WAIT":
+            return StepResult("WAIT", "CARRIER_BUSY", pre.reason)  # nothing written; plan again later
         if pre.status != "PASS":
             return StepResult("STOP", pre.status, pre.reason,
                               {"command_id": intent["carrier_request"]["command_id"], "intent": intent})
@@ -422,6 +425,8 @@ class ClaudeJulesAutoLoop:
         details = {"command_id": intent["carrier_request"]["command_id"], "intent_id": intent["intent_id"]}
         if result.status in {"DISPATCHED", "NO-OP"}:
             return StepResult(action, result.status, result.reason, details)
+        if result.status == "WAIT":
+            return StepResult("WAIT", "CARRIER_BUSY", result.reason, details)  # resumes from the same intent
         if result.status == "BLOCKED" and result.record is not None:
             return StepResult(action, "BLOCKED", result.reason, details)  # receipt written; next step re-plans
         return StepResult("STOP", result.status, result.reason, details)

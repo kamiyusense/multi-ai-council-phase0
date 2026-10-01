@@ -193,6 +193,36 @@ any dispatch unless the latest generation is a live AUTO lease held by Claude.
   ❤️ J-RED and 💛 J-YELLOW streams both have Jules work in flight, so takeover
   is correctly BLOCKED for both.
 
+## 8a. Reusing the shared carrier without interfering (2026-10-02)
+
+The user chose to keep the existing carrier `feature/chat-work-command-bus`
+and its workflow (no new carrier, no gate/setting change). Two ways a Claude
+write there could disturb the ChatGPT lanes, and how each is closed:
+
+- **Cancelled pending runs.** The carrier workflow has one concurrency group;
+  GitHub keeps one pending run per group and cancels an older pending run when
+  a newer one queues. `CarrierQuietGuard` therefore lets Claude write a claim
+  or command only when no carrier run is unfinished (queued / in progress /
+  waiting / requested / pending, read through REST) and the carrier's latest
+  commit is at least 5 minutes old (another controller may be between its
+  claim and its command). Busy → `WAIT CARRIER_BUSY` with nothing written; a
+  half-written dispatch resumes from the same intent. Unreadable → `UNKNOWN`.
+  It is checked in the no-write preflight, before the claim and before the
+  budget slot and command. `carrier --file since.txt` lists any carrier run
+  cancelled since a time, as an after-the-fact interference check.
+- **Global Loop numbers.** Claude uses the same create-only claim rule as the
+  ChatGPT lanes (`if exists choose a new number`); a lost race is a
+  `COLLISION` receipt and a re-plan, never an overwrite.
+
+Stream ownership for an isolated test target: a stream that nobody ever owned
+or commanded may be ACQUIRED by AUTO directly (`takeover` → `new-stream`).
+The AUTO holder can `renew` its own live lease between dispatches (a RENEW
+bumps the generation, so it is refused while an intent is half-written).
+
+Read-only check on real GitHub (2026-10-02 04:3x JST): the guard returned
+`WAIT CARRIER_BUSY: carrier changed 41s ago`; no carrier run was cancelled
+on 2026-10-01/02.
+
 ## 9. Not done / UNKNOWN
 
 - LIVE (stages 8–9) did not start (still 0 of 10 after the design correction).

@@ -21,7 +21,8 @@ simulate:
 CLI (all commands print one JSON object):
   python -m automation.command_bus.claude_jules_live status|step|poll|budget
   python -m automation.command_bus.claude_jules_live record-review --file review.json
-  python -m automation.command_bus.claude_jules_live observe|takeover|handback|reclaim [--write]
+  python -m automation.command_bus.claude_jules_live observe|takeover|renew|handback|reclaim [--write]
+  python -m automation.command_bus.claude_jules_live carrier [--file since.txt]
 """
 from __future__ import annotations
 
@@ -33,17 +34,17 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from .claude_jules_adoption import adoption_receipt_path
 from .claude_jules_autoloop import ClaudeJulesAutoLoop
 from .claude_jules_dispatch import (
-    EVIDENCE_ROOT, canonical_json, command_path, dispatch_receipt_path, sha256_of, validate_dispatch_intent,
+    EVIDENCE_ROOT, DispatchResult, canonical_json, command_path, dispatch_receipt_path, sha256_of, validate_dispatch_intent,
 )
 from .claude_jules_live_adapter import GitHubRestReader, GitLiveClient, fresh_pr_view, pull_request_payload
 from .claude_jules_handover import (
-    SEMIAUTO_HOLDER, append_decision, decide_handback, decide_reclaim, decide_takeover, observe_stream,
+    SEMIAUTO_HOLDER, append_decision, decide_handback, decide_reclaim, decide_renew, decide_takeover, observe_stream,
 )
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
@@ -255,6 +256,53 @@ class LiveResultFacts:
         return head if parent == inspection["candidate_head"] else None
 
 
+class CarrierQuietGuard:
+    """Write to the shared carrier only while it is quiet.
+
+    The carrier workflow runs in one concurrency group; GitHub keeps at most
+    one pending run per group and cancels an older pending run when a newer
+    one queues.  So Claude never writes a claim or command while any carrier
+    run is unfinished, nor within ``quiet`` of the carrier's latest commit
+    (another controller may be between its claim and its command).  A busy
+    carrier is a WAIT with nothing written, never a failure.
+    """
+
+    def __init__(self, *, git: GitLiveClient, rest: GitHubRestReader, carrier_branch: str,
+                 workflow_file: str = CARRIER_WORKFLOW, quiet: timedelta = timedelta(minutes=5),
+                 clock: Any = None):
+        self.git, self.rest, self.branch, self.workflow = git, rest, carrier_branch, workflow_file
+        self.quiet = quiet
+        self.clock = clock or (lambda: datetime.now(timezone.utc))
+
+    def __call__(self) -> DispatchResult:
+        try:
+            active = self.rest.active_workflow_runs(self.workflow)
+            tip = self.git.remote_head(self.branch)
+            committed = self.git.commit_time(tip) if tip else None
+        except Exception as exc:  # unreadable is never quiet
+            return DispatchResult("UNKNOWN", f"carrier activity unverifiable: {exc}")
+        if active:
+            ids = ", ".join(str(r.get("id")) for r in active)
+            return DispatchResult("WAIT", f"CARRIER_BUSY: carrier workflow run(s) unfinished: {ids}")
+        if tip is None or committed is None:
+            return DispatchResult("UNKNOWN", "carrier tip unavailable")
+        age = self.clock() - datetime.fromisoformat(committed)
+        if age < self.quiet:
+            return DispatchResult("WAIT", f"CARRIER_BUSY: carrier changed {int(age.total_seconds())}s ago "
+                                          f"(quiet window {int(self.quiet.total_seconds())}s)")
+        return DispatchResult("PASS", "carrier quiet: no unfinished run, no recent commit")
+
+
+def cancelled_carrier_runs(rest: GitHubRestReader, *, since: str,
+                           workflow_file: str = CARRIER_WORKFLOW) -> list[dict[str, Any]]:
+    """Interference check: carrier runs cancelled since ``since`` (anyone's)."""
+    start = datetime.fromisoformat(since.replace("Z", "+00:00"))
+    return [{"id": r["id"], "head_sha": r["head_sha"], "created_at": r["created_at"]}
+            for r in rest.recent_workflow_runs(workflow_file)
+            if r.get("conclusion") == "cancelled"
+            and datetime.fromisoformat(r["created_at"].replace("Z", "+00:00")) >= start]
+
+
 def outstanding_dispatches(git: GitLiveClient, policy: dict[str, Any], origin_loop_id: str) -> list[dict[str, Any]]:
     prefix = f"{EVIDENCE_ROOT}/claude-auto-dispatch-intents/"
     found = []
@@ -324,6 +372,17 @@ def handover(action: str, *, git: GitLiveClient, rest: GitHubRestReader, policy:
         decision = decide_takeover(owner_chain=chain, activity=activity, auto_holder=policy["holder_id"],
                                    loop_id=origin_loop_id, expected_repo=policy["target_repo"],
                                    expected_pr=policy["expected_pr"], target_head=head, now=now)
+    elif action == "renew":
+        prefix = f"{EVIDENCE_ROOT}/claude-auto-dispatch-intents/"
+        half = 0
+        for content in git.list(prefix, policy["data_branch"]):
+            intent = validate_dispatch_intent(json.loads(content.text))
+            if intent["origin_loop_id"] == origin_loop_id and git.get(
+                    dispatch_receipt_path(intent["carrier_request"]["command_id"]), policy["data_branch"]) is None:
+                half += 1
+        decision = decide_renew(owner_chain=chain, auto_holder=policy["holder_id"],
+                                outstanding_dispatches=len(outstanding_dispatches(git, policy, origin_loop_id)),
+                                half_written_intents=half, target_head=head, now=now)
     elif action == "handback":
         outstanding = len(outstanding_dispatches(git, policy, origin_loop_id))
         decision = decide_handback(owner_chain=chain, auto_holder=policy["holder_id"],
@@ -348,14 +407,16 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=args.scratch)
     loop = ClaudeJulesAutoLoop(client=git, refs=git, policy=policy,
                                owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
-                               roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id)
+                               roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id,
+                               carrier_guard=CarrierQuietGuard(git=git, rest=rest, carrier_branch=policy["carrier_branch"]))
     return loop, git, rest, policy
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="claude_jules_live")
     parser.add_argument("command", choices=["status", "step", "poll", "budget", "record-review", "record-observation",
-                                            "observe", "takeover", "handback", "reclaim"])
+                                            "observe", "takeover", "renew", "handback", "reclaim",
+                                            "carrier"])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--roadmap", required=True)
     parser.add_argument("--origin-loop-id", required=True)
@@ -389,7 +450,13 @@ def main(argv: list[str] | None = None) -> int:
                        policy["data_branch"])
         stored = git.get(path, policy["data_branch"])
         out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}
-    elif args.command in {"observe", "takeover", "handback", "reclaim"}:
+    elif args.command == "carrier":
+        quiet = CarrierQuietGuard(git=git, rest=rest, carrier_branch=policy["carrier_branch"])()
+        out = {"now": now, "quiet": quiet.status, "reason": quiet.reason}
+        if args.file:  # --file holds an ISO timestamp: list carrier runs cancelled since then
+            with open(args.file, encoding="utf-8") as handle:
+                out["cancelled_since"] = cancelled_carrier_runs(rest, since=handle.read().strip())
+    elif args.command in {"observe", "takeover", "renew", "handback", "reclaim"}:
         out = handover(args.command, git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id,
                        lane_id=args.lane_id, now=now, write=args.write)
     elif args.command == "status":

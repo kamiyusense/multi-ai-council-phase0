@@ -123,6 +123,12 @@ def decide_takeover(*, owner_chain: list[dict[str, Any]], activity: StreamActivi
         return HandoverDecision("UNKNOWN", f"owner chain invalid: {exc}")
     if activity.in_flight:
         return HandoverDecision("BLOCKED", f"Jules work in flight on the stream: {', '.join(activity.in_flight)}")
+    if not chain and not activity.commands:
+        # A brand-new stream (e.g. an isolated test target): nobody ever owned or commanded it.
+        event = _base_event(loop_id=loop_id, event_type="ACQUIRE", role="AUTO", holder=auto_holder, generation=1,
+                            now=now, lease=lease, expected_repo=expected_repo, expected_pr=expected_pr,
+                            target_head=target_head, reason_tag="new-stream")
+        return HandoverDecision("ELIGIBLE", "new stream: no owner and no command ever recorded", event)
     if activity.last_activity_at is None:
         return HandoverDecision("UNKNOWN", "no durable stream activity to prove a stall")
     idle = current - _time(activity.last_activity_at)
@@ -172,6 +178,32 @@ def decide_handback(*, owner_chain: list[dict[str, Any]], auto_holder: str, outs
     event["previous_owner_role"], event["previous_holder_id"] = "AUTO", auto_holder
     validate_owner_chain([*chain, event])
     return HandoverDecision("ELIGIBLE", "AUTO at a boundary hands the stream back to SEMI_AUTO", event)
+
+
+def decide_renew(*, owner_chain: list[dict[str, Any]], auto_holder: str, outstanding_dispatches: int,
+                 half_written_intents: int, target_head: str, now: str,
+                 lease: timedelta = timedelta(hours=3)) -> HandoverDecision:
+    """AUTO extends its own live lease; only between dispatches (a RENEW bumps the generation)."""
+    try:
+        chain = validate_owner_chain(owner_chain)
+    except ValueError as exc:
+        return HandoverDecision("UNKNOWN", f"owner chain invalid: {exc}")
+    latest = chain[-1]
+    if latest["event_type"] in {"RELEASE", "TERMINAL"} or latest["owner_role"] != "AUTO":
+        return HandoverDecision("BLOCKED", "stream is not owned by AUTO")
+    if latest["holder_id"] != auto_holder:
+        return HandoverDecision("BLOCKED", "another AUTO holder owns the stream")
+    if _time(now) >= _time(latest["expires_at"]):
+        return HandoverDecision("BLOCKED", "AUTO lease already expired; SEMI_AUTO may reclaim, AUTO may not renew")
+    if half_written_intents:
+        return HandoverDecision("BLOCKED", "a dispatch intent is half-written; renewing would strand it")
+    event = _base_event(loop_id=latest["loop_id"], event_type="RENEW", role="AUTO", holder=auto_holder,
+                        generation=latest["generation"] + 1, now=now, lease=lease,
+                        expected_repo=latest["expected_repo"], expected_pr=latest["expected_pr"],
+                        target_head=target_head, reason_tag="renew")
+    validate_owner_chain([*chain, event])
+    return HandoverDecision("ELIGIBLE", f"AUTO lease renewed ({outstanding_dispatches} dispatch(es) awaiting results)",
+                            event)
 
 
 def decide_reclaim(*, owner_chain: list[dict[str, Any]], semiauto_holder: str, target_head: str, now: str,

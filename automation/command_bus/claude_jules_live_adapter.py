@@ -257,6 +257,11 @@ class GitLiveClient:
         out = self._git("log", "--diff-filter=A", "--format=%H", tip, "--", _safe_path(path)).stdout
         return [line for line in out.split() if _SHA40.fullmatch(line)]
 
+    def commit_time(self, sha: str) -> str | None:
+        if not self.ensure_commit(sha):
+            return None
+        return self._git("show", "-s", "--format=%cI", sha).stdout.strip() or None
+
     def show(self, sha: str, path: str) -> str | None:
         if not self.ensure_commit(sha):
             return None
@@ -306,6 +311,18 @@ class GitHubRestReader:
 
     def workflow_runs_for_commit(self, workflow_file: str, head_sha: str) -> list[dict[str, Any]]:
         return self.paged(f"actions/workflows/{workflow_file}/runs", {"head_sha": head_sha}, key="workflow_runs")
+
+    def active_workflow_runs(self, workflow_file: str) -> list[dict[str, Any]]:
+        """Every run of the workflow that has not finished (any not-completed status)."""
+        runs: list[dict[str, Any]] = []
+        for status in ("queued", "in_progress", "waiting", "requested", "pending"):
+            runs.extend(self.paged(f"actions/workflows/{workflow_file}/runs", {"status": status},
+                                   key="workflow_runs"))
+        return runs
+
+    def recent_workflow_runs(self, workflow_file: str, *, per_page: int = 30) -> list[dict[str, Any]]:
+        data = self.get(f"actions/workflows/{workflow_file}/runs", {"per_page": per_page})
+        return list((data or {}).get("workflow_runs", []))
 
     def run_jobs(self, run_id: int) -> list[dict[str, Any]]:
         return self.paged(f"actions/runs/{int(run_id)}/jobs", key="jobs")

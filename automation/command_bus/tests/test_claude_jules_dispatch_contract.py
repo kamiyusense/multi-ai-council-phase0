@@ -165,7 +165,7 @@ class PolicyAndFenceTests(unittest.TestCase):
             {"allowed_target_branches": ["main"]}, {"allowed_target_branches": [CARRIER]},
             {"allowed_lane_ids": ["J-PURPLE"]}, {"data_branch": "main"}, {"expected_pr": 0},
             {"live_dispatch_authorization": {"approved_by": "x"}},
-            {"live_dispatch_authorization": dict(policy()["live_dispatch_authorization"], max_dispatches=7)},
+            {"live_dispatch_authorization": dict(policy()["live_dispatch_authorization"], max_dispatches=11)},
         ):
             with self.assertRaises(ValueError, msg=str(overrides)):
                 validate_policy(policy(**overrides))
