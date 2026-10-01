@@ -782,3 +782,87 @@ class TestACPMockTextUpdateWire(unittest.IsolatedAsyncioTestCase):
                 sys.executable, "-c", script,
                 cwd=tempfile.gettempdir(), prompt_text="hello fake",
             )
+
+
+
+    async def test_success_2_chunks(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'fake '}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "notif2 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'result'}}}}\n"
+            "sys.stdout.write(json.dumps(notif2) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_text_update_wire
+        result = await acp_mock_text_update_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+        self.assertEqual(result, {"text": "fake result", "stopReason": "end_turn"})
+
+    async def test_success_3_chunks(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'fake '}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "notif2 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 're'}}}}\n"
+            "sys.stdout.write(json.dumps(notif2) + '\\n')\n"
+            "notif3 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'sult'}}}}\n"
+            "sys.stdout.write(json.dumps(notif3) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_text_update_wire
+        result = await acp_mock_text_update_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+        self.assertEqual(result, {"text": "fake result", "stopReason": "end_turn"})
+
+    async def test_fourth_chunk_fails_closed(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': '1'}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_text_update_wire
+        with self.assertRaisesRegex(ValueError, "Maximum of 3 text updates exceeded"):
+            await acp_mock_text_update_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_missing_chunk_early_terminal_fails_closed(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_text_update_wire
+        with self.assertRaisesRegex(ValueError, "must not have an id field"):
+            await acp_mock_text_update_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_valid_first_chunk_then_malformed_fails_closed(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'fake '}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "notif2 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'image'}}}}\n"
+            "sys.stdout.write(json.dumps(notif2) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_text_update_wire
+        with self.assertRaisesRegex(ValueError, "content type must be 'text'"):
+            await acp_mock_text_update_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
