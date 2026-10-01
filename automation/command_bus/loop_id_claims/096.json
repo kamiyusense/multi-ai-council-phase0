@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 96,
+  "loop_id": "096",
+  "lane_id": "J-BLUE",
+  "lane_display": "💙",
+  "task_id": "bwj1-wake-event-classifier",
+  "command_id": "relay-dev-loop-096-bwj1-wake-event-classifier",
+  "target_branch": "feature/blue-work-jules-webhook-loop",
+  "expected_target_head": "a46d5e729b6156815c3790a25754b04e6f9ff968",
+  "expected_target_tree": "97c552ddcbf2cdafac9f08df452e9bafa12c6e02",
+  "work_branch": "jules-work/relay-dev-loop-096-bwj1-wake-event-classifier",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T11:03:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
