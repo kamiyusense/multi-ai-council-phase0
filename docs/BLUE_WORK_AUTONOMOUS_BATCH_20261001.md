@@ -125,6 +125,15 @@ actorだけの信頼判定・AI実行は導入しない。新Webhook server、DB
 最終件数と実際のcommit/Actionsは [checkpoint](evidence/blue-work-batch-20261001/checkpoint.json) と
 PR #217 bodyの保存後readbackを正本とする。
 
+実装commit: [`fb67ce259e20d1c9047ecd77a93958d3ce018084`](https://github.com/kamiyusense/multi-ai-council-phase0/commit/fb67ce259e20d1c9047ecd77a93958d3ce018084)。
+full suiteは938件（成功937、Windows-only skip 1、failure/error 0）、重点84件すべて成功。
+同じHEADの [PR Actions](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870292540) と
+[push Actions](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870285179) のjob/logとartifactを
+読み戻し、両方938件・成功937・skip 1を確認した。
+[Actions readback](evidence/blue-work-batch-20261001/actions-readback.json)にjob ID・step・artifact URLを保存。
+公開対象34 blob一致、対象外583 blob維持。保存後の文書更新commitはこの実装commitの子で、
+最新HEADはPR #217から取得する。実装コードとfixtureは文書更新で変更しない。
+
 - 修正前: `receipt-before.txt` の8件すべてFAIL（問題の再現）。
 - 最終: `unittest.txt` のfull command-bus suite、`focused.txt` の重点検証。
 - `source-readback.json`: 仕様blob SHA、開始HEAD、carrier HEAD/世代。

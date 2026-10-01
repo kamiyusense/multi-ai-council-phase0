@@ -5,8 +5,8 @@
   "experiment_branch": "experiment/blue-work-autonomous-development",
   "initial_head": "66a726d6e9782ad358aa1ecd161e4fb60704be4e",
   "preserved_concurrent_parent": "574f7da4b2c9c5619a2229f82ffca970f125c5f6",
-  "recorded_at": "2026-10-01T13:37:54.673823+00:00",
-  "publication_state": "NOT_PUBLISHED",
+  "recorded_at": "2026-10-01T13:43:37.391358+00:00",
+  "publication_state": "PUBLISHED_AND_READ_BACK",
   "full_tests": {
     "run": 938,
     "success": 937,
@@ -69,6 +69,31 @@
     "docs/evidence/blue-work-batch-20261001/receipt-before.txt",
     "docs/evidence/blue-work-batch-20261001/focused.txt",
     "docs/evidence/blue-work-batch-20261001/unittest.txt",
-    "docs/evidence/blue-work-batch-20261001/checkpoint.json"
-  ]
+    "docs/evidence/blue-work-batch-20261001/checkpoint.json",
+    "docs/evidence/blue-work-batch-20261001/actions-readback.json"
+  ],
+  "code_commit_sha": "fb67ce259e20d1c9047ecd77a93958d3ce018084",
+  "code_tree_sha": "f62b322a49a542bfdd13fe798a416e33f081b8f4",
+  "preserved_parent": "574f7da4b2c9c5619a2229f82ffca970f125c5f6",
+  "remote_readback": {
+    "matched_blobs": 34,
+    "unchanged_other_blobs": 583,
+    "mismatches": 0
+  },
+  "actions_readback": "actions-readback.json",
+  "actions_code_head_results": [
+    {
+      "run_id": 36870292540,
+      "job_id": 110396022373,
+      "conclusion": "success",
+      "test_count": 938
+    },
+    {
+      "run_id": 36870285179,
+      "job_id": 110395997315,
+      "conclusion": "success",
+      "test_count": 938
+    }
+  ],
+  "stopped_at_boundary": "static work complete; independent review and authenticated session/job-log production reader required; LIVE not authorized"
 }
