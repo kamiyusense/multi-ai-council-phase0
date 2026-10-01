@@ -9,7 +9,6 @@ from automation.command_bus.claude_loop import (
     prepare_next_action, validate_machine_gate,
 )
 from automation.command_bus.jules_api_closed_loop import JulesApiClosedLoop
-from automation.command_bus.jules_api_request import validate_request as validate_jules_semiauto_request
 from automation.command_bus.validator import validate_command
 
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
@@ -246,11 +245,24 @@ class ClaudeLoopTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "PREPARED")
         request = result.request
+        self.assertEqual(
+            set(request),
+            {
+                "schema_version", "profile", "command_id", "target_repo",
+                "target_branch", "work_branch", "expected_target_head",
+                "expected_target_tree", "allowed_paths", "prompt", "created_at",
+                "expires_at", "retry", "fallback", "merge_allowed",
+                "force_push_allowed",
+            },
+        )
+        self.assertEqual(request["schema_version"], 2)
         self.assertEqual(request["profile"], "JULES_CHAT_SEMIAUTO_V2")
-        self.assertEqual(request["origin_loop_id"], "claude-night-001")
-        self.assertEqual(request["origin_round"], 1)
-        self.assertEqual(request["origin_correlation_id"], "claude-night-001-r1")
-        self.assertEqual(request["origin_generation"], 1)
+        self.assertEqual(request["work_branch"], "jules-work/claude-jules-a-live-001")
+        for origin_key in (
+            "origin_loop_id", "origin_round", "origin_correlation_id",
+            "origin_generation",
+        ):
+            self.assertNotIn(origin_key, request)
         self.assertEqual(prepared.request["generation"], 1)
         self.assertEqual(request["target_repo"], "kamiyusense/multi-ai-council-phase0")
         self.assertEqual(request["target_branch"], "feature/bounded-target")
@@ -263,7 +275,6 @@ class ClaudeLoopTests(unittest.TestCase):
         self.assertEqual(request["fallback"], "disabled")
         self.assertFalse(request["merge_allowed"])
         self.assertFalse(request["force_push_allowed"])
-        validate_jules_semiauto_request(request, now=NOW)
 
     def test_semiauto_bridge_fails_closed_on_wrong_repo_expiry_and_default_branch(self):
         wrong_repo = prepare_next_action(
