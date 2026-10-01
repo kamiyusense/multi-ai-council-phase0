@@ -23,7 +23,7 @@ def get_valid_preflights():
             "reasons": ["ready"],
             "provider_id": "openai",
             "external_agent": "@agentclientprotocol/codex-acp",
-            "pinned_version": "1.12.0",
+            "pinned_version": "2.1.0",
             "retry_count": 0,
             "fallback_state": "disabled",
             "live_ready": False
@@ -34,7 +34,7 @@ def get_valid_preflights():
             "reasons": ["ready"],
             "provider_id": "anthropic",
             "external_agent": "@agentclientprotocol/claude-agent-acp",
-            "pinned_version": "0.79.0",
+            "pinned_version": "0.84.0",
             "retry_count": 0,
             "fallback_state": "disabled",
             "live_ready": False
@@ -45,7 +45,7 @@ def get_valid_preflights():
             "reasons": ["ready"],
             "provider_id": "google",
             "external_agent": "antigravity-acp",
-            "pinned_version": "1.1.1",
+            "pinned_version": "1.2.1",
             "retry_count": 0,
             "fallback_state": "disabled",
             "live_ready": False
