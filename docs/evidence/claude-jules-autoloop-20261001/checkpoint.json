@@ -15,7 +15,7 @@
   "environment": "Claude Code cloud container, Python 3.11.15",
   "tests": {
     "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
-    "after_full_suite": "924 run, OK, 1 skipped (+ superseded-dispatch settlement assertions)",
+    "after_full_suite": "933 run, OK, 1 skipped (after integrating the adopted LIVE results)",
     "new_test_methods": {
       "e2e": 29,
       "dispatch_contract": 14,
@@ -113,5 +113,18 @@
       "verdict": "PASS",
       "adopted": true
     }
-  ]
+  ],
+  "integration": {
+    "merge_commit": "see git log (merge of origin/claude/autoloop-live-target into the PR branch)",
+    "live_target_head": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+    "merge_base": "f8d30433dc2fa1b65f243e2383d8e51dbc98324d",
+    "files_added": 4,
+    "superseded_not_included": "Loop 129 / PR 231",
+    "blobs_identical_to_adopted": true
+  },
+  "followup_2026_10_02": {
+    "owner": "SEMI_AUTO gen 2 (lease to 2026-10-02T08:30Z)",
+    "extra_live_test": "NOT STARTED: owner fence + takeover BLOCKED (SEMI_AUTO lease valid, result PRs open); ownership not taken",
+    "budget_used": 4
+  }
 }

@@ -245,6 +245,43 @@ carrier guard now ignores Claude's own claim commit for the quiet window, and a
 superseded failed candidate no longer counts as an outstanding dispatch
 (it blocked the handback).
 
+## 8c. Follow-up check, integration and merge preparation (2026-10-02 06:3x JST)
+
+- Read-only state (GitHub records): owner = SEMI_AUTO generation 2
+  (`chatgpt-semiauto-controller`, lease to 2026-10-02 08:30 UTC, handed back by
+  Claude after Loop 131); outstanding Claude dispatches 0; LIVE slots used 4 of
+  10 (slot-01..04); last adopted result = `53f2caf` (Loop 131, PR 233);
+  `poll` returned no new result; the carrier was quiet.
+- **No further LIVE test was started.** The stream belongs to SEMI_AUTO, and
+  Claude does not take it over: the takeover rule needs an expired SEMI_AUTO
+  lease, a stall of at least 2 hours and nothing in flight. It reported
+  `BLOCKED` (the four result PRs 230-233 are still open and recent), and the
+  loop's own owner fence reported `STOP BLOCKED: loop is owned by SEMI_AUTO`.
+  A new test can start after the lease expires (08:30 UTC) and the stream is
+  idle, or when the human hands the stream to AUTO.
+- **Integration:** `claude/autoloop-live-target` (merge-base `f8d3043`) differed
+  only by the three adopted commits (4 added files); the PR branch had only
+  documentation/evidence and the two LIVE-found fixes on top. Merge-tree was
+  clean. The live target was merged into this PR branch with a normal merge
+  commit (non-default branch, no force). The merged files are byte-identical
+  to the adopted candidates (`git rev-parse` of each blob). The superseded
+  Loop 129 candidate (PR 231) is intentionally not included. Full suite
+  933 tests OK, `git diff --check` and `compileall` clean, secret-pattern scan
+  of `automation/` and `docs/` found nothing.
+- **Merge preparation / human decisions (not done here):**
+  1. PR 220 is a draft against `feature/claude-auto-current-jules-protocol`;
+     marking it ready and merging are human-only.
+  2. `config/claude_jules_autoloop_policy.live.json` carries a live
+     authorization that expires 2026-10-02 15:00 UTC and names the isolated
+     target; harmless when expired, but a human may prefer to drop the two
+     `*.live.json` files before merging.
+  3. Jules PRs 230-233 and the `jules-work/*` branches are still open; close
+     them after the merge decision (not touched here).
+  4. The shared carrier workflow lists only one concurrency group; the quiet
+     guard reduces but cannot remove the chance of colliding with another
+     controller's pending run, so run Claude AUTO only while ChatGPT's lanes
+     are idle.
+
 ## 9. Not done / UNKNOWN
 
 - LIVE is no longer blocked: after the user's explicit approval the isolated
