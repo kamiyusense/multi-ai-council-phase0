@@ -33,6 +33,7 @@ on:
       - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
       - automation/command_bus/loop_status_development.py
+      - automation/command_bus/signal_observed_github.py
       - automation/command_bus/loop_owner.py
       - automation/command_bus/loop_owner_backend.py
       - automation/command_bus/loop_owner_observation.py
@@ -76,6 +77,7 @@ on:
       - automation/command_bus/tests/test_github_oidc_signature_proof.mjs
       - automation/command_bus/tests/test_claude_loop.py
       - automation/command_bus/tests/test_loop_status_development.py
+      - automation/command_bus/tests/test_signal_observed_github.py
       - automation/command_bus/tests/test_loop_owner.py
       - automation/command_bus/tests/test_loop_owner_backend.py
       - automation/command_bus/tests/test_loop_owner_observation.py
