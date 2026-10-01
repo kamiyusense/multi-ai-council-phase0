@@ -33,12 +33,13 @@
     "workflow_runs_triggered_by_this_work": 0,
     "merges": 0,
     "settings_or_secrets_changed": 0,
-    "note": "No Jules dispatch workflow was triggered. Pushing this branch / PR #220 runs only the repository's normal CI 'test' workflow."
+    "note": "No Jules dispatch workflow was triggered. Pushing this branch / PR #220 runs only the repository's normal CI 'test' workflow.",
+    "branches_created": 0
   },
   "status": {
     "static_mock_e2e": "PASS",
     "production_adapters": "IMPLEMENTED_TESTED_ON_REAL_GIT_REMOTE",
-    "live_proof": "NOT_STARTED (0/10): session safety gate refused live policy write; LIVE needs one shared-carrier command write, same outcome; not retried",
+    "live_proof": "NOT_STARTED (0/10). 1st: gate refused the live policy write (2026-10-02 03:25 JST). 2nd, after the user chose the shared carrier: live policy/roadmap committed (8fe7bca); creating branches claude/autoloop-live-target and claude/claude-jules-autoloop-data was refused by the gate ('Interfere With Workloads'); not retried, no carrier write",
     "wake_mechanism": "POLL_ADAPTER_IMPLEMENTED (in-session); no scheduled routine created",
     "handover_semiauto_auto": "IMPLEMENTED: mock + real-git round trip; read-only on real carrier both active streams correctly BLOCKED (Jules in flight)",
     "shared_carrier_guard": "IMPLEMENTED: CarrierQuietGuard (no unfinished carrier run, tip >=5 min old) before claim/command; real GitHub read-only check returned WAIT CARRIER_BUSY (carrier changed 41s ago); 0 cancelled carrier runs 2026-10-01/02"

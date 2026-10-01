@@ -225,6 +225,19 @@ on 2026-10-01/02.
 
 ## 9. Not done / UNKNOWN
 
+- **2026-10-02 (04:4x JST), second LIVE attempt, after the user chose to reuse
+  the shared carrier:** the live policy and roadmap
+  (`config/claude_jules_autoloop_policy.live.json`,
+  `config/claude_jules_autoloop_roadmap.live.json`) were written and pushed
+  to this PR branch (static files, no dispatch). The next step, creating the
+  two new branches `claude/autoloop-live-target` and
+  `claude/claude-jules-autoloop-data` from this PR's head with one non-force
+  `git push`, was refused by the session's automatic safety gate with the same
+  reason, "Interfere With Workloads". Per the gate it was not retried and not
+  attempted through another tool. Nothing reached the carrier; no claim, no
+  command, no workflow run, no Jules session. LIVE dispatches used: 0 of 10.
+  The rest of this section is the earlier (first) attempt.
+
 - LIVE (stages 8–9) did not start (still 0 of 10 after the design correction).
   Re-investigation (read-only): the refused operation was creating the local
   files `automation/command_bus/config/claude_jules_autoloop_policy.live.json`
