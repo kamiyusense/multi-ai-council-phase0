@@ -102,6 +102,7 @@ on:
       - automation/command_bus/tests/test_signal_observed_feedback.py
       - automation/command_bus/signal_observed_feedback_request.py
       - automation/command_bus/tests/test_signal_observed_feedback_request.py
+      - automation/command_bus/tests/test_signal_observed_static_e2e.py
       - .github/workflows/loop-status-signal.yml
       - .github/workflows/loop-status-development.yml
       - .github/workflows/loop-status-signal-test.yml
@@ -169,6 +170,7 @@ jobs:
             automation.command_bus.tests.test_validation_scope
             automation.command_bus.tests.test_signal_observed_feedback
             automation.command_bus.tests.test_signal_observed_feedback_request
+            automation.command_bus.tests.test_signal_observed_static_e2e
           )
           existing=()
           for module in "${modules[@]}"; do
