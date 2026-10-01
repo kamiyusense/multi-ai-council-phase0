@@ -410,3 +410,45 @@ async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_t
             raise ValueError("ACP session/prompt response missing valid stopReason")
 
         return {"text": concatenated_text, "stopReason": stop_reason}
+
+def acp_mock_text_to_phase0_raw(mock_result: dict[str, str]) -> bytes:
+    """
+    MOCK ONLY: Pure synchronous helper that converts a synthetic local-fake
+    ACP text update result into the phase0-response-v1 JSON bytes envelope
+    accepted by RelayCoreAdapter.classify().
+
+    This does NOT connect to a live adapter, dispatch path, bridge, provider,
+    or network. It creates only synthetic response data, with no evidence refs.
+    """
+    if not isinstance(mock_result, dict):
+        raise TypeError("mock_result must be a dictionary")
+
+    if set(mock_result.keys()) != {"text", "stopReason"}:
+        raise ValueError("mock_result must contain exactly the keys {'text', 'stopReason'}")
+
+    text = mock_result["text"]
+    if not isinstance(text, str):
+        raise TypeError("text must be a string")
+
+    if not text.strip():
+        raise ValueError("text cannot be empty or only whitespace")
+
+    stop_reason = mock_result["stopReason"]
+    if not isinstance(stop_reason, str):
+        raise TypeError("stopReason must be a string")
+
+    if stop_reason != "end_turn":
+        raise ValueError(f"stopReason must be exactly 'end_turn', got {stop_reason}")
+
+    response = {
+        "schema_version": "phase0-response-v1",
+        "answer_state": "ANSWER",
+        "conclusion_code": "SUCCESS",
+        "safety_warning": "UNKNOWN",
+        "safety_reason": None,
+        "evidence_refs": [],
+        "marker_echoes": {"head": None, "middle": None, "tail": None},
+        "answer_text": text
+    }
+
+    return json.dumps(response, ensure_ascii=False).encode("utf-8")

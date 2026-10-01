@@ -899,3 +899,98 @@ class TestACPMockTextUpdateWire(unittest.IsolatedAsyncioTestCase):
                 sys.executable, "-c", script,
                 cwd=tempfile.gettempdir(), prompt_text="hello fake",
             )
+
+class TestACPMockTextToPhase0Raw(unittest.TestCase):
+    def test_positive_mapping(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+        import json
+        mock_result = {"text": "hello 日本語\nworld", "stopReason": "end_turn"}
+        raw_bytes = acp_mock_text_to_phase0_raw(mock_result)
+
+        parsed = json.loads(raw_bytes.decode("utf-8"))
+        self.assertEqual(set(parsed), {"schema_version", "answer_state", "conclusion_code", "safety_warning", "safety_reason", "evidence_refs", "marker_echoes", "answer_text"})
+        self.assertEqual(parsed["schema_version"], "phase0-response-v1")
+        self.assertEqual(parsed["answer_state"], "ANSWER")
+        self.assertEqual(parsed["conclusion_code"], "SUCCESS")
+        self.assertEqual(parsed["safety_warning"], "UNKNOWN")
+        self.assertIsNone(parsed["safety_reason"])
+        self.assertEqual(parsed["evidence_refs"], [])
+        self.assertEqual(parsed["marker_echoes"], {"head": None, "middle": None, "tail": None})
+        self.assertEqual(parsed["answer_text"], "hello 日本語\nworld")
+
+        # Test input dict remains unchanged
+        self.assertEqual(mock_result, {"text": "hello 日本語\nworld", "stopReason": "end_turn"})
+
+        # Test deterministic repeated mapping bytes equal
+        raw_bytes_2 = acp_mock_text_to_phase0_raw(mock_result)
+        self.assertEqual(raw_bytes, raw_bytes_2)
+
+    def test_positive_integration_with_core_adapter(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+        from src.relay.core_adapter import RelayCoreAdapter
+        from tests.relay.test_core_adapter import RecordingBridge
+        import json
+
+        mock_result = {"text": "integration text", "stopReason": "end_turn"}
+        raw_bytes = acp_mock_text_to_phase0_raw(mock_result)
+
+        # Instantiate existing RelayCoreAdapter with a mock bridge
+        adapter = RelayCoreAdapter("test_provider", RecordingBridge(), {"auth_kind": "mock"})
+
+        # Call pure classify(raw_bytes)
+        classification = adapter.classify(raw_bytes)
+
+        self.assertTrue(classification["success"])
+        self.assertEqual(classification["execution_state"], "COMPLETE")
+        self.assertEqual(classification["participation_state"], "PARTICIPANT")
+
+    def test_negative_wrong_missing_extra_keys(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw({"text": "a"}) # Missing stopReason
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw({"stopReason": "end_turn"}) # Missing text
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw({"text": "a", "stopReason": "end_turn", "extra": "b"}) # Extra key
+
+    def test_negative_none_non_dict(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+
+        with self.assertRaises(TypeError):
+            acp_mock_text_to_phase0_raw(None)
+
+        with self.assertRaises(TypeError):
+            acp_mock_text_to_phase0_raw(["text", "stopReason"])
+
+    def test_negative_empty_whitespace_text(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw({"text": "", "stopReason": "end_turn"})
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw({"text": "   \n\t", "stopReason": "end_turn"})
+
+    def test_negative_non_string_text(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+
+        with self.assertRaises(TypeError):
+            acp_mock_text_to_phase0_raw({"text": 123, "stopReason": "end_turn"})
+
+    def test_negative_non_end_turn_stopReason(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+
+        invalid_reasons = ["refusal", "cancelled", "max_tokens", "max_turn_requests", "endTurn", "unknown"]
+        for reason in invalid_reasons:
+            with self.subTest(reason=reason):
+                with self.assertRaises(ValueError):
+                    acp_mock_text_to_phase0_raw({"text": "a", "stopReason": reason})
+
+    def test_negative_non_string_stopReason(self):
+        from src.relay.acp_client import acp_mock_text_to_phase0_raw
+
+        with self.assertRaises(TypeError):
+            acp_mock_text_to_phase0_raw({"text": "a", "stopReason": True})
