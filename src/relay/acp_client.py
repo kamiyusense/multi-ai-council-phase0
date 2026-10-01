@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from copy import deepcopy
 from typing import Any
 
 from providers.policy import ProviderPolicy
+
+from .acp_stdio_transport import spawn_stdio_transport
 
 
 class ACPClient:
@@ -160,3 +163,63 @@ class ACPClient:
         if session_id not in self._sessions:
             raise ValueError("Unknown session")
         return deepcopy(self._sessions[session_id]["evidence"])
+
+
+async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) -> dict[str, Any]:
+    """Execute a single ACP v1 initialize round-trip against a local spawned process.
+
+    This provides an isolated, retry-free primitive bridging Relay to the standard
+    ACP Python SDK stdio transport behavior.
+
+    Source: agentclientprotocol/python-sdk commit 9d07d7871ef4b220b8507e15fc4b1560f0950a64;
+    src/acp/client/connection.py initialize request contract (Apache-2.0).
+    """
+    async with spawn_stdio_transport(command, *args, shutdown_timeout=timeout) as (stdout, stdin, _process):
+        request = {
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": 1,
+                "clientCapabilities": {},
+                "clientInfo": {"name": "relay", "version": "0.1.0"},
+            },
+        }
+
+        request_bytes = json.dumps(request).encode("utf-8") + b"\n"
+        stdin.write(request_bytes)
+        await stdin.drain()
+
+        try:
+            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+        except asyncio.TimeoutError as e:
+            raise TimeoutError("Timeout reading ACP initialize response") from e
+
+        if not line:
+            raise EOFError("Unexpected EOF reading ACP initialize response")
+
+        try:
+            response = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError("Malformed JSON in ACP initialize response") from e
+
+        if not isinstance(response, dict):
+            raise ValueError("ACP initialize response must be a JSON object")
+
+        if response.get("jsonrpc") != "2.0":
+            raise ValueError("ACP initialize response must have jsonrpc='2.0'")
+
+        if type(response.get("id")) is not int or response["id"] != 0:
+            raise ValueError("ACP initialize response id mismatch")
+
+        if "error" in response:
+            raise RuntimeError("ACP initialize returned error")
+
+        result = response.get("result")
+        if not isinstance(result, dict):
+            raise ValueError("ACP initialize response missing valid result object")
+
+        if type(result.get("protocolVersion")) is not int or result["protocolVersion"] != 1:
+            raise ValueError("ACP initialize response unsupported protocol version")
+
+        return result
