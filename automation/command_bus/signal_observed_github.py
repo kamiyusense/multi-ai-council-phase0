@@ -1,11 +1,19 @@
 import re
 
+def _is_valid_sha(sha):
+    if not isinstance(sha, str):
+        return False
+    return bool(re.match(r'^[a-f0-9]{40}$', sha))
+
+def map_result_pr_head_to_observed_state(pr_head_sha):
+    if pr_head_sha is None:
+        return "NO_RESULT_PR"
+    if _is_valid_sha(pr_head_sha):
+        return "PR_READY"
+    return "UNKNOWN"
+
 def map_exact_head_github_run_to_observed_check(pr_head_sha, run_head_sha, status, conclusion):
-    if not isinstance(pr_head_sha, str) or not isinstance(run_head_sha, str):
-        return "UNKNOWN"
-    if not re.match(r'^[a-f0-9]{40}$', pr_head_sha):
-        return "UNKNOWN"
-    if not re.match(r'^[a-f0-9]{40}$', run_head_sha):
+    if not _is_valid_sha(pr_head_sha) or not _is_valid_sha(run_head_sha):
         return "UNKNOWN"
     if pr_head_sha != run_head_sha:
         return "UNKNOWN"
