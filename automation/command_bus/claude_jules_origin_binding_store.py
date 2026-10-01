@@ -27,7 +27,7 @@ class BindingStoreResult:
 
 
 def _get_path(command_id: str) -> str:
-    if not isinstance(command_id, str) or not COMMAND_ID_RE.match(command_id):
+    if not isinstance(command_id, str) or not COMMAND_ID_RE.fullmatch(command_id):
         raise ValueError("unsafe or invalid command_id")
     return f"automation/command_bus/evidence/claude-auto-origin-bindings/{command_id}.json"
 
