@@ -16,6 +16,7 @@ class FakeGitHubContentsClient:
     def __init__(self):
         self.files: dict[tuple[str, str], GitHubContent] = {}
         self.create_calls = 0
+        self.update_calls = 0
         self.create_should_raise = False
         self.create_but_store = False
 
@@ -36,6 +37,7 @@ class FakeGitHubContentsClient:
         return content
 
     def update(self, path: str, text: str, sha: str, message: str, branch: str) -> GitHubContent:
+        self.update_calls += 1
         raise NotImplementedError("update must never be called on immutable bindings")
 
 
@@ -99,6 +101,8 @@ class TestClaudeJulesOriginBindingStore(unittest.TestCase):
             _get_path("../invalid")
         with self.assertRaises(ValueError):
             _get_path("invalid/path")
+        with self.assertRaises(ValueError):
+            _get_path("valid-id\n")
 
     def test_persist_absent_creates_and_reads_back_successfully_returns_accepted(self) -> None:
         result = self.store.persist(self.valid_record, self.valid_request, self.valid_claim)
@@ -264,6 +268,23 @@ class TestClaudeJulesOriginBindingStore(unittest.TestCase):
         self.assertEqual(self.valid_claim, claim_before)
         self.assertNotIn("lane_id", read_back.record)
         self.assertNotIn("lane_display", read_back.record)
+
+    def test_inputs_are_not_mutated_and_update_is_never_called(self) -> None:
+        record_before = copy.deepcopy(self.valid_record)
+        request_before = copy.deepcopy(self.valid_request)
+        claim_before = copy.deepcopy(self.valid_claim)
+
+        persisted = self.store.persist(self.valid_record, self.valid_request, self.valid_claim)
+        self.assertEqual(persisted.status, "ACCEPTED")
+        read = self.store.read(
+            self.valid_request["command_id"], self.valid_request, self.valid_claim
+        )
+        self.assertEqual(read.status, "READ")
+
+        self.assertEqual(self.valid_record, record_before)
+        self.assertEqual(self.valid_request, request_before)
+        self.assertEqual(self.valid_claim, claim_before)
+        self.assertEqual(self.client.update_calls, 0)
 
     def test_read_invalid_cross_binding_returns_unknown(self) -> None:
         self.store.persist(self.valid_record, self.valid_request, self.valid_claim)
