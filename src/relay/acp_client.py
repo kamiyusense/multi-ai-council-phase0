@@ -312,7 +312,7 @@ async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: 
         return stop_reason
 
 async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0) -> dict[str, str]:
-    """Execute an initialize -> session/new -> session/prompt request, extract one text update, and wait for terminal round-trip."""
+    """Mock-only ACP prompt: concatenate 1..3 text updates before the terminal response."""
     async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
         session_id = await _acp_handshake(stdout, stdin, cwd, timeout)
 
@@ -330,60 +330,83 @@ async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_t
         stdin.write(request_bytes)
         await stdin.drain()
 
-        try:
-            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
-        except asyncio.TimeoutError as e:
-            raise TimeoutError("Timeout reading ACP session/update notification") from e
+        concatenated_text = ""
+        notification_count = 0
+        terminal_result = None
 
-        if not line:
-            raise EOFError("Unexpected EOF reading ACP session/update notification")
+        for _ in range(4):
+            try:
+                line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+            except asyncio.TimeoutError as e:
+                raise TimeoutError("Timeout reading ACP session/prompt response") from e
 
-        try:
-            notification = json.loads(line)
-        except json.JSONDecodeError as e:
-            raise ValueError("Malformed JSON in ACP session/update notification") from e
+            if not line:
+                raise EOFError("Unexpected EOF reading ACP session/prompt response")
 
-        if not isinstance(notification, dict):
-            raise ValueError("ACP session/update notification must be a JSON object")
+            try:
+                frame = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise ValueError("Malformed JSON in ACP session/prompt response") from e
 
-        if notification.get("jsonrpc") != "2.0":
-            raise ValueError("ACP session/update notification must have jsonrpc='2.0'")
+            if not isinstance(frame, dict):
+                raise ValueError("ACP session/prompt response must be a JSON object")
 
-        if "id" in notification:
-            raise ValueError("ACP session/update notification must not have an id field")
+            if frame.get("jsonrpc") != "2.0":
+                raise ValueError("ACP session/prompt response must have jsonrpc='2.0'")
 
-        if notification.get("method") != "session/update":
-            raise ValueError("ACP session/update notification method must be 'session/update'")
+            if "id" in frame:
+                # Terminal response
+                if notification_count == 0:
+                    raise ValueError("ACP session/update notification must not have an id field")
+                if type(frame.get("id")) is not int or frame["id"] != 2:
+                    raise ValueError("ACP session/prompt response id mismatch")
+                if "error" in frame:
+                    raise RuntimeError("ACP session/prompt returned error")
+                terminal_result = frame.get("result")
+                if not isinstance(terminal_result, dict):
+                    raise ValueError("ACP session/prompt response missing valid result object")
+                break
+            else:
+                # Notification
+                if notification_count >= 3:
+                    raise ValueError("Maximum of 3 text updates exceeded")
 
-        params = notification.get("params")
-        if not isinstance(params, dict):
-            raise ValueError("ACP session/update notification missing valid params object")
+                if frame.get("method") != "session/update":
+                    raise ValueError("ACP session/update notification method must be 'session/update'")
 
-        if params.get("sessionId") != session_id:
-            raise ValueError("ACP session/update notification sessionId mismatch")
+                params = frame.get("params")
+                if not isinstance(params, dict):
+                    raise ValueError("ACP session/update notification missing valid params object")
 
-        update = params.get("update")
-        if not isinstance(update, dict):
-            raise ValueError("ACP session/update notification missing valid update object")
+                if params.get("sessionId") != session_id:
+                    raise ValueError("ACP session/update notification sessionId mismatch")
 
-        if update.get("sessionUpdate") != "agent_message_chunk":
-            raise ValueError("ACP session/update notification sessionUpdate must be 'agent_message_chunk'")
+                update = params.get("update")
+                if not isinstance(update, dict):
+                    raise ValueError("ACP session/update notification missing valid update object")
 
-        content = update.get("content")
-        if not isinstance(content, dict):
-            raise ValueError("ACP session/update notification missing valid content object")
+                if update.get("sessionUpdate") != "agent_message_chunk":
+                    raise ValueError("ACP session/update notification sessionUpdate must be 'agent_message_chunk'")
 
-        if content.get("type") != "text":
-            raise ValueError("ACP session/update notification content type must be 'text'")
+                notif_content = update.get("content")
+                if not isinstance(notif_content, dict):
+                    raise ValueError("ACP session/update notification missing valid content object")
 
-        text = content.get("text")
-        if not isinstance(text, str):
-            raise ValueError("ACP session/update notification missing valid text string")
+                if notif_content.get("type") != "text":
+                    raise ValueError("ACP session/update notification content type must be 'text'")
 
-        result = await _acp_read_terminal_response(stdout, 2, timeout, "session/prompt")
+                text = notif_content.get("text")
+                if not isinstance(text, str):
+                    raise ValueError("ACP session/update notification missing valid text string")
 
-        stop_reason = result.get("stopReason")
+                concatenated_text += text
+                notification_count += 1
+
+        if terminal_result is None:
+            raise ValueError("No terminal response received within bound")
+
+        stop_reason = terminal_result.get("stopReason")
         if not isinstance(stop_reason, str) or stop_reason not in {"end_turn", "max_tokens", "max_turn_requests", "refusal", "cancelled"}:
             raise ValueError("ACP session/prompt response missing valid stopReason")
 
-        return {"text": text, "stopReason": stop_reason}
+        return {"text": concatenated_text, "stopReason": stop_reason}
