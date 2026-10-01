@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 115,
+  "loop_id": "115",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-feedback-decision",
+  "command_id": "relay-dev-loop-115-signal-feedback-decision",
+  "target_branch": "feature/signal-observed-v1",
+  "expected_target_head": "20edfeb2c4e8329bb4476c91525b65f24eb536fd",
+  "expected_target_tree": "0db8a8d6abde755250bb27a482632d058da0941f",
+  "work_branch": "jules-work/relay-dev-loop-115-signal-feedback-decision",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T20:46:15+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
