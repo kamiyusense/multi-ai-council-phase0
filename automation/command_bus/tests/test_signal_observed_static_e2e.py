@@ -17,17 +17,25 @@ class TestSignalObservedStaticE2E(unittest.TestCase):
     """
 
     def test_lifecycle_success_fixture(self):
-        # 1. dispatch accepted: define deterministic identities
-        mock_session_id = "123456"
+        # 1. Deterministic accepted-dispatch FIXTURE only; no transport is exercised.
+        mock_dispatch = {
+            "status": "accepted",
+            "session_id": "123456",
+            "expected_target_head": "c" * 40,
+        }
+        mock_session_id = mock_dispatch["session_id"]
         mock_result_head = "a" * 40
         mock_workflow_head = "a" * 40
         mock_activity_name = f"sessions/{mock_session_id}/activities/act-1"
         mock_answer = "This is a fix."
 
-        # Assert fixture identities before mapping
+        # Assert dispatch-fixture identities before mapping; not live acceptance evidence.
+        self.assertEqual(mock_dispatch["status"], "accepted")
+        self.assertRegex(mock_dispatch["expected_target_head"], r"^[0-9a-f]{40}$")
+        self.assertEqual(mock_dispatch["session_id"], mock_session_id)
         self.assertEqual(len(mock_result_head), 40)
         self.assertTrue(mock_result_head.islower())
-        self.assertTrue(mock_session_id.isdigit())
+        self.assertTrue(mock_session_id.isascii() and mock_session_id.isdigit())
 
         # 2. IN_PROGRESS
         observed_in_progress = map_jules_session_state_to_observed_signal("IN_PROGRESS")
@@ -42,7 +50,7 @@ class TestSignalObservedStaticE2E(unittest.TestCase):
             observed_session_id=mock_session_id,
             expected_session_id=mock_session_id,
             jules_state="AWAITING_USER_FEEDBACK",
-            agent_message="Can you approve?",
+            agent_message="May I keep the filename within the allowlist?",
             controller_classification="SMALL_REVERSIBLE_REPO",
             already_answered=False,
         )
@@ -54,7 +62,7 @@ class TestSignalObservedStaticE2E(unittest.TestCase):
             observed_activity_name=mock_activity_name,
             expected_activity_name=mock_activity_name,
             jules_state="AWAITING_USER_FEEDBACK",
-            agent_message="Can you approve?",
+            agent_message="May I keep the filename within the allowlist?",
             controller_classification="SMALL_REVERSIBLE_REPO",
             answer_text=mock_answer,
             already_answered=False,
@@ -65,6 +73,7 @@ class TestSignalObservedStaticE2E(unittest.TestCase):
             "expected_state": "AWAITING_USER_FEEDBACK",
             "prompt": mock_answer
         })
+        self.assertNotIn("May I keep the filename within the allowlist?", str(request))
 
         # 5. result PR
         observed_pr_ready = map_result_pr_head_to_observed_state(mock_result_head)
