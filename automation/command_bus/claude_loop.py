@@ -17,6 +17,7 @@ from typing import Any, Iterable
 
 from .executor import make_executor_request
 from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE
+from .claude_jules_origin_binding import build_binding_record
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,
@@ -379,6 +380,43 @@ def prepare_jules_semiauto_request(
         if set(request) != current_carrier_keys:
             return LoopResult("UNKNOWN", "current Jules carrier request shape mismatch")
         return LoopResult("PREPARED", "unpersisted Jules semi-auto request artifact created", request)
+    except (KeyError, TypeError, ValueError) as exc:
+        return LoopResult("UNKNOWN", str(exc))
+
+
+def prepare_jules_semiauto_bundle(
+    prepared_request: dict[str, Any], carrier_claim: dict[str, Any], *,
+    target_branch: str, default_branch: str, created_at: str,
+    command_id: str | None = None,
+) -> LoopResult:
+    """Prepare the current Jules request and its Claude AUTO origin binding.
+
+    This pure helper composes the existing request and binding validators. It
+    performs no persistence, dispatch, provider/model call, or GitHub write.
+    """
+    try:
+        carrier = prepare_jules_semiauto_request(
+            prepared_request,
+            target_branch=target_branch,
+            default_branch=default_branch,
+            created_at=created_at,
+            command_id=command_id,
+        )
+        if carrier.status != "PREPARED" or carrier.request is None:
+            return carrier
+        binding = build_binding_record(
+            prepared_request["loop_id"],
+            prepared_request["round"],
+            prepared_request["correlation_id"],
+            prepared_request["generation"],
+            carrier.request,
+            carrier_claim,
+        )
+        return LoopResult(
+            "PREPARED",
+            "unpersisted Jules request and origin binding artifacts created",
+            {"carrier_request": carrier.request, "origin_binding": binding},
+        )
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
 
