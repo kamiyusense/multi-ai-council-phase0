@@ -37,19 +37,19 @@ class ProviderPolicy:
 CODEX_POLICY = ProviderPolicy(
     provider_id="openai",
     external_agent="@agentclientprotocol/codex-acp",
-    pinned_version="1.12.0",
+    pinned_version="2.1.0",
 )
 
 CLAUDE_POLICY = ProviderPolicy(
     provider_id="anthropic",
     external_agent="@agentclientprotocol/claude-agent-acp",
-    pinned_version="0.79.0",
+    pinned_version="0.84.0",
 )
 
 ANTIGRAVITY_POLICY = ProviderPolicy(
     provider_id="google",
     external_agent="antigravity-acp",
-    pinned_version="1.1.1",
+    pinned_version="1.2.1",
 )
 
 
