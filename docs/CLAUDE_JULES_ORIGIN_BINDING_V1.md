@@ -20,3 +20,15 @@ This pure module enforces the following strict linkages before emitting a standa
 - Generic identity strings are capped at 1024 characters; command IDs and hashes retain their stricter field-specific limits.
 
 Any mismatch results in immediate fail-closed state without leaking missing keys or internal structural gaps.
+
+## Durable Store (Loop 093)
+
+The `automation.command_bus.claude_jules_origin_binding_store` module provides a durable persistence boundary for origin bindings, stored at `automation/command_bus/evidence/claude-auto-origin-bindings/<command_id>.json`. It strictly reuses the `GitHubContentsClient` create-only, independent readback pattern.
+
+- It maintains `retry=0` and `fallback=disabled` limits.
+- Exact match readback confirms persistence as `ACCEPTED`.
+- Missing or malformed readbacks fail closed to `UNKNOWN`.
+- A valid existing record identical to the input safely returns `RECOVERED`.
+- A valid existing record that differs returns `BLOCKED`.
+- This store is **STATIC PREP of the durable storage boundary only**; current carrier validators are explicitly a precondition and must pass first. Integrated Claude->Jules LIVE execution remains explicitly UNKNOWN and not authorized.
+- A later bounded adapter may build and persist this binding in conjunction with a validated current V2 request and schema-v3 claim.
