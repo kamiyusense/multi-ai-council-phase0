@@ -1,0 +1,6 @@
+{
+  "target_sha": "da70c1347c011353e1121e20569e8563855b1030",
+  "loop_number": 111,
+  "scope": "exact-head full unit suite + compileall + git diff --check; no provider/model execution",
+  "candidate_pr": 213
+}
