@@ -353,6 +353,116 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual((lost.action, lost.status), ("STOP", "UNKNOWN"))
         self.assertEqual([x for x in w2.github.writes if x[0] == "ff"], [])
 
+    # -- PR #220 review: receipts, post-FF recovery, tampered records ---------
+    def _adopted_world(self):
+        w = World()
+        w.step()
+        command_id = w.command(w.commands()[0])["command_id"]
+        w.deliver(w.jules.run(command_id))
+        self.assertEqual(w.step().status, "PASS")
+        self.assertEqual(w.step().status, "ADOPTED")
+        return w, command_id
+
+    def _replace(self, w, path, mutate):
+        from automation.command_bus.github_backend import GitHubContent
+        record = json.loads(w.github.get(path, DATA).text)
+        mutate(record)
+        text = json.dumps(record)
+        w.github.files[(DATA, path)] = GitHubContent(path=path, text=text, sha="f" * 40)
+
+    def test_invalid_adoption_receipt_is_not_trusted(self):
+        from automation.command_bus.claude_jules_adoption import adoption_receipt_path
+        cases = {
+            "malformed": lambda r: r.pop("tree_after"),
+            "wrong-command": lambda r: r.__setitem__("command_id", "relay-dev-loop-999-other"),
+            "wrong-head": lambda r: r.__setitem__("head_after", "e" * 40),
+            "wrong-intent": lambda r: r.__setitem__("intent_sha256", "0" * 64),
+            "not-adopted": lambda r: r.__setitem__("state", "PENDING"),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name):
+                w, command_id = self._adopted_world()
+                self._replace(w, adoption_receipt_path(command_id), mutate)
+                ffs = [x for x in w.github.writes if x[0] == "ff"]
+                result = w.step()
+                self.assertEqual((result.action, result.status), ("STOP", "UNKNOWN"), result.reason)
+                self.assertEqual([x for x in w.github.writes if x[0] == "ff"], ffs)
+                self.assertEqual(len(w.commands()), 1)  # never moves on to the next task
+
+    def test_adoption_receipt_requires_canonical_to_still_contain_head(self):
+        w, _ = self._adopted_world()
+        w.github.branches[TARGET] = w.github.child(w.github.ancestors(w.github.branches[TARGET])[1], {"z": "1"}, "rewound")
+        result = w.step()
+        self.assertEqual((result.action, result.status), ("STOP", "UNKNOWN"), result.reason)
+        self.assertEqual(len(w.commands()), 1)
+
+    def test_crash_after_fast_forward_restores_receipt_without_ref_write(self):
+        w = World()
+        w.step()
+        w.deliver(w.jules.run(w.command(w.commands()[0])["command_id"]))
+        w.step()
+        w.github.create_hook = lambda path, branch: ("raise-before-write"
+                                                     if "claude-auto-adoption-receipts" in path else None)
+        crashed = w.step()
+        self.assertEqual((crashed.action, crashed.status), ("STOP", "UNKNOWN"), crashed.reason)
+        ffs = [x for x in w.github.writes if x[0] == "ff"]
+        self.assertEqual(len(ffs), 1)
+        w.github.create_hook = None
+        restored = w.step()
+        self.assertEqual((restored.action, restored.status), ("ADOPT", "ADOPTED"), restored.reason)
+        self.assertIn("no ref write", restored.reason)
+        self.assertEqual([x for x in w.github.writes if x[0] == "ff"], ffs)
+        nxt = w.step()
+        self.assertEqual((nxt.action, nxt.status), ("DISPATCH", "DISPATCHED"))
+        self.assertEqual(len(w.commands()), 2)
+
+    def test_canonical_at_candidate_without_lock_is_unknown(self):
+        w = World()
+        w.step()
+        w.deliver(w.jules.run(w.command(w.commands()[0])["command_id"]))
+        w.step()
+        # Someone else advanced the target to the candidate; no Claude lock exists.
+        w.github.branches[TARGET] = w.jules.prs[300]["head_sha"]
+        result = w.step()
+        self.assertEqual((result.action, result.status), ("STOP", "UNKNOWN"), result.reason)
+        self.assertEqual([x for x in w.github.writes if x[0] == "ff"], [])
+        self.assertEqual([p for (b, p) in w.github.files if "claude-auto-adoption-receipts" in p], [])
+
+    def test_tampered_inspection_record_stops_unknown(self):
+        w = World()
+        w.step()
+        w.deliver(w.jules.run(w.command(w.commands()[0])["command_id"]))
+        w.step()
+        [(_, path)] = [k for k in w.github.files if "claude-auto-inspections/" in k[1]]
+        self._replace(w, path, lambda r: r.__setitem__("task_id", "other-task"))
+        result = w.step()
+        self.assertEqual((result.action, result.status), ("STOP", "UNKNOWN"), result.reason)
+        self.assertEqual([x for x in w.github.writes if x[0] == "ff"], [])
+
+    def test_tampered_result_event_stops_unknown(self):
+        w = World()
+        w.step()
+        w.deliver(w.jules.run(w.command(w.commands()[0])["command_id"]))
+        [(_, path)] = [k for k in w.github.files if "claude-auto-result-events/" in k[1]]
+        self._replace(w, path, lambda r: r.__setitem__("head_ref_session_id", "999"))
+        result = w.step()
+        self.assertEqual((result.action, result.status), ("STOP", "UNKNOWN"), result.reason)
+        self.assertEqual(w.facts.calls, [])
+
+    def test_fresh_pr_head_ref_or_footer_mismatch_blocks(self):
+        for name, mutate in {
+            "head-ref": lambda pr: pr.__setitem__("head_ref", pr["head_ref"] + "-x"),
+            "footer": lambda pr: pr.__setitem__("body", "no session footer"),
+        }.items():
+            with self.subTest(name):
+                w = World()
+                w.step()
+                w.deliver(w.jules.run(w.command(w.commands()[0])["command_id"]))
+                mutate(w.jules.prs[300])
+                result = w.step()
+                self.assertEqual((result.action, result.status), ("STOP", "BLOCKED"), result.reason)
+                self.assertEqual([x for x in w.github.writes if x[0] == "ff"], [])
+
     def test_max_rounds_stops_after_adoption(self):
         w = World(pol=policy(max_rounds=1))
         w.step()

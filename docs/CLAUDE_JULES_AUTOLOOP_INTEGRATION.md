@@ -90,6 +90,10 @@ controller instance for every step).
 - `retry=0` / `fallback=disabled`: every record, intent digest, carrier validators.
 - `round ≤ max_rounds ≤ 6`: policy, verdict, controller.
 - Terminal receipt replay prevention: dispatch receipt / adoption receipt pre-read → NO-OP.
+  An adoption receipt is never trusted by existence: it is re-validated against
+  the intent and inspection and the canonical branch is re-read; otherwise UNKNOWN.
+- Stored result events and inspections are re-validated (digest, identity) on
+  every read; a tampered record stops the loop UNKNOWN.
 - Exact target HEAD/tree: preflight and again immediately before the command
   write; adoption requires the canonical HEAD to still equal the snapshot.
 - Carrier head movement (other controllers committing) is **not** treated as
@@ -107,9 +111,15 @@ controller instance for every step).
 
 ## 6. Tests (this branch, cloud container, Python 3.11.15)
 
-- New: `test_claude_jules_autoloop_e2e.py` (22 mock E2E scenarios),
-  `test_claude_jules_dispatch_contract.py`, `test_claude_jules_result_inspection.py`;
+- New: `test_claude_jules_autoloop_e2e.py` (29 mock E2E scenarios),
+  `test_claude_jules_dispatch_contract.py` (14), `test_claude_jules_result_inspection.py` (16);
   compatibility test switched to the reviewed bundle.
+- PR #220 review fixes are covered by negative tests: malformed / wrong-command /
+  wrong-head / wrong-intent adoption receipts, canonical no longer containing the
+  adopted head, crash after a successful fast-forward (receipt restored with no
+  second ref write), canonical at the candidate without a Claude lock (UNKNOWN),
+  tampered stored inspection and result event (STOP UNKNOWN), fresh PR head ref
+  or footer mismatch (BLOCKED).
 - Full suite: `python -m unittest discover -s automation/command_bus/tests -t .`
   → see the checkpoint JSON for the exact count; compileall and `git diff --check` PASS.
 - Mutation spot checks (remove re-fence, session check, exact-head test binding,

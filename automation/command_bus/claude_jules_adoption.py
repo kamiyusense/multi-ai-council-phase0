@@ -55,6 +55,35 @@ def adoption_receipt_path(command_id: str) -> str:
     return f"{EVIDENCE_ROOT}/claude-auto-adoption-receipts/{command_id}.json"
 
 
+_RECEIPT_KEYS = {
+    "schema_version", "profile", "command_id", "task_id", "intent_sha256", "origin_loop_id",
+    "origin_round", "target_branch", "head_before", "head_after", "tree_after", "inspection_sha256",
+    "state", "adopted_at", "merge", "force_push", "retry_count",
+}
+
+
+def validate_adoption_receipt(receipt: Any, *, intent: dict[str, Any], inspection: dict[str, Any]) -> dict[str, Any]:
+    """Fail-closed check that a stored receipt is exactly this dispatch's adoption."""
+    request = intent["carrier_request"]
+    if not isinstance(receipt, dict) or set(receipt) != _RECEIPT_KEYS:
+        raise ValueError("adoption receipt keys mismatch")
+    expected = {
+        "schema_version": 1, "profile": RECEIPT_PROFILE, "state": "ADOPTED",
+        "command_id": request["command_id"], "task_id": inspection["task_id"],
+        "intent_sha256": intent["intent_sha256"], "origin_loop_id": intent["origin_loop_id"],
+        "origin_round": intent["origin_round"], "target_branch": request["target_branch"],
+        "head_before": request["expected_target_head"], "head_after": inspection["candidate_head"],
+        "tree_after": inspection["candidate_tree"], "inspection_sha256": inspection["inspection_sha256"],
+        "merge": False, "force_push": False, "retry_count": 0,
+    }
+    for key, value in expected.items():
+        if receipt[key] != value or type(receipt[key]) is not type(value):
+            raise ValueError(f"adoption receipt {key} mismatch")
+    if inspection.get("command_id") != request["command_id"] or inspection.get("intent_sha256") != intent["intent_sha256"]:
+        raise ValueError("inspection does not bind this dispatch")
+    return receipt
+
+
 class SafeAdoption:
     def __init__(self, *, client: Any, refs: AdoptionRefClient, policy: dict[str, Any]):
         self.client, self.refs = client, refs
@@ -67,10 +96,13 @@ class SafeAdoption:
         command_id = request["command_id"]
         try:
             existing = self.client.get(adoption_receipt_path(command_id), self.branch)
-            if existing is not None:
-                return AdoptionResult("NO-OP", "adoption receipt already exists", json.loads(existing.text))
         except Exception as exc:
             return AdoptionResult("UNKNOWN", f"receipt pre-read failed: {exc}")
+        if existing is not None:
+            verified = self.verify_adopted(intent=intent, inspection=inspection)
+            if verified.status != "VERIFIED":
+                return verified
+            return AdoptionResult("NO-OP", "verified adoption receipt already exists", verified.record)
         if target not in self.policy["allowed_target_branches"] or target == self.policy["default_branch"]:
             return AdoptionResult("BLOCKED", "target branch is not granted to Claude AUTO")
         if inspection.get("verdict") != "PASS" or inspection.get("decision") != "ADOPT_CANDIDATE":
@@ -90,6 +122,8 @@ class SafeAdoption:
         if current is None or tree is None or compare is None:
             return AdoptionResult("UNKNOWN", "fresh canonical readback incomplete")
         if current != snapshot:
+            if current == candidate:
+                return self._restore_receipt(intent, inspection, adopted_at)
             return AdoptionResult("BLOCKED", "STALE_TARGET: canonical moved since the snapshot; do not force an old base")
         if tree != candidate_tree:
             return AdoptionResult("BLOCKED", "candidate tree differs from the inspected tree")
@@ -133,18 +167,73 @@ class SafeAdoption:
         after_tree = self.refs.get_commit_tree(after)
         if after_tree != candidate_tree:
             return AdoptionResult("UNKNOWN", "canonical tree readback mismatch")
-        receipt = {"schema_version": 1, "profile": RECEIPT_PROFILE, "command_id": command_id,
-                   "task_id": inspection["task_id"], "origin_loop_id": intent["origin_loop_id"],
-                   "origin_round": intent["origin_round"], "target_branch": target,
-                   "head_before": snapshot, "head_after": after, "tree_after": after_tree,
-                   "inspection_sha256": inspection["inspection_sha256"], "state": "ADOPTED",
-                   "adopted_at": adopted_at, "merge": False, "force_push": False, "retry_count": 0}
-        state = self._create_once(adoption_receipt_path(command_id), receipt)
+        return self._write_receipt(intent, inspection, adopted_at)
+
+    def _receipt(self, intent: dict[str, Any], inspection: dict[str, Any], adopted_at: str) -> dict[str, Any]:
+        request = intent["carrier_request"]
+        return {"schema_version": 1, "profile": RECEIPT_PROFILE, "command_id": request["command_id"],
+                "task_id": inspection["task_id"], "intent_sha256": intent["intent_sha256"],
+                "origin_loop_id": intent["origin_loop_id"], "origin_round": intent["origin_round"],
+                "target_branch": request["target_branch"], "head_before": request["expected_target_head"],
+                "head_after": inspection["candidate_head"], "tree_after": inspection["candidate_tree"],
+                "inspection_sha256": inspection["inspection_sha256"], "state": "ADOPTED",
+                "adopted_at": adopted_at, "merge": False, "force_push": False, "retry_count": 0}
+
+    def _restore_receipt(self, intent: dict[str, Any], inspection: dict[str, Any], adopted_at: str) -> AdoptionResult:
+        """Canonical already equals the inspected candidate but no receipt exists.
+
+        Only provable when our own lock for (target, snapshot) binds exactly this
+        candidate and inspection; then the receipt is created without any ref write.
+        """
+        request = intent["carrier_request"]
+        try:
+            lock = self.client.get(lock_path(request["target_branch"], request["expected_target_head"]), self.branch)
+            record = None if lock is None else json.loads(lock.text)
+            tree = self.refs.get_commit_tree(inspection["candidate_head"])
+        except Exception as exc:
+            return AdoptionResult("UNKNOWN", f"post-adoption recovery readback failed: {exc}")
+        expected = {"profile": LOCK_PROFILE, "target_branch": request["target_branch"],
+                    "from_head": request["expected_target_head"], "to_head": inspection["candidate_head"],
+                    "command_id": request["command_id"], "inspection_sha256": inspection["inspection_sha256"]}
+        if not isinstance(record, dict) or any(record.get(k) != v for k, v in expected.items()):
+            return AdoptionResult("UNKNOWN", "canonical equals candidate but no matching adoption lock; cannot prove who advanced it")
+        if tree != inspection["candidate_tree"]:
+            return AdoptionResult("UNKNOWN", "canonical tree does not match the inspected tree")
+        return self._write_receipt(intent, inspection, adopted_at, restored=True)
+
+    def _write_receipt(self, intent: dict[str, Any], inspection: dict[str, Any], adopted_at: str,
+                       *, restored: bool = False) -> AdoptionResult:
+        receipt = self._receipt(intent, inspection, adopted_at)
+        state = self._create_once(adoption_receipt_path(receipt["command_id"]), receipt)
         if state == "CREATED":
-            return AdoptionResult("ADOPTED", "fast-forward written and read back", receipt)
+            reason = "receipt restored from lock + canonical readback; no ref write" if restored else "fast-forward written and read back"
+            return AdoptionResult("ADOPTED", reason, receipt)
         if state == "RECOVERED":
             return AdoptionResult("NO-OP", "identical adoption receipt already recorded", receipt)
         return AdoptionResult("UNKNOWN", "canonical advanced but receipt unresolved; recover from readback", receipt)
+
+    def verify_adopted(self, *, intent: dict[str, Any], inspection: dict[str, Any] | None) -> AdoptionResult:
+        """Re-verify a stored adoption receipt and the fresh canonical branch."""
+        request = intent["carrier_request"]
+        try:
+            content = self.client.get(adoption_receipt_path(request["command_id"]), self.branch)
+            if content is None:
+                return AdoptionResult("MISSING", "no adoption receipt")
+            if not isinstance(inspection, dict):
+                return AdoptionResult("UNKNOWN", "adoption receipt has no verified inspection")
+            receipt = validate_adoption_receipt(json.loads(content.text), intent=intent, inspection=inspection)
+            current = self.refs.get_branch_head(request["target_branch"])
+            compare = self.refs.compare(receipt["head_after"], current) if current else None
+            tree = self.refs.get_commit_tree(receipt["head_after"])
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return AdoptionResult("UNKNOWN", f"adoption receipt invalid: {exc}")
+        except Exception as exc:
+            return AdoptionResult("UNKNOWN", f"canonical readback failed: {exc}")
+        if tree != receipt["tree_after"]:
+            return AdoptionResult("UNKNOWN", "adopted commit tree readback mismatch")
+        if not isinstance(compare, dict) or compare.get("merge_base") != receipt["head_after"] or compare.get("behind_by") != 0:
+            return AdoptionResult("UNKNOWN", "canonical branch no longer contains the adopted head")
+        return AdoptionResult("VERIFIED", "adoption receipt and canonical readback agree", receipt)
 
     def _create_once(self, path: str, record: dict[str, Any], compare_keys: tuple[str, ...] | None = None) -> str:
         def same(other: dict[str, Any]) -> bool:

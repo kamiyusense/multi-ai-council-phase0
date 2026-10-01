@@ -171,10 +171,18 @@ class ClaudeJulesAutoLoop:
         if receipt.get("state") != "DISPATCHED":
             return StepResult("STOP", "UNKNOWN", f"unexpected dispatch receipt state {receipt.get('state')}")
 
-        adopted = self._read_json(adoption_receipt_path(command_id))
-        if adopted is not None:
+        try:
+            all_inspections = self.inspections.list_all()
+            adopted = self._adoption_state(latest, all_inspections)
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"durable inspection/adoption records unverifiable: {exc}")
+        if adopted.status == "VERIFIED":
             return self._after_adoption(latest, now=now)
-        mine = [r for r in self.inspections.list_all() if r.get("command_id") == command_id]
+        if adopted.status != "MISSING":
+            return StepResult("STOP", "UNKNOWN", f"adoption record: {adopted.reason}")
+        mine = [r for r in all_inspections if r["command_id"] == command_id]
+        if any(r["intent_sha256"] != latest["intent_sha256"] for r in mine):
+            return StepResult("STOP", "BLOCKED", "inspection record bound to another dispatch intent")
         if mine:
             current = self._current_inspection(mine)
             decision = current["decision"]
@@ -214,7 +222,11 @@ class ClaudeJulesAutoLoop:
 
     def _inspect_new_result(self, intent: dict[str, Any], spec: dict[str, Any], *, now: str) -> StepResult:
         request = intent["carrier_request"]
-        events = [e for e in self.inbox.list_events() if e["command_id"] == request["command_id"]]
+        try:
+            events = [e for e in self.inbox.list_events() if e["command_id"] == request["command_id"]]
+            prior = self.inspections.list_all()
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"durable event records unverifiable: {exc}")
         if not events:
             return StepResult("WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
                               {"command_id": request["command_id"]})
@@ -275,11 +287,25 @@ class ClaudeJulesAutoLoop:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
+    def _adoption_state(self, intent: dict[str, Any], inspections: list[dict[str, Any]]) -> Any:
+        """VERIFIED / MISSING / UNKNOWN for one dispatch, never trusting mere existence."""
+        raw = self._read_json(adoption_receipt_path(intent["carrier_request"]["command_id"]))
+        if raw is None:
+            return self.adoption.verify_adopted(intent=intent, inspection=None)  # MISSING
+        referenced = raw.get("inspection_sha256") if isinstance(raw, dict) else None
+        match = [r for r in inspections if r["inspection_sha256"] == referenced
+                 and r["command_id"] == intent["carrier_request"]["command_id"]]
+        return self.adoption.verify_adopted(intent=intent, inspection=match[0] if len(match) == 1 else None)
+
     def next_roadmap_task(self) -> dict[str, Any] | None:
         adopted_families: set[str] = set()
+        inspections = self.inspections.list_all()
         for intent in self._intents():
-            if self._read_json(adoption_receipt_path(intent["carrier_request"]["command_id"])) is not None:
+            state = self._adoption_state(intent, inspections)
+            if state.status == "VERIFIED":
                 adopted_families.add(_family(intent["task_id"]))
+            elif state.status != "MISSING":
+                raise ValueError(f"unverifiable adoption for {intent['carrier_request']['command_id']}: {state.reason}")
         for entry in self.roadmap["tasks"]:
             spec = entry["task_spec"]
             if spec["task_id"] in adopted_families:
@@ -294,7 +320,10 @@ class ClaudeJulesAutoLoop:
         if round_number > self.policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
         if spec is None:
-            spec = self.next_roadmap_task()
+            try:
+                spec = self.next_roadmap_task()
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+                return StepResult("STOP", "UNKNOWN", f"roadmap position unverifiable: {exc}")
             if spec is None:
                 return StepResult("COMPLETE", "COMPLETE", "no remaining roadmap task is eligible")
         generation = self._owner_generation()

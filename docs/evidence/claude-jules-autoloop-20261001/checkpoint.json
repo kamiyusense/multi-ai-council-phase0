@@ -15,8 +15,12 @@
   "environment": "Claude Code cloud container, Python 3.11.15",
   "tests": {
     "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
-    "after_full_suite": "884 run, OK, 1 skipped",
-    "new_test_methods": {"e2e": 22, "dispatch_contract": 14, "result_inspection": 14},
+    "after_full_suite": "893 run, OK, 1 skipped (884 at e4d9ebde before the PR #220 review fixes)",
+    "new_test_methods": {
+      "e2e": 29,
+      "dispatch_contract": 14,
+      "result_inspection": 16
+    },
     "compileall": "PASS",
     "git_diff_check": "PASS"
   },
@@ -25,7 +29,8 @@
     "carrier_writes": 0,
     "workflow_runs_triggered_by_this_work": 0,
     "merges": 0,
-    "settings_or_secrets_changed": 0
+    "settings_or_secrets_changed": 0,
+    "note": "No Jules dispatch workflow was triggered. Pushing this branch / PR #220 runs only the repository's normal CI 'test' workflow."
   },
   "status": {
     "static_mock_e2e": "PASS",
@@ -34,5 +39,14 @@
     "wake_mechanism": "UNKNOWN_PENDING_HUMAN_CHOICE"
   },
   "retry": 0,
-  "fallback": "disabled"
+  "fallback": "disabled",
+  "review_fixes": {
+    "source": "PR #220 independent STATIC review of e4d9ebde",
+    "fixed": [
+      "adoption receipt re-validated (keys, command, intent, inspection, target, heads, tree) plus fresh canonical readback before NO-OP or next task",
+      "crash after fast-forward: receipt restored create-only from matching lock + candidate tree readback, no ref write; unprovable -> UNKNOWN",
+      "stored result events and inspections re-validated (digest, identity, consistency) fail-closed; lineage compares fresh PR head_ref and exact footer session"
+    ],
+    "mutation_checks": "trusting an existing receipt, dropping receipt restoration, restoring without a lock: each made a test fail"
+  }
 }

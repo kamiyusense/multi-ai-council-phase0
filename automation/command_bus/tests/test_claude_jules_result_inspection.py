@@ -7,10 +7,10 @@ import hmac
 import json
 import unittest
 
-from automation.command_bus.claude_jules_adoption import SafeAdoption, lock_path
+from automation.command_bus.claude_jules_adoption import SafeAdoption, adoption_receipt_path, lock_path
 from automation.command_bus.claude_jules_dispatch import build_dispatch_intent, sha256_of
 from automation.command_bus.claude_jules_inspection import (
-    find_vacuous_tests, inspect_result, validate_small_repair,
+    find_vacuous_tests, inspect_result, validate_inspection_record, validate_small_repair,
 )
 from automation.command_bus.claude_jules_result_event import (
     ResultEventInbox, normalize_pull_request_event, verify_github_signature, verify_result_lineage,
@@ -35,6 +35,13 @@ def payload(**pr_overrides):
           "base": {"ref": work, "repo": repo}, "head": {"ref": f"{work}-{SESSION}", "sha": "c" * 40, "repo": repo}}
     pr.update(pr_overrides)
     return {"action": "opened", "repository": repo, "pull_request": pr}
+
+
+def redigest(event, **changes):
+    record = dict(event, **changes)
+    record.pop("event_sha256")
+    record["event_sha256"] = sha256_of(record)
+    return record
 
 
 def normalized(**kw):
@@ -97,7 +104,8 @@ class LineageTests(unittest.TestCase):
         self.receipt = {"state": "DISPATCHED", "intent_sha256": self.intent["intent_sha256"],
                         "command_id": self.intent["carrier_request"]["command_id"]}
         self.obs = {"command_id": self.event["command_id"], "workflow_run_id": "run-1", "conclusion": "success", "session_id": SESSION}
-        self.pr = {"number": 300, "state": "open", "merged": False, "base_ref": self.event["base_ref"], "head_sha": "c" * 40}
+        self.pr = {"number": 300, "state": "open", "merged": False, "base_ref": self.event["base_ref"], "head_sha": "c" * 40,
+                   "head_ref": self.event["head_ref"], "body": payload()["pull_request"]["body"]}
 
     def check(self, **kw):
         args = dict(intent=self.intent, dispatch_receipt=self.receipt, dispatch_observation=self.obs, fresh_pr=self.pr)
@@ -114,9 +122,15 @@ class LineageTests(unittest.TestCase):
         self.assertEqual(self.check(fresh_pr=dict(self.pr, head_sha="d" * 40)), "STALE")
         self.assertEqual(self.check(fresh_pr=dict(self.pr, merged=True)), "BLOCKED")
         self.assertEqual(self.check(fresh_pr=dict(self.pr, state="closed")), "STALE")
-        self.assertEqual(self.check(event=dict(self.event, body_session_ids=["1"])), "BLOCKED")
-        self.assertEqual(self.check(event=dict(self.event, head_ref_session_id="1")), "BLOCKED")
-        self.assertEqual(self.check(event=dict(self.event, body_session_ids=[])), "UNKNOWN")
+        self.assertEqual(self.check(event=redigest(self.event, body_session_ids=["1"])), "BLOCKED")
+        self.assertEqual(self.check(event=redigest(self.event, head_ref_session_id="1",
+                                                   head_ref=self.event["base_ref"] + "-1")), "BLOCKED")
+        self.assertEqual(self.check(fresh_pr=dict(self.pr, head_ref=self.event["base_ref"] + "-77")), "BLOCKED")
+        self.assertEqual(self.check(fresh_pr=dict(self.pr, body="no footer")), "BLOCKED")
+        self.assertEqual(self.check(fresh_pr=dict(self.pr, body=self.pr["body"] + " https://jules.google.com/task/5)")), "BLOCKED")
+        # A stored record edited without its digest is rejected outright.
+        self.assertEqual(self.check(event=dict(self.event, pr_number=301)), "BLOCKED")
+        self.assertEqual(self.check(event=redigest(self.event, body_session_ids=[])), "UNKNOWN")
         self.assertEqual(self.check(event=dict(self.event, command_id="relay-dev-loop-001-x")), "BLOCKED")
 
 
@@ -199,6 +213,29 @@ class InspectionTests(unittest.TestCase):
                                                    repairs_already_made=made)[0], "BLOCKED")
 
 
+    def test_stored_inspection_record_is_revalidated_fail_closed(self):
+        path = self.spec["allowed_paths"][1]["path"]
+        record = self.run_inspect(changed_test_sources={path: VACUOUS_TEST}).record
+        self.assertIs(validate_inspection_record(record), record)
+
+        def resealed(**changes):
+            r = dict(record, **changes)
+            r.pop("inspection_sha256")
+            r["inspection_sha256"] = sha256_of(r)
+            return r
+        bad = [
+            dict(record, verdict="PASS"),                                     # undigested tamper
+            resealed(verdict="PASS", decision="ADOPT_CANDIDATE"),             # PASS with findings
+            resealed(decision="ADOPT_CANDIDATE"),                             # verdict/decision mismatch
+            resealed(self_report_used=True),
+            {k: v for k, v in record.items() if k != "checks"},
+            "not a record",
+        ]
+        for value in bad:
+            with self.assertRaises(ValueError):
+                validate_inspection_record(value)
+
+
 class AdoptionTests(unittest.TestCase):
     def setUp(self):
         self.gh = FakeGitHub()
@@ -244,6 +281,20 @@ class AdoptionTests(unittest.TestCase):
         self.gh.files[(DATA, path)] = GitHubContent(path, json.dumps({"command_id": "relay-dev-loop-779-alpha-helper"}), "s")
         self.assertEqual(self.adopt().status, "BLOCKED")
         self.assertEqual(self.gh.branches[TARGET], self.intent["carrier_request"]["expected_target_head"])
+
+    def test_existing_receipt_is_reverified_not_trusted(self):
+        self.assertEqual(self.adopt().status, "ADOPTED")
+        path = adoption_receipt_path(self.intent["carrier_request"]["command_id"])
+        good = self.gh.files[(DATA, path)]
+        for change in ({"head_after": "e" * 40}, {"command_id": "relay-dev-loop-779-alpha-helper"}, {"force_push": True}):
+            record = dict(json.loads(good.text), **change)
+            self.gh.files[(DATA, path)] = GitHubContent(path, json.dumps(record), "s")
+            self.assertEqual(self.adopt().status, "UNKNOWN", change)
+        self.gh.files[(DATA, path)] = GitHubContent(path, "{not json", "s")
+        self.assertEqual(self.adopt().status, "UNKNOWN")
+        self.gh.files[(DATA, path)] = good
+        self.assertEqual(self.adopt().status, "NO-OP")
+        self.assertEqual(len([w for w in self.gh.writes if w[0] == "ff"]), 1)
 
 
 if __name__ == "__main__":

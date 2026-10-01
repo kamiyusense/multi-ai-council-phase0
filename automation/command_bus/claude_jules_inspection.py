@@ -242,12 +242,49 @@ def _decide(findings: list[dict[str, Any]], unknown: list[str], prior: list[dict
     return "FAIL_MAJOR", "JULES_CORRECTIVE", "substantial correction needs a new bounded Jules mission"
 
 
+_INSPECTION_KEYS = {
+    "schema_version", "profile", "command_id", "task_id", "intent_sha256", "candidate_head",
+    "candidate_tree", "repair_of", "changed_paths", "checks", "findings", "verdict", "decision",
+    "reason", "inspected_at", "self_report_used", "inspection_sha256",
+}
+_DECISIONS = {
+    "PASS": {"ADOPT_CANDIDATE"},
+    "FAIL_MINOR": {"CLAUDE_SMALL_REPAIR"},
+    "FAIL_MAJOR": {"JULES_CORRECTIVE", "JULES_CORRECTIVE_REDUCED", "STOP_HUMAN"},
+    "UNKNOWN": {"INVESTIGATE"},
+}
+
+
+def validate_inspection_record(record: Any) -> dict[str, Any]:
+    """Re-validate a stored inspection before any decision is taken from it."""
+    if not isinstance(record, dict) or set(record) != _INSPECTION_KEYS:
+        raise ValueError("inspection record keys mismatch")
+    if record["schema_version"] != 1 or record["profile"] != INSPECTION_PROFILE:
+        raise ValueError("unsupported inspection record")
+    if record["inspection_sha256"] != sha256_of({k: v for k, v in record.items() if k != "inspection_sha256"}):
+        raise ValueError("inspection record digest mismatch")
+    if record["decision"] not in _DECISIONS.get(record["verdict"], set()):
+        raise ValueError("inspection verdict/decision inconsistent")
+    if record["self_report_used"] is not False:
+        raise ValueError("inspection relied on a self report")
+    inspection_path(record["command_id"], record["candidate_head"])
+    if record["verdict"] == "PASS":
+        if record["findings"] or any(c.get("state") != "PASS" for c in record["checks"]) or not record["checks"]:
+            raise ValueError("PASS inspection carries non-PASS checks or findings")
+        if not _SHA40.fullmatch(record["candidate_tree"] or ""):
+            raise ValueError("PASS inspection lacks the candidate tree")
+    if record["repair_of"] is not None and not _SHA40.fullmatch(record["repair_of"]):
+        raise ValueError("invalid repair_of")
+    return record
+
+
 class InspectionStore:
     def __init__(self, client: GitHubContentsClient, *, data_branch: str):
         self.client, self.branch = client, data_branch
 
     def persist(self, record: dict[str, Any]) -> str:
         path = inspection_path(record["command_id"], record["candidate_head"])
+        validate_inspection_record(record)
         existing = self.client.get(path, self.branch)
         if existing is not None:
             return "RECOVERED" if json.loads(existing.text) == record else "BLOCKED"
@@ -266,7 +303,13 @@ class InspectionStore:
 
     def list_all(self) -> list[dict[str, Any]]:
         prefix = f"{EVIDENCE_ROOT}/claude-auto-inspections/"
-        return [json.loads(c.text) for c in self.client.list(prefix, self.branch)]
+        records = []
+        for content in self.client.list(prefix, self.branch):
+            record = validate_inspection_record(json.loads(content.text))
+            if content.path != inspection_path(record["command_id"], record["candidate_head"]):
+                raise ValueError("inspection record path mismatch")
+            records.append(record)
+        return records
 
 
 def validate_small_repair(

@@ -280,7 +280,7 @@ class FakeFacts:
 
     def fresh_pr(self, number: int) -> dict[str, Any] | None:
         pr = self.jules.prs.get(number)
-        return None if pr is None else {k: pr[k] for k in ("number", "state", "merged", "base_ref", "head_sha")}
+        return None if pr is None else {k: pr[k] for k in ("number", "state", "merged", "base_ref", "head_sha", "head_ref", "body")}
 
     def compare(self, base: str, head: str) -> dict[str, Any] | None:
         return self.github.compare(base, head)

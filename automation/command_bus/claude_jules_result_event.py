@@ -124,6 +124,40 @@ def normalize_pull_request_event(
         return EventResult("REJECTED", f"malformed event: {exc}")
 
 
+_EVENT_KEYS = {
+    "schema_version", "profile", "source", "id", "first_delivery_id", "event", "repository",
+    "pr_number", "base_ref", "head_ref", "head_sha", "command_id", "head_ref_session_id",
+    "body_session_ids", "event_sha256",
+}
+
+
+def validate_event_record(record: Any) -> dict[str, Any]:
+    """Re-validate a stored event: schema, digest and every derived identity."""
+    if not isinstance(record, dict) or set(record) != _EVENT_KEYS:
+        raise ValueError("event record keys mismatch")
+    if record["schema_version"] != 1 or record["profile"] != EVENT_PROFILE:
+        raise ValueError("unsupported event record")
+    if record["event_sha256"] != sha256_of({k: v for k, v in record.items() if k != "event_sha256"}):
+        raise ValueError("event record digest mismatch")
+    if record["id"] != result_id(record["pr_number"], record["head_sha"]):
+        raise ValueError("event id does not match PR/head")
+    if record["source"] != f"github.com/{record['repository']}":
+        raise ValueError("event source mismatch")
+    if not carrier_request_validator.COMMAND_ID_RE.fullmatch(record["command_id"] or ""):
+        raise ValueError("event command id invalid")
+    if record["base_ref"] != _WORK_PREFIX + record["command_id"]:
+        raise ValueError("event base ref does not bind the command")
+    session = record["head_ref_session_id"]
+    if not isinstance(session, str) or not session.isdigit() or record["head_ref"] != f"{record['base_ref']}-{session}":
+        raise ValueError("event head ref does not bind the session")
+    if record["event"] not in {f"pull_request.{a}" for a in ACCEPTED_ACTIONS}:
+        raise ValueError("event kind invalid")
+    ids = record["body_session_ids"]
+    if not isinstance(ids, list) or ids != sorted(set(ids)) or any(not isinstance(i, str) or not i.isdigit() for i in ids):
+        raise ValueError("event body session ids invalid")
+    return record
+
+
 def _identity(record: dict[str, Any]) -> dict[str, Any]:
     ignored = {"first_delivery_id", "event", "event_sha256"}
     return {k: v for k, v in record.items() if k not in ignored}
@@ -140,7 +174,7 @@ class ResultEventInbox:
             path = event_path(event["id"])
             existing = self.client.get(path, self.branch)
             if existing is not None:
-                stored = json.loads(existing.text)
+                stored = validate_event_record(json.loads(existing.text))
                 if _identity(stored) == _identity(event):
                     return EventResult("DUPLICATE", "result already recorded; NO-OP", stored)
                 return EventResult("BLOCKED", "conflicting record for the same result id", stored)
@@ -164,7 +198,7 @@ class ResultEventInbox:
         prefix = f"{EVIDENCE_ROOT}/claude-auto-result-events/"
         events = []
         for content in self.client.list(prefix, self.branch):
-            record = json.loads(content.text)
+            record = validate_event_record(json.loads(content.text))
             if content.path != event_path(record.get("id")):
                 raise ValueError("event record path mismatch")
             events.append(record)
@@ -184,6 +218,10 @@ def verify_result_lineage(
     and the workflow's accepted session.
     """
     request = intent["carrier_request"]
+    try:
+        validate_event_record(event)
+    except (KeyError, TypeError, ValueError) as exc:
+        return EventResult("BLOCKED", f"stored event record invalid: {exc}")
     if event.get("repository") != request["target_repo"]:
         return EventResult("BLOCKED", "result repository mismatch")
     if event.get("command_id") != request["command_id"] or event.get("base_ref") != request["work_branch"]:
@@ -217,6 +255,10 @@ def verify_result_lineage(
         return EventResult("BLOCKED", "result PR base changed")
     if fresh_pr.get("head_sha") != event.get("head_sha"):
         return EventResult("STALE", "a newer result head exists; process the newer event instead")
+    if fresh_pr.get("head_ref") != event.get("head_ref"):
+        return EventResult("BLOCKED", "fresh PR head ref differs from the recorded session branch")
+    if sorted(set(_BODY_SESSION.findall(fresh_pr.get("body") or ""))) != [session]:
+        return EventResult("BLOCKED", "fresh PR body footer does not name exactly the accepted session")
     return EventResult("PASS", "result lineage verified", {
         "command_id": request["command_id"], "session_id": session,
         "workflow_run_id": dispatch_observation["workflow_run_id"],
