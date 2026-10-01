@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Relay Live Readiness Inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "retry_count",
+    "fallback_state",
+    "unresolved_by_provider",
+    "unresolved_count",
+    "inventory",
+    "packet_sha256"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "UNRESOLVED",
+        "PROOF_RECORDS_COMPLETE"
+      ]
+    },
+    "live_ready": {
+      "type": "boolean",
+      "const": false
+    },
+    "dispatch_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "human_approval_required": {
+      "type": "boolean",
+      "const": true
+    },
+    "retry_count": {
+      "type": "integer",
+      "const": 0
+    },
+    "fallback_state": {
+      "type": "string",
+      "const": "disabled"
+    },
+    "unresolved_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unresolved_by_provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "openai",
+        "anthropic",
+        "google"
+      ],
+      "properties": {
+        "openai": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "anthropic": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "google": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "openai",
+        "anthropic",
+        "google"
+      ],
+      "properties": {
+        "openai": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executed_model_verification_mechanism",
+            "filesystem_network_confinement",
+            "final_fanout_secret_pii_private_code_policy",
+            "finite_timeout",
+            "intended_subscription_billing_route",
+            "minimum_permission_profile",
+            "provider_specific_abort_readback",
+            "zero_hidden_retry_fallback_end_to_end",
+            "chatgpt_route_retry_zero",
+            "no_auth_recovery_replay",
+            "no_stream_reconnect_replay",
+            "single_model_request_evidence"
+          ],
+          "properties": {
+            "executed_model_verification_mechanism": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "filesystem_network_confinement": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "final_fanout_secret_pii_private_code_policy": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "finite_timeout": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "intended_subscription_billing_route": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "minimum_permission_profile": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "provider_specific_abort_readback": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "zero_hidden_retry_fallback_end_to_end": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "chatgpt_route_retry_zero": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "no_auth_recovery_replay": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "no_stream_reconnect_replay": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "single_model_request_evidence": {
+              "$ref": "#/$defs/proof_record"
+            }
+          }
+        },
+        "anthropic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executed_model_verification_mechanism",
+            "filesystem_network_confinement",
+            "final_fanout_secret_pii_private_code_policy",
+            "finite_timeout",
+            "intended_subscription_billing_route",
+            "minimum_permission_profile",
+            "provider_specific_abort_readback",
+            "zero_hidden_retry_fallback_end_to_end",
+            "account_auth",
+            "dangerous_skip_permissions_false",
+            "independent_executed_model_verification",
+            "model_fallback_disabled",
+            "no_restart_recovery_extra_turn",
+            "sdk_retry_zero"
+          ],
+          "properties": {
+            "executed_model_verification_mechanism": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "filesystem_network_confinement": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "final_fanout_secret_pii_private_code_policy": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "finite_timeout": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "intended_subscription_billing_route": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "minimum_permission_profile": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "provider_specific_abort_readback": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "zero_hidden_retry_fallback_end_to_end": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "account_auth": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "dangerous_skip_permissions_false": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "independent_executed_model_verification": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "model_fallback_disabled": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "no_restart_recovery_extra_turn": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "sdk_retry_zero": {
+              "$ref": "#/$defs/proof_record"
+            }
+          }
+        },
+        "google": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executed_model_verification_mechanism",
+            "filesystem_network_confinement",
+            "final_fanout_secret_pii_private_code_policy",
+            "finite_timeout",
+            "intended_subscription_billing_route",
+            "minimum_permission_profile",
+            "provider_specific_abort_readback",
+            "zero_hidden_retry_fallback_end_to_end",
+            "api_key_cloud_billing_overage_absent",
+            "cancel_teardown_no_restart",
+            "executed_model_verification",
+            "intended_account_route",
+            "internal_retry_fallback_zero",
+            "quota_billing_unknown_blocks"
+          ],
+          "properties": {
+            "executed_model_verification_mechanism": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "filesystem_network_confinement": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "final_fanout_secret_pii_private_code_policy": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "finite_timeout": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "intended_subscription_billing_route": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "minimum_permission_profile": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "provider_specific_abort_readback": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "zero_hidden_retry_fallback_end_to_end": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "api_key_cloud_billing_overage_absent": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "cancel_teardown_no_restart": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "executed_model_verification": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "intended_account_route": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "internal_retry_fallback_zero": {
+              "$ref": "#/$defs/proof_record"
+            },
+            "quota_billing_unknown_blocks": {
+              "$ref": "#/$defs/proof_record"
+            }
+          }
+        }
+      }
+    },
+    "packet_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "$defs": {
+    "proof_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "evidence_ref"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "UNKNOWN"
+            },
+            "evidence_ref": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "CONFIRMED"
+            },
+            "evidence_ref": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}
