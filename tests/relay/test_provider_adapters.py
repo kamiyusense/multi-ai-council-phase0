@@ -65,6 +65,7 @@ class TestProviderAdapters(unittest.TestCase):
         evidence = codex_evidence()
         profile = build_codex_profile("account", evidence)
         self.assert_profile_invariants(profile, CODEX_POLICY)
+        self.assertEqual(profile.binary_name, "codex-acp")
         self.assertEqual(
             profile.static_preflight_config,
             {"auth_kind": "account", "route_evidence": evidence},
