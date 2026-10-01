@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "mode": "STATIC_SELF_VERIFIED",
+  "base_head": "66d366523ebe28726fcb36b0e5a45cb3368aa52d",
+  "base_tree": "08e5d1d8af9ede9677f34ab0dbe5c1f6f6d2a54d",
+  "unchanged_original_blobs_verified": 197,
+  "source_blob_mismatches": [],
+  "tests": {
+    "total": 852,
+    "passed": 851,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 1,
+    "new_tests": 35
+  },
+  "compileall": "PASS",
+  "unittest_log_sha256": "a3cc4a70e6b1c1d8e8c1b286664de13868d4b0546f707740f7550cc97f7e846b",
+  "source_sha256": {
+    ".github/workflows/blue-work-reconcile-static.yml": "588740dab1aba64be44bbc35a2afb4091140ff1a25a907d54999825d9f3c7dbe",
+    "automation/command_bus/blue_work_wake_prepare.py": "05a41d0e63fe3b20d180f07b218e8eb2d26eabffef30b7bfa0f14db5071bbd06",
+    "automation/command_bus/blue_work_reconcile_prepare.py": "029866839e79d142c9332635c9eee9defe2d14b7df0105ae299567f3403b0ca4",
+    "automation/command_bus/blue_work_reconcile_cli.py": "f8629ad6ee4d64b52be738bda0ce1d69e6c239f1485a8c8cfc529290231380c9",
+    "automation/command_bus/tests/test_blue_work_reconcile_prepare.py": "0d26126bfa4b3d2d4579981a6fa4f87a94e2e32616a358df54db2f9948ce4593",
+    "automation/command_bus/tests/test_blue_work_reconcile_cli.py": "eae90805e9f84256404671ddf944c4eaac433ed4eef820d11e571a73bb4efea4",
+    "automation/command_bus/tests/fixtures/blue_work_reconcile/input.json": "258ac604f51fa6e92ebed37a3781ddcee61a44759ed334c6446f53521717d89d",
+    "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md": "7bf7cc6b9a125d30d2f343762fae5e8ef8a1b8b674dd2730f8992b5b4fbf940d",
+    "docs/BLUE_WORK_AUTONOMOUS_EXPERIMENT_20261001.md": "3fe2e7391099cdca2a733c56df0b6fe6faeeacfdd09312a20ab68f4d3bdc7f01"
+  },
+  "independent_review": "NOT_RUN",
+  "live_transport": "NOT_WIRED",
+  "lineage_authentication": "NOT_WIRED",
+  "live_work_wakes": 0,
+  "live_jules_sessions": 0,
+  "carrier_commands_posted": 0,
+  "scheduled_tasks_created": 0,
+  "retry": 0,
+  "fallback": "disabled",
+  "unittest_log_path": "docs/evidence/blue-work-autonomous-20261001/unittest.txt",
+  "diff_check": "PASS"
+}

@@ -1,0 +1,53 @@
+name: Blue Work reconciliation offline validation
+
+on:
+  push:
+    branches:
+      - experiment/blue-work-autonomous-development
+  pull_request:
+    branches:
+      - feature/blue-work-jules-webhook-loop
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blue-work-static-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact experiment commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Run existing and new command-bus static tests
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+      - name: Compile and check whitespace
+        run: |
+          python -m compileall -q automation/command_bus
+          git diff --check
+      - name: Replay only the committed synthetic snapshot
+        run: |
+          python -m automation.command_bus.blue_work_reconcile_cli \
+            automation/command_bus/tests/fixtures/blue_work_reconcile/input.json \
+            --now 2026-10-01T12:00:00Z --output blue-static-candidate.json
+      - name: Record offline boundary
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          result = json.loads(Path('blue-static-candidate.json').read_text())
+          assert result['execution_mode'] == 'PREPARE_ONLY'
+          assert result['external_send_attempted'] is False
+          assert result['model_executed'] is False
+          assert result['plan']['status'] == 'PREPARED'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Synthetic snapshot replay: PREPARED. No review posted, no Work/Jules started.\n')
+              summary.write('Live transport and authenticated lineage: NOT_WIRED.\n')
+          PY

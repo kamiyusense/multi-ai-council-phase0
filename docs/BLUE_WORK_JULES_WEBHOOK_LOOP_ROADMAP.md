@@ -677,6 +677,13 @@ Result:
 
 - failure/no-change Jules terminal states can also wake reconciliation without adding a general orchestration platform.
 
+## Isolated autonomous experiment (STATIC only)
+
+See [BLUE_WORK_AUTONOMOUS_EXPERIMENT_20261001.md](BLUE_WORK_AUTONOMOUS_EXPERIMENT_20261001.md)
+for the isolated PR203-based snapshot reconciler, offline Actions replay,
+verification evidence and remaining production/LIVE blockers. This does not
+change BWJ-4 authorization or declare BWJ-5/6 complete.
+
 ## 17. Navigation summary
 
 ```text

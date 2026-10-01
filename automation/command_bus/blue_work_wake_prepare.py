@@ -8,6 +8,13 @@ from .blue_jules_result_event import EventClassificationResult, EventDecision
 
 
 _SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
+RESULT_REVIEW_TASK = "fresh-read GitHub; verify exact J-BLUE claim/command/session/result lineage and current result head; independently inspect paths/semantics/negative tests/test evidence; return PASS/FAIL/BLOCKED/UNKNOWN plus one bounded next-task proposal; perform no target write and do not dispatch Jules."
+RESULT_REVIEW_VERIFICATION = (
+    "fresh result PR/branch/head readback",
+    "durable J-BLUE lineage verification",
+    "independent diff/test evidence inspection",
+    "confirmation no target write/Jules dispatch/live provider execution occurred",
+)
 
 
 @dataclass(frozen=True)
@@ -155,14 +162,9 @@ def prepare_blue_work_wake(
         "target_branch": target.target_branch,
         "expected_target_head": target.expected_target_head,
         "expires_at": expires_at,
-        "task": "fresh-read GitHub; verify exact J-BLUE claim/command/session/result lineage and current result head; independently inspect paths/semantics/negative tests/test evidence; return PASS/FAIL/BLOCKED/UNKNOWN plus one bounded next-task proposal; perform no target write and do not dispatch Jules.",
+        "task": RESULT_REVIEW_TASK,
         "allowed_paths": [],
-        "verification": [
-            "fresh result PR/branch/head readback",
-            "durable J-BLUE lineage verification",
-            "independent diff/test evidence inspection",
-            "confirmation no target write/Jules dispatch/live provider execution occurred",
-        ],
+        "verification": list(RESULT_REVIEW_VERIFICATION),
         "live_provider_or_model_allowed": False,
         "retry": 0,
         "fallback": "disabled",
