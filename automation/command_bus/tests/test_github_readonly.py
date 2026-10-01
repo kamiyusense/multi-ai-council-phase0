@@ -173,6 +173,7 @@ class PaginationTests(unittest.TestCase):
         url = ROOT + "/pulls/42/files?per_page=100"
         tree_url = ROOT + "/git/trees/" + "a" * 40 + "?recursive=1"
         reader = FakeReader({url: ReadResponse([{"filename": "docs/a.md", "status": "modified"}], {}),
+                             ROOT + "/pulls/42": ReadResponse(pr, {}),
                              tree_url: ReadResponse({"truncated": False, "tree": [{"path": "docs/a.md", "mode": "100644"}]}, {})})
         rows = result_files(reader, pr)
         self.assertIs(rows[0]["symlink"], False)

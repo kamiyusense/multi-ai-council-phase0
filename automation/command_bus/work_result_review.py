@@ -35,6 +35,17 @@ def assess_result_review(*, lineage: LineageDecision, request: dict, reviewer_re
         if not isinstance(lineage, LineageDecision) or lineage.status != "VERIFIED_SNAPSHOT":
             raise ValueError("verified captured source lineage required")
         validate_review_request(request)
+        if (not _positive(lineage.result_pr) or not _sha(lineage.result_head) or not _sha(lineage.result_tree)
+                or not isinstance(lineage.allowed_paths, tuple) or not lineage.allowed_paths):
+            raise ValueError("verified lineage result identity/scope unavailable")
+        result_id = f"{lineage.lane}-jules-result-pr{lineage.result_pr}-{lineage.result_head}"
+        if (request["request_id"] != result_id or request["loop_id"] != result_id
+                or request["correlation_id"] != result_id or request["round"] != 1
+                or request["expected_target_head"] != lineage.result_head
+                or request["expected_target_tree"] != lineage.result_tree):
+            raise ValueError("review request differs from verified source result")
+        if tuple(allowed_paths) != lineage.allowed_paths:
+            raise ValueError("review allowlist differs from verified source command")
         if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("aware current time required")
         if _time(request["expires_at"]) <= now:

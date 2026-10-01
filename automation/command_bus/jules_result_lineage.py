@@ -41,12 +41,18 @@ class LineageDecision:
     reason: str
     lineage: EventLineage | None = None
     session_id: str | None = None
+    lane: str | None = None
+    result_pr: int | None = None
+    result_head: str | None = None
+    result_tree: str | None = None
+    allowed_paths: tuple[str, ...] | None = None
 
 
 def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit: Any,
                           dispatch_run: Any, dispatch_job: Any, dispatch_log: Any,
                           acceptance: Any, session_readback: Any,
-                          result_pr: Any, comparison: Any, now: datetime) -> LineageDecision:
+                          result_pr: Any, comparison: Any, now: datetime,
+                          result_commit: Any = None) -> LineageDecision:
     try:
         identity = lane_identity(lane)
         validate_formal_command(request, claim, now=now, historical=True)
@@ -78,8 +84,9 @@ def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit
         accepted_names = re.findall(r"(?m)^(?:[0-9TZ:.-]+ )?Jules session accepted: (sessions/[0-9]+)\s*$", dispatch_log)
         if accepted_names != [accepted.session_name]:
             raise ValueError("dispatch log session acceptance mismatch/ambiguous")
-        if "Jules session timing read back: " + accepted.session_name + " at " + accepted.accepted_at_jst not in dispatch_log:
-            raise ValueError("dispatch log timing readback missing")
+        timing_lines = re.findall(r"(?m)^(?:[0-9TZ:.-]+ )?Jules session timing read back: (sessions/[0-9]+) at ([^\s]+)\s*$", dispatch_log)
+        if timing_lines != [(accepted.session_name, accepted.accepted_at_jst)]:
+            raise ValueError("dispatch log executed timing readback missing/ambiguous")
         accepted_at = _time(accepted.session_create_time)
         if not (_time(request["created_at"]) <= accepted_at < _time(request["expires_at"]) and accepted_at <= now):
             raise ValueError("session acceptance outside command lifetime")
@@ -101,12 +108,20 @@ def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit
             raise ValueError("result base/HEAD mismatch")
         expected_url = f"https://github.com/{EXPECTED_REPOSITORY}/pull/{result_pr['number']}"
         outputs = session_readback.get("outputs")
-        if not isinstance(outputs, list) or sum(isinstance(x, dict) and x.get("pullRequest", {}).get("url") == expected_url for x in outputs) != 1:
+        if not isinstance(outputs, list) or any(not isinstance(x, dict) for x in outputs):
+            raise ValueError("session outputs unavailable")
+        pr_outputs = [x["pullRequest"] for x in outputs if "pullRequest" in x]
+        if len(pr_outputs) != 1 or not isinstance(pr_outputs[0], dict) or pr_outputs[0].get("url") != expected_url:
             raise ValueError("session output does not uniquely identify result PR")
         if (not isinstance(comparison, dict) or comparison.get("status") not in {"ahead", "identical"}
                 or comparison.get("base_commit", {}).get("sha") != request["expected_target_head"]
                 or comparison.get("merge_base_commit", {}).get("sha") != request["expected_target_head"]):
             raise ValueError("exact result ancestry unavailable")
+        if comparison["base_commit"].get("commit", {}).get("tree", {}).get("sha") != request["expected_target_tree"]:
+            raise ValueError("comparison base tree does not match formal snapshot")
+        if (not isinstance(result_commit, dict) or result_commit.get("sha") != result_pr["head"]["sha"]
+                or not _sha(result_commit.get("tree", {}).get("sha"))):
+            raise ValueError("pinned result Git commit HEAD/tree unavailable")
         # REST compare returns commits, NOT a head_commit field. Require all
         # pages (total_commits) and the actual final SHA, even beyond 250 commits.
         commits = comparison.get("commits")
@@ -123,6 +138,7 @@ def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit
             raise ValueError("identical comparison HEAD mismatch")
         return LineageDecision("VERIFIED_SNAPSHOT", "captured lineage bindings verified; source authentication is caller responsibility",
                                EventLineage(request["command_id"], request["work_branch"], request["expected_target_head"], EXPECTED_REPOSITORY),
-                               observed.session_id)
+                               observed.session_id, lane, result_pr["number"], result_pr["head"]["sha"],
+                               result_commit["tree"]["sha"], tuple(request["allowed_paths"]))
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
         return LineageDecision("UNKNOWN", str(exc))

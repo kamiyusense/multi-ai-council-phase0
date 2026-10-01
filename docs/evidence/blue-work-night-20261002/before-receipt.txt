@@ -1,0 +1,151 @@
+test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) ... 
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=None) ... FAIL
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[]) ... FAIL
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value='claimed PASS') ... FAIL
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=['']) ... FAIL
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=['  ']) ... FAIL
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[None]) ... FAIL
+  test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[1]) ... FAIL
+test_terminal_receipt_missing_verification_is_not_replay_authority (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_missing_verification_is_not_replay_authority) ... FAIL
+test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) ... 
+  test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value={}) ... FAIL
+  test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value=[]) ... FAIL
+  test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value=False) ... FAIL
+  test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value=1) ... FAIL
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value='claimed PASS')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[''])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=['  '])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[None])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_requires_verification_evidence (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_requires_verification_evidence) (value=[1])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 48, in test_terminal_receipt_requires_verification_evidence
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_missing_verification_is_not_replay_authority (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_missing_verification_is_not_replay_authority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 56, in test_terminal_receipt_missing_verification_is_not_replay_authority
+    self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 61, in test_terminal_receipt_optional_capability_boundary_is_typed
+    self.assertEqual(self.assess(comments=[self.receipt(capability_boundary=value)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 61, in test_terminal_receipt_optional_capability_boundary_is_typed
+    self.assertEqual(self.assess(comments=[self.receipt(capability_boundary=value)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 61, in test_terminal_receipt_optional_capability_boundary_is_typed
+    self.assertEqual(self.assess(comments=[self.receipt(capability_boundary=value)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_terminal_receipt_optional_capability_boundary_is_typed (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_terminal_receipt_optional_capability_boundary_is_typed) (value=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 61, in test_terminal_receipt_optional_capability_boundary_is_typed
+    self.assertEqual(self.assess(comments=[self.receipt(capability_boundary=value)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.006s
+
+FAILED (failures=12)

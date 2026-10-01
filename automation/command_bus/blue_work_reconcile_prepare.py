@@ -214,6 +214,13 @@ def _records(reviews: Any, comments: Any, complete: Any, *, focus_id: str | None
                 or not isinstance(receipt.get("command_id"), str) or not receipt["command_id"]
                 or receipt.get("status") not in STATUSES or receipt.get("terminal") is not True):
             raise ValueError("malformed terminal receipt")
+        verification = receipt.get("verification")
+        if (not isinstance(verification, list) or not verification
+                or any(not isinstance(item, str) or not item.strip() for item in verification)):
+            raise ValueError("terminal receipt verification/evidence missing")
+        if ("capability_boundary" in receipt and receipt["capability_boundary"] is not None
+                and not isinstance(receipt["capability_boundary"], str)):
+            raise ValueError("terminal receipt capability boundary malformed")
         _target(receipt, receipt=True)
         command = commands.get(identity)
         if command is None:

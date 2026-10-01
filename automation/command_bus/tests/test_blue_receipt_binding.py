@@ -1,4 +1,5 @@
 """Regression for the independent-review receipt binding finding."""
+import json
 import unittest
 from . import test_blue_work_reconcile_prepare as fixtures
 
@@ -39,3 +40,22 @@ class ReceiptBindingRegression(unittest.TestCase):
     def test_duplicate_terminal_receipts_are_uncertainty(self):
         self.assertEqual(self.assess(comments=[self.receipt(), self.receipt()]).status, "UNKNOWN")
         self.assertEqual(self.prepare(comments=[self.receipt(), self.receipt()]).status, "UNKNOWN")
+
+    def test_terminal_receipt_requires_verification_evidence(self):
+        for value in (None, [], "claimed PASS", [""], ["  "], [None], [1]):
+            with self.subTest(value=value):
+                row = self.receipt(verification=value)
+                self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+                self.assertEqual(self.prepare(reviews=[self.review()], comments=[row]).status, "UNKNOWN")
+
+    def test_terminal_receipt_missing_verification_is_not_replay_authority(self):
+        row = self.receipt()
+        payload = json.loads(row["body"].split("\n", 1)[1])
+        del payload["verification"]
+        row["body"] = "[CW_BLUE_RECEIPT_V1]\n" + json.dumps(payload)
+        self.assertEqual(self.assess(comments=[row]).status, "UNKNOWN")
+
+    def test_terminal_receipt_optional_capability_boundary_is_typed(self):
+        for value in ({}, [], False, 1):
+            with self.subTest(value=value):
+                self.assertEqual(self.assess(comments=[self.receipt(capability_boundary=value)]).status, "UNKNOWN")

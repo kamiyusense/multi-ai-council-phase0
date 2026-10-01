@@ -83,7 +83,8 @@ def snapshot(lane="blue", *, decision="PASS", with_review=True):
               "dispatch_job": {"id": 51, "run_id": 50, "head_sha": "f" * 40, "status": "completed", "conclusion": "success"},
               "dispatch_log": "2026-10-01T10:01:00.000Z Jules session accepted: sessions/12345\n2026-10-01T10:01:01.000Z Jules session timing read back: sessions/12345 at 2026-10-01T19:01:00+09:00\n",
               "acceptance": acceptance, "session_readback": session, "result_pr": deepcopy(result),
-              "comparison": {"status": "ahead", "base_commit": {"sha": BASE}, "merge_base_commit": {"sha": BASE}, "total_commits": 1, "commits": [{"sha": HEAD}]}}
+              "result_commit": {"sha": HEAD, "tree": {"sha": TREE}},
+              "comparison": {"status": "ahead", "base_commit": {"sha": BASE, "commit": {"tree": {"sha": request["expected_target_tree"]}}}, "merge_base_commit": {"sha": BASE}, "total_commits": 1, "commits": [{"sha": HEAD}]}}
     proposal = {"task_id": "mock-next", "prompt": PROMPT, "allowed_paths": request["allowed_paths"], "expires_at": wake["expires_at"]}
     review = {"current_result": {"head": HEAD, "tree": TREE}, "evidence_refs": ["fixture://diff", "fixture://tests"],
               "changed_files": [{"filename": request["allowed_paths"][0], "status": "modified", "symlink": False}],

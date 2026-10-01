@@ -176,6 +176,18 @@ def result_files(reader: Reader, pr: dict) -> list[dict]:
     head = pr.get("head", {}).get("sha")
     if type(number) is not int or number < 1 or type(count) is not int or count < 0 or count >= 3000:
         raise ValueError("result changed-file count unavailable/API limit")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-f]{40}", head):
+        raise ValueError("result HEAD unavailable")
+    detail_url = ROOT + f"/pulls/{number}"
+    def binding(value):
+        if not isinstance(value, dict):
+            raise ValueError("result detail unavailable")
+        return (value.get("number"), value.get("changed_files"), value.get("state"), value.get("merged"),
+                tuple((value.get(side, {}).get("sha"), value.get(side, {}).get("ref"),
+                       value.get(side, {}).get("repo", {}).get("full_name")) for side in ("head", "base")))
+    expected = binding(pr)
+    if binding(reader.get(detail_url).data) != expected:
+        raise ValueError("result moved before changed-file collection")
     rows = read_all(reader, ROOT + f"/pulls/{number}/files?per_page=100", identity_key="filename")
     if len(rows) != count:
         raise ValueError("changed-file pagination incomplete")
@@ -189,6 +201,8 @@ def result_files(reader: Reader, pr: dict) -> list[dict]:
             raise ValueError("result regular-file mode unverified")
         row["symlink"] = mode == "120000"
         result.append(row)
+    if binding(reader.get(detail_url).data) != expected:
+        raise ValueError("result moved during changed-file collection; no retry")
     return result
 
 

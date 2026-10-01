@@ -1,5 +1,16 @@
 # Phase 0 Handover — Current
 
+## PR #217 experiment: 2026-10-02 bounded LIVE batch
+
+Fresh-read [night batch](docs/BLUE_WORK_NIGHT_BATCH_20261002.md) and PR #217
+before continuing this experiment. User authorized at most ten existing
+Work/Jules LIVE trials for this purpose; Merge remains withheld. Blue read-only
+wake was independently read back, then a distinct Work review found two material
+static gaps. Repairs and exact-head revalidation are recorded there. Historical
+STATIC-only checkpoints are not the current trial approval. Approval is scoped;
+it does not authorize main write, force/history changes, new secrets, settings,
+permissions or billing changes. Never replay a terminal command.
+
 Updated: 2026-10-01
 
 ## Experimental PR #217 checkpoint — STATIC only
