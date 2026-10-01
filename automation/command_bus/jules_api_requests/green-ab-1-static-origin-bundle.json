@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "green-ab-1-static-origin-bundle",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "compare/green-ab-1-jules",
+  "work_branch": "jules-work/green-ab-1-static-origin-bundle",
+  "expected_target_head": "83b499a25c1cce6ec8b4f29f268f194372321afa",
+  "expected_target_tree": "c53e727575bfa6735cfa1b1ad14ad62bbeb5185f",
+  "allowed_paths": [
+    "automation/command_bus/claude_loop.py",
+    "automation/command_bus/tests/test_claude_loop.py",
+    "automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py",
+    "docs/CLAUDE_AUTOLOOP_HANDOVER_CURRENT.md"
+  ],
+  "prompt": "FORMAL A/B COMPARISON 1/5. Fresh-read the supplied isolated target branch and current carrier contract. Implement the smallest STATIC companion helper that prepares BOTH (1) the exact current JULES_CHAT_SEMIAUTO_V2 request via existing prepare_jules_semiauto_request() and (2) its CLAUDE_AUTO_ORIGIN_BINDING_V1 record via existing build_binding_record(), returning them together without persistence or dispatch. Reuse existing validation; do not create a new schema/framework/database/queue/workflow. Preserve exact carrier 16-key request shape and keep origin_* out of it. Fail closed on invalid/mismatched inputs. Add focused positive and negative regression tests and concise docs. No live Claude/Jules/provider/model execution, no workflow dispatch, no merge/default write/force push/delete. Work only from the supplied isolated snapshot. Do not inspect or copy the competing Cloud Work branch/result. Publish only to the isolated Jules work branch/PR; never update canonical or the comparison target branch. Run the same focused/full validation requested for the Work side and report exact evidence.",
+  "task_size": "MEDIUM",
+  "created_at": "2026-10-01T18:30:30+09:00",
+  "expires_at": "2026-10-01T20:30:30+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge": false,
+  "force_push": false
+}
