@@ -29,4 +29,5 @@ def build_codex_profile(
         external_agent=CODEX_POLICY.external_agent,
         pinned_version=CODEX_POLICY.pinned_version,
         _static_preflight_config=config,
+        binary_name="codex-acp",
     )
