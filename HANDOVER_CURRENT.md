@@ -73,6 +73,13 @@ It converts the reuse-first policy into bounded migrations such as “adapt this
 named upstream ACP primitive into these existing Relay files”; it explicitly
 stops the pattern of asking Jules to design a complete mechanism first.
 
+For Signal / Status / Control Tower work, next read
+[docs/SIGNAL_FOUNDATION_ROADMAP.md](docs/SIGNAL_FOUNDATION_ROADMAP.md).
+It applies the same small-component migration rule to Signal, starts with direct
+Jules/GitHub observed facts, keeps Jules/Cloud Work/durable runtime control
+planes separate, and serializes shared navigation/registry/Issue/snapshot seams
+to reduce merge friction between parallel lanes.
+
 ## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
 
 This rule is durable project policy for every Chat that uses the Chat -> Jules
