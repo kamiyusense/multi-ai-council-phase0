@@ -1,0 +1,6 @@
+{
+  "target_sha": "db6348b0e7dd5d71f848308dac324906d969c5d7",
+  "loop_number": 121,
+  "candidate_pr": 223,
+  "scope": "exact-head full repository unit suite, Python compile, diff check; pure mock ACP-to-Phase0 mapper only; no live provider/model execution"
+}
