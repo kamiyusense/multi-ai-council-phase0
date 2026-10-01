@@ -91,6 +91,7 @@ class TestProviderAdapters(unittest.TestCase):
                 "allowDangerouslySkipPermissions"
             ]
         )
+        self.assertEqual(profile.binary_name, "claude-agent-acp")
         self.assertEqual(
             profile.static_preflight_config,
             {

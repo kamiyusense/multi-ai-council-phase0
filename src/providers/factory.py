@@ -74,8 +74,8 @@ def create_core_adapter(profile: ProviderStaticProfile, bridge: RelayProviderAda
             raise ValueError("Anthropic profile must have exact claude_session_meta()")
         if provider_meta != expected_meta:
              raise ValueError("Anthropic config must have exact claude_session_meta() as provider_meta")
-        if profile.binary_name is not None:
-            raise ValueError("Anthropic profile must not have binary_name")
+        if profile.binary_name not in (None, "claude-agent-acp"):
+            raise ValueError("Anthropic profile binary_name must be official claude-agent-acp or None")
 
     elif profile.provider_id == "google":
         if profile.session_meta is not None:
