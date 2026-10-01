@@ -115,7 +115,7 @@ controller instance for every step).
 
 ## 6. Tests (this branch, cloud container, Python 3.11.15)
 
-- New: `test_claude_jules_live_adapter.py` (14, real git remote),
+- New: `test_claude_jules_handover.py` (8), `test_claude_jules_live_adapter.py` (15, real git remote),
   `test_claude_jules_autoloop_e2e.py` (29 mock E2E scenarios),
   `test_claude_jules_dispatch_contract.py` (14), `test_claude_jules_result_inspection.py` (16);
   compatibility test switched to the reviewed bundle.
@@ -159,9 +159,52 @@ controller instance for every step).
   timeout. A read-only check against real GitHub normalized Jules PR #223
   correctly (session id equal in head ref, footer and workflow log).
 
-## 8. Not done / UNKNOWN
+## 8. SEMI_AUTO ⇄ AUTO controller handover (design correction, 2026-10-02)
 
-- LIVE (stages 8–9) did not start. On 2026-10-02 the human approved Loop A
+The goal is **one** Jules development whose controller can change, not a
+separate Claude lane. ChatGPT (SEMI_AUTO) normally commands a stream (a lane
+working on one target branch); Claude (AUTO) may take the same stream over and
+must hand it back. Lanes (❤️💛💚💙) are not Claude-only; the policy's lane list
+only says which existing lanes Claude may command *while it owns the stream*.
+
+`claude_jules_handover.py` reuses the existing `loop_owner` chain (ACQUIRE /
+RENEW / HANDOFF with generation fencing, create-only through
+`LoopOwnerGitHubBackend`); the controller's existing fence already refuses
+any dispatch unless the latest generation is a live AUTO lease held by Claude.
+
+- **Takeover (SEMI_AUTO → AUTO)** only when all hold: any SEMI_AUTO lease has
+  expired; the stream's last durable activity (carrier claims, result PRs,
+  owner events) is ≥ 2 h old; no Jules work is in flight (every stream
+  command has a result PR or is past the 6 h result deadline, and no open
+  result PR changed within 2 h). Time alone never transfers ownership. The
+  current ChatGPT loop writes no owner events; then the first AUTO generation is
+  an ACQUIRE made under the same stall/in-flight rules.
+- **Handback (AUTO → SEMI_AUTO)** by the AUTO holder only at a boundary (no
+  Claude dispatch outstanding), so Claude does not keep running when it is
+  not needed. **Reclaim**: SEMI_AUTO may take back a stream whose AUTO lease
+  expired without a handback (for example, the Claude environment ended).
+- Two Claude instances racing for the same generation: the create-only
+  generation path lets exactly one win; the other is BLOCKED.
+- CLI: `observe | takeover | handback | reclaim` (`--write` to append).
+- Tests: 8 mock tests (decision matrix and a full
+  SEMI_AUTO → AUTO → task adopted → SEMI_AUTO round trip, session loss and
+  reclaim, takeover refused while ChatGPT's Jules task is in flight) and a
+  real-git round trip. Read-only check on the real carrier (2026-10-02 03:5x JST):
+  ❤️ J-RED and 💛 J-YELLOW streams both have Jules work in flight, so takeover
+  is correctly BLOCKED for both.
+
+## 9. Not done / UNKNOWN
+
+- LIVE (stages 8–9) did not start (still 0 of 10 after the design correction).
+  Re-investigation (read-only): the refused operation was creating the local
+  files `automation/command_bus/config/claude_jules_autoloop_policy.live.json`
+  (granting target `claude/autoloop-live-target`, lane J-GREEN, PR 220 and a
+  live authorization) and `claude_jules_autoloop_roadmap.live.json`. Under the
+  corrected design the J-GREEN-exclusive grant is unnecessary, but any LIVE
+  proof still needs a live authorization and one command write to the shared
+  carrier `feature/chat-work-command-bus` (the only branch the Jules workflow
+  listens to, used minute by minute by the ChatGPT lanes). That is the same
+  outcome the safety gate refused, so it was not retried. On 2026-10-02 the human approved Loop A
   LIVE with a total budget of 10, but this Claude Code session's automatic
   safety gate refused the first LIVE preparation write (the live policy that
   grants the dedicated target `claude/autoloop-live-target` and lane J-GREEN),

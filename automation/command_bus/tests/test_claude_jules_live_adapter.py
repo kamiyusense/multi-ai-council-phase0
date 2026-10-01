@@ -401,5 +401,56 @@ class LiveControllerIntegrationTests(unittest.TestCase):
         self.assertIsNotNone(self.c.get(dispatch_receipt_path(first.details["command_id"]), DATA))
 
 
+class LiveHandoverTests(unittest.TestCase):
+    """SEMI_AUTO -> AUTO -> SEMI_AUTO on a real git remote through the CLI helper."""
+
+    def setUp(self):
+        from automation.command_bus.claude_jules_handover import SEMIAUTO_HOLDER
+        self.remote = Remote()
+        self.c = self.remote.client
+        self.rest = StubRest()
+        self.policy = policy(live_dispatch_authorization=dict(policy()["live_dispatch_authorization"],
+                                                              expires_at="2026-10-03T00:00:00+00:00"))
+        gpt = owner_event(role="SEMI_AUTO", holder=SEMIAUTO_HOLDER, expires_at="2026-10-01T10:00:00+00:00")
+        gpt["claimed_at"] = "2026-10-01T09:00:00+00:00"
+        self.c.create(owner_event_path(LOOP, 1), json.dumps(gpt), "chatgpt owns the stream", DATA)
+        claim = {"lane_id": "J-BLUE", "lane_display": "x", "target_branch": TARGET,
+                 "command_id": "relay-dev-loop-040-gpt-task", "claimed_at": "2026-10-01T09:05:00+00:00"}
+        self.c.create("automation/command_bus/loop_id_claims/040.json", json.dumps(claim), "gpt claim", CARRIER)
+        self.rest.prs[40] = {"number": 40, "state": "closed", "updated_at": "2026-10-01T09:30:00+00:00",
+                             "base": {"ref": "jules-work/relay-dev-loop-040-gpt-task", "repo": {"full_name": REPO}},
+                             "head": {"ref": "x", "sha": "a" * 40, "repo": {"full_name": REPO}}}
+
+    def tearDown(self):
+        self.remote.close()
+
+    def run_handover(self, action, now, write=True):
+        from automation.command_bus.claude_jules_live import handover
+        return handover(action, git=self.c, rest=self.rest, policy=self.policy, origin_loop_id=LOOP,
+                        lane_id="J-BLUE", now=now, write=write)
+
+    def test_round_trip_on_real_git(self):
+        early = self.run_handover("takeover", "2026-10-01T10:30:00+00:00")
+        self.assertEqual(early.get("status"), "BLOCKED", early)  # stalled < 2h since the PR changed
+        observed = self.run_handover("observe", "2026-10-01T12:00:00+00:00", write=False)
+        self.assertEqual(observed["activity"]["in_flight"], ())
+        taken = self.run_handover("takeover", "2026-10-01T12:00:00+00:00")
+        self.assertEqual(taken["status"], "APPENDED", taken)
+        loop = ClaudeJulesAutoLoop(client=self.c, refs=self.c, policy=self.policy,
+                                   owner_reader=LoopOwnerGitHubBackend(self.c, branch=DATA),
+                                   roadmap=roadmap(task_spec("alpha-helper")), facts=None,
+                                   origin_loop_id=LOOP, lane_id="J-BLUE")
+        self.assertEqual(loop.step(now="2026-10-01T12:01:00+00:00").status, "DISPATCHED")
+        busy = self.run_handover("handback", "2026-10-01T12:02:00+00:00")
+        self.assertEqual(busy["status"], "BLOCKED")  # Claude dispatch outstanding
+        reclaimed = self.run_handover("reclaim", "2026-10-01T15:30:00+00:00")  # AUTO lease (3h) expired
+        self.assertEqual(reclaimed["status"], "APPENDED", reclaimed)
+        stopped = loop.step(now="2026-10-01T15:31:00+00:00")
+        self.assertEqual((stopped.action, stopped.status), ("STOP", "BLOCKED"))
+        roles = [json.loads(c.text)["owner_role"] for c in
+                 self.c.list(f"automation/command_bus/loop_owner_events/{LOOP}/", DATA)]
+        self.assertEqual(roles, ["SEMI_AUTO", "AUTO", "SEMI_AUTO"])
+
+
 if __name__ == "__main__":
     unittest.main()

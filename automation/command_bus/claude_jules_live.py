@@ -21,6 +21,7 @@ simulate:
 CLI (all commands print one JSON object):
   python -m automation.command_bus.claude_jules_live status|step|poll|budget
   python -m automation.command_bus.claude_jules_live record-review --file review.json
+  python -m automation.command_bus.claude_jules_live observe|takeover|handback|reclaim [--write]
 """
 from __future__ import annotations
 
@@ -41,6 +42,9 @@ from .claude_jules_dispatch import (
     EVIDENCE_ROOT, canonical_json, command_path, dispatch_receipt_path, sha256_of, validate_dispatch_intent,
 )
 from .claude_jules_live_adapter import GitHubRestReader, GitLiveClient, fresh_pr_view, pull_request_payload
+from .claude_jules_handover import (
+    SEMIAUTO_HOLDER, append_decision, decide_handback, decide_reclaim, decide_takeover, observe_stream,
+)
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
 from .loop_owner_backend import LoopOwnerGitHubBackend
@@ -289,6 +293,48 @@ def poll_results(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str
     return outcomes
 
 
+def stream_activity(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str, Any], lane_id: str,
+                    target_branch: str, owner_chain: list[dict[str, Any]], now: str):
+    """Read the stream's carrier claims and their result PRs (ChatGPT's and Claude's alike)."""
+    claims = [json.loads(c.text) for c in git.list("automation/command_bus/loop_id_claims/", policy["carrier_branch"])]
+    stream = [c for c in claims if c.get("lane_id") == lane_id and c.get("target_branch") == target_branch]
+    prs = {c["command_id"]: rest.pulls_for_base(f"jules-work/{c['command_id']}") for c in stream}
+    return observe_stream(lane_id=lane_id, target_branch=target_branch, claims=stream, result_prs=prs,
+                          owner_chain=owner_chain, now=now)
+
+
+def handover(action: str, *, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str, Any],
+             origin_loop_id: str, lane_id: str, now: str, write: bool) -> dict[str, Any]:
+    """observe / takeover / handback / reclaim for one stream; writes only with ``write``."""
+    backend = LoopOwnerGitHubBackend(git, branch=policy["data_branch"])
+    read = backend.read_chain(origin_loop_id)
+    if read.status != "READ":
+        return {"status": "UNKNOWN", "reason": read.reason}
+    chain = [json.loads(c.text) for c in git.list(f"automation/command_bus/loop_owner_events/{origin_loop_id}/",
+                                                   policy["data_branch"])]
+    target = policy["allowed_target_branches"][0]
+    head = git.get_branch_head(target)
+    if head is None:
+        return {"status": "UNKNOWN", "reason": "stream target branch unavailable"}
+    if action == "observe" or action == "takeover":
+        activity = stream_activity(git=git, rest=rest, policy=policy, lane_id=lane_id, target_branch=target,
+                                   owner_chain=chain, now=now)
+        if action == "observe":
+            return {"status": "OBSERVED", "activity": activity.__dict__, "owner": chain[-1] if chain else None}
+        decision = decide_takeover(owner_chain=chain, activity=activity, auto_holder=policy["holder_id"],
+                                   loop_id=origin_loop_id, expected_repo=policy["target_repo"],
+                                   expected_pr=policy["expected_pr"], target_head=head, now=now)
+    elif action == "handback":
+        outstanding = len(outstanding_dispatches(git, policy, origin_loop_id))
+        decision = decide_handback(owner_chain=chain, auto_holder=policy["holder_id"],
+                                   outstanding_dispatches=outstanding, target_head=head, now=now)
+    else:
+        decision = decide_reclaim(owner_chain=chain, semiauto_holder=SEMIAUTO_HOLDER, target_head=head, now=now)
+    if write:
+        decision = append_decision(backend, decision)
+    return {"status": decision.status, "reason": decision.reason, "event": decision.event}
+
+
 # -- CLI ---------------------------------------------------------------------
 def _load(path: str) -> dict[str, Any]:
     with open(path, encoding="utf-8") as handle:
@@ -308,7 +354,8 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="claude_jules_live")
-    parser.add_argument("command", choices=["status", "step", "poll", "budget", "record-review", "record-observation"])
+    parser.add_argument("command", choices=["status", "step", "poll", "budget", "record-review", "record-observation",
+                                            "observe", "takeover", "handback", "reclaim"])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--roadmap", required=True)
     parser.add_argument("--origin-loop-id", required=True)
@@ -317,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scratch", default=os.path.join(tempfile.gettempdir(), "claude-jules-live"))
     parser.add_argument("--trailer", default="")
     parser.add_argument("--file")
+    parser.add_argument("--write", action="store_true", help="append the owner event (handover commands only)")
     parser.add_argument("--now")
     args = parser.parse_args(argv)
     now = args.now or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -341,6 +389,9 @@ def main(argv: list[str] | None = None) -> int:
                        policy["data_branch"])
         stored = git.get(path, policy["data_branch"])
         out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}
+    elif args.command in {"observe", "takeover", "handback", "reclaim"}:
+        out = handover(args.command, git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id,
+                       lane_id=args.lane_id, now=now, write=args.write)
     elif args.command == "status":
         out = {"now": now, "outstanding": [i["carrier_request"]["command_id"] for i in
                                            outstanding_dispatches(git, policy, args.origin_loop_id)]}
