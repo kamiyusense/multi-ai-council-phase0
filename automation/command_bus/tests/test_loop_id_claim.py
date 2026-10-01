@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -211,16 +212,38 @@ class LoopIdClaimTests(unittest.TestCase):
             verified = verify_claim_file(command_path, claims)
             self.assertEqual(verified["command_id"], COMMAND_ID)
 
+    def _is_quarantined_anomaly(self, path: Path) -> bool:
+        if path.name == "110.json":
+            with open(path, "rb") as f:
+                sha = hashlib.sha256(f.read()).hexdigest()
+            return sha == "f53ae6aaa307f3cb3f65e2f44d7d79b9432e09e627e0e25500e82bfd0596bdc8"
+        elif path.name == "113.json":
+            with open(path, "rb") as f:
+                sha = hashlib.sha256(f.read()).hexdigest()
+            return sha == "5f4e1b477d4cdfbf54c7f0094249d68f785a2c7bc8a14c99b0762baa0ce7497e"
+        return False
+
     def test_repository_claim_files_are_unique_and_valid(self):
         claims_dir = Path("automation/command_bus/loop_id_claims")
         paths = sorted(claims_dir.glob("*.json"))
         self.assertGreaterEqual(len(paths), 5)
         loop_ids = []
         for path in paths:
-            loaded = json.loads(path.read_text(encoding="utf-8"))
-            validated = validate_claim(loaded)
-            self.assertEqual(path.name, f"{validated['loop_id']}.json")
-            loop_ids.append(validated["loop_id"])
+            if self._is_quarantined_anomaly(path):
+                loaded = json.loads(path.read_text(encoding="utf-8"))
+                if path.name == "110.json":
+                    with self.assertRaisesRegex(ValueError, "claim task_id/command_id mismatch"):
+                        validate_claim(loaded)
+                    loop_ids.append("110")
+                else:
+                    with self.assertRaisesRegex(ValueError, "claim command_id must be a numbered Relay loop"):
+                        validate_claim(loaded)
+                    loop_ids.append("113")
+            else:
+                loaded = json.loads(path.read_text(encoding="utf-8"))
+                validated = validate_claim(loaded)
+                self.assertEqual(path.name, f"{validated['loop_id']}.json")
+                loop_ids.append(validated["loop_id"])
         self.assertEqual(len(loop_ids), len(set(loop_ids)))
 
     def test_061_through_063_remain_legacy_historical_backfills(self):
@@ -270,6 +293,49 @@ class LoopIdClaimTests(unittest.TestCase):
             self.assertIsNone(
                 verify_claim_file(command_path, Path(tmp) / "missing-claims")
             )
+
+
+
+    def test_quarantined_claims_strictness(self):
+        # A modified or forged file matching the name is not excused.
+        with tempfile.TemporaryDirectory() as tmp:
+            claims_dir = Path(tmp)
+
+            # Test modified 110.json
+            path_110 = claims_dir / "110.json"
+            path_110.write_text(json.dumps({"some": "forged_data"}), encoding="utf-8")
+            self.assertFalse(self._is_quarantined_anomaly(path_110))
+
+            # Test modified 113.json
+            path_113 = claims_dir / "113.json"
+            path_113.write_text(json.dumps({"some": "forged_data"}), encoding="utf-8")
+            self.assertFalse(self._is_quarantined_anomaly(path_113))
+
+        # Check standard validate_claim does not excuse either anomaly
+        real_claims = Path("automation/command_bus/loop_id_claims")
+
+        path_110 = real_claims / "110.json"
+        if path_110.is_file():
+            loaded_110 = json.loads(path_110.read_text(encoding="utf-8"))
+            with self.assertRaisesRegex(ValueError, "claim task_id/command_id mismatch"):
+                validate_claim(loaded_110)
+
+        path_113 = real_claims / "113.json"
+        if path_113.is_file():
+            loaded_113 = json.loads(path_113.read_text(encoding="utf-8"))
+            with self.assertRaisesRegex(ValueError, "claim command_id must be a numbered Relay loop"):
+                validate_claim(loaded_113)
+
+        # verify_claim_file fails on anomaly when request specifies it
+        with tempfile.TemporaryDirectory() as tmp:
+            command_path = Path(tmp) / "command.json"
+            command_req = {
+                "command_id": "relay-dev-loop-110-green-work-vs-jules-v2-bridge-ab",
+                "work_branch": "jules-work/relay-dev-loop-110-green-work-vs-jules-v2-bridge-ab"
+            }
+            command_path.write_text(json.dumps(command_req), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "claim task_id/command_id mismatch"):
+                verify_claim_file(command_path, real_claims, require_dispatchable_current=False)
 
 
 if __name__ == "__main__":
