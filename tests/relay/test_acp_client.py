@@ -1165,3 +1165,187 @@ class TestACPMockPhase0EndToEnd(unittest.IsolatedAsyncioTestCase):
                     )
                 mock_mapper.assert_not_called()
                 mock_classifier.assert_not_called()
+
+class TestCoreAdapterLifecycleMock(unittest.IsolatedAsyncioTestCase):
+    async def test_positive_mock_lifecycle(self):
+        from src.relay.core_adapter import RelayCoreAdapter
+        from tests.relay.test_core_adapter import RecordingBridge
+        from src.relay.acp_client import acp_mock_text_update_wire, acp_mock_text_to_phase0_raw
+
+        bridge = RecordingBridge()
+        valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
+        adapter = RelayCoreAdapter("openai", bridge, valid_openai_config)
+
+        case_context = {
+            "correlation_id": "c-1",
+            "session_id": "s-1",
+            "payload": {"q": "test"},
+            "timeout_seconds": 10
+        }
+
+        # 1. Prepare
+        import copy
+        orig_context = copy.deepcopy(case_context)
+        prepared = adapter.prepare(case_context)
+        self.assertEqual(case_context, orig_context)
+        self.assertEqual(prepared.get("provider_id"), "openai")
+        self.assertEqual(prepared.get("session_id"), "s-1")
+        self.assertEqual(prepared.get("correlation_id"), "c-1")
+
+        # 2. Preflight
+        preflight_res = adapter.preflight(prepared)
+        self.assertTrue(preflight_res.get("ok"))
+        self.assertEqual(preflight_res.get("static_configuration_status"), "PASS")
+        self.assertFalse(preflight_res.get("live_ready"))
+        self.assertEqual(preflight_res.get("live_readiness"), "BLOCKED")
+
+        # 3. Dispatch
+        handle = adapter.dispatch(prepared)
+        self.assertFalse(handle.get("live_process_started"))
+        self.assertEqual(handle.get("provider_id"), "openai")
+        self.assertEqual(handle.get("session_id"), "s-1")
+        self.assertEqual(handle.get("correlation_id"), "c-1")
+        self.assertEqual(bridge.dispatch_count, 1)
+
+        # 4. Mock execution via external subprocess script, mapped and manually fed to collect
+        script = TestACPMockPhase0EndToEnd.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt', req3\n"
+            "assert req3['id'] == 2, req3\n"
+            "assert req3['params']['prompt'][0]['text'] == 'hello fake', req3\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'mockこんにちは'}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "notif2 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': '\\nworld'}}}}\n"
+            "sys.stdout.write(json.dumps(notif2) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        import sys
+        import tempfile
+        import json
+        mock_result = await acp_mock_text_update_wire(
+            sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake"
+        )
+
+        # 5. Map to phase0 raw
+        raw_bytes = acp_mock_text_to_phase0_raw(mock_result)
+
+        parsed_mapped = json.loads(raw_bytes.decode("utf-8"))
+        self.assertEqual(parsed_mapped["schema_version"], "phase0-response-v1")
+        self.assertEqual(parsed_mapped["safety_warning"], "UNKNOWN")
+        self.assertEqual(parsed_mapped["evidence_refs"], [])
+        self.assertEqual(parsed_mapped["marker_echoes"], {"head": None, "middle": None, "tail": None})
+        self.assertEqual(parsed_mapped["answer_text"], "mockこんにちは\nworld")
+
+        bridge.mock_collect_result = {"rawResponse": raw_bytes.decode("utf-8")}
+
+        # 6. Collect
+        collected = adapter.collect(handle)
+        self.assertEqual(collected, raw_bytes)
+        self.assertEqual(bridge.collect_called_with, handle)
+
+        # 7. Classify
+        classify_res = adapter.classify(collected)
+        self.assertTrue(classify_res.get("success"))
+        self.assertEqual(classify_res.get("execution_state"), "COMPLETE")
+        self.assertEqual(classify_res.get("participation_state"), "PARTICIPANT")
+        self.assertEqual(bridge.dispatch_count, 1)
+
+    async def test_negative_mock_lifecycle_refusal(self):
+        from src.relay.core_adapter import RelayCoreAdapter
+        from tests.relay.test_core_adapter import RecordingBridge
+        from src.relay.acp_client import acp_mock_text_update_wire, acp_mock_text_to_phase0_raw
+
+        bridge = RecordingBridge()
+        valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
+        adapter = RelayCoreAdapter("openai", bridge, valid_openai_config)
+
+        script = TestACPMockPhase0EndToEnd.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'mock'}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'refusal'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        import sys
+        import tempfile
+        import json
+        mock_result = await acp_mock_text_update_wire(
+            sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake"
+        )
+
+        # The mapper must reject it (ValueError)
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw(mock_result)
+
+        self.assertEqual(bridge.dispatch_count, 0)
+        self.assertEqual(bridge.collect_count, 0)
+
+    async def test_negative_mock_lifecycle_invalid_schema(self):
+        from src.relay.core_adapter import RelayCoreAdapter
+        from tests.relay.test_core_adapter import RecordingBridge
+        import json
+
+        bridge = RecordingBridge()
+        valid_openai_config = {
+            "auth_kind": "account",
+            "route_evidence": {
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "custom_model_provider_configured": False,
+                "arbitrary_codex_config_present": False
+            }
+        }
+        adapter = RelayCoreAdapter("openai", bridge, valid_openai_config)
+
+        case_context = {
+            "correlation_id": "c-2",
+            "session_id": "s-2",
+            "payload": {"q": "test"},
+            "timeout_seconds": 10
+        }
+
+        prepared = adapter.prepare(case_context)
+        adapter.preflight(prepared)
+        handle = adapter.dispatch(prepared)
+
+        # Inject deliberately invalid schema
+        invalid_phase0_raw = {
+            "schema_version": "invalid-schema",
+            "answer_state": "ANSWER",
+            "conclusion_code": "SUCCESS",
+            "safety_warning": "UNKNOWN",
+            "safety_reason": None,
+            "evidence_refs": [],
+            "marker_echoes": {"head": None, "middle": None, "tail": None},
+            "answer_text": "foo"
+        }
+        raw_bytes = json.dumps(invalid_phase0_raw).encode("utf-8")
+
+        bridge.mock_collect_result = {"rawResponse": raw_bytes.decode("utf-8")}
+        collected = adapter.collect(handle)
+
+        classify_res = adapter.classify(collected)
+        self.assertFalse(classify_res.get("success"))
+        self.assertEqual(classify_res.get("execution_state"), "UNKNOWN")
