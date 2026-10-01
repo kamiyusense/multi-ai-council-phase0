@@ -1,0 +1,6 @@
+{
+  "target_sha": "fc20f67f1a47edfaa2b2027c02396af37aeaa5f3",
+  "loop_number": 119,
+  "candidate_pr": 221,
+  "scope": "exact-head full repository unit suite, Python compile, diff check; local fake child only, no live provider/model execution"
+}
