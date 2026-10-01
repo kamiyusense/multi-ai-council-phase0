@@ -994,3 +994,174 @@ class TestACPMockTextToPhase0Raw(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             acp_mock_text_to_phase0_raw({"text": "a", "stopReason": True})
+
+class TestACPMockPhase0EndToEnd(unittest.IsolatedAsyncioTestCase):
+    handshake_script = (
+        "import sys, json\n"
+        "req1 = json.loads(sys.stdin.readline())\n"
+        "assert req1 == {'jsonrpc': '2.0', 'id': 0, 'method': 'initialize', 'params': {'protocolVersion': 1, 'clientCapabilities': {}, 'clientInfo': {'name': 'relay', 'version': '0.1.0'}}}, req1\n"
+        "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
+        "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+        "sys.stdout.flush()\n"
+        "req2 = json.loads(sys.stdin.readline())\n"
+        "assert req2['method'] == 'session/new' and req2['id'] == 1, req2\n"
+        f"assert req2['params'] == {{'cwd': {tempfile.gettempdir()!r}, 'mcpServers': []}}, req2\n"
+        "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {'sessionId': 'session-123'}}\n"
+        "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
+        "sys.stdout.flush()\n"
+    )
+
+    async def test_positive_two_notifications_e2e(self):
+        from src.relay.acp_client import acp_mock_text_update_wire, acp_mock_text_to_phase0_raw
+        from src.relay.core_adapter import RelayCoreAdapter
+        from tests.relay.test_core_adapter import RecordingBridge
+
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "assert req3['params']['prompt'][0]['text'] == 'hello end-to-end'\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'こんにちは'}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "notif2 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': '\\nworld'}}}}\n"
+            "sys.stdout.write(json.dumps(notif2) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+
+        # 1. Fake local child process -> dictionary mock result
+        mock_result = await acp_mock_text_update_wire(
+            sys.executable, "-c", script,
+            cwd=tempfile.gettempdir(), prompt_text="hello end-to-end"
+        )
+
+        # Capture copy to ensure unmodified
+        mock_result_copy = dict(mock_result)
+
+        self.assertEqual(mock_result, {"text": "こんにちは\nworld", "stopReason": "end_turn"})
+
+        # 2. Map to strict MOCK-only Phase0 response-v1
+        raw_bytes = acp_mock_text_to_phase0_raw(mock_result)
+
+        # Verify original dict untouched
+        self.assertEqual(mock_result, mock_result_copy)
+
+        parsed = json.loads(raw_bytes.decode("utf-8"))
+        self.assertEqual(set(parsed), {"schema_version", "answer_state", "conclusion_code", "safety_warning", "safety_reason", "evidence_refs", "marker_echoes", "answer_text"})
+        self.assertEqual(parsed["schema_version"], "phase0-response-v1")
+        self.assertEqual(parsed["answer_state"], "ANSWER")
+        self.assertEqual(parsed["conclusion_code"], "SUCCESS")
+        self.assertEqual(parsed["safety_warning"], "UNKNOWN")
+        self.assertIsNone(parsed["safety_reason"])
+        self.assertEqual(parsed["evidence_refs"], [])
+        self.assertEqual(parsed["marker_echoes"], {"head": None, "middle": None, "tail": None})
+        self.assertEqual(parsed["answer_text"], "こんにちは\nworld")
+
+        # 3. Classify with pure core adapter
+        adapter = RelayCoreAdapter("test_provider", RecordingBridge(), {"auth_kind": "mock"})
+        classification = adapter.classify(raw_bytes)
+
+        self.assertTrue(classification["success"])
+        self.assertEqual(classification["execution_state"], "COMPLETE")
+        self.assertEqual(classification["participation_state"], "PARTICIPANT")
+
+    async def test_positive_one_notification_e2e(self):
+        from src.relay.acp_client import acp_mock_text_update_wire, acp_mock_text_to_phase0_raw
+        from src.relay.core_adapter import RelayCoreAdapter
+        from tests.relay.test_core_adapter import RecordingBridge
+
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'one chunk'}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+
+        mock_result = await acp_mock_text_update_wire(
+            sys.executable, "-c", script,
+            cwd=tempfile.gettempdir(), prompt_text="hello fake"
+        )
+        self.assertEqual(mock_result, {"text": "one chunk", "stopReason": "end_turn"})
+
+        raw_bytes = acp_mock_text_to_phase0_raw(mock_result)
+
+        adapter = RelayCoreAdapter("test_provider", RecordingBridge(), {"auth_kind": "mock"})
+        classification = adapter.classify(raw_bytes)
+
+        self.assertTrue(classification["success"])
+        self.assertEqual(classification["execution_state"], "COMPLETE")
+        self.assertEqual(classification["participation_state"], "PARTICIPANT")
+
+    async def test_negative_terminal_refusal(self):
+        from src.relay.acp_client import acp_mock_text_update_wire, acp_mock_text_to_phase0_raw
+
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'partial '}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'refusal'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+
+        mock_result = await acp_mock_text_update_wire(
+            sys.executable, "-c", script,
+            cwd=tempfile.gettempdir(), prompt_text="hello fake"
+        )
+        self.assertEqual(mock_result, {"text": "partial ", "stopReason": "refusal"})
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw(mock_result)
+
+    async def test_negative_terminal_cancelled(self):
+        from src.relay.acp_client import acp_mock_text_update_wire, acp_mock_text_to_phase0_raw
+
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'partial '}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'cancelled'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+
+        mock_result = await acp_mock_text_update_wire(
+            sys.executable, "-c", script,
+            cwd=tempfile.gettempdir(), prompt_text="hello fake"
+        )
+        self.assertEqual(mock_result, {"text": "partial ", "stopReason": "cancelled"})
+
+        with self.assertRaises(ValueError):
+            acp_mock_text_to_phase0_raw(mock_result)
+
+    async def test_negative_malformed_update_never_calls_downstream(self):
+        from src.relay.acp_client import acp_mock_text_update_wire
+        from unittest.mock import patch
+
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "notif1 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'valid '}}}}\n"
+            "sys.stdout.write(json.dumps(notif1) + '\\n')\n"
+            "notif2 = {'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 'session-123', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'image'}}}}\n"
+            "sys.stdout.write(json.dumps(notif2) + '\\n')\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'end_turn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+
+        with patch("src.relay.acp_client.acp_mock_text_to_phase0_raw") as mock_mapper:
+            with patch("src.relay.core_adapter.RelayCoreAdapter.classify") as mock_classifier:
+                with self.assertRaises(ValueError):
+                    await acp_mock_text_update_wire(
+                        sys.executable, "-c", script,
+                        cwd=tempfile.gettempdir(), prompt_text="hello fake"
+                    )
+                mock_mapper.assert_not_called()
+                mock_classifier.assert_not_called()
