@@ -296,6 +296,8 @@ class ClaudeJulesDispatcher:
         self.policy = validate_policy(policy)
         self.owner_reader = owner_reader
         self.binding_store = ClaudeJulesOriginBindingStore(client, self.policy["data_branch"])
+        from .claude_jules_live_budget import LiveBudgetLedger  # local import: the ledger reuses this module
+        self.budget = LiveBudgetLedger(client, data_branch=self.policy["data_branch"])
 
     # -- public -----------------------------------------------------------
     def dispatch(self, intent: dict[str, Any], *, now: str, dispatches_used: int) -> DispatchResult:
@@ -336,6 +338,13 @@ class ClaudeJulesDispatcher:
             return fence
         if (stale := self._target_problem(request)):
             return self._receipt(intent, "BLOCKED", stale) if stale.startswith("STALE") else DispatchResult("UNKNOWN", stale)
+        # Consume one slot of the fixed total LIVE budget before the irreversible write.
+        slot = self.budget.acquire(command_id=request["command_id"], intent_sha256=intent["intent_sha256"],
+                                   origin_loop_id=intent["origin_loop_id"], acquired_at=now)
+        if slot.status in {"EXHAUSTED", "COLLISION"}:
+            return self._receipt(intent, "BLOCKED", f"live budget: {slot.reason}")
+        if slot.status not in {"ACQUIRED", "RECOVERED"}:
+            return DispatchResult("UNKNOWN", f"live budget: {slot.reason}")
         outcome = self._create_once(command_path(request["command_id"]), request,
                                     self.policy["carrier_branch"], "append Claude AUTO Jules command", pretty=True)
         if outcome.status == "COLLISION":
@@ -350,6 +359,14 @@ class ClaudeJulesDispatcher:
             return DispatchResult("BLOCKED", problem)
         if (problem := live_authorization_problem(self.policy, now=now, dispatches_used=dispatches_used)):
             return DispatchResult("PREPARED_NOT_AUTHORIZED", f"{problem}; nothing written", intent)
+        try:
+            slots = self.budget.slots()
+        except Exception as exc:
+            return DispatchResult("UNKNOWN", f"live budget ledger unverifiable: {exc}")
+        command_id = intent["carrier_request"]["command_id"]
+        if len(slots) >= self.budget.cap and not any(s["command_id"] == command_id for s in slots):
+            return DispatchResult("PREPARED_NOT_AUTHORIZED",
+                                  f"LIVE budget exhausted ({len(slots)}/{self.budget.cap}); nothing written", intent)
         if (fence := self._fence(intent, now)).status != "PASS":
             return fence
         if (stale := self._target_problem(intent["carrier_request"])):

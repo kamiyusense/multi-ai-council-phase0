@@ -15,11 +15,12 @@
   "environment": "Claude Code cloud container, Python 3.11.15",
   "tests": {
     "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
-    "after_full_suite": "893 run, OK, 1 skipped (884 at e4d9ebde before the PR #220 review fixes)",
+    "after_full_suite": "907 run, OK, 1 skipped (stage 6/7 live adapters added)",
     "new_test_methods": {
       "e2e": 29,
       "dispatch_contract": 14,
-      "result_inspection": 16
+      "result_inspection": 16,
+      "live_adapter_real_git": 14
     },
     "compileall": "PASS",
     "git_diff_check": "PASS"
@@ -34,9 +35,9 @@
   },
   "status": {
     "static_mock_e2e": "PASS",
-    "production_adapters": "NOT_WIRED",
-    "live_proof": "NOT_AUTHORIZED",
-    "wake_mechanism": "UNKNOWN_PENDING_HUMAN_CHOICE"
+    "production_adapters": "IMPLEMENTED_TESTED_ON_REAL_GIT_REMOTE",
+    "live_proof": "NOT_STARTED: approved by human (budget 10) but the session safety gate refused the live policy write",
+    "wake_mechanism": "POLL_ADAPTER_IMPLEMENTED (in-session); no scheduled routine created"
   },
   "retry": 0,
   "fallback": "disabled",
@@ -48,5 +49,17 @@
       "stored result events and inspections re-validated (digest, identity, consistency) fail-closed; lineage compares fresh PR head_ref and exact footer session"
     ],
     "mutation_checks": "trusting an existing receipt, dropping receipt restoration, restoring without a lock: each made a test fail"
+  },
+  "live_budget": {
+    "cap": 10,
+    "used": 0,
+    "ledger": "claude/claude-jules-autoloop-data:automation/command_bus/evidence/claude-auto-live-budget/ (not created)"
+  },
+  "stage_6_7_readonly_real_github_check": {
+    "pr": 223,
+    "command_id": "relay-dev-loop-121-acp-mock-phase0-mapper",
+    "normalized": "ACCEPTED",
+    "session_consistent": true,
+    "writes": 0
   }
 }

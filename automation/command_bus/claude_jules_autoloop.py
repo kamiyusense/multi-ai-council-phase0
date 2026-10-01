@@ -46,6 +46,9 @@ from .claude_loop import (
 ROADMAP_PROFILE = "CLAUDE_AUTO_JULES_ROADMAP_V1"
 MAX_ATTEMPTS_PER_ROUND = 2
 REQUEST_LIFETIME = timedelta(minutes=90)
+# Jules normally answers within an hour; after this a dispatch with no result PR
+# (Jules failure, no publication, lost event) stops for a human instead of waiting forever.
+RESULT_DEADLINE = timedelta(hours=6)
 TERMINAL_STOP = {"STOP_HUMAN", "INVESTIGATE"}
 
 
@@ -228,15 +231,24 @@ class ClaudeJulesAutoLoop:
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable event records unverifiable: {exc}")
         if not events:
+            deadline = datetime.fromisoformat(intent["prepared_at"]) + RESULT_DEADLINE
+            if datetime.fromisoformat(now.replace("Z", "+00:00")) >= deadline:
+                return StepResult("STOP", "NO_RESULT_TIMEOUT",
+                                  f"no Jules result PR recorded by {deadline.isoformat()}; the dispatch slot stays consumed",
+                                  {"command_id": request["command_id"]})
             return StepResult("WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
                               {"command_id": request["command_id"]})
         receipt = self._read_json(dispatch_receipt_path(request["command_id"]))
-        observation = self.facts.dispatch_observation(request["command_id"])
+        try:
+            observation = self.facts.dispatch_observation(request["command_id"])
+            fresh = {e["pr_number"]: self.facts.fresh_pr(e["pr_number"]) for e in events}
+        except Exception as exc:  # evidence transport/record failure is never a pass
+            return StepResult("STOP", "UNKNOWN", f"dispatch/PR evidence unverifiable: {exc}")
         lineage = None
         for event in sorted(events, key=lambda e: e["pr_number"], reverse=True):
             verdict = verify_result_lineage(event, intent=intent, dispatch_receipt=receipt,
                                             dispatch_observation=observation,
-                                            fresh_pr=self.facts.fresh_pr(event["pr_number"]))
+                                            fresh_pr=fresh[event["pr_number"]])
             if verdict.status == "PASS":
                 lineage = verdict.record
                 break
@@ -244,6 +256,11 @@ class ClaudeJulesAutoLoop:
                 return StepResult("STOP", verdict.status, f"result lineage: {verdict.reason}")
         if lineage is None:
             return StepResult("WAIT", "WAITING_FOR_RESULT", "only stale result heads recorded")
+        ready = getattr(self.facts, "review_ready", None)
+        if ready is not None and not ready(intent, spec, lineage["candidate_head"]):
+            return StepResult("WAIT", "AWAITING_CLAUDE_REVIEW",
+                              "result lineage verified; Claude's independent review record is not written yet",
+                              {"command_id": request["command_id"], "head": lineage["candidate_head"]})
         return self._inspect(intent, spec, lineage, lineage["candidate_head"], now=now, repair_of=None)
 
     def _inspect(self, intent: dict[str, Any], spec: dict[str, Any], lineage: dict[str, Any], head: str,

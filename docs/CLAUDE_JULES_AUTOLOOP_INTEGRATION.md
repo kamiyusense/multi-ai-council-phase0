@@ -7,7 +7,8 @@
 > LIVE実証に必要な人間の承認事項は
 > [LIVE proof plan](CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_PLAN.md) に列挙した。
 
-Status: **STATIC/mock complete; LIVE = NOT AUTHORIZED / adapters NOT_WIRED.**
+Status: **STATIC/mock complete; stage 6/7 production adapters implemented and tested on real git
+(LIVE preparation stopped by the session's safety gate, see §8); no LIVE dispatch has run.**
 Branch: `claude/claude-jules-autoloop-integration` (base
 `feature/claude-auto-current-jules-protocol` @ `83b499a`).
 
@@ -63,6 +64,9 @@ with the existing GitHub records, not an orchestrator. No OSS code was copied.
 | `claude_jules_inspection.py` | 5–6 | 10-point independent inspection, vacuous-test detector, repair decision, small-repair gate |
 | `claude_jules_adoption.py` | 7 | serialized non-force fast-forward with readback and receipt |
 | `claude_jules_autoloop.py` | 8–9 | resumable controller (`step`, `run_until_boundary`), roadmap planner |
+| `claude_jules_live_adapter.py` | 6 | production `GitHubContentsClient` + refs over git (single-file create-only commits, non-force pushes, fresh `ls-remote` heads, git compare) and a repository-scoped read-only REST reader |
+| `claude_jules_live_budget.py` | 6–8 | create-only LIVE budget ledger: fixed total of 10 real dispatches, slot taken before the command write, never released |
+| `claude_jules_live.py` | 6–7 | live facts collector (workflow run + session, fresh PR, tests on exact head in a worktree, Claude review record), PR poll wake adapter, CLI |
 | `config/claude_jules_autoloop_policy.json` | — | committed policy: **grants nothing**, no live authorization |
 | `config/claude_jules_autoloop_roadmap.proposed.json` | 10 | proposed one-task docs-only LIVE proof roadmap |
 
@@ -111,7 +115,8 @@ controller instance for every step).
 
 ## 6. Tests (this branch, cloud container, Python 3.11.15)
 
-- New: `test_claude_jules_autoloop_e2e.py` (29 mock E2E scenarios),
+- New: `test_claude_jules_live_adapter.py` (14, real git remote),
+  `test_claude_jules_autoloop_e2e.py` (29 mock E2E scenarios),
   `test_claude_jules_dispatch_contract.py` (14), `test_claude_jules_result_inspection.py` (16);
   compatibility test switched to the reviewed bundle.
 - PR #220 review fixes are covered by negative tests: malformed / wrong-command /
@@ -127,12 +132,42 @@ controller instance for every step).
   Removing the adoption `current != snapshot` check alone does not, because
   `fast_forward_allowed` repeats it (defence in depth).
 
-## 7. Not done / UNKNOWN
+## 7. Stage 6/7 live wiring (implemented 2026-10-02)
 
-- Production adapters are NOT_WIRED: a GitHub transport implementing
-  `GitHubContentsClient` + ref operations, and a `ResultFactsCollector` that
-  runs the real test suite and records Claude's review. In a Claude Code
-  session Claude itself performs these via its tools.
+- Writes: one commit adding exactly one file per record (matches the carrier
+  workflow's "exactly one added file" rule), pushed without force. A push that
+  git rejects wrote nothing and is rebuilt on the new tip (max 3); any other
+  push failure is ambiguous and resolved only by readback.
+- Ref heads are read fresh with `git ls-remote`; compare is computed with git
+  (merge base → head, like GitHub's compare).
+- Dispatch evidence: the run on the command commit is read through REST. The
+  job-log storage host is blocked by this container's network policy, so the
+  accepted session id may instead come from a Claude-recorded
+  `CLAUDE_AUTO_DISPATCH_OBSERVATION_V1` bound to that exact run and job
+  (Claude reads the log through its GitHub tool). Lineage still cross-checks it
+  against the PR head ref and footer.
+- Wake: `poll` lists PRs whose base is each outstanding work branch and feeds
+  them through the same normalizer/inbox (`poll-<PR>-<HEAD>` delivery id, same
+  result id as a webhook). The loop waits with `AWAITING_CLAUDE_REVIEW` until
+  Claude's create-only review record for the exact head/tree exists.
+- Failure handling: no result PR within 6 h → `STOP NO_RESULT_TIMEOUT` (slot stays
+  used); evidence read failures → `STOP UNKNOWN`; budget 10/10 → no further
+  dispatch, checked before any write and again right before the command write.
+- Tests: `test_claude_jules_live_adapter.py` (14) runs the unchanged controller
+  against a real bare git remote: dispatch, poll, review wait, inspection,
+  real fast-forward adoption, budget exhaustion, slot race, blocked job log,
+  timeout. A read-only check against real GitHub normalized Jules PR #223
+  correctly (session id equal in head ref, footer and workflow log).
+
+## 8. Not done / UNKNOWN
+
+- LIVE (stages 8–9) did not start. On 2026-10-02 the human approved Loop A
+  LIVE with a total budget of 10, but this Claude Code session's automatic
+  safety gate refused the first LIVE preparation write (the live policy that
+  grants the dedicated target `claude/autoloop-live-target` and lane J-GREEN),
+  classifying it as interference with other workloads (the shared carrier is
+  in active use by the ChatGPT lanes). Per that gate the step was not retried
+  or worked around. LIVE dispatches used: 0 of 10.
 - Event wake mechanism for LIVE is UNKNOWN until chosen (see the LIVE plan);
   the normalizer accepts any ingress that supplies the PR payload.
 - Jules failure/no-PR completion produces no PR event; the loop then stays in
