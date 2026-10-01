@@ -23,6 +23,11 @@ For Relay-specific execution, continue with
 `RELAY_MINIMAL_REUSE_ROADMAP.md`. It translates this policy into small named
 upstream-component migrations rather than subsystem-design tasks.
 
+For the 💙 Cloud Work ↔ J-BLUE webhook closed-loop path, continue with
+`BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md`. It applies the same policy to the
+event bridge: reuse the current carrier/claim/receipt/HEAD contracts and add only
+the minimum GitHub wake adapter before considering new infrastructure.
+
 ## 2. Mandatory new-Chat read order
 
 A fresh development Chat should read in this order:
@@ -31,7 +36,9 @@ A fresh development Chat should read in this order:
 2. current `HANDOVER_CURRENT.md`
 3. current `docs/DEVELOPMENT_EXECUTION_ROUTER.md`
 4. **this file**
-5. for Relay work: `docs/RELAY_MINIMAL_REUSE_ROADMAP.md`
+5. task-specific fast roadmap when applicable:
+   - Relay: `docs/RELAY_MINIMAL_REUSE_ROADMAP.md`
+   - 💙 Work ↔ J-BLUE webhook loop: `docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md`
 6. selected route specification:
    - Jules: `docs/CHAT_JULES_API_SEMIAUTO.md`, then current carrier branch
      Color Lane / Semi-Auto / Task Prompt specs and validators

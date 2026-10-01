@@ -48,6 +48,21 @@ Jules claims/sessions and WORK carriers/generations/receipts remain separate,
 even when escalation preserves the same heart color. Protocol and generation
 gates below are unchanged.
 
+## 💙 Blue Work ↔ J-BLUE webhook closed-loop development
+
+For development of the event-driven controller/reviewer loop that combines the
+existing 💙 Cloud Work lane with 💙 J-BLUE, read
+[BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md](BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md).
+
+The roadmap is **Blue-first and not a live activation flag**. It preserves the
+current Blue carrier protocol/generation fencing and the separate Jules global
+claim/command/session control plane. Its target bridge is deliberately small:
+a verified Jules result GitHub event is normalized into at most one Blue carrier
+COMMENT review, then Work fresh-reads GitHub and reconciles from durable state.
+
+Do not treat this roadmap as authorization to start Jules, change Work settings,
+or enable an unbounded autonomous loop.
+
 ## Replacement and recovery
 
 For `Cloud Workを交換したい`, `Workが壊れた`, `Loop先を作り直したい`

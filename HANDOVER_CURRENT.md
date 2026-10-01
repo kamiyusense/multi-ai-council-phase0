@@ -73,6 +73,13 @@ It converts the reuse-first policy into bounded migrations such as “adapt this
 named upstream ACP primitive into these existing Relay files”; it explicitly
 stops the pattern of asking Jules to design a complete mechanism first.
 
+For the 💙 Cloud Work ↔ J-BLUE event-driven closed-loop development path, read
+[docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md](docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md).
+It keeps the existing components and adds only the smallest missing GitHub-event
+wake adapter: Jules result → GitHub event → one Blue carrier review → Work
+reconciliation → next bounded J-BLUE mission. The roadmap is documentation and
+does not itself authorize live Jules dispatch or an unbounded autonomous loop.
+
 ## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
 
 This rule is durable project policy for every Chat that uses the Chat -> Jules
