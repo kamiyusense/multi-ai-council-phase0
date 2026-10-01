@@ -356,7 +356,7 @@ class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
         script = (
             "import sys, json\n"
             "req1 = json.loads(sys.stdin.readline())\n"
-            "assert req1 == {\'jsonrpc\': \'2.0\', \'id\': 0, \'method\': \'initialize\', \'params\': {\'protocolVersion\': 1, \'clientCapabilities\': {}, \'clientInfo\': {\'name\': \'relay\', \'version\': \'0.1.0\'}}}, req1\\n"
+            "assert req1 == {\'jsonrpc\': \'2.0\', \'id\': 0, \'method\': \'initialize\', \'params\': {\'protocolVersion\': 1, \'clientCapabilities\': {}, \'clientInfo\': {\'name\': \'relay\', \'version\': \'0.1.0\'}}}, req1\n"
             "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
             "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
             "sys.stdout.flush()\n"
