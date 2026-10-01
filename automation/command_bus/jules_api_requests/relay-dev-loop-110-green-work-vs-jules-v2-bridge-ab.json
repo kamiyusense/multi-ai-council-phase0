@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-110-green-work-vs-jules-v2-bridge-ab",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "compare/green-work-vs-jules-loop-110",
+  "work_branch": "jules-work/relay-dev-loop-110-green-work-vs-jules-v2-bridge-ab",
+  "expected_target_head": "63c66e352a4ba35382a3dd3285748e45fcfc2931",
+  "expected_target_tree": "22c807f91921be32237bf1393d8e866dc6d2461f",
+  "allowed_paths": [
+    "automation/command_bus/claude_loop.py",
+    "automation/command_bus/tests/test_claude_loop.py",
+    "automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py",
+    "automation/command_bus/claude_jules_origin_binding.py",
+    "automation/command_bus/claude_jules_origin_binding_store.py",
+    "docs/CLAUDE_NIGHT_LOOP_DESIGN.md",
+    "docs/CLAUDE_AUTOLOOP_HANDOVER_CURRENT.md"
+  ],
+  "prompt": "Task / size class: MEDIUM — A/B comparison copy of the Green Cloud Work Claude AUTO -> current Jules carrier V2 bridge mission.\n\nGoal:\nStarting ONLY from the supplied isolated comparison branch snapshot, complete the stalled Claude AUTO -> current Jules carrier V2 bridge using existing parts and the minimum compatible diff. Do not inspect or copy later commits/results from feature/claude-auto-current-jules-protocol created after expected_target_head; this is an independent A/B implementation.\n\nRead first:\n- automation/command_bus/claude_loop.py\n- automation/command_bus/tests/test_claude_loop.py\n- automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py\n- automation/command_bus/claude_jules_origin_binding.py\n- automation/command_bus/claude_jules_origin_binding_store.py\n- current carrier source feature/chat-work-command-bus: automation/command_bus/jules_api_request.py\n\nAllowed changed paths only:\n- automation/command_bus/claude_loop.py\n- automation/command_bus/tests/test_claude_loop.py\n- automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py\n- automation/command_bus/claude_jules_origin_binding.py\n- automation/command_bus/claude_jules_origin_binding_store.py\n- docs/CLAUDE_NIGHT_LOOP_DESIGN.md\n- docs/CLAUDE_AUTOLOOP_HANDOVER_CURRENT.md\n\nHard scope / Do Not Touch:\nNo live Claude/Jules/provider/model execution from implementation/tests. No billing/API key/settings/permissions changes. No main/default-branch write. No Merge/rebase/force push/branch delete/history rewrite. No unrelated refactor. No new framework/schema/database/queue/workflow/dependency. Do not inspect/copy the competing Cloud Work result or later commits on feature/claude-auto-current-jules-protocol.\n\nExisting implementation to reuse:\nReuse current carrier JULES_CHAT_SEMIAUTO_V2 exact request contract and work_branch rule from feature/chat-work-command-bus. Reuse existing CLAUDE_AUTO_ORIGIN_BINDING_V1/build_binding_record() for origin identity if a companion is required. Do not duplicate those semantics.\n\nRequired semantics:\nFirst make prepare_jules_semiauto_request() emit current JULES_CHAT_SEMIAUTO_V2 exact 16-key request shape: schema_version=2; profile=JULES_CHAT_SEMIAUTO_V2; work_branch=jules-work/<command_id>; origin_loop_id/origin_round/origin_correlation_id/origin_generation absent from carrier request. Preserve prepare_jules_closed_loop_command() internal schema/version semantics unchanged. Update only stale V1/origin-in-request compatibility assertions. Origin identity remains represented by existing CLAUDE_AUTO_ORIGIN_BINDING_V1. If genuinely required, add only a thin pure companion using existing build_binding_record().\n\nNegative/failure cases:\nReject stale V1 request assumptions; exact key set must not admit origin_* carrier fields; do not mutate inputs; do not weaken existing negative tests; if a correct solution requires any path outside allowlist, STOP and report it.\n\nAcceptance:\nExact V2 16-key carrier output; exact work_branch; origin_* absent; internal prepared command semantics unchanged; deterministic valid bridge accepted by current carrier validator evidence; origin binding semantics preserved; relevant negative tests non-vacuous; only allowed paths changed; no scratch/untracked files.\n\nValidation:\nPYTHONPATH=. python -m unittest automation.command_bus.tests.test_claude_loop -v\nPYTHONPATH=. python -m unittest automation.command_bus.tests.test_claude_jules_current_carrier_compatibility -v\nPYTHONPATH=. python -m unittest automation.command_bus.tests.test_claude_jules_origin_binding -v\nPYTHONPATH=. python -m unittest automation.command_bus.tests.test_claude_jules_origin_binding_store -v\nPYTHONPATH=. python -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\ngit status --short\n\nPublication:\nIf green, commit and open the normal isolated PR. Do not Merge. This is comparison-only: do not update the canonical target branch.\n\nStop:\nIf an out-of-scope path or competing Work result is required, STOP and report exact reason. retry=0; fallback=disabled.",
+  "created_at": "2026-10-01T17:39:00+09:00",
+  "expires_at": "2026-10-01T19:39:00+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
