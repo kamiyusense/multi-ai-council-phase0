@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 0 Control Tower Semi-Auto schedule hint v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "loop_number",
+    "acceptance_state",
+    "accepted_at",
+    "task_size",
+    "eta_start",
+    "eta_end",
+    "eta_state"
+  ],
+  "properties": {
+    "loop_number": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "integer", "minimum": 1, "maximum": 999999}
+      ]
+    },
+    "acceptance_state": {
+      "enum": ["VERIFIED", "UNKNOWN"]
+    },
+    "accepted_at": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "task_size": {
+      "oneOf": [
+        {"type": "null"},
+        {"enum": ["SHORT", "MEDIUM", "LONG"]}
+      ]
+    },
+    "eta_start": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "eta_end": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "eta_state": {
+      "enum": ["UNKNOWN", "BEFORE_WINDOW", "WITHIN_WINDOW", "OVERDUE"]
+    }
+  }
+}

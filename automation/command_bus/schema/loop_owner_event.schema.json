@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Append-only Phase 0 Loop owner event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "loop_id",
+    "owner_role",
+    "holder_id",
+    "generation",
+    "fencing_token",
+    "previous_generation",
+    "claimed_at",
+    "expires_at",
+    "expected_repo",
+    "expected_pr",
+    "expected_target_head",
+    "command_id",
+    "correlation_id",
+    "source_receipt_id",
+    "source_receipt_ref",
+    "evidence_refs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_type": {
+      "enum": [
+        "ACQUIRE",
+        "RENEW",
+        "HANDOFF",
+        "RELEASE",
+        "TERMINAL"
+      ]
+    },
+    "loop_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "owner_role": {
+      "enum": [
+        "SEMI_AUTO",
+        "AUTO"
+      ]
+    },
+    "holder_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fencing_token": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previous_generation": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected_repo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_pr": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_target_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "command_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^automation/command_bus/evidence/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
+      },
+      "maxItems": 32
+    },
+    "previous_owner_role": {
+      "enum": [
+        "SEMI_AUTO",
+        "AUTO"
+      ]
+    },
+    "previous_holder_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "terminal_receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_receipt_ref": {
+      "type": "string",
+      "pattern": "^automation/command_bus/receipts/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "HANDOFF"
+          }
+        },
+        "required": [
+          "event_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "previous_owner_role",
+          "previous_holder_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "TERMINAL"
+          }
+        },
+        "required": [
+          "event_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "terminal_receipt_id"
+        ]
+      }
+    }
+  ]
+}

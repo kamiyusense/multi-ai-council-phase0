@@ -1,6 +1,205 @@
 # Phase 0 Handover — Current
 
-Updated: 2026-09-21
+Updated: 2026-10-01
+
+## 0. Current development worker routing — read this first
+
+Before selecting an implementation worker, read
+[docs/DEVELOPMENT_EXECUTION_ROUTER.md](docs/DEVELOPMENT_EXECUTION_ROUTER.md)
+from current main. It supersedes the former Chat-first / Work fallback
+**development worker** rule. A user need not know carrier or target PR numbers.
+
+- Chat is Controller / Reviewer / Small-repair Integrator: it retains supervision,
+  independent GitHub inspection, task design, safe small repairs with tests/readback,
+  and PASS / FAIL / UNKNOWN judgment.
+- Ordinary GitHub code, tests and docs development uses Chat-driven Jules
+  semi-auto by default. The router leads to the current Color Lane, Semi-Auto,
+  Task Prompt, [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md), claim ledger and workflow specifications on the discovered
+  carrier branch. `JA/JB/JC/JD/JG` or a heart-color start request selects only
+  a Jules lane, not a task or Loop number.
+- Explicit Cloud Work color requests use the selected 💛/💚/💙/❤️ lane; an
+  explicit 緑LINE request selects Green. Mission-based escalation preserves an
+  assigned heart color; without an assigned/explicit color, Work defaults to Green. The [Cloud Work lane and replacement index](docs/CLOUD_WORK_LANES_INDEX.md)
+  links the current carrier, protocol, worker-state and exchange manuals.
+- `Cloud Workを交換したい` / `Workが壊れた` / `Loop先を作り直したい`:
+  use that index to read the ChatGPT replacement support manual **first**;
+  derive the active generation from GitHub, never user memory.
+- User-machine-local dependencies require a complete 🔵 Local Work prompt
+  for the user to paste; do not auto-handoff or send them to any Cloud Work lane.
+- Ambiguous identity or capability is UNKNOWN and blocks dispatch. No Merge,
+  default-branch direct write, force push, retry or fallback is implied.
+
+Previous WORK use does not authorize automatic WORK continuation. Each new mission
+is freshly routed with Jules as the standard candidate. Fresh routing may still
+choose WORK again when its escalation conditions remain true; routing reset is
+not forced Jules dispatch. Detailed repair/sizing/ETA policy lives in the Guide.
+
+The future Claude-origin AUTO runtime is separate from this development
+worker choice. Claude auto-loop *development* uses this router.
+
+## 0.0.0 2026-10-01 current override — Development acceleration / reuse-first fast path
+
+Before designing or implementing a new development subsystem, read
+[docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md](docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md).
+
+This is the default execution style for ordinary Phase 0 development and
+**complements**, rather than replaces, the carrier-side Controller Operating
+Guide introduced by PR #191:
+
+- repo reuse first, then official provider/platform examples, then the smallest
+  mature permissively licensed primitive;
+- implement only what is needed to reach the next real integration boundary;
+- do not add queue/DLQ/retry engine/general orchestration/dashboard/new database
+  merely because they may become useful later;
+- preserve every already-fixed Phase 0 safety boundary;
+- follow the Controller Guide for safe small repair, adaptive task sizing,
+  repeated-FAIL cause analysis, WORK escalation and planning ETA;
+- Jules prompts should name the existing helper/upstream pattern to reuse and
+  explicitly forbid speculative architecture/features outside the bounded task.
+
+Current high-value shortcuts recorded in the playbook include GitHub's official
+webhook HMAC + `X-GitHub-Delivery` dedupe pattern, Trigger.dev-style
+deterministic SHA-256 idempotency when an existing stable ID is insufficient,
+Standard Webhooks/Svix raw-body verification semantics, CloudEvents
+`source + id` identity semantics, and Temporal/Inngest as design references
+only until measured pain justifies larger infrastructure.
+
+Read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` for deeper prior-art details,
+not as a prerequisite to every implementation task.
+
+For Relay work, next read
+[docs/RELAY_MINIMAL_REUSE_ROADMAP.md](docs/RELAY_MINIMAL_REUSE_ROADMAP.md).
+It converts the reuse-first policy into bounded migrations such as “adapt this
+named upstream ACP primitive into these existing Relay files”; it explicitly
+stops the pattern of asking Jules to design a complete mechanism first.
+
+For the 💙 Cloud Work ↔ J-BLUE event-driven closed-loop development path, read
+[docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md](docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md).
+It keeps the existing components and adds only the smallest missing GitHub-event
+wake adapter: Jules result → GitHub event → one Blue carrier review → Work
+reconciliation → next bounded J-BLUE mission. The roadmap is documentation and
+does not itself authorize live Jules dispatch or an unbounded autonomous loop.
+
+For Signal / Status / Control Tower work, next read
+[docs/SIGNAL_FOUNDATION_ROADMAP.md](docs/SIGNAL_FOUNDATION_ROADMAP.md).
+It applies the same small-component migration rule to Signal, starts with direct
+Jules/GitHub observed facts, keeps Jules/Cloud Work/durable runtime control
+planes separate, and serializes shared navigation/registry/Issue/snapshot seams
+to reduce merge friction between parallel lanes.
+
+## 0.0.1 2026-09-28 current override — Semi-auto task timing footer
+
+This rule is durable project policy for every Chat that uses the Chat -> Jules
+semi-auto loop.
+
+Before using the semi-auto route, fresh-read:
+
+- [Jules Semi-Auto entry](docs/CHAT_JULES_API_SEMIAUTO.md) and its linked
+  current carrier [Color Lane specification](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md).
+  First verify the workflow's current carrier branch; this URL is a snapshot.
+
+When a Jules task is successfully accepted and the Chat returns control to the
+human before the result is available, the **last line of the user-facing reply**
+must show:
+
+- canonical Jules lane ID and heart-color display for numbered tasks;
+- globally unique Loop number from a read-back schema-v3 claim;
+- verified Jules `session accepted` time in JST;
+- task-size label: `短`, `中`, or `長`;
+- estimated completion window.
+
+Required shape:
+
+```text
+## **❤️ J-RED / Loop 064投入：06:30 ／委託先：Jules ／投入タスク目安：中 ／推定完了目安：06:46〜06:56ごろ**
+```
+
+Do not add prose after this footer. Do not append
+`→ この時間以降なら結果確認おすすめ`.
+
+The dispatch time is not the command commit time or Action queue time. It is the
+verified Jules API session-acceptance time converted to Asia/Tokyo/JST. If Jules
+acceptance is not verifiable, do not invent the time or completion estimate;
+report UNKNOWN instead. The absence of an official Jules ETA alone does not
+make an estimate UNKNOWN: with verified acceptance/time, use the Controller Guide's
+recent measurements or conservative heuristic range as a non-guaranteed planning hint.
+
+## 0.1 2026-09-28 current override — Control Tower v2
+
+The current Signal/Status presentation direction is **Multi-loop Control Tower**.
+
+Before further Signal / Control Tower work, fresh-read from current `main`:
+
+- `docs/PHASE0_CONTROL_TOWER_V2_ROADMAP.md`
+- `docs/SIGNAL_DEVELOPER_CONTROL_TOWER_V2_CHANGE_REQUEST.md`
+- the latest Control Tower checkpoint documents.
+
+PR #72 is historical source material only once the two documents above are on
+`main`. GitHub current state overrides remembered PR numbers/SHA.
+
+Current implementation status:
+
+- CT-1 static foundation: implemented;
+- CT-2 prepare-only migration plan and publisher boundary: implemented;
+- explicit PLACEHOLDER / DURABLE identity state and registration gate: implemented;
+- live-migration preflight: implemented;
+- machine-readable snapshot v1 schema/read-only parser: implemented;
+- read-only durable transition collector: implemented;
+- retry-zero migration rollback boundary: implemented;
+- Issue #33 live single-loop -> multi-loop migration: **NOT STARTED**;
+- CT-3 Development registry migration: not started;
+- Windows executable: not started.
+
+The next major integration boundary is **real durable loop identity adoption**.
+Do not promote the four presentation placeholder IDs merely to unblock the
+Control Tower. Each real runtime lane must first expose/adopt a stable durable
+`loop_id` backed by the existing state/owner-chain/receipt/evidence/provider
+observation/fresh-target verification path. Until then live migration remains
+NOT_WIRED.
+
+Control Tower presentation metadata (`mode`, `controller_kind`, `worker_kind`,
+`display_name`, schedule/ETA fields, and `identity_state`) is not durable
+owner/liveness truth. Existing state/owner chain/receipt/evidence/provider
+observation/fresh target/authority/fencing remain the correctness source.
+
+Takeover/authority code remains a durable-control-plane concern and must not be
+reimplemented inside the Control Tower renderer.
+
+## 0.1 2026-09-25 current override — Jules API route adopted
+
+This section supersedes older Jules-launch / API-key statements below when they
+conflict.
+
+Current durable direction:
+
+- custom BrowserHook / Work Cloud Browser Jules launch route: **FROZEN**
+- Jules API route: **USER AUTHORIZED**
+- primary predecessor: `google-labs-code/jules-action`
+- first smoke pin:
+  `bff7875eaa123cac6742b7cfc51005b95ba4d566`
+- exact non-default starting branch is mandatory
+- API key must stay in an approved secret store; never commit or paste it
+- retry = 0 / fallback disabled / ambiguous submit => readback, not resend
+- no automatic Merge / no direct main write / no force push / no branch deletion
+- GitHub Actions green alone is not proof; verify Jules session/PR/ancestry/diff
+
+Read first:
+
+1. `docs/JULES_API_ROUTE_DECISION_20260925.md`
+2. executor role:
+   `docs/JULES_API_ROUTE_EXECUTOR_HANDOFF_20260925.md`
+3. advisor role:
+   `docs/JULES_API_ROUTE_ADVISOR_HANDOFF_20260925.md`
+
+The scoped Jules API authorization does **not** authorize other provider API
+keys, general metered API fallback, Billing/Credits/Overages changes, or secret
+exposure.
+
+The first prepared workflow is:
+`.github/workflows/jules-phase0-smoke.yml`
+
+It is preparation only until it exists on the default branch and the user has
+completed the remaining secret/key approval steps.
 
 ## 1. Purpose
 
@@ -81,7 +280,7 @@ Do not silently weaken these:
 - automatic retry = 0
 - no automatic model fallback
 - no paid fallback
-- no API-key route
+- no general provider API-key route; scoped Jules API exception is defined in section 0
 - unknown billing / permission / auth safety boundary => fail closed
 - runtime GitHub write prohibited
 - arbitrary shell construction prohibited
@@ -196,11 +395,11 @@ This development Git workflow does **not** change the Phase 0 runtime rule: the 
 
 Do not assume Work handoff is available from the current ChatGPT Project.
 
-The Windows desktop app has shown the red error:
+A historical Local Work handoff attempt in the Windows desktop app showed:
 
 `Could not use this project for a local chat`
 
-The symptom is consistent with reported Windows ChatGPT Project -> local Work context-sync failures. Continue in Chat + GitHub unless the user explicitly chooses to test Work again.
+This is a historical Local Work context-sync limitation, not the current development worker policy. Use the router above; give the user a complete Local Work prompt when a local dependency exists.
 
 ## 10. Chat ⇄ Work autonomy rules
 
@@ -208,11 +407,17 @@ The symptom is consistent with reported Windows ChatGPT Project -> local Work co
 
 ## 11. Pioneer / OSS reuse research
 
-Generic Relay / multi-agent infrastructureを1から再実装する前に、`docs/PIONEER_OSS_RESEARCH_HANDOVER.md` を読む。
+日常の実装判断では、まず `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md` を読む。
+そこで「今すぐ使う小さい答え」が見つからない場合だけ、
+`docs/PIONEER_OSS_RESEARCH_HANDOVER.md` の詳細調査へ降りる。
 
-現在の方針は **OSS-first / reuse-first**。ACP / OpenHands / worktree orchestrators / AGENTS.md / stacked PR / CAID等を先にコードレベルで監査し、license・Windows・subscription auth・permission bypass・retry/restart・GitHub副作用・secret handling・test coverageを確認してから採否を決める。
+現在の方針は **reuse-first / minimum-implementation-first**。既存repo →
+公式例 → 小さい成熟OSS部品の順に探し、必要な部分だけ流用する。
+大きな基盤を採用する前に license / auth / retry / permission /
+GitHub副作用 / secret handling / test coverage を確認する。
 
-これは採用済み仕様ではなく研究候補。Phase 0固定安全境界は変更しない。
+研究候補を見つけても、それ自体を新しい開発バックログにしない。
+Phase 0固定安全境界とController Operating Guideの現行routing/repair規則は変更しない。
 
 ## 12. Next safe implementation batch
 
@@ -265,14 +470,17 @@ UNKNOWN on a safety boundary blocks live execution, not static implementation.
 A new chat should:
 
 1. read this handover
-2. **before any Jules dispatch, read `docs/JULES_TASK_PROMPT_SPEC.md`**
-3. read the implementation spec and checklist
-4. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
-5. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` before rebuilding generic Relay/orchestration code
-6. read `docs/CHAT_WORK_AUTONOMY_RULES.md` before Work/Closed Loop use
-7. inspect the current open PR / branch before changing files
-8. preserve all fixed safety decisions
-9. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
-10. continue static implementation without live provider calls
-11. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
-12. keep GitHub writes within this private repository and authorized feature branches/PR scope
+2. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` from current main and select the development route
+2a. **before any Jules dispatch, read `docs/JULES_TASK_PROMPT_SPEC.md`** (carrier branch)
+3. read `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md` and use its reuse-first / minimum-implementation fast path
+4. read the implementation spec and checklist
+5. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary
+6. read `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` only when deeper prior-art detail is needed
+7. read `docs/CHAT_WORK_AUTONOMY_RULES.md` when Work / Closed Loop rules are relevant
+8. inspect the current open PR / branch before changing files
+9. preserve all fixed safety decisions
+10. audit OSS reuse candidates before duplicating generic Relay/orchestration functionality
+11. follow the Jules API route decision in section 0; do not revive the frozen BrowserHook route
+12. before using the Chat -> Jules semi-auto loop, follow the router to current carrier Color Lane → Semi-Auto → Task Prompt → Controller Operating Guide and obey the mandatory task-time footer
+13. for concurrent Relay work, use a separate feature branch/checkpoint rather than modifying another agent's branch
+14. keep GitHub writes within this private repository and authorized feature branches/PR scope

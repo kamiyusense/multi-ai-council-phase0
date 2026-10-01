@@ -16,6 +16,8 @@ ROOT = "automation/command_bus/"
 STATIC_PREFIXES = (
     ROOT + "tests/",
     ROOT + "schema/",
+    ROOT + "config/",
+    ROOT + "docker/",
 )
 LEDGER_PREFIXES = (
     ROOT + "commands/",
@@ -34,6 +36,9 @@ LEDGER_PREFIXES = (
     ROOT + "execution_receipts/",
     ROOT + "jules_launch_attempts/",
     ROOT + "auth_handoffs/",
+    ROOT + "loop_owner_events/",
+    ROOT + "loop_owner_observations/",
+    ROOT + "loop_owner_authorities/",
 )
 
 
@@ -65,7 +70,7 @@ def classify_command_bus_path(path: str) -> ScopeKind:
     if not rest:
         return ScopeKind.UNKNOWN
     if "/" not in rest:
-        if rest.endswith(".py") or rest == "README.md":
+        if rest.endswith(".py") or rest in {"README.md", "claude_gate_compose.yaml"}:
             return ScopeKind.STATIC
         return ScopeKind.UNKNOWN
     if any(path.startswith(prefix) for prefix in STATIC_PREFIXES):

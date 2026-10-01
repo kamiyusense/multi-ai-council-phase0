@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 0 durable Loop owner provider observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observation_id",
+    "loop_id",
+    "owner_role",
+    "holder_id",
+    "generation",
+    "fencing_token",
+    "expected_repo",
+    "expected_pr",
+    "expected_target_head",
+    "state",
+    "evidence_ref",
+    "observed_at",
+    "expires_at",
+    "verified"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "loop_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "owner_role": {
+      "enum": [
+        "SEMI_AUTO",
+        "AUTO"
+      ]
+    },
+    "holder_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fencing_token": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_repo": {
+      "type": "string",
+      "minLength": 3
+    },
+    "expected_pr": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_target_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "state": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_ref": {
+      "type": "string",
+      "pattern": "^automation/command_bus/evidence/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.json$"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "verified": {
+      "type": "boolean"
+    }
+  }
+}

@@ -35,8 +35,36 @@
 
 ## 2. Work利用条件
 
-### 2.1 新規handoff
-ChatからWorkへの新規handoffは、ユーザーが明示的にWork利用を指示した場合、または既に開始済みWorkを継続する場合に限る。
+### 2.1 開発worker選択
+
+[canonical execution router](DEVELOPMENT_EXECUTION_ROUTER.md) が現在の開発worker選択の正本。
+旧「Chat-first / Work fallback」は開発worker選択についてsuperseded。
+ChatはGitHubのfresh readback、独立検品、設計、次タスク作成、PASS / FAIL /
+UNKNOWN判定と人間のMerge境界を維持する。FAIL後は安全な小修正を先に評価し、
+修正したChat自身もtest・semantic review・exact HEAD・remote readbackで検証する。
+詳細はdiscovered carrierの [Controller Operating Guide](https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md)。
+
+- 通常のGitHub実装・test・docs変更: Chat-driven Jules半Loopをデフォルトにする。
+- 明示されたCloud Work色laneはそのlaneへ。緑LINEはGreenを指定する。
+  色指定なしのWorkやJulesに不向きなcloud-safe missionへのescalationは
+  assigned heart colorを維持し、色未選択の場合のみGreenをdefaultとする。
+  [4-lane・交換索引](CLOUD_WORK_LANES_INDEX.md)から選択laneのcarrierを一意に
+  fresh discoveryし、protocolとworker-stateを確認してから送る。
+- Work交換・故障・再作成は同索引からChatGPT support manualを先に読む。
+  PR番号・generation・SHA・automation IDをユーザーの記憶に依存させない。
+- Windows/WSL/Docker/ローカル認証情報などPC固有資源が必要な場合:
+  Green laneを使用せず、GitHub側で可能な確認後、ユーザーがそのまま貼れる
+  完全なLocal Work用指示文を
+  「## **🔵【以下をLocal Workへそのまま貼り付けてください】**」
+  の見出しと1つのコードブロックで渡す。ChatからLocal Workへ勝手にhandoffしない。
+- identityまたは能力を確認できない場合: UNKNOWN、dispatchしない。
+
+WORKを前回使ったことだけで次もWORKにしない。毎missionでfresh routingし、
+Julesを標準候補へ戻す。routing resetはJulesへの強制dispatchではなく、
+難所・強結合などのWORK条件が続けばbounded WORKの連続利用を認める。
+
+これらのworker選択は、Work内の自律処理ルールや将来のClaude-origin
+AUTO Loopのruntimeを変更しない。
 
 ### 2.2 現在の既知制約
 Windows環境でProject → local Work handoff時に
@@ -48,7 +76,7 @@ Windows環境でProject → local Work handoff時に
 そのため:
 - Work利用可否を推測しない
 - 同じhandoffを理由確認なしに再試行しない
-- Workが使えなければChat + GitHubで継続
+- Local Workが使えなければUNKNOWNとして、安全なGitHub確認とrouterに従う他の独立作業だけ継続
 - reply retrieval不能は `UNKNOWN`
 - ユーザーが明示的に再試験を指示するまでChat側から勝手にWorkへ飛ばさない
 
@@ -299,7 +327,7 @@ live POCでは:
 - API key作成・変更・表示
 - settings / permissions変更
 - 管理者権限取得
-- GitHub write / commit / push / PR / Merge
+- 未承認範囲のGitHub write / commit / push / PR、および承認のないMerge
 - branch削除
 - remote変更
 - force push
@@ -390,56 +418,45 @@ live POCでは:
 
 ## 18. 役割境界
 
+worker選択と復旧手順は
+[canonical router](DEVELOPMENT_EXECUTION_ROUTER.md) を読む。
+
 ### Chat
-- 設計判断
-- 安全レビュー
-- Work/Jules成果物検品
-- live実行可否判定
-- ユーザー説明
-- GitHub checkpoint readback
+- GitHub current stateのfresh readback、設計と次のbounded task
+- Jules/Cloud Work成果の独立検品（diff、ancestry、tests、evidence）
+- Controller-safe small repairと再検証（詳細は上記Guide）
+- PASS / FAIL / UNKNOWN、安全・Merge等の人間判断境界
+- 許可済みfeature branch / PR範囲のwriteとremote readback
 
-### Work
-Work利用可能かつユーザーが開始・許可した場合:
-- 静的実装
-- fixture
-- test
-- dry-run
-- artifact
-- evidence整理
-- 大きな安全バッチ処理
+### Jules
+- 通常開発のデフォルト実装担当。正確なnon-default branchと範囲で
+  静的実装、tests、docs、GitHub checkpointを作る。
 
-### Jules / その他実装担当
-- 明示branch・scope内のみ
-- 静的実装
-- tests
-- docs
-- GitHub checkpoint作成
-- 他担当branchを勝手に上書きしない
+### Cloud Work 4色lane
+- 💛 Yellow / 💚 Green / 💙 Blue / ❤️ Redは独立したCloud Work carrier。
+  escalationではassigned heart colorを維持し、色未選択時のみGreenをdefaultとする。現在の一覧と交換入口は
+  [4-lane・交換索引](CLOUD_WORK_LANES_INDEX.md)。
+- 選択laneのcarrier/protocol/worker-stateをfresh discovery。
+  Local Work固有資源は扱わない。carrier PRはMergeしない。
+
+### Local Work
+- ユーザーPC固有資源が必要なときのみ、Chatから完全な🔵promptを渡し、
+  ユーザーが貼り付ける。勝手なhandoffはしない。
 
 ### Relay
 transport / dispatch担当。Council最終判断をしない。
-詳細は `docs/ARCHITECTURE.md`。
+詳細は docs/ARCHITECTURE.md。
 
 ## 19. 新しいChatへの必須読込順
 
-新しいChatは最低限以下を確認する。
+1. current main の README.md と HANDOVER_CURRENT.md
+2. [development execution router](DEVELOPMENT_EXECUTION_ROUTER.md)
+3. 選択したJulesまたは[Cloud Work 4色lane仕様](CLOUD_WORK_LANES_INDEX.md)とcurrent GitHub target identity（交換依頼ではChatGPT support manualを最初に読む）
+4. docs/PHASE0_IMPLEMENTATION_SPEC.md、checklist、architectureなどのtask資料
+5. このWork自律処理文書（Work / Closed Loopを使う場合）
 
-1. `HANDOVER_CURRENT.md`
-2. `docs/PHASE0_IMPLEMENTATION_SPEC.md`
-3. `docs/PHASE0_IMPLEMENTATION_CHECKLIST.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/CHAT_WORK_AUTONOMY_RULES.md`
-6. `docs/DEVELOPMENT_WORKFLOW.md`
-7. 現在のopen PR / branch / checkpoint SHA
-
-そのうえで:
-- Work利用可否
-- GitHub承認範囲
-- live実行承認有無
-- 現在branch/checkpoint
-- 安全境界のUNKNOWN
-
-を確認して続行する。
+過去PR番号、Chat/thread/session IDやsnapshot SHAをcorrectnessの入口にしない。
+retry=0、fallback=disabled、成功不明writeの再送禁止、Mergeは明示承認のみ。
 
 ## 20. Final Principle
 

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pr": 25,
+  "observed_pr_head": "c12b5973304371248e867b5681aad99a51c38c48",
+  "probe_date": "2026-09-26",
+  "overall": {
+    "runtime_probe_status": "BLOCKED",
+    "literal_provider_request_retry_zero": "UNKNOWN",
+    "reason": "Claude Code executable and matching installed source/package were not available at checked locations; installing or downloading was prohibited.",
+    "live_provider_execution_count": 0,
+    "real_credential_use_count": 0,
+    "controller_dispatch_count": 0,
+    "fake_provider_request_count": 0,
+    "fake_endpoint_started": false
+  },
+  "runtime_identity": {
+    "claude_executable": null,
+    "absolute_path": null,
+    "version": null,
+    "executable_sha256": null,
+    "source_or_package_identity": null,
+    "checked": [
+      "Get-Command/where.exe claude in current PATH: not found",
+      "C:/Users/yuuki/AppData/Roaming/npm/claude.cmd: absent",
+      "C:/Users/yuuki/AppData/Roaming/npm/node_modules/@anthropic-ai/claude-code/cli.js: absent",
+      "C:/Users/yuuki/AppData/Roaming/npm/node_modules/@anthropic-ai/claude-code/package.json: absent",
+      "C:/Users/yuuki/AppData/Local/Programs/Claude Code/claude.exe: absent",
+      "C:/Users/yuuki/AppData/Local/Programs/Claude/claude.exe: absent",
+      "C:/Program Files/Claude Code/claude.exe: absent",
+      "C:/Program Files/Claude/claude.exe: absent",
+      "C:/Users/yuuki/AppData/Local/Microsoft/WinGet/Links/claude.exe: absent",
+      "C:/Users/yuuki/.local/bin/claude.exe: absent",
+      "C:/Users/yuuki/.npm-global/bin/claude.cmd: absent",
+      "Repository file-name scan for Claude Code executable/package source: no match"
+    ],
+    "credential_or_user_config_read": false,
+    "package_install_or_upgrade": false
+  },
+  "runtime_options": {
+    "CLAUDE_CODE_MAX_RETRIES": "UNKNOWN_NOT_SET_OR_INSPECTED",
+    "resume_or_continue": "NOT_USED",
+    "max_turns": "NOT_SET_EXECUTABLE_UNAVAILABLE",
+    "tools_disabled": "NOT_SET_EXECUTABLE_UNAVAILABLE",
+    "model_fallback_disabled": "NOT_TESTED",
+    "advisor_disabled": "NOT_TESTED",
+    "fast_mode_disabled": "NOT_TESTED",
+    "background_or_subagents_disabled": "NOT_TESTED",
+    "automatic_continuation_control": "UNKNOWN"
+  },
+  "cases": [
+    {"id":"A","scenario":"single successful response","status":"NOT_RUN"},
+    {"id":"B","scenario":"max_tokens/output truncation","status":"NOT_RUN"},
+    {"id":"C","scenario":"no response/timeout","status":"NOT_RUN"},
+    {"id":"D","scenario":"stream disconnect","status":"NOT_RUN"},
+    {"id":"E","scenario":"retryable 5xx","status":"NOT_RUN"},
+    {"id":"F","scenario":"429","status":"NOT_RUN"},
+    {"id":"G","scenario":"auth failure/recovery","status":"NOT_RUN"},
+    {"id":"H","scenario":"interrupted/continuation","status":"NOT_RUN"}
+  ],
+  "per_case_evidence": {
+    "controller_dispatch_count": 0,
+    "fake_provider_observed_request_count": 0,
+    "retry_or_continuation_events": [],
+    "model_or_fallback_indication": null,
+    "exit_status": null,
+    "stdout": null,
+    "stderr": null,
+    "reason": "The actual CLI was unavailable, so none of the case processes or fake endpoint requests occurred. Zero here describes this probe session only and is not evidence that the CLI would emit one or zero requests."
+  },
+  "reproduction": [
+    "Resolve claude with Get-Command and where.exe; neither returned an executable.",
+    "Check the listed standard CLI and npm package locations; each was absent.",
+    "Scan the repository file list for Claude Code executable/package source; no match was found.",
+    "Do not install/download Claude Code. Do not read Claude config or credentials. Stop before starting a process or fake endpoint."
+  ],
+  "interpretation": "The runtime experiment is BLOCKED by missing local runtime/source. CLAUDE_LITERAL_RETRY_ZERO remains UNKNOWN; no PASS or FAIL conclusion about Claude Code behavior can be drawn.",
+  "follow_up_blocker": "A user-managed, already-installed Claude Code executable and matching source/package identity must become available locally before the fake-provider matrix can run. No real credentials or external provider connection are needed for that future test."
+}

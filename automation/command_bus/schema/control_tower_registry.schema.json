@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 0 Control Tower display registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "loops"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "loops": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "loop_id",
+          "display_name",
+          "mode",
+          "controller_kind",
+          "worker_kind",
+          "display_order",
+          "enabled",
+          "safe_detail_ref",
+          "identity_state"
+        ],
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+()/>-]{0,63}$"
+          },
+          "mode": {
+            "enum": [
+              "SEMI_AUTO",
+              "AUTO"
+            ]
+          },
+          "controller_kind": {
+            "enum": [
+              "CHATGPT",
+              "CLAUDE",
+              "WORK",
+              "OTHER"
+            ]
+          },
+          "worker_kind": {
+            "enum": [
+              "JULES",
+              "GEMINI",
+              "CLAUDE",
+              "OTHER"
+            ]
+          },
+          "display_order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "safe_detail_ref": {
+            "type": "string",
+            "pattern": "^(issue|pr):[1-9][0-9]{0,9}$"
+          },
+          "identity_state": {
+            "enum": [
+              "PLACEHOLDER",
+              "DURABLE"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

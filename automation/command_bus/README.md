@@ -56,6 +56,16 @@ writes, malformed or missing records, and invalid state readback.
 
 The runtime is intentionally limited to `automation/command_bus/**`; it does not execute Jules, providers, live models, API keys, or GitHub workflows.
 
+## Claude night-loop preparation
+
+`claude_loop.py` defines explicit `JULES_BACKEND` and `CLAUDE_BACKEND` modes.
+Both prepare records through the existing executor contract. Requests bind the
+fresh target head and tree, `TREE_IDENTITY_V1`, and an explicit path policy;
+the existing Jules API closed loop remains the only Jules dispatch route.
+The module does not start either model or dispatch externally. It requires
+`retry=0`, `fallback=disabled`, and rejects unsafe actions and rounds above six.
+Terminal receipt matching reuses the executor receipt fields.
+
 
 Durable-boundary hardening:
 - every append/state write requires an independent branch readback; unverifiable
@@ -150,6 +160,8 @@ Static blob verification/reconstruction includes only:
 - `automation/command_bus/README.md`
 - `automation/command_bus/tests/**`
 - `automation/command_bus/schema/**`
+- `automation/command_bus/config/**`
+- `automation/command_bus/docker/**`
 
 Operational record families such as commands, events, evidence, receipts,
 states, reviewer records, reviewer wake reservations, and executor records are
@@ -161,3 +173,100 @@ This keeps static validation bounded even when GitHub history grows. A new
 unclassified blob area under `automation/command_bus/**` is not silently
 ignored: `validation_scope.py` classifies it as UNKNOWN and validation fails
 closed until the area is explicitly assigned to the static or ledger scope.
+
+## Claude admission gate (static only)
+
+`claude_admission_gate.py` provides a host-owned atomic SQLite claim that
+admits at most one generation POST per in-process host-registered dispatch;
+all later attempts are denied before upstream connect. The optional loop
+integration `claude_loop.prepare_claude_transport()` is a preflight description
+only and cannot launch a process. Count-token requests are denied locally,
+health checks are local, and unknown routes fail closed. Validation used only
+loopback fake providers. Production upstream is pinned to the exact Anthropic
+HTTPS origin and requires a separately identified production state store;
+fake upstreams require an explicit test-only connector. The Compose manifest
+requires an explicit human-gated runtime launch. Claude has internal-only network access, while the gate alone has a
+separately controlled egress network and no published host port. Images and
+Claude Code version are pinned; Dockerfile-specific ignore files restrict the
+build contexts. The Claude launcher fails closed unless explicitly enabled
+with valid one-dispatch metadata. The Gate entrypoint only opens an existing
+store and never bootstraps it. A separate `gate-bootstrap` service now declares
+the one-time receipt-backed initialization route behind the exact
+`human-gate-bootstrap` profile, a required confirmation argument,
+`network_mode: none`, and the fixed non-root identity. Its receipt is mounted outside the
+`gate-state` named volume via the external host-control directory. Nested mount
+ordering and volume ownership still require checks for each deployment.
+Effective host firewall behavior, production store ACL verification on Windows,
+backup rollback protection, automatic model fallback behavior, and a complete
+real Claude response remain unproven. One 2026-09-28 Claude process ended before
+the Gate due to a missing sandbox dependency; the Gate recorded zero upstream
+requests. Claude OAuth succeeded. No Jules execution occurred. See
+`docs/CLAUDE_ADMISSION_GATE_DESIGN.md` for constraints and blockers.
+`prepare_transport` separates strict `HOST_LOOPBACK` from opt-in
+`CONTAINER_INTERNAL`, which accepts only the freshly validated Compose endpoint
+`http://gate:8080`. The container contract requires an externally supplied
+expected store UUID; an empty/replaced volume must fail closed. Production
+store creation is a separate explicit one-time operation with an external
+receipt; normal production open never bootstraps. Windows production ACL
+verification remains blocked. This gate remains prepare/static-only and does
+not launch Claude or perform the bootstrap. See
+`docs/CLAUDE_ADMISSION_GATE_DESIGN.md`.
+
+### Credential-free bubblewrap component proof
+
+Docker Engine 29.8.0 denied bubblewrap's
+`clone(CLONE_NEWNS|CLONE_NEWUSER|SIGCHLD)` under its default seccomp profile.
+The `claude` service alone uses
+`docker/claude-runtime/claude-bwrap-seccomp-amd64.json`. It starts from the
+profile vendored in Moby commit `3ce5872b7950c63ba2ffbc5123101019ff3e6682`
+(Git blob `ea5a494afb8d64898fa0f4f47ae0c4f5ba9cbbc9`) and adds only the
+observed amd64 clone flags, eight observed mount flag combinations, `pivot_root`,
+and `umount2(MNT_DETACH)`. The validator pins the resulting file hash and
+rejects other runtime security options, added capabilities, or applying this
+profile to Gate/bootstrap services. The profile is applied by Docker Compose;
+it is excluded from the image build context.
+
+A network-none, UID/GID 1000:1000 component container with no mounts or
+credentials failed under Docker's default profile and passed with the pinned
+profile. Its mount and user namespaces differed from the outer container;
+direct connection to a reserved test IP and lookup of an invalid domain both
+failed. A request for an additional PID namespace was denied. No Claude Code
+process or Anthropic request was made during this component proof. The prior
+real attempt remains terminal FAILED; this component result does not authorize
+a new dispatch or real-model run. See Issue #23 for the LIVE checkpoints.
+
+## Durable Loop owner and Status transition
+
+`loop_owner_events/<loop_id>/<generation>.json` is the append-only owner ledger.
+`generation` is monotonic and is also the fencing token. The chain keeps only
+`loop_id`, target repository, and target PR fixed. Each generation has its own
+target head, command/correlation identity, lease window, source receipt, and
+evidence so RENEW/HANDOFF can follow an advanced target head without reusing
+older proof.
+
+Source receipts use an explicit
+`automation/command_bus/receipts/<loop_id>/<file>.json` locator. Evidence uses
+`automation/command_bus/evidence/<loop_id>/<file>.json`;
+`loop_status_evidence.py` requires an exact non-empty readback for every
+required evidence path.
+
+`loop_owner_backend.py` is create-only. It accepts only the exact next
+generation, performs event readback and complete-chain readback, never updates
+an existing generation, and never retries automatically. ACQUIRE starts the
+chain, RENEW keeps the same owner, HANDOFF fences the previous owner, and
+RELEASE/TERMINAL close the chain. RELEASE requires a DONE receipt. TERMINAL
+binds its terminal receipt to that generation's source receipt.
+
+`loop_owner_observation.py` defines the provider observation for an active
+generation. Active ACQUIRE/RENEW/HANDOFF requires a fresh verified observation.
+A verified RELEASE/TERMINAL close does not require an active observation.
+
+`loop_status_transition.py` binds state, owner chain, receipt, fresh target,
+evidence readbacks, and active provider observation before Status projection.
+State `last_command_id` and `last_receipt_id` must bind the latest owner
+generation. A non-active state whose owner chain was not closed is forced to
+BLOCKED instead of appearing IDLE.
+
+The production transition caller and live observation writer are still not
+connected. Issue #33 therefore remains fail-closed until those layers exist.
+PR activity, Chat silence, and commit timestamps are not ownership signals.

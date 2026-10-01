@@ -1,12 +1,110 @@
 # Pioneer / OSS Multi-Agent Development Research Handover
 
-Updated: 2026-09-21  
+Updated: 2026-10-01
 Status: research handover / adoption candidates only
 
-> この文書は、現Chatで行った「先駆者はどうやって複数AIで開発しているか」「既存OSSを流用できないか」の調査内容を、新しいChatへ引き継ぐためのもの。  
+> この文書は、現Chatで行った「先駆者はどうやって複数AIで開発しているか」「既存OSSを流用できないか」の調査内容を、新しいChatへ引き継ぐためのもの。
 > ここに挙げる仕組みは **まだPhase 0正式採用ではない**。実装へ取り込む前に、license / safety / Windows / auth / retry / permission / GitHub副作用をコードレベルで監査する。
 
 ---
+
+## 0. 2026-10-01 acceleration shortlist — 日常実装は先にこちら
+
+この詳細研究を全部読み直してから毎回実装を始める必要はない。
+日常の実行方針は
+[DEVELOPMENT_ACCELERATION_PLAYBOOK.md](DEVELOPMENT_ACCELERATION_PLAYBOOK.md)
+を正として先に読む。
+
+今回の追加調査で、特に「今すぐ自作量を減らせる」ものを次へ絞った。
+
+### GitHub Webhooks — direct official reuse
+
+Official:
+- https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks
+- https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+
+使う答え:
+- raw body + `X-Hub-Signature-256` + HMAC-SHA256
+- constant-time comparison
+- `X-GitHub-Event` + payload `action` で早期filter
+- `X-GitHub-Delivery` を外部eventの一次dedupe identityとして使う
+- requested redeliveryでも同じ delivery ID
+- receiverは10秒以内に2xxを返し、長いworker処理をHTTP request内で行わない
+
+Phase 0では、まずこの公式patternで十分。独自webhook frameworkを先に
+作らない。
+
+### Trigger.dev — tiny idempotency primitive only
+
+Repository:
+https://github.com/triggerdotdev/trigger.dev
+
+Observed license: Apache-2.0.
+
+使う答え:
+- deterministic key material
+- scope identity
+- SHA-256 digest
+
+Phase 0では retry=0 が固定なので、Trigger.dev本体のrun/attempt machineryを
+持ち込まない。既存 stable ID で足りない場合だけ小さいhash helperを使う。
+
+### Standard Webhooks / Svix — semantics only unless multiple providers need it
+
+Spec:
+https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md
+
+Svix:
+https://github.com/svix/svix-webhooks
+
+Observed Svix license: MIT.
+
+使う答え:
+- original/raw payload bytesを検証
+- message IDをidempotency keyとして扱う
+- signature comparisonをconstant-timeで行う
+
+GitHub-onlyの間はGitHub公式HMAC + Python標準libを優先し、Svix server /
+Redis / Postgres / retry scheduler / DLQは入れない。
+
+### CloudEvents — event identity concept only
+
+Spec:
+https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md
+
+使う答え:
+- `source + id` がdistinct event identity
+- 同じ `source + id` の再送をduplicateとして扱える
+
+Phase 0の origin identity と carrier identity を分離してbindingする設計の
+答え合わせとして使う。SDK dependencyは現時点では不要。
+
+### Temporal / Inngest — future painkiller, not current dependency
+
+Temporal Python SDK / samples:
+- https://github.com/temporalio/sdk-python
+- https://github.com/temporalio/samples-python
+- observed license: MIT
+
+Inngest:
+- https://github.com/inngest/inngest
+- server repository observed license: SSPL + future-license terms
+
+どちらもdurable workflow / idempotencyの答え合わせには使うが、今はPhase 0を
+別platformへ移植しない。既存GitHub durable control planeで実害が出てから
+再検討する。
+
+### Short rule
+
+```text
+repo内reuse
+-> 公式実装例
+-> 小さいpermissive OSS部品
+-> design-only reference
+-> 最後に自作
+```
+
+「安全そうだから追加」ではなく、「次の実装境界に必要だから追加」を採用条件とする。
 
 ## 1. 結論
 

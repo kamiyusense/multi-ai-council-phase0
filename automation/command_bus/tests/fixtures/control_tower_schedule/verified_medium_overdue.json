@@ -1,0 +1,9 @@
+{
+  "loop_number": 39,
+  "acceptance_state": "VERIFIED",
+  "accepted_at": "2026-09-28T12:59:00+09:00",
+  "task_size": "MEDIUM",
+  "eta_start": "2026-09-28T13:15:00+09:00",
+  "eta_end": "2026-09-28T13:25:00+09:00",
+  "eta_state": "OVERDUE"
+}
