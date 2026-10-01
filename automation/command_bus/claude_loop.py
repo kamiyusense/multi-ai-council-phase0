@@ -10,13 +10,16 @@ Claude-only coding step for the no-Jules contingency.  There is no fallback.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
-from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
+from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE
+from .claude_jules_origin_binding import build_binding_record
+from .jules_carrier_current import jules_api_request as carrier_request_validator
+from .jules_carrier_current import loop_id_claim as carrier_claim_validator
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,
@@ -323,6 +326,20 @@ def prepare_jules_semiauto_request(
             return LoopResult("BLOCKED", f"invalid semi-auto created_at: {exc}")
         if created.tzinfo is None or created.utcoffset() is None:
             return LoopResult("BLOCKED", "semi-auto created_at must include timezone")
+        try:
+            expires = datetime.fromisoformat(
+                prepared_request["expires_at"].replace("Z", "+00:00")
+            )
+        except ValueError as exc:
+            return LoopResult("BLOCKED", f"invalid semi-auto expires_at: {exc}")
+        if expires.tzinfo is None or expires.utcoffset() is None:
+            return LoopResult("BLOCKED", "semi-auto expires_at must include timezone")
+        if expires <= created or expires - created > timedelta(hours=2):
+            return LoopResult("UNKNOWN", "invalid semi-auto request lifetime")
+        if command["expected_repo"] != "kamiyusense/multi-ai-council-phase0":
+            return LoopResult("UNKNOWN", "unexpected semi-auto target repository")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", command["command_id"]):
+            return LoopResult("BLOCKED", "invalid semi-auto command identity")
 
         operation_bounds = []
         for item in command["path_policy"]:
@@ -338,15 +355,12 @@ def prepare_jules_semiauto_request(
         )
 
         request = {
-            "schema_version": 1,
+            "schema_version": 2,
             "profile": JULES_SEMIAUTO_PROFILE,
             "command_id": command["command_id"],
-            "origin_loop_id": prepared_request["loop_id"],
-            "origin_round": prepared_request["round"],
-            "origin_correlation_id": prepared_request["correlation_id"],
-            "origin_generation": command["generation"],
             "target_repo": command["expected_repo"],
             "target_branch": command["starting_branch"],
+            "work_branch": f"jules-work/{command['command_id']}",
             "expected_target_head": command["expected_target_head"],
             "expected_target_tree": command["expected_target_tree"],
             "allowed_paths": list(command["allowed_paths"]),
@@ -358,8 +372,107 @@ def prepare_jules_semiauto_request(
             "merge_allowed": False,
             "force_push_allowed": False,
         }
-        validate_jules_semiauto_request(request, now=created)
+        current_carrier_keys = {
+            "schema_version", "profile", "command_id", "target_repo",
+            "target_branch", "work_branch", "expected_target_head",
+            "expected_target_tree", "allowed_paths", "prompt", "created_at",
+            "expires_at", "retry", "fallback", "merge_allowed",
+            "force_push_allowed",
+        }
+        if set(request) != current_carrier_keys:
+            return LoopResult("UNKNOWN", "current Jules carrier request shape mismatch")
         return LoopResult("PREPARED", "unpersisted Jules semi-auto request artifact created", request)
+    except (KeyError, TypeError, ValueError) as exc:
+        return LoopResult("UNKNOWN", str(exc))
+
+
+def numbered_command_id(loop_number: int, task_id: str) -> str:
+    """Return the carrier's numbered Relay command identity for one Loop."""
+    if isinstance(loop_number, bool) or not isinstance(loop_number, int) or not 0 <= loop_number <= 999999:
+        raise ValueError("invalid loop_number")
+    command_id = f"relay-dev-loop-{loop_number:03d}-{task_id}"
+    if carrier_claim_validator.extract_numbered_loop(command_id) is None:
+        raise ValueError("invalid numbered command identity")
+    if not carrier_request_validator.COMMAND_ID_RE.fullmatch(command_id):
+        raise ValueError("numbered command identity exceeds carrier limits")
+    return command_id
+
+
+def prepare_loop_claim(
+    carrier_request: dict[str, Any], *, lane_id: str, claimed_at: str,
+) -> LoopResult:
+    """Build the schema-v3 CLAIMED Loop claim matching one carrier request.
+
+    Pure: the claim is validated with the pinned current carrier validator and
+    cross-checked against the request; nothing is written.
+    """
+    try:
+        parsed = carrier_claim_validator.extract_numbered_loop(carrier_request.get("command_id"))
+        if parsed is None:
+            return LoopResult("BLOCKED", "carrier request is not a numbered Relay loop")
+        loop_id, task_id = parsed
+        claim = {
+            "schema_version": carrier_claim_validator.DISPATCH_CLAIM_SCHEMA_VERSION,
+            "loop_number": int(loop_id),
+            "loop_id": loop_id,
+            "lane_id": lane_id,
+            "lane_display": carrier_claim_validator.lane_display_for(lane_id),
+            "task_id": task_id,
+            "command_id": carrier_request["command_id"],
+            "target_branch": carrier_request["target_branch"],
+            "expected_target_head": carrier_request["expected_target_head"],
+            "expected_target_tree": carrier_request["expected_target_tree"],
+            "work_branch": carrier_request["work_branch"],
+            "state": carrier_claim_validator.DISPATCHABLE_STATE,
+            "claimed_at": claimed_at,
+            "duplicate_guard": carrier_claim_validator.DUPLICATE_GUARD,
+            "retry": 0,
+            "fallback": "disabled",
+        }
+        carrier_claim_validator.verify_command_claim(carrier_request, claim)
+        return LoopResult("PREPARED", "unpersisted schema-v3 Loop claim created", claim)
+    except (KeyError, TypeError, ValueError) as exc:
+        return LoopResult("BLOCKED", f"claim preparation failed: {exc}")
+
+
+def prepare_jules_semiauto_bundle(
+    prepared_request: dict[str, Any], carrier_claim: dict[str, Any], *,
+    target_branch: str, default_branch: str, created_at: str,
+    command_id: str | None = None,
+) -> LoopResult:
+    """Prepare the current carrier request plus its Claude AUTO origin binding.
+
+    Adopted from the compare/green-ab-1-work comparison helper and hardened:
+    the emitted request and the supplied claim are both checked with the
+    pinned current carrier validators before the binding is built.  Pure: no
+    persistence, dispatch, provider/model call, or GitHub write.
+    """
+    try:
+        carrier = prepare_jules_semiauto_request(
+            prepared_request,
+            target_branch=target_branch,
+            default_branch=default_branch,
+            created_at=created_at,
+            command_id=command_id,
+        )
+        if carrier.status != "PREPARED" or carrier.request is None:
+            return carrier
+        created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        carrier_request_validator.validate_request(carrier.request, now=created)
+        carrier_claim_validator.verify_command_claim(carrier.request, carrier_claim)
+        binding = build_binding_record(
+            prepared_request["loop_id"],
+            prepared_request["round"],
+            prepared_request["correlation_id"],
+            prepared_request["generation"],
+            carrier.request,
+            carrier_claim,
+        )
+        return LoopResult(
+            "PREPARED",
+            "unpersisted Jules request and origin binding artifacts created",
+            {"carrier_request": carrier.request, "origin_binding": binding},
+        )
     except (KeyError, TypeError, ValueError) as exc:
         return LoopResult("UNKNOWN", str(exc))
 

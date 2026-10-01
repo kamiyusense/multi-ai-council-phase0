@@ -323,3 +323,65 @@ path.
 Next task is static/mock/unit implementation of the Phase 0 admission gate only.
 No live Claude/provider/Jules call, real credential read, new API key, billing
 route, or takeover work is authorized by this checkpoint.
+
+## 2026-09-30 compatibility audit rejected attempts
+
+- PR #177 / Loop 065: rejected/not adopted.
+- PR #180 / Loop 068: rejected/not adopted due to vacuous negatives.
+- PR #183 / Loop 078: rejected/not adopted. Mostly useful reference (commit `ca2dd7eaead38b002f5445e324a3a0f13d0fd1d2`), but its `work_branch` cross-binding negative stopped at claim internal validation; it lacked direct real target-side bridge-output proof and required blob-SHA evidence.
+- PR #187 / Loop 079: rejected/not adopted. (commit `83ef2143a2cf5b0b6c058951c41777e76493a4b8`). Fresh GitHub readback showed the committed result contradicted Jules' own summary: the main test file was only a dummy pass, compatibility doc was empty, handover was unchanged, and three repo-root scratch files were committed.
+
+Next safe boundary = architecture choice + STATIC implementation of durable AUTO-origin binding. No integrated live activation authorized. J-GREEN development lane is not automatically future AUTO runtime lane.
+
+## 2026-10-01 STATIC Binding V1 added (Loop 092)
+
+Loop 092 introduces `CLAUDE_AUTO_ORIGIN_BINDING_V1` as a pure, static origin cross-binding module. It statically resolves the identity linkage without mutating the current carrier V2 request schema or V3 claim schema logic.
+
+This contract strictly evaluates exact-key binding and fails closed on mismatches. It does not dictate a durable file location and makes no changes to the carrier workflows. Integrated live execution from Claude-verdict to Jules LIVE remains explicitly UNKNOWN and not authorized.
+
+## 2026-10-01 STATIC Durable Binding Store added (Loop 093)
+
+Loop 093 introduces the immutable store for the binding in `automation.command_bus.claude_jules_origin_binding_store`. It strictly reuses the existing `GitHubContentsClient` create-only, verify-readback pattern from the backend systems.
+
+No new database, general persistence framework, or workflow was created. The module securely cross-binds valid carrier requests and claims to origin identities. It fails closed (UNKNOWN) upon missing or unmatched cross-binding fields, and handles retry/recovery strictly by blocking on changed existing state and recovering identical state without re-creating.
+
+This is **STATIC PREP of the durable storage boundary only**. Current carrier request/claim schemas and workflows are required preconditions. Integrated Claude->Jules LIVE execution remains explicitly UNKNOWN and not authorized.
+
+## 2026-10-01 Current Jules carrier V2 bridge completed
+
+`prepare_jules_semiauto_request()` now emits the exact current
+`JULES_CHAT_SEMIAUTO_V2` 16-key carrier request: `schema_version=2`,
+canonical `target_branch`, isolated `work_branch=jules-work/<command_id>`,
+and no `origin_*` fields in the carrier request. The internal
+`prepare_jules_closed_loop_command()` schema remains unchanged.
+
+Claude AUTO origin loop/round/correlation/generation identity is preserved by
+the existing `CLAUDE_AUTO_ORIGIN_BINDING_V1` companion record through
+`build_binding_record()`; the compatibility proof validates the emitted request
+against the exact pinned current-carrier validator before building that binding.
+
+Cloud-safe isolated verification reconstructed the required modules and pinned
+fixtures from this branch: 68 targeted tests PASS across `test_claude_loop`,
+current-carrier compatibility, origin binding, and immutable binding store.
+Python compileall PASS and no trailing whitespace was found in changed Python
+files. A complete repository checkout was not exposed to this Cloud Work, and
+the branch HEAD had no workflow runs, so the full command-bus discovery result
+remains UNKNOWN rather than inferred. No Jules/provider/model call, workflow
+dispatch, merge, default-branch write, or local-machine access occurred.
+
+## 2026-10-01 Claude × Jules AUTO loop STATIC/mock integration
+
+Branch `claude/claude-jules-autoloop-integration` (Draft PR into
+`feature/claude-auto-current-jules-protocol`) composes the existing pieces into
+a resumable Claude controller: fenced dispatch through the unchanged carrier
+contract, durable result-event inbox, independent inspection with small-repair
+vs Jules-corrective decision, serialized fast-forward adoption, and roadmap
+planning. The reviewed `prepare_jules_semiauto_bundle` from
+`compare/green-ab-1-work` is adopted in hardened form. Mock E2E covers the full
+cycle plus duplicate/late/stale events, session loss, ambiguous writes,
+collisions, stale/foreign owners, HEAD/tree drift and max rounds.
+
+Read first: [integration](CLAUDE_JULES_AUTOLOOP_INTEGRATION.md) and
+[LIVE proof plan](CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_PLAN.md). The committed policy
+grants no target branch, no lane and no live authorization. LIVE remains
+unauthorized; production adapters remain NOT_WIRED.

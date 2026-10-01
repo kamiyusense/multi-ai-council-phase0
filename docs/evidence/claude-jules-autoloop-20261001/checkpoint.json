@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "checkpoint": "claude-jules-autoloop-static-mock-20261001",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "branch": "claude/claude-jules-autoloop-integration",
+  "base_branch": "feature/claude-auto-current-jules-protocol",
+  "base_head": "83b499a25c1cce6ec8b4f29f268f194372321afa",
+  "carrier_branch_observed": "feature/chat-work-command-bus",
+  "carrier_head_observed": "59dc2f0",
+  "carrier_validator_blob_sha": {
+    "jules_api_request.py": "1aebad3469c2bfa629e97fd109541c236dc2244a",
+    "loop_id_claim.py": "d7aba1adfa60b0341d7db6df1b92b8c39bd8c822"
+  },
+  "reused_comparison_commit": "be683df2f513576b37108a41ca1202169867af41",
+  "environment": "Claude Code cloud container, Python 3.11.15",
+  "tests": {
+    "baseline_full_suite_at_base": "834 run, OK, 1 skipped",
+    "after_full_suite": "933 run, OK, 1 skipped (after integrating the adopted LIVE results)",
+    "new_test_methods": {
+      "e2e": 29,
+      "dispatch_contract": 14,
+      "result_inspection": 16,
+      "live_adapter_real_git": 15,
+      "handover": 8,
+      "carrier_guard": 8
+    },
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "live_actions": {
+    "jules_tasks_submitted": 4,
+    "merges": 0,
+    "main_writes": 0,
+    "force_pushes": 0,
+    "settings_or_secrets_changed": 0,
+    "branches_created": [
+      "claude/autoloop-live-target",
+      "claude/claude-jules-autoloop-data"
+    ],
+    "carrier_writes": "8 single-file commits on feature/chat-work-command-bus (4 Loop claims 128-131 + 4 commands); no other controller's file touched",
+    "cancelled_carrier_runs_since_first_lap": 0,
+    "approval": "user messages 2026-10-01T18:09:52Z, 19:14:22Z, 19:30:50Z (project thread)"
+  },
+  "status": {
+    "static_mock_e2e": "PASS",
+    "production_adapters": "IMPLEMENTED_TESTED_ON_REAL_GIT_REMOTE",
+    "live_proof": "PASS (4/10): 3 roadmap tasks, 1 Claude-found defect corrected by a Jules corrective, all adopted by non-force fast-forward of claude/autoloop-live-target (head 53f2caf); roadmap COMPLETE",
+    "wake_mechanism": "POLL_ADAPTER_IMPLEMENTED (in-session); no scheduled routine created",
+    "handover_semiauto_auto": "PROVEN LIVE on the isolated stream: ACQUIRE(AUTO, gen1) -> 4 dispatches -> HANDOFF to SEMI_AUTO (gen2); the AUTO controller is then fenced (STOP BLOCKED owner fence)",
+    "shared_carrier_guard": "IMPLEMENTED: CarrierQuietGuard (no unfinished carrier run, tip >=5 min old) before claim/command; real GitHub read-only check returned WAIT CARRIER_BUSY (carrier changed 41s ago); 0 cancelled carrier runs 2026-10-01/02"
+  },
+  "retry": 0,
+  "fallback": "disabled",
+  "review_fixes": {
+    "source": "PR #220 independent STATIC review of e4d9ebde",
+    "fixed": [
+      "adoption receipt re-validated (keys, command, intent, inspection, target, heads, tree) plus fresh canonical readback before NO-OP or next task",
+      "crash after fast-forward: receipt restored create-only from matching lock + candidate tree readback, no ref write; unprovable -> UNKNOWN",
+      "stored result events and inspections re-validated (digest, identity, consistency) fail-closed; lineage compares fresh PR head_ref and exact footer session"
+    ],
+    "mutation_checks": "trusting an existing receipt, dropping receipt restoration, restoring without a lock: each made a test fail"
+  },
+  "live_budget": {
+    "cap": 10,
+    "used": 4,
+    "slots": "claude/claude-jules-autoloop-data:automation/command_bus/evidence/claude-auto-live-budget/slot-01..04.json"
+  },
+  "stage_6_7_readonly_real_github_check": {
+    "pr": 223,
+    "command_id": "relay-dev-loop-121-acp-mock-phase0-mapper",
+    "normalized": "ACCEPTED",
+    "session_consistent": true,
+    "writes": 0
+  },
+  "live_runs": [
+    {
+      "loop": 128,
+      "command": "relay-dev-loop-128-autoloop-live-proof-note",
+      "carrier_run": 36916174486,
+      "jules_session": "16228878555691005955",
+      "pr": 230,
+      "candidate": "fc2ad82fb6dac0201f62db0d6c927bd90c985050",
+      "verdict": "PASS",
+      "adopted": true
+    },
+    {
+      "loop": 129,
+      "command": "relay-dev-loop-129-autoloop-budget-summary",
+      "carrier_run": 36917472072,
+      "jules_session": "9613854744580982311",
+      "pr": 231,
+      "candidate": "de325fc042d44dee31f7c8e31e6afb81cb032d3b",
+      "verdict": "FAIL_MAJOR (TypeError leak for mixed-type slot numbers, no test)",
+      "adopted": false
+    },
+    {
+      "loop": 130,
+      "command": "relay-dev-loop-130-autoloop-budget-summary-fix1",
+      "carrier_run": 36919432141,
+      "jules_session": "10117650476672833427",
+      "pr": 232,
+      "candidate": "2eb310cc535a664e74b1bce1e2bd65efee53ae67",
+      "verdict": "PASS",
+      "adopted": true
+    },
+    {
+      "loop": 131,
+      "command": "relay-dev-loop-131-autoloop-operator-quickstart",
+      "carrier_run": 36920736127,
+      "jules_session": "12222938286641699709",
+      "pr": 233,
+      "candidate": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+      "verdict": "PASS",
+      "adopted": true
+    }
+  ],
+  "integration": {
+    "merge_commit": "see git log (merge of origin/claude/autoloop-live-target into the PR branch)",
+    "live_target_head": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+    "merge_base": "f8d30433dc2fa1b65f243e2383d8e51dbc98324d",
+    "files_added": 4,
+    "superseded_not_included": "Loop 129 / PR 231",
+    "blobs_identical_to_adopted": true
+  },
+  "followup_2026_10_02": {
+    "owner": "SEMI_AUTO gen 2 (lease to 2026-10-02T08:30Z)",
+    "extra_live_test": "NOT STARTED: owner fence + takeover BLOCKED (SEMI_AUTO lease valid, result PRs open); ownership not taken",
+    "budget_used": 4
+  }
+}
