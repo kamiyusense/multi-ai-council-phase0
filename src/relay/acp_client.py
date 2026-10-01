@@ -418,7 +418,7 @@ def acp_mock_text_to_phase0_raw(mock_result: dict[str, str]) -> bytes:
     accepted by RelayCoreAdapter.classify().
 
     This does NOT connect to a live adapter, dispatch path, bridge, provider,
-    or network. It generates purely synthetic evidence for testing.
+    or network. It creates only synthetic response data, with no evidence refs.
     """
     if not isinstance(mock_result, dict):
         raise TypeError("mock_result must be a dictionary")
