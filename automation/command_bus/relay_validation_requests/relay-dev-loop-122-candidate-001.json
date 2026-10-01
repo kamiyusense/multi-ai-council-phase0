@@ -1,0 +1,6 @@
+{
+  "target_sha": "f6072c167f403338486273dc9cf9ec4b1012c386",
+  "loop_number": 122,
+  "candidate_pr": 224,
+  "scope": "exact-head full repository unit suite, Python compile, diff check; fake ACP-to-Phase0-to-pure-classify test only; no live provider/model execution"
+}
