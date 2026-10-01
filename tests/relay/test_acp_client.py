@@ -350,6 +350,89 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError, "unsupported protocol version"):
             await acp_initialize_wire(sys.executable, "-c", script)
 
+
+class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
+    async def test_success_roundtrip(self):
+        script = (
+            "import sys, json\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "assert req1['method'] == 'initialize'\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "req2 = json.loads(sys.stdin.readline())\n"
+            "assert req2['method'] == 'session/new'\n"
+            "assert req2['id'] == 1\n"
+            "assert req2['params']['cwd'] == '/tmp/cwd'\n"
+            "assert req2['params']['mcpServers'] == []\n"
+            "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {'sessionId': 'session-123'}}\n"
+            "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_open_session_wire
+        result = await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp/cwd")
+        self.assertEqual(result, "session-123")
+
+    async def test_missing_session_id(self):
+        script = (
+            "import sys, json\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "req2 = json.loads(sys.stdin.readline())\n"
+            "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {}}\n"
+            "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_open_session_wire
+        with self.assertRaisesRegex(ValueError, "missing valid sessionId"):
+            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp")
+
+    async def test_blank_session_id(self):
+        script = (
+            "import sys, json\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "req2 = json.loads(sys.stdin.readline())\n"
+            "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {'sessionId': '   '}}\n"
+            "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_open_session_wire
+        with self.assertRaisesRegex(ValueError, "missing valid sessionId"):
+            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp")
+
+    async def test_session_new_timeout(self):
+        script = (
+            "import sys, json, time\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "time.sleep(10)\n"
+        )
+        from src.relay.acp_client import acp_open_session_wire
+        with self.assertRaisesRegex(TimeoutError, "Timeout reading ACP session/new response"):
+            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp", timeout=0.1)
+
+    async def test_initialize_failure_aborts_early(self):
+        script = (
+            "import sys, json\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'error': {'code': -1, 'message': 'init error'}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "req2 = sys.stdin.readline()\n"
+            "if req2:\n"
+            "    sys.exit(1)\n"
+        )
+        from src.relay.acp_client import acp_open_session_wire
+        with self.assertRaisesRegex(RuntimeError, "ACP initialize returned error"):
+            await acp_open_session_wire(sys.executable, "-c", script, cwd="/tmp")
+
     async def test_wrong_protocol_version(self):
         script = (
             "import sys, json\n"
