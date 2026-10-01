@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -333,6 +334,7 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
     async def test_boolean_id_is_not_accepted(self):
         script = (
             "import sys, json\n"
+            "sys.stdin.readline()\n"
             "resp = {'jsonrpc': '2.0', 'id': False, 'result': {'protocolVersion': 1}}\n"
             "sys.stdout.write(json.dumps(resp) + '\\n')\n"
             "sys.stdout.flush()\n"
@@ -349,6 +351,153 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
         )
         with self.assertRaisesRegex(ValueError, "unsupported protocol version"):
             await acp_initialize_wire(sys.executable, "-c", script)
+
+
+class TestACPMockPromptWire(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.handshake_script = (
+            "import sys, json\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "assert req1 == {\'jsonrpc\': \'2.0\', \'id\': 0, \'method\': \'initialize\', \'params\': {\'protocolVersion\': 1, \'clientCapabilities\': {}, \'clientInfo\': {\'name\': \'relay\', \'version\': \'0.1.0\'}}}, req1\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "req2 = json.loads(sys.stdin.readline())\n"
+            "assert req2['method'] == 'session/new'\n"
+            "assert req2['id'] == 1\n"
+            f"assert req2['params']['cwd'] == {tempfile.gettempdir()!r}\n"
+            "assert req2['params']['mcpServers'] == []\n"
+            "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {'sessionId': 'session-123'}}\n"
+            "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+
+    async def test_success_roundtrip(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "assert req3['method'] == 'session/prompt'\n"
+            "assert req3['id'] == 2\n"
+            "assert req3['params']['sessionId'] == 'session-123'\n"
+            "assert req3['params']['prompt'] == [{'type': 'text', 'text': 'hello fake'}]\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': 'endTurn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        result = await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+        self.assertEqual(result, "endTurn")
+
+    async def test_missing_stop_reason(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(ValueError, "missing valid stopReason"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_blank_stop_reason(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'result': {'stopReason': '   '}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(ValueError, "missing valid stopReason"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_wrong_id(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': 99, 'result': {'stopReason': 'endTurn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(ValueError, "id mismatch"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_error_response_raises(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id'], 'error': {'code': -1, 'message': 'prompt error'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(RuntimeError, "returned error"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_timeout_fails_closed(self):
+        script = self.handshake_script + (
+            "import time\n"
+            "time.sleep(10)\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(TimeoutError, "Timeout reading ACP session/prompt response"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake", timeout=0.1)
+
+    async def test_initialize_failure_prevents_prompt(self):
+        script = (
+            "import sys, json\n"
+            "req1 = json.loads(sys.stdin.readline())\n"
+            "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'error': {'code': -1, 'message': 'init error'}}\n"
+            "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+            "sys.stdout.flush()\n"
+            "req2 = sys.stdin.readline()\n"
+            "if req2:\n"
+            "    sys.exit(1)\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(RuntimeError, "ACP initialize returned error"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+
+    async def test_bool_prompt_response_id_fails_closed(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': True, 'result': {'stopReason': 'endTurn'}}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(ValueError, "id mismatch"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_missing_prompt_result_fails_closed(self):
+        script = self.handshake_script + (
+            "req3 = json.loads(sys.stdin.readline())\n"
+            "resp3 = {'jsonrpc': '2.0', 'id': req3['id']}\n"
+            "sys.stdout.write(json.dumps(resp3) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        from src.relay.acp_client import acp_mock_prompt_wire
+        with self.assertRaisesRegex(ValueError, "missing valid result object"):
+            await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tempfile.gettempdir(), prompt_text="hello fake")
+
+    async def test_invalid_session_never_sends_prompt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = os.path.join(tmp, "unexpected-prompt")
+            script = (
+                "import sys, json\n"
+                "req1 = json.loads(sys.stdin.readline())\n"
+                "resp1 = {'jsonrpc': '2.0', 'id': req1['id'], 'result': {'protocolVersion': 1}}\n"
+                "sys.stdout.write(json.dumps(resp1) + '\\n')\n"
+                "sys.stdout.flush()\n"
+                "req2 = json.loads(sys.stdin.readline())\n"
+                "resp2 = {'jsonrpc': '2.0', 'id': req2['id'], 'result': {'sessionId': ' '}}\n"
+                "sys.stdout.write(json.dumps(resp2) + '\\n')\n"
+                "sys.stdout.flush()\n"
+                "req3 = sys.stdin.readline()\n"
+                f"if req3: open({marker!r}, 'w').write(req3)\n"
+            )
+            from src.relay.acp_client import acp_mock_prompt_wire
+            with self.assertRaisesRegex(ValueError, "missing valid sessionId"):
+                await acp_mock_prompt_wire(sys.executable, "-c", script, cwd=tmp, prompt_text="hello fake")
+            self.assertFalse(os.path.exists(marker), "session/prompt was sent after failed session/new")
 
 
 class TestACPOpenSessionWire(unittest.IsolatedAsyncioTestCase):
