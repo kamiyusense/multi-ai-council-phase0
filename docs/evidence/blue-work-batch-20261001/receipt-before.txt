@@ -1,0 +1,93 @@
+FFFFFFFF
+======================================================================
+FAIL: test_receipt_same_id_wrong_pr_blocks_worker (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_same_id_wrong_pr_blocks_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 7, in test_receipt_same_id_wrong_pr_blocks_worker
+    self.assertEqual(self.assess(comments=[self.receipt(target_pr=999)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_receipt_same_id_wrong_branch_blocks_worker (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_same_id_wrong_branch_blocks_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 10, in test_receipt_same_id_wrong_branch_blocks_worker
+    self.assertEqual(self.assess(comments=[self.receipt(target_branch="unrelated")]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_receipt_same_id_wrong_head_blocks_worker (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_same_id_wrong_head_blocks_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 13, in test_receipt_same_id_wrong_head_blocks_worker
+    self.assertEqual(self.assess(comments=[self.receipt(target_head_before="b" * 40)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_receipt_same_id_wrong_generation_blocks_worker (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_same_id_wrong_generation_blocks_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 16, in test_receipt_same_id_wrong_generation_blocks_worker
+    self.assertEqual(self.assess(comments=[self.receipt(worker_generation=2)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_result_receipt_claiming_target_write_blocks_worker (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_result_receipt_claiming_target_write_blocks_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 19, in test_result_receipt_claiming_target_write_blocks_worker
+    self.assertEqual(self.assess(comments=[self.receipt(target_head_after="b" * 40)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_receipt_without_submitted_command_blocks_worker (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_without_submitted_command_blocks_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 22, in test_receipt_without_submitted_command_blocks_worker
+    self.assertEqual(self.assess(reviews=[], comments=[self.receipt()]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_receipt_same_id_wrong_pr_blocks_adapter (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_same_id_wrong_pr_blocks_adapter)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 25, in test_receipt_same_id_wrong_pr_blocks_adapter
+    self.assertEqual(self.prepare(comments=[self.receipt(target_pr=999)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_receipt_same_id_wrong_generation_blocks_adapter (automation.command_bus.tests.test_blue_receipt_binding.ReceiptBindingRegression.test_receipt_same_id_wrong_generation_blocks_adapter)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_blue_receipt_binding.py", line 28, in test_receipt_same_id_wrong_generation_blocks_adapter
+    self.assertEqual(self.prepare(comments=[self.receipt(worker_generation=2)]).status, "UNKNOWN")
+AssertionError: 'NO_OP' != 'UNKNOWN'
+- NO_OP
++ UNKNOWN
+
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.005s
+
+FAILED (failures=8)

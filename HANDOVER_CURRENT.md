@@ -1,6 +1,30 @@
 # Phase 0 Handover — Current
 
+## PR #217 experiment: 2026-10-02 bounded LIVE batch
+
+Fresh-read [night batch](docs/BLUE_WORK_NIGHT_BATCH_20261002.md) and PR #217
+before continuing this experiment. User authorized at most ten existing
+Work/Jules LIVE trials for this purpose; Merge remains withheld. Blue read-only
+wake was independently read back, then a distinct Work review found two material
+static gaps. Repairs and exact-head revalidation are recorded there. Historical
+STATIC-only checkpoints are not the current trial approval. Approval is scoped;
+it does not authorize main write, force/history changes, new secrets, settings,
+permissions or billing changes. Never replay a terminal command.
+
 Updated: 2026-10-01
+
+## Experimental PR #217 checkpoint — STATIC only
+
+This block exists only on `experiment/blue-work-autonomous-development`.
+Fresh-read [PR #217](https://github.com/kamiyusense/multi-ai-council-phase0/pull/217)
+and [the autonomous batch handover](docs/BLUE_WORK_AUTONOMOUS_BATCH_20261001.md).
+It records receipt-binding repair, complete GitHub GET pagination, captured
+formal Jules lineage checks, four-lane prepare-only reconciliation, existing
+durable reviewer reuse and schema-v3 next-task candidates. No claim is reserved,
+no carrier review is sent, no result is adopted and no Work/Jules/model is started.
+BWJ-4 LIVE remains unexecuted; BWJ-5/6 additions are STATIC contracts/mocks,
+not independent review or live completion. Canonical routing and safety still
+come from current main and the freshly discovered carrier specifications.
 
 ## 0. Current development worker routing — read this first
 
