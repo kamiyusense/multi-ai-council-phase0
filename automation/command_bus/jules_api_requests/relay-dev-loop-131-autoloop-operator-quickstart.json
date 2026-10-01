@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-131-autoloop-operator-quickstart",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "claude/autoloop-live-target",
+  "work_branch": "jules-work/relay-dev-loop-131-autoloop-operator-quickstart",
+  "expected_target_head": "2eb310cc535a664e74b1bce1e2bd65efee53ae67",
+  "expected_target_tree": "a77f2802b13bd99869e61bc11e856875c3e25c7f",
+  "allowed_paths": [
+    "docs/CLAUDE_JULES_AUTOLOOP_OPERATOR_QUICKSTART.md"
+  ],
+  "prompt": "Loop 131 — bounded SHORT docs-only operator note.\n\nGoal:\nAdd docs/CLAUDE_JULES_AUTOLOOP_OPERATOR_QUICKSTART.md: a short operator quickstart for the Claude AUTO loop CLI. It must have the heading '# Claude AUTO loop operator quickstart', one bullet per CLI command name status, poll, step, budget, record-review and record-observation as listed in the module docstring of automation/command_bus/claude_jules_live.py, and a sentence stating that the total LIVE Jules dispatch budget is 10 and is never reset.\nNon-goals: No code, test, workflow, configuration or other documentation change.\n\nRead first:\n- automation/command_bus/claude_jules_live.py\n- docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md\n\nAllowed changed paths only:\n- docs/CLAUDE_JULES_AUTOLOOP_OPERATOR_QUICKSTART.md (ADD)\n\nHard scope / Do Not Touch:\n- any file other than docs/CLAUDE_JULES_AUTOLOOP_OPERATOR_QUICKSTART.md\n- retry=0\n- fallback=disabled\n- no Merge\n- no direct default-branch write\n- no force push, history rewrite, rebase or branch deletion\n- no live provider/model/API call\n- no secrets, credentials, billing, settings or permission changes\n- no workflow changes unless a workflow path is explicitly allowed\n\nReuse-first:\n- Use the command names exactly as defined by the argparse choices in automation/command_bus/claude_jules_live.py.\n- Do not duplicate or weaken accepted semantics.\n\nRequired semantics:\n1. All six CLI command names appear as bullets.\n2. The budget sentence says 10 and that it is never reset.\n\nNegative/tamper cases:\n- Do not invent CLI commands or flags that do not exist.\n- Do not create any second file.\n\nAcceptance criteria:\n- The changed-path set is exactly docs/CLAUDE_JULES_AUTOLOOP_OPERATOR_QUICKSTART.md (ADD).\n- Each semantic requirement above has a direct assertion/proof.\n- No vacuous tests (`pass`, `assertTrue(True)`, unrelated assertions).\n- Changed paths are exactly within the allowlist.\n- Existing green tests alone are not sufficient.\n- Machine acceptance check ids: all_cli_commands_listed, budget_sentence_present\n\nValidation:\ngit diff --check\n\nPublication:\nPublish the normal isolated Jules PR only if git diff --check passes and only the allowed file was added.\nDo not Merge.\n\nStop and report instead of guessing if:\n- any other file would need to change\n- an out-of-scope change is required\n- a safety/permission/live/architecture boundary is reached\n- the checked-out work branch is not the expected snapshot\n\nOperation bounds inherited from the Claude verdict:\n- docs/CLAUDE_JULES_AUTOLOOP_OPERATOR_QUICKSTART.md: permitted operations ADD\nDo not perform DELETE or RENAME. If an operation cannot stay within these bounds, make no edit and report BLOCKED.",
+  "created_at": "2026-10-01T20:18:40+00:00",
+  "expires_at": "2026-10-01T21:48:40+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
