@@ -1,6 +1,7 @@
 import json
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from automation.command_bus.blue_jules_result_event import (
     EventDecision,
@@ -55,6 +56,56 @@ class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
             expected_repository=self.repo,
         )
 
+    @staticmethod
+    def mock_generation_gate(command_generation, active_generation, fixed_worker_generation):
+        return (
+            type(command_generation) is int
+            and type(active_generation) is int
+            and type(fixed_worker_generation) is int
+            and command_generation > 0
+            and command_generation == active_generation == fixed_worker_generation
+        )
+
+    @staticmethod
+    def mock_receipt_gate(receipt, expected_command, expected_generation):
+        if not isinstance(receipt, dict) or not isinstance(expected_command, dict):
+            return False
+        expected = {
+            "protocol_version": 1,
+            "command_id": expected_command["command_id"],
+            "worker_generation": expected_generation,
+            "status": "PASS",
+            "target_repository": expected_command["target_repository"],
+            "target_pr": expected_command["target_pr"],
+            "target_branch": expected_command["target_branch"],
+            "target_head_before": expected_command["expected_target_head"],
+            "target_head_after": expected_command["expected_target_head"],
+            "terminal": True,
+        }
+        return (
+            type(receipt.get("protocol_version")) is int
+            and type(receipt.get("worker_generation")) is int
+            and type(receipt.get("target_pr")) is int
+            and type(receipt.get("terminal")) is bool
+            and all(receipt.get(key) == value for key, value in expected.items())
+        )
+
+    @staticmethod
+    def make_receipt(command):
+        return {
+            "protocol_version": 1,
+            "command_id": command["command_id"],
+            "worker_generation": command["worker_generation"],
+            "status": "PASS",
+            "target_repository": command["target_repository"],
+            "target_pr": command["target_pr"],
+            "target_branch": command["target_branch"],
+            "target_head_before": command["expected_target_head"],
+            "target_head_after": command["expected_target_head"],
+            "verification": ["mock independent diff and test evidence inspected"],
+            "terminal": True,
+        }
+
     def test_basic_flow(self):
         # 1. mock Jules PR opened event -> BWJ-1 classifier
         event = self.make_event(self.head_sha_1)
@@ -80,15 +131,16 @@ class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
         self.assertEqual(parsed["live_provider_or_model_allowed"], False)
         self.assertEqual(parsed["allowed_paths"], [])
 
-        # 3. mock Blue Work terminal receipt (test-only helper)
-        def check_generation_fence(cmd_gen, active_gen, expected_gen):
-            if cmd_gen != active_gen or active_gen != expected_gen:
-                return False
-            return True
+        # 3. Current Blue worker, carrier state and command must all match.
+        self.assertTrue(self.mock_generation_gate(
+            parsed["worker_generation"], self.worker_generation, self.worker_generation
+        ))
 
-        self.assertTrue(check_generation_fence(parsed["worker_generation"], self.worker_generation, self.worker_generation))
-
-        # 4. Mock terminal receipt & mock Controller PASS/CONTINUE next-task decision
+        # 4. Only a matching terminal PASS receipt permits Controller continuation.
+        blue_receipt = self.make_receipt(parsed)
+        self.assertTrue(self.mock_receipt_gate(
+            blue_receipt, parsed, self.worker_generation
+        ))
         verdict = make_structured_verdict(
             verdict_id="verdict-1",
             loop_id="loop-1",
@@ -158,15 +210,44 @@ class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
         classification_new = classify_blue_jules_result_event(event_new, lineage, (classification.command_id,))
         self.assertEqual(classification_new.decision, EventDecision.WAKE)
         self.assertNotEqual(classification_new.command_id, classification.command_id)
+        target_new = TargetSnapshot(
+            self.repo, self.pr_number, self.work_branch,
+            self.head_sha_2, self.head_sha_2,
+        )
+        new_prepared = prepare_blue_work_wake(
+            classification_new, carrier, target_new,
+            (classification.command_id,), self.expires_at, self.now,
+        )
+        self.assertEqual(new_prepared.status, "PREPARED")
+        new_payload = json.loads(new_prepared.review_body.split("\n", 1)[1])
+        self.assertEqual(new_payload["command_id"], classification_new.command_id)
+        self.assertEqual(new_payload["expected_target_head"], self.head_sha_2)
+        self.assertNotEqual(new_prepared.review_body, prepare_res.review_body)
+
+        # Duplicate protection also applies if classifier inputs were not pre-deduplicated.
+        direct_duplicate = prepare_blue_work_wake(
+            classification, carrier, target,
+            (classification.command_id,), self.expires_at, self.now,
+        )
+        self.assertEqual(direct_duplicate.status, "NO_OP")
+        self.assertIsNone(direct_duplicate.review_body)
 
         # 10. Stale old-head case
         target_stale = TargetSnapshot(self.repo, self.pr_number, self.work_branch, self.head_sha_1, self.head_sha_2)
         prepare_res_stale = prepare_blue_work_wake(classification, carrier, target_stale, (), self.expires_at, self.now)
         self.assertEqual(prepare_res_stale.status, "STALE")
+        self.assertIsNone(prepare_res_stale.review_body)
 
-        # 11. Generation mismatch
-        self.assertFalse(check_generation_fence(parsed["worker_generation"], self.worker_generation + 1, self.worker_generation))
-        self.assertFalse(check_generation_fence(parsed["worker_generation"], self.worker_generation, self.worker_generation + 1))
+        # 11. Either current state or fixed worker being stale prevents continuation.
+        self.assertFalse(self.mock_generation_gate(
+            parsed["worker_generation"], self.worker_generation + 1, self.worker_generation
+        ))
+        self.assertFalse(self.mock_generation_gate(
+            parsed["worker_generation"], self.worker_generation, self.worker_generation + 1
+        ))
+        self.assertFalse(self.mock_generation_gate(
+            True, self.worker_generation, self.worker_generation
+        ))
 
         # 12. Terminal receipt replay prevents next Jules preparation
         receipt = {
@@ -189,28 +270,48 @@ class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
         self.assertEqual(next_action_re.status, "NO-OP")
 
     def test_mock_receipt_gate(self):
-        def mock_receipt_gate(receipt, expected_cmd_id, expected_gen, expected_head):
-            if receipt.get("command_id") != expected_cmd_id:
-                return False
-            if receipt.get("worker_generation") != expected_gen:
-                return False
-            if receipt.get("expected_target_head") != expected_head:
-                return False
-            if not receipt.get("terminal"):
-                return False
-            return True
-
-        valid_receipt = {
-            "command_id": "cmd-1",
-            "worker_generation": 1,
-            "expected_target_head": "h1",
-            "terminal": True
+        command = {
+            "command_id": "blue-jules-result-pr42-" + "a" * 40,
+            "worker_generation": 3,
+            "target_repository": self.repo,
+            "target_pr": 42,
+            "target_branch": self.work_branch,
+            "expected_target_head": self.head_sha_1,
         }
-        self.assertTrue(mock_receipt_gate(valid_receipt, "cmd-1", 1, "h1"))
+        valid = self.make_receipt(command)
+        self.assertTrue(self.mock_receipt_gate(valid, command, 3))
+        cases = {
+            "wrong command": {"command_id": "other-command"},
+            "wrong generation": {"worker_generation": 2},
+            "bool generation": {"worker_generation": True},
+            "wrong repository": {"target_repository": "other/repo"},
+            "wrong PR": {"target_pr": 43},
+            "wrong branch": {"target_branch": "main"},
+            "wrong head before": {"target_head_before": self.head_sha_2},
+            "wrong head after": {"target_head_after": self.head_sha_2},
+            "not terminal": {"terminal": False},
+            "truthy nonboolean terminal": {"terminal": 1},
+            "not PASS": {"status": "UNKNOWN"},
+            "wrong protocol": {"protocol_version": 2},
+        }
+        for name, changes in cases.items():
+            with self.subTest(name=name):
+                tampered = {**valid, **changes}
+                self.assertFalse(self.mock_receipt_gate(tampered, command, 3))
+                # No Controller next-task preparation is allowed on an invalid receipt.
+                with patch(
+                    "automation.command_bus.tests.test_blue_work_jules_webhook_static_e2e.prepare_next_action"
+                ) as forbidden_prepare:
+                    if self.mock_receipt_gate(tampered, command, 3):
+                        prepare_next_action(None, expected_repo=self.repo,
+                                            expected_pr=42, expires_at=self.expires_at,
+                                            path_policy=[])
+                    forbidden_prepare.assert_not_called()
 
-        self.assertFalse(mock_receipt_gate(valid_receipt, "cmd-2", 1, "h1"))
-        self.assertFalse(mock_receipt_gate(valid_receipt, "cmd-1", 2, "h1"))
-        self.assertFalse(mock_receipt_gate(valid_receipt, "cmd-1", 1, "h2"))
-
-        invalid_terminal = dict(valid_receipt, terminal=False)
-        self.assertFalse(mock_receipt_gate(invalid_terminal, "cmd-1", 1, "h1"))
+        for missing in ("command_id", "worker_generation", "target_repository",
+                        "target_pr", "target_branch", "target_head_before",
+                        "target_head_after", "terminal"):
+            with self.subTest(missing=missing):
+                tampered = dict(valid)
+                del tampered[missing]
+                self.assertFalse(self.mock_receipt_gate(tampered, command, 3))
