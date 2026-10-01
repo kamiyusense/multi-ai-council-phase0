@@ -334,6 +334,7 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
     async def test_boolean_id_is_not_accepted(self):
         script = (
             "import sys, json\n"
+            "sys.stdin.readline()\n"
             "resp = {'jsonrpc': '2.0', 'id': False, 'result': {'protocolVersion': 1}}\n"
             "sys.stdout.write(json.dumps(resp) + '\\n')\n"
             "sys.stdout.flush()\n"
