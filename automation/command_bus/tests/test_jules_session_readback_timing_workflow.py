@@ -32,10 +32,9 @@ class JulesSessionReadbackTimingWorkflowTests(unittest.TestCase):
         )
         self.assertIn("session_create_time=", self.text)
         self.assertIn("accepted_at_jst=", self.text)
-        self.assertIn(
-            "accepted_at_source: \\`JULES_SESSION_GET_CREATE_TIME_READBACK\\`",
-            self.text,
-        )
+        # The summary is rendered with printf (no backtick command substitution).
+        self.assertIn("accepted_at_source: `%s`", self.text)
+        self.assertIn('"JULES_SESSION_GET_CREATE_TIME_READBACK"', self.text)
 
     def test_readback_does_not_use_local_or_github_clock_as_acceptance_source(self):
         forbidden = (

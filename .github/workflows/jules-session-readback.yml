@@ -64,7 +64,11 @@ jobs:
           name="$(jq -r '.name // "UNKNOWN"' "${response_file}")"
           state="$(jq -r '.state // "UNKNOWN"' "${response_file}")"
           pr_url="$(jq -r '[.outputs[]? | .pullRequest?.url // empty] | first // ""' "${response_file}")"
-          echo "Jules session readback: name=${name} state=${state} pr_url=${pr_url:-NONE}"
+          timing_json="$(python -m automation.command_bus.jules_session_acceptance \
+            "${response_file}" --expected-session-id "${session_id}")"
+          session_create_time="$(jq -er '.session_create_time' <<<"${timing_json}")"
+          accepted_at_jst="$(jq -er '.accepted_at_jst' <<<"${timing_json}")"
+          echo "Jules session readback: name=${name} state=${state} accepted_at_jst=${accepted_at_jst} pr_url=${pr_url:-NONE}"
 
           activities_file="${RUNNER_TEMP}/jules-activities.json"
           activities_code="$(curl --silent --show-error --fail-with-body --retry 0 \
@@ -100,6 +104,9 @@ jobs:
             printf '## Jules session readback\n'
             printf -- '- session_id: `%s`\n' "${session_id}"
             printf -- '- state: `%s`\n' "${state}"
+            printf -- '- jules_session_create_time: `%s`\n' "${session_create_time}"
+            printf -- '- accepted_at_jst: `%s`\n' "${accepted_at_jst}"
+            printf -- '- accepted_at_source: `%s`\n' "JULES_SESSION_GET_CREATE_TIME_READBACK"
             printf -- '- pull_request: `%s`\n' "${pr_url:-NONE}"
             printf -- '- latest_agent_activity_name: `%s`\n' "${latest_agent_activity_name}"
             printf -- '- latest_agent_message_json: `%s`\n' "${latest_agent_message_json}"
