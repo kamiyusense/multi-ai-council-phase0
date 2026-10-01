@@ -1,9 +1,9 @@
 import json
+import sys
 import tempfile
 import unittest
 
 from providers.policy import ProviderPolicy
-import sys
 from relay.acp_client import ACPClient, acp_initialize_wire
 from relay.duplicate_guard import DuplicateGuard
 from relay.envelope import DispatchEnvelope, DispatchSlot
@@ -258,18 +258,22 @@ class TestRelayLifecycleIntegration(unittest.TestCase):
         prompted_after = sum(1 for item in client._sessions.values() if item["prompted"])
         self.assertEqual(prompted_after, 1)
 
+
 class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
     async def test_success_roundtrip(self):
         # A mock child process that reads one line and returns a valid initialize response
         script = (
             "import sys, json\n"
             "req = json.loads(sys.stdin.readline())\n"
-            "resp = {'jsonrpc': '2.0', 'id': req['id'], 'result': {'protocolVersion': '1', 'capabilities': {}}}\n"
+            "assert req == {'jsonrpc': '2.0', 'id': 0, 'method': 'initialize', 'params': "
+            "{'protocolVersion': 1, 'clientCapabilities': {}, "
+            "'clientInfo': {'name': 'relay', 'version': '0.1.0'}}}, req\n"
+            "resp = {'jsonrpc': '2.0', 'id': req['id'], 'result': {'protocolVersion': 1, 'capabilities': {}}}\n"
             "sys.stdout.write(json.dumps(resp) + '\\n')\n"
             "sys.stdout.flush()\n"
         )
         result = await acp_initialize_wire(sys.executable, "-c", script)
-        self.assertEqual(result, {'protocolVersion': '1', 'capabilities': {}})
+        self.assertEqual(result, {'protocolVersion': 1, 'capabilities': {}})
 
     async def test_timeout_fails_closed(self):
         script = "import time\ntime.sleep(10)\n"
@@ -289,7 +293,7 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
     async def test_wrong_jsonrpc_version(self):
         script = (
             "import sys, json\n"
-            "resp = {'jsonrpc': '1.0', 'id': 0, 'result': {'protocolVersion': '1'}}\n"
+            "resp = {'jsonrpc': '1.0', 'id': 0, 'result': {'protocolVersion': 1}}\n"
             "sys.stdout.write(json.dumps(resp) + '\\n')\n"
             "sys.stdout.flush()\n"
         )
@@ -299,7 +303,7 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
     async def test_wrong_id(self):
         script = (
             "import sys, json\n"
-            "resp = {'jsonrpc': '2.0', 'id': 1, 'result': {'protocolVersion': '1'}}\n"
+            "resp = {'jsonrpc': '2.0', 'id': 1, 'result': {'protocolVersion': 1}}\n"
             "sys.stdout.write(json.dumps(resp) + '\\n')\n"
             "sys.stdout.flush()\n"
         )
@@ -324,6 +328,26 @@ class TestACPInitializeWire(unittest.IsolatedAsyncioTestCase):
             "sys.stdout.flush()\n"
         )
         with self.assertRaisesRegex(ValueError, "missing valid result object"):
+            await acp_initialize_wire(sys.executable, "-c", script)
+
+    async def test_boolean_id_is_not_accepted(self):
+        script = (
+            "import sys, json\n"
+            "resp = {'jsonrpc': '2.0', 'id': False, 'result': {'protocolVersion': 1}}\n"
+            "sys.stdout.write(json.dumps(resp) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        with self.assertRaisesRegex(ValueError, "id mismatch"):
+            await acp_initialize_wire(sys.executable, "-c", script)
+
+    async def test_string_protocol_version_is_not_accepted(self):
+        script = (
+            "import sys, json\n"
+            "resp = {'jsonrpc': '2.0', 'id': 0, 'result': {'protocolVersion': '1'}}\n"
+            "sys.stdout.write(json.dumps(resp) + '\\n')\n"
+            "sys.stdout.flush()\n"
+        )
+        with self.assertRaisesRegex(ValueError, "unsupported protocol version"):
             await acp_initialize_wire(sys.executable, "-c", script)
 
     async def test_wrong_protocol_version(self):
