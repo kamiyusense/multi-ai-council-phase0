@@ -19,6 +19,15 @@ goal is:
 This document is the short operational layer above the deeper research in
 `PIONEER_OSS_RESEARCH_HANDOVER.md`.
 
+For Relay-specific execution, continue with
+`RELAY_MINIMAL_REUSE_ROADMAP.md`. It translates this policy into small named
+upstream-component migrations rather than subsystem-design tasks.
+
+For Signal / Status / Control Tower execution, continue with
+`SIGNAL_FOUNDATION_ROADMAP.md`. It separates read-only observed work from
+verified durable runtime truth so presentation can reach a useful MVP before
+dangerous runtime-mutation proof is complete.
+
 ## 2. Mandatory new-Chat read order
 
 A fresh development Chat should read in this order:
@@ -27,15 +36,16 @@ A fresh development Chat should read in this order:
 2. current `HANDOVER_CURRENT.md`
 3. current `docs/DEVELOPMENT_EXECUTION_ROUTER.md`
 4. **this file**
-5. when the mission is Signal / Status / Control Tower:
+5. for Relay work: `docs/RELAY_MINIMAL_REUSE_ROADMAP.md`
+6. for Signal / Status / Control Tower work:
    `docs/SIGNAL_FOUNDATION_ROADMAP.md`
-6. selected route specification:
+7. selected route specification:
    - Jules: `docs/CHAT_JULES_API_SEMIAUTO.md`, then current carrier branch
      Color Lane / Semi-Auto / Task Prompt specs and validators
    - Cloud Work: `docs/CLOUD_WORK_LANES_INDEX.md`
    - Local dependency: Local Work boundary from the router
-7. task-specific design / handover / current canonical branch
-8. `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` only when deeper prior-art detail is
+8. task-specific design / handover / current canonical branch
+9. `docs/PIONEER_OSS_RESEARCH_HANDOVER.md` only when deeper prior-art detail is
    needed
 
 GitHub current state is authority. Historical PR numbers, SHA values, Chat IDs,
