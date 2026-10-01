@@ -368,3 +368,12 @@ files. A complete repository checkout was not exposed to this Cloud Work, and
 the branch HEAD had no workflow runs, so the full command-bus discovery result
 remains UNKNOWN rather than inferred. No Jules/provider/model call, workflow
 dispatch, merge, default-branch write, or local-machine access occurred.
+
+## 2026-10-01 STATIC current-carrier origin bundle helper
+
+`prepare_jules_semiauto_bundle()` is a pure companion helper that first calls
+`prepare_jules_semiauto_request()` and then calls `build_binding_record()` with
+the prepared Claude AUTO loop/round/correlation/generation identity. It returns
+`carrier_request` and `origin_binding` together without persistence or
+dispatch. The carrier remains the exact 16-key `JULES_CHAT_SEMIAUTO_V2` shape
+with no `origin_*` keys; request/claim mismatches fail closed with no bundle.
