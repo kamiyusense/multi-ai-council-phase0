@@ -2,144 +2,112 @@ import asyncio
 import os
 import sys
 import unittest
-import contextlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 
-from relay.acp_stdio_transport import spawn_stdio_transport, default_environment
+from relay.acp_stdio_transport import default_environment, spawn_stdio_transport
 
 
 class TestACPStdioTransport(unittest.IsolatedAsyncioTestCase):
-    async def test_child_stdio_pipes_usable(self):
+    async def test_stdio_env_and_cwd(self):
         code = (
-            "import sys\n"
-            "for line in sys.stdin:\n"
-            "    sys.stdout.write(line.upper())\n"
-            "    sys.stdout.flush()\n"
-        )
-        async with spawn_stdio_transport(sys.executable, "-c", code) as (stdout, stdin, process):
-            stdin.write(b"hello world\n")
-            await stdin.drain()
-            response = await stdout.readline()
-            self.assertEqual(response, b"HELLO WORLD\n")
-
-        self.assertEqual(process.returncode, 0)
-
-    async def test_explicit_env_overlay_reaches_child(self):
-        code = (
-            "import os, sys\n"
-            "sys.stdout.write(os.environ.get('CUSTOM_ENV_VAR', 'MISSING'))\n"
-            "sys.stdout.flush()\n"
-        )
-        env = {"CUSTOM_ENV_VAR": "PRESENT_AND_CORRECT"}
-        async with spawn_stdio_transport(sys.executable, "-c", code, env=env) as (stdout, stdin, process):
-            response = await stdout.readline()
-            self.assertEqual(response, b"PRESENT_AND_CORRECT")
-
-        self.assertEqual(process.returncode, 0)
-
-    async def test_inherited_env_is_limited(self):
-        code = (
-            "import os, sys\n"
-            "sys.stdout.write(os.environ.get('UNSAFE_SENSITIVE_VAR', 'CLEARED'))\n"
-            "sys.stdout.flush()\n"
-        )
-        os.environ["UNSAFE_SENSITIVE_VAR"] = "LEAKED"
-        try:
-            # First, check default_environment helper output
-            env_out = default_environment()
-            self.assertNotIn("UNSAFE_SENSITIVE_VAR", env_out)
-
-            # Check inside child process
-            async with spawn_stdio_transport(sys.executable, "-c", code) as (stdout, stdin, process):
-                response = await stdout.readline()
-                self.assertEqual(response, b"CLEARED")
-
-            self.assertEqual(process.returncode, 0)
-        finally:
-            del os.environ["UNSAFE_SENSITIVE_VAR"]
-
-    async def test_cwd_is_honored(self):
-        code = (
-            "import os, sys\n"
-            "sys.stdout.write(os.getcwd())\n"
+            "import os,sys\n"
+            "line=sys.stdin.readline().strip()\n"
+            "sys.stdout.write('|'.join([line.upper(), os.environ['PHASE0_TEST'], os.getcwd()]))\n"
             "sys.stdout.flush()\n"
         )
         with TemporaryDirectory() as tmpdir:
-            real_tmpdir = os.path.realpath(tmpdir)
-            async with spawn_stdio_transport(sys.executable, "-c", code, cwd=tmpdir) as (stdout, stdin, process):
-                response = await stdout.readline()
-                self.assertEqual(response.decode().strip(), real_tmpdir)
-
+            async with spawn_stdio_transport(
+                sys.executable,
+                "-c",
+                code,
+                env={"PHASE0_TEST": "overlay"},
+                cwd=tmpdir,
+            ) as (stdout, stdin, process):
+                stdin.write(b"hello\n")
+                await stdin.drain()
+                parts = (await stdout.read()).decode().split("|")
+            self.assertEqual(parts[0], "HELLO")
+            self.assertEqual(parts[1], "overlay")
+            self.assertEqual(Path(parts[2]).resolve(), Path(tmpdir).resolve())
             self.assertEqual(process.returncode, 0)
 
-    async def test_graceful_child_exit_via_eof(self):
-        code = (
-            "import sys\n"
-            "data = sys.stdin.read()\n"
-            "sys.exit(0 if data == 'EOF_SEEN' else 1)\n"
-        )
-        async with spawn_stdio_transport(sys.executable, "-c", code) as (stdout, stdin, process):
-            stdin.write(b"EOF_SEEN")
-            await stdin.drain()
-            # Stdin will be closed on exit gracefully
+    async def test_environment_is_trimmed(self):
+        os.environ["PHASE0_SHOULD_NOT_LEAK"] = "secret"
+        try:
+            self.assertNotIn("PHASE0_SHOULD_NOT_LEAK", default_environment())
+            code = (
+                "import os,sys\n"
+                "sys.stdout.write(os.environ.get('PHASE0_SHOULD_NOT_LEAK','absent'))\n"
+                "sys.stdout.flush()\n"
+            )
+            async with spawn_stdio_transport(sys.executable, "-c", code) as (stdout, _, process):
+                result = await stdout.read()
+            self.assertEqual(result, b"absent")
+            self.assertEqual(process.returncode, 0)
+        finally:
+            del os.environ["PHASE0_SHOULD_NOT_LEAK"]
 
+    async def test_graceful_eof_shutdown(self):
+        code = "import sys; sys.exit(0 if sys.stdin.read() == 'done' else 2)"
+        async with spawn_stdio_transport(sys.executable, "-c", code) as (_, stdin, process):
+            stdin.write(b"done")
+            await stdin.drain()
         self.assertEqual(process.returncode, 0)
 
-    async def test_fallback_termination_on_stubborn_process(self):
-        code = (
-            "import sys, time\n"
-            "try:\n"
-            "    sys.stdin.read()\n"
-            "except KeyboardInterrupt:\n"
-            "    pass\n"
-            "while True:\n"
-            "    time.sleep(1)\n"
+    async def test_cleanup_escalates_without_relaunch(self):
+        process = mock.Mock()
+        process.stdout = object()
+        process.stdin = mock.Mock()
+        process.stdin.wait_closed = mock.AsyncMock()
+        process.wait = mock.AsyncMock(
+            side_effect=[asyncio.TimeoutError(), asyncio.TimeoutError(), -9]
         )
-        async with spawn_stdio_transport(sys.executable, "-c", code, shutdown_timeout=0.1) as (stdout, stdin, process):
-            pass
+        process.terminate = mock.Mock()
+        process.kill = mock.Mock()
 
-        # Depending on platform, the process will either be terminated or killed
-        self.assertNotEqual(process.returncode, 0)
+        create = mock.AsyncMock(return_value=process)
+        with mock.patch("asyncio.create_subprocess_exec", new=create):
+            async with spawn_stdio_transport("fake-agent", shutdown_timeout=0.01):
+                pass
 
-    async def test_fallback_kill_on_extremely_stubborn_process(self):
-        # A process that traps SIGTERM as well as SIGINT
-        code = (
-            "import sys, time, signal\n"
-            "def handler(signum, frame): pass\n"
-            "signal.signal(signal.SIGTERM, handler)\n"
-            "signal.signal(signal.SIGINT, handler)\n"
-            "while True:\n"
-            "    time.sleep(0.1)\n"
-        )
-        async with spawn_stdio_transport(sys.executable, "-c", code, shutdown_timeout=0.2) as (stdout, stdin, process):
-            pass
+        create.assert_awaited_once()
+        process.stdin.close.assert_called_once()
+        process.terminate.assert_called_once()
+        process.kill.assert_called_once()
+        self.assertEqual(process.wait.await_count, 3)
 
-        self.assertNotEqual(process.returncode, 0)
-        self.assertNotEqual(process.returncode, None) # Ensure it has actually died
+    async def test_missing_stdio_fails_closed(self):
+        process = mock.Mock()
+        process.stdout = None
+        process.stdin = None
+        process.kill = mock.Mock()
+        process.wait = mock.AsyncMock(return_value=-9)
+        create = mock.AsyncMock(return_value=process)
 
-    async def test_invalid_missing_stdio_fails(self):
-        import unittest.mock as mock
-
-        # Mock asyncio.create_subprocess_exec to return a mock process without stdout
-        mock_process = mock.Mock() # Using regular Mock since kill() is not async in Process
-        mock_process.stdout = None
-        mock_process.stdin = None
-        mock_process.wait = mock.AsyncMock() # wait() IS async
-
-        # We need an AsyncMock for the return value of create_subprocess_exec
-        mock_create = mock.AsyncMock(return_value=mock_process)
-
-        with mock.patch('asyncio.create_subprocess_exec', new=mock_create):
-            with self.assertRaisesRegex(RuntimeError, "spawn_stdio_transport requires stdout/stderr pipes"):
-                async with spawn_stdio_transport(sys.executable, "-c", "pass", limit=1) as (stdout, stdin, process):
+        with mock.patch("asyncio.create_subprocess_exec", new=create):
+            with self.assertRaisesRegex(RuntimeError, "stdin/stdout pipes"):
+                async with spawn_stdio_transport("fake-agent"):
                     pass
 
-        mock_process.kill.assert_called_once()
-        mock_process.wait.assert_awaited_once()
+        create.assert_awaited_once()
+        process.kill.assert_called_once()
+        process.wait.assert_awaited_once()
 
+    async def test_invalid_command_is_not_retried(self):
+        create = mock.AsyncMock(side_effect=FileNotFoundError("missing"))
+        with mock.patch("asyncio.create_subprocess_exec", new=create):
+            with self.assertRaises(FileNotFoundError):
+                async with spawn_stdio_transport("missing-agent"):
+                    pass
+        create.assert_awaited_once()
 
-    async def test_invalid_command_fails(self):
-        with self.assertRaises(FileNotFoundError):
-            async with spawn_stdio_transport("invalid_nonexistent_command_12345") as (stdout, stdin, process):
+    async def test_shutdown_timeout_must_be_positive(self):
+        with self.assertRaisesRegex(ValueError, "positive"):
+            async with spawn_stdio_transport(sys.executable, shutdown_timeout=0):
                 pass
+
+
+if __name__ == "__main__":
+    unittest.main()
