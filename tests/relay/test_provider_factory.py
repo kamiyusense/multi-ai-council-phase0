@@ -102,7 +102,23 @@ class TestProviderFactory(unittest.TestCase):
                 "hide_claude_auth": False,
             }
         )
+        self.assertEqual(profile.binary_name, "claude-agent-acp")
         self.assert_static_roundtrip(profile, "anthropic")
+
+    def test_factory_rejects_unapproved_anthropic_binary(self):
+        profile = build_claude_profile(
+            auth_kind="account",
+            route_evidence={
+                "api_key_present": False,
+                "gateway_configured": False,
+                "external_cloud_configured": False,
+                "dangerous_permission_bypass": False,
+                "hide_claude_auth": False,
+            }
+        )
+        wrong = replace(profile, binary_name="foreign-acp")
+        with self.assertRaisesRegex(ValueError, "Anthropic profile binary_name"):
+            create_core_adapter(wrong, RelayProviderAdapterBridge())
 
     def test_antigravity_factory_success(self):
         profile = build_antigravity_profile(

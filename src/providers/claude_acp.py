@@ -38,4 +38,5 @@ def build_claude_profile(
         pinned_version=CLAUDE_POLICY.pinned_version,
         _static_preflight_config=config,
         _session_meta=canonical_meta,
+        binary_name="claude-agent-acp",
     )
