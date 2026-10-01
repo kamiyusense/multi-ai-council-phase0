@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 import re
 from typing import Any
 
-from .jules_api_request import validate_request
+from .jules_api_request_origin import validate_request
 from .jules_session_acceptance import extract_session_acceptance
 from .loop_owner import validate_owner_event
 from .loop_owner_observation import validate_provider_observation
