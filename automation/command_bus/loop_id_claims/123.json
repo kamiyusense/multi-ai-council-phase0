@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 123,
+  "loop_id": "123",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-sf7-reuse-receipt",
+  "command_id": "relay-dev-loop-123-signal-sf7-reuse-receipt",
+  "target_branch": "feature/signal-observed-v1",
+  "expected_target_head": "9e4b765e5f368daebd0ba57fc1001241d8134e12",
+  "expected_target_tree": "fa0e5de56bd1098b2ebbb655e94e4fab641dfdc3",
+  "work_branch": "jules-work/relay-dev-loop-123-signal-sf7-reuse-receipt",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-02T03:27:29+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
