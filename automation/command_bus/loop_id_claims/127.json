@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 127,
+  "loop_id": "127",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-claim-historical-quarantine",
+  "command_id": "relay-dev-loop-127-signal-claim-historical-quarantine",
+  "target_branch": "feature/signal-claim-historical-quarantine",
+  "expected_target_head": "2b28a3d4c4388002f59f46d9abdf7c3e440f1f99",
+  "expected_target_tree": "7b3d3b5924f8e8951741a1f5a2105ea737440458",
+  "work_branch": "jules-work/relay-dev-loop-127-signal-claim-historical-quarantine",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-02T04:24:54+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
