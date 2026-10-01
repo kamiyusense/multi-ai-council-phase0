@@ -320,6 +320,15 @@ class CarrierQuietGuard:
             if other not in commands and now - claimed < self.pending_window:
                 return DispatchResult("WAIT", f"CARRIER_BUSY: Loop {claim.get('loop_id')} claimed without its "
                                               f"command yet (another controller mid-dispatch)")
+        mine = [c for c in claims if command_id is not None and c.get("command_id") == command_id]
+        if mine:
+            try:  # our own claim at the tip is not another controller's activity
+                path = f"automation/command_bus/loop_id_claims/{mine[0]['loop_id']}.json"
+                if tip in self.git.added_by(self.branch, path):
+                    parent = self.git._git("rev-parse", f"{tip}^").stdout.strip()
+                    committed = self.git.commit_time(parent) or committed
+            except Exception as exc:
+                return DispatchResult("UNKNOWN", f"carrier tip ownership unverifiable: {exc}")
         age = now - datetime.fromisoformat(committed)
         if age < self.quiet:
             return DispatchResult("WAIT", f"CARRIER_BUSY: carrier changed {int(age.total_seconds())}s ago "

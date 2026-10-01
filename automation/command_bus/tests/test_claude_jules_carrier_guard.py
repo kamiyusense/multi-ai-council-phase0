@@ -78,6 +78,11 @@ class CarrierQuietGuardTests(unittest.TestCase):
         self.assertEqual(pending.status, "WAIT")
         self.assertIn("mid-dispatch", pending.reason)
         self.assertEqual(self.guard(10, "relay-dev-loop-130-gpt").status, "PASS")  # our own claim is excluded
+        # our own claim at the tip does not restart the quiet window (measured from its parent)
+        self.later = (lambda base: (lambda minutes: (lambda: base + timedelta(minutes=minutes))))(
+            datetime.fromisoformat(self.remote.client.commit_time(self.remote.head(CARRIER))))
+        self.assertEqual(self.guard(0, "relay-dev-loop-130-gpt").status, "WAIT")  # parent is the seed, 0 min
+
         self.remote.client.create("automation/command_bus/jules_api_requests/relay-dev-loop-130-gpt.json", "{}",
                                   "command 130", CARRIER)
         # new commits move the tip; measure from the latest commit
