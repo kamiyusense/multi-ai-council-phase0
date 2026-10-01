@@ -100,6 +100,8 @@ on:
       - automation/command_bus/tests/test_validation_scope.py
       - automation/command_bus/signal_observed_feedback.py
       - automation/command_bus/tests/test_signal_observed_feedback.py
+      - automation/command_bus/signal_observed_feedback_request.py
+      - automation/command_bus/tests/test_signal_observed_feedback_request.py
       - .github/workflows/loop-status-signal.yml
       - .github/workflows/loop-status-development.yml
       - .github/workflows/loop-status-signal-test.yml
@@ -166,6 +168,7 @@ jobs:
             automation.command_bus.tests.test_runtime_transition_owner_authority
             automation.command_bus.tests.test_validation_scope
             automation.command_bus.tests.test_signal_observed_feedback
+            automation.command_bus.tests.test_signal_observed_feedback_request
           )
           existing=()
           for module in "${modules[@]}"; do
