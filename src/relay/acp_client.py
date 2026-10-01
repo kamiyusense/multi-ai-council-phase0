@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from copy import deepcopy
 from typing import Any
-import asyncio
-from .acp_stdio_transport import spawn_stdio_transport
 
 from providers.policy import ProviderPolicy
+
+from .acp_stdio_transport import spawn_stdio_transport
 
 
 class ACPClient:
@@ -163,20 +164,24 @@ class ACPClient:
             raise ValueError("Unknown session")
         return deepcopy(self._sessions[session_id]["evidence"])
 
+
 async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) -> dict[str, Any]:
     """Execute a single ACP v1 initialize round-trip against a local spawned process.
 
     This provides an isolated, retry-free primitive bridging Relay to the standard
     ACP Python SDK stdio transport behavior.
+
+    Source: agentclientprotocol/python-sdk commit 9d07d7871ef4b220b8507e15fc4b1560f0950a64;
+    src/acp/client/connection.py initialize request contract (Apache-2.0).
     """
-    async with spawn_stdio_transport(command, *args, shutdown_timeout=timeout) as (stdout, stdin, process):
+    async with spawn_stdio_transport(command, *args, shutdown_timeout=timeout) as (stdout, stdin, _process):
         request = {
             "jsonrpc": "2.0",
             "id": 0,
             "method": "initialize",
             "params": {
-                "protocolVersion": "1",
-                "capabilities": {},
+                "protocolVersion": 1,
+                "clientCapabilities": {},
                 "clientInfo": {"name": "relay", "version": "0.1.0"},
             },
         }
@@ -204,17 +209,17 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) ->
         if response.get("jsonrpc") != "2.0":
             raise ValueError("ACP initialize response must have jsonrpc='2.0'")
 
-        if response.get("id") != 0:
+        if type(response.get("id")) is not int or response["id"] != 0:
             raise ValueError("ACP initialize response id mismatch")
 
         if "error" in response:
-            raise RuntimeError(f"ACP initialize returned error: {response['error']}")
+            raise RuntimeError("ACP initialize returned error")
 
         result = response.get("result")
         if not isinstance(result, dict):
             raise ValueError("ACP initialize response missing valid result object")
 
-        if str(result.get("protocolVersion")) != "1":
+        if type(result.get("protocolVersion")) is not int or result["protocolVersion"] != 1:
             raise ValueError("ACP initialize response unsupported protocol version")
 
         return result
