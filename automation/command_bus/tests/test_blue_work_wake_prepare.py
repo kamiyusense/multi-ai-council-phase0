@@ -82,6 +82,17 @@ class TestBlueWorkWakePrepare(unittest.TestCase):
         self.assertEqual(parsed["retry"], 0)
         self.assertEqual(parsed["fallback"], "disabled")
 
+    def test_malformed_decision_value_returns_unknown(self):
+        for decision in ("WAKE", "BOGUS", None):
+            with self.subTest(decision=decision):
+                classification = EventClassificationResult(
+                    decision=decision,
+                    command_id=self.valid_classification.command_id,
+                )
+                result = self.call_prepare(classification=classification)
+                self.assertEqual(result.status, "UNKNOWN")
+                self.assertIsNone(result.review_body)
+
     def test_ignore_returns_no_op(self):
         classification = EventClassificationResult(
             decision=EventDecision.IGNORE,
