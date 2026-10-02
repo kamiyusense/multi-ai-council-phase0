@@ -164,7 +164,7 @@ def bind_jules_active_provider_readback(
         raise ValueError("JulesProviderReadbackCandidate is required")
     if candidate.provider_state not in _ACTIVE_JULES_STATES:
         raise ValueError(
-            "active durable ACQUIRE requires a conservatively active Jules readback"
+            "active durable ACQUIRE requires an explicit RUNNING-equivalent conservatively active Jules readback"
         )
     canonical_provider_state = "RUNNING"
 
