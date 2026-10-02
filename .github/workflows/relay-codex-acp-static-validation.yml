@@ -77,7 +77,8 @@ jobs:
             tests.relay.test_acp_stdio_relay_transport.TestCodexAdapterContract \
             tests.relay.test_acp_stdio_relay_transport.TestOfficialAdapterLaunchGuards \
             tests.relay.test_acp_stdio_relay_transport.TestLifecycleMapping \
-            tests.relay.test_acp_stdio_relay_transport.TestLiveLaunchRefused 2>&1 | tee contract.txt
+            tests.relay.test_acp_stdio_relay_transport.TestLiveLaunchRefused \
+            tests.relay.test_m9_codex_first_live 2>&1 | tee contract.txt
           grep -q '^OK$' contract.txt
           if grep -qi 'skipped' contract.txt; then echo 'skips are not allowed in the contract run' >&2; exit 1; fi
 
