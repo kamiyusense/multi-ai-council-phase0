@@ -1,0 +1,47 @@
+# CANDIDATE ONLY. Inert: not under .github/workflows and not active.
+# Activation = a human-reviewed merge that copies this file to
+# .github/workflows/signal-sf8-authority-issuer.yml on main.
+# Purpose: a manual (workflow_dispatch) run by an allowlisted human that yields
+# OIDC-bound evidence of an owner-authority decision. It writes nothing.
+name: Signal SF-8 authority issuer
+on:
+  workflow_dispatch:
+    inputs:
+      lane_loop_id:
+        description: "Lane loop_id being adopted (must exist in the registry)"
+        required: true
+        type: string
+      approval_ref:
+        description: "Reference such as issue:33#comment"
+        required: true
+        type: string
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: signal-sf8-authority-issuer
+  cancel-in-progress: false
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.actor_id == github.triggering_actor_id && contains(fromJSON('["REPLACE_WITH_HUMAN_ACTOR_ID"]'), github.actor_id)
+    steps:
+      - name: Checkout main without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Request once, verify GitHub signature and context in memory
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          OIDC_PROOF_PROFILE: sf8-authority
+        run: node automation/command_bus/github_oidc_signature_proof.mjs
+      - name: Save sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sf8-authority-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/oidc-proof-evidence.json
+          if-no-files-found: error
+          retention-days: 30

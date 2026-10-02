@@ -62,3 +62,25 @@ OIDC proves which workflow, commit and run executed, not that a human decided. P
 - Recovery: everything is on this branch; rerun the full suite, then follow the marker steps above once.
 - Remaining human decisions: clear the gate for the one-shot live proof; approve the issuer workflow on main; choose the stable lane id.
 - Next safe task: independent Signal Reviewer readback of PR #236.
+
+## Update: one-shot live proof result (2026-10-02)
+
+- Run 36981004299, attempt 1, exact commit 93460dee54948dc6ac3888f4142ab78cd54ce759.
+- OIDC identity proof: PASS. Evidence `docs/evidence/signal-sf8/oidc-identity-proof-36981004299.json` (digest 737864e1…0cc1, artifact 11215144168).
+- Jules read-only GET: PASS as transport proof only. `raw_state` was COMPLETED, so this is NOT an active-provider (RUNNING) proof. Evidence `jules-session-get-evidence-36981004299.json` (digest 2eb75574…6a36b, artifact 11215581226).
+- Counters: OIDC 1 used, Jules GET 1 used, Jules dispatch/POST 0. No Jules session was started.
+- Still true: OIDC PASS is not provider PASS and not owner authority. Observed Signal is not Verified Runtime. FINAL_LOOP_ID = UNKNOWN. DURABLE promotion NOT_READY. ISSUE33_MIGRATION_READY = NO.
+- LIVE ACTIVE PROVIDER PROOF stays BLOCKED (needs a RUNNING Signal session).
+
+## Prepared (inert, pre-merge) candidates
+
+- Owner-authority issuer: `docs/candidates/signal-sf8-authority-issuer.yml.candidate` (workflow_dispatch only, main only, `contents: read` + `id-token: write`, no secrets, pinned actions, actor allowlist placeholder). Profile `sf8-authority` in the OIDC policy/proof code. Not under `.github/workflows`, so nothing runs.
+- Stable loop id: `automation/command_bus/lane_identity_adoption.py` validates a PLACEHOLDER -> DURABLE diff (one lane, only identity_state, loop_id set unchanged, allowlisted approver, approval record). It adopts nothing.
+- Guard tests: `test_sf8_authority_issuer_candidate.py`.
+
+## Human decisions remaining (single packet)
+
+1. Approve a reviewed merge that activates the issuer workflow on main, and give the human actor id(s) for the allowlist.
+2. Choose which lane gets the stable loop_id (registry currently has chatgpt-semi-auto, claude-gemini, claude-claude, work-gemini, all PLACEHOLDER) and approve the adoption record.
+3. Decide whether a RUNNING Signal session is wanted for an active-provider proof.
+4. Decide whether any further OIDC / GET runs are allowed.

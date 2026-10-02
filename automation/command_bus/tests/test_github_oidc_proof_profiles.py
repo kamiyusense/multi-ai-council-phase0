@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from automation.command_bus.github_oidc_proof_policy_cli import (
-    PROFILES, RUN7_PROFILE, SF8_PROFILE, REPOSITORY, REPOSITORY_ID, OWNER_ID,
+    PROFILES, RUN7_PROFILE, SF8_AUTHORITY_PROFILE, SF8_PROFILE, REPOSITORY, REPOSITORY_ID, OWNER_ID,
     diagnose_verified_claims, expected_from_runner,
 )
 from automation.command_bus.tests.test_github_oidc_proof_policy_cli import NOW, SHA, claims, runner
@@ -35,7 +35,7 @@ class OidcProofProfileTests(unittest.TestCase):
         self.assertEqual(diagnose_verified_claims(claims(), runner(), now_epoch=NOW), "PASS")
 
     def test_sf8_profile_is_exact_and_separate(self):
-        self.assertEqual(set(PROFILES), {"run7", "sf8"})
+        self.assertEqual(set(PROFILES), {"run7", "sf8", "sf8-authority"})
         self.assertNotEqual(RUN7_PROFILE.audience, SF8_PROFILE.audience)
         self.assertNotEqual(RUN7_PROFILE.workflow_ref, SF8_PROFILE.workflow_ref)
         self.assertEqual(
@@ -75,10 +75,31 @@ class OidcProofProfileTests(unittest.TestCase):
 
     def test_node_profile_table_matches_python_table(self):
         text = NODE_PROFILES_SOURCE.read_text(encoding="utf-8")
-        for profile in (RUN7_PROFILE, SF8_PROFILE):
+        for profile in (RUN7_PROFILE, SF8_PROFILE, SF8_AUTHORITY_PROFILE):
+            self.assertIn(f"event: '{profile.event}'", text)
             self.assertIn(profile.audience.replace(REPOSITORY, "${REPO}"), text)
             self.assertIn(
                 profile.workflow_ref.replace(REPOSITORY, "${REPO}"), text)
+
+    def test_authority_profile_is_manual_dispatch_on_main_only(self):
+        self.assertEqual(SF8_AUTHORITY_PROFILE.event, "workflow_dispatch")
+        self.assertEqual(SF8_AUTHORITY_PROFILE.branch_ref, "refs/heads/main")
+        env = runner(**{
+            "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch",
+            "GITHUB_WORKFLOW_REF": SF8_AUTHORITY_PROFILE.workflow_ref,
+            "GITHUB_WORKFLOW": SF8_AUTHORITY_PROFILE.workflow_name,
+        })
+        good = claims(**{
+            "aud": SF8_AUTHORITY_PROFILE.audience, "sub": SF8_AUTHORITY_PROFILE.subject,
+            "ref": "refs/heads/main", "event_name": "workflow_dispatch",
+            "workflow_ref": SF8_AUTHORITY_PROFILE.workflow_ref,
+            "job_workflow_ref": SF8_AUTHORITY_PROFILE.workflow_ref,
+        })
+        self.assertEqual(diagnose_verified_claims(good, env, now_epoch=NOW, profile=SF8_AUTHORITY_PROFILE), "PASS")
+        # A push-triggered run (what the implementing session can produce) never matches.
+        self.assertNotEqual(diagnose_verified_claims(
+            {**good, "event_name": "push"}, {**env, "GITHUB_EVENT_NAME": "push"},
+            now_epoch=NOW, profile=SF8_AUTHORITY_PROFILE), "PASS")
 
 
 if __name__ == "__main__":

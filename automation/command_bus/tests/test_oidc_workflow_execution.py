@@ -5,7 +5,7 @@ import hashlib
 import json
 import unittest
 
-from automation.command_bus.github_oidc_proof_policy_cli import REPOSITORY, SF8_PROFILE, OidcProofProfile
+from automation.command_bus.github_oidc_proof_policy_cli import REPOSITORY, SF8_AUTHORITY_PROFILE, SF8_PROFILE
 from automation.command_bus.oidc_workflow_execution import (
     AuthorityIssuerPolicy,
     OidcBoundAuthorityAuthenticator,
@@ -18,11 +18,8 @@ from automation.command_bus.runtime_verifier_sources import VerifiedSourceAttest
 RUN_ID = "424242"
 SHA = "c" * 40
 OWNER_ID = "20355232"
-# Test-only issuer profile: a deliberate manual dispatch on a (hypothetical) default-branch workflow.
-DISPATCH_PROFILE = OidcProofProfile(
-    "test-authority", "refs/heads/main", ".github/workflows/test-authority-issuer.yml",
-    "Test authority issuer", "urn:test:authority", event="workflow_dispatch",
-)
+# The real candidate issuer profile: deliberate manual dispatch of a reviewed workflow on main.
+DISPATCH_PROFILE = SF8_AUTHORITY_PROFILE
 
 
 def evidence_for(profile=SF8_PROFILE, run_id=RUN_ID, sha=SHA, **changes):

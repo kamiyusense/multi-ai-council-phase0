@@ -13,12 +13,19 @@ const REPO = 'kamiyusense/multi-ai-council-phase0';
 // Reviewed, exact proof profiles. Python policy (github_oidc_proof_policy_cli) holds the same table.
 export const PROFILES = Object.freeze({
   run7: Object.freeze({
+    event: 'push',
     audience: `urn:phase0:github-oidc-proof:${REPO}`,
     workflowIdentity: `${REPO}/.github/workflows/github-oidc-proof.yml@refs/heads/feature/github-oidc-claims-policy-v1`,
   }),
   sf8: Object.freeze({
+    event: 'push',
     audience: `urn:phase0:signal-sf8-oidc-proof:${REPO}`,
     workflowIdentity: `${REPO}/.github/workflows/signal-sf8-oidc-proof.yml@refs/heads/claude/signal-sf8-oidc-runtime-integration-20261002`,
+  }),
+  'sf8-authority': Object.freeze({
+    event: 'workflow_dispatch',
+    audience: `urn:phase0:signal-sf8-authority-issuer:${REPO}`,
+    workflowIdentity: `${REPO}/.github/workflows/signal-sf8-authority-issuer.yml@refs/heads/main`,
   }),
 });
 export function activeProfile(env = process.env) {
@@ -213,7 +220,7 @@ async function main() {
   const handlers = {
     TOKEN_REQUEST: async () => {
       const context = runnerContext();
-      if (context.GITHUB_RUN_ATTEMPT !== '1' || context.GITHUB_EVENT_NAME !== 'push') fail();
+      if (context.GITHUB_RUN_ATTEMPT !== '1' || context.GITHUB_EVENT_NAME !== profile.event) fail();
       const requestUrl = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '');
       const host = requestUrl.hostname;
       if (requestUrl.protocol !== 'https:' ||

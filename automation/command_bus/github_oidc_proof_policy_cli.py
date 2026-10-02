@@ -59,7 +59,19 @@ SF8_PROFILE = OidcProofProfile(
     "Signal SF-8 bounded OIDC proof",
     "urn:phase0:signal-sf8-oidc-proof:kamiyusense/multi-ai-council-phase0",
 )
-PROFILES = {RUN7_PROFILE.name: RUN7_PROFILE, SF8_PROFILE.name: SF8_PROFILE}
+# Candidate owner-authority issuer: deliberate manual dispatch of a reviewed workflow on the default
+# branch. Inert until that workflow exists on main (merge = human decision).
+SF8_AUTHORITY_PROFILE = OidcProofProfile(
+    "sf8-authority", "refs/heads/main", ".github/workflows/signal-sf8-authority-issuer.yml",
+    "Signal SF-8 authority issuer",
+    "urn:phase0:signal-sf8-authority-issuer:kamiyusense/multi-ai-council-phase0",
+    event="workflow_dispatch",
+)
+PROFILES = {
+    RUN7_PROFILE.name: RUN7_PROFILE,
+    SF8_PROFILE.name: SF8_PROFILE,
+    SF8_AUTHORITY_PROFILE.name: SF8_AUTHORITY_PROFILE,
+}
 
 
 def expected_from_runner(
