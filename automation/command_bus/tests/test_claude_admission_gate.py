@@ -474,8 +474,15 @@ class AdmissionGateTests(unittest.TestCase):
         bad = deepcopy(manifest)
         bad["services"]["claude"]["environment"]["HTTPS_PROXY"] = "http://attacker.example:3128"
         cases.append(bad)
+        for bad_no_proxy in ("*", "gate,api.anthropic.com", "auth-control-proxy", "172.29.247.0/24", ""):
+            bad = deepcopy(manifest)
+            bad["services"]["claude"]["environment"]["NO_PROXY"] = bad_no_proxy
+            cases.append(bad)
         bad = deepcopy(manifest)
-        bad["services"]["claude"]["environment"]["NO_PROXY"] = "*"
+        bad["services"]["claude"]["environment"]["no_proxy"] = "gate"
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        del bad["services"]["claude"]["environment"]["NO_PROXY"]
         cases.append(bad)
         bad = deepcopy(manifest)
         bad["services"]["auth-control-proxy"]["environment"] = {"HTTPS_PROXY": "http://other:3128"}
