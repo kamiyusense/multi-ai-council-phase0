@@ -1,5 +1,9 @@
 # Development execution router (canonical)
 
+> **全route共通・引き継ぎ作成前に必読：**
+> [コピー文章の必須表示規則](USER_COPY_TEXT_FORMAT.md)。ユーザーが貼る完成文は
+> 全文を1つの `markdown` コードブロックへ。次Chatへの継承も必須。
+
 ## Purpose and authority
 
 This is the main-branch entrypoint for choosing the **development worker** in

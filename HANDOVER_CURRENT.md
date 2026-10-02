@@ -1,5 +1,12 @@
 # Phase 0 Handover — Current
 
+## **🔴【全Chat・Work必読：引き継ぎ文の出し方】**
+
+引き継ぎ・他AIへの依頼など、ユーザーが貼る完成文を作る前に
+[コピー文章の必須表示規則](docs/USER_COPY_TEXT_FORMAT.md)を読む。
+**全文を1つの `markdown` コードブロックにまとめ、貼り付け先の🔵見出しを直前に置く。**
+Writing Block / Canvas / 編集カードでは代用しない。この規則を次の引き継ぎにも継承する。
+
 Updated: 2026-10-01
 
 ## 0. Current development worker routing — read this first

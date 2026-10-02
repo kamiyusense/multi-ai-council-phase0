@@ -22,7 +22,8 @@ If this file conflicts with a formal Phase 0 specification or safety boundary, t
 - Prefer concise progress/final reports over long English-heavy explanations.
 - Clearly separate confirmed facts from UNKNOWN.
 - Do not call something PASS merely because an AI says it passed; use tests, readback, diff, hashes, receipts, or direct inspection when available.
-- When the user must copy/paste text, put the copyable text in a fenced code block.
+- Before composing any user-pasted handover or completed prompt, read [ユーザー向けコピー文章・引き継ぎの必須表示規則](docs/USER_COPY_TEXT_FORMAT.md).
+- Put the entire completed copyable text in one fenced `markdown` code block beneath a destination-specific H2 bold 🔵 heading. Do not substitute Writing Block, Canvas or editable cards. Carry this rule forward in every new handover.
 - When the user personally must perform an action, make that requirement visually obvious.
 - Avoid asking for confirmation at ordinary progress boundaries. Continue safe, authorized work until completion criteria or a real blocker.
 
