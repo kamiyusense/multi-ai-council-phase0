@@ -1,0 +1,63 @@
+name: Issue 110 external auth TLS proof prepare-only tests
+
+on:
+  push:
+    branches:
+      - prepare/issue110-external-tls-proof-v1
+    paths:
+      - .github/workflows/issue110-external-auth-tls-prepare.yml
+      - automation/command_bus/claude_external_auth_tls_probe.mjs
+      - automation/command_bus/tests/test_claude_external_auth_tls_probe.mjs
+      - docs/ISSUE110_EXTERNAL_AUTH_TLS_PROOF_PLAN.md
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact prepare head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Run guard unit tests
+        shell: bash
+        run: |
+          node --test automation/command_bus/tests/test_claude_external_auth_tls_probe.mjs
+
+      - name: Verify prepare plan performs no network
+        shell: bash
+        run: |
+          node automation/command_bus/claude_external_auth_tls_probe.mjs plan > /tmp/issue110-tls-plan.json
+          python - <<'PY'
+          import json
+          p=json.load(open("/tmp/issue110-tls-plan.json"))
+          assert p["mode"] == "PREPARE_ONLY"
+          assert p["network_executed"] is False
+          assert p["credential_inputs_required"] is False
+          assert p["oauth_operation_planned"] is False
+          assert p["claude_process_planned"] is False
+          assert p["retry"] == 0
+          assert p["fallback"] == "disabled"
+          print("PREPARE_ONLY_PLAN_PASS")
+          PY
+
+      - name: Verify unarmed run blocks before network
+        shell: bash
+        run: |
+          set +e
+          node automation/command_bus/claude_external_auth_tls_probe.mjs run >/tmp/issue110-tls-run.out 2>/tmp/issue110-tls-run.err
+          code=$?
+          set -e
+          test "$code" = "78"
+          grep -F "no network connection was attempted" /tmp/issue110-tls-run.err
+          echo "UNARMED_NETWORK_BLOCK_PASS"
