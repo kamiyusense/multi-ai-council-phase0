@@ -1,0 +1,73 @@
+{
+  "allowed_content": "signal active proof 2\n",
+  "allowed_path": "docs/evidence/signal-active-proof-2/PROOF.md",
+  "authority_max_age_seconds": 3600,
+  "carrier_claim": {
+    "claimed_at": "2026-10-02T23:40:02+00:00",
+    "command_id": "relay-dev-loop-133-signal-active-proof-2",
+    "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+    "expected_target_head": "151575ed03a1c2c4f528fbcf8b11ededc3202bd9",
+    "expected_target_tree": "12e7e74247000affef3fe1ed457776e570a7e2e6",
+    "fallback": "disabled",
+    "lane_display": "💛",
+    "lane_id": "J-YELLOW",
+    "loop_id": "133",
+    "loop_number": 133,
+    "retry": 0,
+    "schema_version": 3,
+    "state": "CLAIMED",
+    "target_branch": "signal/chatgpt-semi-auto-active-proof-2-target",
+    "task_id": "signal-active-proof-2",
+    "work_branch": "jules-work/relay-dev-loop-133-signal-active-proof-2"
+  },
+  "data_branch": "signal/chatgpt-semi-auto-active-proof-2-data",
+  "durable_context": {
+    "correlation_id": "signal-active-proof-2",
+    "holder_id": "chatgpt-controller",
+    "loop_id": "chatgpt-semi-auto",
+    "owner_expires_at": "2026-10-03T01:40:02+00:00",
+    "target_pr": 264
+  },
+  "expected_target_head": "151575ed03a1c2c4f528fbcf8b11ededc3202bd9",
+  "expected_target_tree": "12e7e74247000affef3fe1ed457776e570a7e2e6",
+  "fallback": "disabled",
+  "human_approval_required": true,
+  "lane_id": "chatgpt-semi-auto",
+  "limits": {
+    "authority_dispatch": 1,
+    "jules_get": 2,
+    "jules_post": 1,
+    "retry": 0
+  },
+  "not_before": "2026-10-02T23:40:02+00:00",
+  "plan_kind": "SIGNAL_STEP7_LIVE_PROOF_PLAN",
+  "provider_oidc_expected_sha": "93460dee54948dc6ac3888f4142ab78cd54ce759",
+  "provider_oidc_run_id": "36981004299",
+  "registry_write_allowed": false,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "request": {
+    "allowed_paths": [
+      "docs/evidence/signal-active-proof-2/PROOF.md"
+    ],
+    "command_id": "relay-dev-loop-133-signal-active-proof-2",
+    "created_at": "2026-10-02T23:40:02+00:00",
+    "expected_target_head": "151575ed03a1c2c4f528fbcf8b11ededc3202bd9",
+    "expected_target_tree": "12e7e74247000affef3fe1ed457776e570a7e2e6",
+    "expires_at": "2026-10-03T01:10:02+00:00",
+    "fallback": "disabled",
+    "force_push_allowed": false,
+    "merge_allowed": false,
+    "profile": "JULES_CHAT_SEMIAUTO_V2",
+    "prompt": "Create exactly one file docs/evidence/signal-active-proof-2/PROOF.md whose entire content is the single line: signal active proof 2\nChange no other file. Do not add tests, code, or dependencies. Open the normal pull request when done.",
+    "retry": 0,
+    "schema_version": 2,
+    "target_branch": "signal/chatgpt-semi-auto-active-proof-2-target",
+    "target_repo": "kamiyusense/multi-ai-council-phase0",
+    "work_branch": "jules-work/relay-dev-loop-133-signal-active-proof-2"
+  },
+  "retry": 0,
+  "schema_version": 1,
+  "target_branch": "signal/chatgpt-semi-auto-active-proof-2-target",
+  "target_pr": 264,
+  "work_branch": "jules-work/relay-dev-loop-133-signal-active-proof-2"
+}
