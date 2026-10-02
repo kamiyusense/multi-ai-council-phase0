@@ -1,0 +1,5 @@
+{
+  "target_sha": "3c7493cb34c066154c8e66db7cb5f9a37175ad03",
+  "source_pr": 255,
+  "purpose": "relay validation: Windows launcher for codex gate, M8/M9 prepare-only (STATIC, no live provider/model)"
+}
