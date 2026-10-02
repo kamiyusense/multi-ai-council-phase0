@@ -249,7 +249,7 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) ->
         return result
 
 
-async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float) -> str:
+async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float, session_meta: dict[str, Any] | None = None) -> str:
     """Internal helper to execute initialize and session/new against an existing transport."""
     init_request = {
         "jsonrpc": "2.0",
@@ -274,6 +274,8 @@ async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWrit
             "mcpServers": [],
         },
     }
+    if session_meta is not None:
+        session_request["params"]["_meta"] = deepcopy(session_meta)
     session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new")
 
     session_id = session_result.get("sessionId")
@@ -311,10 +313,10 @@ async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: 
 
         return stop_reason
 
-async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0) -> dict[str, str]:
+async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0, session_meta: dict[str, Any] | None = None) -> dict[str, str]:
     """Mock-only ACP prompt: concatenate 1..3 text updates before the terminal response."""
     async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
-        session_id = await _acp_handshake(stdout, stdin, cwd, timeout)
+        session_id = await _acp_handshake(stdout, stdin, cwd, timeout, session_meta)
 
         prompt_request = {
             "jsonrpc": "2.0",
