@@ -1,0 +1,5 @@
+{
+  "target_sha": "8011a9388acec67cdab50c3929daaf273cf80445",
+  "candidate_pr": 263,
+  "scope": "final current-main M9 local runner successor after current-main guard, one-shot account-read consumption, approval disclosure, test alignment, and executable-mode restoration; exact-head + official codex-acp 2.1.0 Linux/Windows STATIC validation; no live provider/model/account execution"
+}
