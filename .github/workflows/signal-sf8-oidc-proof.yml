@@ -5,6 +5,7 @@ name: Signal SF-8 bounded OIDC proof
 # match neither the path nor the marker guard.
 #   * oidc-proof: GitHub Actions OIDC identity only (id-token: write, contents: read, no secrets).
 #   * jules-get: ONE read-only GET of one existing Jules Session (existing secret, contents: read, no id-token).
+# Proof attempt 1: OIDC 1 of at most 3, Jules GET 1 of at most 6; retry=0, never rerun.
 # The two jobs share no token and no secret. Neither proves owner authority or durable ownership.
 on:
   push:
