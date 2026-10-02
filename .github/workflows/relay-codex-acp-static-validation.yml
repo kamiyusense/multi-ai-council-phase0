@@ -1,0 +1,102 @@
+name: Phase 0 Relay codex-acp 2.1.0 STATIC gate validation
+
+# Reproduces, on GitHub, the Relay one-generation gate contract against the OFFICIAL
+# @agentclientprotocol/codex-acp@2.1.0 (current Phase 0 pin) with the fixture backend.
+# No provider/model connection, no credentials, no npm lifecycle scripts, no optional
+# (native Codex) packages. Triggered by the same append-only request file as the
+# exact-head validation; it validates the request's target_sha.
+
+on:
+  push:
+    branches:
+      - feature/chat-work-command-bus
+    paths:
+      - automation/command_bus/relay_validation_requests/*.json
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout carrier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Locate one append-only validation request
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit_json="$(curl --fail-with-body --retry 0 -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
+          [[ "$(jq '.files | length' <<<"${commit_json}")" == "1" ]] || { echo "Expected exactly one file." >&2; exit 1; }
+          [[ "$(jq -r '.files[0].status' <<<"${commit_json}")" == "added" ]] || { echo "Request must be append-only." >&2; exit 1; }
+          path="$(jq -r '.files[0].filename' <<<"${commit_json}")"
+          [[ "${path}" =~ ^automation/command_bus/relay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]] || { echo "Unexpected request path." >&2; exit 1; }
+          target_sha="$(jq -er '.target_sha' "${path}")"
+          [[ "${target_sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid target_sha." >&2; exit 1; }
+          echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout exact Relay head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.locate.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Install official codex-acp 2.1.0 (no scripts, no optional native Codex)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          dir="${RUNNER_TEMP}/codex-acp-2.1.0"
+          mkdir -p "${dir}"
+          cd "${dir}"
+          npm init -y >/dev/null
+          npm install --ignore-scripts --omit=optional --no-audit --no-fund @agentclientprotocol/codex-acp@2.1.0
+          [[ "$(node -p "require('./node_modules/@agentclientprotocol/codex-acp/package.json').version")" == "2.1.0" ]]
+          # only the JS shim package may exist; no platform-native Codex package
+          [[ "$(ls node_modules/@openai)" == "codex" ]]
+          [[ ! -e node_modules/@openai/codex/vendor ]]
+          echo "RELAY_CODEX_ACP_DIR=${dir}/node_modules/@agentclientprotocol/codex-acp" >> "${GITHUB_ENV}"
+
+      - name: Run codex-acp 2.1.0 + one-generation gate + fixture backend contract tests (no skips allowed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          PYTHONPATH=src python -m unittest -v \
+            tests.relay.test_acp_stdio_relay_transport.TestOfficialCodexAdapterWithFixtureBackend \
+            tests.relay.test_acp_stdio_relay_transport.TestCodexAdapterContract \
+            tests.relay.test_acp_stdio_relay_transport.TestOfficialAdapterLaunchGuards \
+            tests.relay.test_acp_stdio_relay_transport.TestLifecycleMapping \
+            tests.relay.test_acp_stdio_relay_transport.TestLiveLaunchRefused 2>&1 | tee contract.txt
+          grep -q '^OK$' contract.txt
+          if grep -qi 'skipped' contract.txt; then echo 'skips are not allowed in the contract run' >&2; exit 1; fi
+
+      - name: Full unit suite with the adapter available (record skips)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          PYTHONPATH=src python -m unittest discover -s tests -t . 2>&1 | tee full.txt
+          tail -3 full.txt
+
+      - name: Record
+        shell: bash
+        run: |
+          {
+            echo "## Relay codex-acp 2.1.0 STATIC gate validation"
+            echo "- target_sha: \`${{ steps.locate.outputs.target_sha }}\`"
+            echo "- adapter: @agentclientprotocol/codex-acp 2.1.0 (--ignore-scripts --omit=optional)"
+            echo "- backend: fixtures/relay/fake_codex_app_server.py via src/relay/codex_turn_gate.py"
+            echo "- contract tests: PASS if job green (no skips allowed)"
+            echo "- live provider/model execution: NO"
+          } >> "${GITHUB_STEP_SUMMARY}"
