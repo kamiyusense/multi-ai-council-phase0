@@ -56,6 +56,17 @@ class TriggerEconomyTests(unittest.TestCase):
                 self.assertTrue("paths:" in push or "paths:" in pr,
                                 f"{path.name}: push+pull_request without paths runs twice per push")
 
+    def test_contract_validators_and_readback_workflow_changes_run_the_test_workflow(self):
+        """A PR that only touches the Jules request/claim contract must not be merged untested."""
+        paths = event_block(on_block("loop-status-signal-test.yml"), "pull_request")
+        self.assertIsNotNone(paths)
+        for needed in ("automation/command_bus/jules_api_request.py",
+                       "automation/command_bus/jules_api_request_origin.py",
+                       "automation/command_bus/loop_id_claim.py",
+                       ".github/workflows/jules-chat-semiauto.yml",
+                       ".github/workflows/jules-session-readback.yml"):
+            self.assertIn(f"- {needed}\n", paths, needed)
+
 
 if __name__ == "__main__":
     unittest.main()
