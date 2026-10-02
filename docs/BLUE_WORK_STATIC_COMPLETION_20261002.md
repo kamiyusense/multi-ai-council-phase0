@@ -88,6 +88,15 @@ receipt後crash:exact terminal/tree/trigger照合。review消費後restart:durab
 full command_bus1045、成功1044/Windows-only skip1/失敗0/error0。新規38test methodとそのparameterケース。
 compileall、diff check、既存正式MOCK、pre-submit/terminal CLI、soakの保存artifactを照合する。
 GitHub exact-HEAD Actions/run/job/artifactと保存後readbackは最終checkpointに追記する。Actions greenをsource認証や意味的PASSにしない。
+コード保存commitは `6d7859d922eaeee9e57ddb7ae590d5a819f9eb63`、tree `a1c63a96f709f51878e793a2c993af8591c9f3cb`、親9d2a230の通常FF。
+34ファイル変更、削除0、既存639blob保持、全変更blobをreadbackで照合した。
+[exact code-HEAD CI](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36986471226)、job110772537318、attempt1、成功。
+実行logは1045tests/1044成功/skip1/失敗0/error0、56.490秒。compile/MOCK/E2E/soak/artifactの各step成功を確認。
+[artifact11217746917](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36986471226/artifacts/11217746917)、
+zip digest53a46a0a7babe91564a6f230faf118749ad3e8a9768ac605ab3f3669acf846dc。
+push CI36986466470/job110772523505も成功。詳細は[コード保存後確認](evidence/blue-work-static-20261002/actions-code-readback.json)。
+PR203/4carrier/raw227のHEADとunmergedを保存後に再確認し、全て開始時と同じ。
+この追記を含む最後のcommitは文書・証拠だけ。最新文書HEADのexact CIは最終Conversation checkpointで確認する。
 今回のコードの再検品はこの担当によるSTATIC自己検品。別AI独立検品/新LIVE検証は未実施。前夜のPASSをこのdeltaへ転用しない。
 
 ## BWJ roadmapと残り
@@ -113,3 +122,14 @@ capture設計実装/negative matrix/event全件preflight/4色共通bridge/strict
 E2E/soak/global collision/restart/CLI I/O fence/full回帰/自己検品再修正/日本語引き継ぎ/次LIVE計画/
 証拠保存/通常commit・FF/readback/Actions検証の26区分。Jules工数や投入Loop数へ換算しない。
 有益なSTATIC実装・模擬試験・証拠保存を終えた時点で終了する。Merge待ちやevent到着待ちでspinnerを保持しない。
+
+## 公式資料・先行設計と検証限界
+
+[Jules公式Session resource](https://developers.google.com/jules/api/reference/rest/v1alpha/sessions)はcreateTime/updateTimeのRFC3339・0/3/6/9小数秒、startingBranch、outputs配列を定義する。
+[GitHub review API](https://docs.github.com/en/rest/pulls/reviews)はCOMMENT review作成とpull-requests書込権限を定義する。
+[GITHUB_TOKEN公式](https://docs.github.com/en/actions/concepts/security/github_token)の2026-10-02 fresh資料では、通常イベントのActions再帰抑止に加え、workflow_dispatch/repository_dispatchと、承認待ちになるPR opened/synchronize/reopenedの例外が記載される。
+review eventから外部OpenAI Workへの到達保証、利用プラン固有の件数/rate数値はこの資料から確認できずUNKNOWN。
+既存OpenAI仕様・4色indexに従う兼用を維持し、アカウント制限はユーザー指定5件、タスク追加0で守る。
+OpenCaraのstage分離、HiveMind Actionsのreview入口、PR115のwake-hint/正本分離は既存ロードマップから必要な設計手法だけ継続。
+今回upstreamコードのコピーや新framework導入はなし。公開先行実装の現在の実行能力をこのMOCKから保証しない。
+CAPTURED source verifierの正規route接続と第三者独立検品は再開作業。任意JSONやhashだけで信頼元の証明を作らない。
