@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://relay.local/schemas/relay_live_readiness_snapshot_v1.schema.json",
+  "title": "Relay Live Readiness Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "state",
+    "live_ready",
+    "dispatch_allowed",
+    "human_approval_required",
+    "retry_count",
+    "fallback_state",
+    "preflight_states",
+    "preflight_snapshots",
+    "preflight_packet_sha256",
+    "inventory_state",
+    "unresolved_count",
+    "unresolved_by_provider",
+    "inventory_packet_sha256",
+    "provider_states",
+    "blocking_providers",
+    "bundle_packet_sha256",
+    "pipeline_packet_sha256",
+    "snapshot_packet_sha256"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "READY_FOR_HUMAN_APPROVAL"
+      ]
+    },
+    "live_ready": {
+      "type": "boolean",
+      "const": false
+    },
+    "dispatch_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "human_approval_required": {
+      "type": "boolean",
+      "const": true
+    },
+    "retry_count": {
+      "type": "integer",
+      "const": 0
+    },
+    "fallback_state": {
+      "type": "string",
+      "const": "disabled"
+    },
+    "preflight_states": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "UNKNOWN"
+              ]
+            },
+            "anthropic": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "UNKNOWN"
+              ]
+            },
+            "google": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "UNKNOWN"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "preflight_snapshots": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "static_configuration_status",
+                "live_readiness",
+                "reasons",
+                "provider_id",
+                "external_agent",
+                "pinned_version",
+                "retry_count",
+                "fallback_state",
+                "live_ready"
+              ],
+              "properties": {
+                "static_configuration_status": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "UNKNOWN"
+                  ]
+                },
+                "live_readiness": {
+                  "type": "string",
+                  "const": "BLOCKED"
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "provider_id": {
+                  "type": "string",
+                  "const": "openai"
+                },
+                "external_agent": {
+                  "type": "string"
+                },
+                "pinned_version": {
+                  "type": "string"
+                },
+                "retry_count": {
+                  "type": "integer",
+                  "const": 0
+                },
+                "fallback_state": {
+                  "type": "string",
+                  "const": "disabled"
+                },
+                "live_ready": {
+                  "type": "boolean",
+                  "const": false
+                }
+              }
+            },
+            "anthropic": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "static_configuration_status",
+                "live_readiness",
+                "reasons",
+                "provider_id",
+                "external_agent",
+                "pinned_version",
+                "retry_count",
+                "fallback_state",
+                "live_ready"
+              ],
+              "properties": {
+                "static_configuration_status": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "UNKNOWN"
+                  ]
+                },
+                "live_readiness": {
+                  "type": "string",
+                  "const": "BLOCKED"
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "provider_id": {
+                  "type": "string",
+                  "const": "anthropic"
+                },
+                "external_agent": {
+                  "type": "string"
+                },
+                "pinned_version": {
+                  "type": "string"
+                },
+                "retry_count": {
+                  "type": "integer",
+                  "const": 0
+                },
+                "fallback_state": {
+                  "type": "string",
+                  "const": "disabled"
+                },
+                "live_ready": {
+                  "type": "boolean",
+                  "const": false
+                }
+              }
+            },
+            "google": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "static_configuration_status",
+                "live_readiness",
+                "reasons",
+                "provider_id",
+                "external_agent",
+                "pinned_version",
+                "retry_count",
+                "fallback_state",
+                "live_ready"
+              ],
+              "properties": {
+                "static_configuration_status": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "UNKNOWN"
+                  ]
+                },
+                "live_readiness": {
+                  "type": "string",
+                  "const": "BLOCKED"
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "provider_id": {
+                  "type": "string",
+                  "const": "google"
+                },
+                "external_agent": {
+                  "type": "string"
+                },
+                "pinned_version": {
+                  "type": "string"
+                },
+                "retry_count": {
+                  "type": "integer",
+                  "const": 0
+                },
+                "fallback_state": {
+                  "type": "string",
+                  "const": "disabled"
+                },
+                "live_ready": {
+                  "type": "boolean",
+                  "const": false
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "preflight_packet_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "inventory_state": {
+      "type": "string",
+      "enum": [
+        "BLOCKED_UNKNOWN",
+        "UNRESOLVED",
+        "PROOF_RECORDS_COMPLETE"
+      ]
+    },
+    "unresolved_count": {
+      "type": "integer",
+      "minimum": -1
+    },
+    "unresolved_by_provider": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "anthropic": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "google": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "inventory_packet_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "provider_states": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "openai",
+            "anthropic",
+            "google"
+          ],
+          "properties": {
+            "openai": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            },
+            "anthropic": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            },
+            "google": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_UNKNOWN",
+                "READY_FOR_HUMAN_APPROVAL"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "blocking_providers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "openai",
+          "anthropic",
+          "google"
+        ]
+      },
+      "uniqueItems": true,
+      "maxItems": 3
+    },
+    "bundle_packet_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "pipeline_packet_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "snapshot_packet_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "phase0-response-v1",
+  "answer_state": "ANSWER",
+  "conclusion_code": "SUCCESS",
+  "safety_warning": "ABSENT",
+  "safety_reason": null,
+  "evidence_refs": [],
+  "marker_echoes": {
+    "head": "h",
+    "middle": null,
+    "tail": "t"
+  }
+}
