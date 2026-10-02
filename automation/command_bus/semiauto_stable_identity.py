@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 from .jules_semiauto_owner_prepare import (
     JulesSemiAutoAcquireBundle,
+    prepare_current_jules_semiauto_acquire,
     prepare_jules_semiauto_acquire,
 )
 
@@ -51,6 +52,23 @@ def validate_semiauto_stable_identity(
     }:
         raise ValueError("session, PR, or branch identity cannot be durable loop_id")
     return loop_id
+
+
+def prepare_adopted_current_semiauto_acquire(
+    *, registry: dict[str, Any], request: dict[str, Any],
+    carrier_claim: dict[str, Any], durable_context: dict[str, Any],
+    session_response: dict[str, Any], target_pr_readback: dict[str, Any],
+    now: Any,
+) -> JulesSemiAutoAcquireBundle:
+    """Compose adopted identity with the canonical work_branch carrier shape."""
+    validate_semiauto_stable_identity(
+        registry=registry, request=request, durable_context=durable_context,
+    )
+    return prepare_current_jules_semiauto_acquire(
+        request=request, carrier_claim=carrier_claim,
+        durable_context=durable_context, session_response=session_response,
+        target_pr_readback=target_pr_readback, now=now,
+    )
 
 
 def prepare_adopted_semiauto_acquire(
