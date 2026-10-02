@@ -57,11 +57,20 @@ class ContractSplitTests(unittest.TestCase):
         self.assertIn("python -m automation.command_bus.jules_api_request \\", text)
         self.assertNotIn("jules_api_request_origin", text)
 
-    def test_origin_consumers_import_the_origin_module_by_its_new_name(self):
-        for rel in ("claude_loop.py", "jules_semiauto_owner_prepare.py"):
-            source = (ROOT / "automation/command_bus" / rel).read_text(encoding="utf-8")
-            imports = re.findall(r"^from \.(jules_api_request\w*) import", source, re.M)
-            self.assertNotIn("jules_api_request", imports, rel)
+    def test_origin_only_consumer_does_not_import_canonical_contract(self):
+        rel = "claude_loop.py"
+        source = (ROOT / "automation/command_bus" / rel).read_text(encoding="utf-8")
+        imports = re.findall(r"^from \.(jules_api_request\w*) import", source, re.M)
+        self.assertNotIn("jules_api_request", imports, rel)
+
+    def test_owner_prepare_is_the_explicit_dual_contract_bridge(self):
+        rel = "jules_semiauto_owner_prepare.py"
+        source = (ROOT / "automation/command_bus" / rel).read_text(encoding="utf-8")
+        imports = re.findall(r"^from \.(jules_api_request\w*) import", source, re.M)
+        self.assertIn("jules_api_request", imports, rel)
+        self.assertIn("jules_api_request_origin", imports, rel)
+        self.assertIn("def prepare_jules_semiauto_acquire(", source)
+        self.assertIn("def prepare_current_jules_semiauto_acquire(", source)
 
     def test_safety_invariants_are_identical_in_both_validators(self):
         for module, request in ((canonical, canonical_request()), (origin, origin_request())):

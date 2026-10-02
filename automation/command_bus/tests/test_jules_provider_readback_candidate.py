@@ -14,7 +14,10 @@ from automation.command_bus.runtime_verifier_sources import (
     VerifiedSourceAttestation,
 )
 from automation.command_bus.tests.test_jules_semiauto_owner_prepare import (
+    BRANCH,
+    WORK_BRANCH,
     bundle,
+    current_bundle,
 )
 
 
@@ -86,6 +89,17 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         self.assertEqual(source["verification_state"], "UNKNOWN")
         self.assertEqual(source["provider_state"], "RUNNING")
 
+    def test_current_carrier_candidate_binds_both_branch_identities(self):
+        prepared = current_bundle()
+        candidate = prepare_jules_provider_readback_candidate(
+            bundle=prepared,
+            session_readback=session_get(sourceContext={
+                "githubRepoContext": {"startingBranch": WORK_BRANCH},
+            }),
+        )
+        self.assertIn(f"github-branch:{BRANCH}", candidate.proof_refs)
+        self.assertIn(f"jules-branch:{WORK_BRANCH}", candidate.proof_refs)
+
     def test_raw_provider_state_is_preserved_without_mapping(self):
         prepared = bundle()
         queued = prepare_jules_provider_readback_candidate(
@@ -98,6 +112,7 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         )
         self.assertEqual(queued.provider_state, "QUEUED")
         self.assertEqual(completed.provider_state, "COMPLETED")
+
 
     def test_real_api_in_progress_regression_binds_without_losing_raw_state(self):
         prepared = bundle()
@@ -193,8 +208,6 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
                     bundle=prepared,
                     candidate=candidate,
                 )
-                # Preserve the provider's raw state on the candidate, but keep
-                # the durable runtime vocabulary canonical.
                 self.assertEqual(candidate.provider_state, state)
                 self.assertEqual(binding.evidence_document["provider_state"], "RUNNING")
                 self.assertEqual(binding.provider_observation_input["state"], "RUNNING")

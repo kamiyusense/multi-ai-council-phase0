@@ -140,17 +140,31 @@ class JulesDirectReadbackAuthenticator:
                 return None
             if normalized["head"] != source["expected_target_head"]:
                 return None
-            if normalized["branch"] != starting_branch:
-                return None
             if normalized["state"] != "open" or normalized["merged"] is not False:
                 return None
 
+            proof_refs = set(source["proof_refs"])
             required_proofs = {
                 source_ref,
                 f"github-pr:{source['expected_pr']}",
                 f"github-head:{source['expected_target_head']}",
             }
-            if not required_proofs.issubset(set(source["proof_refs"])):
+            if not required_proofs.issubset(proof_refs):
+                return None
+
+            target_branches = _proof_values(proof_refs, "github-branch:")
+            provider_branches = _proof_values(proof_refs, "jules-branch:")
+            if target_branches or provider_branches:
+                # Current carrier: target identity and isolated Jules branch are
+                # distinct and both must be durably named exactly once.
+                if len(target_branches) != 1 or len(provider_branches) != 1:
+                    return None
+                if normalized["branch"] != target_branches[0]:
+                    return None
+                if starting_branch != provider_branches[0]:
+                    return None
+            elif normalized["branch"] != starting_branch:
+                # Historical contract kept fail-closed for old recorded proofs.
                 return None
 
             return VerifiedSourceAttestation(
@@ -161,6 +175,13 @@ class JulesDirectReadbackAuthenticator:
             )
         except (KeyError, TypeError, ValueError):
             return None
+
+
+def _proof_values(refs: set[str], prefix: str) -> list[str]:
+    values = sorted(ref[len(prefix):] for ref in refs if ref.startswith(prefix))
+    if any(not value or ".." in value or "\\" in value for value in values):
+        return []
+    return values
 
 
 def _normalize_target(raw: dict[str, Any] | None) -> dict[str, Any] | None:

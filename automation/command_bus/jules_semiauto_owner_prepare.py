@@ -20,7 +20,9 @@ from datetime import datetime, timedelta
 import re
 from typing import Any
 
-from .jules_api_request_origin import validate_request
+from .jules_api_request import validate_request as validate_current_request
+from .jules_api_request_origin import validate_request as validate_origin_request
+from .loop_id_claim import verify_command_claim
 from .jules_session_acceptance import extract_session_acceptance
 from .loop_owner import validate_owner_event
 from .loop_owner_observation import validate_provider_observation
@@ -45,6 +47,8 @@ _MAX_OWNER_LEASE = timedelta(hours=4)
 class JulesSemiAutoAcquireBundle:
     acceptance_session_id: str
     target_pr: int
+    target_branch: str
+    provider_starting_branch: str
     initial_state: dict[str, Any]
     source_receipt: dict[str, Any]
     owner_event: dict[str, Any]
@@ -61,16 +65,68 @@ def prepare_jules_semiauto_acquire(
     target_pr_readback: dict[str, Any],
     now: datetime | None = None,
 ) -> JulesSemiAutoAcquireBundle:
-    validate_request(request, now=now)
+    """Prepare the historical origin-shaped request contract.
+
+    This remains explicit so the canonical live carrier contract is never
+    accepted by the historical validator by accident.
+    """
+    validate_origin_request(request, now=now)
     context = _validate_context(durable_context)
     _validate_origin_correlation(request, context)
+    return _prepare_validated_acquire(
+        request=request,
+        context=context,
+        session_response=session_response,
+        target_pr_readback=target_pr_readback,
+        target_branch=request["target_branch"],
+        provider_starting_branch=request["target_branch"],
+    )
+
+
+def prepare_current_jules_semiauto_acquire(
+    *,
+    request: dict[str, Any],
+    carrier_claim: dict[str, Any],
+    durable_context: dict[str, Any],
+    session_response: dict[str, Any],
+    target_pr_readback: dict[str, Any],
+    now: datetime | None = None,
+) -> JulesSemiAutoAcquireBundle:
+    """Prepare the canonical live carrier contract without blending schemas.
+
+    The current carrier keeps the canonical target branch read-only while Jules
+    starts from the isolated per-command work_branch.  The schema-v3 Loop claim
+    is required so the work branch and exact target snapshot are durably bound.
+    """
+    validate_current_request(request, now=now)
+    verify_command_claim(request, carrier_claim, require_dispatchable_current=True)
+    context = _validate_context(durable_context)
+    return _prepare_validated_acquire(
+        request=request,
+        context=context,
+        session_response=session_response,
+        target_pr_readback=target_pr_readback,
+        target_branch=request["target_branch"],
+        provider_starting_branch=request["work_branch"],
+    )
+
+
+def _prepare_validated_acquire(
+    *,
+    request: dict[str, Any],
+    context: dict[str, Any],
+    session_response: dict[str, Any],
+    target_pr_readback: dict[str, Any],
+    target_branch: str,
+    provider_starting_branch: str,
+) -> JulesSemiAutoAcquireBundle:
     target = _normalize_target(target_pr_readback)
 
     if target["repo"] != request["target_repo"]:
         raise ValueError("target PR repository mismatch")
     if target["pr"] != context["target_pr"]:
         raise ValueError("target PR number mismatch")
-    if target["branch"] != request["target_branch"]:
+    if target["branch"] != target_branch:
         raise ValueError("target PR head branch mismatch")
     if target["head"] != request["expected_target_head"]:
         raise ValueError("target PR head SHA mismatch")
@@ -79,7 +135,7 @@ def prepare_jules_semiauto_acquire(
 
     acceptance = extract_session_acceptance(
         session_response,
-        expected_branch=request["target_branch"],
+        expected_branch=provider_starting_branch,
     )
     claimed = _time(acceptance.session_create_time, "Jules createTime")
     expires = _time(context["owner_expires_at"], "owner_expires_at")
@@ -210,6 +266,8 @@ def prepare_jules_semiauto_acquire(
     return JulesSemiAutoAcquireBundle(
         acceptance_session_id=acceptance.session_id,
         target_pr=context["target_pr"],
+        target_branch=target_branch,
+        provider_starting_branch=provider_starting_branch,
         initial_state=initial_state,
         source_receipt=source_receipt,
         owner_event=owner_event,
@@ -217,7 +275,6 @@ def prepare_jules_semiauto_acquire(
         provider_observation_input=provider_observation_input,
         transition_request=transition_request,
     )
-
 
 def _validate_origin_correlation(
     request: dict[str, Any],
