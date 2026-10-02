@@ -79,3 +79,43 @@ M0 COMPLETE · M1 PARTIAL (lifecycle mapped; official adapter hosted only for Co
 
 ## No-LIVE (this update)
 Real provider/model execution NO. Processes started: official `codex-acp` (node) with the fixture backend, TCK, local fake agents. The bundled `@openai/codex` was installed with `--omit=optional --ignore-scripts` (no native binary present) and never executed. API-key route NO; retry/fallback added NO; billing/settings/secrets NO; main write NO; merge NO.
+
+
+---
+
+# Update 3 — Codex second-turn decision, gate, contract tests, M3/M4/M6 audit (STATIC)
+
+Decision (human, recorded): Phase 0 keeps **one Relay request = one model generation**. codex-acp's automatic title-generation turn is NOT allowed, not even as "cheap" or "not counted".
+
+## Codex second turn: conclusion A (suppressed in STATIC with an outer gate)
+Search of options (all read-only; no fork/patch/monkey-patch):
+1. Upstream flag/env/option: none found to disable title generation (`TitleGenerator` is created unconditionally in `CodexAcpServer`; env options are CODEX_PATH, CODEX_CONFIG, MODEL_PROVIDER, DEFAULT_AUTH_REQUEST, INITIAL_AGENT_MODE, NO_BROWSER, APP_SERVER_LOGS).
+2./3./4. No codex-acp, app-server or ACP session setting found that skips it. It is skipped only if the session title source is `explicit`/`unknown` (set from backend `thread/name/updated` or resumed sessions) or the prompt has no text block - quirks of upstream behavior, not a contract; not used.
+5. Upstream tests mock in-process; no spawn-level switch.
+6. Ending the session right after the response is a race (title turn starts as soon as the first turn completes) - not deterministic; not relied on.
+7. **Adopted**: `src/relay/codex_turn_gate.py`, used as the documented `CODEX_PATH` backend hook. It forwards JSON-RPC to the real/fixture backend (`RELAY_GATE_BACKEND`) and lets only ONE generation-starting request through per process (`turn/start`, `turn/steer`, `review/start`, `thread/compact/start`, `thread/goal/set`); later ones get a JSON-RPC error and never reach the backend; unparsable lines are not forwarded; decisions are logged. Same philosophy as the Claude Admission Gate: the host-side outer boundary, not upstream, bounds generations.
+
+Regression tests (env-gated, `RELAY_CODEX_ACP_DIR`), verified on codex-acp 2.1.0 and 2.1.1:
+- canary: **without** the gate the fixture backend sees 2 `turn/start` (title generation reproduced; if upstream changes this test fails and forces a re-audit);
+- with the gate: backend sees exactly 1 `turn/start`, gate log = `allowed`, `blocked`;
+- `OfficialAdapterLaunch` now refuses a launch whose `CODEX_PATH` is not the gate.
+
+Limits (honest): this is proven against a fixture backend only. On a real backend the gate is the same byte-level filter, but nothing real was run. The gate is a Python script: on Windows codex-acp spawns `"<path>" app-server` through a shell, so a `.cmd`/exe shim is needed before any Windows LIVE use. Residual: the blocked title attempt still creates an ephemeral `thread/start` (no generation). Status: second-turn risk = suppressed in STATIC (A); M2 stays PARTIAL; M9 LIVE remains forbidden.
+
+## Lifecycle contract (official codex-acp + gate + fixture backend, tests)
+initialize and session/new reach the backend with no generation method; prompt is the only generation (1 `turn/start`); cancel/close finish within 10 s with no relaunch (1 backend `initialize`); timeout -> TIMEOUT, `session/cancel` sent, backend sees `turn/interrupt`, 1 initialize, 1 turn/start, retry 0; duplicate same request -> BLOCKED with no second process/generation; same slot + different hash -> conflict BLOCKED, still 1 process/1 turn; malformed notification and agent-initiated id'd request (permission) fail closed and are never answered (fake-agent tests).
+
+## M3 Claude (PARTIAL / UNKNOWN / LIVE_BOUNDARY)
+Upstream test seam is an in-process vitest mock of the Claude Agent SDK `query` (`src/tests/acp-scenarios/harness.ts`): test-only, not a launchable no-provider mode. The only spawn-level hook is `CLAUDE_CODE_EXECUTABLE` (replace the Claude Code CLI), but `query()` starts that CLI at session creation and speaks the SDK's own protocol; a self-written fake would not be an official seam. Not launched; no self-made fake is counted as adapter verification. Admission Gate and `allowDangerouslySkipPermissions=False` untouched; `ANTHROPIC_BASE_URL` etc. stay forbidden in the STATIC launch env.
+
+## M4 Antigravity (PARTIAL / UNKNOWN / LIVE_BOUNDARY)
+Registry `antigravity-acp/agent.json` v1.3.0, license proprietary (terms: antigravity.google/terms), binary distribution only (`agy_acp_server.par` linux/mac with linux args `--uid=`, `.exe` Windows; zip from dl.google.com). The registry's public protocol matrix (`.protocol-matrix/latest.json`, a snapshot at registry version 1.2.1) reports for the unauthenticated binary: initialize success, protocolVersion 1, authMethods `["agent"]`, session/new -> `auth_required` (-32000). That is third-party CI evidence, not a Phase 0 test, and not a no-provider mode (after auth, prompts are live). Binary not downloaded/run/reverse-engineered; no code copied.
+
+## M6 read-only design (interface only; nothing queried)
+`src/relay/codex_account_readonly.py`: allow-list of exactly `account/read` (`refreshToken:false`) and `account/rateLimits/read`; `summarize_account_evidence()` maps responses to auth_state (CHATGPT_ACCOUNT / NOT_AUTHENTICATED / API_KEY_ROUTE_VIOLATION / ...), plan type, `ordinaryUsageAllowed`, primary/secondary window used%/reset, reached type, spend-control flag, credits flags (no balance/email/accountId copied). Missing/null/malformed -> UNKNOWN; usage is never "allowed" unless the account was positively read as a ChatGPT account; side_effects always 0. Not wired into Relay. Upstream fields `rateLimitResetCredits` / `rateLimitUpsell` are ignored. No login/logout/token/billing path exists. M6 = UNKNOWN (design ready, no real read).
+
+## Verdicts after this update
+M0 COMPLETE · M1 PARTIAL · M2 PARTIAL (gate proven on fixture; no real backend) · M3 PARTIAL/UNKNOWN/LIVE_BOUNDARY · M4 PARTIAL/UNKNOWN/LIVE_BOUNDARY · M5 PARTIAL (see `docs/RELAY_ACP_TCK_EVIDENCE.md`) · M6 UNKNOWN (design only) · M7 PARTIAL · M8 unchanged · M9/M10 NOT_STARTED.
+
+## No-LIVE (this update)
+Real provider/model execution NO; Codex/Claude/Antigravity real turns 0; processes started: official codex-acp (node) + gate + fixture backend, TCK, fake agents. API-key route NO; retry/fallback added NO (the gate adds a block, not a retry); Billing/settings/permissions/credentials NO; main write NO; merge NO.

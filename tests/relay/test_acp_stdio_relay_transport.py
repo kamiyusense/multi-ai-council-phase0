@@ -199,7 +199,8 @@ class TestOfficialAdapterLaunchGuards(unittest.TestCase):
         from pathlib import Path
         from relay.acp_stdio_relay_transport import OfficialAdapterLaunch
         root = Path(__file__).resolve().parents[2] / "fixtures" / "relay"
-        env = {"CODEX_PATH": str(root / "fake_codex_app_server.py")}
+        gate = Path(__file__).resolve().parents[2] / "src" / "relay" / "codex_turn_gate.py"
+        env = {"CODEX_PATH": str(gate), "RELAY_GATE_BACKEND": str(root / "fake_codex_app_server.py")}
         env.update(over.pop("env", {}))
         return OfficialAdapterLaunch(over.pop("command", ("node", "x/codex-acp/dist/index.js")), env, over.pop("root", root))
 
@@ -214,7 +215,11 @@ class TestOfficialAdapterLaunchGuards(unittest.TestCase):
 
     def test_backend_outside_fixture_root_or_credentials_refused(self):
         with self.assertRaises(ValueError):
-            AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch("openai", env={"CODEX_PATH": "/usr/bin/env"}))
+            AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch("openai", env={"RELAY_GATE_BACKEND": "/usr/bin/env"}))
+        # un-gated launch (backend wired directly as CODEX_PATH) is refused
+        with self.assertRaisesRegex(ValueError, "one-generation gate"):
+            AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch(
+                "openai", env={"CODEX_PATH": self._launch("openai").env["RELAY_GATE_BACKEND"]}))
         for key in ("OPENAI_API_KEY", "CODEX_API_KEY", "MODEL_PROVIDER", "CODEX_CONFIG"):
             with self.subTest(key):
                 with self.assertRaises(ValueError):
@@ -280,7 +285,9 @@ class TestOfficialCodexAdapterWithFixtureBackend(unittest.TestCase):
         log = os.path.join(home, "backend.log")
         env = {
             "HOME": home, "CODEX_HOME": home, "APP_SERVER_LOGS": home, "FAKE_CODEX_LOG": log,
-            "CODEX_PATH": str(root / "fake_codex_app_server.py"),
+            "CODEX_PATH": str(root.parents[1] / "src" / "relay" / "codex_turn_gate.py"),
+            "RELAY_GATE_BACKEND": str(root / "fake_codex_app_server.py"),
+            "RELAY_GATE_LOG": os.path.join(home, "gate.log"),
         }
         launch = OfficialAdapterLaunch(("node", os.path.join(self.dir, "dist", "index.js")), env, root)
         t = AcpStdioStaticTransport(PROFILES["openai"](), official=launch)
@@ -292,9 +299,9 @@ class TestOfficialCodexAdapterWithFixtureBackend(unittest.TestCase):
         with open(log) as fh:
             methods = fh.read().split()
         self.assertEqual(methods[0], "initialize")
-        # Only the fixture backend was reached; the user-facing turn is turn/start #1.
-        # Upstream codex-acp may add a fire-and-forget title turn (observed): 1 or 2.
-        self.assertIn(methods.count("turn/start"), (1, 2))
+        # One Relay request -> exactly one generation reaches the backend; any
+        # upstream-initiated extra turn (title generation) is stopped by the gate.
+        self.assertEqual(methods.count("turn/start"), 1)
         self.assertEqual((t.spawn_count, t.prompt_count), (1, 1))
         adapter = RelayCoreAdapter("openai", RelayProviderAdapterBridge(), PROFILES["openai"]().static_preflight_config)
         self.assertTrue(adapter.classify(res.raw)["success"])
@@ -324,3 +331,130 @@ class TestOfficialTckFixtureAgentThroughLifecycle(unittest.TestCase):
                 self.assertEqual((t.spawn_count, t.prompt_count, t.cancel_sent), (1, 1, 0))
                 adapter = RelayCoreAdapter(pid, RelayProviderAdapterBridge(), PROFILES[pid]().static_preflight_config)
                 self.assertTrue(adapter.classify(res.raw)["success"])
+
+
+class TestCodexAdapterContract(unittest.TestCase):
+    """Relay<->ACP contract against official codex-acp + gate + fixture backend.
+
+    Skipped unless RELAY_CODEX_ACP_DIR is set. Backend log = what reached the fixture.
+    """
+
+    def setUp(self):
+        import os
+        import shutil
+        self.dir = os.environ.get("RELAY_CODEX_ACP_DIR")
+        if not self.dir or not shutil.which("node"):
+            self.skipTest("RELAY_CODEX_ACP_DIR / node not available (TEST_ENVIRONMENT_NOT_PREPARED)")
+        self.home = tempfile.mkdtemp()
+
+    def _env(self, gated=True, **extra):
+        import os
+        from pathlib import Path
+        repo = Path(__file__).resolve().parents[2]
+        fake = str(repo / "fixtures" / "relay" / "fake_codex_app_server.py")
+        env = {
+            "HOME": self.home, "CODEX_HOME": self.home, "APP_SERVER_LOGS": self.home,
+            "FAKE_CODEX_LOG": os.path.join(self.home, "backend.log"),
+            "RELAY_GATE_LOG": os.path.join(self.home, "gate.log"),
+            "RELAY_GATE_BACKEND": fake,
+            "CODEX_PATH": str(repo / "src" / "relay" / "codex_turn_gate.py") if gated else fake,
+        }
+        env.update(extra)
+        return env
+
+    def _adapter(self):
+        import os
+        return ("node", os.path.join(self.dir, "dist", "index.js"))
+
+    def _transport(self, **extra):
+        from pathlib import Path
+        from relay.acp_stdio_relay_transport import OfficialAdapterLaunch
+        root = Path(__file__).resolve().parents[2] / "fixtures" / "relay"
+        launch = OfficialAdapterLaunch(self._adapter(), self._env(**extra), root)
+        return AcpStdioStaticTransport(PROFILES["openai"](), official=launch)
+
+    def _backend(self, name="backend.log"):
+        import os
+        path = os.path.join(self.home, name)
+        if not os.path.exists(path):
+            return []
+        with open(path) as fh:
+            return fh.read().split()
+
+    @staticmethod
+    def _read(path):
+        with open(path) as fh:
+            return fh.read()
+
+    def _wait_for(self, predicate, seconds=5.0):
+        import time
+        end = time.time() + seconds
+        while time.time() < end:
+            if predicate():
+                return True
+            time.sleep(0.05)
+        return predicate()
+
+    def test_upstream_title_second_turn_is_reproduced_without_gate(self):
+        """Canary: documents upstream behavior. If this fails, upstream changed; re-audit."""
+        import asyncio
+        from relay.acp_client import acp_mock_text_update_wire
+        asyncio.run(acp_mock_text_update_wire(
+            *self._adapter(), cwd=self.home, prompt_text="hi", timeout=20.0, env=self._env(gated=False)))
+        self.assertTrue(self._wait_for(lambda: self._backend().count("turn/start") >= 2),
+                        "BLOCKED_TITLE_GENERATION_SECOND_TURN canary: second turn/start no longer observed")
+
+    def test_gate_limits_backend_to_one_generation_and_blocks_title_turn(self):
+        import asyncio
+        import json
+        import os
+        from relay.acp_client import acp_mock_text_update_wire
+        asyncio.run(acp_mock_text_update_wire(
+            *self._adapter(), cwd=self.home, prompt_text="hi", timeout=20.0, env=self._env()))
+        gate_log = os.path.join(self.home, "gate.log")
+        self.assertTrue(self._wait_for(lambda: os.path.exists(gate_log) and "blocked" in self._read(gate_log)))
+        with open(gate_log) as fh:
+            decisions = [json.loads(line)["decision"] for line in fh if line.strip()]
+        self.assertEqual(decisions, ["allowed", "blocked"])
+        self.assertEqual(self._backend().count("turn/start"), 1)
+
+    def test_initialize_and_session_new_start_no_generation(self):
+        t = self._transport()
+        t.initialize("openai")
+        sid = t.open_session("openai", cwd=self.home)
+        methods = self._backend()
+        for gen in ("turn/start", "review/start", "thread/compact/start", "turn/steer", "thread/goal/set"):
+            self.assertNotIn(gen, methods)
+        self.assertEqual(t.prompt_count, 0)
+        t.close("openai", sid)
+
+    def test_cancel_and_close_are_bounded_and_do_not_relaunch(self):
+        import time
+        t = self._transport(FAKE_CODEX_NO_COMPLETE="1")
+        t.initialize("openai")
+        sid = t.open_session("openai", cwd=self.home)
+        started = time.time()
+        t.cancel("openai", sid)
+        t.close("openai", sid)
+        self.assertLess(time.time() - started, 10)
+        self.assertEqual((t.spawn_count, self._backend().count("initialize")), (1, 1))
+
+    def test_timeout_cancels_without_relaunch_or_retry(self):
+        t = self._transport(FAKE_CODEX_NO_COMPLETE="1")
+        res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(
+            envelope("openai", timeout=2), cwd=self.home)
+        self.assertEqual(res.state, RelayState.TIMEOUT)
+        self.assertEqual((t.spawn_count, t.prompt_count, t.cancel_sent), (1, 1, 1))
+        methods = self._backend()
+        self.assertEqual((methods.count("initialize"), methods.count("turn/start")), (1, 1))
+        self.assertIn("turn/interrupt", methods)
+
+    def test_duplicate_and_conflict_start_no_new_process_or_generation(self):
+        t = self._transport()
+        lc = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard())
+        self.assertEqual(lc.dispatch_mock(envelope("openai", timeout=20), cwd=self.home).state, RelayState.SIMULATED)
+        dup = lc.dispatch_mock(envelope("openai", timeout=20), cwd=self.home)
+        conflict = lc.dispatch_mock(envelope("openai", prompt="different", timeout=20), cwd=self.home)
+        self.assertEqual((dup.state, conflict.state), (RelayState.BLOCKED, RelayState.BLOCKED))
+        methods = self._backend()
+        self.assertEqual((t.spawn_count, methods.count("initialize"), methods.count("turn/start")), (1, 1, 1))

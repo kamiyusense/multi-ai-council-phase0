@@ -15,8 +15,9 @@ Two launch modes, both STATIC:
 
 * injected fake agent command (known official adapter names are refused; this
   name guard is fail-closed for known identities but is not a sandbox);
-* ``OfficialAdapterLaunch``: an official adapter whose *backend* is replaced by a
-  repository fixture through the adapter's own documented option. Only
+* ``OfficialAdapterLaunch``: an official adapter whose backend is replaced, through
+  the adapter's own documented option, by the Relay one-generation gate wrapping a
+  repository fixture. Only
   providers with a verified seam are accepted (openai: ``CODEX_PATH``). Others
   fail closed as UNKNOWN / LIVE_BOUNDARY. The adapter process is started; no
   provider/model backend can be reached because the backend is the fixture.
@@ -55,7 +56,8 @@ LIVE_ADAPTER_MARKERS = (
     "@agentclientprotocol/",
 )
 
-# provider_id -> env key through which the official adapter accepts a replacement backend.
+# provider_id -> env key through which the official adapter accepts a replacement backend
+# (here: the one-generation gate, which wraps the real/fixture backend).
 _VERIFIED_BACKEND_SEAMS = {"openai": "CODEX_PATH"}
 
 # Credential / route variables that must not reach an adapter in STATIC mode.
@@ -102,13 +104,18 @@ def _validate_official_launch(launch: OfficialAdapterLaunch, profile: ProviderSt
     forbidden = _FORBIDDEN_ENV.intersection(launch.env)
     if forbidden:
         raise ValueError(f"credential/route env not allowed in STATIC mode: {sorted(forbidden)}")
-    backend = launch.env.get(seam)
+    # codex-acp may start a second (title-generation) turn on its own. The outer
+    # one-generation gate must therefore sit between the adapter and its backend.
+    gate = Path(__file__).with_name("codex_turn_gate.py").resolve()
+    if not launch.env.get(seam) or Path(launch.env[seam]).resolve() != gate:
+        raise ValueError(f"{seam} must be the Relay one-generation gate (codex_turn_gate.py)")
+    backend = launch.env.get("RELAY_GATE_BACKEND")
     if not backend:
-        raise ValueError(f"{seam} must point at a fixture backend")
+        raise ValueError("RELAY_GATE_BACKEND must point at a fixture backend")
     backend_path = Path(backend).resolve()
     root = Path(launch.fixture_root).resolve()
     if not backend_path.is_file() or root not in backend_path.parents:
-        raise ValueError(f"{seam} must be a file inside the fixture root")
+        raise ValueError("RELAY_GATE_BACKEND must be a file inside the fixture root")
 
 
 class AcpStdioStaticTransport:

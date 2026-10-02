@@ -57,7 +57,7 @@ def _canned(method: str, params: dict):
         return {"thread": thread, "model": "fake-model", "modelProvider": "fake", "serviceTier": None,
                 "disabledPluginIds": [], "cwd": cwd, "instructionSources": [], "approvalPolicy": "never",
                 "approvalsReviewer": "user", "sandbox": {"type": "readOnly"}, "reasoningEffort": "none"}
-    if method in ("thread/unsubscribe", "thread/archive", "thread/name/set", "skills/extraRoots/set"):
+    if method in ("thread/unsubscribe", "thread/archive", "thread/name/set", "skills/extraRoots/set", "turn/interrupt"):
         return {}
     return None
 
@@ -96,9 +96,14 @@ def main() -> None:
                 "platformFamily": "unix",
                 "platformOs": "linux",
             }})
+        elif method == "turn/interrupt" and os.environ.get("FAKE_CODEX_HOLD_TURN"):
+            send({"jsonrpc": "2.0", "id": msg["id"], "result": {}})
+            send({"jsonrpc": "2.0", "method": "turn/completed", "params": {
+                "threadId": msg["params"]["threadId"], "turn": _turn("interrupted")}})
         elif method == "turn/start":
             send({"jsonrpc": "2.0", "id": msg["id"], "result": {"turn": _turn("inProgress")}})
-            _turn_events(msg["params"]["threadId"], os.environ.get("FAKE_CODEX_REPLY", "fake codex reply"))
+            if not (os.environ.get("FAKE_CODEX_NO_COMPLETE") or os.environ.get("FAKE_CODEX_HOLD_TURN")):  # simulate a hung turn
+                _turn_events(msg["params"]["threadId"], os.environ.get("FAKE_CODEX_REPLY", "fake codex reply"))
         elif _canned(method, msg.get("params")) is not None:
             send({"jsonrpc": "2.0", "id": msg["id"], "result": _canned(method, msg.get("params"))})
         else:
