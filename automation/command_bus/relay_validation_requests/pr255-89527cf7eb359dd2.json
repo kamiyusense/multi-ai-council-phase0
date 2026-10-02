@@ -1,0 +1,5 @@
+{
+  "target_sha": "89527cf7eb359dd2f4e2b3aba15477e2fe7859da",
+  "source_pr": 255,
+  "purpose": "relay validation: M9 one-shot runner prepare-only, Linux + Windows (STATIC, fixture backends only, no live provider/model)"
+}
