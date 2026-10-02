@@ -110,18 +110,121 @@ class TestThreeProviderStaticE2E(unittest.TestCase):
         t, _ = lifecycle("openai")
         with self.assertRaises(ValueError):
             t.initialize("anthropic")
+        self.assertEqual(t.spawn_count, 0)
+        t.initialize("openai")
         sid = t.open_session("openai", cwd=self.cwd)
         with self.assertRaises(ValueError):
             t.prompt("google", sid, {"prompt": "x"})
-        self.assertEqual(t.spawn_count, 0)
+        t.close("openai", sid)
 
     def test_second_prompt_rejected(self):
         t, _ = lifecycle("openai")
+        t.initialize("openai")
         sid = t.open_session("openai", cwd=self.cwd)
         t.prompt("openai", sid, {"prompt": "x"}, 5)
         with self.assertRaises(ValueError):
             t.prompt("openai", sid, {"prompt": "x"}, 5)
-        self.assertEqual(t.spawn_count, 1)
+        t.close("openai", sid)
+        self.assertEqual((t.spawn_count, t.prompt_count), (1, 1))
+
+
+class TestLifecycleMapping(unittest.TestCase):
+    """Relay calls map one-to-one onto ACP calls over ONE persistent child."""
+
+    def _agent(self, logfile, tail_after_prompt):
+        script = (
+            "import sys, json\n"
+            f"LOG = {logfile!r}\n"
+            "def note(m):\n"
+            "    open(LOG, 'a').write(m + '\\n')\n"
+            "def send(o):\n"
+            "    sys.stdout.write(json.dumps(o) + '\\n'); sys.stdout.flush()\n"
+            "for line in sys.stdin:\n"
+            "    r = json.loads(line); m = r['method']; note(m)\n"
+            "    if m == 'initialize':\n"
+            "        send({'jsonrpc': '2.0', 'id': r['id'], 'result': {'protocolVersion': 1, 'agentCapabilities': {'sessionCapabilities': {'close': {}}}}})\n"
+            "    elif m == 'session/new':\n"
+            "        send({'jsonrpc': '2.0', 'id': r['id'], 'result': {'sessionId': 's1'}})\n"
+            "    elif m == 'session/prompt':\n"
+            + tail_after_prompt +
+            "    elif m == 'session/close':\n"
+            "        send({'jsonrpc': '2.0', 'id': r['id'], 'result': {}})\n"
+        )
+        return (sys.executable, "-c", script)
+
+    def _methods(self, logfile):
+        with open(logfile) as fh:
+            return fh.read().split()
+
+    def test_success_order_and_close_request(self):
+        import os
+        log = os.path.join(tempfile.mkdtemp(), "m.log")
+        tail = (
+            "        send({'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 's1', 'update': {'sessionUpdate': 'available_commands_update', 'availableCommands': []}}})\n"
+            "        send({'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 's1', 'update': {'sessionUpdate': 'agent_message_chunk', 'content': {'type': 'text', 'text': 'ok'}}}})\n"
+            "        send({'jsonrpc': '2.0', 'id': r['id'], 'result': {'stopReason': 'end_turn'}})\n"
+        )
+        t = AcpStdioStaticTransport(PROFILES["openai"](), self._agent(log, tail))
+        res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(envelope("openai"), cwd=tempfile.gettempdir())
+        self.assertEqual(res.state, RelayState.SIMULATED)
+        self.assertEqual(self._methods(log), ["initialize", "session/new", "session/prompt", "session/close"])
+        self.assertEqual((t.spawn_count, t.close_requests, t.cancel_sent), (1, 1, 0))
+
+    def test_timeout_sends_cancel_then_closes_and_no_retry(self):
+        import os
+        log = os.path.join(tempfile.mkdtemp(), "m.log")
+        t = AcpStdioStaticTransport(PROFILES["anthropic"](), self._agent(log, "        pass\n"))
+        res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(envelope("anthropic", timeout=1), cwd=tempfile.gettempdir())
+        self.assertEqual(res.state, RelayState.TIMEOUT)
+        self.assertEqual(self._methods(log), ["initialize", "session/new", "session/prompt", "session/cancel"])
+        self.assertEqual((t.spawn_count, t.prompt_count, t.cancel_sent), (1, 1, 1))
+
+    def test_tool_call_update_and_agent_request_fail_closed(self):
+        import os
+        for tail in (
+            "        send({'jsonrpc': '2.0', 'method': 'session/update', 'params': {'sessionId': 's1', 'update': {'sessionUpdate': 'tool_call', 'toolCallId': 'x'}}})\n",
+            "        send({'jsonrpc': '2.0', 'id': 99, 'method': 'session/request_permission', 'params': {'sessionId': 's1'}})\n",
+        ):
+            with self.subTest(tail=tail):
+                log = os.path.join(tempfile.mkdtemp(), "m.log")
+                t = AcpStdioStaticTransport(PROFILES["google"](), self._agent(log, tail))
+                res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(envelope("google"), cwd=tempfile.gettempdir())
+                self.assertEqual(res.state, RelayState.UNKNOWN)
+                self.assertIsNone(res.raw)
+                self.assertNotIn("permission", " ".join(self._methods(log)))
+
+
+class TestOfficialAdapterLaunchGuards(unittest.TestCase):
+    def _launch(self, pid, **over):
+        from pathlib import Path
+        from relay.acp_stdio_relay_transport import OfficialAdapterLaunch
+        root = Path(__file__).resolve().parents[2] / "fixtures" / "relay"
+        env = {"CODEX_PATH": str(root / "fake_codex_app_server.py")}
+        env.update(over.pop("env", {}))
+        return OfficialAdapterLaunch(over.pop("command", ("node", "x/codex-acp/dist/index.js")), env, over.pop("root", root))
+
+    def test_openai_official_launch_accepted_with_fixture_backend(self):
+        AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch("openai"))
+
+    def test_claude_and_antigravity_have_no_verified_seam(self):
+        for pid, cmd in (("anthropic", ("node", "claude-agent-acp/dist/index.js")), ("google", ("./agy_acp_server.par",))):
+            with self.subTest(pid):
+                with self.assertRaisesRegex(ValueError, "UNKNOWN / LIVE_BOUNDARY"):
+                    AcpStdioStaticTransport(PROFILES[pid](), official=self._launch(pid, command=cmd))
+
+    def test_backend_outside_fixture_root_or_credentials_refused(self):
+        with self.assertRaises(ValueError):
+            AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch("openai", env={"CODEX_PATH": "/usr/bin/env"}))
+        for key in ("OPENAI_API_KEY", "CODEX_API_KEY", "MODEL_PROVIDER", "CODEX_CONFIG"):
+            with self.subTest(key):
+                with self.assertRaises(ValueError):
+                    AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch("openai", env={key: "x"}))
+
+    def test_command_and_official_are_exclusive(self):
+        with self.assertRaises(ValueError):
+            AcpStdioStaticTransport(PROFILES["openai"](), ("python",), official=self._launch("openai"))
+        with self.assertRaises(ValueError):
+            AcpStdioStaticTransport(PROFILES["openai"]())
 
 
 class TestLiveLaunchRefused(unittest.TestCase):
@@ -151,3 +254,73 @@ class TestLiveLaunchRefused(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOfficialCodexAdapterWithFixtureBackend(unittest.TestCase):
+    """Real official codex-acp + fixture app-server. Skipped unless RELAY_CODEX_ACP_DIR is set.
+
+    RELAY_CODEX_ACP_DIR = .../node_modules/@agentclientprotocol/codex-acp (npm install
+    --ignore-scripts --omit=optional). The adapter's backend is the fixture via CODEX_PATH,
+    so the bundled Codex is never executed and no provider/model is reachable.
+    """
+
+    def setUp(self):
+        import os
+        import shutil
+        self.dir = os.environ.get("RELAY_CODEX_ACP_DIR")
+        if not self.dir or not shutil.which("node"):
+            self.skipTest("RELAY_CODEX_ACP_DIR / node not available (TEST_ENVIRONMENT_NOT_PREPARED)")
+
+    def test_lifecycle_through_official_adapter(self):
+        import os
+        from pathlib import Path
+        from relay.acp_stdio_relay_transport import OfficialAdapterLaunch
+        root = Path(__file__).resolve().parents[2] / "fixtures" / "relay"
+        home = tempfile.mkdtemp()
+        log = os.path.join(home, "backend.log")
+        env = {
+            "HOME": home, "CODEX_HOME": home, "APP_SERVER_LOGS": home, "FAKE_CODEX_LOG": log,
+            "CODEX_PATH": str(root / "fake_codex_app_server.py"),
+        }
+        launch = OfficialAdapterLaunch(("node", os.path.join(self.dir, "dist", "index.js")), env, root)
+        t = AcpStdioStaticTransport(PROFILES["openai"](), official=launch)
+        res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(
+            envelope("openai", timeout=20), cwd=home
+        )
+        self.assertEqual(res.state, RelayState.SIMULATED)
+        self.assertIn(b"fake codex reply", res.raw)
+        with open(log) as fh:
+            methods = fh.read().split()
+        self.assertEqual(methods[0], "initialize")
+        # Only the fixture backend was reached; the user-facing turn is turn/start #1.
+        # Upstream codex-acp may add a fire-and-forget title turn (observed): 1 or 2.
+        self.assertIn(methods.count("turn/start"), (1, 2))
+        self.assertEqual((t.spawn_count, t.prompt_count), (1, 1))
+        adapter = RelayCoreAdapter("openai", RelayProviderAdapterBridge(), PROFILES["openai"]().static_preflight_config)
+        self.assertTrue(adapter.classify(res.raw)["success"])
+
+
+class TestOfficialTckFixtureAgentThroughLifecycle(unittest.TestCase):
+    """acp-tck's bundled conforming v1 fixture agent (offline, stdlib, no provider).
+
+    Skipped unless RELAY_ACP_TCK_FIXTURE points at tests/fixtures/agents/v1/conforming.py.
+    This is an ACP-conformant fixture, NOT the official Claude/Antigravity adapter.
+    """
+
+    def setUp(self):
+        import os
+        self.fixture = os.environ.get("RELAY_ACP_TCK_FIXTURE")
+        if not self.fixture:
+            self.skipTest("RELAY_ACP_TCK_FIXTURE not set (TEST_ENVIRONMENT_NOT_PREPARED)")
+
+    def test_three_profiles_success_cancel_isolation(self):
+        for pid in PROFILES:
+            with self.subTest(pid):
+                t = AcpStdioStaticTransport(PROFILES[pid](), (sys.executable, self.fixture))
+                res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(
+                    envelope(pid), cwd=tempfile.gettempdir()
+                )
+                self.assertEqual(res.state, RelayState.SIMULATED)
+                self.assertEqual((t.spawn_count, t.prompt_count, t.cancel_sent), (1, 1, 0))
+                adapter = RelayCoreAdapter(pid, RelayProviderAdapterBridge(), PROFILES[pid]().static_preflight_config)
+                self.assertTrue(adapter.classify(res.raw)["success"])

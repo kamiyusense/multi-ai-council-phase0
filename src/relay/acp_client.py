@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from copy import deepcopy
+from collections.abc import Mapping
 from typing import Any
 
 from providers.policy import ProviderPolicy
@@ -165,31 +166,62 @@ class ACPClient:
         return deepcopy(self._sessions[session_id]["evidence"])
 
 
+_MAX_INTERLEAVED_NOTIFICATIONS = 16
+# Official adapters push metadata-only session updates around a turn. These carry
+# no model text and request nothing from the client, so the prompt wire skips them
+# (bounded). Anything else that is not agent_message_chunk (tool_call, plan, ...)
+# still fails closed.
+_IGNORABLE_SESSION_UPDATES = frozenset({
+    "available_commands_update",
+    "usage_update",
+    "session_info_update",
+    "current_mode_update",
+    "config_option_update",
+})
+
+
 async def _acp_read_terminal_response(
     stdout: asyncio.StreamReader,
     expected_id: int,
     timeout: float,
     method_name: str,
 ) -> dict[str, Any]:
-    """Internal helper to read and validate a JSON-RPC terminal response."""
-    try:
-        line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
-    except asyncio.TimeoutError as e:
-        raise TimeoutError(f"Timeout reading ACP {method_name} response") from e
+    """Internal helper to read and validate a JSON-RPC terminal response.
 
-    if not line:
-        raise EOFError(f"Unexpected EOF reading ACP {method_name} response")
+    Official adapters may interleave one-way notifications (e.g. session/update)
+    before the terminal response. Up to _MAX_INTERLEAVED_NOTIFICATIONS are
+    skipped; an agent-initiated *request* (method + id, e.g. a permission
+    request) is never answered and fails closed.
+    """
+    skipped = 0
+    while True:
+        try:
+            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+        except asyncio.TimeoutError as e:
+            raise TimeoutError(f"Timeout reading ACP {method_name} response") from e
 
-    try:
-        response = json.loads(line)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Malformed JSON in ACP {method_name} response") from e
+        if not line:
+            raise EOFError(f"Unexpected EOF reading ACP {method_name} response")
 
-    if not isinstance(response, dict):
-        raise ValueError(f"ACP {method_name} response must be a JSON object")
+        try:
+            response = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Malformed JSON in ACP {method_name} response") from e
 
-    if response.get("jsonrpc") != "2.0":
-        raise ValueError(f"ACP {method_name} response must have jsonrpc='2.0'")
+        if not isinstance(response, dict):
+            raise ValueError(f"ACP {method_name} response must be a JSON object")
+
+        if response.get("jsonrpc") != "2.0":
+            raise ValueError(f"ACP {method_name} response must have jsonrpc='2.0'")
+
+        if "method" in response:
+            if "id" in response:
+                raise ValueError(f"ACP {method_name}: agent-initiated request is not supported")
+            skipped += 1
+            if skipped > _MAX_INTERLEAVED_NOTIFICATIONS:
+                raise ValueError(f"ACP {method_name}: too many interleaved notifications")
+            continue
+        break
 
     if type(response.get("id")) is not int or response["id"] != expected_id:
         raise ValueError(f"ACP {method_name} response id mismatch")
@@ -220,7 +252,7 @@ async def _acp_exchange(
     return await _acp_read_terminal_response(stdout, expected_id, timeout, method_name)
 
 
-async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) -> dict[str, Any]:
+async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0, env: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Execute a single ACP v1 initialize round-trip against a local spawned process.
 
     This provides an isolated, retry-free primitive bridging Relay to the standard
@@ -229,7 +261,7 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) ->
     Source: agentclientprotocol/python-sdk commit 9d07d7871ef4b220b8507e15fc4b1560f0950a64;
     src/acp/client/connection.py initialize request contract (Apache-2.0).
     """
-    async with spawn_stdio_transport(command, *args, shutdown_timeout=timeout) as (stdout, stdin, _process):
+    async with spawn_stdio_transport(command, *args, env=env, shutdown_timeout=timeout) as (stdout, stdin, _process):
         request = {
             "jsonrpc": "2.0",
             "id": 0,
@@ -249,8 +281,8 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0) ->
         return result
 
 
-async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float) -> str:
-    """Internal helper to execute initialize and session/new against an existing transport."""
+async def _acp_initialize(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, timeout: float) -> dict[str, Any]:
+    """Internal helper: ACP initialize round-trip (request id 0)."""
     init_request = {
         "jsonrpc": "2.0",
         "id": 0,
@@ -264,7 +296,11 @@ async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWrit
     init_result = await _acp_exchange(stdout, stdin, init_request, 0, timeout, "initialize")
     if type(init_result.get("protocolVersion")) is not int or init_result["protocolVersion"] != 1:
         raise ValueError("ACP initialize response unsupported protocol version")
+    return init_result
 
+
+async def _acp_new_session(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float) -> str:
+    """Internal helper: ACP session/new round-trip (request id 1)."""
     session_request = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -283,15 +319,21 @@ async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWrit
     return session_id
 
 
-async def acp_open_session_wire(command: str, *args: str, cwd: str, timeout: float = 2.0) -> str:
+async def _acp_handshake(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float) -> str:
+    """Internal helper to execute initialize and session/new against an existing transport."""
+    await _acp_initialize(stdout, stdin, timeout)
+    return await _acp_new_session(stdout, stdin, cwd, timeout)
+
+
+async def acp_open_session_wire(command: str, *args: str, cwd: str, timeout: float = 2.0, env: Mapping[str, str] | None = None) -> str:
     """Execute initialize and session/new round-trips against a single local spawned process."""
-    async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
+    async with spawn_stdio_transport(command, *args, env=env, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
         return await _acp_handshake(stdout, stdin, cwd, timeout)
 
 
-async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0) -> str:
+async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0, env: Mapping[str, str] | None = None) -> str:
     """Execute a single ACP v1 initialize -> session/new -> session/prompt terminal round-trip."""
-    async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
+    async with spawn_stdio_transport(command, *args, env=env, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
         session_id = await _acp_handshake(stdout, stdin, cwd, timeout)
 
         prompt_request = {
@@ -311,105 +353,122 @@ async def acp_mock_prompt_wire(command: str, *args: str, cwd: str, prompt_text: 
 
         return stop_reason
 
-async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0) -> dict[str, str]:
+async def _acp_prompt_text(
+    stdout: asyncio.StreamReader,
+    stdin: asyncio.StreamWriter,
+    session_id: str,
+    prompt_text: str,
+    timeout: float,
+) -> dict[str, str]:
+    """Internal helper: session/prompt (request id 2) -> 1..3 text chunks + stopReason."""
+    prompt_request = {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "session/prompt",
+        "params": {
+            "sessionId": session_id,
+            "prompt": [{"type": "text", "text": prompt_text}],
+        },
+    }
+
+    request_bytes = json.dumps(prompt_request).encode("utf-8") + b"\n"
+    stdin.write(request_bytes)
+    await stdin.drain()
+
+    concatenated_text = ""
+    notification_count = 0
+    terminal_result = None
+
+    ignored = 0
+    for _ in range(4 + _MAX_INTERLEAVED_NOTIFICATIONS):
+        try:
+            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+        except asyncio.TimeoutError as e:
+            raise TimeoutError("Timeout reading ACP session/prompt response") from e
+
+        if not line:
+            raise EOFError("Unexpected EOF reading ACP session/prompt response")
+
+        try:
+            frame = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError("Malformed JSON in ACP session/prompt response") from e
+
+        if not isinstance(frame, dict):
+            raise ValueError("ACP session/prompt response must be a JSON object")
+
+        if frame.get("jsonrpc") != "2.0":
+            raise ValueError("ACP session/prompt response must have jsonrpc='2.0'")
+
+        if "id" in frame:
+            # Terminal response
+            if notification_count == 0:
+                raise ValueError("ACP session/update notification must not have an id field")
+            if type(frame.get("id")) is not int or frame["id"] != 2:
+                raise ValueError("ACP session/prompt response id mismatch")
+            if "error" in frame:
+                raise RuntimeError("ACP session/prompt returned error")
+            terminal_result = frame.get("result")
+            if not isinstance(terminal_result, dict):
+                raise ValueError("ACP session/prompt response missing valid result object")
+            break
+        else:
+            # Notification
+            if notification_count >= 3:
+                raise ValueError("Maximum of 3 text updates exceeded")
+
+            if frame.get("method") != "session/update":
+                raise ValueError("ACP session/update notification method must be 'session/update'")
+
+            params = frame.get("params")
+            if not isinstance(params, dict):
+                raise ValueError("ACP session/update notification missing valid params object")
+
+            if params.get("sessionId") != session_id:
+                raise ValueError("ACP session/update notification sessionId mismatch")
+
+            update = params.get("update")
+            if not isinstance(update, dict):
+                raise ValueError("ACP session/update notification missing valid update object")
+
+            if update.get("sessionUpdate") in _IGNORABLE_SESSION_UPDATES:
+                ignored += 1
+                if ignored > _MAX_INTERLEAVED_NOTIFICATIONS:
+                    raise ValueError("Too many ignorable session updates")
+                continue
+
+            if update.get("sessionUpdate") != "agent_message_chunk":
+                raise ValueError("ACP session/update notification sessionUpdate must be 'agent_message_chunk'")
+
+            notif_content = update.get("content")
+            if not isinstance(notif_content, dict):
+                raise ValueError("ACP session/update notification missing valid content object")
+
+            if notif_content.get("type") != "text":
+                raise ValueError("ACP session/update notification content type must be 'text'")
+
+            text = notif_content.get("text")
+            if not isinstance(text, str):
+                raise ValueError("ACP session/update notification missing valid text string")
+
+            concatenated_text += text
+            notification_count += 1
+
+    if terminal_result is None:
+        raise ValueError("No terminal response received within bound")
+
+    stop_reason = terminal_result.get("stopReason")
+    if not isinstance(stop_reason, str) or stop_reason not in {"end_turn", "max_tokens", "max_turn_requests", "refusal", "cancelled"}:
+        raise ValueError("ACP session/prompt response missing valid stopReason")
+
+    return {"text": concatenated_text, "stopReason": stop_reason}
+
+
+async def acp_mock_text_update_wire(command: str, *args: str, cwd: str, prompt_text: str, timeout: float = 2.0, env: Mapping[str, str] | None = None) -> dict[str, str]:
     """Mock-only ACP prompt: concatenate 1..3 text updates before the terminal response."""
-    async with spawn_stdio_transport(command, *args, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
+    async with spawn_stdio_transport(command, *args, env=env, cwd=cwd, shutdown_timeout=timeout) as (stdout, stdin, _process):
         session_id = await _acp_handshake(stdout, stdin, cwd, timeout)
-
-        prompt_request = {
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "session/prompt",
-            "params": {
-                "sessionId": session_id,
-                "prompt": [{"type": "text", "text": prompt_text}],
-            },
-        }
-
-        request_bytes = json.dumps(prompt_request).encode("utf-8") + b"\n"
-        stdin.write(request_bytes)
-        await stdin.drain()
-
-        concatenated_text = ""
-        notification_count = 0
-        terminal_result = None
-
-        for _ in range(4):
-            try:
-                line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
-            except asyncio.TimeoutError as e:
-                raise TimeoutError("Timeout reading ACP session/prompt response") from e
-
-            if not line:
-                raise EOFError("Unexpected EOF reading ACP session/prompt response")
-
-            try:
-                frame = json.loads(line)
-            except json.JSONDecodeError as e:
-                raise ValueError("Malformed JSON in ACP session/prompt response") from e
-
-            if not isinstance(frame, dict):
-                raise ValueError("ACP session/prompt response must be a JSON object")
-
-            if frame.get("jsonrpc") != "2.0":
-                raise ValueError("ACP session/prompt response must have jsonrpc='2.0'")
-
-            if "id" in frame:
-                # Terminal response
-                if notification_count == 0:
-                    raise ValueError("ACP session/update notification must not have an id field")
-                if type(frame.get("id")) is not int or frame["id"] != 2:
-                    raise ValueError("ACP session/prompt response id mismatch")
-                if "error" in frame:
-                    raise RuntimeError("ACP session/prompt returned error")
-                terminal_result = frame.get("result")
-                if not isinstance(terminal_result, dict):
-                    raise ValueError("ACP session/prompt response missing valid result object")
-                break
-            else:
-                # Notification
-                if notification_count >= 3:
-                    raise ValueError("Maximum of 3 text updates exceeded")
-
-                if frame.get("method") != "session/update":
-                    raise ValueError("ACP session/update notification method must be 'session/update'")
-
-                params = frame.get("params")
-                if not isinstance(params, dict):
-                    raise ValueError("ACP session/update notification missing valid params object")
-
-                if params.get("sessionId") != session_id:
-                    raise ValueError("ACP session/update notification sessionId mismatch")
-
-                update = params.get("update")
-                if not isinstance(update, dict):
-                    raise ValueError("ACP session/update notification missing valid update object")
-
-                if update.get("sessionUpdate") != "agent_message_chunk":
-                    raise ValueError("ACP session/update notification sessionUpdate must be 'agent_message_chunk'")
-
-                notif_content = update.get("content")
-                if not isinstance(notif_content, dict):
-                    raise ValueError("ACP session/update notification missing valid content object")
-
-                if notif_content.get("type") != "text":
-                    raise ValueError("ACP session/update notification content type must be 'text'")
-
-                text = notif_content.get("text")
-                if not isinstance(text, str):
-                    raise ValueError("ACP session/update notification missing valid text string")
-
-                concatenated_text += text
-                notification_count += 1
-
-        if terminal_result is None:
-            raise ValueError("No terminal response received within bound")
-
-        stop_reason = terminal_result.get("stopReason")
-        if not isinstance(stop_reason, str) or stop_reason not in {"end_turn", "max_tokens", "max_turn_requests", "refusal", "cancelled"}:
-            raise ValueError("ACP session/prompt response missing valid stopReason")
-
-        return {"text": concatenated_text, "stopReason": stop_reason}
+        return await _acp_prompt_text(stdout, stdin, session_id, prompt_text, timeout)
 
 def acp_mock_text_to_phase0_raw(mock_result: dict[str, str]) -> bytes:
     """
