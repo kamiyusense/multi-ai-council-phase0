@@ -106,3 +106,10 @@ LIVE05のWork原結果検品FAILと06Yellow UNKNOWN/07Green PASS/08Red PASSは
 [evidence](evidence/blue-work-night-20261002/live-05-08.json)に保存。
 Session GETの一回failureはUNKNOWN、再実行しない。診断保存機能をSTATICで追加、987件実行（成功986/skip1）。
 自動review投稿/source認証/無人連続運転は未完了。前段のPENDING表記は当時の履歴。
+
+## 終了checkpoint
+
+LIVE09の最終Blue修正delta検品はPASS（receipt5944599531）、9/10使用。
+同じコードHEAD931697eac8ea561a41589799187545eba5c0d62bのActions36956416439/job110680237549は
+987件/skip1で成功。source UNKNOWNと自動bridge NOT_WIREDは残す。
+後続保存は証拠文書のみで実装を変更しない。詳細は最終検品文書とactions-final-readback/live-09を読む。

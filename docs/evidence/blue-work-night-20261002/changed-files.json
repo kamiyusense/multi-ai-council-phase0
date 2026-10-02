@@ -1,0 +1,238 @@
+{
+  "baseline": "044e96b69f4bcf7c2efb43cb325f8b5181e086e1",
+  "reviewed_code_head": "931697eac8ea561a41589799187545eba5c0d62b",
+  "changes_to_reviewed_code": [
+    {
+      "path": ".github/workflows/blue-existing-session-readback.yml",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0
+    },
+    {
+      "path": ".github/workflows/blue-work-reconcile-static.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "path": "HANDOVER_CURRENT.md",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/blue_work_reconcile_prepare.py",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/github_readonly.py",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/jules_completed_readback_cli.py",
+      "status": "added",
+      "additions": 52,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/jules_result_lineage.py",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 5
+    },
+    {
+      "path": "automation/command_bus/jules_session_readonly.py",
+      "status": "added",
+      "additions": 110,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/tests/closed_loop_fixtures.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/work_closed_loop/input.json",
+      "status": "modified",
+      "additions": 305,
+      "deletions": 294
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_receipt_binding.py",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/tests/test_github_readonly.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_completed_readback_cli.py",
+      "status": "added",
+      "additions": 87,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_readonly.py",
+      "status": "added",
+      "additions": 215,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_readonly_boundaries.py",
+      "status": "added",
+      "additions": 107,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_lineage_binding.py",
+      "status": "added",
+      "additions": 97,
+      "deletions": 0
+    },
+    {
+      "path": "automation/command_bus/work_result_review.py",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0
+    },
+    {
+      "path": "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0
+    },
+    {
+      "path": "docs/BLUE_WORK_NIGHT_BATCH_20261002.md",
+      "status": "added",
+      "additions": 108,
+      "deletions": 0
+    },
+    {
+      "path": "docs/BLUE_WORK_REVIEW_READY_20261002.md",
+      "status": "added",
+      "additions": 105,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/before-bindings.txt",
+      "status": "added",
+      "additions": 91,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/before-receipt.txt",
+      "status": "added",
+      "additions": 151,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-01-02.json",
+      "status": "added",
+      "additions": 127,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-03-04.json",
+      "status": "added",
+      "additions": 121,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-05-08.json",
+      "status": "added",
+      "additions": 689,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/readback-failure.json",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/session-before.txt",
+      "status": "added",
+      "additions": 205,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/session-readback-request.json",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-repair.json",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-session-final.json",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-session-repair.json",
+      "status": "added",
+      "additions": 61,
+      "deletions": 0
+    }
+  ],
+  "evidence_only_new_paths": [
+    "docs/evidence/blue-work-night-20261002/actions-final-readback.json",
+    "docs/evidence/blue-work-night-20261002/live-09.json",
+    "docs/evidence/blue-work-night-20261002/changed-files.json"
+  ],
+  "autonomous_engineering_steps": [
+    "current main navigation fresh read",
+    "formal Jules carrier/V2/schema-v3 specs fresh read",
+    "four unique carriers/generation/receipts fresh read",
+    "PR203/217 diff/tests/evidence inspection",
+    "official docs/precedent verification",
+    "Blue read-only LIVE wake/readback",
+    "Blue independent review FAIL readback",
+    "pre-repair reproduction",
+    "receipt verification repair",
+    "PR all-page HEAD fence repair",
+    "source/result/review/allowlist binding repair",
+    "focused/full/static regression",
+    "commit337 publication/readback",
+    "independent delta PASS/next proposal readback",
+    "full global ledger and328branches coherence",
+    "create-only schema-v3 claim125/readback",
+    "isolated branch and single matching command/readback",
+    "Actions Session acceptance/time readback",
+    "PR227 exact ancestry/two-path inspection",
+    "raw Session-reader negative reproduction",
+    "bounded Controller GET-reader repair/mocks",
+    "commit568/static Actions/readback",
+    "one existing Session GET failure observation",
+    "Work raw result semantic FAIL/source UNKNOWN review",
+    "three-color isolated read-only LIVE/readback",
+    "safe diagnosis/output/rerun fences + regression",
+    "987 exact-head CI/blob/scope verification",
+    "final independent PASS and evidence checkpoint/readback"
+  ],
+  "step_count": 28,
+  "jules_medium_equivalence": "NOT_MEASURED",
+  "actual_new_jules_sessions": 1,
+  "live_count": 9,
+  "work_pass": 5,
+  "work_fail": 2,
+  "work_unknown": 1,
+  "read_only_session_get_observations": 1,
+  "completed_source": "UNKNOWN",
+  "merge_performed": false,
+  "stop_reason": "useful authorized STATIC/independent review/evidence work complete; completed source and automatic bridge still UNKNOWN/NOT_WIRED; no budget-filling missions"
+}

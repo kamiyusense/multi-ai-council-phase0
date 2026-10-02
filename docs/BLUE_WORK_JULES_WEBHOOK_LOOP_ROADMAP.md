@@ -15,7 +15,9 @@ Work independently rejected its raw PR227 semantics; Controller repairs are
 tested separately. The completed Session GET failed closed; authenticated source
 and automatic Actions→carrier-review transport remain UNKNOWN/NOT_WIRED.
 BWJ-4 full event bridge, M3/M4 adoption/cycle and continuous operation are not complete.
-Merge stays withheld. The following STATIC section is historical.
+Final independent repaired-code delta PASS at931697e; exact-head Actions987/skip1 passed.
+LIVE9/10 used; source UNKNOWN stops new Jules/adoption. Evidence-only child commits
+preserve independently reviewed code. Merge stays withheld. The following STATIC section is historical.
 
 ### PR #217 experimental STATIC checkpoint
 

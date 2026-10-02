@@ -3,8 +3,9 @@
 ## PR #217 current review-ready checkpoint
 
 Read [BLUE_WORK_REVIEW_READY_20261002.md](docs/BLUE_WORK_REVIEW_READY_20261002.md)
-first for this experiment. LIVE budget used8/10 at this checkpoint, complete
-Session source UNKNOWN, raw Jules result FAIL, bounded Controller repairs tested.
+first for this experiment. LIVE budget used9/10 at this checkpoint, complete
+Session source UNKNOWN, raw Jules result FAIL, bounded Controller repairs tested and independently PASS at code SHA931697eac8ea561a41589799187545eba5c0d62b.
+Exact-head Actions987/skip1 passed; later commits preserve those code blobs.
 Blue/Green/Red read-only Work evidence is verified; Yellow tree proof UNKNOWN.
 Merge remains withheld. Fresh-read PR217 HEAD and evidence before continuation.
 Earlier blocks below are historical snapshots and do not override current state.

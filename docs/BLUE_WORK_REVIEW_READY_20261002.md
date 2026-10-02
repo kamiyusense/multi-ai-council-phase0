@@ -25,7 +25,7 @@ readback workflowはrequest追加commitとrun_attempt1だけ。一件既存Sessi
 STATIC workflowに将来のjules-work/** base result PR入口を追加し、既存prepare-only CLIを再利用。
 現在のsource認証接続はNOT_WIRED/UNKNOWNのままで、候補や実投稿権限は生成しない。
 
-## LIVE台帳（max10、現在8使用）
+## LIVE台帳（max10、最終9使用）
 
 | 回 | 操作 | terminal / 観測 |
 | --- | --- | --- |
@@ -37,9 +37,11 @@ STATIC workflowに将来のjules-work/** base result PR入口を追加し、既�
 | 06 | Yellow read-only接続/混線防止 | UNKNOWN、receipt5944505227。起動は確認、tree確認能力不足 |
 | 07 | Green read-only接続/混線防止 | PASS、receipt5944510318 |
 | 08 | Red read-only接続/混線防止 | PASS、receipt5944504857 |
+| 09 | Blue最終修正delta独立検品 | PASS、receipt5944599531。source UNKNOWNとは別 |
 
 外部Work命令1件/新Jules Session1件を1回。読取り・STATIC Actions・既存Session GETは観測。
-新Sessionは1件、Work命令は7件。新Scheduled Task/設定変更は0件。曖昧送信の再送0件。
+新Sessionは1件、Work命令は8件。Work outcomeはPASS5/FAIL2/UNKNOWN1。
+試験04の新Julesは受理済みだが、原コードFAIL・完成sourceUNKNOWNで正式採用しない。新Scheduled Task/設定変更は0件。曖昧送信の再送0件。
 すべてのWork receiptは元reviewとcommand/PR/branch/HEAD/世代/terminalを照合済み。
 Green/Yellowのnode ID表記も実reviewのnode_idと照合し、数値IDを捏造しない。
 Yellow UNKNOWNはcontrollerがtreeを読めても独立検品PASSへ書き換えない。
@@ -49,7 +51,12 @@ Yellow UNKNOWNはcontrollerがtreeを読めても独立検品PASSへ書き換え
 3370044のfull949（948成功/skip1）はexactHEAD Actions36910508737/job110531683234で確認。
 568a30dのfull984（983成功/skip1）はActions36955285231/job110676786533の実logで確認。
 診断修正後local full987（986成功/Windows-only skip1、failure/error0、47.665秒）、
-compileall/diff check/mock正式閉ループが成功。保存後はexactHEAD Actionsを正本に追記する。
+compileall/diff check/mock正式閉ループが成功。保存後exactHEAD `931697eac8ea561a41589799187545eba5c0d62b` の
+Actions36956416439/job110680237549も987件/skip1、failure/error0（55.260秒）で成功。
+compileall/diff check/MOCK/preflight/artifact保存を実step/logで確認。
+最終独立Work receipt5944599531は同じコードHEAD/treeでPASS。
+保存12blobは内容一致、対象外626blobを維持。後続commitは証拠文書だけでコード同一。
+[evidence Actions](evidence/blue-work-night-20261002/actions-final-readback.json)を参照。
 修正前raw227の8 regression methodは9 assertion failures/5 errors（subcase込み）で再現。
 過去のreceipt test harness errorは製品不具合と区別して保存してある。
 コードの自己検品、Work独立検品、CIとLIVE source照合は別の証拠軸。
@@ -97,7 +104,15 @@ OpenCaraのevent振分け/PR直列化、HiveMind reviewerのPR入口、PR115のw
 自律工程は現在28種類の調査・再現・修正・検証・保存・readbackとして整理し、Jules中規模Loop
 18〜30回と同等の工数を証明したとはしない。実Jules投入はLoop125一回。
 細かな工程確認は求めず、承認された安全範囲で継続した。
-最終独立delta reviewと保存後Actionsの結果はPR217/checkpointへ追記する。
+最終独立delta reviewと保存後Actionsの結果をPR217/checkpointに保存した。
+9/10で停止。source認証/実Actions reviewの境界を推測で越えず、残枠消費のための任務は作らない。
+ここまでコード・模擬回帰・独立検品・保存/readbackを終え、残りはLIVE source診断と自動bridge境界。
+
+28工程の実施区分: navigation/正式仕様/4色探索/差分/公式資料、Blue read-only/独立検品、
+再現/receipt修正/pagination修正/lineage修正/回帰/保存readback/delta独立PASS、
+global全ledger/claim予約/work branch+命令/Session受理readback、結果差分/異常再現/reader修正/
+STATIC Actions/既存GET一回failure/原結果Work検品/3色接続/診断修正/最終回帰/最終保存と独立検品。
+工程数はこのまとまりの数で、実APIリクエスト数やJules工数換算ではない。
 
 証拠: [night batch](BLUE_WORK_NIGHT_BATCH_20261002.md) /
 [JSON・修正前log](evidence/blue-work-night-20261002/) /
