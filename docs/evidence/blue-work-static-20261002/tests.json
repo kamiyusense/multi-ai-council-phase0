@@ -1,0 +1,23 @@
+{
+  "source_mode": "STATIC",
+  "tests_run": 1045,
+  "passed": 1044,
+  "skipped": 1,
+  "failures": 0,
+  "errors": 0,
+  "seconds": 46.991,
+  "log_sha256": "360691d94ae665da88cb983d963d3ccb1321f50f5f6b7dc8dd2cadaa83e28102",
+  "before_regression": {
+    "initial_tests": 4,
+    "initial_failures": 3,
+    "additional_tests": 1,
+    "additional_failures": 1,
+    "errors": 0
+  },
+  "new_live_trials": 0,
+  "new_session_gets": 0,
+  "new_claim_reservations": 0,
+  "independent_review_of_this_delta": "NOT_EXECUTED",
+  "semantic_live_authentication": "UNKNOWN",
+  "new_test_methods": 38
+}

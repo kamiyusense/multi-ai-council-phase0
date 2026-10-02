@@ -1,0 +1,255 @@
+{
+  "execution_mode": "PREPARE_ONLY",
+  "external_execution": 0,
+  "fake_submissions": 32,
+  "fault_observations": 1280,
+  "invariant_violations": {
+    "claim_reservation": 0,
+    "cross_color_consumption": 0,
+    "duplicate_dispatch": 0,
+    "external_send": 0,
+    "force": 0,
+    "foreign_receipt_adoption": 0,
+    "global_loop_collision": 0,
+    "merge": 0,
+    "stale_generation_execution": 0,
+    "target_mismatch_adoption": 0,
+    "terminal_replay": 0,
+    "unauthenticated_adoption": 0
+  },
+  "limitations": [
+    "Assertions cover deterministic fixture cases only.",
+    "No provider/source authentication or live wake proven.",
+    "Concurrent unreserved candidates may collide; formal reservation recheck must BLOCK, never retry."
+  ],
+  "loops_per_lane": 8,
+  "records": [
+    {
+      "candidate_loop": 2003,
+      "command_id": "blue-jules-result-pr43-8e6122d2089ad030fafd07f6e2be4310c24ce1ee",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 1
+    },
+    {
+      "candidate_loop": 2005,
+      "command_id": "yellow-jules-result-pr44-9a6c0e28cbe86538fa03672021152c5022d13890",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 1
+    },
+    {
+      "candidate_loop": 2007,
+      "command_id": "green-jules-result-pr45-338ec47b37e48180d064be05b8ad4ba9c706064f",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 1
+    },
+    {
+      "candidate_loop": 2009,
+      "command_id": "red-jules-result-pr46-db55fac90713aeef16082d4894f192f563c71ed0",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 1
+    },
+    {
+      "candidate_loop": 2013,
+      "command_id": "yellow-jules-result-pr48-a2fc762013d326dbec9b0437b3c53f91eb04a782",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 2
+    },
+    {
+      "candidate_loop": 2015,
+      "command_id": "green-jules-result-pr49-f7a4ad5630650977761914c5ab0e0f5022d93c3c",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 2
+    },
+    {
+      "candidate_loop": 2017,
+      "command_id": "red-jules-result-pr50-308cbf317043b25ce1477ad4c904dd3dcabbab12",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 2
+    },
+    {
+      "candidate_loop": 2011,
+      "command_id": "blue-jules-result-pr47-2d57776f97d140a63b33036eac4748e1f6a17186",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 2
+    },
+    {
+      "candidate_loop": 2023,
+      "command_id": "green-jules-result-pr53-117517117f262cc6020ceb0cc863abc90867bae6",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 3
+    },
+    {
+      "candidate_loop": 2025,
+      "command_id": "red-jules-result-pr54-0c1489970067707ed49bcb3faf3e4e6b1f34578b",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 3
+    },
+    {
+      "candidate_loop": 2019,
+      "command_id": "blue-jules-result-pr51-f00cdcae4e39e284269c8ec71873383d125efb0c",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 3
+    },
+    {
+      "candidate_loop": 2021,
+      "command_id": "yellow-jules-result-pr52-feffc00405ec0d5d713c6ba4ac076933751baaa6",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 3
+    },
+    {
+      "candidate_loop": 2033,
+      "command_id": "red-jules-result-pr58-966f84e46159d23dc86f463051f49d0ee9e57433",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 4
+    },
+    {
+      "candidate_loop": 2027,
+      "command_id": "blue-jules-result-pr55-f2cd93e49fcb44d1711a0985a948f7f1da3698e7",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 4
+    },
+    {
+      "candidate_loop": 2029,
+      "command_id": "yellow-jules-result-pr56-101f750fd4e229728aa7a2d2bd407665df72d82e",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 4
+    },
+    {
+      "candidate_loop": 2031,
+      "command_id": "green-jules-result-pr57-3b937bf00a66822e17e234362d3daf38404dcdd9",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 4
+    },
+    {
+      "candidate_loop": 2035,
+      "command_id": "blue-jules-result-pr59-6ca36cace6c1e9c99768c54bc3abb5f5ada150b2",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 5
+    },
+    {
+      "candidate_loop": 2037,
+      "command_id": "yellow-jules-result-pr60-f9e4513b6d5e618dbc883dd80481c65ad00a6f33",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 5
+    },
+    {
+      "candidate_loop": 2039,
+      "command_id": "green-jules-result-pr61-cdf0726ae134d6017f383328823abf046fe49be7",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 5
+    },
+    {
+      "candidate_loop": 2041,
+      "command_id": "red-jules-result-pr62-cf5b9a2b0605a11af36144209fa1561e972acde7",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 5
+    },
+    {
+      "candidate_loop": 2045,
+      "command_id": "yellow-jules-result-pr64-e760f132231e4b0128b0b77868088ef43054682b",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 6
+    },
+    {
+      "candidate_loop": 2047,
+      "command_id": "green-jules-result-pr65-dc296ea4039c31b456652bacf827f36dc16a12bb",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 6
+    },
+    {
+      "candidate_loop": 2049,
+      "command_id": "red-jules-result-pr66-fc0ec2d9985f1551e4180fa6c2e279ad18f39675",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 6
+    },
+    {
+      "candidate_loop": 2043,
+      "command_id": "blue-jules-result-pr63-da7cfa7bc43eea8e1695045ed06babc79030302f",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 6
+    },
+    {
+      "candidate_loop": 2055,
+      "command_id": "green-jules-result-pr69-fb8c47134f678507e94ce4ade9795567b10ab10d",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 7
+    },
+    {
+      "candidate_loop": 2057,
+      "command_id": "red-jules-result-pr70-b376cd8f689b2da14839d8a9d30e684643f46e6f",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 7
+    },
+    {
+      "candidate_loop": 2051,
+      "command_id": "blue-jules-result-pr67-a31a5e702e59e9b491f13ef496ff43b70bbbb0ba",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 7
+    },
+    {
+      "candidate_loop": 2053,
+      "command_id": "yellow-jules-result-pr68-cc3afaabb521892e452d7c5b28d30d9acf0f7f04",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 7
+    },
+    {
+      "candidate_loop": 2065,
+      "command_id": "red-jules-result-pr74-de4dfdaa3f3873589a4dbc1c9deccee835d62d29",
+      "lane": "red",
+      "restart_status": "NO_OP",
+      "virtual_round": 8
+    },
+    {
+      "candidate_loop": 2059,
+      "command_id": "blue-jules-result-pr71-d4a9c46aacf230933d43a2a2138f3b87e4ee5974",
+      "lane": "blue",
+      "restart_status": "NO_OP",
+      "virtual_round": 8
+    },
+    {
+      "candidate_loop": 2061,
+      "command_id": "yellow-jules-result-pr72-2956c2d38ab8362e2afa1be50caf3e97098b6a02",
+      "lane": "yellow",
+      "restart_status": "NO_OP",
+      "virtual_round": 8
+    },
+    {
+      "candidate_loop": 2063,
+      "command_id": "green-jules-result-pr73-8e5bf38ba2f09f627de71bff6bfa39aaff5f1399",
+      "lane": "green",
+      "restart_status": "NO_OP",
+      "virtual_round": 8
+    }
+  ],
+  "source_mode": "MOCK",
+  "unreserved_next_candidates": 32,
+  "virtual_loops": 32
+}

@@ -1,0 +1,37 @@
+{
+  "checks": [
+    {
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "compileall",
+        "-q",
+        "automation/command_bus"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "automation.command_bus.work_event_prepare_cli",
+        "--snapshot",
+        "automation/command_bus/tests/fixtures/work_closed_loop/input.json",
+        "--now",
+        "2026-10-01T12:00:00Z",
+        "--output",
+        "/workspace/scratch/7371808bc95c/formal-static-final.json"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "external_execution": 0
+}

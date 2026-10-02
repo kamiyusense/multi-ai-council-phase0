@@ -1,5 +1,8 @@
 # PR #217 — 2026-10-02 最終検品用チェックポイント
 
+最新のSTATIC完成バッチは [日本語引き継ぎ・Merge前検品入口](BLUE_WORK_STATIC_COMPLETION_20261002.md)。
+Trial10は10/10投入済み・receiptなしUNKNOWN。新LIVE/Session GET/claim予約は禁止。以下の9/10表記は過去の記録。
+
 続行の最新記録は [Session診断と検品](BLUE_WORK_CONTINUATION_20261002.md)。以下は前夜のチェックポイント。
 
 この文書は実験枝だけの記録。最新HEADはPR #217とgit/refから必ず読み直す。

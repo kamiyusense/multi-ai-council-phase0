@@ -90,6 +90,12 @@ def assess_result_review(*, lineage: LineageDecision, request: dict, reviewer_re
         if reqs != [request] or len(responses) != 1:
             raise ValueError("exact one request/response readback required")
         response = responses[0]
+        circular = {'review-request:' + request['request_id'], 'review-response:' + response['response_id']}
+        circular.update('review-receipt:' + r['receipt_id'] for r in ledger.receipts
+                        if r.get('request_id') == request['request_id'] and isinstance(r.get('receipt_id'), str))
+        references = request['evidence_refs'] + response['evidence_refs'] + [c['evidence_ref'] for c in checks]
+        if any(reference in circular for reference in references):
+            return ResultReviewGate('BLOCKED', 'review cannot use its own request/response/consumption as proof of success')
         if response["reviewer_instance_id"] == implementer_id:
             return ResultReviewGate("BLOCKED", "implementer cannot be independent reviewer")
         if response["reviewer_role"] != request["reviewer_role"] or response["review_kind"] != "JULES_RESULT":

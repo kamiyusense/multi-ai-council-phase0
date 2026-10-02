@@ -30,7 +30,9 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Run existing and new command-bus static tests
-        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+        run: |
+          set -o pipefail
+          python -m unittest discover -s automation/command_bus/tests -t . -v 2>&1 | tee command-bus-tests.txt
       - name: Compile and check whitespace
         run: |
           python -m compileall -q automation/command_bus
@@ -51,7 +53,36 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           python -m automation.command_bus.work_event_prepare_cli \
-            --github-event "$GITHUB_EVENT_PATH" --lane blue --output github-event-preflight.json
+            --github-event "$GITHUB_EVENT_PATH" --lane auto --output github-event-preflight.json
+      - name: Replay complete four-lane bridge and restart faults without services
+        run: |
+          python -m automation.command_bus.work_event_prepare_cli \
+            --bridge-snapshot automation/command_bus/tests/fixtures/work_bridge/pre-submit.json \
+            --now 2026-10-01T12:00:00Z --output bridge-review-candidate.json
+          python -m automation.command_bus.work_event_prepare_cli \
+            --bridge-snapshot automation/command_bus/tests/fixtures/work_bridge/terminal.json \
+            --now 2026-10-01T12:00:00Z --output bridge-next-candidate.json
+          python -m automation.command_bus.tests.static_bridge_simulation > four-lane-static-soak.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          review = json.loads(Path('bridge-review-candidate.json').read_text())
+          next_task = json.loads(Path('bridge-next-candidate.json').read_text())
+          soak = json.loads(Path('four-lane-static-soak.json').read_text())
+          assert review['status'] == 'PREPARED_REVIEW'
+          assert next_task['status'] == 'PREPARED_NEXT'
+          for value in (review, next_task):
+              assert value['source_mode'] == 'MOCK'
+              assert value['source_authentication'] == 'MOCK_ONLY'
+              assert value['posting_authority'] is False
+              assert value['external_send_attempted'] is False
+              assert value['adoption_performed'] is False
+              assert value['claim_reserved'] is False
+          assert next_task['next_task']['reservation_state'] == 'NOT_RESERVED'
+          assert soak['virtual_loops'] == 32
+          assert set(soak['invariant_violations'].values()) == {0}
+          assert soak['external_execution'] == 0
+          PY
       - name: Record offline boundary
         run: |
           python - <<'PY'
@@ -76,12 +107,17 @@ jobs:
               summary.write('Authenticated existing Jules Session GET and live transport: NOT_WIRED.\n')
           PY
       - name: Save prepare-only artifacts
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: work-prepare-only-${{ github.run_id }}
           path: |
+            command-bus-tests.txt
             blue-static-candidate.json
             formal-static-cycle.json
             github-event-preflight.json
+            bridge-review-candidate.json
+            bridge-next-candidate.json
+            four-lane-static-soak.json
           if-no-files-found: error
           retention-days: 7

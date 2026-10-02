@@ -1,4 +1,5 @@
 # PR217 続行 — 2026-10-02 Session診断と検品
+最新状態は [STATIC完成バッチ](BLUE_WORK_STATIC_COMPLETION_20261002.md)。下記の診断計画は実施済みの履歴であり再実行指示ではない。
 これは実験枝だけの継続記録。入口は [PR217](https://github.com/kamiyusense/multi-ai-council-phase0/pull/217) と最新HEAD。Merge保留。
 前夜の記録は [最終検品](BLUE_WORK_REVIEW_READY_20261002.md) / [night batch](BLUE_WORK_NIGHT_BATCH_20261002.md)。
 
@@ -59,3 +60,12 @@ compileall/diff whitespace/MOCK正式schema-v3閉ループも成功。単なる�
 [Jules Session types](https://jules.google/docs/api/reference/types) /
 [Google protobuf Timestamp](https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp)。
 公式Timestampの9桁/offset契約を設計参考にした。新dependencyやupstreamコードのコピーはない。
+
+## 実施後の固定結果
+診断run36970590374/job110723542520（request commit9d2a23024e23faca78c720fb2962b483c4607b4e）はCLI exit2で安全停止。
+name/branch/repository/COMPLETED/same-secondは一致、exact createTimeとunique PR output比較はfalse。
+source認証はUNKNOWN。既存の安全なlogのみを今回読み戻し、raw responseは取得・保存せず、新GETも行っていない。
+artifact11211033930のzip digestは05354a93401dbbb1f50d8b4a9db8526b32e85a98b8881084fa574ea62ada9373。
+Trial10 review5388681925は2026-10-02T05:50:51Zに提出済み、expiry07:52Z。
+Controller checkpoint5947745815と今回のfresh comment全件readbackでreceiptなし。UNKNOWN固定、再送禁止。
+前の9/10は履歴。承認予算10/10は消費済み。今回STATICバッチの新LIVEは0回。

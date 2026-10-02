@@ -24,6 +24,9 @@ def prepare_static_cycle(snapshot: dict[str, Any], *, now: datetime) -> dict[str
         if not isinstance(snapshot, dict) or snapshot.get("source_mode") not in {"MOCK", "CAPTURED"}:
             raise ValueError("explicit MOCK/CAPTURED source mode required")
         result["source_mode"] = snapshot["source_mode"]
+        if snapshot["source_mode"] == "CAPTURED":
+            result.update(status="BLOCKED", reason="captured JSON is not authenticated provider evidence; source verifier NOT_WIRED")
+            return result
         lane = snapshot["lane"]
         lineage = verify_result_lineage(lane=lane, **snapshot["source"], now=now)
         result["lineage"] = asdict(lineage)

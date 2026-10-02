@@ -1,0 +1,237 @@
+{
+  "base_commit": "9d2a23024e23faca78c720fb2962b483c4607b4e",
+  "files": [
+    {
+      "path": ".github/workflows/blue-work-reconcile-static.yml",
+      "old_blob": "cd3236d111d212ac87e588ac0d92953d15aa5d9f",
+      "new_blob": "ff0e14478cb7a4cabcad0dbe886b49820d3d2817",
+      "bytes": 5740,
+      "status": "modified"
+    },
+    {
+      "path": "automation/command_bus/jules_result_lineage.py",
+      "old_blob": "0a470ce987f1742b150cd504814631e6853163be",
+      "new_blob": "90bf60ca39dca9c667e25af32e5ef2c1d8600964",
+      "bytes": 10126,
+      "status": "modified"
+    },
+    {
+      "path": "automation/command_bus/jules_session_readonly.py",
+      "old_blob": "e363fd71c78217a4c0b3de86635ea7f7275e7470",
+      "new_blob": "2b32c9f02118c605ad5457efd9f989dbea2d8ddd",
+      "bytes": 8561,
+      "status": "modified"
+    },
+    {
+      "path": "automation/command_bus/work_closed_loop_prepare.py",
+      "old_blob": "616013d75ccda74eaf243a781f46be4cd6a30b53",
+      "new_blob": "9487ea1b1c2d27430127cd8fd6c233c8139f2c4c",
+      "bytes": 4377,
+      "status": "modified"
+    },
+    {
+      "path": "automation/command_bus/work_event_prepare_cli.py",
+      "old_blob": "50f41eb580b7c25e1e775654ed4ef5cb3252b4a6",
+      "new_blob": "dcf32c549321424c0722f07af6407b1e23744229",
+      "bytes": 10184,
+      "status": "modified"
+    },
+    {
+      "path": "automation/command_bus/work_result_review.py",
+      "old_blob": "1171c14e4b1880ce8ae20e297b59caba237f2d04",
+      "new_blob": "04e3fa1310b1c11dea9986ff7b4abd43ee65f55c",
+      "bytes": 9152,
+      "status": "modified"
+    },
+    {
+      "path": "automation/command_bus/jules_session_evidence.py",
+      "old_blob": null,
+      "new_blob": "7c194f37280c6d1ce1fdf91e9dae5115b7eb6136",
+      "bytes": 9122,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/work_bridge_prepare.py",
+      "old_blob": null,
+      "new_blob": "dda50c60b4bf371bfd7ab3d092d8c487b22af5d1",
+      "bytes": 11728,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/bridge_fixtures.py",
+      "old_blob": null,
+      "new_blob": "e4e65d738bd4f81230f02ac78a4b422eef7b8ad1",
+      "bytes": 7922,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/static_bridge_simulation.py",
+      "old_blob": null,
+      "new_blob": "ed511f95964e6cd465bab50429c9850c152bc9b0",
+      "bytes": 5663,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/test_static_source_boundaries.py",
+      "old_blob": null,
+      "new_blob": "708fd1a74ad44943f5c1e0d52cff171d7760db9b",
+      "bytes": 2129,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_evidence.py",
+      "old_blob": null,
+      "new_blob": "53b73ff5306464ff41e5dec58399e5fc0644410b",
+      "bytes": 7506,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_bridge_prepare.py",
+      "old_blob": null,
+      "new_blob": "107fada64c696b863b0241669d864a93780fc5f1",
+      "bytes": 4780,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_bridge_github_preflight.py",
+      "old_blob": null,
+      "new_blob": "2785041b2b845573b5e6b7ed0bff103016ae589f",
+      "bytes": 5924,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/test_static_bridge_simulation.py",
+      "old_blob": null,
+      "new_blob": "76a95dc5aabcaf31e9c4c6dae51cac98ffce7a93",
+      "bytes": 1621,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/work_bridge/pre-submit.json",
+      "old_blob": null,
+      "new_blob": "78f9747dc8fe51477499957556427d5724a43b0d",
+      "bytes": 16737,
+      "status": "added"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/work_bridge/terminal.json",
+      "old_blob": null,
+      "new_blob": "cfa2952265d3c35582cc99d0289013cf9e628635",
+      "bytes": 19028,
+      "status": "added"
+    },
+    {
+      "path": "docs/BLUE_WORK_REVIEW_READY_20261002.md",
+      "old_blob": "9705f14ca97f5f0cb8a229da070aae1ce969499d",
+      "new_blob": "a62fca0c0320b5731d9ec41315a034d2838b752a",
+      "bytes": 9857,
+      "status": "modified"
+    },
+    {
+      "path": "docs/BLUE_WORK_CONTINUATION_20261002.md",
+      "old_blob": "fdaa0ef760ffc010b6b760016f6041ab5e59f8b6",
+      "new_blob": "de1b58c0384f6e03f1dfa0e559df35f0d26fd277",
+      "bytes": 6579,
+      "status": "modified"
+    },
+    {
+      "path": "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md",
+      "old_blob": "89d1843bd2f1cb973a5e92aaa68d24d7d8df39bc",
+      "new_blob": "ccce1b456a5f93c70f4dceafe6803338dac5dc33",
+      "bytes": 24024,
+      "status": "modified"
+    },
+    {
+      "path": "docs/BLUE_WORK_STATIC_COMPLETION_20261002.md",
+      "old_blob": null,
+      "new_blob": "b435223ec2155700702dd1e2bbe73dd6d9c1a611",
+      "bytes": 11255,
+      "status": "added"
+    },
+    {
+      "path": "docs/BLUE_WORK_NEXT_LIVE_PLAN_20261002.md",
+      "old_blob": null,
+      "new_blob": "e3b6bf7d7db9307c7f761ada8d3d46031be18d8f",
+      "bytes": 6774,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/start-readback.json",
+      "old_blob": null,
+      "new_blob": "e21f12e96c0b6398573466c422b5c3c3976278d5",
+      "bytes": 3447,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/regression-before.txt",
+      "old_blob": null,
+      "new_blob": "bcfebd82f6b9cc17fbda5df185fa13243dbe46de",
+      "bytes": 3191,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/circular-regression-before.txt",
+      "old_blob": null,
+      "new_blob": "f2baa0c9004d6565e8e52c0551ac5867b142c596",
+      "bytes": 1027,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/focused-tests.txt",
+      "old_blob": null,
+      "new_blob": "140bc189930dba5378919b27be3210e9927177ed",
+      "bytes": 7724,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/full-tests.txt",
+      "old_blob": null,
+      "new_blob": "4e74e4d963eafc7cd6c034c5c570ff37400ed9aa",
+      "bytes": 200611,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/tests.json",
+      "old_blob": null,
+      "new_blob": "6c29b93b78c33d3341c65e5b41ce518c4fd16889",
+      "bytes": 581,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/four-lane-soak.json",
+      "old_blob": null,
+      "new_blob": "183afedef93842e96c440fea03c2c02d33589da5",
+      "bytes": 7627,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/mock-review-candidate.json",
+      "old_blob": null,
+      "new_blob": "41be32ece0a1064ee9efd800f07120a3a7f64b87",
+      "bytes": 2144,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/mock-next-candidate.json",
+      "old_blob": null,
+      "new_blob": "03671fee256357c24fcfbb71aa75e717ba49163a",
+      "bytes": 12272,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-continuation-20261002/session-diagnostic-result.json",
+      "old_blob": null,
+      "new_blob": "e2abb84de5ec34353d30ef5f34a93e4e29fae60d",
+      "bytes": 2500,
+      "status": "added"
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/checks.json",
+      "old_blob": null,
+      "new_blob": "0f8e0bf47b3ba6fa00fbbaac40b3c0ebdcfa24b7",
+      "bytes": 831,
+      "status": "added"
+    }
+  ],
+  "manifest_self_inclusion": false
+}

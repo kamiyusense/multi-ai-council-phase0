@@ -17,6 +17,7 @@ from .cloud_work_lanes import lane_identity
 from .jules_semiauto_request_v2 import validate_request
 from .loop_id_claim import verify_command_claim
 from .jules_session_acceptance import extract_session_acceptance, verify_session_acceptance_readback
+from .jules_session_readonly import _exact_time
 
 
 def validate_formal_command(request: dict[str, Any], claim: dict[str, Any], *, now: datetime,
@@ -74,6 +75,10 @@ def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit
             raise ValueError("dispatch workflow binding unavailable")
         accepted = extract_session_acceptance(acceptance, expected_branch=request["work_branch"])
         observed = verify_session_acceptance_readback(accepted, session_readback)
+        if _exact_time(acceptance.get("createTime")) != _exact_time(session_readback.get("createTime")):
+            raise ValueError("exact provider createTime differs from acceptance capture")
+        if "updateTime" in session_readback and _exact_time(session_readback["updateTime"]) < _exact_time(session_readback["createTime"]):
+            raise ValueError("provider updateTime precedes createTime")
         if (not isinstance(dispatch_job, dict) or not _positive(dispatch_job.get("id"))
                 or dispatch_job.get("run_id") != dispatch_run["id"]
                 or dispatch_job.get("head_sha") != command_commit["sha"]
@@ -108,7 +113,7 @@ def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit
             raise ValueError("result base/HEAD mismatch")
         expected_url = f"https://github.com/{EXPECTED_REPOSITORY}/pull/{result_pr['number']}"
         outputs = session_readback.get("outputs")
-        if not isinstance(outputs, list) or any(not isinstance(x, dict) for x in outputs):
+        if not isinstance(outputs, list) or len(outputs) != 1 or any(not isinstance(x, dict) for x in outputs):
             raise ValueError("session outputs unavailable")
         pr_outputs = [x["pullRequest"] for x in outputs if "pullRequest" in x]
         if len(pr_outputs) != 1 or not isinstance(pr_outputs[0], dict) or pr_outputs[0].get("url") != expected_url:
@@ -140,5 +145,5 @@ def verify_result_lineage(*, lane: str, request: Any, claim: Any, command_commit
                                EventLineage(request["command_id"], request["work_branch"], request["expected_target_head"], EXPECTED_REPOSITORY),
                                observed.session_id, lane, result_pr["number"], result_pr["head"]["sha"],
                                result_commit["tree"]["sha"], tuple(request["allowed_paths"]))
-    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+    except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as exc:
         return LineageDecision("UNKNOWN", str(exc))

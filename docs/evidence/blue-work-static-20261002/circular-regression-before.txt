@@ -1,0 +1,17 @@
+test_review_cannot_cite_its_own_response_as_success_evidence (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_review_cannot_cite_its_own_response_as_success_evidence) ... FAIL
+
+======================================================================
+FAIL: test_review_cannot_cite_its_own_response_as_success_evidence (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_review_cannot_cite_its_own_response_as_success_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/continuation/automation/command_bus/tests/test_static_source_boundaries.py", line 43, in test_review_cannot_cite_its_own_response_as_success_evidence
+    self.assertEqual(result['status'], 'BLOCKED')
+AssertionError: 'PREPARED' != 'BLOCKED'
+- PREPARED
++ BLOCKED
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (failures=1)

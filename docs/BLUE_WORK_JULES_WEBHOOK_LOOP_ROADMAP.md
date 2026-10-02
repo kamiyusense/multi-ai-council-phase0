@@ -729,3 +729,16 @@ README
 If this roadmap conflicts with fresh GitHub state, fresh state wins.
 
 If it conflicts with a formal safety/authorization contract, the stricter current contract wins.
+
+## 2026-10-02 PR217 STATIC completion checkpoint (experiment only)
+
+[日本語引き継ぎ](BLUE_WORK_STATIC_COMPLETION_20261002.md) / [証拠](evidence/blue-work-static-20261002/)。
+BWJ-1–3 reused; BWJ-5/6 formal review/claim preparation now has a complete four-lane MOCK bridge/restart replay.
+Provider acceptance/completion capture contract preserves exact nanoseconds and formal command/claim/run/job/target identity.
+Captured JSON does not authenticate its provider source: CAPTURED preparation is BLOCKED, including forged VERIFIED labels.
+GitHub-only preflight derives the lane from the schema-v3 claim, collects files/ancestry/tree/jobs/carrier records and final fences.
+It produces NO_OP for an existing command and BLOCKED without authenticated Session/log evidence. No review is posted.
+32 virtual cycles, 1280 fault observations, restart recovery and global-candidate collision blocking are deterministic STATIC evidence only.
+BWJ-4 automatic result→Actions→Work remains NOT_WIRED; BWJ-7–9 LIVE continuous operation is not complete.
+Trial10 has no terminal receipt at fresh readback: UNKNOWN, no resend. Budget10/10; this STATIC batch adds0 LIVE.
+No Merge, permission change, Session GET, claim reservation or external execution occurred in this batch.

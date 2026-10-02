@@ -121,12 +121,12 @@ class JulesSessionGetReader:
             url = "https://github.com/kamiyusense/multi-ai-council-phase0/pull/" + str(expected_pr)
             try:
                 actual_time = _exact_time(data.get('createTime'))
-            except ValueError:
+            except (ValueError, OverflowError):
                 actual_time = None
             try:
                 update_valid = ('updateTime' not in data or (
                     actual_time is not None and _exact_time(data['updateTime']) >= actual_time))
-            except ValueError:
+            except (ValueError, OverflowError):
                 update_valid = False
             # Diagnose all comparisons from this ONE response. Same-second is
             # information about legacy timing precision, NEVER an acceptance gate.
