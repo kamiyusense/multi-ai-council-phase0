@@ -265,7 +265,12 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(plan['retry'], 0)
         self.assertEqual(plan['fallback'], 'disabled')
         self.assertFalse(plan['event_filter']['exactly_once_physical_delivery_guaranteed'])
-        self.assertFalse((root / plan['proposed_future_workflow']['path']).exists())
+        # The historical disabled proposal remains evidence. A separate,
+        # explicitly approved dispatch-only proof now supplies its transport.
+        proof = (root / plan['proposed_future_workflow']['path']).read_text()
+        self.assertIn('workflow_dispatch:', proof)
+        self.assertNotIn('pull_request_review:', proof)
+        self.assertIn('permissions: {}', proof)
 
     def test_default_static_workflow_keeps_read_permissions_and_only_mock_delivery(self):
         root = Path(__file__).resolve().parents[3]

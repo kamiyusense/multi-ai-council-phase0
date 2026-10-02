@@ -123,6 +123,10 @@ jobs:
               summary.write('Formal MOCK cycle: captured lineage → review contract → schema-v3 next candidate. NOT_RESERVED.\n')
               summary.write('Authenticated existing Jules Session GET and live transport: NOT_WIRED.\n')
           PY
+      - name: Validate one-shot proof contracts with fake transports only
+        run: |
+          set -o pipefail
+          python -m unittest automation.command_bus.tests.test_blue_work_wake_proof automation.command_bus.tests.test_blue_review_delivery_prepare -v 2>&1 | tee bwj4-proof-contract-tests.txt
       - name: Save prepare-only artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -137,5 +141,6 @@ jobs:
             bridge-next-candidate.json
             four-lane-static-soak.json
             bwj4-6-boundary-static.json
+            bwj4-proof-contract-tests.txt
           if-no-files-found: error
           retention-days: 7

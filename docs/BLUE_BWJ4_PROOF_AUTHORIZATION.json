@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "purpose": "BWJ-4_TRANSPORT_ONLY",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "approved": true,
+  "proof_id": "blue-bwj4-20261002T212217Z-transport-proof-01",
+  "approval_expires_at": "2026-10-03T00:22:17Z",
+  "approved_actor_login": "kamiyusense",
+  "approved_actor_id": 20355232,
+  "target_pr": 172,
+  "target": {
+    "pr": 172,
+    "branch": "cloud-work/replacement-proof-v1",
+    "head": "0e7d96df29cfedbe4f95de444e4f7a9a7efd6577",
+    "tree": "815045e5162b717c14a833ca0104c885cfbc1feb"
+  },
+  "worker_generation": 1,
+  "retry": 0,
+  "fallback": "disabled",
+  "limits": {
+    "provider_create": 0,
+    "provider_get": 0,
+    "provider_model_execution": 0,
+    "jules_submit": 0,
+    "jules_get": 0,
+    "claim_reservation": 0,
+    "next_command_publication": 0,
+    "target_mutation": 0,
+    "adoption": 0,
+    "retry": 0,
+    "proof_activation": 1,
+    "workflow_run": 1,
+    "review_post": 1,
+    "logical_blue_wake": 1,
+    "terminal_receipt": 1
+  },
+  "approval_basis": "Explicit user request: inspect/merge #259, dedicated workflow PR if required, one BWJ-4 transport-only proof. No provider/Jules/BWJ-5/7 budget.",
+  "not_authority": "This fixture does not authenticate Jules Session origin. Automation ID/prompt and bot metadata are not source authentication."
+}

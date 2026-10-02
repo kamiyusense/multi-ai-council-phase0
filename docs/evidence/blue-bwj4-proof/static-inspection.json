@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "purpose": "BWJ-4 one-shot transport proof STATIC verification and authorized #259 integration",
+  "starting_main_head": "7e1c90b72c7523f4265803da7ee82671c9dbd800",
+  "starting_main_tree": "526459c4a1908db147271b86c9effa0677e4d475",
+  "pr259_head": "5449220d7091dc10a18b4800190a72200e6fe603",
+  "pr259_merge": "4bc4179d53f5c87bed2e936422575c0c71dbc866",
+  "post_merge_main_head": "4bc4179d53f5c87bed2e936422575c0c71dbc866",
+  "post_merge_main_tree": "480173e848abe0aa436100b2e3a1766aab8436c8",
+  "carrier": {
+    "pr": 167,
+    "branch": "cloud-work/carrier-blue-v1",
+    "head": "5f9e210bc17ed695610e23b1c1699e11f5c8ed4b",
+    "generation": 1,
+    "enabled_blue_prompt_readback": true,
+    "server_event_filters": "UNKNOWN"
+  },
+  "target": {
+    "pr": 172,
+    "branch": "cloud-work/replacement-proof-v1",
+    "head": "0e7d96df29cfedbe4f95de444e4f7a9a7efd6577",
+    "tree": "815045e5162b717c14a833ca0104c885cfbc1feb"
+  },
+  "classification": "transport-only fixture; no authenticated Jules source or semantic adoption",
+  "provider_authentication": "NOT_WIRED",
+  "local_validation": {
+    "focused_tests": 42,
+    "new_proof_tests": 20,
+    "full_tests": 1353,
+    "skipped": 1,
+    "skip_reason": "Windows-only production bootstrap ACL check on Linux",
+    "failures": 0,
+    "errors": 0,
+    "compileall": "PASS",
+    "diff_check": "PASS",
+    "workflow_yaml_syntax": "PASS",
+    "mock_and_restart_fault_contracts": "PASS"
+  },
+  "local_logs": {
+    "proof-full.txt": {
+      "sha256": "d100d45d85ebcc8611bca5fd2758d23eb3012104b0c1d436547f93501479082d"
+    },
+    "proof-focused-final.txt": {
+      "sha256": "09c4e1d246d72730613d90ce14e846d555a7ae75241c8bb6664e2a24e61ccd77"
+    }
+  },
+  "paths": {
+    ".github/workflows/blue-work-wake-proof.yml": {
+      "sha256": "467381a0119f6ddddab0bb524137d01dd747aab28b0c8372c26b97251d46b4af"
+    },
+    ".github/workflows/blue-work-reconcile-static.yml": {
+      "sha256": "596e4df9af6bb8354ca0ee6e146ba2ce49e2ea0f374b937d215b75b40312a69d"
+    },
+    "automation/command_bus/blue_work_wake_proof.py": {
+      "sha256": "b5ccd7e3630d96c9eb6b33cd617953209a12b1e80a1ff2ee170f102d04df20e9"
+    },
+    "automation/command_bus/tests/test_blue_work_wake_proof.py": {
+      "sha256": "56f920f65eae3281647f05fb0088f48c346d1ec7f2e8b492089dc56e0d5ba809"
+    },
+    "automation/command_bus/tests/test_blue_review_delivery_prepare.py": {
+      "sha256": "792852efa3deedb83d3126b27620fde775946bda95a81ca4ba8ea04a5f5ed57f"
+    },
+    "docs/BLUE_BWJ4_PROOF_AUTHORIZATION.json": {
+      "sha256": "28fc2b0b6591e27788368c25e1cb1abab9d037fd6fdac5a1a7f49dd719c6bf2e"
+    },
+    "docs/BLUE_BWJ4_TRANSPORT_PROOF.md": {
+      "sha256": "016f080622af61d0e6d78474607a2f0da9772cb0733a2e703cd83a05a009fda1"
+    }
+  },
+  "execution_boundary": {
+    "workflow_dispatch_tool": "NOT_AVAILABLE_IN_CURRENT_GITHUB_CONNECTOR",
+    "github_fetch": "GET_ONLY",
+    "rerun_is_not_initial_dispatch": true,
+    "browser_fallback": "NOT_USED",
+    "credential_setup_or_extraction": false,
+    "live_workflow_run": 0,
+    "review_post": 0,
+    "work_wake": 0,
+    "terminal_receipt": 0,
+    "provider_create_get_model": 0,
+    "jules_submit_get": 0,
+    "claim_reservation": 0,
+    "target_mutation": 0,
+    "retry": 0,
+    "fallback": "disabled",
+    "merge_count_at_checkpoint": 1
+  },
+  "rollback": "Normal non-destructive non-default PR to set approved=false or remove only proof-job PR write; retain all records; no automatic Merge."
+}
