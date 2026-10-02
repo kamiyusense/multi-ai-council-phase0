@@ -1,0 +1,5 @@
+{
+  "target_sha": "af5c01080c8747c3fb27f40e366ea8670b096029",
+  "source_pr": 255,
+  "purpose": "relay exact-head validation final head: gate + adapter contract tests (STATIC, no live provider/model)"
+}
