@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "loops": [
+    {
+      "loop_id": "chatgpt-semi-auto",
+      "display_name": "ChatGPT Semi-Auto",
+      "mode": "SEMI_AUTO",
+      "controller_kind": "CHATGPT",
+      "worker_kind": "JULES",
+      "display_order": 10,
+      "enabled": true,
+      "safe_detail_ref": "issue:33",
+      "identity_state": "DURABLE"
+    },
+    {
+      "loop_id": "claude-gemini",
+      "display_name": "Claude -> Gemini",
+      "mode": "AUTO",
+      "controller_kind": "CLAUDE",
+      "worker_kind": "GEMINI",
+      "display_order": 20,
+      "enabled": true,
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
+    },
+    {
+      "loop_id": "claude-claude",
+      "display_name": "Claude -> Claude",
+      "mode": "AUTO",
+      "controller_kind": "CLAUDE",
+      "worker_kind": "CLAUDE",
+      "display_order": 30,
+      "enabled": true,
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
+    },
+    {
+      "loop_id": "work-gemini",
+      "display_name": "Work -> Gemini",
+      "mode": "AUTO",
+      "controller_kind": "WORK",
+      "worker_kind": "GEMINI",
+      "display_order": 40,
+      "enabled": true,
+      "safe_detail_ref": "issue:33",
+      "identity_state": "PLACEHOLDER"
+    }
+  ]
+}

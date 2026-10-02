@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "report_kind": "SIGNAL_SF8_READINESS_REPORT",
+  "scope_note": "Prepare-only. STATIC passes are never LIVE passes. Nothing here promotes the registry or writes Issue #33.",
+  "checks": {
+    "stable_identity": {
+      "status": "NOT_RUN",
+      "scope": "STATIC",
+      "evidence_ref": "docs/evidence/signal-sf8/adoption-record-candidate-chatgpt-semi-auto.json"
+    },
+    "prepared_persistence": {
+      "status": "PASS",
+      "scope": "STATIC",
+      "evidence_ref": "test:test_sf8_oidc_runtime_e2e"
+    },
+    "canonical_receipt": {
+      "status": "PASS",
+      "scope": "STATIC",
+      "evidence_ref": "test:test_sf8_oidc_runtime_e2e"
+    },
+    "provider_authentication": {
+      "status": "BLOCKED",
+      "scope": "STATIC",
+      "evidence_ref": "docs/evidence/signal-sf8/readiness-report-20261003.json",
+      "note": "Recorded Session 132 evidence cannot satisfy the production authenticator: NO_TARGET_PR_AT_OBSERVATION, NO_DURABLE_OWNER_EVENT_AT_OBSERVATION, NO_SANITIZED_PROVIDER_SOURCE_CONTEXT, FRESH_SESSION_READ_REQUIRED_BY_AUTHENTICATOR, OBSERVATION_STALE"
+    },
+    "owner_authority_authentication": {
+      "status": "PASS",
+      "scope": "LIVE",
+      "evidence_ref": "docs/evidence/signal-authority/authority-run-readback-37031275812.json",
+      "note": "Execution lineage of manual dispatch run 37031275812 authenticates through the production authority path; no durable grant for a real loop event exists yet."
+    },
+    "publisher_accepted": {
+      "status": "PASS",
+      "scope": "STATIC",
+      "evidence_ref": "test:test_sf8_step7_10_report"
+    },
+    "collector_readback": {
+      "status": "PASS",
+      "scope": "STATIC",
+      "evidence_ref": "test:test_sf8_step7_10_report"
+    },
+    "registration_ready": {
+      "status": "BLOCKED",
+      "scope": "STATIC",
+      "evidence_ref": "docs/evidence/signal-sf8/readiness-report-20261003.json",
+      "note": "production registry: NOT_WIRED; fixture registry chain: READY"
+    },
+    "negative_stale_mismatch_tests": {
+      "status": "PASS",
+      "scope": "STATIC",
+      "evidence_ref": "test:test_recorded_live_evidence"
+    },
+    "recovery_test": {
+      "status": "PASS",
+      "scope": "STATIC",
+      "evidence_ref": "test:test_sf8_authority_issuer_candidate"
+    }
+  },
+  "durable_promotion_candidate": {
+    "status": "NOT_READY",
+    "reasons": [
+      "stable_identity: NOT_RUN",
+      "prepared_persistence: STATIC pass is not LIVE evidence",
+      "canonical_receipt: STATIC pass is not LIVE evidence",
+      "provider_authentication: BLOCKED",
+      "publisher_accepted: STATIC pass is not LIVE evidence",
+      "collector_readback: STATIC pass is not LIVE evidence",
+      "registration_ready: BLOCKED"
+    ]
+  },
+  "recorded_provider": {
+    "recorded_lineage": "VERIFIED",
+    "live_authentication": "BLOCKED",
+    "lineage_failures": [],
+    "blockers": [
+      "NO_TARGET_PR_AT_OBSERVATION",
+      "NO_DURABLE_OWNER_EVENT_AT_OBSERVATION",
+      "NO_SANITIZED_PROVIDER_SOURCE_CONTEXT",
+      "FRESH_SESSION_READ_REQUIRED_BY_AUTHENTICATOR"
+    ]
+  },
+  "recorded_authority": {
+    "run_id": "37031275812",
+    "event": "workflow_dispatch",
+    "actor_id": "20355232",
+    "triggering_actor_id": "20355232"
+  },
+  "stable_identity_adoption_candidate": {
+    "lane_loop_id": "chatgpt-semi-auto",
+    "validator_accepts_against_production_registry": true,
+    "production_registry_sha256": "6af0268e17fd99adf4901e6a3be294c7e24c3b38241281a7b4cb0571b36b5eb0",
+    "production_identity_states": [
+      "PLACEHOLDER"
+    ]
+  },
+  "issue33_migration": {
+    "production_preflight_status": "NOT_WIRED",
+    "production_preflight_stage": "registration",
+    "issue33_migration_ready": "NO"
+  },
+  "live_counters_this_batch": {
+    "jules_sessions_created": 0,
+    "jules_get": 0,
+    "authority_reruns": 0,
+    "oidc_reruns": 0,
+    "provider_model_live": 0
+  }
+}

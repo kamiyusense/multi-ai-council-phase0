@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "record_id": "adopt-chatgpt-semi-auto-1",
+  "lane_loop_id": "chatgpt-semi-auto",
+  "approved_by_actor_id": "20355232",
+  "approval_ref": "github-actions:run/37031275812",
+  "approved_at": "2026-10-02T16:03:37Z",
+  "decision": "ADOPT_DURABLE",
+  "expected_registry_sha256": "6af0268e17fd99adf4901e6a3be294c7e24c3b38241281a7b4cb0571b36b5eb0"
+}
