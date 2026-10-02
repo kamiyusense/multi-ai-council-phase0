@@ -25,6 +25,7 @@ from .runtime_verifier_sources import validate_provider_verification_source
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _PROVIDER_STATE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]{0,63}$")
 _VERIFICATION_STATES = {"VERIFIED", "REJECTED", "UNKNOWN"}
+_ACTIVE_JULES_STATES = frozenset({"QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"})
 
 
 @dataclass(frozen=True)
@@ -151,15 +152,21 @@ def bind_jules_active_provider_readback(
     bundle: JulesSemiAutoAcquireBundle,
     candidate: JulesProviderReadbackCandidate,
 ) -> JulesProviderReadbackBinding:
-    """Rebind provider evidence to a later independently-read RUNNING state."""
+    """Rebind an independently-read active Jules state to canonical RUNNING evidence.
+
+    The candidate keeps the raw Jules state exactly. The durable runtime contract
+    uses RUNNING as its provider-state vocabulary, so only states already accepted
+    as conservatively active by the direct authenticator are canonicalized here.
+    """
     if not isinstance(bundle, JulesSemiAutoAcquireBundle):
         raise ValueError("JulesSemiAutoAcquireBundle is required")
     if not isinstance(candidate, JulesProviderReadbackCandidate):
         raise ValueError("JulesProviderReadbackCandidate is required")
-    if candidate.provider_state != "RUNNING":
+    if candidate.provider_state not in _ACTIVE_JULES_STATES:
         raise ValueError(
-            "active durable ACQUIRE requires an explicit RUNNING Jules readback"
+            "active durable ACQUIRE requires a conservatively active Jules readback"
         )
+    canonical_provider_state = "RUNNING"
 
     event = bundle.owner_event
     observation = bundle.provider_observation_input
@@ -200,7 +207,7 @@ def bind_jules_active_provider_readback(
 
     refreshed_evidence = {
         **evidence,
-        "provider_state": candidate.provider_state,
+        "provider_state": canonical_provider_state,
         "observed_at": candidate.observed_at,
     }
     if validate_evidence_document(refreshed_evidence) != candidate.evidence_ref:
@@ -208,7 +215,7 @@ def bind_jules_active_provider_readback(
 
     refreshed_observation = {
         **observation,
-        "state": candidate.provider_state,
+        "state": canonical_provider_state,
         "observed_at": candidate.observed_at,
     }
     validate_provider_observation({**refreshed_observation, "verified": True})
