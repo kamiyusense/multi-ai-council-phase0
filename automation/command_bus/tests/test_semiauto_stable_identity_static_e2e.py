@@ -17,6 +17,7 @@ from automation.command_bus.jules_provider_verification_source import prepare_ju
 from automation.command_bus.semiauto_stable_identity import prepare_adopted_semiauto_acquire
 from automation.command_bus.runtime_state_initializer import RuntimeStateInitializer
 from automation.command_bus.runtime_transition_coordinator import AuthorizedOwnerContext, RuntimeTransitionPublisher
+from automation.command_bus.runtime_transition_receipt import CanonicalOwnerReceiptGitHubBackend
 from automation.command_bus.runtime_verifier_sources import SourceBoundProviderVerifier
 from automation.command_bus.semiauto_stable_identity import validate_semiauto_stable_identity
 from automation.command_bus.tests.test_jules_semiauto_owner_prepare import (
@@ -127,7 +128,13 @@ def build_chain(*, registry=None, req=None, ctx=None, session_get=None, rich_tar
     client = Client()
     initialized = RuntimeStateInitializer(client, branch="fixture/runtime-data").create(prepared.initial_state)
     assert initialized.status == "ACCEPTED", initialized
-    client.put(prepared.owner_event["source_receipt_ref"], prepared.source_receipt)
+    receipt_result = CanonicalOwnerReceiptGitHubBackend(client, branch="fixture/runtime-data").write(
+        prepared.owner_event, prepared.source_receipt
+    )
+    assert receipt_result.status == "ACCEPTED", receipt_result
+    state_path = f"automation/command_bus/state/{prepared.owner_event['loop_id']}.json"
+    assert client.data[state_path].sha == "create-1"
+    assert client.data[prepared.owner_event["source_receipt_ref"]].sha == "create-2"
     flat_target = {
         "repo": REPO, "pr": 4, "head": HEAD, "state": "open", "merged": False,
     }
@@ -222,7 +229,7 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
         prepared, binding, normalized, source, client, publisher, status, _ = build_chain()
         publisher.provider_verifier = SourceBoundProviderVerifier(SourceReader(source), None)
         self.assertNotEqual(publisher.publish(binding.transition_request).status, "READY")
-        self.assertEqual((client.creates, client.updates), (1, 0))
+        self.assertEqual((client.creates, client.updates), (2, 0))
         self.assertEqual(status.plans, [])
         publisher.provider_verifier = SourceBoundProviderVerifier(SourceReader(normalized), None)
         self.assertNotEqual(publisher.publish(binding.transition_request).status, "READY")
@@ -274,7 +281,7 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
         ):
             with self.subTest(bad_source=bad_source):
                 self.assertIsNone(authenticator.authenticate(bad_source, expected=bad_source))
-        self.assertEqual((client.creates, client.updates), (1, 0))
+        self.assertEqual((client.creates, client.updates), (2, 0))
         self.assertEqual(status.plans, [])
 
     def test_identity_is_lane_scoped_across_request_turns(self):
@@ -308,3 +315,46 @@ class SemiAutoStableIdentityStaticE2ETests(unittest.TestCase):
                 registry=registry, request=request(),
                 durable_context=context(loop_id=LOOP_ID),
             )
+
+    def test_canonical_owner_receipt_backend_recovery_and_conflict(self):
+        prepared, _, _, _, client, _, _, _ = build_chain()
+        self.assertEqual(client.creates, 2)
+        backend = CanonicalOwnerReceiptGitHubBackend(client, branch="fixture/runtime-data")
+        recovered = backend.write(prepared.owner_event, prepared.source_receipt)
+        self.assertEqual(recovered.status, "RECOVERED")
+        self.assertEqual(client.creates, 2)
+
+        conflicting_receipt = copy.deepcopy(prepared.source_receipt)
+        conflicting_receipt["provider_state"] = "FAILED"
+        blocked = backend.write(prepared.owner_event, conflicting_receipt)
+        self.assertEqual(blocked.status, "BLOCKED")
+        self.assertEqual(client.creates, 2)
+
+        invalid_receipt = copy.deepcopy(prepared.source_receipt)
+        invalid_receipt.pop("receipt_id")
+        unknown = backend.write(prepared.owner_event, invalid_receipt)
+        self.assertEqual(unknown.status, "UNKNOWN")
+        self.assertEqual(client.creates, 2)
+
+        for result in (recovered, blocked, unknown):
+            self.assertNotEqual(result.status, "ACCEPTED")
+
+    def test_canonical_owner_receipt_backend_ambiguous_create_recovery(self):
+        req = request(
+            profile="JULES_CHAT_SEMIAUTO_V2", origin_loop_id="human-origin-039",
+            origin_round=3, origin_correlation_id="semi-durable-001", origin_generation=1,
+        )
+        prepared = prepare_adopted_semiauto_acquire(
+            registry=fixture_registry(), request=req, durable_context=context(loop_id=LOOP_ID),
+            session_response=session(), target_pr_readback=target(), now=NOW,
+        )
+        client = Client()
+        RuntimeStateInitializer(client, branch="fixture/runtime-data").create(prepared.initial_state)
+        self.assertEqual(client.creates, 1)
+
+        client.fail_create_after_write = True
+        backend = CanonicalOwnerReceiptGitHubBackend(client, branch="fixture/runtime-data")
+        result = backend.write(prepared.owner_event, prepared.source_receipt)
+
+        self.assertEqual(result.status, "ACCEPTED")
+        self.assertEqual(client.creates, 2)
