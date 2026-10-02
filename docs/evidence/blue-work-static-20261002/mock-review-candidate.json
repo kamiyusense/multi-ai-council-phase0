@@ -1,0 +1,34 @@
+{
+  "adoption_performed": false,
+  "capture_fingerprint": "cd808a728f120bb8e39aabb000de2dc4a2cfe9476b0925b73e5d9fad59118023",
+  "claim_reserved": false,
+  "execution_mode": "PREPARE_ONLY",
+  "external_send_attempted": false,
+  "fallback": "disabled",
+  "model_executed": false,
+  "posting_authority": false,
+  "posting_blockers": [
+    "production source authentication",
+    "explicit posting authorization",
+    "pull-requests:write",
+    "fresh final readback"
+  ],
+  "reason": "MOCK artifact only; no send method",
+  "recovery": {
+    "resend_allowed": false,
+    "status": "NOT_SUBMITTED"
+  },
+  "retry": 0,
+  "review_candidate": {
+    "carrier_pr": 167,
+    "command_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "lane": "blue",
+    "purpose": "JULES_RESULT_REVIEW",
+    "reason": "offline candidate only; no authenticated lineage or send authority",
+    "review_body": "[CW_BLUE_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"worker_generation\": 1,\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 42,\n  \"target_branch\": \"jules-result/fixture\",\n  \"expected_target_head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"expires_at\": \"2026-10-01T13:00:00Z\",\n  \"task\": \"fresh-read GitHub; verify exact J-BLUE claim/command/session/result lineage and current result head; independently inspect paths/semantics/negative tests/test evidence; return PASS/FAIL/BLOCKED/UNKNOWN plus one bounded next-task proposal; perform no target write and do not dispatch Jules.\",\n  \"allowed_paths\": [],\n  \"verification\": [\n    \"fresh result PR/branch/head readback\",\n    \"durable J-BLUE lineage verification\",\n    \"independent diff/test evidence inspection\",\n    \"confirmation no target write/Jules dispatch/live provider execution occurred\"\n  ],\n  \"live_provider_or_model_allowed\": false,\n  \"retry\": 0,\n  \"fallback\": \"disabled\"\n}",
+    "status": "PREPARED"
+  },
+  "source_authentication": "MOCK_ONLY",
+  "source_mode": "MOCK",
+  "status": "PREPARED_REVIEW"
+}

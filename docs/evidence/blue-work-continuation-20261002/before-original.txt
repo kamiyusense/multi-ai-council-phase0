@@ -1,0 +1,32 @@
+test_invalid_expected_precision_zero_get (__main__.Before.test_invalid_expected_precision_zero_get) ... FAIL
+test_nanosecond_mismatch (__main__.Before.test_nanosecond_mismatch) ... FAIL
+test_nanosecond_update_before_creation (__main__.Before.test_nanosecond_update_before_creation) ... FAIL
+
+======================================================================
+FAIL: test_invalid_expected_precision_zero_get (__main__.Before.test_invalid_expected_precision_zero_get)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<stdin>", line 23, in test_invalid_expected_precision_zero_get
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 910, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected 'open' to not have been called. Called 1 times.
+Calls: [call(<urllib.request.Request object at 0x7f20f592d7f0>, timeout=30)].
+
+======================================================================
+FAIL: test_nanosecond_mismatch (__main__.Before.test_nanosecond_mismatch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<stdin>", line 15, in test_nanosecond_mismatch
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_nanosecond_update_before_creation (__main__.Before.test_nanosecond_update_before_creation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<stdin>", line 19, in test_nanosecond_update_before_creation
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.008s
+
+FAILED (failures=3)

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "observation_id": "blue-20261002-session-diagnostic-01",
+  "request_commit": "9d2a23024e23faca78c720fb2962b483c4607b4e",
+  "request_path": "docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json",
+  "parent_code_commit": "348d9dbf9ef119536dce6d936633d6f058a662fc",
+  "code_tree": "3af6683a92402b975482b880be702ec28b46b58b",
+  "run_id": 36970590374,
+  "job_id": 110723542520,
+  "event": "push",
+  "attempt": 1,
+  "conclusion": "failure",
+  "cli_exit_code": 2,
+  "result": {
+    "adoption_performed": false,
+    "diagnostic_checks": {
+      "completed": true,
+      "create_time_exact": false,
+      "create_time_same_second": true,
+      "create_time_valid": true,
+      "repository_matches": true,
+      "session_name_matches": true,
+      "starting_branch_matches": true,
+      "unique_pr_output_matches": false,
+      "update_time_valid": true
+    },
+    "failure_stage": "create_time",
+    "fallback": "disabled",
+    "new_session_created": false,
+    "retry": 0,
+    "status": "UNKNOWN",
+    "successor_dispatched": false,
+    "work_review_posted": false
+  },
+  "artifact_id": 11211033930,
+  "artifact_zip_sha256": "05354a93401dbbb1f50d8b4a9db8526b32e85a98b8881084fa574ea62ada9373",
+  "artifact_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36970590374/artifacts/11211033930",
+  "projected_marker": "2026-10-02T05:48:33.2552366Z [SESSION_DIAGNOSTIC_V1] {\"adoption_performed\": false, \"diagnostic_checks\": {\"completed\": true, \"create_time_exact\": false, \"create_time_same_second\": true, \"create_time_valid\": true, \"repository_matches\": true, \"session_name_matches\": true, \"starting_branch_matches\": true, \"unique_pr_output_matches\": false, \"update_time_valid\": true}, \"failure_stage\": \"create_time\", \"fallback\": \"disabled\", \"new_session_created\": false, \"retry\": 0, \"status\": \"UNKNOWN\", \"successor_dispatched\": false, \"work_review_posted\": false}",
+  "interpretation": {
+    "current_response": "time exact mismatch and unique PR output comparison false",
+    "time_precision": "same second only; not exact acceptance",
+    "output_specific_cause": "UNKNOWN; no raw response retained",
+    "old_failed_observation_cause": "UNKNOWN",
+    "new_get_retries": 0,
+    "new_session_count": 0,
+    "strict_source_adoption": "UNKNOWN",
+    "successor": "NONE"
+  },
+  "new_observations_this_continuation": 1,
+  "previous_completed_observations": 1,
+  "automatic_followup": "disabled"
+}

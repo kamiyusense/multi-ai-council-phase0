@@ -1,0 +1,205 @@
+{
+  "adoption_performed": false,
+  "capture_fingerprint": "cd808a728f120bb8e39aabb000de2dc4a2cfe9476b0925b73e5d9fad59118023",
+  "claim_reserved": false,
+  "execution_mode": "PREPARE_ONLY",
+  "external_send_attempted": false,
+  "fallback": "disabled",
+  "model_executed": false,
+  "next_task": {
+    "claim": {
+      "claimed_at": "2026-10-01T12:00:00+00:00",
+      "command_id": "relay-dev-loop-901-mock-next",
+      "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+      "expected_target_head": "cccccccccccccccccccccccccccccccccccccccc",
+      "expected_target_tree": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "fallback": "disabled",
+      "lane_display": "💙",
+      "lane_id": "J-BLUE",
+      "loop_id": "901",
+      "loop_number": 901,
+      "retry": 0,
+      "schema_version": 3,
+      "state": "CLAIMED",
+      "target_branch": "experiment/blue-work-autonomous-development",
+      "task_id": "mock-next",
+      "work_branch": "jules-work/relay-dev-loop-901-mock-next"
+    },
+    "claim_path": "automation/command_bus/loop_id_claims/901.json",
+    "command": {
+      "allowed_paths": [
+        "automation/command_bus/tests/test_blue_receipt_binding.py"
+      ],
+      "command_id": "relay-dev-loop-901-mock-next",
+      "created_at": "2026-10-01T12:00:00+00:00",
+      "expected_target_head": "cccccccccccccccccccccccccccccccccccccccc",
+      "expected_target_tree": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "expires_at": "2026-10-01T13:00:00Z",
+      "fallback": "disabled",
+      "force_push_allowed": false,
+      "merge_allowed": false,
+      "profile": "JULES_CHAT_SEMIAUTO_V2",
+      "prompt": "Loop candidate — bounded MEDIUM STATIC receipt regression.\nGoal:\nProve a receipt for another PR cannot terminate a command. No architecture expansion.\nRead first:\n- automation/command_bus/blue_work_reconcile_prepare.py\n- automation/command_bus/tests/test_blue_receipt_binding.py\nAllowed changed paths only:\n- automation/command_bus/tests/test_blue_receipt_binding.py\nHard scope / Do Not Touch:\n- retry=0; fallback=disabled; no Merge; no live provider, model, Work or Jules calls.\n- no default-branch write, force push, deletion, settings, credentials or billing changes.\nReuse-first:\nReuse the original BWJ fixture and existing receipt parser; do not duplicate policy.\nRequired semantics:\nAssert UNKNOWN when the same command ID has a receipt for another PR.\nNegative/tamper cases:\nWrong PR, HEAD and worker generation; malformed receipt; duplicate command.\nAcceptance criteria:\nDirect observable assertions; no vacuous tests; only the allowed test file changes.\nValidation:\npython -m unittest automation.command_bus.tests.test_blue_receipt_binding -v\npython -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\nPublication:\nNormal isolated Jules PR only after all required checks succeed; no Merge.\nStop and report instead of guessing if:\nTarget snapshot moved, paths need expansion, evidence is UNKNOWN or any approval boundary is reached.\n",
+      "retry": 0,
+      "schema_version": 2,
+      "target_branch": "experiment/blue-work-autonomous-development",
+      "target_repo": "kamiyusense/multi-ai-council-phase0",
+      "work_branch": "jules-work/relay-dev-loop-901-mock-next"
+    },
+    "command_path": "automation/command_bus/jules_api_requests/relay-dev-loop-901-mock-next.json",
+    "external_write_attempted": false,
+    "reason": "formal candidate only; global reservation and publication NOT performed",
+    "reservation_state": "NOT_RESERVED",
+    "status": "PREPARED"
+  },
+  "posting_authority": false,
+  "reason": "STOP before reservation or dispatch",
+  "recovery": {
+    "receipt_comment": 102,
+    "resend_allowed": false,
+    "status": "TERMINAL",
+    "terminal_status": "PASS",
+    "trigger_review": 101
+  },
+  "retry": 0,
+  "review": {
+    "adopted": false,
+    "decision": "PASS",
+    "reason": "captured independent-review contract; no semantic review executed or adoption performed",
+    "recovered_records": {
+      "claims": [
+        {
+          "capability": "review",
+          "claim_id": "mock-review-owner",
+          "claimed_at": "2026-10-01T12:00:00+00:00",
+          "expires_at": "2026-10-01T13:00:00+00:00",
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "reviewer_generation": 1,
+          "reviewer_instance_id": "mock-independent-work",
+          "role": "reviewer",
+          "schema_version": 1,
+          "status": "ACTIVE"
+        }
+      ],
+      "receipts": [
+        {
+          "correlation_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+          "loop_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_id": "review-mock-review-response",
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "response_id": "mock-review-response",
+          "review_profile": "DURABLE_REVIEW_V2",
+          "round": 1,
+          "schema_version": 1,
+          "state": "CONSUMED"
+        }
+      ],
+      "requests": [
+        {
+          "allowed_decisions": [
+            "PASS",
+            "FAIL",
+            "BLOCKED",
+            "UNKNOWN"
+          ],
+          "correlation_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_refs": [
+            "fixture://diff",
+            "fixture://tests"
+          ],
+          "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+          "expires_at": "2026-10-01T13:00:00Z",
+          "fallback": "disabled",
+          "loop_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "retry": 0,
+          "review_kind": "JULES_RESULT",
+          "review_profile": "DURABLE_REVIEW_V2",
+          "reviewer_role": "reviewer",
+          "round": 1,
+          "schema_version": 1,
+          "status": "OPEN"
+        }
+      ],
+      "responses": [
+        {
+          "correlation_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "decision": "PASS",
+          "evidence_refs": [
+            "fixture://diff",
+            "fixture://tests"
+          ],
+          "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+          "loop_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "model_route_evidence": {
+            "live_model_used": false,
+            "route": "MOCK"
+          },
+          "next_command_proposal": {
+            "allowed_paths": [
+              "automation/command_bus/tests/test_blue_receipt_binding.py"
+            ],
+            "expires_at": "2026-10-01T13:00:00Z",
+            "prompt": "Loop candidate — bounded MEDIUM STATIC receipt regression.\nGoal:\nProve a receipt for another PR cannot terminate a command. No architecture expansion.\nRead first:\n- automation/command_bus/blue_work_reconcile_prepare.py\n- automation/command_bus/tests/test_blue_receipt_binding.py\nAllowed changed paths only:\n- automation/command_bus/tests/test_blue_receipt_binding.py\nHard scope / Do Not Touch:\n- retry=0; fallback=disabled; no Merge; no live provider, model, Work or Jules calls.\n- no default-branch write, force push, deletion, settings, credentials or billing changes.\nReuse-first:\nReuse the original BWJ fixture and existing receipt parser; do not duplicate policy.\nRequired semantics:\nAssert UNKNOWN when the same command ID has a receipt for another PR.\nNegative/tamper cases:\nWrong PR, HEAD and worker generation; malformed receipt; duplicate command.\nAcceptance criteria:\nDirect observable assertions; no vacuous tests; only the allowed test file changes.\nValidation:\npython -m unittest automation.command_bus.tests.test_blue_receipt_binding -v\npython -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\nPublication:\nNormal isolated Jules PR only after all required checks succeed; no Merge.\nStop and report instead of guessing if:\nTarget snapshot moved, paths need expansion, evidence is UNKNOWN or any approval boundary is reached.\n",
+            "task_id": "mock-next"
+          },
+          "rationale_summary": "MOCK semantic review only: receipt binding and negative cases inspected.",
+          "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "response_id": "mock-review-response",
+          "review_kind": "JULES_RESULT",
+          "review_profile": "DURABLE_REVIEW_V2",
+          "reviewer_generation": 1,
+          "reviewer_instance_id": "mock-independent-work",
+          "reviewer_role": "reviewer",
+          "round": 1,
+          "schema_version": 1,
+          "status": "AVAILABLE",
+          "submitted_at": "2026-10-01T12:00:00+00:00"
+        }
+      ]
+    },
+    "response": {
+      "correlation_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decision": "PASS",
+      "evidence_refs": [
+        "fixture://diff",
+        "fixture://tests"
+      ],
+      "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected_target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+      "loop_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "model_route_evidence": {
+        "live_model_used": false,
+        "route": "MOCK"
+      },
+      "next_command_proposal": {
+        "allowed_paths": [
+          "automation/command_bus/tests/test_blue_receipt_binding.py"
+        ],
+        "expires_at": "2026-10-01T13:00:00Z",
+        "prompt": "Loop candidate — bounded MEDIUM STATIC receipt regression.\nGoal:\nProve a receipt for another PR cannot terminate a command. No architecture expansion.\nRead first:\n- automation/command_bus/blue_work_reconcile_prepare.py\n- automation/command_bus/tests/test_blue_receipt_binding.py\nAllowed changed paths only:\n- automation/command_bus/tests/test_blue_receipt_binding.py\nHard scope / Do Not Touch:\n- retry=0; fallback=disabled; no Merge; no live provider, model, Work or Jules calls.\n- no default-branch write, force push, deletion, settings, credentials or billing changes.\nReuse-first:\nReuse the original BWJ fixture and existing receipt parser; do not duplicate policy.\nRequired semantics:\nAssert UNKNOWN when the same command ID has a receipt for another PR.\nNegative/tamper cases:\nWrong PR, HEAD and worker generation; malformed receipt; duplicate command.\nAcceptance criteria:\nDirect observable assertions; no vacuous tests; only the allowed test file changes.\nValidation:\npython -m unittest automation.command_bus.tests.test_blue_receipt_binding -v\npython -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\nPublication:\nNormal isolated Jules PR only after all required checks succeed; no Merge.\nStop and report instead of guessing if:\nTarget snapshot moved, paths need expansion, evidence is UNKNOWN or any approval boundary is reached.\n",
+        "task_id": "mock-next"
+      },
+      "rationale_summary": "MOCK semantic review only: receipt binding and negative cases inspected.",
+      "request_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "response_id": "mock-review-response",
+      "review_kind": "JULES_RESULT",
+      "review_profile": "DURABLE_REVIEW_V2",
+      "reviewer_generation": 1,
+      "reviewer_instance_id": "mock-independent-work",
+      "reviewer_role": "reviewer",
+      "round": 1,
+      "schema_version": 1,
+      "status": "AVAILABLE",
+      "submitted_at": "2026-10-01T12:00:00+00:00"
+    },
+    "status": "VALIDATED"
+  },
+  "source_authentication": "MOCK_ONLY",
+  "source_mode": "MOCK",
+  "status": "PREPARED_NEXT"
+}
