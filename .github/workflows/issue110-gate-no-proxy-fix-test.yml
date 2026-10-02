@@ -1,0 +1,80 @@
+name: Issue 110 Gate NO_PROXY static validation
+
+on:
+  push:
+    branches:
+      - static/issue110-gate-no-proxy-fix-v1
+    paths:
+      - .github/workflows/issue110-gate-no-proxy-fix-test.yml
+      - automation/command_bus/claude_admission_gate.py
+      - automation/command_bus/claude_gate_compose.yaml
+      - automation/command_bus/docker/claude-runtime/claude_runtime_launcher.mjs
+      - automation/command_bus/tests/test_claude_admission_gate.py
+      - automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+      - automation/command_bus/tests/claude_production_proxy_routing_fixture.sh
+      - automation/command_bus/tests/fixtures/claude_model_auth_mock.mjs
+      - docs/CLAUDE_ADMISSION_GATE_DESIGN.md
+      - docs/CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md
+      - docs/ISSUE110_OAUTH_REFRESH_FIXTURE_FINDINGS.md
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact validation head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - name: Node auth proxy and launcher regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test automation/command_bus/tests/test_claude_auth_control_proxy.mjs
+
+      - name: Full command-bus Python unittest suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s automation/command_bus/tests -v
+
+      - name: Compile command-bus Python
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q automation/command_bus
+
+      - name: Validate Compose JSON and split-routing contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("automation/command_bus/claude_gate_compose.yaml")
+          m=json.loads(p.read_text(encoding="utf-8"))
+          env=m["services"]["claude"]["environment"]
+          assert env["ANTHROPIC_BASE_URL"] == "http://gate:8080"
+          assert env["HTTPS_PROXY"] == "http://auth-control-proxy:3128"
+          assert env["NO_PROXY"] == "gate"
+          assert env["CLAUDE_CODE_PROXY_RESOLVES_HOSTS"] == "1"
+          print("COMPOSE_SPLIT_ROUTING_CONTRACT_PASS")
+          PY
+
+      - name: Diff integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main...HEAD

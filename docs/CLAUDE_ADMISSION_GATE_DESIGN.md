@@ -128,13 +128,20 @@ The deterministic validator requires:
 * Internal network: bridge with `internal: true`; Claude is not attached to
   the separate egress network. Gate and the narrow auth proxy join both.
 
-Claude's only proxy environment is the exact internal `HTTPS_PROXY` URL for
-the auth control-plane sidecar. The launcher blocks HTTP_PROXY, ALL_PROXY,
-NO_PROXY, and proxy URL overrides. Its model API base remains the Gate.
-This hostname-level CONNECT policy cannot inspect an encrypted request path or
-TLS SNI/Host mismatch; the static candidate therefore remains **not live-ready**
-until a reviewed enforcement design resolves that limitation. See the linked
-Issue #110 design for evidence levels and the A/B comparison.
+Claude's external proxy environment is the exact internal `HTTPS_PROXY` URL
+for the auth control-plane sidecar plus the exact launcher-owned
+`NO_PROXY=gate`. Actual Claude Code 2.1.283 routing tests showed this bypass is
+required: without it, the client sends its internal
+`ANTHROPIC_BASE_URL=http://gate:8080` model request to the HTTPS proxy, which
+returns 405 before the Gate is reached. With exact `NO_PROXY=gate`, the model
+request reaches the Gate again while external HTTPS remains proxied. The
+launcher rejects wildcard, expanded, lowercase/mixed-case, and caller-overridden
+NO_PROXY values.
+
+This hostname-level CONNECT policy still cannot inspect an encrypted OAuth
+request path or HTTP Host/HTTP2 authority inside TLS. A real credentialed OAuth
+refresh remains separately approval-gated. See the linked Issue #110 design
+for direct Docker/TLS/fixture evidence and the A/B comparison.
 
 This follows Docker's documented Compose networking ([networking guide](https://docs.docker.com/compose/how-tos/networking/),
 [network reference](https://docs.docker.com/reference/compose-file/networks/)).
