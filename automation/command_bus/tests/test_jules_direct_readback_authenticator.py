@@ -12,7 +12,7 @@ from automation.command_bus.runtime_verifier_sources import VerifiedSourceAttest
 HEAD = "a" * 40
 REPO = "kamiyusense/multi-ai-council-phase0"
 SESSION_ID = "31415926535897932384"
-TARGET_BRANCH = TARGET_BRANCH
+TARGET_BRANCH = "feature/relay-transport-7070955470193506982"
 WORK_BRANCH = "jules-work/relay-dev-loop-900-current-runtime-binding"
 OBSERVED = "2026-09-28T03:59:00+00:00"
 EXPIRES = "2026-09-28T06:00:00+00:00"
