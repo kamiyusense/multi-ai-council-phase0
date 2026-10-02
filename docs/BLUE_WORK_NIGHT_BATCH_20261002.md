@@ -1,5 +1,35 @@
 # PR #217 — 2026-10-02 深夜バッチ
 
+## 2026-10-02 朝の継続チェックポイント
+
+LIVEは4/10回使用。03の独立delta reviewはPASS（receipt5938512018）。
+Workの次タスク提案を正式schema-v3 global claimへ変換し、全328 branchと現行ledgerを
+再取得してLoop125をcreate-only予約。claim commit `fbcdbbc1a13232869f973ba3e4eb1b60f165e72a`、
+一件command commit `1ce9fc705df90bf0c04a5535edef992293f3f730`。
+正式carrier上のclaim/commandのみ追加し、他レーンのファイルは変更していない。
+既存JulesはSession `12436642121757218108` を受理。
+GET createTime読み戻しは `2026-10-01T19:08:33Z`（JST04:08:33）。
+[dispatch run36911997317](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36911997317)
+/ job110536649367の実行timing行を確認。緑Actionsだけを意味的PASSにしない。
+
+結果[PR #227](https://github.com/kamiyusense/multi-ai-council-phase0/pull/227)は
+HEAD `b4c5608f983ef42b5bd206bfc9c4f0f465ae7869`、sole parentは修正217 HEAD
+`33700442825b56e3bd949c32b06707cfb46ce29b`、変更は許可2ファイルだけ。
+ただしController検品でraw候補をFAILとした。Unicode ID/unsafe branchがI/Oへ到達、
+ValueError本文の秘密漏れ、不正outputのAttributeError、時刻の文字列比較、
+余分なnested項目と未検証updateTimeの返却を8 regression methodで再現。
+修正前は9 assertion failures/5 errors（subcase込み）、interrupt保持1件は成功。
+PR227は変更せず、217に既存helperを使う最小修正を準備。Jules raw結果のPASS/正式採用とは区別。
+
+修正後は全984件（983成功、Windows-only skip1、failure/error0）、重点35件成功。
+compileall/diff checkも成功。既存readback workflowにはbacktick実行と不完全projectionがあるため
+使わず、217限定・request追加commit限定の小さなGET-only workflowを用意した。
+既存承認secretを読むだけで認証/設定/権限は変更しない。HTTP GETは30秒/1MiB、
+no redirect/retry/fallback、全出力は固定identityに照合した必要項目だけ。
+読取りは試験04の観測であり、新規Work/Jules実験には数えない。
+このcheckpointでは完成Session GET・原結果の独立Work検品はまだUNKNOWN。
+認証sourceのruntime自動接続、Actions review投稿、無人連続運転は未完成。
+
 対象は既存 `experiment/blue-work-autonomous-development` のみ。Merge保留。
 開始時にGitHubから再取得したHEAD: `044e96b69f4bcf7c2efb43cb325f8b5181e086e1`、
 tree: `d152694485762e81efd6c9536e5d9790b3c528d8`。
