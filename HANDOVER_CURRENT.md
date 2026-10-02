@@ -2,6 +2,11 @@
 
 ## PR #217 experiment: 2026-10-02 bounded LIVE batch
 
+Morning continuation: trial03 delta review PASS; official global Loop125 claim
+and one Jules Session accepted; result PR227 exists but raw semantics FAIL.
+Direct bounded Session-reader repairs and GET-only readback are tracked in the
+night batch document. Fresh GitHub readback overrides these snapshot statements.
+
 Fresh-read [night batch](docs/BLUE_WORK_NIGHT_BATCH_20261002.md) and PR #217
 before continuing this experiment. User authorized at most ten existing
 Work/Jules LIVE trials for this purpose; Merge remains withheld. Blue read-only

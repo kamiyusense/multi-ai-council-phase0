@@ -1,0 +1,43 @@
+name: Blue one existing completed Session readback
+
+on:
+  push:
+    branches: [experiment/blue-work-autonomous-development]
+    paths: [docs/evidence/blue-work-night-20261002/session-readback-request.json]
+
+permissions:
+  contents: read
+
+jobs:
+  readback-existing-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact isolated commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Require create-only request in this commit
+        run: |
+          python - <<'PY'
+          import subprocess
+          path = 'docs/evidence/blue-work-night-20261002/session-readback-request.json'
+          change = subprocess.check_output(['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', 'HEAD', '--', path], text=True).strip()
+          assert change == 'A\t' + path, 'request is not create-only; no GET attempted'
+          PY
+      - name: GET one already-existing completed Session
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          python -m automation.command_bus.jules_completed_readback_cli \
+            docs/evidence/blue-work-night-20261002/session-readback-request.json \
+            blue-existing-session-readback.json
+      - name: Save projected nonsecret readback
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blue-existing-session-${{ github.run_id }}
+          path: blue-existing-session-readback.json
+          if-no-files-found: error
+          retention-days: 7
