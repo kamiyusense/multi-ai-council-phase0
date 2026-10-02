@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+from dataclasses import dataclass
 
 from .github_oidc_claims_policy import (
     GitHubOidcExpectedContext,
@@ -29,18 +30,64 @@ SUBJECT = (
 )
 
 
-def expected_from_runner(env: dict[str, str]) -> GitHubOidcExpectedContext:
+@dataclass(frozen=True)
+class OidcProofProfile:
+    """Exact reviewed context for one bounded OIDC proof workflow."""
+    name: str
+    branch_ref: str
+    workflow_path: str
+    workflow_name: str
+    audience: str
+    event: str = "push"
+
+    @property
+    def workflow_ref(self) -> str:
+        return f"{REPOSITORY}/{self.workflow_path}@{self.branch_ref}"
+
+    @property
+    def subject(self) -> str:
+        return f"repo:kamiyusense@{OWNER_ID}/multi-ai-council-phase0@{REPOSITORY_ID}:ref:{self.branch_ref}"
+
+
+RUN7_PROFILE = OidcProofProfile(
+    "run7", BRANCH_REF, ".github/workflows/github-oidc-proof.yml",
+    "Phase 0 bounded OIDC identity proof", AUDIENCE,
+)
+SF8_BRANCH_REF = "refs/heads/claude/signal-sf8-oidc-runtime-integration-20261002"
+SF8_PROFILE = OidcProofProfile(
+    "sf8", SF8_BRANCH_REF, ".github/workflows/signal-sf8-oidc-proof.yml",
+    "Signal SF-8 bounded OIDC proof",
+    "urn:phase0:signal-sf8-oidc-proof:kamiyusense/multi-ai-council-phase0",
+)
+# Candidate owner-authority issuer: deliberate manual dispatch of a reviewed workflow on the default
+# branch. Inert until that workflow exists on main (merge = human decision).
+SF8_AUTHORITY_PROFILE = OidcProofProfile(
+    "sf8-authority", "refs/heads/main", ".github/workflows/signal-sf8-authority-issuer.yml",
+    "Signal SF-8 authority issuer",
+    "urn:phase0:signal-sf8-authority-issuer:kamiyusense/multi-ai-council-phase0",
+    event="workflow_dispatch",
+)
+PROFILES = {
+    RUN7_PROFILE.name: RUN7_PROFILE,
+    SF8_PROFILE.name: SF8_PROFILE,
+    SF8_AUTHORITY_PROFILE.name: SF8_AUTHORITY_PROFILE,
+}
+
+
+def expected_from_runner(
+    env: dict[str, str], profile: OidcProofProfile = RUN7_PROFILE,
+) -> GitHubOidcExpectedContext:
     """Bound runner context to the reviewed repository, workflow and first run."""
     fixed = {
         "GITHUB_ACTIONS": "true",
         "GITHUB_REPOSITORY": REPOSITORY,
         "GITHUB_REPOSITORY_ID": REPOSITORY_ID,
         "GITHUB_REPOSITORY_OWNER_ID": OWNER_ID,
-        "GITHUB_REF": BRANCH_REF,
+        "GITHUB_REF": profile.branch_ref,
         "GITHUB_REF_TYPE": "branch",
-        "GITHUB_WORKFLOW_REF": WORKFLOW_REF,
-        "GITHUB_WORKFLOW": "Phase 0 bounded OIDC identity proof",
-        "GITHUB_EVENT_NAME": "push",
+        "GITHUB_WORKFLOW_REF": profile.workflow_ref,
+        "GITHUB_WORKFLOW": profile.workflow_name,
+        "GITHUB_EVENT_NAME": profile.event,
         "GITHUB_RUN_ATTEMPT": "1",
         "RUNNER_ENVIRONMENT": "github-hosted",
     }
@@ -51,34 +98,38 @@ def expected_from_runner(env: dict[str, str]) -> GitHubOidcExpectedContext:
     if sha != env.get("GITHUB_WORKFLOW_SHA"):
         raise ValueError("workflow SHA differs from triggering SHA")
     return GitHubOidcExpectedContext(
-        audience=AUDIENCE,
-        subject=SUBJECT,
+        audience=profile.audience,
+        subject=profile.subject,
         repository=REPOSITORY,
         repository_id=REPOSITORY_ID,
         repository_owner_id=OWNER_ID,
-        ref=BRANCH_REF,
+        ref=profile.branch_ref,
         sha=sha,
-        workflow_ref=WORKFLOW_REF,
+        workflow_ref=profile.workflow_ref,
         workflow_sha=sha,
-        event_name="push",
+        event_name=profile.event,
         run_id=env.get("GITHUB_RUN_ID", ""),
         repository_visibility="private",
-        job_workflow_ref=WORKFLOW_REF,
+        job_workflow_ref=profile.workflow_ref,
         job_workflow_sha=sha,
     )
 
 
-def evaluate_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: int) -> bool:
-    expected = expected_from_runner(env)
+def evaluate_verified_claims(
+    claims: dict, env: dict[str, str], *, now_epoch: int, profile: OidcProofProfile = RUN7_PROFILE,
+) -> bool:
+    expected = expected_from_runner(env, profile)
     return evaluate_github_oidc_claims_policy(
         claims, expected, now_epoch=now_epoch,
     ).status == "MATCH"
 
 
-def diagnose_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: int) -> str:
+def diagnose_verified_claims(
+    claims: dict, env: dict[str, str], *, now_epoch: int, profile: OidcProofProfile = RUN7_PROFILE,
+) -> str:
     """Return only a fixed stage, never raw claims or exception text."""
     try:
-        expected = expected_from_runner(env)
+        expected = expected_from_runner(env, profile)
     except (ValueError, TypeError, KeyError) as exc:
         reason = str(exc)
         if any(name in reason for name in ("RUN_ID", "RUN_ATTEMPT")):
@@ -119,13 +170,14 @@ def diagnose_verified_claims(claims: dict, env: dict[str, str], *, now_epoch: in
 
 def safe_failure_code(
     stage: str, claims: object, env: dict[str, str], *, now_epoch: int,
+    profile: OidcProofProfile = RUN7_PROFILE,
 ) -> str:
     """Expose only the first known mismatch category, never raw values."""
     generic = f"OIDC_{stage}_REJECTED"
     if stage not in {"WORKFLOW", "REF_SHA"}:
         return generic
     try:
-        expected = expected_from_runner(env)
+        expected = expected_from_runner(env, profile)
     except (ValueError, TypeError, KeyError) as exc:
         reason = str(exc)
         if stage == "WORKFLOW":
@@ -162,13 +214,21 @@ def safe_failure_code(
 def main() -> int:
     claims: object = {}
     now_epoch = int(time.time())
+    profile = PROFILES.get(os.environ.get("OIDC_PROOF_PROFILE", RUN7_PROFILE.name))
+    if profile is None:
+        sys.stdout.write(json.dumps({
+            "status": "BLOCKED", "terminal_stage": "WORKFLOW",
+            "safe_error_code": "OIDC_WORKFLOW_REJECTED",
+        }))
+        return 1
     try:
         claims = json.load(sys.stdin)
-        stage = diagnose_verified_claims(claims, os.environ, now_epoch=now_epoch)
+        stage = diagnose_verified_claims(claims, os.environ, now_epoch=now_epoch, profile=profile)
     except (ValueError, TypeError, KeyError, json.JSONDecodeError):
         stage = "COMPLETE"
     accepted = stage == "PASS"
-    code = "NONE" if accepted else safe_failure_code(stage, claims, os.environ, now_epoch=now_epoch)
+    code = "NONE" if accepted else safe_failure_code(
+        stage, claims, os.environ, now_epoch=now_epoch, profile=profile)
     sys.stdout.write(json.dumps({
         "status": "PASS" if accepted else "BLOCKED",
         "terminal_stage": "COMPLETE" if accepted else stage,
