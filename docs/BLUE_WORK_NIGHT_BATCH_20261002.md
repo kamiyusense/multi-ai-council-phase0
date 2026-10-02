@@ -98,3 +98,11 @@ PR #217の再利用copyとblob一致。旧claim番号を新dispatchへ流用し�
 次は修正HEADの独立delta review。PASS後に用途・HEAD・command/claimを個別固定して
 正式global claim/次Jules/結果検品へ進める。新LIVE総数は常に10以下。
 未確認送信・terminal receiptの再実行・同じ失敗の無分析再試行は禁止。
+
+## 最新の朝チェックポイント
+
+[最終検品用記録](BLUE_WORK_REVIEW_READY_20261002.md)とPR217の最新HEADを読む。
+LIVE05のWork原結果検品FAILと06Yellow UNKNOWN/07Green PASS/08Red PASSは
+[evidence](evidence/blue-work-night-20261002/live-05-08.json)に保存。
+Session GETの一回failureはUNKNOWN、再実行しない。診断保存機能をSTATICで追加、987件実行（成功986/skip1）。
+自動review投稿/source認証/無人連続運転は未完了。前段のPENDING表記は当時の履歴。

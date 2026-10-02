@@ -1,5 +1,14 @@
 # Phase 0 Handover — Current
 
+## PR #217 current review-ready checkpoint
+
+Read [BLUE_WORK_REVIEW_READY_20261002.md](docs/BLUE_WORK_REVIEW_READY_20261002.md)
+first for this experiment. LIVE budget used8/10 at this checkpoint, complete
+Session source UNKNOWN, raw Jules result FAIL, bounded Controller repairs tested.
+Blue/Green/Red read-only Work evidence is verified; Yellow tree proof UNKNOWN.
+Merge remains withheld. Fresh-read PR217 HEAD and evidence before continuation.
+Earlier blocks below are historical snapshots and do not override current state.
+
 ## PR #217 experiment: 2026-10-02 bounded LIVE batch
 
 Morning continuation: trial03 delta review PASS; official global Loop125 claim

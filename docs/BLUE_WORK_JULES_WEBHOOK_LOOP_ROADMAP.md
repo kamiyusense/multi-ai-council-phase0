@@ -5,6 +5,18 @@ Status: proposed execution roadmap / documentation only
 Pilot lane: 💙 J-BLUE + 💙 Cloud Work Blue  
 Source policy: PR #191 Controller Operating Guide + PR #192 Development Acceleration Playbook + PR #193 Signal roadmap pattern + PR #194 Relay minimal-reuse roadmap + PR #115 Work-event-loop static research
 
+### PR #217 current 2026-10-02 checkpoint
+
+Read [the review-ready checkpoint](BLUE_WORK_REVIEW_READY_20261002.md).
+BWJ-1–3 and captured BWJ-5/6 are STATIC-ready. Existing Blue/Green/Red read-only
+COMMENT wake/isolation were read back; Yellow woke but tree proof is UNKNOWN.
+One schema-v3 global Loop125 was reserved and one Jules Session accepted.
+Work independently rejected its raw PR227 semantics; Controller repairs are
+tested separately. The completed Session GET failed closed; authenticated source
+and automatic Actions→carrier-review transport remain UNKNOWN/NOT_WIRED.
+BWJ-4 full event bridge, M3/M4 adoption/cycle and continuous operation are not complete.
+Merge stays withheld. The following STATIC section is historical.
+
 ### PR #217 experimental STATIC checkpoint
 
 Read [the autonomous batch handover](BLUE_WORK_AUTONOMOUS_BATCH_20261001.md)

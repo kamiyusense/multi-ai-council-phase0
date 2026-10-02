@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   readback-existing-session:
+    if: github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -35,9 +36,10 @@ jobs:
             docs/evidence/blue-work-night-20261002/session-readback-request.json \
             blue-existing-session-readback.json
       - name: Save projected nonsecret readback
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: blue-existing-session-${{ github.run_id }}
           path: blue-existing-session-readback.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
