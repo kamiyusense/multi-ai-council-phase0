@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 from automation.command_bus.jules_completed_readback_cli import main, prepare_readback
+from automation.command_bus.jules_session_readonly import SessionReadbackUnavailable
 
 
 class CompletedReadbackTests(unittest.TestCase):
@@ -57,3 +58,30 @@ class CompletedReadbackTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 main([str(inp), str(out)])
             self.assertFalse(out.exists())
+
+    def test_classified_failure_saved_once_without_retry(self):
+        self.reader.read_completed_session.side_effect = SessionReadbackUnavailable('outputs')
+        with tempfile.TemporaryDirectory() as tmp, patch('automation.command_bus.jules_completed_readback_cli.JulesSessionGetReader', return_value=self.reader):
+            inp, out = Path(tmp)/'input.json', Path(tmp)/'out.json'
+            inp.write_text(json.dumps(self.request))
+            self.assertEqual(main([str(inp), str(out)]), 2)
+            value = json.loads(out.read_text())
+            self.assertEqual(value['status'], 'UNKNOWN')
+            self.assertEqual(value['failure_stage'], 'outputs')
+            self.assertNotIn('session', value)
+            self.reader.read_completed_session.assert_called_once()
+
+    def test_existing_output_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp, patch('automation.command_bus.jules_completed_readback_cli.JulesSessionGetReader', return_value=self.reader):
+            inp, out = Path(tmp)/'input.json', Path(tmp)/'out.json'
+            inp.write_text(json.dumps(self.request))
+            out.write_text('preserve')
+            with self.assertRaises(FileExistsError):
+                main([str(inp), str(out)])
+            self.assertEqual(out.read_text(), 'preserve')
+            self.reader.read_completed_session.assert_not_called()
+
+    def test_stage_cannot_contain_remote_secret(self):
+        error = SessionReadbackUnavailable('FAKE_SECRET')
+        self.assertEqual(error.stage, 'unspecified')
+        self.assertNotIn('FAKE_SECRET', str(error))
