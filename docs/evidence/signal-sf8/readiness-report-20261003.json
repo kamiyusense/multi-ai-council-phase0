@@ -57,6 +57,22 @@
       "evidence_ref": "test:test_sf8_authority_issuer_candidate"
     }
   },
+  "pre_adoption_gate": {
+    "status": "NOT_READY",
+    "reasons": [
+      "prepared_persistence: STATIC pass is not LIVE evidence",
+      "canonical_receipt: STATIC pass is not LIVE evidence",
+      "provider_authentication: BLOCKED",
+      "publisher_accepted: STATIC pass is not LIVE evidence",
+      "collector_readback: STATIC pass is not LIVE evidence"
+    ],
+    "deferred_checks": [
+      "stable_identity",
+      "registration_ready"
+    ],
+    "human_approval_required": true,
+    "registry_write_allowed": false
+  },
   "durable_promotion_candidate": {
     "status": "NOT_READY",
     "reasons": [

@@ -19,7 +19,8 @@ from automation.command_bus.control_tower_live_preflight import (
 from automation.command_bus.control_tower_registration import assess_registration_readiness
 from automation.command_bus.lane_identity_adoption import registry_digest, validate_lane_adoption_diff
 from automation.command_bus.sf8_readiness import (
-    REQUIRED_CHECKS, CheckResult, assess_durable_promotion_candidate, issue33_migration_ready,
+    REQUIRED_CHECKS, CheckResult, assess_durable_promotion_candidate, assess_pre_adoption_readiness,
+    issue33_migration_ready,
 )
 from automation.command_bus.tests import test_recorded_live_evidence as rec
 from automation.command_bus.tests import test_sf8_oidc_runtime_e2e as e2e
@@ -80,12 +81,19 @@ def build_report():
         "no durable grant for a real loop event exists yet.")
     notes["provider_authentication"] = "Recorded Session 132 evidence cannot satisfy the production authenticator: " + ", ".join(provider.blockers)
     notes["registration_ready"] = f"production registry: {production_registration.status}; fixture registry chain: {fixture_registration}"
+    pre_adoption = assess_pre_adoption_readiness(checks)
     promotion = assess_durable_promotion_candidate(checks)
     return {
         "schema_version": 1,
         "report_kind": "SIGNAL_SF8_READINESS_REPORT",
         "scope_note": "Prepare-only. STATIC passes are never LIVE passes. Nothing here promotes the registry or writes Issue #33.",
         "checks": {n: {**asdict(checks[n]), **({"note": notes[n]} if n in notes else {})} for n in REQUIRED_CHECKS},
+        "pre_adoption_gate": {
+            "status": pre_adoption.status, "reasons": list(pre_adoption.reasons),
+            "deferred_checks": list(pre_adoption.deferred_checks),
+            "human_approval_required": pre_adoption.human_approval_required,
+            "registry_write_allowed": pre_adoption.registry_write_allowed,
+        },
         "durable_promotion_candidate": {"status": promotion.status, "reasons": list(promotion.reasons)},
         "recorded_provider": {
             "recorded_lineage": provider.recorded_lineage, "live_authentication": provider.live_authentication,
@@ -119,6 +127,10 @@ class Step7To10ReportTests(unittest.TestCase):
 
     def test_status_is_honest(self):
         r = build_report()
+        self.assertEqual(r["pre_adoption_gate"]["status"], "NOT_READY")
+        self.assertEqual(r["pre_adoption_gate"]["deferred_checks"], ["stable_identity", "registration_ready"])
+        self.assertTrue(r["pre_adoption_gate"]["human_approval_required"])
+        self.assertFalse(r["pre_adoption_gate"]["registry_write_allowed"])
         self.assertEqual(r["durable_promotion_candidate"]["status"], "NOT_READY")
         self.assertEqual(r["checks"]["provider_authentication"]["status"], "BLOCKED")
         self.assertEqual(r["checks"]["stable_identity"]["status"], "NOT_RUN")

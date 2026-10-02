@@ -1,6 +1,6 @@
 # Signal Roadmap Step 7-10 prepare-only checkpoint (2026-10-03 JST)
 
-Base: main 25a6488 (fresh readback). Nothing here promotes the production registry, writes Issue #33, merges a PR, or runs any LIVE call. Counters this batch: Jules sessions 0, Jules GET 0, authority reruns 0, OIDC reruns 0, provider/model LIVE 0.
+Base: main 7e1c90b (PR #249 merged; fresh PR base readback). Nothing here promotes the production registry, writes Issue #33, merges a PR, or runs any LIVE call. Counters this batch: Jules sessions 0, Jules GET 0, authority reruns 0, OIDC reruns 0, provider/model LIVE 0.
 
 ## Step 7 - bind recorded LIVE evidence to the authenticators
 | Path | Result | Why |
@@ -27,7 +27,7 @@ Base: main 25a6488 (fresh readback). Nothing here promotes the production regist
 ## Readiness (machine-readable: `docs/evidence/signal-sf8/readiness-report-20261003.json`)
 DURABLE promotion candidate: NOT_READY. stable_identity NOT_RUN; provider_authentication BLOCKED; registration_ready BLOCKED (production NOT_WIRED); owner_authority_authentication PASS/LIVE (execution lineage); prepared_persistence, canonical_receipt, publisher_accepted, collector_readback PASS but STATIC (not LIVE); negative/recovery tests PASS.
 
-Design finding: `stable_identity` and `registration_ready` are evaluated on the production registry, so they can only pass after the adoption merge, which should itself follow readiness. Follow-up: evaluate those two checks against the candidate registry before the merge. Not changed here.
+Ordering fix: the strict full DURABLE gate remains post-adoption and still requires `stable_identity` plus `registration_ready`. A separate pre-adoption gate now evaluates only checks that can be proven before the registry write and may reach `READY_FOR_HUMAN_APPROVAL` only; it always keeps `human_approval_required=true` and `registry_write_allowed=false`. The two post-adoption checks are explicitly deferred rather than weakened. Current pre-adoption status is NOT_READY because provider authentication is BLOCKED and the publisher/collector/persistence/receipt results are still STATIC.
 
 ## Human decisions left
-A. Merge the `chatgpt-semi-auto` PLACEHOLDER -> DURABLE adoption (only after the single LIVE proof passes). B. Migrate Issue #33 (only after A). C. Approve ONE additional LIVE proof (required: existing evidence is not reusable for provider authentication) and one more human dispatch of the issuer.
+A. Merge the `chatgpt-semi-auto` PLACEHOLDER -> DURABLE adoption only after the pre-adoption gate reaches `READY_FOR_HUMAN_APPROVAL`; after the merge, rerun the strict full DURABLE/registration verification. B. Migrate Issue #33 only after that post-adoption verification is READY. C. Approve ONE additional LIVE proof (required: existing evidence is not reusable for provider authentication) and one more human dispatch of the issuer.
