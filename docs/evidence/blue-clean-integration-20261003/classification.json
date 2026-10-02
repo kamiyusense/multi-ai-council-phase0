@@ -1,0 +1,1018 @@
+{
+  "start_main": "204441254687be75dd14866a63e5296109fee7c6",
+  "final_base_main": "25a64885ae64c8bc04065e07caaeb9a30ce3c86d",
+  "final_base_tree": "1e4d0ee17fddf2599bc9bd1d7f0289777399eafd",
+  "base_advance_note": "PR #251 documentation-only advance retained; functional files match the locally tested main.",
+  "start_main_tree": "10b32d2c9fd158bc445ea8a9cfb751869e5caa86",
+  "source_217": "5d17df185fb8bcc2e9f0bfd2090a76c60bc4359a",
+  "source_203": "66d366523ebe28726fcb36b0e5a45cb3368aa52d",
+  "compatibility_source_249": "c44f0b9ca4dc3310870b154ff2939df9b6a5d1f5",
+  "carrier": "45d4bc15a428ee7f51f71fadf55ec2881bb76552",
+  "summary": {
+    "STALE / OBSOLETE": 29,
+    "CLEAN_PORT_NEEDED": 46,
+    "ALREADY_IN_MAIN": 2,
+    "HISTORICAL_EVIDENCE_ONLY": 48
+  },
+  "rows": [
+    {
+      "path": ".github/workflows/blue-existing-session-readback.yml",
+      "source_217_blob": "2107197f66f43e1df83df87f1af682b15a0ef670",
+      "main_blob": null,
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": ".github/workflows/blue-work-reconcile-static.yml",
+      "source_217_blob": "ff0e14478cb7a4cabcad0dbe886b49820d3d2817",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "4ed8be399866818c471b2c889d48211500218031"
+    },
+    {
+      "path": ".github/workflows/jules-chat-semiauto.yml",
+      "source_217_blob": "9035f50bb6a1a65f086b524dc24f2cd0703aa5a0",
+      "main_blob": "177c614b050bc9ae3cc4b1169be55919c50591de",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": ".github/workflows/jules-session-readback.yml",
+      "source_217_blob": "b23f8c159777cca7dc6dc32d4914af456e4a1290",
+      "main_blob": "a4f0189922c7cd27c80ffa541f5d5a534e26562e",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": ".github/workflows/loop-status-development.yml",
+      "source_217_blob": "bae695608a477acdfbb694cf6b246d3c42b8215c",
+      "main_blob": "8f8262269d63b6d35348d42e3d72026ab863e61e",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": ".github/workflows/loop-status-signal-test.yml",
+      "source_217_blob": "b1e1083457f1e4081ff23cf828c9945d861d3a0d",
+      "main_blob": "b02268f3b4cdab8d7fe1d6d4001ce9b69f76d79d",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "HANDOVER_CURRENT.md",
+      "source_217_blob": "d64d47e92d1b5030f73eed1dfbcd5ce3504dda79",
+      "main_blob": "3387165054b238da3cff06084f0beaf8b4286a9a",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "README.md",
+      "source_217_blob": "07af4b882d584e607904578a3d32011c85942f42",
+      "main_blob": "4ce9bbf56bb954a23fd6ce087ef185efaea5195d",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/README.md",
+      "source_217_blob": "d249c46b95d8f20335aa6fcc25dfa107b5717e16",
+      "main_blob": "9b7e8b50d8159b8c23eefb44042116341a0faaa1",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/blue_jules_result_event.py",
+      "source_217_blob": "ae21109e73a01b08f99e29c67425824ee753397d",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "ae21109e73a01b08f99e29c67425824ee753397d"
+    },
+    {
+      "path": "automation/command_bus/blue_work_reconcile_cli.py",
+      "source_217_blob": "7ff36865cde82bf9708c10cf5a41f9278c186c6b",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "7ff36865cde82bf9708c10cf5a41f9278c186c6b"
+    },
+    {
+      "path": "automation/command_bus/blue_work_reconcile_prepare.py",
+      "source_217_blob": "7e190f6519a4877bde4184c8b9e43c454b8bffe9",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "7e190f6519a4877bde4184c8b9e43c454b8bffe9"
+    },
+    {
+      "path": "automation/command_bus/blue_work_wake_prepare.py",
+      "source_217_blob": "e437133e412f1a468e53d1c843354d03278692ee",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "e437133e412f1a468e53d1c843354d03278692ee"
+    },
+    {
+      "path": "automation/command_bus/claude_loop.py",
+      "source_217_blob": "879c29141194a180a26ca6725bbec9c266c279eb",
+      "main_blob": "b7d8a94e733c4d4df6b12db8fa4e0c8d225ed91d",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/cloud_work_lanes.py",
+      "source_217_blob": "9d581dd7f499e1007e9b0b632fe28a8711910f47",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "9d581dd7f499e1007e9b0b632fe28a8711910f47"
+    },
+    {
+      "path": "automation/command_bus/cloud_work_snapshot.py",
+      "source_217_blob": "965802a4e1345dc239ed1b8f4ec9bd949e35230f",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "965802a4e1345dc239ed1b8f4ec9bd949e35230f"
+    },
+    {
+      "path": "automation/command_bus/github_jules_source.py",
+      "source_217_blob": "dbad6e098c38373a1d4ed4fcc6d485f56701cd1a",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "dbad6e098c38373a1d4ed4fcc6d485f56701cd1a"
+    },
+    {
+      "path": "automation/command_bus/github_oidc_proof_policy_cli.py",
+      "source_217_blob": "80edcdf4f3ac1a2ac2a7592cd8c5d58af840d375",
+      "main_blob": "d68b6595372f0395c868f6c3570c6b2a566d9aa3",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/github_oidc_signature_proof.mjs",
+      "source_217_blob": "add8bb50fb224fd5961b8df78fd0a4d3e35588e3",
+      "main_blob": "b18d8023d17df8c38e0be65551e2db4635b60a1e",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/github_readonly.py",
+      "source_217_blob": "877d0a05ca4ba587507a3589b4b9cfc4851e5eff",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "877d0a05ca4ba587507a3589b4b9cfc4851e5eff"
+    },
+    {
+      "path": "automation/command_bus/jules_api_request.py",
+      "source_217_blob": "12d0286c4ebfb5e8932c42d6f29984c5c90c52e4",
+      "main_blob": "1aebad3469c2bfa629e97fd109541c236dc2244a",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/jules_completed_readback_cli.py",
+      "source_217_blob": "52c552d2b5e3e1a5a39d5b943e97fe29d173b7c8",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "52c552d2b5e3e1a5a39d5b943e97fe29d173b7c8"
+    },
+    {
+      "path": "automation/command_bus/jules_direct_readback_authenticator.py",
+      "source_217_blob": "6ccebae6140dedbdec552589aabcc8a3016e5414",
+      "main_blob": "704e6d5f1888b1938350b4ae2bf4b555cd25f187",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/jules_provider_readback_candidate.py",
+      "source_217_blob": "59293377644a45b90d31007676a8dabdca75e34e",
+      "main_blob": "268d1bf20ca412fedde537f402560f4da44f2632",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/jules_result_lineage.py",
+      "source_217_blob": "90bf60ca39dca9c667e25af32e5ef2c1d8600964",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "90bf60ca39dca9c667e25af32e5ef2c1d8600964"
+    },
+    {
+      "path": "automation/command_bus/jules_semiauto_owner_prepare.py",
+      "source_217_blob": "19e73a49480e49edf6f19237b1a4e2407b1b39c5",
+      "main_blob": "e2c7a4942a42623166bc23d41ad0ee861db1837b",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/jules_semiauto_request_v2.py",
+      "source_217_blob": "1aebad3469c2bfa629e97fd109541c236dc2244a",
+      "main_blob": null,
+      "classification": "ALREADY_IN_MAIN",
+      "reason": "Byte-identical canonical implementation is already jules_api_request.py; reuse its imports instead of adding a duplicate.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/jules_session_evidence.py",
+      "source_217_blob": "7c194f37280c6d1ce1fdf91e9dae5115b7eb6136",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "7c194f37280c6d1ce1fdf91e9dae5115b7eb6136"
+    },
+    {
+      "path": "automation/command_bus/jules_session_readonly.py",
+      "source_217_blob": "2b32c9f02118c605ad5457efd9f989dbea2d8ddd",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "2b32c9f02118c605ad5457efd9f989dbea2d8ddd"
+    },
+    {
+      "path": "automation/command_bus/next_jules_prepare.py",
+      "source_217_blob": "daa3c4ea371c5dc56af9a0201400a54f337e0977",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "daa3c4ea371c5dc56af9a0201400a54f337e0977"
+    },
+    {
+      "path": "automation/command_bus/semiauto_stable_identity.py",
+      "source_217_blob": "4a72faa5642532b8f52ef158a58ca89971215748",
+      "main_blob": "bc31c34207649904ff85f21922ffd839eae00cb3",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/bridge_fixtures.py",
+      "source_217_blob": "e4e65d738bd4f81230f02ac78a4b422eef7b8ad1",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "e4e65d738bd4f81230f02ac78a4b422eef7b8ad1"
+    },
+    {
+      "path": "automation/command_bus/tests/closed_loop_fixtures.py",
+      "source_217_blob": "2cef3df1afa9e24ffd6641c280de263cacb9af98",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "2cef3df1afa9e24ffd6641c280de263cacb9af98"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/blue_work_reconcile/input.json",
+      "source_217_blob": "785c199fed305fe655995887ba31644776223f38",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "785c199fed305fe655995887ba31644776223f38"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/work_bridge/pre-submit.json",
+      "source_217_blob": "78f9747dc8fe51477499957556427d5724a43b0d",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "78f9747dc8fe51477499957556427d5724a43b0d"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/work_bridge/terminal.json",
+      "source_217_blob": "cfa2952265d3c35582cc99d0289013cf9e628635",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "cfa2952265d3c35582cc99d0289013cf9e628635"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/work_closed_loop/input.json",
+      "source_217_blob": "ed2bde8a2f86ad5ac993aef039f0600abcfbfca7",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "ed2bde8a2f86ad5ac993aef039f0600abcfbfca7"
+    },
+    {
+      "path": "automation/command_bus/tests/static_bridge_simulation.py",
+      "source_217_blob": "ed511f95964e6cd465bab50429c9850c152bc9b0",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "ed511f95964e6cd465bab50429c9850c152bc9b0"
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_jules_result_event.py",
+      "source_217_blob": "c4ed03c04a5b5e6b58b0861084e5e3de40e57f7b",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "c4ed03c04a5b5e6b58b0861084e5e3de40e57f7b"
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_receipt_binding.py",
+      "source_217_blob": "fc4afe8a2dcf8208537c00b3d7d47a0f88f11f32",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "fc4afe8a2dcf8208537c00b3d7d47a0f88f11f32"
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_session_diagnostic_workflow.py",
+      "source_217_blob": "073f46416efe1f55a738a29746d9aed99463d468",
+      "main_blob": null,
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_work_jules_webhook_static_e2e.py",
+      "source_217_blob": "c68e352a11a33ce1627336e238fcd9fc13e6b3f2",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "042f8c1ac227d721ca8422bdc555678d77fda661"
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_work_reconcile_cli.py",
+      "source_217_blob": "daa3d0e0f2fb84359c20037714df77d96e7cdbdd",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "daa3d0e0f2fb84359c20037714df77d96e7cdbdd"
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_work_reconcile_prepare.py",
+      "source_217_blob": "6c08248dc3841f1b99184c7afe87e7313c3b3d8a",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "6c08248dc3841f1b99184c7afe87e7313c3b3d8a"
+    },
+    {
+      "path": "automation/command_bus/tests/test_blue_work_wake_prepare.py",
+      "source_217_blob": "86ff37b1169ffd53e295004969c3f7107b9fb692",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "86ff37b1169ffd53e295004969c3f7107b9fb692"
+    },
+    {
+      "path": "automation/command_bus/tests/test_claude_loop.py",
+      "source_217_blob": "85966ced0d123e7f5f3c6a37e9f2b5224b8ba42b",
+      "main_blob": "4f5af132d457f1b2133d5c30c9e58382dfae3609",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_cloud_work_snapshot.py",
+      "source_217_blob": "d86ad76565a106f9b98e5b0e63b0ce12d1d10dc8",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "d86ad76565a106f9b98e5b0e63b0ce12d1d10dc8"
+    },
+    {
+      "path": "automation/command_bus/tests/test_github_jules_source.py",
+      "source_217_blob": "eed37d53f91d6c5f054eb6dd92452ece1713e6bd",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "eed37d53f91d6c5f054eb6dd92452ece1713e6bd"
+    },
+    {
+      "path": "automation/command_bus/tests/test_github_readonly.py",
+      "source_217_blob": "5f321d15290a45776cbe086774838de70396ed07",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "5f321d15290a45776cbe086774838de70396ed07"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_api_request.py",
+      "source_217_blob": "6911735ea39cf770262ff592cacb6837b7b42caa",
+      "main_blob": "205ae576b6bc715f1fb0aefcf3240c9013e8fe18",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_chat_semiauto_timing_workflow.py",
+      "source_217_blob": "ce5b343bb85c0fb6396b14c44d514927dee29f0f",
+      "main_blob": "f1a1de04f1e18b17e220fe021e416752fe0653a8",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_completed_readback_cli.py",
+      "source_217_blob": "fe9aa5e6ad10d329951eb4a5e1c89c3077f4b597",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "fe9aa5e6ad10d329951eb4a5e1c89c3077f4b597"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_direct_readback_authenticator.py",
+      "source_217_blob": "63fdb81dc87882347559aa4cc1f523a20997c227",
+      "main_blob": "45edf9291e79b4e7e961e6b87599a87a24db228f",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_provider_readback_candidate.py",
+      "source_217_blob": "81d7e0699a554ace6653c80acff2d910f97f8e92",
+      "main_blob": "58f1d65c404b7f2ca1cc74b4bab0bd57df0c3d42",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_semiauto_owner_prepare.py",
+      "source_217_blob": "06c963a16be7f0b04f640bed98bf3e402f8ca7f9",
+      "main_blob": "094fcb856c6bd7752c6d0b55b614dd6411bf6ff4",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_diagnostics.py",
+      "source_217_blob": "248716a41a551830949dcbb496a290873adad6c3",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "248716a41a551830949dcbb496a290873adad6c3"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_evidence.py",
+      "source_217_blob": "53b73ff5306464ff41e5dec58399e5fc0644410b",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "53b73ff5306464ff41e5dec58399e5fc0644410b"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_readback_timing_workflow.py",
+      "source_217_blob": "19ccd33e839274f0f6919e0f82ab531f591cf545",
+      "main_blob": "3f7fe24cd8d3a3cbb2474ea437a764840b7d9109",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_readonly.py",
+      "source_217_blob": "ac41e2980febe135ec18f95970ecef735fe7b5cd",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "ac41e2980febe135ec18f95970ecef735fe7b5cd"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_session_readonly_boundaries.py",
+      "source_217_blob": "b4bcb660a539e9ddf9cbd218f6f3c487b027194c",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "b4bcb660a539e9ddf9cbd218f6f3c487b027194c"
+    },
+    {
+      "path": "automation/command_bus/tests/test_static_bridge_simulation.py",
+      "source_217_blob": "76a95dc5aabcaf31e9c4c6dae51cac98ffce7a93",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "76a95dc5aabcaf31e9c4c6dae51cac98ffce7a93"
+    },
+    {
+      "path": "automation/command_bus/tests/test_static_source_boundaries.py",
+      "source_217_blob": "708fd1a74ad44943f5c1e0d52cff171d7760db9b",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "708fd1a74ad44943f5c1e0d52cff171d7760db9b"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_bridge_github_preflight.py",
+      "source_217_blob": "2785041b2b845573b5e6b7ed0bff103016ae589f",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "2785041b2b845573b5e6b7ed0bff103016ae589f"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_bridge_prepare.py",
+      "source_217_blob": "107fada64c696b863b0241669d864a93780fc5f1",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "107fada64c696b863b0241669d864a93780fc5f1"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_closed_loop_prepare.py",
+      "source_217_blob": "efcd39e5215e803ff566a504a166d6c455879c23",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "efcd39e5215e803ff566a504a166d6c455879c23"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_event_prepare_cli.py",
+      "source_217_blob": "5a018cd934b04828e223d7835e42b99faa167673",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "5a018cd934b04828e223d7835e42b99faa167673"
+    },
+    {
+      "path": "automation/command_bus/tests/test_work_lineage_binding.py",
+      "source_217_blob": "cd630213f7f0dbee47498aa10421e87c7d7d6d0b",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "cd630213f7f0dbee47498aa10421e87c7d7d6d0b"
+    },
+    {
+      "path": "automation/command_bus/work_bridge_prepare.py",
+      "source_217_blob": "dda50c60b4bf371bfd7ab3d092d8c487b22af5d1",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "dda50c60b4bf371bfd7ab3d092d8c487b22af5d1"
+    },
+    {
+      "path": "automation/command_bus/work_closed_loop_prepare.py",
+      "source_217_blob": "9487ea1b1c2d27430127cd8fd6c233c8139f2c4c",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "9487ea1b1c2d27430127cd8fd6c233c8139f2c4c"
+    },
+    {
+      "path": "automation/command_bus/work_event_prepare_cli.py",
+      "source_217_blob": "dcf32c549321424c0722f07af6407b1e23744229",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "dcf32c549321424c0722f07af6407b1e23744229"
+    },
+    {
+      "path": "automation/command_bus/work_result_review.py",
+      "source_217_blob": "04e3fa1310b1c11dea9986ff7b4abd43ee65f55c",
+      "main_blob": null,
+      "classification": "CLEAN_PORT_NEEDED",
+      "reason": "Missing Blue-specific code/test/fixture; compatibility-tested with current main.",
+      "port_source_blob": "04e3fa1310b1c11dea9986ff7b4abd43ee65f55c"
+    },
+    {
+      "path": "docs/BLUE_WORK_AUTONOMOUS_BATCH_20261001.md",
+      "source_217_blob": "24e3b8265019628db6a94d9f1abf0df4e5eff0af",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_AUTONOMOUS_EXPERIMENT_20261001.md",
+      "source_217_blob": "5ab98fd07e0debbee3b6206dd5db0ec810a9ba49",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_CONTINUATION_20261002.md",
+      "source_217_blob": "de1b58c0384f6e03f1dfa0e559df35f0d26fd277",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md",
+      "source_217_blob": "ccce1b456a5f93c70f4dceafe6803338dac5dc33",
+      "main_blob": "755afbe6ea04bacf316c6ed11da9bc8fd116a0c2",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_NEXT_LIVE_PLAN_20261002.md",
+      "source_217_blob": "e3b6bf7d7db9307c7f761ada8d3d46031be18d8f",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_NIGHT_BATCH_20261002.md",
+      "source_217_blob": "a699cf66b0c6d2664800448a4745c858d9cfb23b",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_REVIEW_READY_20261002.md",
+      "source_217_blob": "a62fca0c0320b5731d9ec41315a034d2838b752a",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/BLUE_WORK_STATIC_COMPLETION_20261002.md",
+      "source_217_blob": "31d862c30f24b784079d69cc169bfb1ee9b71d17",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/CHAT_JULES_API_SEMIAUTO.md",
+      "source_217_blob": "272c4ac027bb7d3470b80e2a6dfe56dfc7948aa4",
+      "main_blob": "36932cfc00ca6fd9018822225b8482b1f32be446",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/CLAUDE_AUTOLOOP_HANDOVER_CURRENT.md",
+      "source_217_blob": "2e28154d64909b845e5d72414b9100fed11a0e0c",
+      "main_blob": "acca5c7a60e117ddbae0fe0145cbd2dc7fc32dbc",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/CLAUDE_NIGHT_LOOP_DESIGN.md",
+      "source_217_blob": "4532f19380920be154ce44b4a6a1da08349dcb84",
+      "main_blob": "7a8e45e2ba81e177bca054d9f89c18ec943e6877",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/DEVELOPMENT_WORKFLOW.md",
+      "source_217_blob": "04ff153fb385eabb829b3f5bc4fef045a9bc4521",
+      "main_blob": "c96cabe14e0113133595385904cd5b68ffb1dc66",
+      "classification": "STALE / OBSOLETE",
+      "reason": "Preserve the newer main common contracts/navigation/workflows, or exclude LIVE diagnostic workflow and its contract test.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-autonomous-20261001/checkpoint.json",
+      "source_217_blob": "d70576c344b1ac5203381b85d93889b3d554b102",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-autonomous-20261001/offline-candidate.json",
+      "source_217_blob": "e005a5ec5f280dd245b6dcb3cab193837279608f",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-autonomous-20261001/unittest.txt",
+      "source_217_blob": "49023b8595e3bf7dd303f73f124808f0c640517e",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/actions-readback.json",
+      "source_217_blob": "a8b9d22ea69b22faf20bb6a8745195c22433acd6",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/checkpoint.json",
+      "source_217_blob": "56065b072af330a5f85c697fd87799c1b3ef8d3e",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/focused.txt",
+      "source_217_blob": "dd0ffc441ed00c397d882eb5fdd0554dab44f0f9",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/formal-static-cycle.json",
+      "source_217_blob": "fdd3841a739d0b465a7535046f331c379e72282f",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/receipt-before.txt",
+      "source_217_blob": "baf553e149f2ba6fd7178da923fe72d690958535",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/source-readback.json",
+      "source_217_blob": "bc59cf86d6460cf357e30a4c24f3d85e4c545c11",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-batch-20261001/unittest.txt",
+      "source_217_blob": "8ad58c1c33d704d37f686a2e3ca5e75f1eb9594b",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-continuation-20261002/before-original.txt",
+      "source_217_blob": "b61033163fb04eace111bca09b7beb4873e9cb91",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-continuation-20261002/focused.txt",
+      "source_217_blob": "75075ff5242271ed5942271cc0eff71743bb54af",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json",
+      "source_217_blob": "2cc5cdc16ae7c8478e74141369362a176cd04dea",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-continuation-20261002/session-diagnostic-result.json",
+      "source_217_blob": "e2abb84de5ec34353d30ef5f34a93e4e29fae60d",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-continuation-20261002/tests.json",
+      "source_217_blob": "9ee3741d923d77695db38df6e4df89787cf82f56",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/actions-final-readback.json",
+      "source_217_blob": "84130f79c883283de57e696312d8cf0ed9a140c8",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/before-bindings.txt",
+      "source_217_blob": "7abb244df6a10301d2413660a150d35028cc2cba",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/before-receipt.txt",
+      "source_217_blob": "73050938122ef6511b36443b2aedeb9b7b68db0b",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/changed-files.json",
+      "source_217_blob": "1436bf6a82a677217fb137b1ef4f87a7167e1467",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-01-02.json",
+      "source_217_blob": "0174ad4130694c0e71309614e137e744be387e49",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-03-04.json",
+      "source_217_blob": "d974ba0b4c19b6c177d153a686ce01e1b2666391",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-05-08.json",
+      "source_217_blob": "b2a923cd5818be4aed3aa1cc325113842a3547a0",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-09.json",
+      "source_217_blob": "5eaa63230d69da69817e6bd8b2edb259b29f848d",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/readback-failure.json",
+      "source_217_blob": "8b8fc84a7ec84a9c30f1b358f6d50a44858ea84d",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/session-before.txt",
+      "source_217_blob": "03da0797da48f4a82d8e4efb5b6cd65bcf4086dc",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/session-readback-request.json",
+      "source_217_blob": "4b1d81f77fd513adeea571af64a378c77f59780e",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-repair.json",
+      "source_217_blob": "0314d86f3b21c90ea87ea0e6084252a6255053de",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-session-final.json",
+      "source_217_blob": "218858b185d09359e20546dbedb61b97c4539528",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-session-repair.json",
+      "source_217_blob": "eabd708f3e728c5bc9cb94504f92739810684c17",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/actions-code-readback.json",
+      "source_217_blob": "b4f7a8a662485f0ef839ee9e7f92baf71b231b68",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/changed-files.json",
+      "source_217_blob": "0c800424e3690444c0eb66cee9d8b3b827a0d329",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/checks.json",
+      "source_217_blob": "0f8e0bf47b3ba6fa00fbbaac40b3c0ebdcfa24b7",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/circular-regression-before.txt",
+      "source_217_blob": "f2baa0c9004d6565e8e52c0551ac5867b142c596",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/focused-tests.txt",
+      "source_217_blob": "140bc189930dba5378919b27be3210e9927177ed",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/four-lane-soak.json",
+      "source_217_blob": "183afedef93842e96c440fea03c2c02d33589da5",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/full-tests.txt",
+      "source_217_blob": "4e74e4d963eafc7cd6c034c5c570ff37400ed9aa",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/mock-next-candidate.json",
+      "source_217_blob": "03671fee256357c24fcfbb71aa75e717ba49163a",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/mock-review-candidate.json",
+      "source_217_blob": "41be32ece0a1064ee9efd800f07120a3a7f64b87",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/regression-before.txt",
+      "source_217_blob": "bcfebd82f6b9cc17fbda5df185fa13243dbe46de",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/start-readback.json",
+      "source_217_blob": "e21f12e96c0b6398573466c422b5c3c3976278d5",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "docs/evidence/blue-work-static-20261002/tests.json",
+      "source_217_blob": "6c29b93b78c33d3341c65e5b41ce518c4fd16889",
+      "main_blob": null,
+      "classification": "HISTORICAL_EVIDENCE_ONLY",
+      "reason": "Historical records remain linked in PR #217; do not duplicate trial/evidence history.",
+      "port_source_blob": null
+    },
+    {
+      "path": "automation/command_bus/loop_id_claim.py",
+      "source_217_blob": "d7aba1adfa60b0341d7db6df1b92b8c39bd8c822",
+      "main_blob": "d7aba1adfa60b0341d7db6df1b92b8c39bd8c822",
+      "classification": "ALREADY_IN_MAIN",
+      "reason": "Current main is canonical; no replacement."
+    }
+  ]
+}
