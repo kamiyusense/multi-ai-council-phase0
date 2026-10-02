@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-109-acp-session-new-minimal-wire",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "work_branch": "jules-work/relay-dev-loop-109-acp-session-new-minimal-wire",
+  "expected_target_head": "2d5d66edeaaa28037289d7aee85768c8410e7836",
+  "expected_target_tree": "358ce2cc43d9f2c0b8929446dd1e32e41d991c21",
+  "allowed_paths": [
+    "src/relay/acp_client.py",
+    "tests/relay/test_acp_client.py"
+  ],
+  "prompt": "❤️ J-RED Loop 109 — SHORT: one ACP v1 session/new mock round-trip.\n\nGoal: Move exactly one step beyond the adopted Loop 107 ACP initialize wire. On one LOCAL FAKE child subprocess only, execute ACP initialize and then session/new in the SAME process; return the validated sessionId. Do not design a full client, implement prompt/session execution, or connect a provider.\n\nUpstream source (behavior reference; do not vendor):\nagentclientprotocol/python-sdk commit 9d07d7871ef4b220b8507e15fc4b1560f0950a64\n- src/acp/client/connection.py::ClientSideConnection.initialize and new_session\n- src/acp/meta.py: AGENT_METHODS[\"session_new\"]=\"session/new\"; ACP v1 protocolVersion=1.\n- examples/client.py: initialize then new_session(mcp_servers=[],cwd=...).\nCurrent local reuse:\n- src/relay/acp_stdio_transport.py::spawn_stdio_transport\n- src/relay/acp_client.py::acp_initialize_wire (Loop 107 adopted).\nPreserve existing synchronous ACPClient mock and acp_initialize_wire public behavior.\n\nExactly allowed modified files:\n- src/relay/acp_client.py\n- tests/relay/test_acp_client.py\n\nImplement a small async acp_open_session_wire(command,*args,cwd:str,timeout:float=2.0)->str (or equivalently minimal name) using ONE invocation of spawn_stdio_transport and ONE child process for BOTH messages. Initialize uses ACP v1 integer protocolVersion=1, clientCapabilities={}, minimal clientInfo. Request #0: method initialize; validate matching id=0, protocolVersion integer 1, no error. Request #1: method session/new; params cwd supplied, mcpServers=[]; validate matching id=1, result dict, nonblank string sessionId, no error. NDJSON JSON-RPC 2.0 only. Reuse a tiny private single-frame helper if this avoids duplicating validation, but DO NOT create a general RPC framework or a new module. Bound both receives; fail closed on wrong id, JSON, missing/error result, wrong protocol version, EOF, timeout. No retry, relaunch, fallback or implicit authentication. On any error the process is closed using existing helper. Return ONLY sessionId, never claim live readiness.\n\nTests must use only local fake Python child via sys.executable; prove correct two-request order, exact ACP v1 fields, one subprocess, cwd, correct id matching, and no session/new after invalid initialize; add only essential targeted failure tests and preserve existing suite. No provider binaries or network calls.\n\nDo NOT: run any real provider/model/API; add dependency; modify acp_stdio_transport, provider adapters, RelayTransport, lifecycle, dispatcher, Gate, policy, proof/readiness, docs, GitHub command bus, or workflow; introduce sync/async bridge/background threads; implement session/prompt, tools, permissions, auth, provider selection; alter billing/settings/permissions; create extra plan/checkpoint files. Keep diff small. If cannot meet scope in exactly two files, STOP and report incompatibility, do not broaden it.\n\nValidation: PYTHONPATH=src python -m unittest tests.relay.test_acp_client -v; PYTHONPATH=src python -m unittest discover -s tests -t . -v; python -m compileall -q src tests; git diff --check. Normal isolated Jules PR only if all PASS and EXACT 2-file path fence. No Merge, rebase, force push, branch delete. retry=0; fallback=disabled.",
+  "created_at": "2026-10-01T17:24:38+09:00",
+  "expires_at": "2026-10-01T18:54:38+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

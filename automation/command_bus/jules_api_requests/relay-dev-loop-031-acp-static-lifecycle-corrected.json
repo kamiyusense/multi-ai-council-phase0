@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-031-acp-static-lifecycle-corrected",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d4e56accb8f8cfa5b4c27c7003823a37f166e2cf",
+  "expected_target_tree": "4955f750a359e5e9acbbf8dd1f783f98b0335e4c",
+  "allowed_paths": [
+    "src/relay/acp_client.py",
+    "src/relay/transport.py",
+    "src/relay/lifecycle.py",
+    "tests/relay/test_acp_client.py",
+    "tests/relay/test_relay_static.py",
+    "fixtures/relay/acp_initialize_account.json",
+    "fixtures/relay/acp_initialize_unsupported.json",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Corrective bounded static/mock ACP lifecycle batch. PR #54 is NOT accepted. Start only from the exact unchanged target head/tree above; do not depend on PR #54. Do not import/call acp.spawn_agent_process, start subprocesses, contact providers/network, or change auth/billing/settings/workflows/Core/provider policy.\n\nImplement an injected-test-double ACPClient that models initialize -> strict static validation -> new session -> exactly one prompt -> ordered update evidence capture -> terminal result -> cancel/close. Preserve retry=0, fallback disabled, live_process_started=false, no reopen/replay/second prompt.\n\nCritical corrections learned from rejected PR #54:\n1. NEVER inject session updates into, wrap, or mutate the terminal provider response. The raw terminal response returned by prompt must be preserved exactly as bytes. Keep ordered raw session updates in separate ACPClient evidence keyed by session_id (deep-copied or immutable snapshot), readable by tests without changing terminal bytes.\n2. Fail closed on malformed terminal response. Do not `str()` arbitrary values into bytes. Define a narrow static-double terminal contract and reject anything outside it as UNKNOWN/error. If the double returns bytes, return those exact bytes. If supporting a structured terminal object, validate its exact minimal static shape first and serialize deterministically; add tests for int/list/None/malformed dict rejection.\n3. Initialize validation must be stricter than `capabilities is dict`: require a supported protocol_version shape/value for the static fixture, account auth via ProviderPolicy, and a capability object whose expected fields are mappings/objects; missing/malformed/unsupported structure fails closed. Do not default a missing protocol version to success.\n4. Preserve raw ordered update payloads before interpretation; malformed update events must not be silently treated as valid success evidence. Either store them as raw snapshots plus an explicit validation state or fail closed according to the static-double contract.\n5. Explicit safety callbacks for permission, file read/write, terminal request, elicitation/user-input, and unknown extensions/notifications must never auto-approve. Tests must assert each category separately.\n6. RelayLifecycle invariants remain: duplicate same intent no second prompt, stop-before-dispatch no session, timeout/error after session -> cancel once + close once, pre-session failure -> no fabricated session/cancel, close once when a session was opened.\n\nUse local deterministic doubles only. Add fixtures and comprehensive regression tests. Update RELAY_STATIC_CHECKPOINT with static/mock-only wording and independent Chat validation required. Run focused tests, then exactly once full `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Create normal Jules PR. No merge/force push.",
+  "created_at": "2026-09-27T18:18:00+00:00",
+  "expires_at": "2026-09-27T20:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

@@ -1,0 +1,5 @@
+{
+  "session_id": "9253898000382177924",
+  "expected_state": "AWAITING_USER_FEEDBACK",
+  "prompt": "Yes. Remove the extra expected_target_head assertion from bundle.source_receipt inside the new bootstrap persistence adapter. Do not add that field to the receipt and do not modify runtime_transition_receipt.py or the existing receipt contract. Keep exact target-head validation through the existing bundle members that already carry it (owner_event / initial_state / evidence / transition request as applicable). Then run the exact validations from Loop 090, keep changes within the original allowlist, and publish the normal isolated Jules PR if all checks pass. Do not broaden scope, do not write any real runtime records, do not mutate registry/Issue #33/Status, do not merge, rebase, force-push, delete branches, or start another session. retry=0; fallback=disabled."
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 69,
+  "loop_id": "069",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "claude-permissions-readonly-checklist",
+  "command_id": "relay-dev-loop-069-claude-permissions-readonly-checklist",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "8d10785f673db3dfd8a2d61be851ede4a56efadd",
+  "expected_target_tree": "7ccda6cfd2b9ac8a4965fa79f2c4a292fc937a5a",
+  "work_branch": "jules-work/relay-dev-loop-069-claude-permissions-readonly-checklist",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-30T14:49:47+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

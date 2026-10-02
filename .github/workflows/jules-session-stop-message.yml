@@ -1,0 +1,85 @@
+name: Phase 0 Jules bounded stop message
+
+on:
+  push:
+    branches:
+      - feature/chat-work-command-bus
+    paths:
+      - automation/command_bus/jules_api_stop_requests/*.json
+
+permissions:
+  contents: read
+
+jobs:
+  stop-message:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact carrier commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Locate one newly-added stop request
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit_json="$(curl --fail-with-body --retry 0 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
+          total="$(jq '.files | length' <<<"${commit_json}")"
+          [[ "${total}" == "1" ]] || { echo "Expected one stop request file." >&2; exit 1; }
+          status="$(jq -r '.files[0].status' <<<"${commit_json}")"
+          path="$(jq -r '.files[0].filename' <<<"${commit_json}")"
+          [[ "${status}" == "added" ]] || { echo "Stop request must be append-only." >&2; exit 1; }
+          [[ "${path}" =~ ^automation/command_bus/jules_api_stop_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]] || { echo "Unexpected stop request path." >&2; exit 1; }
+          echo "path=${path}" >> "${GITHUB_OUTPUT}"
+
+      - name: Send bounded stop exactly once if still active
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          STOP_PATH: ${{ steps.locate.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          session_id="$(jq -er '.session_id' "${STOP_PATH}")"
+          expected_state="$(jq -er '.expected_state' "${STOP_PATH}")"
+          [[ "${session_id}" =~ ^[0-9]+$ ]] || { echo "Invalid session_id." >&2; exit 1; }
+          [[ "${expected_state}" == "IN_PROGRESS" ]] || { echo "Unsupported expected_state." >&2; exit 1; }
+
+          session_file="${RUNNER_TEMP}/jules-session.json"
+          http_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${session_file}" \
+            --write-out '%{http_code}' \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            "https://jules.googleapis.com/v1alpha/sessions/${session_id}")"
+          [[ "${http_code}" =~ ^2[0-9][0-9]$ ]] || { echo "Unexpected Jules session HTTP status ${http_code}." >&2; exit 1; }
+
+          current_state="$(jq -r '.state // "UNKNOWN"' "${session_file}")"
+          if [[ "${current_state}" != "IN_PROGRESS" ]]; then
+            echo "NO-OP: session no longer IN_PROGRESS; current=${current_state}"
+            exit 0
+          fi
+
+          prompt='Stop further implementation now. Do not continue coding or testing. Preserve the current partial work by committing it only to the existing isolated work branch jules-work/relay-dev-loop-049-readiness-snapshot and publish or update a normal PR if possible. Do not write the canonical target branch, main, or unrelated paths. If no work exists, report that. Then stop and do not resume unless a new explicit instruction arrives. No live provider/model/API execution, retry=0, fallback disabled, no merge.'
+          body_file="${RUNNER_TEMP}/jules-stop-message.json"
+          jq -n --arg prompt "${prompt}" '{prompt: $prompt}' > "${body_file}"
+
+          send_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${RUNNER_TEMP}/jules-stop-response.json" \
+            --write-out '%{http_code}' \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            --data-binary "@${body_file}" \
+            "https://jules.googleapis.com/v1alpha/sessions/${session_id}:sendMessage")"
+          [[ "${send_code}" =~ ^2[0-9][0-9]$ ]] || { echo "Unexpected Jules sendMessage HTTP status ${send_code}." >&2; exit 1; }
+          echo "Bounded stop message accepted for session_id=${session_id}; retry=0"

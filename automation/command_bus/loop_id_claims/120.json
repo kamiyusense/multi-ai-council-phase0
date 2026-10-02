@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 120,
+  "loop_id": "120",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-observed-static-e2e",
+  "command_id": "relay-dev-loop-120-signal-observed-static-e2e",
+  "target_branch": "feature/signal-observed-v1",
+  "expected_target_head": "0f38ba86b3f21f1aeeec8719a9f90f99a2f027bd",
+  "expected_target_tree": "e04736a1e042857d29b971fb464b13ab06d7f10a",
+  "work_branch": "jules-work/relay-dev-loop-120-signal-observed-static-e2e",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T22:12:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

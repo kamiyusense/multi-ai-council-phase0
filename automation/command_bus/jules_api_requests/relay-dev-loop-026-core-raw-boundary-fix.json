@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-026-core-raw-boundary-fix",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "1a2d451e70c71c6f0cabaeab989a72a31ff205c0",
+  "expected_target_tree": "f5c86df27c52528f215663e382448c4f0234dfe3",
+  "allowed_paths": [
+    "src/relay/core_adapter.py",
+    "tests/relay/test_core_adapter.py",
+    "src/relay/__init__.py"
+  ],
+  "prompt": "Bounded static/mock Relay task. This is a corrective replacement for the unaccepted PR #45; start ONLY from the exact target branch/head/tree above and do not depend on the PR #45 branch. Implement a Relay-side Core compatibility adapter without importing or modifying src/phase0_core. Critical semantic requirement: Core CaseRunner persists collect() bytes and then parses those bytes directly as the Provider Response JSON. Therefore collect() MUST return rawResponse.encode('utf-8') exactly, where rawResponse is the underlying Relay bridge result's string Provider Response. It MUST NOT json.dumps() the Relay wrapper dict containing stdout/rawResponse/correlation_id. Missing or non-string rawResponse must fail closed. Validate provider_id is a non-empty string at adapter construction. prepare() must deepcopy caller input, inject this adapter provider_id when provider_id is omitted, and reject a conflicting explicit provider_id instead of silently switching identity. Preserve existing bridge/dispatcher semantics; do not edit src/relay/bridge.py or dispatcher.py. Add focused tests proving: provider_id validation; omitted provider_id is injected; conflicting provider_id rejected; caller payload not mutated; collect returns exact rawResponse bytes with no Relay wrapper keys; missing/non-string raw fails closed; abort delegates; classify(bytes) is fail-closed on malformed bytes and never claims live execution/delivery/retry/fallback. Include a test bridge/subclass whose rawResponse is a complete Phase0 Provider Response-shaped JSON so json.loads(adapter.collect(...)) yields the response object itself, not {stdout, rawResponse,...}. No live/provider/network/auth/API/billing/settings/GitHub runtime writes. retry=0, fallback disabled. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-27T13:50:00+00:00",
+  "expires_at": "2026-09-27T15:35:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

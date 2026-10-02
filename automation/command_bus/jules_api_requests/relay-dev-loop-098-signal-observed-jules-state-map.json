@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-098-signal-observed-jules-state-map",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/signal-observed-v1",
+  "work_branch": "jules-work/relay-dev-loop-098-signal-observed-jules-state-map",
+  "expected_target_head": "a46d5e729b6156815c3790a25754b04e6f9ff968",
+  "expected_target_tree": "97c552ddcbf2cdafac9f08df452e9bafa12c6e02",
+  "allowed_paths": [
+    "automation/command_bus/signal_observed_jules.py",
+    "automation/command_bus/tests/test_signal_observed_jules.py"
+  ],
+  "prompt": "Task / size class:\nLoop 098 — SHORT minimal-port Signal observation task.\n\nGoal:\nAdd only the smallest pure Jules Session-state -> Observed Signal-state mapper. Do not design the complete Signal/Control Tower mechanism.\n\nUpstream / accepted source:\n- .github/workflows/jules-session-readback.yml: existing accepted readback already extracts the official Jules Session .state field.\n- automation/command_bus/jules_direct_readback_authenticator.py: consistency reference only; it already treats QUEUED/PLANNING/IN_PROGRESS as active durable-provider states and does not treat AWAITING_USER_FEEDBACK/PAUSED/FAILED as running. Do not couple the new presentation mapper to its private constants.\n\nSmall component to reuse:\nThe existing raw Jules Session state vocabulary/readback boundary. Adapt only the state mapping needed by Observed Signal.\n\nExisting local destination:\n- automation/command_bus/signal_observed_jules.py\n- automation/command_bus/tests/test_signal_observed_jules.py\n\nAllowed changed paths — EXACTLY these two files.\n\nRequired behavior:\n- pure function, no network/file/GitHub/provider calls\n- QUEUED -> DISPATCHED\n- PLANNING -> IN_PROGRESS\n- IN_PROGRESS -> IN_PROGRESS\n- AWAITING_USER_FEEDBACK -> NEEDS_INPUT\n- FAILED -> FAIL\n- COMPLETED -> SESSION_COMPLETE\n- any other value, including PAUSED, AWAITING_PLAN_APPROVAL, RUNNING, empty string, lowercase variants, None or non-string -> UNKNOWN\n- SESSION_COMPLETE is deliberately NOT PASS; PR/check verification belongs to a later component\n- keep this Jules-specific; do not create a generic provider framework/base class\n- if a tiny str Enum or constants make the function clearer, that is allowed, but no abstraction layer\n- do not import durable owner/authority/registry/collector code\n- no inference from timestamps, silence, ETA, PR age or messages\n\nTests:\nDirectly assert every mapping above plus UNKNOWN behavior. Avoid parameterized machinery if a simple table-driven unittest is enough.\n\nDo NOT:\n- modify existing readback/authenticator code\n- modify workflows\n- modify Control Tower registry/schemas/snapshot/runtime code\n- modify Issue #33 or status publisher\n- add docs/checkpoints/plan files\n- add dependencies\n- add speculative safety/features\n- run provider/model/API/network calls\n- Merge/rebase/force push/delete branches\n\nStop condition:\nIf this tiny mapper cannot fit in the two allowed files without broad redesign or touching durable-runtime semantics, STOP and report the exact incompatibility. Do not expand scope.\n\nValidation:\npython -m unittest automation.command_bus.tests.test_signal_observed_jules -v\npython -m unittest discover -v automation/command_bus/tests\npython -m compileall -q automation/command_bus\ngit diff --check\n\nMandatory path fence:\nFinal changed-file set must equal exactly:\n- automation/command_bus/signal_observed_jules.py\n- automation/command_bus/tests/test_signal_observed_jules.py\n\nPublication:\nPublish the normal isolated Jules PR only if the exact path fence and validations are green. Do not Merge.\n\nretry=0\nfallback=disabled",
+  "created_at": "2026-10-01T11:18:00+09:00",
+  "expires_at": "2026-10-01T12:48:00+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 125,
+  "loop_id": "125",
+  "task_id": "bwj-session-get-reader",
+  "command_id": "relay-dev-loop-125-bwj-session-get-reader",
+  "target_branch": "experiment/blue-work-autonomous-development",
+  "expected_target_head": "33700442825b56e3bd949c32b06707cfb46ce29b",
+  "work_branch": "jules-work/relay-dev-loop-125-bwj-session-get-reader",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T19:05:00Z",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled",
+  "lane_id": "J-BLUE",
+  "lane_display": "💙",
+  "expected_target_tree": "cec1ddf4dd3bc8df5a7a5cd1261cc7cc9cb85bdc"
+}

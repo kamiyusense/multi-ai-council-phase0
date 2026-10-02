@@ -221,6 +221,12 @@ one user input
 
 Phase 0 is intended to remove human copy/paste relay work while preserving explicit safety boundaries and evidence.
 
+## 0. Jules task prompt contract — MANDATORY
+
+Before creating or dispatching **any** new Jules task, read `docs/JULES_TASK_PROMPT_SPEC.md`. It is the canonical contract for task sizing, prompt order, exact allowed paths, reuse-first behavior, Do Not Touch boundaries, semantic acceptance criteria, negative/tamper cases, vacuous-test prohibition, validation commands, publication conditions, and stop conditions.
+
+Do not treat a green Jules test suite or Jules self-report as acceptance. The controller/reviewer must independently inspect semantics and evidence after Jules returns.
+
 ## 2. Repositories
 
 ### Council record / design source
@@ -465,6 +471,7 @@ A new chat should:
 
 1. read this handover
 2. read `docs/DEVELOPMENT_EXECUTION_ROUTER.md` from current main and select the development route
+2a. **before any Jules dispatch, read `docs/JULES_TASK_PROMPT_SPEC.md`**
 3. read `docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md` and use its reuse-first / minimum-implementation fast path
 4. read the implementation spec and checklist
 5. read `docs/ARCHITECTURE.md` and preserve the Council / Relay subsystem boundary

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-027-core-adapter-semantic-guard",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "1a2d451e70c71c6f0cabaeab989a72a31ff205c0",
+  "expected_target_tree": "f5c86df27c52528f215663e382448c4f0234dfe3",
+  "allowed_paths": [
+    "src/relay/core_adapter.py",
+    "tests/relay/test_core_adapter.py",
+    "src/relay/__init__.py"
+  ],
+  "prompt": "Bounded static/mock Relay corrective task. PR #45 and PR #48 were NOT accepted; start ONLY from the exact target branch/head/tree above and do not depend on either unaccepted branch. Implement the Relay-side Core compatibility adapter without importing/modifying src/phase0_core and without editing bridge.py or dispatcher.py. Preserve the already-established correct requirements: provider_id must be a non-empty string; prepare() deep-copies caller input, injects this adapter provider_id when omitted, rejects conflicting explicit provider_id; collect() extracts bridge rawResponse, requires a string, and returns rawResponse.encode('utf-8') EXACTLY (never the Relay wrapper dict). Critical semantic guard: classify(bytes) MUST NOT return COMPLETE/success merely because bytes are UTF-8/JSON. It must fail closed unless the parsed object has a complete Phase0 Provider Response-shaped structure. Locally validate, without importing Core, these exact allowed fields only: optional schema_version (if present must equal 'phase0-response-v1'), required answer_state, conclusion_code, safety_warning, safety_reason, evidence_refs, marker_echoes, answer_text. Require answer_state string; conclusion_code string; safety_warning one of PRESENT/ABSENT/UNKNOWN; safety_reason null or string; evidence_refs list of strings; marker_echoes dict with exactly head/middle/tail, each null or string; answer_text string. Reject unexpected wrapper keys such as stdout/rawResponse/correlation_id. On malformed bytes, non-object JSON, missing/invalid fields, or unexpected fields, classify as UNKNOWN/success false. On valid full response, classify may report COMPLETE/PARTICIPANT/success true but must not claim live execution, delivery, retry, or fallback. Tests MUST include: full valid Phase0 response -> success; {}, only answer_state, malformed bytes, non-object JSON, and Relay wrapper dict -> UNKNOWN; exact collect bytes parse to the Provider Response object itself; provider identity injection/conflict/deepcopy; missing/non-string raw fail closed; abort delegation. No live/provider/network/auth/API/billing/settings/GitHub runtime writes. retry=0, fallback disabled. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-27T14:05:00+00:00",
+  "expires_at": "2026-09-27T15:50:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

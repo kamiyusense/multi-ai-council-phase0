@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-023-bridge-direct-validation",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "12018e2e4398fd7edd1d04c1a2eb0438f6c507b4",
+  "expected_target_tree": "2a9bb6734c19644cdff07773f93f4ebfd226f221",
+  "allowed_paths": [
+    "src/relay/bridge.py",
+    "tests/relay/test_integration.py"
+  ],
+  "prompt": "Bounded static/mock Relay bridge-hardening task only. Close the direct Core->RelayProviderAdapterBridge.prepare validation gap without breaking legacy Core mock calls. In bridge.prepare: require case_context to be a dict; validate timeout_seconds with existing validate_timeout; obtain payload=case_context.get('payload', {}) and validate it with existing shared validate_payload before deepcopy. For explicit optional identity fields provider_id, session_id, correlation_id: if the key is present, require a non-empty string; if omitted, preserve current None/omitted-compatible behavior because Core direct adapter calls may not supply them yet. Preserve case_id as currently carried. Also preserve packet_sha256 in the prepared context if present, because Core passes it as evidence identity; do not invent or require it. Do not add duplicated blocked-key/timeout logic. Add focused integration tests calling bridge.prepare directly: non-dict case_context rejected; forbidden/non-dict payload rejected; invalid explicit provider/session/correlation IDs rejected; omitted optional IDs still accepted; valid explicit IDs preserved; packet_sha256 preserved unchanged when supplied; caller payload remains deep-copied. No new files. Preserve no-live behavior, retry=0, fallback disabled, provider isolation, current preflight/dispatch/collect/abort/classify semantics. No provider/network/auth/API/billing/settings/persistence changes. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, git diff --check.",
+  "created_at": "2026-09-27T09:13:00+00:00",
+  "expires_at": "2026-09-27T10:45:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

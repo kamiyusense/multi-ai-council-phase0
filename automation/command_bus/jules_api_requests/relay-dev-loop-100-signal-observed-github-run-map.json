@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-100-signal-observed-github-run-map",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/signal-observed-v1",
+  "work_branch": "jules-work/relay-dev-loop-100-signal-observed-github-run-map",
+  "expected_target_head": "0147bae7e92a3f30228913bad1a649044f4b9850",
+  "expected_target_tree": "9ad7dc432e98543c0b37f2b53e851784f240d6c3",
+  "allowed_paths": [
+    "automation/command_bus/signal_observed_github.py",
+    "automation/command_bus/tests/test_signal_observed_github.py"
+  ],
+  "prompt": "Task / size class:\nLoop 100 — SHORT minimal-port GitHub workflow observation task.\n\nGoal:\nAdd only the smallest pure GitHub Actions workflow-run status/conclusion -> Observed Signal check-state mapper. Do not design the complete PR/check observation subsystem.\n\nUpstream / accepted source:\n- automation/command_bus/runtime_transition_status_dispatch.py\n  Existing accepted code validates GitHub workflow run status as one of queued / in_progress / completed and requires a string conclusion only when completed. It treats terminal success separately from terminal non-success.\n- Existing GitHub Actions API readbacks already expose .status and .conclusion. No new transport is needed in this task.\n\nSmall component to reuse:\nOnly that existing workflow-run status/conclusion vocabulary and terminal-success distinction.\n\nExisting local destination:\n- automation/command_bus/signal_observed_github.py\n- automation/command_bus/tests/test_signal_observed_github.py\n\nAllowed changed paths — EXACTLY these two files.\n\nRequired behavior:\nImplement one small pure function, for example map_github_workflow_run_to_observed_check(status, conclusion), with no network/file/GitHub calls.\n\nMappings:\n- status=\"queued\", conclusion=None -> VERIFYING\n- status=\"in_progress\", conclusion=None -> VERIFYING\n- status=\"completed\", conclusion=\"success\" -> PASS\n- status=\"completed\", conclusion=\"failure\" -> FAIL\n- status=\"completed\" with any other conclusion, including cancelled, skipped, neutral, timed_out, action_required, stale, startup_failure, None or non-string -> UNKNOWN\n- any unsupported/malformed status, including None, empty, uppercase variants or non-string -> UNKNOWN\n- nonterminal queued/in_progress with any non-None conclusion -> UNKNOWN\n\nDo not infer PASS from session completion, PR presence, timestamps, silence or mergeability.\nDo not create a generic provider/check framework.\nDo not select/filter workflow runs or bind a PR head in this task; exact-head binding is the next separate Signal component.\nDo not import durable runtime/owner/authority/registry/collector modules.\n\nTests:\nDirectly assert the four positive mappings and representative UNKNOWN cases above. Keep tests simple/table-driven if useful.\n\nDo NOT:\n- modify runtime_transition_status_dispatch.py\n- modify workflows/readback transports\n- modify signal_observed_jules.py\n- modify Control Tower registry/schemas/snapshot/runtime code\n- modify Issue #33/status publisher\n- add docs/checkpoints/plan files\n- add dependencies\n- add speculative abstractions/features\n- run provider/model/API/network calls\n- Merge/rebase/force push/delete branches\n\nStop condition:\nIf this tiny mapper cannot fit in the two allowed files without broad redesign, STOP and report the incompatibility instead of expanding scope.\n\nValidation:\npython -m unittest automation.command_bus.tests.test_signal_observed_github -v\npython -m unittest discover -v automation/command_bus/tests\npython -m compileall -q automation/command_bus\ngit diff --check\n\nMandatory path fence:\nFinal changed-file set must equal exactly:\n- automation/command_bus/signal_observed_github.py\n- automation/command_bus/tests/test_signal_observed_github.py\n\nPublication:\nPublish the normal isolated Jules PR only if exact path fence and validations are green. Do not Merge.\n\nretry=0\nfallback=disabled",
+  "created_at": "2026-10-01T11:34:00+09:00",
+  "expires_at": "2026-10-01T13:04:00+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

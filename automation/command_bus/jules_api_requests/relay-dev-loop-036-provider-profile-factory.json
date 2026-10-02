@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-036-provider-profile-factory",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "7e153522bf03425ea3a043a352d2606794dfddf3",
+  "expected_target_tree": "7015419cc3b85a86ad8a6d325a4c5f4253f62fb8",
+  "allowed_paths": [
+    "src/providers/factory.py",
+    "src/providers/__init__.py",
+    "tests/relay/test_provider_factory.py",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Medium static/mock integration batch (~15-20 minute scope). Start ONLY from the exact target head/tree above. No subprocess, provider/network/model call, credential/env/filesystem discovery, billing/settings/workflow mutation, live execution, Core source changes, or Relay source changes. Do not change policy.py, preflight.py, provider profile builders, RelayCoreAdapter, RelayDispatcher, ACPClient, or lifecycle code.\n\nGoal: add a pure provider-profile -> RelayCoreAdapter factory boundary. Implement `src/providers/factory.py` (and exports/tests/docs only) that accepts a `ProviderStaticProfile` plus an explicitly injected `RelayProviderAdapterBridge`-compatible bridge and returns a `RelayCoreAdapter` configured with a deep-copied profile static_preflight_config. The factory must not call bridge.preflight/dispatch/collect/abort and must not start anything.\n\nTrust boundary: do not trust an arbitrarily hand-constructed ProviderStaticProfile just because its dataclass invariants pass. Select the canonical existing policy by profile.provider_id and require profile.external_agent and pinned_version to exactly match that policy. Unknown provider fails closed. Require retry_count==0, fallback_state=='disabled', live_ready is False, live_readiness=='BLOCKED'. Re-run `validate_provider_static` exactly once on the profile's explicit static_preflight_config before constructing the adapter; missing/malformed/unsafe config fails closed. Do not repair or infer missing fields.\n\nFor OpenAI: config must satisfy current validate_provider_static contract and profile must not claim Claude session_meta or Google binary_name.\nFor Anthropic: config must satisfy current contract; profile.session_meta must exactly equal `claude_session_meta()` and config provider_meta must exactly equal that same canonical meta; binary_name must be None.\nFor Google: config must satisfy current contract; session_meta must be None; binary_name must exactly equal `antigravity_binary_name(platform, architecture)` derived from the explicit config. Unsupported/missing platform/architecture fails closed.\n\nUse CODEX_POLICY / CLAUDE_POLICY / ANTIGRAVITY_POLICY as the only provider metadata/version source. Do not duplicate literals. Never treat static PASS as live authorization.\n\nTests: all three profiles created through accepted builders -> factory -> RelayCoreAdapter preflight PASS with live_ready False/live_readiness BLOCKED. Then use existing RelayDispatcher + RelayProviderAdapterBridge with the existing valid Provider Response fixture to prove one exact static/mock round trip per provider: one dispatch/collect, raw bytes preserved, retry 0/fallback disabled/live_turn_executed false. Negative tests: hand-built profile with wrong agent/version; unknown provider; unsafe/missing/malformed config; Claude wrong/missing session_meta; Google wrong binary or unsupported platform/arch; OpenAI profile carrying provider-specific foreign metadata. Prove factory construction itself invokes zero bridge preflight/dispatch/collect/abort. Prove returned adapter remains isolated from caller mutation of a config copy obtained before/after construction.\n\nStatic-only. No live readiness claim. Update RELAY_STATIC_CHECKPOINT to note the profile->adapter factory is mock/static only and Core PR #3 integration remains a separate checkpoint. Run focused tests first, then exactly once: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Create normal Jules PR. No merge, no force push.",
+  "created_at": "2026-09-28T01:50:00+00:00",
+  "expires_at": "2026-09-28T03:15:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

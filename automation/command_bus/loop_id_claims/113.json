@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 113,
+  "loop_id": "113",
+  "lane_id": "J-GREEN",
+  "lane_display": "💚",
+  "task_id": "formal-ab-1-static-origin-bundle",
+  "command_id": "green-ab-1-static-origin-bundle",
+  "target_branch": "compare/green-ab-1-jules",
+  "expected_target_head": "83b499a25c1cce6ec8b4f29f268f194372321afa",
+  "expected_target_tree": "c53e727575bfa6735cfa1b1ad14ad62bbeb5185f",
+  "work_branch": "jules-work/green-ab-1-static-origin-bundle",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T18:30:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

@@ -1,0 +1,5 @@
+{
+  "session_id": "11593389034636354764",
+  "expected_state": "AWAITING_USER_FEEDBACK",
+  "prompt": "Yes. The original Loop 079 publication condition already authorizes the normal isolated Jules PR once the exact allowed-path fence and required validations are green. Commit the current bounded changes and open the normal PR now. Do not make any additional code or documentation changes beyond the already-validated three allowed paths. Do not merge, rebase, force-push, delete branches, start another Jules session, or run any Claude/provider/model/API action. retry=0; fallback=disabled."
+}
