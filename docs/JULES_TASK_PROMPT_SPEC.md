@@ -1,7 +1,7 @@
 # Jules Task Prompt Specification
 
 Status: MANDATORY for every new Jules task in this repository.
-Updated: 2026-09-29
+Updated: 2026-09-30
 
 This document is the canonical prompt-writing contract for Chat/Work/other
 controllers that dispatch implementation work to Jules.
@@ -10,6 +10,45 @@ It exists because green tests alone have repeatedly been insufficient. Several
 Relay loops returned green suites while independent semantic review still found
 contract gaps. The goal is therefore not "make Jules try harder"; the goal is
 to make each task narrow, observable, bounded, and independently reviewable.
+
+## 0. Loop ID uniqueness and parallel-lane reservation before prompt composition
+
+For numbered Relay/Jules loops, the controller MUST NOT infer that "last loop + 1"
+is available from memory. All Jules lanes share one global Loop-number namespace.
+
+Before composing the task, fresh-read the durable command-bus state and obtain a
+create-only claim at `automation/command_bus/loop_id_claims/<NNN>.json`.
+A claimed number is never recycled. If the path exists, select a different
+unused number. Ambiguous claim writes require readback, not retry.
+
+New numbered dispatches MUST use claim schema version 3 and follow
+`docs/JULES_PARALLEL_COLOR_LANES.md`. The canonical lane IDs are
+`J-RED`, `J-BLUE`, `J-YELLOW`, and `J-GREEN`, displayed as
+❤️, 💙, 💛, and 💚. Each lane is independent: using `J-GREEN` does not require
+`J-BLUE` or `J-YELLOW` to exist or run.
+
+The claim binds the numeric Loop to the command/work branch and exact target
+snapshot, and carries `lane_id` plus `lane_display` as presentation/routing
+metadata. Lane metadata must never substitute for `command_id`, `work_branch`,
+Jules session, or exact HEAD/tree verification.
+
+The order is mandatory:
+
+1. fresh-read globally used Loop numbers;
+2. create-only schema-v3 claim with state `CLAIMED`;
+3. read back the exact claim;
+4. create the exact isolated work branch from the claimed HEAD/tree;
+5. append one matching Jules command;
+6. read back workflow validation and the returned Jules session.
+
+If two controllers race for the same Loop number, the loser reads back the
+existing claim and selects another unused number. It must not blindly retry the
+same create.
+
+`HISTORICAL_BACKFILL` claims reserve already-used numbers for archival
+uniqueness only and are never dispatch authority.
+
+The eventual work branch and Jules command ID must match the durable claim.
 
 ## 1. Mandatory pre-dispatch rule
 
@@ -326,6 +365,23 @@ The controller MUST independently verify:
 - canonical is independently revalidated;
 - durable evidence/checkpoint is recorded;
 - retry/fallback/Merge/live boundaries were preserved.
+
+## Adaptive sizing, repeated failure and worker escalation
+
+Use [Controller Operating Guide](JULES_CONTROLLER_OPERATING_GUIDE.md) for the
+detailed decision policy. MEDIUM is the normal bounded-mission baseline;
+SHORT and LONG are valid when justified. Size is adaptive, not a lane setting.
+Repeated failures require cause/prompt analysis, clearer Read first/allowed paths/
+negative cases and, where useful, temporary decomposition. After the hard section
+passes, freshly evaluate the next normal mission's size; never remain SHORT
+permanently because of past failures.
+
+Evaluate Controller-safe small repair before a corrective task. Substantial or
+ambiguous corrections may return to Jules; broad, strongly coupled cloud-safe
+missions may use WORK when decomposition would harm consistency. Select per
+mission: previous WORK success is not routing authority, and fresh routing may
+choose WORK again without a ceremonial Jules dispatch. None of these judgments
+relaxes this prompt contract or the claim/HEAD/tree/retry/fallback safety gates.
 
 ## 18. Rule precedence
 
