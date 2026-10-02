@@ -1,0 +1,13 @@
+diff --git a/automation/command_bus/claude_loop.py b/automation/command_bus/claude_loop.py
+index 6d6a145..f53cf06 100644
+--- a/automation/command_bus/claude_loop.py
++++ b/automation/command_bus/claude_loop.py
+@@ -16,7 +16,7 @@ import re
+ from typing import Any, Iterable
+ 
+ from .executor import make_executor_request
+-from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE
++from .jules_carrier_current.jules_api_request import PROFILE as JULES_SEMIAUTO_PROFILE
+ from .claude_jules_origin_binding import build_binding_record
+ from .jules_carrier_current import jules_api_request as carrier_request_validator
+ from .jules_carrier_current import loop_id_claim as carrier_claim_validator

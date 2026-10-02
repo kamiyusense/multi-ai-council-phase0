@@ -16,7 +16,7 @@ import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
-from .jules_api_request import PROFILE_V2 as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
+from .jules_api_request_origin import PROFILE_V2 as JULES_SEMIAUTO_PROFILE, validate_request as validate_jules_semiauto_request
 from .claude_admission_gate import (
     CONTAINER_INTERNAL, HOST_LOOPBACK,
     prepare_transport as prepare_admission_transport,

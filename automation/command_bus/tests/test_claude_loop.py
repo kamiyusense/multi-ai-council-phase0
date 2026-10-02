@@ -9,7 +9,7 @@ from automation.command_bus.claude_loop import (
     prepare_next_action, validate_machine_gate,
 )
 from automation.command_bus.jules_api_closed_loop import JulesApiClosedLoop
-from automation.command_bus.jules_api_request import validate_request as validate_jules_semiauto_request
+from automation.command_bus.jules_api_request_origin import validate_request as validate_jules_semiauto_request
 from automation.command_bus.validator import validate_command
 
 NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)

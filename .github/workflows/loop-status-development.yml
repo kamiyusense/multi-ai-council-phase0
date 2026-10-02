@@ -11,6 +11,10 @@ on:
       - .github/workflows/loop-status-development.yml
       - docs/LOOP_STATUS_SIGNAL.md
   pull_request_target:
+    # Only PRs based on main can pass the job `if:` below (PR #4 / #25 are main-based);
+    # the filter stops stacked Jules/lane PRs from queuing a run that is always skipped.
+    branches:
+      - main
     types:
       - opened
       - synchronize
