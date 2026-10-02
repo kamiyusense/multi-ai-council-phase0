@@ -153,3 +153,83 @@ def assess_registration_readiness(
         (),
         (),
     )
+
+
+def assess_lane_registration_readiness(
+    registry: dict,
+    loop_id: str,
+    verified_transition: TransitionProjectionResult | None,
+) -> ControlTowerRegistrationReadiness:
+    """Verify one already-adopted durable lane without weakening global readiness.
+
+    This is for the per-lane adoption transaction only. Other enabled lanes may
+    still be PLACEHOLDER. Issue #33 migration must continue to use
+    assess_registration_readiness(), which requires every enabled lane.
+    """
+    try:
+        entries = validate_registry(registry)
+    except (ValueError, TypeError, KeyError, AssertionError) as exc:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED", f"registry invalid: {exc}", (), (), ()
+        )
+    if not isinstance(loop_id, str) or not loop_id:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED", "lane loop_id must be a non-empty string", (), (), ()
+        )
+    matches = tuple(entry for entry in entries if entry.loop_id == loop_id)
+    if len(matches) != 1:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED", f"lane {loop_id} is not uniquely registered", (), (), ()
+        )
+    entry = matches[0]
+    if not entry.enabled:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED", f"lane {loop_id} is disabled", (), (), ()
+        )
+    if entry.identity_state != "DURABLE":
+        return ControlTowerRegistrationReadiness(
+            "NOT_WIRED",
+            f"lane {loop_id} identity is still PLACEHOLDER",
+            (), (), (), (loop_id,),
+        )
+    if verified_transition is None:
+        return ControlTowerRegistrationReadiness(
+            "NOT_WIRED",
+            f"lane {loop_id} durable transition is unavailable",
+            (), (loop_id,), (),
+        )
+    if not isinstance(verified_transition, TransitionProjectionResult):
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED",
+            f"lane {loop_id} is not backed by TransitionProjectionResult",
+            (), (), (),
+        )
+    if verified_transition.status == "UNKNOWN":
+        return ControlTowerRegistrationReadiness(
+            "NOT_WIRED",
+            f"lane {loop_id} durable transition is UNKNOWN",
+            (), (), (loop_id,),
+        )
+    if verified_transition.status not in _ACCEPTED_TRANSITION_STATUSES:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED",
+            f"lane {loop_id} has unsupported transition status {verified_transition.status}",
+            (), (), (),
+        )
+    if verified_transition.projection is None or verified_transition.owner_decision is None:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED",
+            f"lane {loop_id} has incomplete accepted durable projection",
+            (), (), (),
+        )
+    if verified_transition.projection.loop_id != loop_id:
+        return ControlTowerRegistrationReadiness(
+            "BLOCKED",
+            f"lane {loop_id} durable projection loop_id mismatch",
+            (), (), (),
+        )
+    return ControlTowerRegistrationReadiness(
+        "READY",
+        f"lane {loop_id} is DURABLE and backed by an accepted transition projection",
+        (loop_id,), (), (),
+    )

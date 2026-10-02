@@ -115,6 +115,24 @@ on:
       - docs/LOOP_STATUS_SIGNAL.md
       - .github/workflows/github-oidc-proof.yml
       - docs/GITHUB_OIDC_BOUNDED_PROOF_CHECKPOINT.md
+      # SF-8 authority / recorded-evidence chain
+      - automation/command_bus/oidc_workflow_execution.py
+      - automation/command_bus/recorded_live_evidence.py
+      - automation/command_bus/lane_identity_adoption.py
+      - automation/command_bus/sf8_readiness.py
+      - automation/command_bus/tests/test_oidc_workflow_execution.py
+      - automation/command_bus/tests/test_recorded_live_evidence.py
+      - automation/command_bus/tests/test_sf8_*.py
+      - automation/command_bus/tests/test_github_oidc_proof_profiles.py
+      - .github/workflows/signal-sf8-authority-issuer.yml
+      - docs/evidence/signal-sf8/**
+      - docs/evidence/signal-authority/**
+      - docs/evidence/signal-active-proof/**
+      - .github/workflows/signal-step7-live-publish.yml
+      - automation/command_bus/signal_step7_live_proof.py
+      - automation/command_bus/signal_step7_live_proof_cli.py
+      - automation/command_bus/tests/test_signal_step7_live_proof.py
+      - automation/command_bus/tests/test_signal_step7_live_workflow.py
 
 permissions:
   contents: read
@@ -189,7 +207,7 @@ jobs:
       - name: Run full command-bus suite
         shell: bash
         run: |
-          python -m unittest discover -v automation/command_bus/tests
+          python -m unittest discover -v -s automation/command_bus/tests -t .
 
       - name: Verify OAuth proxy and launcher without network access
         shell: bash

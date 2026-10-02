@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "proof_kind": "JULES_OUTPUT_GITHUB_READBACK",
+  "status": "PASS",
+  "session_id": "301196275118188780",
+  "pull_request": 243,
+  "pull_request_state": "open",
+  "merged": false,
+  "mergeable": true,
+  "base_branch": "jules-work/relay-dev-loop-132-signal-active-provider-proof",
+  "base_sha": "4ddb0407001dc18c35f5f45bd37f67664fb9ff32",
+  "head_branch": "jules-work/relay-dev-loop-132-signal-active-provider-proof-301196275118188780",
+  "head_sha": "5f04ba750c1d9676cafdf008fe0eedf5a51d8e61",
+  "changed_files": [
+    "docs/evidence/signal-active-proof/PROOF.md"
+  ],
+  "changed_file_content": "signal active proof\n",
+  "changed_file_blob_sha": "61fc5ae31a36c4f3a4e217a88cb78948310d2b6b",
+  "notes": "GitHub-only post-session readback. No additional Jules API GET was used.",
+  "readback_payload_sha256": "e6b09c7070f508a03d820d089f2460a275f17199ad96b83082c80d46831eeea2"
+}

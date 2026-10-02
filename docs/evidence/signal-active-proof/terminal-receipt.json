@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "receipt_kind": "JULES_ACTIVE_PROVIDER_PROOF_TERMINAL",
+  "loop_id": "132",
+  "session_id": "301196275118188780",
+  "state": "UNKNOWN",
+  "reason": "GET_BUDGET_EXHAUSTED_AFTER_ACTIVE_STATE_PROOF",
+  "active_provider_proof_status": "PASS",
+  "active_provider_state": "IN_PROGRESS",
+  "proof_ref": "docs/evidence/signal-active-proof/provider-active-evidence.json",
+  "readback_run_id": "36995074564",
+  "retry": 0,
+  "fallback": "disabled",
+  "additional_jules_get_allowed": false,
+  "notes": "Terminal Jules session state was intentionally not queried after the bounded active-state proof. Observe subsequent PR/branch results only through GitHub readback.",
+  "receipt_payload_sha256": "5594d383181f8b0698dcc3623513ba92ae053a9b04785a12bac16ca47f35d34c"
+}

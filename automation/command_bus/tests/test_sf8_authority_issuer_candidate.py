@@ -63,7 +63,7 @@ class IssuerCandidate(unittest.TestCase):
     def test_no_other_workflow_uses_authority_profile(self):
         for f in (ROOT / ".github/workflows").glob("*.yml"):
             if f.name != "signal-sf8-authority-issuer.yml":
-                self.assertNotIn("sf8-authority", f.read_text())
+                self.assertNotRegex(f.read_text(), r"OIDC_PROOF_PROFILE:\s*['\"]?sf8-authority")
 
 
 class LaneAdoption(unittest.TestCase):

@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from automation.command_bus.control_tower_registration import (
+    assess_lane_registration_readiness,
     assess_registration_readiness,
 )
 from automation.command_bus.loop_owner import OwnerDecision
@@ -171,6 +172,49 @@ class ControlTowerRegistrationReadinessTests(unittest.TestCase):
         self.assertEqual(result.status, "NOT_WIRED")
         self.assertEqual(result.missing_loop_ids, ("loop-015",))
         self.assertIn("unregistered verified transitions ignored=other-loop", result.reason)
+
+    def test_lane_readiness_allows_other_placeholder_lanes_but_not_global_ready(self):
+        raw = registry()
+        raw["loops"][0]["identity_state"] = "DURABLE"
+        transition = verified_result("chatgpt-semi-auto")
+        lane = assess_lane_registration_readiness(raw, "chatgpt-semi-auto", transition)
+        self.assertEqual(lane.status, "READY")
+        self.assertEqual(lane.ready_loop_ids, ("chatgpt-semi-auto",))
+
+        global_result = assess_registration_readiness(
+            raw, {"chatgpt-semi-auto": transition}
+        )
+        self.assertEqual(global_result.status, "NOT_WIRED")
+        self.assertIn("claude-gemini", global_result.placeholder_loop_ids)
+
+    def test_lane_readiness_fails_closed_before_adoption_and_on_bad_transition(self):
+        raw = registry()
+        self.assertEqual(
+            assess_lane_registration_readiness(
+                raw, "chatgpt-semi-auto", verified_result("chatgpt-semi-auto")
+            ).status,
+            "NOT_WIRED",
+        )
+        raw["loops"][0]["identity_state"] = "DURABLE"
+        self.assertEqual(
+            assess_lane_registration_readiness(raw, "chatgpt-semi-auto", None).status,
+            "NOT_WIRED",
+        )
+        self.assertEqual(
+            assess_lane_registration_readiness(raw, "chatgpt-semi-auto", object()).status,
+            "BLOCKED",
+        )
+        self.assertEqual(
+            assess_lane_registration_readiness(
+                raw, "chatgpt-semi-auto", verified_result("different-loop")
+            ).status,
+            "BLOCKED",
+        )
+        unknown = TransitionProjectionResult("UNKNOWN", "unknown", None, None, None)
+        self.assertEqual(
+            assess_lane_registration_readiness(raw, "chatgpt-semi-auto", unknown).status,
+            "NOT_WIRED",
+        )
 
     def test_multiple_lanes_require_all_enabled_durable_identities(self):
         raw = {
