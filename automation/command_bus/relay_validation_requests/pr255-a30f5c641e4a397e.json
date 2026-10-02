@@ -1,0 +1,5 @@
+{
+  "target_sha": "a30f5c641e4a397ec4944857442c0cb3acf9e68b",
+  "source_pr": 255,
+  "purpose": "relay validation: Windows launcher for codex gate (STATIC, no live provider/model); intermediate head"
+}
