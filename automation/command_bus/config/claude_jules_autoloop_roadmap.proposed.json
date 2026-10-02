@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "profile": "CLAUDE_AUTO_JULES_ROADMAP_V1",
+  "roadmap_id": "claude-jules-live-proof-001-proposed",
+  "tasks": [
+    {
+      "task_spec": {
+        "schema_version": 1,
+        "task_id": "autoloop-live-proof-note",
+        "size": "SHORT",
+        "task_class": "docs-only live-proof marker",
+        "goal": "Add one short Markdown note that records that this file was written by a Jules session dispatched by the Claude AUTO controller. The note must contain exactly the headings '# Claude AUTO live proof note', '## Command', '## Session' and the literal command id given in the Task header.",
+        "non_goals": "No code, test, workflow, configuration or other documentation change.",
+        "read_first": [
+          "docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md"
+        ],
+        "allowed_paths": [
+          {
+            "path": "docs/CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_NOTE.md",
+            "allowed_ops": [
+              "ADD"
+            ]
+          }
+        ],
+        "do_not_touch": [
+          "any file other than docs/CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_NOTE.md"
+        ],
+        "reuse": [
+          "Follow the heading style of docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md."
+        ],
+        "semantics": [
+          "The new file contains the three exact headings listed in the goal.",
+          "The '## Command' section contains the exact command id of this task."
+        ],
+        "negative_cases": [
+          "Do not create any second file.",
+          "Do not edit the integration document."
+        ],
+        "acceptance": [
+          "The changed-path set is exactly docs/CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_NOTE.md (ADD)."
+        ],
+        "validation_commands": [
+          "git diff --check"
+        ],
+        "publication": "Publish the normal isolated Jules PR only if git diff --check passes and only the allowed file was added.",
+        "stop_conditions": [
+          "the work branch HEAD is not the expected snapshot",
+          "any other file would need to change"
+        ],
+        "acceptance_checks": [
+          "exact_headings_present",
+          "exact_command_id_present"
+        ]
+      },
+      "depends_on": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "profile": "CLAUDE_AUTO_JULES_POLICY_V1",
+  "controller_id": "claude-auto",
+  "holder_id": "claude-auto-controller-1",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "default_branch": "main",
+  "carrier_branch": "feature/chat-work-command-bus",
+  "data_branch": "claude/claude-jules-autoloop-data",
+  "allowed_target_branches": [],
+  "allowed_lane_ids": [],
+  "expected_pr": 1,
+  "max_rounds": 6,
+  "live_dispatch_authorization": null
+}
