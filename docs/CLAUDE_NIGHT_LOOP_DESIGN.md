@@ -60,14 +60,18 @@ There are two distinct Jules contracts and they must not be conflated:
      `JULES_CHAT_SEMIAUTO_V2` (V1 remains accepted for existing Chat-driven tasks);
    - converts the already-safe JULES_BACKEND PREPARE_ONLY request into the exact
      request read by `.github/workflows/jules-chat-semiauto.yml`;
-   - reuses the internal bridge first, then validates again with
-     `jules_api_request.validate_request()`;
-   - preserves origin loop/round/correlation/generation plus target repo, branch,
-     exact head/tree, allowlisted paths, prompt, expiry, retry=0,
-     fallback=disabled, merge=false and force-push=false;
-   - generation is a required Claude verdict field and is copied through the
-     PREPARE_ONLY executor request and internal closed-loop command; the live
-     bridge does not accept a separate generation override;
+   - reuses the internal bridge first, then emits the current carrier's exact
+     16-key request shape with `schema_version=2`, profile
+     `JULES_CHAT_SEMIAUTO_V2`, and isolated
+     `work_branch=jules-work/<command_id>`;
+   - carries target repo/branch, exact head/tree, allowlisted paths, prompt,
+     expiry, retry=0, fallback=disabled, merge=false and force-push=false;
+   - does not place Claude origin loop/round/correlation/generation fields in
+     the carrier request or claim. Those identities remain cross-bound through
+     the existing `CLAUDE_AUTO_ORIGIN_BINDING_V1` companion record built by
+     `build_binding_record()`;
+   - generation remains a required Claude verdict/internal-command field; the
+     live carrier request does not accept a separate origin-generation field;
    - carries per-path ADD/MODIFY operation bounds into the task prompt and
      explicitly forbids DELETE/RENAME;
    - still performs no file persistence, GitHub write, workflow dispatch, Jules
