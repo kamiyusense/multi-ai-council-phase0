@@ -1,0 +1,35 @@
+{
+  "focused": {
+    "tests": 286,
+    "seconds": 4.544,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "3742a261e5f79ebc0dc6c5a5244c20be541ca6abbc7ebc90dd95604f797f888a"
+  },
+  "full": {
+    "tests": 1311,
+    "seconds": 95.086,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "sha256": "2f89d3c348269f2870313491d80f72f08533710a438344499628ef6dd61fc437"
+  },
+  "compile": "PASS",
+  "diff_check": "PASS",
+  "mock_soak": {
+    "virtual_loops": 32,
+    "fault_observations": 1280,
+    "invariant_violations": 0,
+    "external_execution": 0
+  },
+  "live": 0,
+  "merge": 0,
+  "permissions_change": 0,
+  "review_posting": 0,
+  "claim_reservation": 0,
+  "adoption": 0,
+  "known_skip": "Windows-only production bootstrap ACL boundary on Linux",
+  "local_materialization_missing_historical_state": "automation/command_bus/state/jules-branch-selector-preflight-002.json",
+  "remote_actions": "PENDING at commit creation; exact-head checkpoint required"
+}
