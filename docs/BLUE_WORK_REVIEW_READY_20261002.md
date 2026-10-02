@@ -1,5 +1,7 @@
 # PR #217 — 2026-10-02 最終検品用チェックポイント
 
+続行の最新記録は [Session診断と検品](BLUE_WORK_CONTINUATION_20261002.md)。以下は前夜のチェックポイント。
+
 この文書は実験枝だけの記録。最新HEADはPR #217とgit/refから必ず読み直す。
 Mergeは最後まで保留。main/#203のコード、4色carrierのcode/state、Work設定は変更していない。
 既存正式Jules carrierにはユーザー承認に基づくLoop125 claim/命令だけを追加した。

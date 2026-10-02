@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 from .github_readonly import _pairs
-from .jules_session_readonly import JulesSessionGetReader, SessionReadbackUnavailable
+from .jules_session_readonly import JulesSessionGetReader, SessionReadbackUnavailable, safe_diagnostic_checks
 
 
 def prepare_readback(request, reader):
@@ -13,7 +13,9 @@ def prepare_readback(request, reader):
             'retry', 'fallback', 'purpose'}
             or type(request['retry']) is not int or request['retry'] != 0
             or request['fallback'] != 'disabled'
-            or request['purpose'] != 'existing-completed-session-readback-only'):
+            or not isinstance(request['purpose'], str) or request['purpose'] not in {
+                'existing-completed-session-readback-only',
+                'existing-completed-session-diagnostic-only'}):
         raise ValueError('invalid readback request')
     session = reader.read_completed_session(
         request['session_id'], expected_branch=request['expected_branch'],
@@ -37,7 +39,9 @@ def main(argv=None):
         result = prepare_readback(request, JulesSessionGetReader(os.environ.get('JULES_API_KEY', '')))
         result['status'] = 'OBSERVED_COMPLETED'
     except SessionReadbackUnavailable as exc:
-        result = {'status': 'UNKNOWN', 'failure_stage': exc.stage,
+        classified = SessionReadbackUnavailable(exc.stage, exc.checks)
+        result = {'status': 'UNKNOWN', 'failure_stage': classified.stage,
+                  'diagnostic_checks': safe_diagnostic_checks(classified.checks),
                   'adoption_performed': False, 'new_session_created': False,
                   'work_review_posted': False, 'successor_dispatched': False,
                   'retry': 0, 'fallback': 'disabled'}
@@ -45,6 +49,8 @@ def main(argv=None):
     with output.open('x') as stream:
         stream.write(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
     print('Existing Session readback saved: ' + result['status'] + '; no adoption or successor.')
+    if request.get('purpose') == 'existing-completed-session-diagnostic-only':
+        print('[SESSION_DIAGNOSTIC_V1] ' + json.dumps(result, sort_keys=True))
     return code
 
 

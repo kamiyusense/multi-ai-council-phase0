@@ -3,7 +3,9 @@ name: Blue one existing completed Session readback
 on:
   push:
     branches: [experiment/blue-work-autonomous-development]
-    paths: [docs/evidence/blue-work-night-20261002/session-readback-request.json]
+    paths:
+      - docs/evidence/blue-work-night-20261002/session-readback-request.json
+      - docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json
 
 permissions:
   contents: read
@@ -20,20 +22,39 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 2
           persist-credentials: false
-      - name: Require create-only request in this commit
+      - name: Require exactly one create-only bounded request in this commit
+        id: request
         run: |
           python - <<'PY'
-          import subprocess
-          path = 'docs/evidence/blue-work-night-20261002/session-readback-request.json'
-          change = subprocess.check_output(['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', 'HEAD', '--', path], text=True).strip()
-          assert change == 'A\t' + path, 'request is not create-only; no GET attempted'
+          import json, os, subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from automation.command_bus.github_readonly import _pairs
+          old = 'docs/evidence/blue-work-night-20261002/session-readback-request.json'
+          diagnostic = 'docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json'
+          change = subprocess.check_output(['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', 'HEAD'], text=True).strip()
+          assert change in {'A\t' + old, 'A\t' + diagnostic}, 'one create-only request required; no GET attempted'
+          path = change.split('\t')[1]
+          if path == diagnostic:
+              assert datetime.now(timezone.utc) < datetime(2026, 10, 2, 8, 0, tzinfo=timezone.utc), 'diagnostic window expired; no GET attempted'
+              request = json.loads(Path(path).read_text(), object_pairs_hook=_pairs)
+              assert request == {
+                  'session_id': '12436642121757218108',
+                  'expected_branch': 'jules-work/relay-dev-loop-125-bwj-session-get-reader',
+                  'expected_create_time': '2026-10-01T19:08:33Z', 'expected_pr': 227,
+                  'retry': 0, 'fallback': 'disabled',
+                  'purpose': 'existing-completed-session-diagnostic-only'}, 'diagnostic identity mismatch; no GET attempted'
+              assert type(request['retry']) is int and type(request['expected_pr']) is int, 'invalid integer types; no GET attempted'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('path=' + path + '\n')
           PY
       - name: GET one already-existing completed Session
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          REQUEST_PATH: ${{ steps.request.outputs.path }}
         run: |
           python -m automation.command_bus.jules_completed_readback_cli \
-            docs/evidence/blue-work-night-20261002/session-readback-request.json \
+            "$REQUEST_PATH" \
             blue-existing-session-readback.json
       - name: Save projected nonsecret readback
         if: always()
