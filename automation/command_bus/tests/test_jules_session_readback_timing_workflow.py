@@ -56,12 +56,12 @@ class JulesSessionReadbackTimingWorkflowTests(unittest.TestCase):
         )
 
     def test_sanitized_evidence_reuses_same_session_get(self):
-        self.assertIn('update_time="$(jq -r '.updateTime // ""' "${response_file}")"', self.text)
-        self.assertIn('provider_source="$(jq -r '.sourceContext.source // ""' "${response_file}")"', self.text)
-        self.assertIn(
-            'starting_branch="$(jq -r '.sourceContext.githubRepoContext.startingBranch // ""' "${response_file}")"',
-            self.text,
-        )
+        self.assertIn("update_time=\"$(jq -r", self.text)
+        self.assertIn(".updateTime //", self.text)
+        self.assertIn("provider_source=\"$(jq -r", self.text)
+        self.assertIn(".sourceContext.source //", self.text)
+        self.assertIn("starting_branch=\"$(jq -r", self.text)
+        self.assertIn(".sourceContext.githubRepoContext.startingBranch //", self.text)
         self.assertIn("JULES_SESSION_READBACK_SANITIZED", self.text)
         self.assertIn("jules-session-readback-evidence.json", self.text)
         self.assertEqual(
