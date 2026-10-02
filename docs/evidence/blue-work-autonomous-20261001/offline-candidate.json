@@ -1,0 +1,15 @@
+{
+  "execution_mode": "PREPARE_ONLY",
+  "external_send_attempted": false,
+  "model_executed": false,
+  "lineage_authentication": "NOT_WIRED",
+  "live_transport": "NOT_WIRED",
+  "plan": {
+    "status": "PREPARED",
+    "reason": "offline candidate only; no authenticated lineage or send authority",
+    "command_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "review_body": "[CW_BLUE_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"worker_generation\": 1,\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 42,\n  \"target_branch\": \"jules-result/fixture\",\n  \"expected_target_head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"expires_at\": \"2026-10-01T13:00:00Z\",\n  \"task\": \"fresh-read GitHub; verify exact J-BLUE claim/command/session/result lineage and current result head; independently inspect paths/semantics/negative tests/test evidence; return PASS/FAIL/BLOCKED/UNKNOWN plus one bounded next-task proposal; perform no target write and do not dispatch Jules.\",\n  \"allowed_paths\": [],\n  \"verification\": [\n    \"fresh result PR/branch/head readback\",\n    \"durable J-BLUE lineage verification\",\n    \"independent diff/test evidence inspection\",\n    \"confirmation no target write/Jules dispatch/live provider execution occurred\"\n  ],\n  \"live_provider_or_model_allowed\": false,\n  \"retry\": 0,\n  \"fallback\": \"disabled\"\n}",
+    "carrier_pr": 167,
+    "purpose": "JULES_RESULT_REVIEW"
+  }
+}
