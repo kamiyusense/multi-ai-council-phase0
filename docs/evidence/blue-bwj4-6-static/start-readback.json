@@ -1,0 +1,450 @@
+{
+  "schema_version": 1,
+  "main": {
+    "head": "7e1c90b72c7523f4265803da7ee82671c9dbd800",
+    "tree": "526459c4a1908db147271b86c9effa0677e4d475"
+  },
+  "branch": "feature/blue-bwj4-6-static-readiness",
+  "branch_start": "7e1c90b72c7523f4265803da7ee82671c9dbd800",
+  "prs": {
+    "203": {
+      "state": "closed",
+      "draft": true,
+      "merged": false,
+      "head": "66d366523ebe28726fcb36b0e5a45cb3368aa52d"
+    },
+    "217": {
+      "state": "closed",
+      "draft": true,
+      "merged": false,
+      "head": "5d17df185fb8bcc2e9f0bfd2090a76c60bc4359a"
+    },
+    "249": {
+      "state": "closed",
+      "draft": false,
+      "merged": true,
+      "head": "c44f0b9ca4dc3310870b154ff2939df9b6a5d1f5"
+    },
+    "253": {
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head": "1b3504455444b1f29f7441f38eb4aa6538401044"
+    },
+    "256": {
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head": "5f8fe617333017ed234112bf79b2e08419e4cd0d"
+    }
+  },
+  "jules_carrier": {
+    "branch": "feature/chat-work-command-bus",
+    "head": "fe5950bd30474bdc9f1c2f018a24adee357c6338",
+    "workflow_blob": "177c614b050bc9ae3cc4b1169be55919c50591de",
+    "workflow_matches_main": true
+  },
+  "blue_carrier": {
+    "pr": 167,
+    "branch": "cloud-work/carrier-blue-v1",
+    "head": "5f9e210bc17ed695610e23b1c1699e11f5c8ed4b",
+    "state": "open",
+    "draft": true,
+    "worker_state": {
+      "schema_version": 1,
+      "lane": "blue",
+      "carrier_pr": 167,
+      "carrier_branch": "cloud-work/carrier-blue-v1",
+      "active_generation": 1,
+      "active_worker_title": "Blue PR Review Lane",
+      "active_worker_automation_id": "6abc0a73825481919154cc1180d304c1",
+      "replacement_proof_pr": 172,
+      "replacement_proof_branch": "cloud-work/replacement-proof-v1",
+      "updated_at": "2026-09-29T22:03:41Z",
+      "note": "active_generation is the fencing authority. automation_id is metadata only and is not a correctness input."
+    },
+    "records": [
+      {
+        "id": 5357378827,
+        "kind": "review",
+        "created_at": "2026-09-29T19:29:00Z",
+        "command_id": "blue-fixed-carrier-smoke-001-20260930"
+      },
+      {
+        "id": 5897183410,
+        "kind": "comment",
+        "created_at": "2026-09-29T19:30:00Z",
+        "command_id": "blue-fixed-carrier-smoke-001-20260930"
+      },
+      {
+        "id": 5383867576,
+        "kind": "review",
+        "created_at": "2026-10-01T18:39:28Z",
+        "command_id": "blue-20261001T183834Z-pr217-readonly-01"
+      },
+      {
+        "id": 5938151988,
+        "kind": "comment",
+        "created_at": "2026-10-01T18:42:04Z",
+        "command_id": "blue-20261001T183834Z-pr217-readonly-01"
+      },
+      {
+        "id": 5383944482,
+        "kind": "review",
+        "created_at": "2026-10-01T18:45:06Z",
+        "command_id": "blue-20261001T184700Z-pr217-independent-review-02"
+      },
+      {
+        "id": 5938273083,
+        "kind": "comment",
+        "created_at": "2026-10-01T18:48:26Z",
+        "command_id": "blue-20261001T184700Z-pr217-independent-review-02"
+      },
+      {
+        "id": 5384094436,
+        "kind": "review",
+        "created_at": "2026-10-01T18:57:49Z",
+        "command_id": "blue-20261001T190500Z-pr217-delta-review-03"
+      },
+      {
+        "id": 5938512018,
+        "kind": "comment",
+        "created_at": "2026-10-01T19:02:59Z",
+        "command_id": "blue-20261001T190500Z-pr217-delta-review-03"
+      },
+      {
+        "id": 5387714737,
+        "kind": "review",
+        "created_at": "2026-10-02T02:24:42Z",
+        "command_id": "blue-20261002T022500Z-pr227-result-review-05"
+      },
+      {
+        "id": 5944478821,
+        "kind": "comment",
+        "created_at": "2026-10-02T02:28:17Z",
+        "command_id": "blue-20261002T022500Z-pr227-result-review-05"
+      },
+      {
+        "id": 5387791888,
+        "kind": "review",
+        "created_at": "2026-10-02T02:38:06Z",
+        "command_id": "blue-20261002T024000Z-pr217-final-review-09"
+      },
+      {
+        "id": 5944599531,
+        "kind": "comment",
+        "created_at": "2026-10-02T02:40:41Z",
+        "command_id": "blue-20261002T024000Z-pr217-final-review-09"
+      },
+      {
+        "id": 5388681925,
+        "kind": "review",
+        "created_at": "2026-10-02T05:50:51Z",
+        "command_id": "blue-20261002T055200Z-pr217-session-diagnostic-review-10"
+      }
+    ]
+  },
+  "global_claim_ledger": {
+    "carrier_head": "fe5950bd30474bdc9f1c2f018a24adee357c6338",
+    "count": 62,
+    "max_observed": 132,
+    "claims": [
+      {
+        "path": "automation/command_bus/loop_id_claims/059.json",
+        "sha": "9a413cc22080e469893f2193189281fb477b17a1"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/060.json",
+        "sha": "9ba5d478e2275718eee1cdf23643e48b1f09e683"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/061.json",
+        "sha": "bfd070e81f78542e9261b79a5a195c068e78fa2f"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/062.json",
+        "sha": "27b31e74216e485d8c593db8dd44d3651529a57b"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/063.json",
+        "sha": "aaba802e8748cc75ddd560208ceee8949bcc07af"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/064.json",
+        "sha": "b25261e4b921d31daba623f63ab58f9b6461e02d"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/065.json",
+        "sha": "04f2f6b47bce7afd7693eedb32f004c867e922f4"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/066.json",
+        "sha": "78dce7798980b19d0ccab55e9224f32fb32e9085"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/067.json",
+        "sha": "1f72d8e6b1dee2eaa3bc6c1ecca6f2fa1fdfa92a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/068.json",
+        "sha": "5c381a47e9278709d5eb5808a1a21c08fb18fc6d"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/069.json",
+        "sha": "8bcbf1b0477837e89e74b60ea9fc2342a9a0b6ff"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/075.json",
+        "sha": "1fddf362172263fd6fb8a0dd2226646699a349db"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/076.json",
+        "sha": "d3d87ccd1cc5f6e0634b7ac8d5d7cfcd3264594a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/077.json",
+        "sha": "bd0f81ec6d4d0c8106e052c296bcc8b9db74153f"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/078.json",
+        "sha": "fb0a89426d6d50d49f13790c1a69cd45a867ca1a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/079.json",
+        "sha": "92c423e98e7ff79f57c940d3b93bcf043fa29571"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/080.json",
+        "sha": "67851818a5f1db8919bafa0f1684268fbf5ec27a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/085.json",
+        "sha": "826dffe7dfcda10277d75140bf4d7c8b724e6e0f"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/086.json",
+        "sha": "f43d25b4f327209afe534bf1968cada8917da18b"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/090.json",
+        "sha": "8e7b103b66e108687b4f085464bfca6b31f86b40"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/091.json",
+        "sha": "48a4172bb6c46ed499a87c658cf4ef41eba3c97f"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/092.json",
+        "sha": "b5b577dc86b2c4babd49b5b652444eea89e06f2d"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/093.json",
+        "sha": "aab3bc83ea9b6f0a87a276e0e12bc67a81734be9"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/094.json",
+        "sha": "d81d9881bc33a2c1753186dd19d65bcbec794ad1"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/095.json",
+        "sha": "89529c7e7281256f812dd3688cc4614e49affd4a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/096.json",
+        "sha": "932cc065c1b23e98cdffbcc077e7ea4e418a4cfe"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/097.json",
+        "sha": "c9019fa881ede83bfee3f2fdf37f7198c3665a71"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/098.json",
+        "sha": "e24fd3387a0d7959f5d8e978d1d1ee8603fe2a69"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/099.json",
+        "sha": "eeade71d3a6c0a1c518a83ba51f174605f048e7a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/100.json",
+        "sha": "b59d0e6b3891e374187a34254d397974c936dd8a"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/101.json",
+        "sha": "88ed32ab0f5c4f9f61cd77a62f59ccbc9dfc1365"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/102.json",
+        "sha": "f2a26eed12fa7554916323138e455ca0527f0eb7"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/103.json",
+        "sha": "a5963952005c1c87013168d960b7468040eacaa4"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/104.json",
+        "sha": "4711213aef924271b5321f276cea75fe37ba9cc4"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/105.json",
+        "sha": "4b8244f58117fee676075a75f80dae9cf7270a0c"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/106.json",
+        "sha": "da88512366ea0efa499f6c12a9d1f8f9741a092d"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/107.json",
+        "sha": "4acab9f9b8eae0dff5a7e42deba39c729f7c217b"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/108.json",
+        "sha": "336b4cf2ad19b53ee6c31dfc169bcb8baea5e0c5"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/109.json",
+        "sha": "69e4fd0e0e7244f1775663c24777fd236eb35143"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/110.json",
+        "sha": "7457bc1c0a0d983804b367432b620e9ebf3db9c6"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/111.json",
+        "sha": "242921b8b46776c79906432b48fecaf27afb1212"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/112.json",
+        "sha": "326e4d3ebf782feec5da4c11833583fdac9396cb"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/113.json",
+        "sha": "4d0369d8c2df7a4145960c3bb715741c7a8ca1e0"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/114.json",
+        "sha": "4b07d206d120727a159d9bbb156cb432866f211c"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/115.json",
+        "sha": "186343e9b67fedb3e2b84766232afab2467e5065"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/116.json",
+        "sha": "5a6a3322b350a59a06d2864011afc45fb66f14ff"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/117.json",
+        "sha": "6fd855651f16d0c68feb4a2eb4a450a8cc5aa0b7"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/118.json",
+        "sha": "ef1a3fdc2b67ac3dada59d6e070266de3372b241"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/119.json",
+        "sha": "4bbbe7fb307ccc08f35c2a2a33b08ee189a54f5f"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/120.json",
+        "sha": "b3b37551246790ce740779be2b994fc6e0e760c7"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/121.json",
+        "sha": "a8be56c3844e5a0a2c1bab182bec250b698570f2"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/122.json",
+        "sha": "54fcdfa8c2b8eb79bd5c0bcdc604aa3b3ce1524d"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/123.json",
+        "sha": "3a8ec8ae1a09cc6f901d3128ec3cd43a7b212fb9"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/124.json",
+        "sha": "77fb2298c5e3aa9f9c5a7905653dcca3903e88b9"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/125.json",
+        "sha": "17a3acba8761546d5bed43d6cd8004b4912865b2"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/126.json",
+        "sha": "295fd0bac731826fe55a5c3a384f1a22ac56c87e"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/127.json",
+        "sha": "8fd52f788782bd2144b69abd630265662882eb88"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/128.json",
+        "sha": "bcaf9215c48f1ce2b11fdf4b49beeefbfbaf1b62"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/129.json",
+        "sha": "fa32680f1b9b09714084dbcab3cfc3a1fa8ebbb5"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/130.json",
+        "sha": "fcc3e112f1c21573dc6026dfaa673330fc4865e9"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/131.json",
+        "sha": "36282ca42cb471d1b10f25bf399c4dc02da79e56"
+      },
+      {
+        "path": "automation/command_bus/loop_id_claims/132.json",
+        "sha": "1232edb904479837d7c8a84907e49ab31f6ac879"
+      }
+    ],
+    "reservation_performed": false
+  },
+  "pr256_ci": {
+    "run": 37053947219,
+    "job": 110993893940,
+    "head": "5f8fe617333017ed234112bf79b2e08419e4cd0d",
+    "attempt": 1,
+    "conclusion": "success",
+    "tests": 1311,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "artifact": {
+      "id": 11247439047,
+      "name": "work-prepare-only-37053947219",
+      "size_in_bytes": 40351,
+      "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/actions/artifacts/11247439047",
+      "archive_download_url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/actions/artifacts/11247439047/zip",
+      "expired": false,
+      "created_at": "2026-10-02T19:26:20Z",
+      "expires_at": "2026-10-09T19:26:20Z",
+      "updated_at": "2026-10-02T19:26:20Z",
+      "digest": "sha256:e4793a71831443ecd2dcc452df247ae39bc2d98925bdbb8de2441f34ac082cb9",
+      "workflow_run": {
+        "id": 37053947219,
+        "repository_id": 1378815294,
+        "head_repository_id": 1378815294,
+        "head_branch": "fix/blue-canonical-validator-imports",
+        "head_sha": "5f8fe617333017ed234112bf79b2e08419e4cd0d"
+      }
+    }
+  },
+  "source_policy": {
+    "trial10": "UNKNOWN; terminal receipt absent; no resend",
+    "loop125": "no retrospective PASS",
+    "pr227": "no change/adoption/merge"
+  },
+  "runtime_operations": {
+    "provider_create": 0,
+    "provider_get": 0,
+    "carrier_review_post": 0,
+    "event_triggered_work": 0,
+    "claim_reservation": 0,
+    "jules_dispatch": 0,
+    "permission_change": 0,
+    "merge": 0
+  },
+  "retry": 0,
+  "fallback": "disabled"
+}
