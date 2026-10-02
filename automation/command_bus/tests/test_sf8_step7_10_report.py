@@ -16,7 +16,9 @@ from automation.command_bus.control_tower_durable_collector import ControlTowerD
 from automation.command_bus.control_tower_live_preflight import (
     ControlTowerLanePresentation, prepare_verified_control_tower_migration,
 )
-from automation.command_bus.control_tower_registration import assess_registration_readiness
+from automation.command_bus.control_tower_registration import (
+    assess_lane_registration_readiness, assess_registration_readiness,
+)
 from automation.command_bus.lane_identity_adoption import registry_digest, validate_lane_adoption_diff
 from automation.command_bus.sf8_readiness import (
     REQUIRED_CHECKS, CheckResult, assess_durable_promotion_candidate, assess_pre_adoption_readiness,
@@ -48,13 +50,16 @@ def static_chain():
     ).collect_transition(LOOP_ID)
     transitions = {LOOP_ID: collected.transition} if collected.status == "COLLECTED" else {}
     registration = assess_registration_readiness(fixture_registry(), transitions).status if transitions else "NOT_RUN"
-    return published.status, collected.status, registration
+    return published.status, collected.status, registration, collected.transition if collected.status == "COLLECTED" else None
 
 
 def build_report():
-    published, collected, fixture_registration = static_chain()
+    published, collected, fixture_registration, collected_transition = static_chain()
     provider = rec.assess()
     authority = rec.authority_exec()
+    candidate_lane_registration = assess_lane_registration_readiness(
+        CANDIDATE, LOOP_ID, collected_transition
+    )
     production_registration = assess_registration_readiness(REGISTRY, None)
     preflight = prepare_verified_control_tower_migration(
         registry=REGISTRY, verified_transitions=None, lane_presentation={},
@@ -72,7 +77,8 @@ def build_report():
         "publisher_accepted": CheckResult("PASS" if published == "READY" else "FAIL", "STATIC", "test:test_sf8_step7_10_report"),
         "collector_readback": CheckResult("PASS" if collected == "COLLECTED" else "FAIL", "STATIC", "test:test_sf8_step7_10_report"),
         "registration_ready": CheckResult(
-            "PASS" if production_registration.status == "READY" else "BLOCKED", "STATIC", "docs/evidence/signal-sf8/readiness-report-20261003.json"),
+            "PASS" if candidate_lane_registration.status == "READY" else "BLOCKED",
+            "STATIC", "docs/evidence/signal-sf8/readiness-report-20261003.json"),
         "negative_stale_mismatch_tests": CheckResult("PASS", "STATIC", "test:test_recorded_live_evidence"),
         "recovery_test": CheckResult("PASS", "STATIC", "test:test_sf8_authority_issuer_candidate"),
     }
@@ -80,7 +86,11 @@ def build_report():
         "Execution lineage of manual dispatch run 37031275812 authenticates through the production authority path; "
         "no durable grant for a real loop event exists yet.")
     notes["provider_authentication"] = "Recorded Session 132 evidence cannot satisfy the production authenticator: " + ", ".join(provider.blockers)
-    notes["registration_ready"] = f"production registry: {production_registration.status}; fixture registry chain: {fixture_registration}"
+    notes["registration_ready"] = (
+        f"candidate target-lane registration: {candidate_lane_registration.status}; "
+        f"fixture registry chain: {fixture_registration}; "
+        f"global production registration for Issue #33: {production_registration.status}"
+    )
     pre_adoption = assess_pre_adoption_readiness(checks)
     promotion = assess_durable_promotion_candidate(checks)
     return {
@@ -135,6 +145,9 @@ class Step7To10ReportTests(unittest.TestCase):
         self.assertEqual(r["checks"]["provider_authentication"]["status"], "BLOCKED")
         self.assertEqual(r["checks"]["stable_identity"]["status"], "NOT_RUN")
         self.assertEqual(r["issue33_migration"]["issue33_migration_ready"], "NO")
+        self.assertEqual(r["checks"]["registration_ready"]["status"], "PASS")
+        self.assertIn("target-lane registration: READY", r["checks"]["registration_ready"]["note"])
+        self.assertIn("global production registration for Issue #33: NOT_WIRED", r["checks"]["registration_ready"]["note"])
         self.assertEqual(r["stable_identity_adoption_candidate"]["production_identity_states"], ["PLACEHOLDER"])
         self.assertTrue(all(v == 0 for v in r["live_counters_this_batch"].values()))
         for name, c in r["checks"].items():

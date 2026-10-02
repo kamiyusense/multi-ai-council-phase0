@@ -27,7 +27,15 @@ Base: main 7e1c90b (PR #249 merged; fresh PR base readback). Nothing here promot
 ## Readiness (machine-readable: `docs/evidence/signal-sf8/readiness-report-20261003.json`)
 DURABLE promotion candidate: NOT_READY. stable_identity NOT_RUN; provider_authentication BLOCKED; registration_ready BLOCKED (production NOT_WIRED); owner_authority_authentication PASS/LIVE (execution lineage); prepared_persistence, canonical_receipt, publisher_accepted, collector_readback PASS but STATIC (not LIVE); negative/recovery tests PASS.
 
-Ordering fix: the strict full DURABLE gate remains post-adoption and still requires `stable_identity` plus `registration_ready`. A separate pre-adoption gate now evaluates only checks that can be proven before the registry write and may reach `READY_FOR_HUMAN_APPROVAL` only; it always keeps `human_approval_required=true` and `registry_write_allowed=false`. The two post-adoption checks are explicitly deferred rather than weakened. Current pre-adoption status is NOT_READY because provider authentication is BLOCKED and the publisher/collector/persistence/receipt results are still STATIC.
+Ordering fix: the strict full DURABLE gate remains post-adoption and still requires `stable_identity` plus target-lane `registration_ready`. A new lane-scoped registration check verifies only the adopted lane and intentionally ignores other PLACEHOLDER lanes; the existing global registration/preflight is unchanged and remains the only gate for Issue #33. A separate pre-adoption gate now evaluates only checks that can be proven before the registry write and may reach `READY_FOR_HUMAN_APPROVAL` only; it always keeps `human_approval_required=true` and `registry_write_allowed=false`. The two post-adoption checks are explicitly deferred rather than weakened. Current pre-adoption status is NOT_READY because provider authentication is BLOCKED and the publisher/collector/persistence/receipt results are still STATIC.
 
 ## Human decisions left
 A. Merge the `chatgpt-semi-auto` PLACEHOLDER -> DURABLE adoption only after the pre-adoption gate reaches `READY_FOR_HUMAN_APPROVAL`; after the merge, rerun the strict full DURABLE/registration verification. B. Migrate Issue #33 only after that post-adoption verification is READY. C. Approve ONE additional LIVE proof (required: existing evidence is not reusable for provider authentication) and one more human dispatch of the issuer.
+
+
+## Lane-scoped vs global registration
+
+- `assess_lane_registration_readiness`: adoption transaction for one named lane only. It requires that lane to be enabled + DURABLE + backed by an accepted exact-loop `TransitionProjectionResult`. Other lanes may remain PLACEHOLDER.
+- `assess_registration_readiness`: unchanged global gate. It still requires every enabled lane to be DURABLE and verified before Issue #33 migration can become READY.
+- Current STATIC candidate proof: `chatgpt-semi-auto` target-lane registration = READY with fixture transition; global production registration = NOT_WIRED.
+- STATIC READY does not satisfy the LIVE SF-8 requirement. The additional bounded LIVE proof is still required before adoption can reach human approval.
