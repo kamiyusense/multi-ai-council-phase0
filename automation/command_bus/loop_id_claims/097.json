@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 97,
+  "loop_id": "097",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "official-acp-adapter-pin-refresh",
+  "command_id": "relay-dev-loop-097-official-acp-adapter-pin-refresh",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "50104f6c4600d782a93f1942db63918c929bda50",
+  "expected_target_tree": "ef6138d7507d86384530a428f68b9f41f0ee17ba",
+  "work_branch": "jules-work/relay-dev-loop-097-official-acp-adapter-pin-refresh",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T11:04:19+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

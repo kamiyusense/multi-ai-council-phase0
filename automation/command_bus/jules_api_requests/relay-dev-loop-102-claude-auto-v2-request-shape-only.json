@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-102-claude-auto-v2-request-shape-only",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/claude-auto-current-jules-protocol",
+  "work_branch": "jules-work/relay-dev-loop-102-claude-auto-v2-request-shape-only",
+  "expected_target_head": "63c66e352a4ba35382a3dd3285748e45fcfc2931",
+  "expected_target_tree": "22c807f91921be32237bf1393d8e866dc6d2461f",
+  "allowed_paths": [
+    "automation/command_bus/claude_loop.py",
+    "automation/command_bus/tests/test_claude_loop.py",
+    "automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py"
+  ],
+  "prompt": "Loop 102 — SHORT. Current carrier V2 REQUEST SHAPE ONLY.\n\nThis is a deliberately smaller retry after Loop 099 stopped/failed with zero published changes.\nDo not continue Loop 099's broader companion-binding work.\n\nNamed upstream source:\n- feature/chat-work-command-bus: automation/command_bus/jules_api_request.py\n- reuse ONLY the current exact V2 request shape and work_branch rule.\n\nNamed local destination:\n- automation/command_bus/claude_loop.py\n- automation/command_bus/tests/test_claude_loop.py\n- automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py\n\nGoal:\nChange ONLY prepare_jules_semiauto_request() so its emitted carrier request is the current JULES_CHAT_SEMIAUTO_V2 shape.\nUpdate only the directly stale tests for that request shape.\n\nRequired:\n- schema_version=2\n- profile=\"JULES_CHAT_SEMIAUTO_V2\"\n- work_branch=\"jules-work/<command_id>\"\n- exact current 16 carrier keys:\n  schema_version, profile, command_id, target_repo, target_branch, work_branch,\n  expected_target_head, expected_target_tree, allowed_paths, prompt, created_at,\n  expires_at, retry, fallback, merge_allowed, force_push_allowed\n- origin_loop_id/origin_round/origin_correlation_id/origin_generation are ABSENT from the carrier request.\n- preserve existing prepare_jules_closed_loop_command() behavior and its INTERNAL schema/version semantics unchanged.\n- preserve target repo/branch/head/tree, allowlist/prompt/path bounds, timestamps, retry=0, fallback=disabled, merge=false, force_push=false.\n- current carrier validator evidence must accept deterministic valid bridge output.\n- update compatibility test only where its old schema-1/origin-in-request expectation is stale.\n\nDO NOT:\n- do not add the companion binding function in this Loop.\n- do not touch origin binding/store modules.\n- do not change internal loop command schema/version.\n- do not add inline replacement framework/validator if existing simple checks suffice.\n- do not refactor unrelated claude_loop logic.\n- do not change docs in this Loop.\n- do not add new module/schema/database/queue/workflow/dependency.\n- no live provider/model/Jules/Claude execution from code/tests.\n- no speculative safety/features.\n- no Merge/rebase/force push/delete/history rewrite.\n\nAllowed paths ONLY:\n- automation/command_bus/claude_loop.py\n- automation/command_bus/tests/test_claude_loop.py\n- automation/command_bus/tests/test_claude_jules_current_carrier_compatibility.py\n\nAcceptance:\n- exact 16-key V2 output.\n- work_branch exact.\n- origin_* absent.\n- INTERNAL prepared command remains schema/version behavior exactly as before.\n- deterministic valid bridge output accepted by current carrier validator evidence.\n- existing relevant negative tests remain non-vacuous.\n- inputs not mutated.\n- only 3 allowed paths changed.\n- no scratch/untracked files.\n\nValidation:\nPYTHONPATH=. python -m unittest automation.command_bus.tests.test_claude_loop -v\nPYTHONPATH=. python -m unittest automation.command_bus.tests.test_claude_jules_current_carrier_compatibility -v\nPYTHONPATH=. python -m unittest discover -s automation/command_bus/tests -t . -v\npython -m compileall -q automation/command_bus\ngit diff --check\ngit status --short\n\nPublication:\nIf green, commit and open the normal isolated PR. Publication is already authorized; do not ask for confirmation. Do not Merge.\n\nStop:\nIf any production file outside claude_loop.py or any test outside the two allowed tests must change, STOP and report exact path/reason. Do not widen scope.\n\nretry=0\nfallback=disabled",
+  "created_at": "2026-10-01T13:52:00+09:00",
+  "expires_at": "2026-10-01T15:30:00+09:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

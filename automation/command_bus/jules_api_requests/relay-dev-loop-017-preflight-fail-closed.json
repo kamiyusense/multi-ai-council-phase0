@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-017-preflight-fail-closed",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d0945e203fbdeece1b025e3b388ed9ce40ddfefa",
+  "expected_target_tree": "a62bcf5d3480f17964ffbba9a3c51bef23f34e40",
+  "allowed_paths": [
+    "src/relay/dispatcher.py",
+    "tests/relay/test_dispatcher.py"
+  ],
+  "prompt": "Bounded static/mock Relay safety task only. Close the preflight fail-open gap in RelayDispatcher.dispatch. Today adapter.preflight(prepared) is called but its return value is ignored, so an adapter can return an explicit failed or malformed preflight and dispatcher will still call dispatch(). Minimal fail-closed semantics: capture preflight_result. If it is a dict with ok is exactly True, continue unchanged. If it is a dict with ok is exactly False, return a non-success BLOCKED result with a stable reason such as preflight_not_ok and DO NOT call adapter.dispatch/collect/abort. If the preflight result is missing/malformed/non-dict or lacks an exact boolean ok, return UNKNOWN with stable reason such as preflight_unverified and DO NOT dispatch/collect/abort. Preserve explicit RuntimeError('CLI unavailable') behavior, timeout behavior, retry=0, fallback disabled, duplicate reservation semantics, stop/cancel/abort behavior, and all existing success/classification behavior. Add focused unit tests using tiny test subclasses/adapters inside tests only: ok False blocks before provider dispatch; malformed/None/missing-ok becomes UNKNOWN before provider dispatch; ok True follows normal simulated success; assert dispatch_count and collect_count remain 0 in rejected/unverified cases and no abort call occurs because no handle exists. No new files. No live/provider/network/auth/API/billing/settings/persistence changes. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, git diff --check.",
+  "created_at": "2026-09-26T22:34:00+00:00",
+  "expires_at": "2026-09-26T23:45:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

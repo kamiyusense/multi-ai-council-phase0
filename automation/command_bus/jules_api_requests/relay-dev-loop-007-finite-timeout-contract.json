@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-007-finite-timeout-contract",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "30433f6e51c049996cef72ee4203b842f7dfc5a8",
+  "expected_target_tree": "a0ea5d77b41955c07a3262aaff9d473951332157",
+  "allowed_paths": [
+    "src/relay/bridge.py",
+    "src/relay/dispatcher.py",
+    "tests/relay/test_dispatcher.py"
+  ],
+  "prompt": "Continue the Relay static/mock implementation with one bounded timeout-contract safety increment. The formal Phase 0 spec requires each provider timeout_seconds to be an independent positive finite integer before any future live execution, while null/UNSET/0/negative/non-numeric or non-integer values must fail the live gate. Do not add live provider execution, networking, API/auth/billing/settings changes, schemas, persistence, retry, fallback, or unrelated refactors. Reuse the existing Relay dispatcher/bridge boundary and add the smallest deterministic timeout validation/plumbing needed so a future live gate can verify timeout_seconds without relying on AI output. Preserve existing mock/static behavior and live_ready=false. Reject bool as an integer-like value. Ensure timeout data cannot be silently overridden by payload/provider output. Add focused unit tests covering a valid positive integer and invalid null/UNSET/0/negative/float/bool/non-numeric values, plus provider isolation so one provider timeout value does not alter another. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-26T02:14:00+00:00",
+  "expires_at": "2026-09-26T03:44:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

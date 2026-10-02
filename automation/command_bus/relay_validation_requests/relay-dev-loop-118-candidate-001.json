@@ -1,0 +1,6 @@
+{
+  "target_sha": "ab922dc2a5f9032ddc85c26ab0e2501a37de3c89",
+  "loop_number": 118,
+  "candidate_pr": 218,
+  "scope": "verify exact candidate head full repository test suite, Python compile, diff check; fake local child process only; no provider/model execution"
+}

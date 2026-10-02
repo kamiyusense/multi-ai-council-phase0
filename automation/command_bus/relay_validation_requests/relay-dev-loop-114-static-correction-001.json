@@ -1,0 +1,6 @@
+{
+  "target_sha": "e289e7674f5b82ced4dbac251cf2c5cb5203061e",
+  "scope": "independent full repo unit suite + compileall + git diff check, local/static only, no provider/model execution",
+  "reason": "Loop 114 scope incompatibility resolved as fresh Controller-only correction",
+  "no_live": true
+}

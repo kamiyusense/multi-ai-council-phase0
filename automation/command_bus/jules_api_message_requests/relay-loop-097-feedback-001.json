@@ -1,0 +1,5 @@
+{
+  "session_id": "3439047194842417107",
+  "expected_state": "AWAITING_USER_FEEDBACK",
+  "prompt": "Keep the original two-file allowlist. Do not change the out-of-scope live readiness test. Because the full suite is not green within that allowlist, finish Loop 097 as incompatible with its original scope and do not publish a PR. retry=0; fallback=disabled."
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-032-acp-client-minimal-correction",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d4e56accb8f8cfa5b4c27c7003823a37f166e2cf",
+  "expected_target_tree": "4955f750a359e5e9acbbf8dd1f783f98b0335e4c",
+  "allowed_paths": [
+    "src/relay/acp_client.py",
+    "tests/relay/test_acp_client.py",
+    "fixtures/relay/acp_initialize_account.json",
+    "fixtures/relay/acp_initialize_unsupported.json",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Short corrective static/mock ACP batch. PR #54, PR #56 and unrelated PR #58 are NOT accepted. Start ONLY from the exact unchanged target head/tree above. Keep this task narrow: implement `src/relay/acp_client.py` as a RelayTransport-compatible deterministic test-double transport and tests only. Do not change RelayLifecycle/RelayTransport/provider policy/Core/workflows. No subprocess/network/provider/auth/billing/settings/live execution.\n\nRequired API must match RelayTransport exactly: initialize(provider_id)->dict, open_session(provider_id,cwd=...)->str, prompt(provider_id,session_id,payload,timeout_seconds=None)->bytes, cancel(provider_id,session_id), close(provider_id,session_id).\n\nDeterminism: do NOT use uuid/random/time. Session IDs must be deterministic monotonic values scoped to the client, e.g. `acp-mock:<provider_id>:1`, `:2`.\n\nInitialize: injected fixture/config only; require protocol_version==1, account auth accepted via the existing ProviderPolicy passed to ACPClient, capabilities must be a dict and every advertised capability entry other than auth metadata must have the documented local-mock object/dict shape. Missing/unknown/unsupported values fail closed. Return live_process_started=False.\n\nPrompt: exactly one prompt per open session. Support local flags/fields for deterministic timeout and generic error simulation used by tests. If timeout flag is set, raise TimeoutError; if error flag is set, raise RuntimeError. Otherwise a terminal response MUST be explicitly configured for that session/provider and MUST be bytes. Missing terminal response, None, str, int, list or dict must raise; NEVER return b'' as a default; NEVER stringify/coerce malformed terminal values. Return configured bytes EXACTLY unchanged.\n\nUpdate evidence: capture configured ordered update events into a separate per-session evidence snapshot using deepcopy before interpretation. Do NOT inject/wrap/mutate terminal bytes. Reject malformed update entries that are not dicts before returning success. Provide a read-only/copying accessor for tests if useful.\n\nSafety callbacks: explicit methods for permission, file read, file write, terminal request, elicitation/user-input, and unknown extension/notification. Each must record a deepcopy and return False/denied; never auto-approve.\n\nLifecycle-state invariants inside ACPClient: prompt only on open session, no second prompt, cancel only once, close only once; prompt after cancel or close must fail. Keep provider/session binding and reject wrong-provider operations.\n\nTests must cover all of the above directly, including deterministic session IDs, exact raw terminal bytes, missing/malformed terminal fail-closed, timeout/error raising, evidence separation and deepcopy, malformed update rejection, each safety callback separately, wrong provider, second prompt/cancel/close, prompt after cancel/close, and live_process_started=False. Also add a tiny integration test using existing RelayLifecycle without modifying it to prove: timeout/error after session creation => exactly one cancel + exactly one close; stop-before-dispatch => no session; duplicate same envelope => no second prompt. Use only local doubles.\n\nUpdate checkpoint with static/mock-only wording and independent Chat validation required. Run focused tests, then once: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Normal Jules PR only. No merge/force push.",
+  "created_at": "2026-09-27T21:48:00+00:00",
+  "expires_at": "2026-09-27T23:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

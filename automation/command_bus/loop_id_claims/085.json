@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 85,
+  "loop_id": "085",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-semiauto-bootstrap-cycle-break",
+  "command_id": "relay-dev-loop-085-signal-semiauto-bootstrap-cycle-break",
+  "target_branch": "feature/signal-semiauto-stable-id-adoption-v1",
+  "expected_target_head": "15c94cfb228490bac8f6d20099e05fadc4e8f305",
+  "expected_target_tree": "8cd8fbdd4a97e7420ed03c5bea42eac2cfedcf9e",
+  "work_branch": "jules-work/relay-dev-loop-085-signal-semiauto-bootstrap-cycle-break",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-30T20:03:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

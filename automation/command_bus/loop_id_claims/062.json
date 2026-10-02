@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "loop_number": 62,
+  "loop_id": "062",
+  "lane_id": "J-A",
+  "lane_display": "🟥",
+  "task_id": "abort-readback-proof-contract",
+  "command_id": "relay-dev-loop-062-abort-readback-proof-contract",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "b248fae8ee37a4a55efeb4768bb2514a09f3c4ba",
+  "expected_target_tree": "7cebb40470cb8018d5d5c27e721d1c46b93a7fea",
+  "work_branch": "jules-work/relay-dev-loop-062-abort-readback-proof-contract",
+  "state": "HISTORICAL_BACKFILL",
+  "claimed_at": "2026-09-30T05:36:53+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

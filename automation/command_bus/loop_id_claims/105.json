@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 105,
+  "loop_id": "105",
+  "lane_id": "J-BLUE",
+  "lane_display": "💙",
+  "task_id": "bwj2-blue-wake-prepare-correction",
+  "command_id": "relay-dev-loop-105-bwj2-blue-wake-prepare-correction",
+  "target_branch": "feature/blue-work-jules-webhook-loop",
+  "expected_target_head": "e7d7f0909858288fd904764fe78507acc7326772",
+  "expected_target_tree": "5212eac0b636e5e90febcb9046089f90e2a6ac06",
+  "work_branch": "jules-work/relay-dev-loop-105-bwj2-blue-wake-prepare-correction",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T13:56:40+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

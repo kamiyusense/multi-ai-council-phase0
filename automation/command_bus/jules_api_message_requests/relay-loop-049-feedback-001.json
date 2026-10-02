@@ -1,0 +1,5 @@
+{
+  "session_id": "2187049476280685317",
+  "expected_state": "AWAITING_USER_FEEDBACK",
+  "prompt": "Yes. Continue the existing Loop 049 task exactly as originally specified. Add the missing strict structural/dependency validations, including exact external_agent and pinned_version checks, full pipeline result validation (hash formats, non-boolean integer checks, canonical provider/blocking semantics, and READY_FOR_HUMAN_APPROVAL cross-field constraints), and expand the tests to cover malformed/tampered dependency outputs and inconsistent states. Keep the original allowed paths and all safety constraints unchanged. Do not broaden scope, do not start any live provider/model/API execution, retry=0, fallback=disabled, no merge, no canonical branch write. Run the requested focused tests, then exactly one full unittest discovery, compileall, and git diff --check. If green, publish the normal Jules PR from the isolated work branch."
+}

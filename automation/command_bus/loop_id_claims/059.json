@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "loop_number": 59,
+  "loop_id": "059",
+  "task_id": "minimum-permissions-static-inventory",
+  "command_id": "relay-dev-loop-059-minimum-permissions-static-inventory",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "8846b83804fe9c1c7a62036536a6ac2f4fdebf6e",
+  "work_branch": "jules-work/relay-dev-loop-059-minimum-permissions-static-inventory",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-29T18:56:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

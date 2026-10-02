@@ -3,6 +3,21 @@ name: Phase 0 loop status signal tests
 on:
   pull_request:
     paths:
+      # Jules dispatch contract: a change to the request/claim validators, the readback
+      # workflow or their guards must run the suite (a PR touching only these used to run no tests).
+      - automation/command_bus/jules_api_request.py
+      - automation/command_bus/jules_api_request_origin.py
+      - automation/command_bus/loop_id_claim.py
+      - automation/command_bus/jules_session_acceptance.py
+      - automation/command_bus/tests/test_jules_api_request.py
+      - automation/command_bus/tests/test_jules_api_request_origin.py
+      - automation/command_bus/tests/test_jules_request_contract_split.py
+      - automation/command_bus/tests/test_loop_id_claim.py
+      - automation/command_bus/tests/test_jules_session_readback_*.py
+      - automation/command_bus/tests/test_workflow_trigger_economy.py
+      - .github/workflows/jules-chat-semiauto.yml
+      - .github/workflows/jules-session-readback.yml
+      - .github/workflows/loop-status-signal-test.yml
       - automation/command_bus/claude_admission_gate.py
       - automation/command_bus/claude_gate_compose.yaml
       - automation/command_bus/docker/auth-control-plane/**

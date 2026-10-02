@@ -1,0 +1,25 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-044-core-policy-matrix",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "work_branch": "jules-work/relay-dev-loop-044-core-policy-matrix",
+  "expected_target_head": "5f7baf275932a497274d221648d0e38bc49d5f17",
+  "expected_target_tree": "ebc757ed6ebe27ce90fff8d54da687c29574cbdf",
+  "allowed_paths": [
+    "tests/relay/core_pr3_overlay_policy_matrix_runner.py",
+    "tests/relay/test_core_pr3_overlay_policy_matrix_runner.py",
+    ".github/workflows/relay-core-pr3-overlay-policy-matrix-validation.yml",
+    "tests/relay/test_core_pr3_overlay_policy_matrix_workflow.py",
+    "docs/RELAY_CORE_PR3_OVERLAY_PLAN.md",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Loop 044 — bounded static/mock Core PR #3 policy-edge matrix preparation.\n\nGoal:\nPrepare, but do not trigger, one exact cross-branch validation workflow covering the remaining Core PR #3 static integration boundaries not yet proven by the accepted happy-path and negative provider-isolation matrix.\n\nPinned Core PR #3 head:\n494b7296f32dce1c173a7699e4bd2d87f70d31a9\n\nExisting accepted evidence:\n- happy-path real cross-branch overlay PASS\n- timeout_openai / collect_error_anthropic / invalid_output_google matrix PASS\n- live remains BLOCKED\n\nImplement a new test-only policy matrix runner + static contract tests + dedicated append-only exact-head workflow for exactly these scenarios:\n\n1) safety_unknown_google\n- OpenAI and Anthropic use the normal valid YES raw response.\n- Google returns a schema-valid Provider Response with safety_warning=\"UNKNOWN\" and a nonempty safety_reason.\n- All three providers must remain COMPLETE participants.\n- exact raw bytes must be persisted for all three.\n- Core comparison must report participant_count=3, agreement_count=3, safety_block=true, human_required=true, formal_consensus=false.\n- dispatch_count=1 and collect_count=1 for each provider.\n- retry_count=0, fallback_state=disabled, live_turn_executed=false.\n\n2) fanout_unknown\n- Use the real Core FanoutGate with externally_shareable=None and contains_private_code=False.\n- Core must stop before provider snapshot/dispatch.\n- comparison and report must remain absent/None as produced by Core.\n- providers directory must not exist.\n- every bridge dispatch_count and collect_count must remain 0.\n- checkpoint UNKNOWN must contain the real Core fan-out UNKNOWN evidence and must not be rewritten into invented provider states.\n- live_turn_executed=false.\n- Do not invent retry/fallback fields if the Core early-return checkpoint does not contain them; represent their absence explicitly in the matrix result rather than fabricating values.\n\n3) stop_before_dispatch\n- Create the real Core StopController, call request_stop with a deterministic reason before run_mock_council.\n- Use the real Core CaseRunner.\n- prove every Relay bridge has dispatch_count=0 and collect_count=0.\n- preserve the actual Core-produced provider/checkpoint/comparison semantics exactly. Do not overwrite provider states from scenario expectations.\n- Based on current pinned Core semantics, ERROR_UNKNOWN/nonparticipant results are acceptable only if directly read from Core output/checkpoint.\n- comparison should remain human_required=true/formal_consensus=false and participant_count/agreement_count should be whatever the real Core produces; assert the pinned behavior from evidence, not invented values.\n- retry_count=0, fallback_state=disabled, live_turn_executed=false if those fields are actually emitted by the normal post-provider checkpoint.\n\nGeneral constraints:\n- no production source changes\n- no subprocess/provider process/network/model/API/credential/billing/settings execution\n- no ambient env discovery\n- no live provider turn\n- no real workflow dispatch in this Jules task\n- no changes outside the allowlist\n- use explicit roots and pinned Core head, fail closed on wrong head/missing file\n- clean sys.path/sys.modules restoration on success and failure\n- do not stringify or normalize away Core evidence\n- malformed/missing evidence must fail closed\n- workflow permissions contents:read\n- workflow trigger must be append-only request commit, exactly one added request file, parent-bound relay_sha, exact pinned core_sha, retry=0 behavior\n- workflow must validate the runner JSON with jq from actual fields\n- add static tests proving no secret/live/provider execution surface\n- update docs as PREPARED/NOT_RUN only; do not claim real matrix PASS until independent Chat validation triggers it later\n\nRun focused tests, then exactly one full repository unittest discovery, compileall, and git diff --check. If any fail, fix within the allowlist and rerun only what is necessary. Do not merge.",
+  "created_at": "2026-09-28T06:28:00+00:00",
+  "expires_at": "2026-09-28T08:20:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

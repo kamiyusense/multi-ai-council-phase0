@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 116,
+  "loop_id": "116",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "claude-acp-static-binary-binding",
+  "command_id": "relay-dev-loop-116-claude-acp-static-binary-binding",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "e289e7674f5b82ced4dbac251cf2c5cb5203061e",
+  "expected_target_tree": "81500abea4daf41d207ea90b078724d740dab6f0",
+  "work_branch": "jules-work/relay-dev-loop-116-claude-acp-static-binary-binding",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T20:49:20+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

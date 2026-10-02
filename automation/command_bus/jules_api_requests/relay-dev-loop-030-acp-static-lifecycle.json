@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-030-acp-static-lifecycle",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d4e56accb8f8cfa5b4c27c7003823a37f166e2cf",
+  "expected_target_tree": "4955f750a359e5e9acbbf8dd1f783f98b0335e4c",
+  "allowed_paths": [
+    "src/relay/acp_client.py",
+    "src/relay/transport.py",
+    "src/relay/lifecycle.py",
+    "tests/relay/test_acp_client.py",
+    "tests/relay/test_relay_static.py",
+    "fixtures/relay/acp_initialize_account.json",
+    "fixtures/relay/acp_initialize_unsupported.json",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Bounded static/mock ACP lifecycle batch. Start only from the exact target head/tree above. Do NOT import or call `acp.spawn_agent_process`, do NOT start a subprocess, do NOT contact any provider/network, and do not modify provider policy, Core, workflows, auth, billing, settings, or GitHub runtime behavior. The goal is a deterministic injected-test-double ACP client layer matching the documented lifecycle in docs/RELAY_STATIC_BUILD_PLAN.md and docs/RELAY_ACP_SDK_CONTRACT.md.\n\nAdd `src/relay/acp_client.py` as a static/mock ACP lifecycle wrapper around an injected connection/process test double. It should model: initialize -> verify protocol/capability shape -> verify auth kind using the existing provider policy contract exposed to the caller -> open/new session -> exactly one prompt -> capture ordered session updates -> terminal result -> cancel/close. It must never internally retry, replay, fallback, reopen a session, or issue a second prompt for the same dispatch. Unsupported or malformed initialize/session/update/terminal payloads must fail closed as UNKNOWN/error rather than success.\n\nModel client-side safety handlers explicitly for permission requests, file read/write requests, terminal requests, elicitation/user-input, and unknown extension methods/notifications. In this static layer, do not silently approve any of them: return/record deterministic denied-or-unsupported results and evidence. Session update capture must preserve raw ordered events before any interpretation.\n\nIntegrate only as needed with the existing RelayTransport/RelayLifecycle abstractions without breaking MockTransport. Keep current duplicate guard, stop, timeout, one-prompt, cancel and close invariants. A timeout or error after session creation must cancel the intended provider/session once and close once, without retry. A pre-session failure must not fabricate a session/cancel.\n\nAdd two compact fixtures at the allowlisted paths: one valid account-auth initialize/capability shape and one unsupported/malformed initialize shape. Tests must use only local deterministic doubles and prove: valid initialize/account path; non-account/unknown auth rejected or UNKNOWN; malformed/unsupported capability shape blocked; exactly one prompt; duplicate does not prompt again; prompt timeout cancels once and closes once; error cancels once and closes once; stop-before-dispatch creates no session; ordered raw session updates retained; permission/file/terminal/elicitation requests are never auto-approved; unknown extension fails closed; no live-process claim; retry_count=0/fallback disabled remain true at lifecycle result level.\n\nUpdate docs/RELAY_STATIC_CHECKPOINT.md with an ACP static/mock lifecycle checkpoint, clearly saying no ACP process/provider was started and independent Chat validation is still required. Run focused ACP tests first, then once only: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, and `git diff --check`. Create the normal Jules PR when complete. No merge, no force push.",
+  "created_at": "2026-09-27T16:16:00+00:00",
+  "expires_at": "2026-09-27T18:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

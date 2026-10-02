@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 122,
+  "loop_id": "122",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "acp-mock-phase0-e2e",
+  "command_id": "relay-dev-loop-122-acp-mock-phase0-e2e",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "db6348b0e7dd5d71f848308dac324906d969c5d7",
+  "expected_target_tree": "e99f9b3c7a040275223ac1856f525af8b279e314",
+  "work_branch": "jules-work/relay-dev-loop-122-acp-mock-phase0-e2e",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-02T03:26:25+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

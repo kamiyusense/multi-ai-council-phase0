@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 100,
+  "loop_id": "100",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-observed-github-run-map",
+  "command_id": "relay-dev-loop-100-signal-observed-github-run-map",
+  "target_branch": "feature/signal-observed-v1",
+  "expected_target_head": "0147bae7e92a3f30228913bad1a649044f4b9850",
+  "expected_target_tree": "9ad7dc432e98543c0b37f2b53e851784f240d6c3",
+  "work_branch": "jules-work/relay-dev-loop-100-signal-observed-github-run-map",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T11:34:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-015b-shared-timeout-contract-complete-tests",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "87539694379b1215e635b241164ea76e3e022e2d",
+  "expected_target_tree": "446b8c12ea1b3885717efb7c4372829ee7c7a1e8",
+  "allowed_paths": [
+    "src/relay/envelope.py",
+    "src/relay/dispatcher.py",
+    "src/relay/transport.py",
+    "src/relay/mock_transport.py",
+    "tests/relay/test_dispatcher.py",
+    "tests/relay/test_relay_static.py"
+  ],
+  "prompt": "Corrective bounded static/mock Relay task replacing the incomplete loop015 candidate; derive directly from the exact current PR #4 head, not from PR #32. Consolidate timeout validation in an existing common Relay module (prefer src/relay/envelope.py). Formal contract: timeout_seconds may be omitted/None for static/mock preparation; if explicitly non-None it MUST be a positive integer; bool, float, zero, negative, string/list/dict are invalid. Make RelayDispatcher.dispatch and DispatchEnvelope.build use the same validator. Align timeout type hints in DispatchEnvelope/compute_intent_hash/RelayTransport/MockTransport to int | None. Preserve loop014 timeout propagation. IMPORTANT missing acceptance criterion from prior candidate: add DIRECT focused tests that call DispatchEnvelope.build and prove explicit bool, float, zero, negative, and string timeouts each raise ValueError; add/retain dispatcher tests for the same invalid classes; prove omitted/None accepted; same payload+same integer timeout hashes identically; different integer timeout conflicts. Preserve retry=0, fallback disabled, duplicate/stop/cancel/close/error semantics, simulation markers. No live/provider/network/auth/API/billing/settings/persistence changes. No new files. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, git diff --check.",
+  "created_at": "2026-09-26T22:08:00+00:00",
+  "expires_at": "2026-09-26T23:30:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

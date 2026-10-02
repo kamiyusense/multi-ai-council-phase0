@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-014-lifecycle-timeout-propagation",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "163c23aedd28fac402aa69aa6192b6b83c924a13",
+  "expected_target_tree": "5903d37b1ea0036b398888e63202632d0443b53c",
+  "allowed_paths": [
+    "src/relay/transport.py",
+    "src/relay/mock_transport.py",
+    "src/relay/lifecycle.py",
+    "tests/relay/test_relay_static.py"
+  ],
+  "prompt": "Bounded static/mock Relay consistency task only. DispatchEnvelope now carries optional provider-specific timeout_seconds, but the legacy RelayLifecycle -> RelayTransport.prompt path currently drops it. Extend the existing RelayTransport/MockTransport static interface minimally so RelayLifecycle passes envelope.timeout_seconds to exactly one prompt attempt. Preserve current one-prompt/no-retry/no-fallback semantics, duplicate/conflict behavior, stop/cancel/close behavior, provider isolation, mock live_process_started=false, and all current states. Do not add live execution, subprocess/network/auth/API/billing/settings/persistence, and do not invent provider receipts. Keep backward compatibility for callers/envelopes with timeout_seconds omitted/None. Add focused tests proving: finite timeout reaches the mock prompt call unchanged; omitted/None remains deterministic and accepted; timeout failure still causes exactly one prompt attempt then cancel+close and no retry; different providers can carry different timeout values without cross-contamination. Prefer recording observed prompt timeout in MockTransport test evidence rather than altering provider success payload. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-26T20:54:30+00:00",
+  "expires_at": "2026-09-26T22:30:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

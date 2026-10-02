@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 111,
+  "loop_id": "111",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "acp-prompt-local-fake-wire",
+  "command_id": "relay-dev-loop-111-acp-prompt-local-fake-wire",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "0d17bc50774f7061f5bd3db96a82b53b8ee0a8cf",
+  "expected_target_tree": "ba9218c1c302e3ec0d99c1cec138c6361e6c4aa8",
+  "work_branch": "jules-work/relay-dev-loop-111-acp-prompt-local-fake-wire",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T17:56:09+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

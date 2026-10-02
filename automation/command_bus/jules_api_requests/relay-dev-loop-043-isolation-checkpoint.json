@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-043-isolation-checkpoint",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "work_branch": "jules-work/relay-dev-loop-043-isolation-checkpoint",
+  "expected_target_head": "96e9d454b77be50a3775d917ab2e0a70f698ef70",
+  "expected_target_tree": "3b706e31739b1b36cdd3882ea9e4cb0cd264bfc9",
+  "allowed_paths": [
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Isolation-canary checkpoint task. Edit only docs/RELAY_STATIC_CHECKPOINT.md.\n\nRecord, without altering historical claims, these verified facts in a concise new checkpoint section:\n- Core PR3 negative-path matrix run 36383797774 succeeded.\n- Relay code SHA validated by that run: 565ba16ed59d5ff979552e7c6524559caa4cf423.\n- Pinned Core PR3 head: 494b7296f32dce1c173a7699e4bd2d87f70d31a9.\n- Trigger request commit: f8ad5adda400d7f0fafa91aa363dce03442b107a.\n- timeout_openai isolated OpenAI TIMEOUT and preserved exact healthy-peer RAW evidence.\n- collect_error_anthropic isolated Anthropic ERROR_UNKNOWN and preserved exact healthy-peer RAW evidence.\n- invalid_output_google isolated Google INVALID_OUTPUT and preserved exact healthy-peer RAW evidence, including malformed Google RAW.\n- every scenario had retry_count=0, fallback_state=disabled, live_turn_executed=false, participant_count=2, agreement_count=2, human_required=true, formal_consensus=false.\n- Two separate Jules-bot direct writes to the canonical Relay branch were detected and recovered append-only; the second recovery commit is 96e9d454b77be50a3775d917ab2e0a70f698ef70 and its tree exactly matches the intended pre-overwrite tree 3b706e31739b1b36cdd3882ea9e4cb0cd264bfc9.\n- Root cause of those direct writes remains UNKNOWN.\n- New dispatch policy is isolation-first: canonical target branch is read-only identity; Jules starts only from an exact per-command jules-work snapshot branch.\n- Live provider/model execution remains BLOCKED.\n\nThis is a documentation-only isolation canary. Do not change code, workflows, tests, request ledgers, or any other file. Do not claim this canary itself passed until independent GitHub readback proves the canonical target branch stayed unchanged.",
+  "created_at": "2026-09-28T06:08:00+00:00",
+  "expires_at": "2026-09-28T07:38:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 86,
+  "loop_id": "086",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "antigravity-billing-route-readonly-checklist",
+  "command_id": "relay-dev-loop-086-antigravity-billing-route-readonly-checklist",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "a1071a0fd7ca833fddb5815888d7b16565621347",
+  "expected_target_tree": "70297539e8103efb5b5ce1e272922426fccfb10b",
+  "work_branch": "jules-work/relay-dev-loop-086-antigravity-billing-route-readonly-checklist",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T03:18:58+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
