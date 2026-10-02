@@ -359,8 +359,12 @@ async def _acp_prompt_text(
     session_id: str,
     prompt_text: str,
     timeout: float,
+    *,
+    max_chunks: int = 3,
+    max_ignored: int = _MAX_INTERLEAVED_NOTIFICATIONS,
+    ignorable: frozenset[str] = _IGNORABLE_SESSION_UPDATES,
 ) -> dict[str, str]:
-    """Internal helper: session/prompt (request id 2) -> 1..3 text chunks + stopReason."""
+    """Internal helper: session/prompt (request id 2) -> text chunks (default 1..3) + stopReason."""
     prompt_request = {
         "jsonrpc": "2.0",
         "id": 2,
@@ -380,7 +384,7 @@ async def _acp_prompt_text(
     terminal_result = None
 
     ignored = 0
-    for _ in range(4 + _MAX_INTERLEAVED_NOTIFICATIONS):
+    for _ in range(max_chunks + 1 + max_ignored):
         try:
             line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
         except asyncio.TimeoutError as e:
@@ -414,8 +418,8 @@ async def _acp_prompt_text(
             break
         else:
             # Notification
-            if notification_count >= 3:
-                raise ValueError("Maximum of 3 text updates exceeded")
+            if notification_count >= max_chunks:
+                raise ValueError(f"Maximum of {max_chunks} text updates exceeded")
 
             if frame.get("method") != "session/update":
                 raise ValueError("ACP session/update notification method must be 'session/update'")

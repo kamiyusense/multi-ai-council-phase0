@@ -40,12 +40,14 @@ from .acp_client import (
     _acp_exchange,
     _acp_initialize,
     _acp_new_session,
+    _IGNORABLE_SESSION_UPDATES,
     _acp_prompt_text,
     acp_mock_text_to_phase0_raw,
 )
 from .acp_stdio_transport import spawn_stdio_transport
+from .m9_live_state import LiveAuthorization, verify_live_authorization
 
-__all__ = ["AcpStdioStaticTransport", "OfficialAdapterLaunch", "LIVE_ADAPTER_MARKERS"]
+__all__ = ["AcpStdioStaticTransport", "OfficialAdapterLaunch", "LiveAuthorization", "LIVE_ADAPTER_MARKERS"]
 
 # Official adapter identities that must never be launched from the injected-fake mode.
 LIVE_ADAPTER_MARKERS = (
@@ -78,6 +80,8 @@ class OfficialAdapterLaunch:
     command: tuple[str, ...]
     env: Mapping[str, str]
     fixture_root: Path
+    # Only a consumed one-shot approval (see m9_live_state) unlocks a backend outside fixture_root.
+    live_authorization: LiveAuthorization | None = None
 
 
 def _refuse_live_command(command: tuple[str, ...], profile: ProviderStaticProfile) -> None:
@@ -116,11 +120,19 @@ def _validate_official_launch(launch: OfficialAdapterLaunch, profile: ProviderSt
         raise ValueError(f"{seam} must be the Relay one-generation gate (codex_turn_gate.py/.cmd)")
     backend = launch.env.get("RELAY_GATE_BACKEND")
     if not backend:
-        raise ValueError("RELAY_GATE_BACKEND must point at a fixture backend")
+        raise ValueError("RELAY_GATE_BACKEND must be set")
     backend_path = Path(backend).resolve()
+    if not backend_path.is_file():
+        raise ValueError("RELAY_GATE_BACKEND must be an existing file")
     root = Path(launch.fixture_root).resolve()
-    if not backend_path.is_file() or root not in backend_path.parents:
-        raise ValueError("RELAY_GATE_BACKEND must be a file inside the fixture root")
+    if root in backend_path.parents:
+        if launch.live_authorization is not None:
+            raise ValueError("a fixture backend must not carry a live authorization")
+        return
+    # Backend outside the fixture root = potentially real/live: fail closed unless one-shot approved.
+    verify_live_authorization(launch.live_authorization, profile.provider_id)
+    if backend_path in gates:
+        raise ValueError("RELAY_GATE_BACKEND must not be the gate itself")
 
 
 class AcpStdioStaticTransport:
@@ -142,12 +154,16 @@ class AcpStdioStaticTransport:
         if official is not None:
             _validate_official_launch(official, profile)
             self.command, self._env = official.command, dict(official.env)
+            self._live = official.live_authorization is not None
         else:
             if not isinstance(command, tuple) or not command:
                 raise ValueError("command must be a non-empty tuple")
             _refuse_live_command(command, profile)
             self.command, self._env = command, None
+            self._live = False
         self.profile = profile
+        self.live = self._live
+        self._startup_timeout = 45.0 if self._live else _STARTUP_TIMEOUT_SECONDS
         self.spawn_count = 0
         self.prompt_count = 0
         self.cancel_sent = 0
@@ -180,7 +196,7 @@ class AcpStdioStaticTransport:
         self._cm = spawn_stdio_transport(*self.command, env=self._env, shutdown_timeout=_TEARDOWN_TIMEOUT_SECONDS)
         stdout, stdin, _process = await self._cm.__aenter__()
         self._streams = (stdout, stdin)
-        return await _acp_initialize(stdout, stdin, _STARTUP_TIMEOUT_SECONDS)
+        return await _acp_initialize(stdout, stdin, self._startup_timeout)
 
     async def _teardown(self) -> None:
         cm, self._cm, self._streams = self._cm, None, None
@@ -215,7 +231,7 @@ class AcpStdioStaticTransport:
             "provider_id": provider_id,
             "mode": "acp_stdio_static",
             "adapter_process_started": True,
-            "live_process_started": False,
+            "live_process_started": self._live,
         }
 
     def open_session(self, provider_id: str, *, cwd: str) -> str:
@@ -223,7 +239,7 @@ class AcpStdioStaticTransport:
         if self._state != "initialized" or self._streams is None:
             raise ValueError("transport is not initialized")
         stdout, stdin = self._streams
-        session_id = self._run(_acp_new_session(stdout, stdin, cwd, _STARTUP_TIMEOUT_SECONDS))
+        session_id = self._run(_acp_new_session(stdout, stdin, cwd, self._startup_timeout))
         self._session_id, self._state = session_id, "open"
         return session_id
 
@@ -245,9 +261,17 @@ class AcpStdioStaticTransport:
         if not isinstance(text, str) or not text.strip():
             raise ValueError("payload['prompt'] must be a non-empty string")
         stdout, stdin = self._streams
-        result = self._run(
-            _acp_prompt_text(stdout, stdin, session_id, text, float(timeout_seconds or _DEFAULT_TIMEOUT_SECONDS))
-        )
+        total = float(timeout_seconds or _DEFAULT_TIMEOUT_SECONDS)
+        if self._live:
+            # Real streaming: many small text deltas and metadata updates are normal; the whole
+            # prompt (not each read) is bounded by timeout_seconds. Tool calls etc. still fail closed.
+            coro = _acp_prompt_text(
+                stdout, stdin, session_id, text, total, max_chunks=2000, max_ignored=2000,
+                ignorable=_IGNORABLE_SESSION_UPDATES | {"agent_thought_chunk"},
+            )
+        else:
+            coro = _acp_prompt_text(stdout, stdin, session_id, text, total)
+        result = self._run(asyncio.wait_for(coro, timeout=total))
         # Non end_turn / empty text raises -> lifecycle reports UNKNOWN, never success.
         return acp_mock_text_to_phase0_raw(result)
 

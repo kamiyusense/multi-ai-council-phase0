@@ -30,7 +30,17 @@ def send(obj: dict) -> None:
 def _canned(method: str, params: dict):
     cwd = (params or {}).get("cwd") or "/"
     if method == "account/read":
-        return {"account": {"type": "chatgpt", "email": None, "planType": "plus"}, "requiresOpenaiAuth": False}
+        kind = os.environ.get("FAKE_CODEX_ACCOUNT", "chatgpt")  # chatgpt | apikey | none | malformed | error
+        if kind == "apikey":
+            return {"account": {"type": "apiKey"}, "requiresOpenaiAuth": False}
+        if kind == "none":
+            return {"account": None, "requiresOpenaiAuth": True}
+        if kind == "malformed":
+            return {"unexpected": "shape"}
+        # fake PII/secret-looking values: runner tests assert none of them is ever persisted
+        return {"account": {"type": "chatgpt", "email": "secret.person@example.invalid", "planType": "plus",
+                            "accountId": "acct-SECRET-0001", "accessToken": "tok-SECRET-0002"},
+                "requiresOpenaiAuth": False}
     if method == "config/read":
         return {"config": {}, "origins": {}, "layers": None}
     if method == "skills/list":
@@ -69,8 +79,11 @@ def _turn(status: str) -> dict:
 
 def _turn_events(thread_id: str, text: str) -> None:
     """Emit a fake (no-provider) turn: one agent-message delta then completion."""
-    send({"jsonrpc": "2.0", "method": "item/agentMessage/delta",
-          "params": {"threadId": thread_id, "turnId": "fake-turn-1", "itemId": "fake-item-1", "delta": text}})
+    parts = int(os.environ.get("FAKE_CODEX_DELTAS", "1"))
+    size = max(1, -(-len(text) // parts))
+    for i in range(0, len(text), size):  # several deltas, like real streaming
+        send({"jsonrpc": "2.0", "method": "item/agentMessage/delta",
+              "params": {"threadId": thread_id, "turnId": "fake-turn-1", "itemId": "fake-item-1", "delta": text[i:i + size]}})
     send({"jsonrpc": "2.0", "method": "turn/completed",
           "params": {"threadId": thread_id, "turn": _turn("completed")}})
 
@@ -98,6 +111,8 @@ def main() -> None:
                 "platformFamily": "unix",
                 "platformOs": "linux",
             }})
+        elif method == "account/read" and os.environ.get("FAKE_CODEX_ACCOUNT") == "error":
+            send({"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32000, "message": "static fake: account unavailable"}})
         elif method == "turn/interrupt" and os.environ.get("FAKE_CODEX_HOLD_TURN"):
             send({"jsonrpc": "2.0", "id": msg["id"], "result": {}})
             send({"jsonrpc": "2.0", "method": "turn/completed", "params": {
