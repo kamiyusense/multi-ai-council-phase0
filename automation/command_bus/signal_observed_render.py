@@ -18,6 +18,26 @@ def _safe_str(val: Any) -> str:
     return s
 
 
+def observed_human_attention(observed_jules: str, observed_pr: str, observed_ci: str) -> str:
+    """Pure observed hint: does a person need to look? NEEDED / NOT_NEEDED / UNKNOWN.
+
+    Derived only from already-mapped observed facts. It is not an authority
+    decision and never approves, merges or answers anything.
+    """
+    # With no result PR, CI is UNKNOWN by construction and carries no signal.
+    facts = (observed_jules, observed_pr) if observed_pr == "NO_RESULT_PR" else (observed_jules, observed_pr, observed_ci)
+    if "UNKNOWN" in facts:
+        return "UNKNOWN"
+    if observed_jules in ("NEEDS_INPUT", "FAIL") or observed_ci == "FAIL":
+        return "NEEDED"
+    if observed_jules in ("DISPATCHED", "IN_PROGRESS") or observed_ci == "VERIFYING":
+        return "NOT_NEEDED"
+    if observed_jules == "SESSION_COMPLETE":
+        # Finished work waits for a person's review of the result PR (or its absence).
+        return "NEEDED"
+    return "UNKNOWN"
+
+
 def render_observed_signal_section(snapshot: Any) -> str:
     """
     Renders the pure markdown facts for Observed Signal state.
@@ -56,6 +76,7 @@ def render_observed_signal_section(snapshot: Any) -> str:
         f"- **Jules Session**: `{_safe_str(observed_jules)}`",
         f"- **Result PR**: `{_safe_str(observed_pr)}`",
         f"- **Exact-Head CI**: `{_safe_str(observed_ci)}`",
+        f"- **Human attention (observed hint)**: `{observed_human_attention(observed_jules, observed_pr, observed_ci)}`",
     ]
 
     return "\n".join(lines)
