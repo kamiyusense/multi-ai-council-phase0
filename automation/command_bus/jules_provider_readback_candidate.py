@@ -117,6 +117,8 @@ def prepare_jules_provider_readback_candidate(
         source_ref,
         f"github-pr:{event['expected_pr']}",
         f"github-head:{event['expected_target_head']}",
+        f"github-branch:{bundle.target_branch}",
+        f"jules-branch:{bundle.provider_starting_branch}",
     )
     candidate = JulesProviderReadbackCandidate(
         source_id=source_id,
