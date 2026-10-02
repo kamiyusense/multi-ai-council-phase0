@@ -118,3 +118,41 @@ class TestSignalObservedRender(unittest.TestCase):
         self.assertNotIn("DISPATCHED", third_update)
         self.assertIn(runtime_block, third_update)
         self.assertIn(dev_block, third_update)
+
+
+class TestObservedHumanAttention(unittest.TestCase):
+    """Observed hint only; never an approval or authority decision."""
+
+    def setUp(self):
+        self.sha = "a" * 40
+
+    def _attn(self, jules, head="__sha__", wf_head="__sha__", status="completed", conclusion="success"):
+        head = self.sha if head == "__sha__" else head
+        wf_head = self.sha if wf_head == "__sha__" else wf_head
+        out = render_observed_signal_section({
+            "jules_session_state": jules, "result_pr_head": head,
+            "workflow_head_sha": wf_head, "workflow_status": status,
+            "workflow_conclusion": conclusion,
+        })
+        for line in out.splitlines():
+            if "Human attention" in line:
+                return line.split("`")[1]
+        self.fail("attention line missing")
+
+    def test_waiting_states_need_no_human(self):
+        self.assertEqual(self._attn("QUEUED", head=None), "NOT_NEEDED")
+        self.assertEqual(self._attn("IN_PROGRESS", head=None), "NOT_NEEDED")
+        self.assertEqual(self._attn("COMPLETED", status="in_progress", conclusion=None), "NOT_NEEDED")
+
+    def test_input_failure_and_review_need_human(self):
+        self.assertEqual(self._attn("AWAITING_USER_FEEDBACK", head=None), "NEEDED")
+        self.assertEqual(self._attn("FAILED", head=None), "NEEDED")
+        self.assertEqual(self._attn("COMPLETED"), "NEEDED")
+        self.assertEqual(self._attn("COMPLETED", conclusion="failure"), "NEEDED")
+        self.assertEqual(self._attn("COMPLETED", head=None), "NEEDED")
+
+    def test_malformed_stale_or_unknown_is_unknown(self):
+        self.assertEqual(self._attn("PAUSED", head=None), "UNKNOWN")
+        self.assertEqual(self._attn("COMPLETED", head="xyz"), "UNKNOWN")
+        self.assertEqual(self._attn("COMPLETED", wf_head="b" * 40), "UNKNOWN")
+        self.assertEqual(self._attn(None, head=None), "UNKNOWN")

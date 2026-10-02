@@ -212,3 +212,30 @@ class TestSignalObservedStaticE2E(unittest.TestCase):
 
         # unknown Jules state => UNKNOWN
         self.assertEqual(map_jules_session_state_to_observed_signal("WEIRD_STATE"), "UNKNOWN")
+
+    def test_full_observed_lifecycle_table_with_human_attention(self):
+        """Useful Signal MVP: one rendered projection per lifecycle stage (static only)."""
+        head = "a" * 40
+        stages = [
+            # (jules state, result head, wf head, status, conclusion, session, pr, ci, attention)
+            ("QUEUED", None, None, None, None, "DISPATCHED", "NO_RESULT_PR", "UNKNOWN", "NOT_NEEDED"),
+            ("IN_PROGRESS", None, None, None, None, "IN_PROGRESS", "NO_RESULT_PR", "UNKNOWN", "NOT_NEEDED"),
+            ("AWAITING_USER_FEEDBACK", None, None, None, None, "NEEDS_INPUT", "NO_RESULT_PR", "UNKNOWN", "NEEDED"),
+            ("FAILED", None, None, None, None, "FAIL", "NO_RESULT_PR", "UNKNOWN", "NEEDED"),
+            ("COMPLETED", head, head, "queued", None, "SESSION_COMPLETE", "PR_READY", "VERIFYING", "NOT_NEEDED"),
+            ("COMPLETED", head, head, "completed", "success", "SESSION_COMPLETE", "PR_READY", "PASS", "NEEDED"),
+            ("COMPLETED", head, head, "completed", "failure", "SESSION_COMPLETE", "PR_READY", "FAIL", "NEEDED"),
+            ("COMPLETED", head, "b" * 40, "completed", "success", "SESSION_COMPLETE", "PR_READY", "UNKNOWN", "UNKNOWN"),
+            ("COMPLETED", "bad", head, "completed", "success", "SESSION_COMPLETE", "UNKNOWN", "UNKNOWN", "UNKNOWN"),
+        ]
+        for js, rh, wh, st, co, e_s, e_p, e_c, e_a in stages:
+            out = render_observed_signal_section({
+                "jules_session_state": js, "result_pr_head": rh,
+                "workflow_head_sha": wh, "workflow_status": st, "workflow_conclusion": co,
+            })
+            with self.subTest(stage=js, ci=e_c):
+                self.assertIn(f"**Jules Session**: `{e_s}`", out)
+                self.assertIn(f"**Result PR**: `{e_p}`", out)
+                self.assertIn(f"**Exact-Head CI**: `{e_c}`", out)
+                self.assertIn(f"(observed hint)**: `{e_a}`", out)
+                self.assertIn("does NOT prove durable runtime ownership", out)
