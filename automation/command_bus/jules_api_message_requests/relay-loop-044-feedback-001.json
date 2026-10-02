@@ -1,0 +1,5 @@
+{
+  "session_id": "8612918239052647565",
+  "expected_state": "AWAITING_USER_FEEDBACK",
+  "prompt": "Proceed with the shorter descriptive plan and apply the already-prepared changes directly. Do not embed the full code payload in the plan. Keep the original Loop 044 scope and constraints unchanged: only the six allowed paths, static/mock only, pinned Core PR #3 head 494b7296f32dce1c173a7699e4bd2d87f70d31a9, no live provider/model/process/network/API/credential/billing/settings execution, retry=0, fallback disabled, no merge, no canonical target-branch writes. Preserve real Core evidence rather than inventing expected provider states. Run the requested focused tests, then exactly one full repository unittest discovery, compileall, and git diff --check. If they pass, publish the normal Jules PR from the isolated work branch."
+}

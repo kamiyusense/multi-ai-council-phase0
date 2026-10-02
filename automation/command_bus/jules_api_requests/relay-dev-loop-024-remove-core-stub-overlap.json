@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-024-remove-core-stub-overlap",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "6535598e82eb30f87850b26cb35911969b55ce7c",
+  "expected_target_tree": "4e6465d0a964556f48ebe58f4f7e0615ba35c4c0",
+  "allowed_paths": [
+    "src/relay/bridge.py",
+    "src/phase0_core/adapter.py",
+    "src/phase0_core/__init__.py",
+    "tests/relay/test_integration.py"
+  ],
+  "prompt": "Bounded static/mock Relay integration-cleanup task only. Remove the Relay branch's fake Core stub ownership so PR #4 no longer overlaps PR #3 on src/phase0_core/__init__.py and src/phase0_core/adapter.py. The PR #4 base did not contain those files; they were added only as a temporary Relay stub. In src/relay/bridge.py remove the import of src.phase0_core.adapter.CoreProviderAdapter and make RelayProviderAdapterBridge a plain duck-typed class (no inheritance). Delete the two temporary Relay-added files src/phase0_core/adapter.py and src/phase0_core/__init__.py so they disappear from the PR #4 diff rather than replacing the real Core implementation. Do NOT copy or recreate PR #3 Core code here and do NOT claim formal Core ProviderAdapter conformance yet; final Core mapping remains a later integration checkpoint. Preserve every existing Bridge method/behavior and all loop023 validation. Add/adjust only minimal integration tests if needed to prove the Bridge still exposes callable prepare/preflight/dispatch/collect/abort/classify methods and all existing Relay tests run without a phase0_core import. No new files. No live/provider/network/auth/API/billing/settings/persistence changes. retry=0, fallback disabled. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, git diff --check, and verify git diff against the exact base no longer lists src/phase0_core/__init__.py or src/phase0_core/adapter.py.",
+  "created_at": "2026-09-27T09:22:00+00:00",
+  "expires_at": "2026-09-27T10:55:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

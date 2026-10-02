@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-015-shared-timeout-contract",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "87539694379b1215e635b241164ea76e3e022e2d",
+  "expected_target_tree": "446b8c12ea1b3885717efb7c4372829ee7c7a1e8",
+  "allowed_paths": [
+    "src/relay/envelope.py",
+    "src/relay/dispatcher.py",
+    "src/relay/transport.py",
+    "src/relay/mock_transport.py",
+    "tests/relay/test_dispatcher.py",
+    "tests/relay/test_relay_static.py"
+  ],
+  "prompt": "Bounded static/mock Relay consistency task only. Consolidate the timeout contract without adding a new layer/file. Current RelayDispatcher owns validate_timeout while DispatchEnvelope/RelayTransport still type and accept float timeouts, but the formal Phase0 contract is: timeout may be omitted/None in static/mock preparation; whenever a timeout value is provided it must be a positive integer, bool/non-int/zero/negative invalid. Move or define the shared validator in an existing common Relay module (prefer src/relay/envelope.py) and make RelayDispatcher and DispatchEnvelope.build use the same validator semantics. Keep omitted/None accepted for mock/static envelopes and hashing. Align existing timeout type hints in DispatchEnvelope/compute_intent_hash/RelayTransport/MockTransport to int | None. Update existing float-valued static tests to positive integers; add focused regression tests proving DispatchEnvelope rejects bool, float, zero, negative, string when explicitly provided; Dispatcher rejects the same; omitted/None remains accepted; same payload+same integer timeout hashes identically; different integer timeout conflicts; timeout propagation from loop014 remains unchanged. Preserve retry=0, fallback disabled, duplicate guard, stop/cancel/close/error behavior, simulation markers, and no live/provider/network/auth/API/billing/settings/persistence changes. Do not add new files unless unavoidable. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-26T21:20:30+00:00",
+  "expires_at": "2026-09-26T23:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

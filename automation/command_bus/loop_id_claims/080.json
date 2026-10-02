@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 80,
+  "loop_id": "080",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "antigravity-account-route-readonly-checklist",
+  "command_id": "relay-dev-loop-080-antigravity-account-route-readonly-checklist",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d771598c737c5eb14db79d5a8024a3c1a5a7789d",
+  "expected_target_tree": "ae8f255610f563bd24bac4d05ff0dda1bb1af0f9",
+  "work_branch": "jules-work/relay-dev-loop-080-antigravity-account-route-readonly-checklist",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-30T20:00:46+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

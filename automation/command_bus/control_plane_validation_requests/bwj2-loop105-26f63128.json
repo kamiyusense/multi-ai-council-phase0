@@ -1,0 +1,4 @@
+{
+  "target_sha": "26f63128fe84d97aabf8d95f88a0600e977de0ba",
+  "purpose": "independent exact-head validation for BWJ-2 Loop 105 after Controller-safe fail-closed repair"
+}

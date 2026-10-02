@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "loop_number": 63,
+  "loop_id": "063",
+  "lane_id": "J-A",
+  "lane_display": "🟥",
+  "task_id": "subscription-route-readonly-checklist",
+  "command_id": "relay-dev-loop-063-subscription-route-readonly-checklist",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "6884c33288ed3adf8ea338179e29b33fac690df1",
+  "expected_target_tree": "e0d68e2c6ff735d0cf82bce1f947896368e0f100",
+  "work_branch": "jules-work/relay-dev-loop-063-subscription-route-readonly-checklist",
+  "state": "HISTORICAL_BACKFILL",
+  "claimed_at": "2026-09-30T05:36:53+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 107,
+  "loop_id": "107",
+  "lane_id": "J-RED",
+  "lane_display": "❤️",
+  "task_id": "acp-initialize-wire-minimal",
+  "command_id": "relay-dev-loop-107-acp-initialize-wire-minimal",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "6921d27312861c5f4127459bc822f4fccab5b434",
+  "expected_target_tree": "74e25f2dd2e207de8b1df059fd488b60da242669",
+  "work_branch": "jules-work/relay-dev-loop-107-acp-initialize-wire-minimal",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T14:36:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

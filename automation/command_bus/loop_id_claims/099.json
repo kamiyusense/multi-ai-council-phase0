@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 99,
+  "loop_id": "099",
+  "lane_id": "J-GREEN",
+  "lane_display": "💚",
+  "task_id": "claude-auto-current-v2-bridge-contract-fix",
+  "command_id": "relay-dev-loop-099-claude-auto-current-v2-bridge-contract-fix",
+  "target_branch": "feature/claude-auto-current-jules-protocol",
+  "expected_target_head": "63c66e352a4ba35382a3dd3285748e45fcfc2931",
+  "expected_target_tree": "22c807f91921be32237bf1393d8e866dc6d2461f",
+  "work_branch": "jules-work/relay-dev-loop-099-claude-auto-current-v2-bridge-contract-fix",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T11:19:10+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

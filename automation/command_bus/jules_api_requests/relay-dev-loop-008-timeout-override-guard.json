@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-008-timeout-override-guard",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "a8e88fd1139e2e221bc598f51d0e5a8996b23bc3",
+  "expected_target_tree": "0c03bc46022e1f803c378d180eef907e600848e1",
+  "allowed_paths": [
+    "src/relay/dispatcher.py",
+    "tests/relay/test_dispatcher.py"
+  ],
+  "prompt": "Follow up the Relay timeout-contract implementation with one narrowly bounded override-safety fix. The current dispatcher validates top-level context.timeout_seconds, but payload may still contain a timeout_seconds key. Reject timeout_seconds when it appears inside payload so caller/provider payload data cannot shadow or create a second timeout source. Keep top-level positive-integer timeout behavior unchanged, preserve missing/None mock-only behavior, preserve live_ready=false, retry=0, fallback disabled, and do not add live provider execution, networking, API/auth/billing/settings changes, schemas, persistence, or unrelated refactors. Add focused regression tests proving: payload timeout_seconds is rejected even when top-level timeout_seconds is valid; top-level timeout_seconds still reaches the prepared context unchanged; provider/request isolation remains intact; existing stop/abort/duplicate/error behavior is unchanged. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-26T03:27:00+00:00",
+  "expires_at": "2026-09-26T05:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

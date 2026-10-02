@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 124,
+  "loop_id": "124",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-jules-readback-output",
+  "command_id": "relay-dev-loop-124-signal-jules-readback-output",
+  "target_branch": "feature/signal-jules-readback-output-fix",
+  "expected_target_head": "7a69bc6d8d3c3ebf4d270d5022706b05b3b9ef3f",
+  "expected_target_tree": "d4420fa9066a56c9732487f45dd94e248c4ac72b",
+  "work_branch": "jules-work/relay-dev-loop-124-signal-jules-readback-output",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-02T04:02:04+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

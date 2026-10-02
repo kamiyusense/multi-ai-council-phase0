@@ -1,0 +1,4 @@
+{
+  "target_sha": "6eeea69184bd0db252ad765461fae904369ae36c",
+  "purpose": "Loop 124 readback-only output fix exact result-head validation"
+}

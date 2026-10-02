@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 108,
+  "loop_id": "108",
+  "lane_id": "J-BLUE",
+  "lane_display": "💙",
+  "task_id": "bwj3-static-webhook-roundtrip",
+  "command_id": "relay-dev-loop-108-bwj3-static-webhook-roundtrip",
+  "target_branch": "feature/blue-work-jules-webhook-loop",
+  "expected_target_head": "26f63128fe84d97aabf8d95f88a0600e977de0ba",
+  "expected_target_tree": "9f12488ce0e877fa73b9dba3284166eb59efdfe0",
+  "work_branch": "jules-work/relay-dev-loop-108-bwj3-static-webhook-roundtrip",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T14:38:18+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

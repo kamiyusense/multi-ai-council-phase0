@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-012-acp-cancel-terminal-state",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d4e56accb8f8cfa5b4c27c7003823a37f166e2cf",
+  "expected_target_tree": "4955f750a359e5e9acbbf8dd1f783f98b0335e4c",
+  "allowed_paths": [
+    "src/relay/acp_client.py",
+    "tests/relay/test_acp_client.py",
+    "fixtures/relay/acp_initialize_account.json",
+    "fixtures/relay/acp_initialize_unsupported.json",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Produce a corrected bounded static/mock ACPClient candidate from the exact target head. The prior candidate PR #56 must NOT be copied blindly: it incorrectly permits prompt() after cancel() and even tests cancel -> prompt as valid. Preserve the useful bounded mock ACP lifecycle and strict initialize/auth fixture work, but make cancellation terminal for sending: after cancel(session), prompt(session, ...) must fail closed without recording a prompt or returning terminal bytes. Likewise, no live/network/provider/model execution, no API keys, no billing/settings/permission changes, no retries, no fallback, no Git writes from runtime. Keep exact raw bytes preservation and deepcopy evidence behavior. Add/adjust focused tests proving: prompt before open fails; one prompt only; cancel is idempotency-fail on second cancel; prompt after cancel is rejected; close after cancel is allowed only as cleanup if compatible with current contract; prompt after close rejected; permission/file/terminal/elicitation/unknown callbacks never auto-approve; initialize rejects unsupported protocol/auth and accepts account fixture; terminal bytes are preserved exactly. Do not broaden scope beyond these five allowed paths. Run PYTHONPATH=src python -m unittest discover -s tests -t . -v, python -m compileall -q src tests, and git diff --check.",
+  "created_at": "2026-09-27T19:20:00+00:00",
+  "expires_at": "2026-09-27T21:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

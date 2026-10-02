@@ -1,5 +1,35 @@
 # Chat/Work GitHub command bus
 
+> **MANDATORY BEFORE JULES DISPATCH:** read `docs/JULES_TASK_PROMPT_SPEC.md` before creating any new `automation/command_bus/jules_api_requests/*.json`. The prompt contract requires bounded scope, exact allowed paths, reuse-first, semantic acceptance criteria, negative/tamper tests, no vacuous tests, exact validation commands, and explicit stop conditions. Green Jules tests alone are not acceptance.
+
+## Jules Loop ID claim — mandatory duplicate guard
+
+Before creating any new `automation/command_bus/jules_api_requests/*.json`, the
+controller MUST reserve the numeric Loop ID with an append-only create-only file:
+
+`automation/command_bus/loop_id_claims/<NNN>.json`
+
+Rules:
+
+- fresh-read existing loop claims, Jules command records, and matching
+  `jules-work/relay-dev-loop-<NNN>-*` branches before selecting a number;
+- create exactly one claim file for the chosen number **before** dispatch;
+- claim creation is create-only: never overwrite, delete, or recycle a claim;
+- if the claim path already exists, that number is taken even if the earlier
+  task later stops or fails; choose another unused number;
+- if claim-write success is ambiguous, read back the exact path before doing
+  anything else; do not blindly retry;
+- a claim binds the intended command ID, work branch, and expected target HEAD;
+- the Jules command must use the same Loop number/command/branch as the durable
+  claim;
+- branch existence alone is not a sufficient claim, but a pre-existing matching
+  branch must be checked for conflict before claiming;
+- retry=0 / fallback=disabled applies to the claim/dispatch route as well.
+
+This prevents two independent Chat/Work/controller paths from both naming
+different work `Loop 058`-style identifiers. Gaps in numbering are acceptable;
+reusing a claimed number is not.
+
 GitHub is the durable control plane. Commands and receipts are append-only; only loop state is mutable.
 The processor validates the repository, the target PR, `expected_target_head` (the current head of `expected_pr`), correlation, expiry, STOP, terminal receipts, and the six-round ceiling before processing.
 The carrier/implementation PR head is separate metadata and is never compared through `expected_target_head`.

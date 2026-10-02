@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 66,
+  "loop_id": "066",
+  "lane_id": "J-BLUE",
+  "lane_display": "💙",
+  "task_id": "hidden-retry-proof-contract",
+  "command_id": "relay-dev-loop-066-hidden-retry-proof-contract",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "fc6d2680579b8f9b35ebf0201e60fcef1b8093bc",
+  "expected_target_tree": "0b9c93580de82d33e898360b28cc2bb5daa99f59",
+  "work_branch": "jules-work/relay-dev-loop-066-hidden-retry-proof-contract",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-30T12:26:42+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

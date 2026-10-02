@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 93,
+  "loop_id": "093",
+  "lane_id": "J-GREEN",
+  "lane_display": "💚",
+  "task_id": "claude-auto-origin-binding-store-v1",
+  "command_id": "relay-dev-loop-093-claude-auto-origin-binding-store-v1",
+  "target_branch": "feature/claude-auto-current-jules-protocol",
+  "expected_target_head": "f500ef6c66617787cf3c2fa1bd0088441b74b543",
+  "expected_target_tree": "2d7e7d440f1456d614ba62a6589625d5b7b5b376",
+  "work_branch": "jules-work/relay-dev-loop-093-claude-auto-origin-binding-store-v1",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T07:14:27+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

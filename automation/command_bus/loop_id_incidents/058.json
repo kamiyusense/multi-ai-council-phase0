@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "incident_id": "loop-id-collision-058",
+  "detected_at": "2026-09-29T18:56:00+09:00",
+  "loop_number": 58,
+  "classification": "NUMBER_COLLISION_ONLY",
+  "same_task_retry": false,
+  "duplicate_jules_dispatch": false,
+  "lanes": [
+    {
+      "label": "058-A",
+      "task": "static-evidence-prep-audit",
+      "command_id": "relay-dev-loop-058-static-evidence-prep-audit",
+      "work_branch": "jules-work/relay-dev-loop-058-static-evidence-prep-audit",
+      "jules_session": "3365475565043308879",
+      "pr": 153
+    },
+    {
+      "label": "058-B",
+      "task": "timeout-static-inventory",
+      "command_id": "relay-dev-loop-058-timeout-static-inventory",
+      "work_branch": "jules-work/relay-dev-loop-058-timeout-static-inventory",
+      "jules_session": "3277074397239188266",
+      "pr": 154
+    }
+  ],
+  "root_cause": "Two independent controller paths inferred the same next numeric loop ID without an atomic durable reservation.",
+  "impact": "Durable log ambiguity only; branches, command IDs, sessions, PRs, validation evidence and publication paths remained distinct.",
+  "resolution": [
+    "Both lanes were reviewed independently.",
+    "Both results were preserved without mixing evidence.",
+    "Loop 059 was reserved with create-only automation/command_bus/loop_id_claims/059.json before dispatch.",
+    "Command-bus README, semi-auto operating procedure and Jules prompt specification now require durable loop-ID reservation before dispatch."
+  ],
+  "prevention": "One create-only loop_id_claims/<NNN>.json per numeric loop ID; claimed IDs are never recycled; ambiguous writes require readback; retry=0."
+}

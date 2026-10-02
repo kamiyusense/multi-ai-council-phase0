@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "loop_id": "github-work-write-proof-20260929-001",
+  "state": "RUNNING",
+  "round": 1,
+  "max_rounds": 6,
+  "expires_at": "2026-09-30T00:00:00+09:00",
+  "stop_requested": false,
+  "last_command_id": "github-work-write-proof-20260929-001-000001",
+  "last_receipt_id": null,
+  "expected_target": "work",
+  "retry_policy": 0
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 77,
+  "loop_id": "077",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-semiauto-canonical-id-wiring",
+  "command_id": "relay-dev-loop-077-signal-semiauto-canonical-id-wiring",
+  "target_branch": "feature/signal-semiauto-stable-id-adoption-v1",
+  "expected_target_head": "9b9722056a0e177e09bf136556813be833b3f70a",
+  "expected_target_tree": "85c487668b66d3b74dd3db4806661399a6c20903",
+  "work_branch": "jules-work/relay-dev-loop-077-signal-semiauto-canonical-id-wiring",
+  "state": "CLAIMED",
+  "claimed_at": "2026-09-30T17:35:00+09:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

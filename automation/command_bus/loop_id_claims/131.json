@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 131,
+  "loop_id": "131",
+  "lane_id": "J-GREEN",
+  "lane_display": "💚",
+  "task_id": "autoloop-operator-quickstart",
+  "command_id": "relay-dev-loop-131-autoloop-operator-quickstart",
+  "target_branch": "claude/autoloop-live-target",
+  "expected_target_head": "2eb310cc535a664e74b1bce1e2bd65efee53ae67",
+  "expected_target_tree": "a77f2802b13bd99869e61bc11e856875c3e25c7f",
+  "work_branch": "jules-work/relay-dev-loop-131-autoloop-operator-quickstart",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T20:18:40+00:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

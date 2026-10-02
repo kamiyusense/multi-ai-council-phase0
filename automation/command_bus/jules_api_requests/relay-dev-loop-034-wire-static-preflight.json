@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-034-wire-static-preflight",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "d4588a6de5a184a3e4d866209bea0149cd0a8749",
+  "expected_target_tree": "a81790787c6893bd2a2fd6e778de6baa24bc32ef",
+  "allowed_paths": [
+    "src/relay/core_adapter.py",
+    "tests/relay/test_core_adapter.py",
+    "tests/relay/test_integration.py",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Medium static/mock integration batch (~15-20 minute scope). Start ONLY from the exact target head/tree above. Goal: wire the accepted `providers.preflight.validate_provider_static` into `RelayCoreAdapter.preflight` for static/mock dispatch only. No live provider/process/network/auth/billing/settings/workflow mutation. Do not alter provider policy semantics, RelayDispatcher, RelayLifecycle, ACPClient, or Core source.\n\nKeep composition around the existing RelayProviderAdapterBridge. Extend RelayCoreAdapter constructor with one optional explicit static-preflight configuration object supplied by the caller/test harness. Deep-copy it at construction. Do NOT read os.environ, files, ambient settings, globals, or case payload to discover safety evidence. Prepared case_context/payload must never override the constructor-supplied preflight observations.\n\n`preflight(prepared_context)` ordering: first call bridge.preflight exactly once. Its result must be a dict with `ok is True` and `live_ready is False`; malformed values, exceptions, missing keys, `ok != True`, or `live_ready != False` fail closed and must not permit dispatch. Then require explicit constructor preflight configuration; if missing/malformed, fail closed. Call `validate_provider_static` exactly once using adapter.provider_id plus explicit auth_kind/route_evidence/provider_meta/platform/architecture from that copied config.\n\nIf static provider status is not PASS, return a preflight dict with `ok=False`, `live_ready=False`, `static_configuration_status=UNKNOWN`, deterministic reasons and the provider-preflight result. RelayDispatcher must consequently perform zero bridge dispatch/collect calls.\n\nIf static provider status is PASS, return `ok=True` ONLY to allow the existing static/mock dispatcher path. Also include `mode='static_mock'`, `live_ready=False`, `live_readiness='BLOCKED'`, `static_configuration_status='PASS'`, and the provider-preflight result. A static PASS must never be represented as live authorization/readiness.\n\nTests: define explicit valid local configs for openai, anthropic and google using the current provider-preflight contract. Update all RelayCoreAdapter integration tests that expect dispatch success to provide the correct explicit config. Prove all three providers still complete the mock raw-response round-trip exactly once. Prove missing config, unsafe/missing route evidence, wrong auth kind, malformed config, malformed bridge preflight result and bridge preflight exception all block before bridge.dispatch/collect. Prove case_context/payload attempts to supply or override preflight evidence have no effect. Prove constructor config is deep-copied by mutating caller data after adapter construction. Prove provider mismatch cannot reuse another provider's config. Preserve timeout/abort/duplicate behavior after a valid static preflight. Existing live_turn_executed=false, retry=0 and fallback disabled invariants remain.\n\nDo not modify valid Provider Response bytes/classification semantics. Update RELAY_STATIC_CHECKPOINT to state provider preflight is wired only for static/mock dispatch and live remains BLOCKED. Run focused tests first, then once only: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Create normal Jules PR. No merge, no force push.",
+  "created_at": "2026-09-27T23:05:00+00:00",
+  "expires_at": "2026-09-28T00:30:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

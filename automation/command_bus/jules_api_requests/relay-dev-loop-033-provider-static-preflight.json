@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-033-provider-static-preflight",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "b1e9a617959afedf7af5f28e11a6ba9823ea23dc",
+  "expected_target_tree": "5bf073208acb397e2d31bc7c924cb463920fe07e",
+  "allowed_paths": [
+    "src/providers/preflight.py",
+    "src/providers/__init__.py",
+    "tests/relay/test_provider_preflight.py",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Medium static/mock provider-preflight batch (~15-20 minute scope). Start ONLY from the exact target head/tree above. No subprocess, no ACP spawn, no provider/network call, no credentials, no settings/billing/GitHub runtime mutation, and no live model turn. Do not modify Relay/Core/lifecycle/ACPClient or existing provider policy semantics.\n\nImplement one pure `src/providers/preflight.py` layer that consumes the existing ProviderPolicy objects and produces a deterministic fail-closed static preflight result for provider_id openai/anthropic/google. This is configuration/evidence validation only, never proof that a live route is actually safe. The result must explicitly keep live_ready=False, retry_count=0 and fallback disabled.\n\nUse the existing CODEX_POLICY, CLAUDE_POLICY, ANTIGRAVITY_POLICY as the source of provider identity, external agent and pinned version; do not duplicate version literals in a second registry. Unknown provider_id must fail closed.\n\nInputs should be explicit local observations, not ambient environment reads: auth_kind (string/None), route evidence flags (mapping), optional platform/architecture for Google, and optional provider metadata/config observations. Missing required observations are UNKNOWN/fail-closed; do not infer safe from absence unless the caller explicitly supplies the relevant false value.\n\nCommon rules: policy.assert_static_safety() must pass; auth_kind must satisfy policy.validate_auth_kind and therefore be account; route observations must explicitly prove api_key_present=false, gateway_configured=false, external_cloud_configured=false. Any true/missing/non-bool value fails closed. Output should include deterministic status/reasons plus provider_id, external_agent, pinned_version, retry_count=0, fallback_state='disabled', live_ready=false.\n\nOpenAI/Codex: require explicit observations that custom_model_provider_configured=false and arbitrary_codex_config_present=false. Do not claim built-in provider retry is solved; add a blocker/reason field showing provider-internal retry proof remains UNKNOWN, so live_ready stays false even when static configuration passes.\n\nAnthropic/Claude: require explicit dangerous_permission_bypass=false and hide_claude_auth=false. Expose the existing `claude_session_meta()` result as the only allowed session metadata and test that allowDangerouslySkipPermissions is exactly false. Provider/SDK retry/fallback proof remains UNKNOWN; live_ready stays false.\n\nGoogle/Antigravity: require explicit api_key_present=false, external_cloud_configured=false, cloud_billing_selected=false, overages_enabled=false, adc_present=false, vertex_selected=false. Platform+architecture must be supplied and resolved only through existing `antigravity_binary_name()`; unsupported/unknown platform/arch fails closed. Internal retry/fallback and executed-model proof remain UNKNOWN; live_ready stays false. Do not introduce Gemini CLI fallback.\n\nReturn a structured result separating static_configuration_status (PASS/UNKNOWN) from live_readiness (BLOCKED). A static PASS must never imply live authorization.\n\nTests must cover all three providers, every missing/true/malformed route flag fail-closed case, unknown provider, Claude metadata exact false, Google supported/unsupported architecture resolution, retry/fallback/live_ready invariants, and prove no function reads os.environ or starts anything. Update RELAY_STATIC_CHECKPOINT with static-only wording and remaining live blockers. Run focused tests, then once only: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Create the normal Jules PR. No merge/force push.",
+  "created_at": "2026-09-27T22:31:00+00:00",
+  "expires_at": "2026-09-27T23:45:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

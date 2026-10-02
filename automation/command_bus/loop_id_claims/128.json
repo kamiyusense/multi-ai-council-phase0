@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 128,
+  "loop_id": "128",
+  "lane_id": "J-GREEN",
+  "lane_display": "💚",
+  "task_id": "autoloop-live-proof-note",
+  "command_id": "relay-dev-loop-128-autoloop-live-proof-note",
+  "target_branch": "claude/autoloop-live-target",
+  "expected_target_head": "f8d30433dc2fa1b65f243e2383d8e51dbc98324d",
+  "expected_target_tree": "003562c795e7fc8f1dda63f330ba92300fa1c558",
+  "work_branch": "jules-work/relay-dev-loop-128-autoloop-live-proof-note",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-01T19:34:55+00:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}

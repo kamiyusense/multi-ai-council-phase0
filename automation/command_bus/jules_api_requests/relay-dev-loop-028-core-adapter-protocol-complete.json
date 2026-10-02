@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-028-core-adapter-protocol-complete",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "1a2d451e70c71c6f0cabaeab989a72a31ff205c0",
+  "expected_target_tree": "f5c86df27c52528f215663e382448c4f0234dfe3",
+  "allowed_paths": [
+    "src/relay/core_adapter.py",
+    "tests/relay/test_core_adapter.py",
+    "src/relay/__init__.py"
+  ],
+  "prompt": "Bounded static/mock corrective task. PR #45/#48/#49 were NOT accepted. Start ONLY from the exact target head/tree above; do not depend on those PR branches. Implement one RelayCoreAdapter using composition around existing RelayProviderAdapterBridge; do not import or modify src/phase0_core, bridge.py, dispatcher.py, workflows, auth, billing, or settings. Required Core-shaped interface: provider_id plus prepare(case_context), preflight(prepared_context), dispatch(prepared_context), collect(process_handle)->bytes, abort(process_handle), classify(raw_result:bytes). Constructor takes provider_id (non-empty string) and bridge: RelayProviderAdapterBridge. prepare deep-copies input, injects provider_id when omitted, rejects conflicting explicit provider_id, then delegates to bridge.prepare. preflight and dispatch delegate unchanged to bridge. collect MUST pass the process_handle to bridge.collect, require returned dict.rawResponse to be str, and return rawResponse.encode('utf-8') exactly; no wrapper JSON. abort delegates unchanged to bridge.abort. classify parses bytes and fails closed UNKNOWN/success false unless object has ONLY optional schema_version='phase0-response-v1' plus all required fields answer_state:str, conclusion_code:str, safety_warning in PRESENT/ABSENT/UNKNOWN, safety_reason null|string, evidence_refs list[str], marker_echoes exactly head/middle/tail each null|string, answer_text:str. Valid full response may return COMPLETE/PARTICIPANT/success true; no live/delivery/retry/fallback claims. Use relative import from .bridge. Export RelayCoreAdapter. Tests must use a recording/fake bridge to prove prepare/preflight/dispatch/collect/abort delegation and process-handle passthrough, deepcopy/provider-id rules, exact raw bytes, malformed/wrapper/missing fields fail closed, valid full response succeeds. Keep scope to the 3 allowed files. For speed: run focused core_adapter tests first; once they pass, run full `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, and `git diff --check` once. No live provider/network/API execution. retry=0, fallback disabled.",
+  "created_at": "2026-09-27T14:55:00+00:00",
+  "expires_at": "2026-09-27T16:00:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

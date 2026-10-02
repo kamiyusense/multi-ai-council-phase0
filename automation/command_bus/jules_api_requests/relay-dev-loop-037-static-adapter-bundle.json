@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "profile": "JULES_CHAT_SEMIAUTO_V1",
+  "command_id": "relay-dev-loop-037-static-adapter-bundle",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "feature/relay-transport-7070955470193506982",
+  "expected_target_head": "de28e4726d46cc09f1595b2bb8e5d3ceaed1e337",
+  "expected_target_tree": "888e42f0cb991ad6a46cc3830f709d9acaadbaed",
+  "allowed_paths": [
+    "src/providers/bundle.py",
+    "src/providers/__init__.py",
+    "tests/relay/test_provider_bundle.py",
+    "docs/RELAY_STATIC_CHECKPOINT.md"
+  ],
+  "prompt": "Medium static/mock batch (~15-20 minute scope). Start ONLY from the exact target head/tree above. No subprocess/provider/network/model call, no credentials/env/filesystem discovery, no billing/settings/workflow mutation, no live execution, no Core source change, and no existing Relay/provider-policy/factory behavior change.\n\nGoal: add a deterministic three-provider static adapter bundle on top of the accepted provider builders and `create_core_adapter`. Implement `src/providers/bundle.py` plus exports/tests/docs only.\n\nThe bundle constructor/factory receives exactly three `ProviderStaticProfile` objects and exactly three explicitly injected `RelayProviderAdapterBridge`-compatible bridge objects, keyed by provider_id. It must require the exact canonical provider set {'openai','anthropic','google'} with no missing, duplicate, unknown or extra provider. Reject mismatched profile key/provider_id, bridge missing/extra, and non-profile values. Do not infer, repair or auto-create any profile/bridge.\n\nFor each provider call the existing `create_core_adapter` exactly once. Construction must not call bridge.preflight/dispatch/collect/abort and must not start anything. Return an immutable/static bundle (or equivalent) exposing adapters in deterministic provider order openai, anthropic, google. Do not expose internal mutable dict references; returned mapping/list snapshots must be copied or immutable.\n\nSafety invariants at bundle level: retry remains 0, fallback disabled, live_ready false; no bundle method may claim live authorization. No cross-provider fallback. A provider failure must not silently substitute another provider.\n\nTests: build canonical profiles using the accepted builders with explicit safe observations; inject counting bridges; prove bundle construction invokes zero bridge calls; prove adapter order exactly openai/anthropic/google; prove each adapter's preflight passes static-only and live_ready stays False; use existing valid Provider Response fixture to run one mock RelayDispatcher round trip for each provider with exact one dispatch/collect per provider and raw/classification success. Prove one provider timeout/error does not increment another provider bridge and does not fallback. Negative tests for missing/extra/duplicate/mismatched profiles, missing/extra bridges, wrong key/provider binding, and caller mutation of source dictionaries/snapshots. Prove no os/subprocess/network/import side effects in new module.\n\nUpdate RELAY_STATIC_CHECKPOINT: three-provider adapter bundle is static/mock only; real Core fan-out integration remains separate. Run focused tests first, then exactly once: `PYTHONPATH=src python -m unittest discover -s tests -t . -v`, `python -m compileall -q src tests`, `git diff --check`. Create normal Jules PR. No merge/force push.",
+  "created_at": "2026-09-28T02:23:00+00:00",
+  "expires_at": "2026-09-28T03:45:00+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}

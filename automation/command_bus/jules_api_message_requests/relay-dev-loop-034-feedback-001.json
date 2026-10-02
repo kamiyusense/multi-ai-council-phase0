@@ -1,0 +1,5 @@
+{
+  "session_id": "13937032336702512323",
+  "expected_state": "AWAITING_USER_FEEDBACK",
+  "prompt": "Yes. That diagnosis is correct. Change the remaining test configuration from auth_kind=\"subscription\" to auth_kind=\"account\" so it matches the existing ProviderPolicy allowlist. Do not weaken or change provider policy semantics. Keep all other Loop 034 constraints unchanged: static/mock only, live_ready=false, retry=0, fallback disabled, no live provider/process/network/auth/billing/settings changes. After the minimal correction, run the requested focused tests and then the full unittest/compileall/diff-check once, and create the normal Jules PR if they pass."
+}
