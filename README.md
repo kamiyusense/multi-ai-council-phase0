@@ -60,7 +60,7 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 
 ## Start here
 
-1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md)
+1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md) — 全Chat・Work必読：[引き継ぎ／コピー文章の表示規則](docs/USER_COPY_TEXT_FORMAT.md)
 2. [Development execution router](docs/DEVELOPMENT_EXECUTION_ROUTER.md) — Jules半Loop / [Cloud Work 4色lane・交換](docs/CLOUD_WORK_LANES_INDEX.md) / Local Workの入口（[Jules PR履歴索引](docs/JULES_SEMIAUTO_PR_INDEX.md)へ）
 3. [Development acceleration playbook](docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md) — **新Chat必読**。先駆者流用、作りすぎ禁止、Jules投入/独立検品/小修正、fast roadmap
 4. [Signal foundation roadmap](docs/SIGNAL_FOUNDATION_ROADMAP.md) — Signal / Status / Control Tower開発の現在の実装順。Julesへ「この小部品を最小移植」で投げ、Observed Signalを先行

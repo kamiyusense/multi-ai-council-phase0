@@ -1,5 +1,9 @@
 # Claude auto-loop current handover
 
+> **新しい引き継ぎ文を作る前に必読：**
+> [コピー文章の必須表示規則](USER_COPY_TEXT_FORMAT.md)。ユーザーが貼る完成文は
+> 全文を1つの `markdown` コードブロックにまとめ、次Chatにもこの規則を継承する。
+
 > **Development worker routing (current main):** Read
 > [DEVELOPMENT_EXECUTION_ROUTER.md](DEVELOPMENT_EXECUTION_ROUTER.md) before
 > implementing any AUTO Loop feature. Static/mock/docs development defaults

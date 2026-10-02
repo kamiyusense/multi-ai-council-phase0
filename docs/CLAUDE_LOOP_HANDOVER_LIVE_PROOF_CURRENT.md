@@ -1,5 +1,9 @@
 # Claude Loop live-proof handover (CURRENT)
 
+> **新しい引き継ぎ文を作る前に必読：**
+> [コピー文章の必須表示規則](USER_COPY_TEXT_FORMAT.md)。ユーザーが貼る完成文は
+> 全文を1つの `markdown` コードブロックにまとめ、次Chatにもこの規則を継承する。
+
 > **Development route:** For new implementation work, read
 > [DEVELOPMENT_EXECUTION_ROUTER.md](DEVELOPMENT_EXECUTION_ROUTER.md) from
 > current main before choosing Jules, Green Cloud Work or a Local Work prompt.
