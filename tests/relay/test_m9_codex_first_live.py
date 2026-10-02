@@ -255,6 +255,7 @@ class TestContractAndGuards(Base):
         git("add", ".", cwd=work)
         git("commit", "-m", "c1", cwd=work)
         git("push", "origin", m.EXPECTED_BRANCH, cwd=work)
+        git("push", "origin", f"{m.EXPECTED_BRANCH}:main", cwd=work)
         probe = m.default_git_probe(work, m.EXPECTED_BRANCH)
         self.assertEqual((probe["branch"], probe["clean"], probe["head"] == probe["remote_head"], probe["main_is_ancestor"]),
                          (m.EXPECTED_BRANCH, True, True, True))
@@ -314,10 +315,14 @@ class TestFullFlowWithOfficialAdapterAndFixtureBackend(Base):
         self.assertEqual(self.backend_methods(), calls)
 
     def test_api_key_route_stops_before_any_model_turn(self):
-        rc = m.run(self.cfg(extra_env={"FAKE_CODEX_LOG": str(self.log), "FAKE_CODEX_ACCOUNT": "apikey"}))
+        cfg = self.cfg(extra_env={"FAKE_CODEX_LOG": str(self.log), "FAKE_CODEX_ACCOUNT": "apikey"})
+        rc = m.run(cfg)
         self.assertEqual(rc, 4)
         self.assertNotIn("turn/start", self.backend_methods())
-        self.assertNotIn(st.CONSUMED_FILE, self.state_files())
+        self.assertIn(st.CONSUMED_FILE, self.state_files())
+        calls = list(self.backend_methods())
+        self.assertEqual(m.run(cfg), 3)
+        self.assertEqual(self.backend_methods(), calls)
 
     def test_second_generation_is_blocked_by_the_gate(self):
         rc = m.run(self.cfg(extra_env={"FAKE_CODEX_LOG": str(self.log), "FAKE_CODEX_REPLY": "M9_OK"}))
