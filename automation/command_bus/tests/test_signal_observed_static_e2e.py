@@ -222,6 +222,8 @@ class TestSignalObservedStaticE2E(unittest.TestCase):
             ("IN_PROGRESS", None, None, None, None, "IN_PROGRESS", "NO_RESULT_PR", "UNKNOWN", "NOT_NEEDED"),
             ("AWAITING_USER_FEEDBACK", None, None, None, None, "NEEDS_INPUT", "NO_RESULT_PR", "UNKNOWN", "NEEDED"),
             ("FAILED", None, None, None, None, "FAIL", "NO_RESULT_PR", "UNKNOWN", "NEEDED"),
+            ("AWAITING_USER_FEEDBACK", "bad", None, None, None, "NEEDS_INPUT", "UNKNOWN", "UNKNOWN", "NEEDED"),
+            ("FAILED", "bad", None, None, None, "FAIL", "UNKNOWN", "UNKNOWN", "NEEDED"),
             ("COMPLETED", head, head, "queued", None, "SESSION_COMPLETE", "PR_READY", "VERIFYING", "NOT_NEEDED"),
             ("COMPLETED", head, head, "completed", "success", "SESSION_COMPLETE", "PR_READY", "PASS", "NEEDED"),
             ("COMPLETED", head, head, "completed", "failure", "SESSION_COMPLETE", "PR_READY", "FAIL", "NEEDED"),
