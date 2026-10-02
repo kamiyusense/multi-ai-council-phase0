@@ -1,0 +1,9 @@
+{
+  "session_id": "12436642121757218108",
+  "expected_branch": "jules-work/relay-dev-loop-125-bwj-session-get-reader",
+  "expected_create_time": "2026-10-01T19:08:33Z",
+  "expected_pr": 227,
+  "retry": 0,
+  "fallback": "disabled",
+  "purpose": "existing-completed-session-diagnostic-only"
+}
