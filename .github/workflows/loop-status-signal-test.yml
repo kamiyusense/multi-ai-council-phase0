@@ -202,7 +202,7 @@ jobs:
       - name: Run full command-bus suite
         shell: bash
         run: |
-          python -m unittest discover -v automation/command_bus/tests
+          python -m unittest discover -v -s automation/command_bus/tests -t .
 
       - name: Verify OAuth proxy and launcher without network access
         shell: bash
