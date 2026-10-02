@@ -1,0 +1,5 @@
+{
+  "target_sha": "7a2fde3ff592cce4eccf1cb04b05c1bd625476fe",
+  "source_pr": 255,
+  "purpose": "relay exact-head validation final head: codex-acp 2.1.0 + one-generation gate + fixture backend (STATIC, no live provider/model)"
+}
