@@ -1,0 +1,410 @@
+{
+ ".github/workflows/blue-existing-session-readback.yml": [
+  "372730437",
+  "Blue one existing completed Session readback",
+  "active",
+  "ACTIVE (file on: p217,stack)"
+ ],
+ ".github/workflows/blue-work-reconcile-static.yml": [
+  "372125888",
+  "Blue Work reconciliation offline validation",
+  "active",
+  "ACTIVE (file on: p217,stack)"
+ ],
+ ".github/workflows/claude-literal-retry-zero-probe.yml": [
+  "367821424",
+  "Claude literal retry-zero isolated probe",
+  "active",
+  "ACTIVE (file on: main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/control-plane-exact-head-validation.yml": [
+  "367392204",
+  "Phase 0 control-plane exact-head validation",
+  "active",
+  "ACTIVE (file on: carrier,main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/core-exact-head-validation.yml": [
+  "367603910",
+  "Phase 0 Core exact-head validation",
+  "active",
+  "ACTIVE (file on: carrier,stack)"
+ ],
+ ".github/workflows/github-oidc-proof.yml": [
+  "369732682",
+  "Phase 0 bounded OIDC identity proof",
+  "active",
+  "ACTIVE (file on: main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/issue110-claude-auth-surface.yml": [
+  "369504727",
+  "Issue 110 Claude 2.1.283 auth surface discovery",
+  "active",
+  "HISTORICAL (file only on 4 other branches)"
+ ],
+ ".github/workflows/issue110-claude-model-oauth-fixture.yml": [
+  "369561685",
+  "Issue 110 Claude 2.1.283 model-turn OAuth fixture",
+  "active",
+  "HISTORICAL (file only on 3 other branches)"
+ ],
+ ".github/workflows/issue110-claude-oauth-500ms-repeat.yml": [
+  "369516325",
+  "Issue 110 Claude 2.1.283 OAuth 500ms repeated fixture",
+  "active",
+  "HISTORICAL (file only on 4 other branches)"
+ ],
+ ".github/workflows/issue110-claude-oauth-bundle-inspect.yml": [
+  "369511378",
+  "Issue 110 Claude 2.1.283 OAuth bundle static inspection",
+  "active",
+  "HISTORICAL (file only on 4 other branches)"
+ ],
+ ".github/workflows/issue110-claude-oauth-client-metadata.yml": [
+  "369714584",
+  "Issue 110 Claude OAuth client metadata fixture",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-claude-oauth-fixture.yml": [
+  "369506669",
+  "Issue 110 Claude 2.1.283 OAuth fixture refresh measurement",
+  "active",
+  "HISTORICAL (file only on 4 other branches)"
+ ],
+ ".github/workflows/issue110-claude-oauth-interactive-idle.yml": [
+  "369518445",
+  "Issue 110 Claude 2.1.283 interactive idle OAuth fixture",
+  "active",
+  "HISTORICAL (file only on 4 other branches)"
+ ],
+ ".github/workflows/issue110-claude-oauth-pty-idle.yml": [
+  "369708130",
+  "Issue 110 Claude 2.1.283 PTY idle OAuth refresh fixture",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-claude-proxy-routing-fixture.yml": [
+  "369564034",
+  "Issue 110 Claude production HTTPS proxy routing fixture",
+  "active",
+  "HISTORICAL (file only on 6 other branches)"
+ ],
+ ".github/workflows/issue110-credential-free-docker-proof.yml": [
+  "369396339",
+  "Issue 110 credential-free Docker component proof",
+  "active",
+  "HISTORICAL (file only on 2 other branches)"
+ ],
+ ".github/workflows/issue110-external-auth-tls-live.yml": [
+  "369410544",
+  "Issue 110 external auth TLS execution gate",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-external-auth-tls-prepare.yml": [
+  "369408570",
+  "Issue 110 external auth TLS proof prepare-only tests",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-gate-no-proxy-fix-test.yml": [
+  "369570542",
+  "Issue 110 Gate NO_PROXY static validation",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-freshness-preflight.yml": [
+  "369730728",
+  "Issue 110 OAuth credential freshness preflight",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-generation-adapter-topology.yml": [
+  "369948192",
+  "Issue 110 OAuth helper topology contract",
+  "active",
+  "HISTORICAL (file only on 5 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-generation-loopback-e2e.yml": [
+  "369867906",
+  "Issue 110 OAuth generation loopback TLS end-to-end proof",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-generation-production-adapter-integration.yml": [
+  "369937872",
+  "Issue 110 generation and production adapter composition contract",
+  "active",
+  "HISTORICAL (file only on 6 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-generation-transport-contract.yml": [
+  "369865988",
+  "Issue 110 OAuth generation transport contract proof",
+  "active",
+  "HISTORICAL (file only on 8 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-helper-compose-candidate.yml": [
+  "370462995",
+  "Issue 110 OAuth helper Compose candidate contract",
+  "active",
+  "HISTORICAL (file only on 2 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-helper-mock-preflight.yml": [
+  "369953950",
+  "Issue 110 OAuth helper mock exclusivity preflight",
+  "active",
+  "HISTORICAL (file only on 4 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-one-shot-credential-boundary.yml": [
+  "370486892",
+  "Issue 110 OAuth one-shot credential boundary STATIC contract",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-attempt-bind.yml": [
+  "369863444",
+  "Issue 110 OAuth refresh generation attempt binding proof",
+  "active",
+  "HISTORICAL (file only on 9 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-attempt-io.yml": [
+  "369757820",
+  "Issue 110 OAuth refresh generation attempt IO proof",
+  "active",
+  "HISTORICAL (file only on 15 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-commit-io.yml": [
+  "369760503",
+  "Issue 110 OAuth refresh generation commit IO proof",
+  "active",
+  "HISTORICAL (file only on 13 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-local-tls-e2e.yml": [
+  "369861807",
+  "Issue 110 OAuth refresh generation local TLS E2E",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-paths.yml": [
+  "369753926",
+  "Issue 110 OAuth refresh generation paths static proof",
+  "active",
+  "HISTORICAL (file only on 18 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-pending-io.yml": [
+  "369759251",
+  "Issue 110 OAuth refresh generation pending IO proof",
+  "active",
+  "HISTORICAL (file only on 14 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-predecessor.yml": [
+  "369755146",
+  "Issue 110 OAuth refresh predecessor static proof",
+  "active",
+  "HISTORICAL (file only on 17 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-prepare.yml": [
+  "369860842",
+  "Issue 110 OAuth refresh generation prepare-only proof",
+  "active",
+  "HISTORICAL (file only on 10 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-records.yml": [
+  "369756407",
+  "Issue 110 OAuth refresh generation records static proof",
+  "active",
+  "HISTORICAL (file only on 16 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-generation-recovery.yml": [
+  "369762318",
+  "Issue 110 OAuth refresh generation recovery proof",
+  "active",
+  "HISTORICAL (file only on 12 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-helper-image.yml": [
+  "369749608",
+  "Issue 110 OAuth refresh helper image static proof",
+  "active",
+  "HISTORICAL (file only on 22 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-helper.yml": [
+  "369717478",
+  "Issue 110 OAuth refresh helper prepare-only tests",
+  "active",
+  "HISTORICAL (file only on 25 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-production-adapter.yml": [
+  "369861640",
+  "Issue 110 OAuth refresh production adapter static proof",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-production-plan.yml": [
+  "369751129",
+  "Issue 110 OAuth refresh production plan static proof",
+  "active",
+  "HISTORICAL (file only on 21 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-refresh-transport-fixture.yml": [
+  "369738234",
+  "Issue 110 OAuth refresh local TLS transport fixture",
+  "active",
+  "HISTORICAL (file only on 24 other branches)"
+ ],
+ ".github/workflows/issue110-oauth-runtime-observer.yml": [
+  "370400095",
+  "Issue 110 read-only OAuth runtime observer candidate",
+  "active",
+  "HISTORICAL (file only on 3 other branches)"
+ ],
+ ".github/workflows/jules-chat-semiauto.yml": [
+  "367359234",
+  "Phase 0 Chat to Jules semi-auto",
+  "active",
+  "ACTIVE (file on: carrier,main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/jules-color-lanes-v3-verification.yml": [
+  "370561224",
+  "Jules Color Lanes V3 Verification",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/jules-parallel-lane-claims-v2-verification-final.yml": [
+  "370542005",
+  "Jules Parallel Lane Claims V2 Verification Final",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/jules-parallel-lane-claims-v2-verification.yml": [
+  "370540864",
+  "Jules Parallel Lane Claims V2 Verification",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/jules-phase0-smoke.yml": [
+  "366664316",
+  "Phase 0 Jules API smoke",
+  "active",
+  "ACTIVE (file on: main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/jules-session-message.yml": [
+  "368664494",
+  "Phase 0 Jules session message",
+  "active",
+  "ACTIVE (file on: carrier,stack)"
+ ],
+ ".github/workflows/jules-session-readback.yml": [
+  "367370155",
+  "Phase 0 Jules session readback",
+  "active",
+  "ACTIVE (file on: carrier,main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/jules-session-stop-message.yml": [
+  "369403538",
+  "Phase 0 Jules bounded stop message",
+  "active",
+  "ACTIVE (file on: carrier,stack)"
+ ],
+ ".github/workflows/loop-status-development.yml": [
+  "368345906",
+  "Phase 0 development lane status",
+  "active",
+  "ACTIVE (file on: main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/loop-status-signal-test.yml": [
+  "367972296",
+  "Phase 0 loop status signal tests",
+  "active",
+  "ACTIVE (file on: main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/loop-status-signal.yml": [
+  "367974218",
+  "Phase 0 loop status signal",
+  "active",
+  "ACTIVE (file on: main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/recover-jules-loop-064-session.yml": [
+  "370753968",
+  "Recover Jules Loop 064 session readback",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/relay-core-pr3-overlay-matrix-validation.yml": [
+  "368809781",
+  "Relay Core PR3 Overlay Matrix Validation",
+  "active",
+  "ACTIVE (file on: p4,stack)"
+ ],
+ ".github/workflows/relay-core-pr3-overlay-policy-matrix-validation.yml": [
+  "368895515",
+  "Relay Core PR3 Overlay Policy Matrix Validation",
+  "active",
+  "ACTIVE (file on: p4,stack)"
+ ],
+ ".github/workflows/relay-core-pr3-overlay-validation.yml": [
+  "368786904",
+  "Core PR3 Overlay Validation",
+  "active",
+  "ACTIVE (file on: p4,stack)"
+ ],
+ ".github/workflows/relay-exact-head-validation.yml": [
+  "367391485",
+  "Phase 0 Relay exact-head validation",
+  "active",
+  "ACTIVE (file on: carrier,main,p217,p220,p236,signal,stack)"
+ ],
+ ".github/workflows/relay-loop-060-isolated-verification.yml": [
+  "370412709",
+  "Relay Loop 060 Isolated Verification",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/relay-loop-061-isolated-verification.yml": [
+  "370455677",
+  "Relay Loop 061 Isolated Verification",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/relay-loop-062-isolated-verification.yml": [
+  "370486529",
+  "Relay Loop 062 Isolated Verification",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/relay-loop-063-exact-verification.yml": [
+  "370746569",
+  "Relay Loop 063 Exact Candidate Verification",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/signal-sf8-oidc-proof.yml": [
+  "372748284",
+  "Signal SF-8 bounded OIDC proof",
+  "active",
+  "ACTIVE (file on: p236,stack)"
+ ],
+ ".github/workflows/verify-jules-accepted-at-restore-final.yml": [
+  "370749197",
+  "Verify Jules accepted_at restore final",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/verify-jules-accepted-at-restore-v2.yml": [
+  "370748760",
+  "Verify Jules accepted_at restore v2",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/verify-jules-accepted-at-restore.yml": [
+  "370748209",
+  "Verify Jules accepted_at restore",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ],
+ ".github/workflows/verify-jules-session-timing-readback-v2.yml": [
+  "370752502",
+  "Verify Jules timing readback v2",
+  "active",
+  "HISTORICAL (file only on 1 other branches)"
+ ]
+}
