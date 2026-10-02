@@ -1,0 +1,101 @@
+{
+ "203": {
+  "files": 5,
+  "identical_in_main": 0,
+  "differs_in_main": 0,
+  "absent_in_main": 5,
+  "differs_sample": [],
+  "absent_sample": [
+   "automation/command_bus/blue_jules_result_event.py",
+   "automation/command_bus/blue_work_wake_prepare.py",
+   "automation/command_bus/tests/test_blue_jules_result_event.py",
+   "automation/command_bus/tests/test_blue_work_jules_webhook_static_e2e.py",
+   "automation/command_bus/tests/test_blue_work_wake_prepare.py"
+  ]
+ },
+ "217": {
+  "files": 97,
+  "identical_in_main": 1,
+  "differs_in_main": 2,
+  "absent_in_main": 94,
+  "differs_sample": [
+   "HANDOVER_CURRENT.md",
+   "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md"
+  ],
+  "absent_sample": [
+   ".github/workflows/blue-existing-session-readback.yml",
+   ".github/workflows/blue-work-reconcile-static.yml",
+   "automation/command_bus/blue_jules_result_event.py",
+   "automation/command_bus/blue_work_reconcile_cli.py",
+   "automation/command_bus/blue_work_reconcile_prepare.py",
+   "automation/command_bus/blue_work_wake_prepare.py",
+   "automation/command_bus/cloud_work_lanes.py",
+   "automation/command_bus/cloud_work_snapshot.py",
+   "automation/command_bus/github_jules_source.py",
+   "automation/command_bus/github_readonly.py",
+   "automation/command_bus/jules_completed_readback_cli.py",
+   "automation/command_bus/jules_result_lineage.py"
+  ]
+ },
+ "220": {
+  "files": 36,
+  "identical_in_main": 32,
+  "differs_in_main": 4,
+  "absent_in_main": 0,
+  "differs_sample": [
+   "automation/command_bus/claude_jules_autoloop.py",
+   "automation/command_bus/claude_loop.py",
+   "automation/command_bus/tests/test_claude_jules_autoloop_e2e.py",
+   "docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md"
+  ],
+  "absent_sample": []
+ },
+ "236": {
+  "files": 19,
+  "identical_in_main": 10,
+  "differs_in_main": 3,
+  "absent_in_main": 6,
+  "differs_sample": [
+   "automation/command_bus/lane_identity_adoption.py",
+   "automation/command_bus/tests/test_oidc_workflow_execution.py",
+   "automation/command_bus/tests/test_sf8_authority_issuer_candidate.py"
+  ],
+  "absent_sample": [
+   ".github/workflows/signal-sf8-oidc-proof.yml",
+   "automation/command_bus/sf8_jules_get_evidence.py",
+   "automation/command_bus/tests/test_jules_session_api_reader.py",
+   "automation/command_bus/tests/test_sf8_jules_get_evidence.py",
+   "docs/SIGNAL_SF8_OIDC_RUNTIME_CHECKPOINT_20261002.md",
+   "docs/candidates/signal-sf8-authority-issuer.yml.candidate"
+  ]
+ },
+ "239": {
+  "files": 15,
+  "identical_in_main": 15,
+  "differs_in_main": 0,
+  "absent_in_main": 0,
+  "differs_sample": [],
+  "absent_sample": []
+ },
+ "249": {
+  "files": 95,
+  "identical_in_main": 0,
+  "differs_in_main": 0,
+  "absent_in_main": 95,
+  "differs_sample": [],
+  "absent_sample": [
+   ".github/workflows/blue-existing-session-readback.yml",
+   ".github/workflows/blue-work-reconcile-static.yml",
+   "automation/command_bus/blue_jules_result_event.py",
+   "automation/command_bus/blue_work_reconcile_cli.py",
+   "automation/command_bus/blue_work_reconcile_prepare.py",
+   "automation/command_bus/blue_work_wake_prepare.py",
+   "automation/command_bus/cloud_work_lanes.py",
+   "automation/command_bus/cloud_work_snapshot.py",
+   "automation/command_bus/github_jules_source.py",
+   "automation/command_bus/github_readonly.py",
+   "automation/command_bus/jules_completed_readback_cli.py",
+   "automation/command_bus/jules_result_lineage.py"
+  ]
+ }
+}
