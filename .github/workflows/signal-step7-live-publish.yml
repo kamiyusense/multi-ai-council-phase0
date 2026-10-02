@@ -1,0 +1,81 @@
+# Step 7 LIVE publish half for the durable lane chatgpt-semi-auto.
+#
+# CANDIDATE. It is inert until this file is on main (a human merge) and a human
+# dispatches it by hand. It never runs on push or pull_request events.
+#
+# One dispatch spends exactly ONE fresh Jules GET (the whole proof then totals POST 1,
+# GET 2 counting the carrier's create + timing read). It never POSTs to Jules, never
+# merges, never writes main, the production registry or Issue #33. retry=0, fallback
+# disabled, no rerun: the run records a terminal receipt that blocks any second attempt.
+name: Signal Step 7 live publish
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: Jules session id created by the carrier command (digits only)
+        required: true
+        type: string
+      authority_run_id:
+        description: Run id of the finished authority issuer dispatch (digits only)
+        required: true
+        type: string
+      plan_sha256:
+        description: sha256 of the bound plan stored on the data branch
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+concurrency:
+  group: signal-step7-live-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.event_name == 'workflow_dispatch' && contains(fromJSON('["20355232"]'), github.actor_id)
+    steps:
+      - name: Checkout the dispatched main commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate inputs and the committed plan template (no secrets, no network)
+        env:
+          SESSION_ID: ${{ inputs.session_id }}
+          AUTHORITY_RUN_ID: ${{ inputs.authority_run_id }}
+          PLAN_SHA256: ${{ inputs.plan_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "${SESSION_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad session id" >&2; exit 1; }
+          [[ "${SESSION_ID}" != "301196275118188780" ]] || { echo "old session is forbidden" >&2; exit 1; }
+          [[ "${AUTHORITY_RUN_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad authority run id" >&2; exit 1; }
+          [[ "${PLAN_SHA256}" =~ ^[0-9a-f]{64}$ ]] || { echo "bad plan digest" >&2; exit 1; }
+          python -m automation.command_bus.signal_step7_live_proof_cli \
+            --plan docs/evidence/signal-sf8/step7-live-plan-template.json \
+            --registry docs/evidence/signal-sf8/registry-candidate-chatgpt-semi-auto-durable.json \
+            --check
+      - name: Publish once with one fresh Jules read
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          GITHUB_TOKEN: ${{ github.token }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          SESSION_ID: ${{ inputs.session_id }}
+          AUTHORITY_RUN_ID: ${{ inputs.authority_run_id }}
+          PLAN_SHA256: ${{ inputs.plan_sha256 }}
+          PROVIDER_OIDC_EVIDENCE_PATH: docs/evidence/signal-sf8/oidc-identity-proof-36981004299.json
+        run: |
+          python -m automation.command_bus.signal_step7_live_proof_cli \
+            --plan docs/evidence/signal-sf8/step7-live-plan-template.json \
+            --registry docs/evidence/signal-sf8/registry-candidate-chatgpt-semi-auto-durable.json \
+            --bound-plan-from-data-branch \
+            --result-out "${RUNNER_TEMP}/step7-live-result.json"
+      - name: Save the sanitized result only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: step7-live-result-${{ github.run_id }}
+          path: ${{ runner.temp }}/step7-live-result.json
+          if-no-files-found: warn
+          retention-days: 30

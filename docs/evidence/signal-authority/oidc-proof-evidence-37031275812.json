@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "proof_kind": "GITHUB_HOSTED_OIDC_WORKFLOW_IDENTITY",
+  "status": "PASS",
+  "terminal_stage": "COMPLETE",
+  "safe_error_code": "NONE",
+  "run_id": "37031275812",
+  "exact_commit_sha": "4ddb0407001dc18c35f5f45bd37f67664fb9ff32",
+  "expected_workflow_identity": "kamiyusense/multi-ai-council-phase0/.github/workflows/signal-sf8-authority-issuer.yml@refs/heads/main",
+  "evidence_payload_sha256": "2bcfde87a52cfe21415ac4e29349e38665b8dbd549b20e72598175d230696edb"
+}

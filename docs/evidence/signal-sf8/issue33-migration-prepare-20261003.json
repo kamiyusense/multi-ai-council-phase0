@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "prepare_kind": "SIGNAL_ISSUE33_VERIFIED_RUNTIME_MIGRATION_PREPARE",
+  "status": "NOT_WIRED",
+  "issue33_migration_ready": "NO",
+  "issue33_written_by_this_batch": false,
+  "issue_readback": {
+    "number": 33,
+    "state": "open",
+    "title": "🚦 Phase 0 Loop Status — ⚫ STOPPED",
+    "runtime_state": "STOPPED",
+    "current_owner": "NONE",
+    "loop": "UNKNOWN",
+    "provider": "UNKNOWN",
+    "updated_at": "2026-10-02T09:35:13Z",
+    "full_body_archived": false
+  },
+  "blocked_by": [
+    "production registry identity_state is PLACEHOLDER (assess_registration_readiness: NOT_WIRED)",
+    "no verified durable transition exists for chatgpt-semi-auto (provider_authentication BLOCKED)",
+    "no real loop owner event / durable receipt / evidence on a runtime data branch"
+  ],
+  "write_conditions_when_unblocked": [
+    "prepare_verified_control_tower_migration returns READY at stage complete on the production registry",
+    "adoption PR merged by a human and registry shows DURABLE for chatgpt-semi-auto",
+    "fresh Issue #33 readback equals the managed-block digest recorded in the candidate payload (CAS)",
+    "explicit human approval for the Issue #33 write"
+  ],
+  "payload_to_be_generated_at_unblock": {
+    "fields": ["runtime state", "owner", "stable loop id", "provider state", "verified evidence refs", "generation", "target", "timestamp", "rollback guidance"],
+    "generator": "automation/command_bus/control_tower_live_preflight.py prepare_verified_control_tower_migration"
+  },
+  "recovery": {
+    "before_write": "nothing was written; keep Issue #33 as is",
+    "after_write_wrong_content": "restore the previous Issue body from the Issue edit history or re-run the existing STOPPED projection; never delete the Issue; read back and compare managed blocks",
+    "ambiguous_write": "read back the Issue; do not resend the same write"
+  },
+  "safety": {"retry": 0, "fallback": "disabled", "production_registry_changed": false}
+}

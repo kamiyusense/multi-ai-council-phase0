@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "checkpoint_kind": "SIGNAL_SF8_LIVE_PROOF_CHECKPOINT",
+  "status": "PARTIAL_LIVE_PASS",
+  "authority_evidence": {
+    "status": "PASS",
+    "run_id": "37031275812",
+    "event": "workflow_dispatch",
+    "head_branch": "main",
+    "head_sha": "4ddb0407001dc18c35f5f45bd37f67664fb9ff32",
+    "actor_id": "20355232",
+    "triggering_actor_id": "20355232",
+    "oidc_evidence_ref": "docs/evidence/signal-authority/oidc-proof-evidence-37031275812.json",
+    "run_readback_ref": "docs/evidence/signal-authority/authority-run-readback-37031275812.json"
+  },
+  "active_provider_evidence": {
+    "status": "PASS",
+    "session_id": "301196275118188780",
+    "observed_state": "IN_PROGRESS",
+    "loop_id": "132",
+    "lane_id": "J-YELLOW",
+    "provider_evidence_ref": "docs/evidence/signal-active-proof/provider-active-evidence.json",
+    "github_output_readback_ref": "docs/evidence/signal-active-proof/jules-output-github-readback.json",
+    "output_pr": 243,
+    "output_head_sha": "5f04ba750c1d9676cafdf008fe0eedf5a51d8e61"
+  },
+  "boundaries": {
+    "provider_authentication": "NOT_RUN",
+    "owner_authority_authentication": "NOT_RUN",
+    "runtime_transition_publisher": "NOT_RUN",
+    "collector_readback": "NOT_RUN",
+    "registration_readiness": "NOT_RUN",
+    "stable_identity_promotion": "NOT_RUN",
+    "issue33_migration": "NOT_RUN"
+  },
+  "production_state": {
+    "registry_identity_state": "PLACEHOLDER",
+    "issue33_runtime": "STOPPED"
+  },
+  "safety": {
+    "retry": 0,
+    "fallback": "disabled",
+    "jules_session_create_post_count": 1,
+    "additional_jules_get_allowed": false,
+    "merge_performed": false
+  },
+  "notes": "Both independent LIVE evidence sources are present and verified, but no claim of Verified Runtime or DURABLE is made until the authenticators, publisher, collector, registration readiness, and explicit adoption/migration gates pass."
+}
