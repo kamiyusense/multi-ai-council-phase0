@@ -1,0 +1,125 @@
+{
+  "observed_at": "UNKNOWN: endpoint reads occurred between 12:47Z and 13:30Z",
+  "experiment_parent": "66a726d6e9782ad358aa1ecd161e4fb60704be4e",
+  "pr203_head": "66d366523ebe28726fcb36b0e5a45cb3368aa52d",
+  "sources": [
+    {
+      "path": "docs/JULES_PARALLEL_COLOR_LANES.md",
+      "sha": "3225142ae491543acb2d55539fa3611001e6c092",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_PARALLEL_COLOR_LANES.md"
+    },
+    {
+      "path": "docs/CHAT_JULES_API_SEMIAUTO.md",
+      "sha": "b09b95bdef2a3ebd9d8cf5725fdd524a0d3a3b4f",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/CHAT_JULES_API_SEMIAUTO.md"
+    },
+    {
+      "path": "docs/JULES_TASK_PROMPT_SPEC.md",
+      "sha": "ad136221426a1ad8e8e174f4407604c4dadb6557",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_TASK_PROMPT_SPEC.md"
+    },
+    {
+      "path": "docs/JULES_CONTROLLER_OPERATING_GUIDE.md",
+      "sha": "b87c16f6293349ef5a2f2514f98726b1819e99cf",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/JULES_CONTROLLER_OPERATING_GUIDE.md"
+    },
+    {
+      "path": "automation/command_bus/loop_id_claim.py",
+      "sha": "d7aba1adfa60b0341d7db6df1b92b8c39bd8c822",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/loop_id_claim.py"
+    },
+    {
+      "path": "automation/command_bus/jules_api_request.py",
+      "sha": "1aebad3469c2bfa629e97fd109541c236dc2244a",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/jules_api_request.py"
+    },
+    {
+      "path": "automation/command_bus/README.md",
+      "sha": "09b3a0bea82209939ca33338d67734433dbae236",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/automation/command_bus/README.md"
+    },
+    {
+      "path": "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md",
+      "sha": "686b039c34926f0b4e863eb536102de247390a72",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/feature/chat-work-command-bus/docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md"
+    },
+    {
+      "path": "README.md",
+      "sha": "4ce9bbf56bb954a23fd6ce087ef185efaea5195d",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/README.md"
+    },
+    {
+      "path": "HANDOVER_CURRENT.md",
+      "sha": "d035b29b79afea3519f4bc6247f5791d6643a57d",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/HANDOVER_CURRENT.md"
+    },
+    {
+      "path": "docs/DEVELOPMENT_EXECUTION_ROUTER.md",
+      "sha": "31457aa942610863f6908b1f5fe55703eaa6e41e",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/docs/DEVELOPMENT_EXECUTION_ROUTER.md"
+    },
+    {
+      "path": "docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md",
+      "sha": "02843d5b55cf785026825890a7c2f09dd581861e",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/docs/DEVELOPMENT_ACCELERATION_PLAYBOOK.md"
+    },
+    {
+      "path": "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md",
+      "sha": "755afbe6ea04bacf316c6ed11da9bc8fd116a0c2",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md"
+    },
+    {
+      "path": "docs/CLOUD_WORK_LANES_INDEX.md",
+      "sha": "9d859e7a7770f38e260c209e114e77a162b37142",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/docs/CLOUD_WORK_LANES_INDEX.md"
+    }
+  ],
+  "carriers": [
+    {
+      "lane": "blue",
+      "pr": 167,
+      "head": "5f9e210bc17ed695610e23b1c1699e11f5c8ed4b",
+      "branch": "cloud-work/carrier-blue-v1",
+      "active_generation": 1
+    },
+    {
+      "lane": "yellow",
+      "pr": 165,
+      "head": "62ab55d570caf5e95a33a4cea6396b37e1d14d29",
+      "branch": "cloud-work/carrier-yellow-v1",
+      "active_generation": 1
+    },
+    {
+      "lane": "green",
+      "pr": 166,
+      "head": "c94de4276028227e449707d6a076141d5a251daa",
+      "branch": "cloud-work/carrier-green-v1",
+      "active_generation": 1
+    },
+    {
+      "lane": "red",
+      "pr": 171,
+      "head": "cd16ceb8932350808ff2efb47bc504eb9a37add9",
+      "branch": "cloud-work/carrier-red-v1",
+      "active_generation": 1
+    }
+  ],
+  "claims_tree": "59dc2f0b8a721bcb6efb6a7dccebdcaf0a6c2f98",
+  "external_reviews_posted": 0,
+  "jules_sessions_started": 0,
+  "delegated_agents": 0,
+  "live_provider_calls": 0,
+  "concurrent_parent": "574f7da4b2c9c5619a2229f82ffca970f125c5f6",
+  "global_capture": {
+    "carrier_head": "6c390817d73d844c0e4c8ce5d31d9cac88ed16e0",
+    "branch_count": 320,
+    "branch_pages": 4,
+    "work_branch_count": 129,
+    "claims": 50,
+    "commands": 113,
+    "reserved_numbers_observed": 107,
+    "largest_number_observed": 120,
+    "coherence": "UNKNOWN: development advanced during mission; not a dispatch snapshot",
+    "next_number_reserved": false
+  }
+}

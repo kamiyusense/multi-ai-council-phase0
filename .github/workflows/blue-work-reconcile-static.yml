@@ -1,0 +1,87 @@
+name: Blue Work reconciliation offline validation
+
+on:
+  push:
+    branches:
+      - experiment/blue-work-autonomous-development
+  pull_request:
+    branches:
+      - feature/blue-work-jules-webhook-loop
+      - 'jules-work/**'
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: blue-work-static-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact experiment commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Run existing and new command-bus static tests
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+      - name: Compile and check whitespace
+        run: |
+          python -m compileall -q automation/command_bus
+          git diff --check
+      - name: Replay only the committed synthetic snapshot
+        run: |
+          python -m automation.command_bus.blue_work_reconcile_cli \
+            automation/command_bus/tests/fixtures/blue_work_reconcile/input.json \
+            --now 2026-10-01T12:00:00Z --output blue-static-candidate.json
+      - name: Replay formal schema-v3 mock closed loop
+        run: |
+          python -m automation.command_bus.work_event_prepare_cli \
+            --snapshot automation/command_bus/tests/fixtures/work_closed_loop/input.json \
+            --now 2026-10-01T12:00:00Z --output formal-static-cycle.json
+      - name: Read-only GitHub event preflight
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -m automation.command_bus.work_event_prepare_cli \
+            --github-event "$GITHUB_EVENT_PATH" --lane blue --output github-event-preflight.json
+      - name: Record offline boundary
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          result = json.loads(Path('blue-static-candidate.json').read_text())
+          assert result['execution_mode'] == 'PREPARE_ONLY'
+          assert result['external_send_attempted'] is False
+          assert result['model_executed'] is False
+          assert result['plan']['status'] == 'PREPARED'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Synthetic snapshot replay: PREPARED. No review posted, no Work/Jules started.\n')
+              formal = json.loads(Path('formal-static-cycle.json').read_text())
+              assert formal['status'] == 'PREPARED'
+              assert formal['source_mode'] == 'MOCK'
+              assert formal['next_task']['claim']['schema_version'] == 3
+              assert formal['claim_reserved'] is False
+              assert formal['adoption_performed'] is False
+              assert formal['external_send_attempted'] is False
+              assert formal['model_executed'] is False
+              summary.write('Formal MOCK cycle: captured lineage → review contract → schema-v3 next candidate. NOT_RESERVED.\n')
+              summary.write('Authenticated existing Jules Session GET and live transport: NOT_WIRED.\n')
+          PY
+      - name: Save prepare-only artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: work-prepare-only-${{ github.run_id }}
+          path: |
+            blue-static-candidate.json
+            formal-static-cycle.json
+            github-event-preflight.json
+          if-no-files-found: error
+          retention-days: 7

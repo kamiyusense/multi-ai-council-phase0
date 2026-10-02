@@ -5,6 +5,32 @@ Status: proposed execution roadmap / documentation only
 Pilot lane: 💙 J-BLUE + 💙 Cloud Work Blue  
 Source policy: PR #191 Controller Operating Guide + PR #192 Development Acceleration Playbook + PR #193 Signal roadmap pattern + PR #194 Relay minimal-reuse roadmap + PR #115 Work-event-loop static research
 
+### PR #217 current 2026-10-02 checkpoint
+
+Read [the review-ready checkpoint](BLUE_WORK_REVIEW_READY_20261002.md).
+BWJ-1–3 and captured BWJ-5/6 are STATIC-ready. Existing Blue/Green/Red read-only
+COMMENT wake/isolation were read back; Yellow woke but tree proof is UNKNOWN.
+One schema-v3 global Loop125 was reserved and one Jules Session accepted.
+Work independently rejected its raw PR227 semantics; Controller repairs are
+tested separately. The completed Session GET failed closed; authenticated source
+and automatic Actions→carrier-review transport remain UNKNOWN/NOT_WIRED.
+BWJ-4 full event bridge, M3/M4 adoption/cycle and continuous operation are not complete.
+Final independent repaired-code delta PASS at931697e; exact-head Actions987/skip1 passed.
+LIVE9/10 used; source UNKNOWN stops new Jules/adoption. Evidence-only child commits
+preserve independently reviewed code. Merge stays withheld. The following STATIC section is historical.
+
+### PR #217 experimental STATIC checkpoint
+
+Read [the autonomous batch handover](BLUE_WORK_AUTONOMOUS_BATCH_20261001.md)
+before continuing this experiment. BWJ-1/2 now share only the necessary color
+metadata; Blue compatibility remains tested. Receipt replay protection binds
+command ID, target repository/PR/branch/HEAD and worker generation. Complete
+GitHub GET pagination and fail-closed source capture are implemented.
+BWJ-5 captured reviewer-contract consumption and BWJ-6 formal schema-v3
+next-task preparation are mock/static-ready. The next claim is NOT_RESERVED.
+BWJ-4 real transport proof is still NOT EXECUTED; these additions do not make
+M2/M3 or any live milestone complete. No change to the four carriers is made.
+
 ## 1. Purpose
 
 This roadmap defines the smallest path from the current human-triggered Jules semi-auto loop to a durable event-driven development loop in which:
@@ -676,6 +702,13 @@ BWJ-10 only if needed.
 Result:
 
 - failure/no-change Jules terminal states can also wake reconciliation without adding a general orchestration platform.
+
+## Isolated autonomous experiment (STATIC only)
+
+See [BLUE_WORK_AUTONOMOUS_EXPERIMENT_20261001.md](BLUE_WORK_AUTONOMOUS_EXPERIMENT_20261001.md)
+for the isolated PR203-based snapshot reconciler, offline Actions replay,
+verification evidence and remaining production/LIVE blockers. This does not
+change BWJ-4 authorization or declare BWJ-5/6 complete.
 
 ## 17. Navigation summary
 

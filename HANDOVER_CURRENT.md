@@ -1,6 +1,45 @@
 # Phase 0 Handover — Current
 
+## PR #217 current review-ready checkpoint
+
+Read [BLUE_WORK_REVIEW_READY_20261002.md](docs/BLUE_WORK_REVIEW_READY_20261002.md)
+first for this experiment. LIVE budget used9/10 at this checkpoint, complete
+Session source UNKNOWN, raw Jules result FAIL, bounded Controller repairs tested and independently PASS at code SHA931697eac8ea561a41589799187545eba5c0d62b.
+Exact-head Actions987/skip1 passed; later commits preserve those code blobs.
+Blue/Green/Red read-only Work evidence is verified; Yellow tree proof UNKNOWN.
+Merge remains withheld. Fresh-read PR217 HEAD and evidence before continuation.
+Earlier blocks below are historical snapshots and do not override current state.
+
+## PR #217 experiment: 2026-10-02 bounded LIVE batch
+
+Morning continuation: trial03 delta review PASS; official global Loop125 claim
+and one Jules Session accepted; result PR227 exists but raw semantics FAIL.
+Direct bounded Session-reader repairs and GET-only readback are tracked in the
+night batch document. Fresh GitHub readback overrides these snapshot statements.
+
+Fresh-read [night batch](docs/BLUE_WORK_NIGHT_BATCH_20261002.md) and PR #217
+before continuing this experiment. User authorized at most ten existing
+Work/Jules LIVE trials for this purpose; Merge remains withheld. Blue read-only
+wake was independently read back, then a distinct Work review found two material
+static gaps. Repairs and exact-head revalidation are recorded there. Historical
+STATIC-only checkpoints are not the current trial approval. Approval is scoped;
+it does not authorize main write, force/history changes, new secrets, settings,
+permissions or billing changes. Never replay a terminal command.
+
 Updated: 2026-10-01
+
+## Experimental PR #217 checkpoint — STATIC only
+
+This block exists only on `experiment/blue-work-autonomous-development`.
+Fresh-read [PR #217](https://github.com/kamiyusense/multi-ai-council-phase0/pull/217)
+and [the autonomous batch handover](docs/BLUE_WORK_AUTONOMOUS_BATCH_20261001.md).
+It records receipt-binding repair, complete GitHub GET pagination, captured
+formal Jules lineage checks, four-lane prepare-only reconciliation, existing
+durable reviewer reuse and schema-v3 next-task candidates. No claim is reserved,
+no carrier review is sent, no result is adopted and no Work/Jules/model is started.
+BWJ-4 LIVE remains unexecuted; BWJ-5/6 additions are STATIC contracts/mocks,
+not independent review or live completion. Canonical routing and safety still
+come from current main and the freshly discovered carrier specifications.
 
 ## 0. Current development worker routing — read this first
 

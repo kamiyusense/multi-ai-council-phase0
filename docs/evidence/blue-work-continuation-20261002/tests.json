@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "source_head": "a3e3c2e67cb0dfb3c506cbe06fedc65e237c169e",
+  "original_regressions": {
+    "tests": 3,
+    "failures": 3,
+    "errors": 0,
+    "expected_failure": true,
+    "log": "before-original.txt"
+  },
+  "repaired": {
+    "command": "python -m unittest discover -s automation/command_bus/tests -t . -v",
+    "tests": 1007,
+    "passed": 1006,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 48.722
+  },
+  "focused": {
+    "tests": 58,
+    "failures": 0,
+    "errors": 0,
+    "log": "focused.txt"
+  },
+  "mock_cycle": "PREPARED / MOCK / claim NOT_RESERVED",
+  "compileall": "PASS",
+  "whitespace": "PASS",
+  "live_get_diagnostic": "NOT_YET_EXECUTED",
+  "independent_review_of_new_code": "NOT_YET_EXECUTED",
+  "live_trials_used": 9,
+  "live_max": 10,
+  "retry": 0,
+  "fallback": "disabled"
+}
