@@ -55,6 +55,26 @@ class JulesSessionReadbackTimingWorkflowTests(unittest.TestCase):
             self.text,
         )
 
+    def test_sanitized_evidence_reuses_same_session_get(self):
+        self.assertIn("update_time=\"$(jq -r", self.text)
+        self.assertIn(".updateTime //", self.text)
+        self.assertIn("provider_source=\"$(jq -r", self.text)
+        self.assertIn(".sourceContext.source //", self.text)
+        self.assertIn("starting_branch=\"$(jq -r", self.text)
+        self.assertIn(".sourceContext.githubRepoContext.startingBranch //", self.text)
+        self.assertIn("JULES_SESSION_READBACK_SANITIZED", self.text)
+        self.assertIn("jules-session-readback-evidence.json", self.text)
+        self.assertEqual(
+            self.text.count('"https://jules.googleapis.com/v1alpha/sessions/${session_id}"'),
+            1,
+        )
+
+    def test_activities_readback_can_be_disabled_without_another_session_get(self):
+        self.assertIn('include_activities="$(jq -er', self.text)
+        self.assertIn('if [[ "${include_activities}" == "true" ]]; then', self.text)
+        self.assertIn('latest_agent_message_json="SKIPPED"', self.text)
+        self.assertIn('latest_agent_activity_name="SKIPPED"', self.text)
+
     def test_readback_workflow_adds_no_new_create_session_post(self):
         self.assertNotIn("-X POST", self.text)
         self.assertNotIn("--data-binary @jules_payload.json", self.text)

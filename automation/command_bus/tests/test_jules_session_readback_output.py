@@ -27,6 +27,16 @@ class TestJulesSessionReadbackOutput(unittest.TestCase):
         self.assertNotIn("POST", self.text)
         self.assertNotIn("sendMessage", self.text)
 
+        # Bounded proof mode and sanitized artifact are explicit.
+        self.assertIn("include_activities", self.text)
+        self.assertIn("JULES_SESSION_READBACK_SANITIZED", self.text)
+        self.assertIn("jules-session-readback-evidence.json", self.text)
+        self.assertIn(
+            "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+            self.text,
+        )
+        self.assertIn("persist-credentials: false", self.text)
+
     def test_single_record_extraction_pattern(self):
         # Assert extraction uses last // empty on full activity
         self.assertIn("latest_agent_activity=\"$(jq -c '[.activities[]? | select(.originator == \"agent\" and .agentMessaged.agentMessage != null)] | last // empty' \"${activities_file}\")\"", self.text)
@@ -45,6 +55,7 @@ class TestJulesSessionReadbackOutput(unittest.TestCase):
         self.assertIn("printf -- '- session_id: `%s`\\n' \"${session_id}\"", self.text)
         self.assertIn("printf -- '- state: `%s`\\n' \"${state}\"", self.text)
         self.assertIn("printf -- '- pull_request: `%s`\\n' \"${pr_url:-NONE}\"", self.text)
+        self.assertIn("printf -- '- activities_readback: `%s`\\n' \"${include_activities}\"", self.text)
         self.assertIn("printf -- '- latest_agent_activity_name: `%s`\\n' \"${latest_agent_activity_name}\"", self.text)
         self.assertIn("printf -- '- latest_agent_message_json: `%s`\\n' \"${latest_agent_message_json}\"", self.text)
         self.assertNotIn("echo \"- session_id: `${session_id}`\"", self.text)

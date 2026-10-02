@@ -45,10 +45,12 @@ def read_step() -> str:
 
 
 SESSION = {"name": "sessions/123", "state": "COMPLETED", "createTime": "2026-10-01T10:00:00Z",
-           "sourceContext": {"githubRepoContext": {"startingBranch": "x"}}, "outputs": []}
+           "updateTime": "2026-10-01T10:00:05Z",
+           "sourceContext": {"source": "sources/github/kamiyusense/multi-ai-council-phase0",
+                             "githubRepoContext": {"startingBranch": "x"}}, "outputs": []}
 
 
-def run_step(session=None, activities=None, *, session_code=200, activities_code=200):
+def run_step(session=None, activities=None, *, session_code=200, activities_code=200, include_activities=None):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         bin_dir = tmp / "bin"
@@ -61,7 +63,10 @@ def run_step(session=None, activities=None, *, session_code=200, activities_code
             "session": {"body": SESSION if session is None else session, "code": session_code},
             "activities": {"body": activities if activities is not None else {}, "code": activities_code}}))
         status = tmp / "status.json"
-        status.write_text(json.dumps({"session_id": "123"}))
+        status_payload = {"session_id": "123"}
+        if include_activities is not None:
+            status_payload["include_activities"] = include_activities
+        status.write_text(json.dumps(status_payload))
         summary = tmp / "summary.md"
         runner_temp = tmp / "rt"
         runner_temp.mkdir()
@@ -72,7 +77,9 @@ def run_step(session=None, activities=None, *, session_code=200, activities_code
                    JULES_API_KEY="stub", PYTHONPATH=str(ROOT))
         result = subprocess.run(["bash", str(script)], cwd=ROOT, env=env, capture_output=True, text=True)
         text = summary.read_text() if summary.exists() else ""
-        return result, text, tmp
+        evidence_path = runner_temp / "jules-session-readback-evidence.json"
+        evidence = json.loads(evidence_path.read_text()) if evidence_path.exists() else None
+        return result, text, evidence
 
 
 class ReadbackStepExecutionTests(unittest.TestCase):
@@ -128,6 +135,44 @@ class ReadbackStepExecutionTests(unittest.TestCase):
                 result, summary, _ = run_step(**kwargs)
                 self.assertNotEqual(result.returncode, 0, label)
                 self.assertNotIn("latest_agent_message_json", summary)
+
+    def test_active_proof_can_skip_activities_get(self):
+        result, summary, evidence = run_step(
+            include_activities=False,
+            activities_code=503,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("activities_readback: `false`", summary)
+        self.assertIn("latest_agent_activity_name: `SKIPPED`", summary)
+        self.assertIn("latest_agent_message_json: `SKIPPED`", summary)
+        self.assertIsNotNone(evidence)
+        self.assertFalse(evidence["include_activities"])
+
+    def test_sanitized_artifact_preserves_runtime_binding_fields_only(self):
+        result, _, evidence = run_step()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            evidence,
+            {
+                "schema_version": 1,
+                "proof_kind": "JULES_SESSION_READBACK_SANITIZED",
+                "session_id": "123",
+                "name": "sessions/123",
+                "state": "COMPLETED",
+                "create_time": "2026-10-01T10:00:00Z",
+                "update_time": "2026-10-01T10:00:05Z",
+                "provider_source": "sources/github/kamiyusense/multi-ai-council-phase0",
+                "starting_branch": "x",
+                "include_activities": True,
+                "retry": 0,
+                "fallback": "disabled",
+            },
+        )
+        serialized = json.dumps(evidence)
+        self.assertNotIn("Authorization", serialized)
+        self.assertNotIn("X-Goog-Api-Key", serialized)
+        self.assertNotIn("eyJ", serialized)
+        self.assertNotIn("https://", serialized)
 
     def test_workflow_makes_only_the_two_readonly_gets(self):
         text = WORKFLOW.read_text(encoding="utf-8")
