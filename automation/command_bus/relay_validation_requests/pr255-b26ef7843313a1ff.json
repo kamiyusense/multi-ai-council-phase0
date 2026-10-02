@@ -1,0 +1,5 @@
+{
+  "target_sha": "b26ef7843313a1ffad4c993df28cbe085cd6fe5b",
+  "source_pr": 255,
+  "purpose": "relay final head validation: Linux + Windows codex-acp 2.1.0 gate, M8/M9 prepare-only (STATIC, no live provider/model)"
+}
