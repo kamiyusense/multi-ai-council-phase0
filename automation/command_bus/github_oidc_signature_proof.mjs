@@ -9,7 +9,31 @@ import https from 'node:https';
 export const ISSUER = 'https://token.actions.githubusercontent.com';
 export const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 export const METADATA_URL = `${ISSUER}/.well-known/openid-configuration`;
-export const AUDIENCE = 'urn:phase0:github-oidc-proof:kamiyusense/multi-ai-council-phase0';
+const REPO = 'kamiyusense/multi-ai-council-phase0';
+// Reviewed, exact proof profiles. Python policy (github_oidc_proof_policy_cli) holds the same table.
+export const PROFILES = Object.freeze({
+  run7: Object.freeze({
+    event: 'push',
+    audience: `urn:phase0:github-oidc-proof:${REPO}`,
+    workflowIdentity: `${REPO}/.github/workflows/github-oidc-proof.yml@refs/heads/feature/github-oidc-claims-policy-v1`,
+  }),
+  sf8: Object.freeze({
+    event: 'push',
+    audience: `urn:phase0:signal-sf8-oidc-proof:${REPO}`,
+    workflowIdentity: `${REPO}/.github/workflows/signal-sf8-oidc-proof.yml@refs/heads/claude/signal-sf8-oidc-runtime-integration-20261002`,
+  }),
+  'sf8-authority': Object.freeze({
+    event: 'workflow_dispatch',
+    audience: `urn:phase0:signal-sf8-authority-issuer:${REPO}`,
+    workflowIdentity: `${REPO}/.github/workflows/signal-sf8-authority-issuer.yml@refs/heads/main`,
+  }),
+});
+export function activeProfile(env = process.env) {
+  const profile = PROFILES[env.OIDC_PROOF_PROFILE || 'run7'];
+  if (!profile) fail();
+  return profile;
+}
+export const AUDIENCE = PROFILES.run7.audience;
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 const MAX_JWT_BYTES = 32768;
 
@@ -78,7 +102,7 @@ function runnerContext() {
     'GITHUB_REPOSITORY_OWNER_ID', 'GITHUB_REF', 'GITHUB_REF_TYPE',
     'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA', 'GITHUB_WORKFLOW',
     'GITHUB_EVENT_NAME', 'GITHUB_RUN_ATTEMPT', 'GITHUB_RUN_ID',
-    'GITHUB_SHA', 'RUNNER_ENVIRONMENT',
+    'GITHUB_SHA', 'RUNNER_ENVIRONMENT', 'OIDC_PROOF_PROFILE',
   ];
   const env = { PATH: process.env.PATH || '' };
   for (const name of names) env[name] = process.env[name] || '';
@@ -90,7 +114,6 @@ export const DIAGNOSTIC_STAGES = Object.freeze([
   'ISSUER', 'AUDIENCE', 'TIME', 'REPOSITORY', 'WORKFLOW',
   'REF_SHA', 'RUN_ID', 'COMPLETE',
 ]);
-const WORKFLOW_IDENTITY = 'kamiyusense/multi-ai-council-phase0/.github/workflows/github-oidc-proof.yml@refs/heads/feature/github-oidc-claims-policy-v1';
 const SPECIFIC_SAFE_CODES = Object.freeze({
   WORKFLOW: new Set([
     'OIDC_WORKFLOW_RUNNER_REF_REJECTED',
@@ -164,7 +187,7 @@ function postSignaturePolicy(claims) {
   return { status: 'BLOCKED', terminal_stage: 'COMPLETE' };
 }
 
-export function sanitizedEvidence(diagnostic, runId, sha) {
+export function sanitizedEvidence(diagnostic, runId, sha, workflowIdentity = PROFILES.run7.workflowIdentity) {
   const valid = diagnostic && ['PASS', 'FAIL', 'UNKNOWN'].includes(diagnostic.status) &&
     DIAGNOSTIC_STAGES.includes(diagnostic.terminal_stage) &&
     (diagnostic.status === 'PASS'
@@ -181,7 +204,7 @@ export function sanitizedEvidence(diagnostic, runId, sha) {
     safe_error_code: result.safe_error_code,
     run_id: /^[0-9]+$/.test(runId || '') ? runId : 'UNKNOWN',
     exact_commit_sha: /^[0-9a-f]{40}$/.test(sha || '') ? sha : 'UNKNOWN',
-    expected_workflow_identity: WORKFLOW_IDENTITY,
+    expected_workflow_identity: workflowIdentity,
   };
   const canonical = Object.fromEntries(Object.keys(body).sort().map(key => [key, body[key]]));
   const digest = createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
@@ -189,6 +212,7 @@ export function sanitizedEvidence(diagnostic, runId, sha) {
 }
 
 async function main() {
+  const profile = activeProfile();
   let response;
   let jwks;
   let claims;
@@ -196,13 +220,13 @@ async function main() {
   const handlers = {
     TOKEN_REQUEST: async () => {
       const context = runnerContext();
-      if (context.GITHUB_RUN_ATTEMPT !== '1' || context.GITHUB_EVENT_NAME !== 'push') fail();
+      if (context.GITHUB_RUN_ATTEMPT !== '1' || context.GITHUB_EVENT_NAME !== profile.event) fail();
       const requestUrl = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '');
       const host = requestUrl.hostname;
       if (requestUrl.protocol !== 'https:' ||
           !(host === 'actions.githubusercontent.com' || host.endsWith('.actions.githubusercontent.com')) ||
           !process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN) fail();
-      requestUrl.searchParams.set('audience', AUDIENCE);
+      requestUrl.searchParams.set('audience', profile.audience);
       response = await requestJson(requestUrl, {
         Authorization: `bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
       });
@@ -227,7 +251,7 @@ async function main() {
     };
   }
   const diagnostic = await runDiagnosticPipeline(handlers);
-  const evidence = sanitizedEvidence(diagnostic, process.env.GITHUB_RUN_ID, process.env.GITHUB_SHA);
+  const evidence = sanitizedEvidence(diagnostic, process.env.GITHUB_RUN_ID, process.env.GITHUB_SHA, profile.workflowIdentity);
   const path = join(process.env.RUNNER_TEMP || '.', 'oidc-proof-evidence.json');
   writeFileSync(path, JSON.stringify(evidence, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
   process.stdout.write(`OIDC_PROOF_${evidence.status} stage=${evidence.terminal_stage} code=${evidence.safe_error_code} evidence_payload_sha256=${evidence.evidence_payload_sha256}\n`);

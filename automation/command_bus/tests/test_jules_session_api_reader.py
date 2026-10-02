@@ -95,6 +95,15 @@ class JulesSessionApiReaderTests(unittest.TestCase):
             self.assertIsNone(reader.read_session("123"))
             self.assertEqual(opener.requests, [])
 
+    def test_exception_text_carrying_the_key_is_swallowed(self):
+        import io
+        from contextlib import redirect_stderr, redirect_stdout
+        reader, _ = _reader(exc=RuntimeError(f"boom {SECRET}"))
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.assertIsNone(reader.read_session("123"))
+        self.assertNotIn(SECRET, out.getvalue() + err.getvalue())
+
     def test_credential_never_in_repr(self):
         reader, _ = _reader(_Resp(b"{}"))
         self.assertNotIn(SECRET, repr(reader))
