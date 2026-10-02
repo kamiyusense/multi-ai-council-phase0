@@ -2,7 +2,7 @@
 # allowlisted human yields sanitized GitHub OIDC identity evidence. It writes
 # nothing, uses no secrets, and issues no permission other than "this human
 # dispatched this exact main commit". It does not touch Issue #33 or runtime state.
-name: Signal SF-8 authority issuer
+name: Signal SF-8 authority issuer manual
 on:
   workflow_dispatch:
 permissions:
