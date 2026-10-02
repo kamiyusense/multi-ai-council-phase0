@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 132,
+  "loop_id": "132",
+  "lane_id": "J-YELLOW",
+  "lane_display": "💛",
+  "task_id": "signal-active-provider-proof",
+  "command_id": "relay-dev-loop-132-signal-active-provider-proof",
+  "target_branch": "claude/signal-active-proof-target",
+  "expected_target_head": "4ddb0407001dc18c35f5f45bd37f67664fb9ff32",
+  "expected_target_tree": "b1adeba6022d1e799169c4fd253a7b0d119e4867",
+  "work_branch": "jules-work/relay-dev-loop-132-signal-active-provider-proof",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-02T10:19:20+00:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
