@@ -89,3 +89,6 @@ Dependency changes vs the earlier plan: #234 is already merged into the Signal c
 - Cloud Work: merge policy and per-lane generation/receipt tests for yellow/green/red.
 - All cleanup (PR close, branch delete, workflow registration disable): manifests in the evidence folder; **destructive steps are the human's**.
 - Loop A: SafeAdoption fence, SEMI_AUTO resume design, correcting doc overclaims; any use of the 6 unused LIVE slots needs explicit new approval. Lease note: the owner event says SEMI_AUTO (generation 2) until `2026-10-02T08:30:28Z`; expiry alone is not a takeover (also needs 2h+ stall and no running Jules, or a human hand-over).
+
+
+> R2追記 (2026-10-02T09:13Z): 最新Blue #217反映と再検証は [FINAL_INTEGRATION_R2_20261002.md](FINAL_INTEGRATION_R2_20261002.md) を参照。merge順・patch順・Blue台帳はR2が最新。
