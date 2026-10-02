@@ -2,21 +2,22 @@ from datetime import datetime, timedelta, timezone
 import unittest
 
 from automation.command_bus.jules_api_request import (
-    PROFILE, PROFILE_V2,
+    PROFILE,
     build_jules_prompt,
     validate_request,
 )
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime(2026, 9, 26, 0, 0, tzinfo=timezone.utc)
 
 
 def request(**changes):
     values = {
-        "schema_version": 1,
+        "schema_version": 2,
         "profile": PROFILE,
         "command_id": "chat-jules-001",
         "target_repo": "kamiyusense/multi-ai-council-phase0",
         "target_branch": "feature/relay-transport-7070955470193506982",
+        "work_branch": "jules-work/chat-jules-001",
         "expected_target_head": "a" * 40,
         "expected_target_tree": "b" * 40,
         "allowed_paths": ["tests/relay/test_dispatcher.py"],
@@ -39,6 +40,17 @@ class JulesApiRequestTests(unittest.TestCase):
     def test_default_branch_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "default branch"):
             validate_request(request(target_branch="main"), now=NOW)
+        with self.assertRaisesRegex(ValueError, "default branch"):
+            validate_request(request(work_branch="main"), now=NOW)
+
+    def test_work_branch_must_be_isolated_and_command_scoped(self):
+        with self.assertRaisesRegex(ValueError, "isolated per-command"):
+            validate_request(
+                request(work_branch="feature/relay-transport-7070955470193506982"),
+                now=NOW,
+            )
+        with self.assertRaisesRegex(ValueError, "isolated per-command"):
+            validate_request(request(work_branch="jules-work/other-command"), now=NOW)
 
     def test_retry_and_fallback_are_fixed(self):
         with self.assertRaisesRegex(ValueError, "retry/fallback"):
@@ -66,49 +78,18 @@ class JulesApiRequestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "keys mismatch"):
             validate_request(bad, now=NOW)
 
-    def test_v2_preserves_origin_correlation(self):
-        value = request(
-            profile=PROFILE_V2,
-            origin_loop_id="claude-night-001",
-            origin_round=2,
-            origin_correlation_id="corr-001",
-            origin_generation=3,
-        )
-        self.assertEqual(validate_request(value, now=NOW)["profile"], PROFILE_V2)
-        rendered = build_jules_prompt(value, now=NOW)
-        self.assertIn("Origin loop: claude-night-001", rendered)
-        self.assertIn("Origin round: 2", rendered)
-        self.assertIn("Origin correlation: corr-001", rendered)
-        self.assertIn("Origin generation: 3", rendered)
-
-    def test_v2_rejects_missing_or_invalid_origin_identity(self):
-        base = request(
-            profile=PROFILE_V2,
-            origin_loop_id="claude-night-001",
-            origin_round=2,
-            origin_correlation_id="corr-001",
-            origin_generation=3,
-        )
-        for key, value in (
-            ("origin_loop_id", ""),
-            ("origin_round", 0),
-            ("origin_correlation_id", ""),
-            ("origin_generation", 0),
-        ):
-            changed = dict(base)
-            changed[key] = value
-            with self.assertRaises(ValueError, msg=key):
-                validate_request(changed, now=NOW)
-
-    def test_v1_remains_backward_compatible(self):
-        value = request()
-        self.assertEqual(value["profile"], PROFILE)
-        self.assertEqual(validate_request(value, now=NOW)["command_id"], "chat-jules-001")
-
     def test_prompt_binds_head_tree_and_allowlist(self):
-        rendered = build_jules_prompt(request(), now=NOW)
-        self.assertIn("Expected starting HEAD: " + "a" * 40, rendered)
-        self.assertIn("Expected starting tree: " + "b" * 40, rendered)
+        now = datetime.now(timezone.utc)
+        prompt_request = request(
+            created_at=now.isoformat(),
+            expires_at=(now + timedelta(hours=1)).isoformat(),
+        )
+        rendered = build_jules_prompt(prompt_request)
+        self.assertIn("Canonical target branch (READ-ONLY identity): feature/relay-transport-7070955470193506982", rendered)
+        self.assertIn("Isolated Jules starting work branch: jules-work/chat-jules-001", rendered)
+        self.assertIn("Expected snapshot HEAD: " + "a" * 40, rendered)
+        self.assertIn("Expected snapshot tree: " + "b" * 40, rendered)
+        self.assertIn("do not mutate the canonical target branch", rendered)
         self.assertIn("tests/relay/test_dispatcher.py", rendered)
         self.assertIn("do not merge", rendered)
         self.assertIn("do not retry", rendered)
