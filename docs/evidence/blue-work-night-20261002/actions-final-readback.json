@@ -1,0 +1,162 @@
+{
+  "code_head": "931697eac8ea561a41589799187545eba5c0d62b",
+  "tree": "99c48deb2e19847dba7aaacc02cec0ad048867f9",
+  "run": {
+    "id": 36956416439,
+    "head_sha": "931697eac8ea561a41589799187545eba5c0d62b",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "path": ".github/workflows/blue-work-reconcile-static.yml",
+    "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36956416439"
+  },
+  "jobs": [
+    {
+      "id": 110680237549,
+      "head_sha": "931697eac8ea561a41589799187545eba5c0d62b",
+      "run_id": 36956416439,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36956416439/job/110680237549",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Checkout exact experiment commit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run existing and new command-bus static tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Compile and check whitespace",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Replay only the committed synthetic snapshot",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Replay formal schema-v3 mock closed loop",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Read-only GitHub event preflight",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record offline boundary",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Save prepare-only artifacts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Checkout exact experiment commit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "tests": {
+    "run": 987,
+    "passed": 986,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 55.26
+  },
+  "actual_test_output": [
+    "2026-10-02T02:37:34.2272986Z Ran 987 tests in 55.260s",
+    "2026-10-02T02:37:34.2273615Z OK (skipped=1)"
+  ],
+  "artifact": [
+    {
+      "id": 11205884350,
+      "name": "work-prepare-only-36956416439",
+      "digest": "sha256:9e4321955ce61cc709ecb0e7661a03d2c2bdab3013582984d63d3d3c50e6ee80",
+      "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/actions/artifacts/11205884350",
+      "expired": false
+    }
+  ],
+  "blob_readback": [
+    {
+      "path": "automation/command_bus/jules_session_readonly.py",
+      "sha": "027c1f96feb74527496af8b7b9b50ac996cf7747"
+    },
+    {
+      "path": "automation/command_bus/jules_completed_readback_cli.py",
+      "sha": "e604907386d724ddac1b252d4bcc5a07bc945db7"
+    },
+    {
+      "path": "automation/command_bus/tests/test_jules_completed_readback_cli.py",
+      "sha": "d44808fb6c5bfac0c08c97fb8cc87dbaa4e2aa5c"
+    },
+    {
+      "path": ".github/workflows/blue-existing-session-readback.yml",
+      "sha": "01e730d9bea38f38ff5aa96c4eba225a75580849"
+    },
+    {
+      "path": ".github/workflows/blue-work-reconcile-static.yml",
+      "sha": "cd3236d111d212ac87e588ac0d92953d15aa5d9f"
+    },
+    {
+      "path": "docs/BLUE_WORK_REVIEW_READY_20261002.md",
+      "sha": "5e73aef75a015c091a92573b77f1b3e8835a4ee4"
+    },
+    {
+      "path": "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md",
+      "sha": "16b6a4354c8aa0e00b7fadf77c3659da3f774226"
+    },
+    {
+      "path": "docs/BLUE_WORK_NIGHT_BATCH_20261002.md",
+      "sha": "b6d3c4d15df7edf58e95acd3813f965aa2d7e82a"
+    },
+    {
+      "path": "HANDOVER_CURRENT.md",
+      "sha": "00ea477fd63a5473fc8e866b8927cdf82ed532c9"
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/live-05-08.json",
+      "sha": "b2a923cd5818be4aed3aa1cc325113842a3547a0"
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/readback-failure.json",
+      "sha": "8b8fc84a7ec84a9c30f1b358f6d50a44858ea84d"
+    },
+    {
+      "path": "docs/evidence/blue-work-night-20261002/tests-session-final.json",
+      "sha": "218858b185d09359e20546dbedb61b97c4539528"
+    }
+  ],
+  "tree_readback": {
+    "unchanged_unrelated_blobs": 626,
+    "allowed_paths": 12,
+    "before_blobs": 634,
+    "after_blobs": 638
+  },
+  "completed_session_source": "UNKNOWN",
+  "auto_bridge": "NOT_WIRED",
+  "live_used": 9,
+  "max_live": 10,
+  "independent_receipt_id": 5944599531
+}

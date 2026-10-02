@@ -1,0 +1,146 @@
+[
+  {
+    "run_id": 36870292540,
+    "head_sha": "fb67ce259e20d1c9047ecd77a93958d3ce018084",
+    "conclusion": "success",
+    "event": "pull_request",
+    "job_id": 110396022373,
+    "job_conclusion": "success",
+    "test_count": 938,
+    "skipped": 1,
+    "success": 937,
+    "failures": 0,
+    "errors": 0,
+    "log_summary": [
+      "Ran 938 tests in 52.735s",
+      "OK (skipped=1)"
+    ],
+    "steps": [
+      {
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "name": "Checkout exact experiment commit",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run existing and new command-bus static tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "Compile and check whitespace",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay only the committed synthetic snapshot",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay formal schema-v3 mock closed loop",
+        "conclusion": "success"
+      },
+      {
+        "name": "Read-only GitHub event preflight",
+        "conclusion": "success"
+      },
+      {
+        "name": "Record offline boundary",
+        "conclusion": "success"
+      },
+      {
+        "name": "Save prepare-only artifacts",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Checkout exact experiment commit",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": 11166563021,
+        "name": "work-prepare-only-36870292540",
+        "expired": false,
+        "size_in_bytes": 4191,
+        "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870292540/artifacts/11166563021"
+      }
+    ]
+  },
+  {
+    "run_id": 36870285179,
+    "head_sha": "fb67ce259e20d1c9047ecd77a93958d3ce018084",
+    "conclusion": "success",
+    "event": "push",
+    "job_id": 110395997315,
+    "job_conclusion": "success",
+    "test_count": 938,
+    "skipped": 1,
+    "success": 937,
+    "failures": 0,
+    "errors": 0,
+    "log_summary": [
+      "Ran 938 tests in 51.762s",
+      "OK (skipped=1)"
+    ],
+    "steps": [
+      {
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "name": "Checkout exact experiment commit",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run existing and new command-bus static tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "Compile and check whitespace",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay only the committed synthetic snapshot",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay formal schema-v3 mock closed loop",
+        "conclusion": "success"
+      },
+      {
+        "name": "Read-only GitHub event preflight",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Record offline boundary",
+        "conclusion": "success"
+      },
+      {
+        "name": "Save prepare-only artifacts",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Checkout exact experiment commit",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": 11166598013,
+        "name": "work-prepare-only-36870285179",
+        "expired": false,
+        "size_in_bytes": 3872,
+        "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870285179/artifacts/11166598013"
+      }
+    ]
+  }
+]

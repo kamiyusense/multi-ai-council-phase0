@@ -1,0 +1,123 @@
+name: Blue Work reconciliation offline validation
+
+on:
+  # Current-main integration: one pull_request validation per head.
+  # No push trigger, so the same commit is not tested twice.
+  pull_request:
+    branches:
+      - main
+      - feature/blue-work-jules-webhook-loop
+      - 'jules-work/**'
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: blue-work-static-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact experiment commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Run existing and new command-bus static tests
+        run: |
+          set -o pipefail
+          python -m unittest discover -s automation/command_bus/tests -t . -v 2>&1 | tee command-bus-tests.txt
+      - name: Compile and check whitespace
+        run: |
+          python -m compileall -q automation/command_bus
+          git diff --check
+      - name: Replay only the committed synthetic snapshot
+        run: |
+          python -m automation.command_bus.blue_work_reconcile_cli \
+            automation/command_bus/tests/fixtures/blue_work_reconcile/input.json \
+            --now 2026-10-01T12:00:00Z --output blue-static-candidate.json
+      - name: Replay formal schema-v3 mock closed loop
+        run: |
+          python -m automation.command_bus.work_event_prepare_cli \
+            --snapshot automation/command_bus/tests/fixtures/work_closed_loop/input.json \
+            --now 2026-10-01T12:00:00Z --output formal-static-cycle.json
+      - name: Read-only GitHub event preflight
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -m automation.command_bus.work_event_prepare_cli \
+            --github-event "$GITHUB_EVENT_PATH" --lane auto --output github-event-preflight.json
+      - name: Replay complete four-lane bridge and restart faults without services
+        run: |
+          python -m automation.command_bus.work_event_prepare_cli \
+            --bridge-snapshot automation/command_bus/tests/fixtures/work_bridge/pre-submit.json \
+            --now 2026-10-01T12:00:00Z --output bridge-review-candidate.json
+          python -m automation.command_bus.work_event_prepare_cli \
+            --bridge-snapshot automation/command_bus/tests/fixtures/work_bridge/terminal.json \
+            --now 2026-10-01T12:00:00Z --output bridge-next-candidate.json
+          python -m automation.command_bus.tests.static_bridge_simulation > four-lane-static-soak.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          review = json.loads(Path('bridge-review-candidate.json').read_text())
+          next_task = json.loads(Path('bridge-next-candidate.json').read_text())
+          soak = json.loads(Path('four-lane-static-soak.json').read_text())
+          assert review['status'] == 'PREPARED_REVIEW'
+          assert next_task['status'] == 'PREPARED_NEXT'
+          for value in (review, next_task):
+              assert value['source_mode'] == 'MOCK'
+              assert value['source_authentication'] == 'MOCK_ONLY'
+              assert value['posting_authority'] is False
+              assert value['external_send_attempted'] is False
+              assert value['adoption_performed'] is False
+              assert value['claim_reserved'] is False
+          assert next_task['next_task']['reservation_state'] == 'NOT_RESERVED'
+          assert soak['virtual_loops'] == 32
+          assert set(soak['invariant_violations'].values()) == {0}
+          assert soak['external_execution'] == 0
+          PY
+      - name: Record offline boundary
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          result = json.loads(Path('blue-static-candidate.json').read_text())
+          assert result['execution_mode'] == 'PREPARE_ONLY'
+          assert result['external_send_attempted'] is False
+          assert result['model_executed'] is False
+          assert result['plan']['status'] == 'PREPARED'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Synthetic snapshot replay: PREPARED. No review posted, no Work/Jules started.\n')
+              formal = json.loads(Path('formal-static-cycle.json').read_text())
+              assert formal['status'] == 'PREPARED'
+              assert formal['source_mode'] == 'MOCK'
+              assert formal['next_task']['claim']['schema_version'] == 3
+              assert formal['claim_reserved'] is False
+              assert formal['adoption_performed'] is False
+              assert formal['external_send_attempted'] is False
+              assert formal['model_executed'] is False
+              summary.write('Formal MOCK cycle: captured lineage → review contract → schema-v3 next candidate. NOT_RESERVED.\n')
+              summary.write('Authenticated existing Jules Session GET and live transport: NOT_WIRED.\n')
+          PY
+      - name: Save prepare-only artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: work-prepare-only-${{ github.run_id }}
+          path: |
+            command-bus-tests.txt
+            blue-static-candidate.json
+            formal-static-cycle.json
+            github-event-preflight.json
+            bridge-review-candidate.json
+            bridge-next-candidate.json
+            four-lane-static-soak.json
+          if-no-files-found: error
+          retention-days: 7

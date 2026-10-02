@@ -1,0 +1,42 @@
+test_captured_json_cannot_prepare_successor_without_authentication (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_captured_json_cannot_prepare_successor_without_authentication) ... FAIL
+test_lineage_rejects_one_nanosecond_create_time_difference (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_lineage_rejects_one_nanosecond_create_time_difference) ... FAIL
+test_malformed_command_changed_file_is_unknown_not_exception (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_malformed_command_changed_file_is_unknown_not_exception) ... ok
+test_non_pr_extra_output_does_not_establish_unique_session_result (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_non_pr_extra_output_does_not_establish_unique_session_result) ... FAIL
+
+======================================================================
+FAIL: test_captured_json_cannot_prepare_successor_without_authentication (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_captured_json_cannot_prepare_successor_without_authentication)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/continuation/automation/command_bus/tests/test_static_source_boundaries.py", line 16, in test_captured_json_cannot_prepare_successor_without_authentication
+    self.assertEqual(result['status'], 'BLOCKED')
+AssertionError: 'PREPARED' != 'BLOCKED'
+- PREPARED
++ BLOCKED
+
+
+======================================================================
+FAIL: test_lineage_rejects_one_nanosecond_create_time_difference (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_lineage_rejects_one_nanosecond_create_time_difference)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/continuation/automation/command_bus/tests/test_static_source_boundaries.py", line 25, in test_lineage_rejects_one_nanosecond_create_time_difference
+    self.assertEqual(result.status, 'UNKNOWN')
+AssertionError: 'VERIFIED_SNAPSHOT' != 'UNKNOWN'
+- VERIFIED_SNAPSHOT
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_non_pr_extra_output_does_not_establish_unique_session_result (automation.command_bus.tests.test_static_source_boundaries.SourceBoundaryRegressions.test_non_pr_extra_output_does_not_establish_unique_session_result)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/continuation/automation/command_bus/tests/test_static_source_boundaries.py", line 30, in test_non_pr_extra_output_does_not_establish_unique_session_result
+    self.assertEqual(verify_result_lineage(lane='blue', **value, now=NOW).status, 'UNKNOWN')
+AssertionError: 'VERIFIED_SNAPSHOT' != 'UNKNOWN'
+- VERIFIED_SNAPSHOT
++ UNKNOWN
+
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+FAILED (failures=3)

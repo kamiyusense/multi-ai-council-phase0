@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "source_mode": "GITHUB_READBACK",
+  "starting_head": "9d2a23024e23faca78c720fb2962b483c4607b4e",
+  "starting_tree": "77b9caf994a59c396a545a3d046473af307fb868",
+  "pr_states": {
+    "165": {
+      "head": "62ab55d570caf5e95a33a4cea6396b37e1d14d29",
+      "base": "6d1e9b02a89faee2387009079b2485d5c9705f1b",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_ref": "cloud-work/carrier-yellow-v1",
+      "base_ref": "main"
+    },
+    "166": {
+      "head": "c94de4276028227e449707d6a076141d5a251daa",
+      "base": "6d1e9b02a89faee2387009079b2485d5c9705f1b",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_ref": "cloud-work/carrier-green-v1",
+      "base_ref": "main"
+    },
+    "167": {
+      "head": "5f9e210bc17ed695610e23b1c1699e11f5c8ed4b",
+      "base": "6d1e9b02a89faee2387009079b2485d5c9705f1b",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_ref": "cloud-work/carrier-blue-v1",
+      "base_ref": "main"
+    },
+    "171": {
+      "head": "cd16ceb8932350808ff2efb47bc504eb9a37add9",
+      "base": "3c7aa4d27ef698bebf9112d4c30d10fdc161d986",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_ref": "cloud-work/carrier-red-v1",
+      "base_ref": "main"
+    },
+    "203": {
+      "head": "66d366523ebe28726fcb36b0e5a45cb3368aa52d",
+      "base": "9f3e0f6ee038789e8fbc88e0c1c78d39878fe997",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_ref": "feature/blue-work-jules-webhook-loop",
+      "base_ref": "main"
+    },
+    "217": {
+      "head": "9d2a23024e23faca78c720fb2962b483c4607b4e",
+      "base": "66d366523ebe28726fcb36b0e5a45cb3368aa52d",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_ref": "experiment/blue-work-autonomous-development",
+      "base_ref": "feature/blue-work-jules-webhook-loop"
+    },
+    "227": {
+      "head": "b4c5608f983ef42b5bd206bfc9c4f0f465ae7869",
+      "base": "33700442825b56e3bd949c32b06707cfb46ce29b",
+      "state": "open",
+      "draft": false,
+      "merged": false,
+      "head_ref": "jules-work/relay-dev-loop-125-bwj-session-get-reader-12436642121757218108",
+      "base_ref": "jules-work/relay-dev-loop-125-bwj-session-get-reader"
+    }
+  },
+  "trial10": {
+    "command_id": "blue-20261002T055200Z-pr217-session-diagnostic-review-10",
+    "review_id": 5388681925,
+    "submitted_at": "2026-10-02T05:50:51Z",
+    "expires_at": "2026-10-02T07:52:00Z",
+    "current_reviews": 7,
+    "current_comments": 6,
+    "terminal_receipt_found": false,
+    "status": "UNKNOWN",
+    "resend_allowed": false,
+    "controller_checkpoint": 5947745815
+  },
+  "diagnostic_run": 36970590374,
+  "diagnostic_job": 110723542520,
+  "safe_marker": "2026-10-02T05:48:33.2552366Z [SESSION_DIAGNOSTIC_V1] {\"adoption_performed\": false, \"diagnostic_checks\": {\"completed\": true, \"create_time_exact\": false, \"create_time_same_second\": true, \"create_time_valid\": true, \"repository_matches\": true, \"session_name_matches\": true, \"starting_branch_matches\": true, \"unique_pr_output_matches\": false, \"update_time_valid\": true}, \"failure_stage\": \"create_time\", \"fallback\": \"disabled\", \"new_session_created\": false, \"retry\": 0, \"status\": \"UNKNOWN\", \"successor_dispatched\": false, \"work_review_posted\": false}",
+  "new_live_trials": 0,
+  "new_jules_gets": 0,
+  "new_claim_reservations": 0
+}

@@ -1,0 +1,91 @@
+test_comparison_base_tree_must_match_formal_snapshot (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_comparison_base_tree_must_match_formal_snapshot) ... FAIL
+test_duplicate_executed_timing_readback_is_ambiguous (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_duplicate_executed_timing_readback_is_ambiguous) ... FAIL
+test_echoed_timing_source_is_not_executed_readback (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_echoed_timing_source_is_not_executed_readback) ... FAIL
+test_multiple_pr_outputs_do_not_establish_unique_result (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_multiple_pr_outputs_do_not_establish_unique_result) ... FAIL
+test_review_cannot_expand_verified_source_allowlist (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_review_cannot_expand_verified_source_allowlist) ... FAIL
+test_review_cannot_use_verified_lineage_for_another_head (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_review_cannot_use_verified_lineage_for_another_head) ... FAIL
+test_files_for_stale_input_are_rejected_before_diff_get (automation.command_bus.tests.test_work_lineage_binding.MutableResultFilesTests.test_files_for_stale_input_are_rejected_before_diff_get) ... FAIL
+test_head_advance_during_file_read_is_not_complete_old_diff (automation.command_bus.tests.test_work_lineage_binding.MutableResultFilesTests.test_head_advance_during_file_read_is_not_complete_old_diff) ... FAIL
+
+======================================================================
+FAIL: test_comparison_base_tree_must_match_formal_snapshot (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_comparison_base_tree_must_match_formal_snapshot)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 45, in test_comparison_base_tree_must_match_formal_snapshot
+    self.assertEqual(self.source(x).status, "UNKNOWN")
+AssertionError: 'VERIFIED_SNAPSHOT' != 'UNKNOWN'
+- VERIFIED_SNAPSHOT
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_duplicate_executed_timing_readback_is_ambiguous (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_duplicate_executed_timing_readback_is_ambiguous)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 50, in test_duplicate_executed_timing_readback_is_ambiguous
+    self.assertEqual(self.source(x).status, "UNKNOWN")
+AssertionError: 'VERIFIED_SNAPSHOT' != 'UNKNOWN'
+- VERIFIED_SNAPSHOT
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_echoed_timing_source_is_not_executed_readback (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_echoed_timing_source_is_not_executed_readback)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 56, in test_echoed_timing_source_is_not_executed_readback
+    self.assertEqual(self.source(x).status, "UNKNOWN")
+AssertionError: 'VERIFIED_SNAPSHOT' != 'UNKNOWN'
+- VERIFIED_SNAPSHOT
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_multiple_pr_outputs_do_not_establish_unique_result (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_multiple_pr_outputs_do_not_establish_unique_result)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 62, in test_multiple_pr_outputs_do_not_establish_unique_result
+    self.assertEqual(self.source(x).status, "UNKNOWN")
+AssertionError: 'VERIFIED_SNAPSHOT' != 'UNKNOWN'
+- VERIFIED_SNAPSHOT
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_review_cannot_expand_verified_source_allowlist (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_review_cannot_expand_verified_source_allowlist)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 40, in test_review_cannot_expand_verified_source_allowlist
+    self.assertNotEqual(self.review(x, lineage=lineage).status, "VALIDATED")
+AssertionError: 'VALIDATED' == 'VALIDATED'
+
+======================================================================
+FAIL: test_review_cannot_use_verified_lineage_for_another_head (automation.command_bus.tests.test_work_lineage_binding.LineageBindingTests.test_review_cannot_use_verified_lineage_for_another_head)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 33, in test_review_cannot_use_verified_lineage_for_another_head
+    self.assertNotEqual(self.review(x, lineage=lineage).status, "VALIDATED")
+AssertionError: 'VALIDATED' == 'VALIDATED'
+
+======================================================================
+FAIL: test_files_for_stale_input_are_rejected_before_diff_get (automation.command_bus.tests.test_work_lineage_binding.MutableResultFilesTests.test_files_for_stale_input_are_rejected_before_diff_get)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 78, in test_files_for_stale_input_are_rejected_before_diff_get
+    with self.assertRaises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_head_advance_during_file_read_is_not_complete_old_diff (automation.command_bus.tests.test_work_lineage_binding.MutableResultFilesTests.test_head_advance_during_file_read_is_not_complete_old_diff)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_work_lineage_binding.py", line 91, in test_head_advance_during_file_read_is_not_complete_old_diff
+    with self.assertRaises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.005s
+
+FAILED (failures=8)
