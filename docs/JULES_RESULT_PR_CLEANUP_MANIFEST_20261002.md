@@ -4,8 +4,8 @@ Read-only inventory. **Nothing was closed, merged or deleted.** A human may use 
 to clean up in one pass. Classification is by blob comparison of each PR's own
 diff (PR base..head) against the current branches; re-run before acting.
 
-Reference heads: carrier `7c83ae9`, main `9f3e0f6`, Relay #4 `f6072c1`, #217 `568a30d`,
-#220 `044389e`, signal-observed-v1 `516af0f`, #234 `900ab2c`.
+Reference heads: carrier `7c83ae9`, main `9f3e0f6`, Relay #4 `f6072c1`, #217 `a3e3c2e`,
+#220 `044389e`, signal-observed-v1 `900ab2c` (includes the merged #234). Classification below was made against the earlier #217 `568a30d`; the files named for #217 should be re-checked before closing anything.
 
 Classes: A adopted as-is · B contained identically elsewhere · C superseded by a modified version · D useful, not yet adopted · E not adopted · F UNKNOWN.
 

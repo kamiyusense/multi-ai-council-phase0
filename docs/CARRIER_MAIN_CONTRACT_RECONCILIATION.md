@@ -112,7 +112,7 @@ one passes.
 
 ## 7. Order and the two follow-up patches
 
-1. Merge **this branch** into main (tiny, tested alone: 811 tests).
+1. Merge **this branch** into main (small, tested alone: command_bus 811 tests in Actions at the time of writing).
 2. Land PR #229 and the carrier-side copies of PR #226 + timing on the carrier
    (or merge carrier into main afterwards and take this branch's readback file).
 3. Merge carrier → main. Expected remaining conflicts: only the two prose files in §6.
@@ -120,7 +120,7 @@ one passes.
 5. PR #217 (contains #203): first apply
    `patches/pr217-blue-e2e-carrier-contract.patch` (Blue E2E validates with the
    carrier validator and checks origin identity via the origin binding).
-6. Signal canonical `feature/signal-observed-v1` + PR #234: merged cleanly in the stack.
+6. Signal canonical `feature/signal-observed-v1` (PR #234 is already merged into it): merged cleanly in the stack.
 7. PR #220 last, by its owner, with
    `patches/pr220-claude-loop-profile-import.patch` (`PROFILE_V2` no longer exists
    on the canonical module; use the pinned carrier module's `PROFILE`).
@@ -138,13 +138,25 @@ tests were not removed or weakened anywhere.
 
 ## 9. Evidence and recovery
 
-Stack used for the full-suite run (kept off the PR on purpose): carrier
-`7c83ae9` + this branch + PR #229 + Relay #4 `f6072c1` + PR #217 `568a30d` +
-PR #220 `044389e` + `feature/signal-observed-v1` `516af0f` + PR #234 `900ab2c`
-+ the evidence patches. Result: command_bus **1278** tests OK (1 skipped),
-Relay **801** OK, `compileall`, YAML parse (18 workflows) OK. Count grew from
-the earlier 1153 because #220, #217 and #234 gained tests and this batch added tests. Remaining `git diff --check` findings are whitespace-at-EOF in Relay #4
-and two Blue evidence files (not touched here).
+Stack used for the full-suite run (kept off the PR on purpose, branch
+`claude/carrier-main-stack-verification`): carrier `7c83ae9` + this branch +
+PR #229 + Relay #4 `f6072c1` + PR #217 `a3e3c2e` + PR #220 `044389e` +
+`feature/signal-observed-v1` `900ab2c` (PR #234 is already merged into it, so no
+separate #234 step) + the evidence patches (Blue E2E fix, `PROFILE` import fix,
+cross-lane tests).
+
+Two different kinds of numbers, do not mix them:
+
+- **GitHub Actions on this PR (authoritative for the PR alone):** command_bus
+  811 tests OK, 1 skipped, on the head recorded in the PR checks.
+- **Claude's integration record (local run, not Actions):** the stack above,
+  command_bus **1281** OK (1 skipped), Relay **801** OK, `compileall` OK, YAML
+  parse OK. The earlier record was 1278 against #217 `568a30d`; #217 moved to
+  `a3e3c2e` and the stack was re-merged and re-run. Counts grow whenever #217,
+  #220 or the cross-lane tests gain tests; re-derive before relying on them.
+
+Remaining `git diff --check` findings in the stack are whitespace-at-EOF in
+Relay #4 and two Blue evidence files (not touched by this PR).
 
 Cross-lane negative tests (10, real bare git): other lane takes the Loop
 number first, claim race, expired AUTO lease, live SEMI_AUTO lease, concurrent
