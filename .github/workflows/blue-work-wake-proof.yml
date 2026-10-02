@@ -1,0 +1,72 @@
+name: Blue BWJ-4 one-shot read-only transport proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      proof_id:
+        description: Exact sealed proof ID (one approved activation only)
+        required: true
+        type: string
+      approved_main:
+        description: Fresh independently inspected main HEAD
+        required: true
+        type: string
+      approved_workflow_blob:
+        description: Fresh independently inspected workflow Git blob SHA
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: blue-bwj4-one-shot-proof
+  cancel-in-progress: false
+
+jobs:
+  one-shot-readonly-wake-proof:
+    name: one-shot-readonly-wake-proof
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.actor == 'kamiyusense' && inputs.approved_main == github.sha
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    env:
+      PROOF_ID: ${{ inputs.proof_id }}
+      APPROVED_MAIN: ${{ inputs.approved_main }}
+      APPROVED_WORKFLOW_BLOB: ${{ inputs.approved_workflow_blob }}
+    steps:
+      - name: Checkout vetted exact main only (never target/result PR code)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Fresh gates and secret-free ATTEMPTING record
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -m automation.command_bus.blue_work_wake_proof prepare
+      - name: Make attempt durable BEFORE the single review POST
+        id: attempt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: bwj4-attempt-${{ inputs.proof_id }}
+          path: bwj4-proof/attempt.json
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: false
+      - name: Verify artifact and final reread fence, POST at most once, GET readback
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ATTEMPT_ARTIFACT_ID: ${{ steps.attempt.outputs.artifact-id }}
+          ATTEMPT_ARTIFACT_DIGEST: ${{ steps.attempt.outputs.artifact-digest }}
+        run: python -m automation.command_bus.blue_work_wake_proof post
+      - name: Preserve result including ambiguous outcome (never rerun)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: bwj4-result-${{ github.run_id }}
+          path: bwj4-proof/*.json
+          if-no-files-found: warn
+          retention-days: 90
+          overwrite: false
