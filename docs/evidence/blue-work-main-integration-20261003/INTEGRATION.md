@@ -47,3 +47,41 @@ The Blue offline workflow is read-only and runs:
 - four-lane restart/fault simulation
 
 The exact candidate HEAD and Actions result must be read back before any Merge decision.
+
+
+## R3 static corrections
+
+Final Integration R3 independently found two defects in the first current-main
+candidate and verified the correction series before this branch was updated.
+
+### Remove the expired authenticated Session diagnostic
+
+The original port accidentally included
+`.github/workflows/blue-existing-session-readback.yml`, a bounded historical
+Jules Session GET diagnostic that references `JULES_API_KEY`. It was not part
+of the intended STATIC/mock integration and its fixed diagnostic window is
+expired. This candidate therefore does not carry that workflow into main.
+Its dedicated workflow-shape test,
+`automation/command_bus/tests/test_blue_session_diagnostic_workflow.py`, is
+also omitted. The historical workflow and evidence remain on the #217 source
+branch; no diagnostic GET is executed or retried by this correction.
+
+The only Blue workflow added by this candidate is the read-only
+`blue-work-reconcile-static.yml`.
+
+### Restore three Blue tests inherited from PR #203
+
+The first port was derived from the #217-only diff and therefore missed three
+tests that #203 introduced and #217 inherited without modifying:
+
+- `test_blue_jules_result_event.py`
+- `test_blue_work_wake_prepare.py`
+- `test_blue_work_jules_webhook_static_e2e.py`
+
+All three are restored. The static E2E is adapted to the current carrier
+contract: it validates through `jules_carrier_current`, prepares a schema-v3
+J-BLUE claim, and verifies origin identity through the durable origin-binding
+bundle rather than obsolete carrier request fields.
+
+No LIVE Work/Jules/provider/model execution is authorized or performed by
+these corrections.
