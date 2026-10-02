@@ -26,10 +26,12 @@ def observed_human_attention(observed_jules: str, observed_pr: str, observed_ci:
     """
     # With no result PR, CI is UNKNOWN by construction and carries no signal.
     facts = (observed_jules, observed_pr) if observed_pr == "NO_RESULT_PR" else (observed_jules, observed_pr, observed_ci)
-    if "UNKNOWN" in facts:
-        return "UNKNOWN"
+    # A direct observed NEEDS_INPUT/FAIL or exact-head CI FAIL is already
+    # enough to require attention; an unrelated UNKNOWN must not suppress it.
     if observed_jules in ("NEEDS_INPUT", "FAIL") or observed_ci == "FAIL":
         return "NEEDED"
+    if "UNKNOWN" in facts:
+        return "UNKNOWN"
     if observed_jules in ("DISPATCHED", "IN_PROGRESS") or observed_ci == "VERIFYING":
         return "NOT_NEEDED"
     if observed_jules == "SESSION_COMPLETE":

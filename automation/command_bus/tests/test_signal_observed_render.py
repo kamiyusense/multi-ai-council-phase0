@@ -156,3 +156,11 @@ class TestObservedHumanAttention(unittest.TestCase):
         self.assertEqual(self._attn("COMPLETED", head="xyz"), "UNKNOWN")
         self.assertEqual(self._attn("COMPLETED", wf_head="b" * 40), "UNKNOWN")
         self.assertEqual(self._attn(None, head=None), "UNKNOWN")
+
+    def test_explicit_attention_signal_is_not_suppressed_by_unrelated_unknown(self):
+        self.assertEqual(self._attn("AWAITING_USER_FEEDBACK", head="xyz"), "NEEDED")
+        self.assertEqual(self._attn("FAILED", head="xyz"), "NEEDED")
+        self.assertEqual(
+            self._attn(None, head=self.sha, wf_head=self.sha, status="completed", conclusion="failure"),
+            "NEEDED",
+        )
