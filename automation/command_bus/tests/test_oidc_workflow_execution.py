@@ -205,6 +205,38 @@ class AuthorityAuthenticatorTests(unittest.TestCase):
         auth = OidcBoundAuthorityAuthenticator(execution=push_exec, policy=self.policy)
         self.assertIsNone(auth.authenticate(src, expected=dict(src)))
 
+    def test_dispatch_run_readback_rejects_rerun_wrong_workflow_ref_sha_and_stale(self):
+        bad = {
+            "rerun": {"run_attempt": 2},
+            "workflow": {"path": ".github/workflows/other.yml"},
+            "ref": {"head_branch": "claude/other"},
+            "sha": {"head_sha": "d" * 40},
+            "push_event": {"event": "push"},
+            "not_completed": {"status": "in_progress", "conclusion": None},
+            "other_run": {"id": 1},
+        }
+        for label, changes in bad.items():
+            with self.subTest(label):
+                ex = verify_oidc_workflow_execution(
+                    evidence=evidence_for(DISPATCH_PROFILE), profile=DISPATCH_PROFILE,
+                    run_reader=RunReader(run_for(DISPATCH_PROFILE, **changes)),
+                    expected_run_id=RUN_ID, expected_sha=SHA)
+                self.assertIsNone(ex)
+        stale = verify_oidc_workflow_execution(
+            evidence=evidence_for(DISPATCH_PROFILE), profile=DISPATCH_PROFILE,
+            run_reader=RunReader(run_for(DISPATCH_PROFILE)),
+            expected_run_id=RUN_ID, expected_sha="e" * 40)
+        self.assertIsNone(stale)
+
+    def test_actor_must_equal_triggering_actor_even_when_both_allowlisted(self):
+        policy = AuthorityIssuerPolicy(allowed_actor_ids=frozenset({OWNER_ID, "7"}))
+        split = verify_oidc_workflow_execution(
+            evidence=evidence_for(DISPATCH_PROFILE), profile=DISPATCH_PROFILE,
+            run_reader=RunReader(run_for(DISPATCH_PROFILE, triggering_actor={"id": 7})),
+            expected_run_id=RUN_ID, expected_sha=SHA)
+        self.assertIsNone(OidcBoundAuthorityAuthenticator(execution=split, policy=policy).authenticate(
+            authority_source(split), expected=dict(authority_source(split))))
+
     def test_policy_actor_and_source_fail_closed(self):
         src = authority_source(self.execution)
         expected = dict(src)

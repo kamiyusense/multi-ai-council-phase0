@@ -3,8 +3,12 @@
 Status: Draft, NOT merged. Based on main ed19f7f (fresh readback 2026-10-02 ~08:55Z). PR #236 stays separate and unmerged.
 
 ## What this PR adds (minimum slice moved from PR #236)
-- `.github/workflows/signal-sf8-authority-issuer.yml`: workflow_dispatch only; main only; run_attempt 1; actor == triggering actor; one allowlisted actor id (20355232, the repository owner, read back from GitHub: sole collaborator, role admin). Permissions `contents: read` + `id-token: write`; no secrets; no inputs; no reusable workflows; pinned action SHAs.
+- `.github/workflows/signal-sf8-authority-issuer.yml`: workflow_dispatch only; main only; run_attempt 1; `github.event_name == 'workflow_dispatch'`; pre-start gate on the documented `github.actor_id` only (one allowlisted id: 20355232, the repository owner, read back from GitHub: sole collaborator, role admin). Permissions `contents: read` + `id-token: write`; no secrets; no inputs; no reusable workflows; pinned action SHAs.
 - OIDC profiles `sf8` and `sf8-authority` (Python policy + Node proof), `oidc_workflow_execution.py` (execution proof, OIDC-bound provider/authority authenticators), `sf8_readiness.py` (DURABLE promotion gate), `lane_identity_adoption.py` (adoption record validator), tests, and the recorded one-shot live evidence (run 36981004299).
+
+## Two-stage actor check
+- Before the run: the job `if` uses only documented contexts (`github.actor_id`, event, ref, run_attempt, repository). `github.triggering_actor_id` is NOT a documented property (GitHub Contexts reference: nonexistent properties evaluate to an empty string) and would silently skip the job, so it is not used.
+- After the run: `oidc_workflow_execution.py` re-verifies from the Actions REST readback that `actor.id` is allowlisted, `actor.id == triggering_actor.id`, attempt 1, event workflow_dispatch, exact workflow path, exact main ref and SHA. Unchanged and covered by tests.
 
 ## Trust boundary
 - OIDC proves only: this repo, this workflow file, this ref, this SHA, event, attempt, actor. It is not provider state, not runtime PASS, not a loop id.

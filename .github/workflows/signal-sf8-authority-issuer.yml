@@ -15,7 +15,7 @@ jobs:
   issue:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.actor_id == github.triggering_actor_id && contains(fromJSON('["20355232"]'), github.actor_id)
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.event_name == 'workflow_dispatch' && contains(fromJSON('["20355232"]'), github.actor_id)
     steps:
       - name: Checkout the dispatched main commit without persisted credentials
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

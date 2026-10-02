@@ -35,7 +35,12 @@ class IssuerCandidate(unittest.TestCase):
         for bad in ("contents: write", "actions: write", "attestations: write", "packages: write", "secrets."):
             self.assertNotIn(bad, CAND)
         self.assertIn("github.ref == 'refs/heads/main'", CAND)
-        self.assertIn("github.actor_id == github.triggering_actor_id", CAND)
+        self.assertIn("github.event_name == 'workflow_dispatch'", CAND)
+        self.assertIn("github.actor_id", CAND)
+        # github.triggering_actor_id is not a documented context property (evaluates to ""),
+        # so it must never gate the job; that check lives in the REST readback verifier.
+        self.assertNotIn("triggering_actor_id", CAND)
+        self.assertNotIn("triggering_actor", CAND)
         self.assertIn("github.run_attempt == 1", CAND)
         self.assertIn(f"OIDC_PROOF_PROFILE: {SF8_AUTHORITY_PROFILE.name}", CAND)
         for u in re.findall(r"uses: (\S+)", CAND):
@@ -46,6 +51,14 @@ class IssuerCandidate(unittest.TestCase):
         self.assertNotIn("inputs:", CAND)
         self.assertNotIn("REPLACE_WITH", CAND)
         self.assertIn("github.repository == 'kamiyusense/multi-ai-council-phase0'", CAND)
+
+    def test_checkout_and_artifact_hygiene(self):
+        self.assertIn("persist-credentials: false", CAND)
+        self.assertNotIn("id_token", CAND.lower().replace("id-token", ""))
+        self.assertNotRegex(CAND, r"(?i)\b(jwt|ACTIONS_ID_TOKEN_REQUEST_TOKEN)\b")
+        self.assertEqual(CAND.count("upload-artifact@"), 1)
+        self.assertIn("oidc-proof-evidence.json", CAND)  # sanitized evidence file only
+        self.assertNotRegex(CAND, r"(?m)^\s*run:.*(git (push|commit)|curl|gh )")
 
     def test_no_other_workflow_uses_authority_profile(self):
         for f in (ROOT / ".github/workflows").glob("*.yml"):
