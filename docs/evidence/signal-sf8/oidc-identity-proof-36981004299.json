@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "proof_kind": "GITHUB_HOSTED_OIDC_WORKFLOW_IDENTITY",
+  "status": "PASS",
+  "terminal_stage": "COMPLETE",
+  "safe_error_code": "NONE",
+  "run_id": "36981004299",
+  "exact_commit_sha": "93460dee54948dc6ac3888f4142ab78cd54ce759",
+  "expected_workflow_identity": "kamiyusense/multi-ai-council-phase0/.github/workflows/signal-sf8-oidc-proof.yml@refs/heads/claude/signal-sf8-oidc-runtime-integration-20261002",
+  "evidence_payload_sha256": "737864e122c2ccc9844061f62c1c45b44dff9e89e64a0d343bfdcf8120880cc1"
+}
