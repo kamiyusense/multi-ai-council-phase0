@@ -17,10 +17,16 @@ from automation.command_bus.claude_loop import (
     BackendMode,
     VerdictDecision,
     make_structured_verdict,
+    numbered_command_id,
+    prepare_jules_semiauto_bundle,
     prepare_jules_semiauto_request,
+    prepare_loop_claim,
     prepare_next_action,
 )
-from automation.command_bus.jules_api_request import validate_request
+# The Jules carrier (feature/chat-work-command-bus) owns the request contract:
+# JULES_CHAT_SEMIAUTO_V2 there carries `work_branch`, not the `origin_*` keys of
+# main's validator.  The origin identity travels in the origin-binding record.
+from automation.command_bus.jules_carrier_current.jules_api_request import validate_request
 
 
 class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
@@ -173,17 +179,24 @@ class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
         )
         self.assertEqual(next_action.status, "PREPARED")
 
-        # 6. prepare_jules_semiauto_request
-        jules_req = prepare_jules_semiauto_request(
-            next_action.request,
+        # 6. prepare_jules_semiauto_request + schema-v3 claim + origin binding
+        command_id = numbered_command_id(1, "blue-e2e")
+        common = dict(
             target_branch=self.work_branch,
             default_branch="main",
             created_at=self.now.isoformat(),
+            command_id=command_id,
         )
+        jules_req = prepare_jules_semiauto_request(next_action.request, **common)
         self.assertEqual(jules_req.status, "PREPARED")
         req = jules_req.request
+        claim_res = prepare_loop_claim(req, lane_id="J-BLUE", claimed_at=self.now.isoformat())
+        self.assertEqual(claim_res.status, "PREPARED", claim_res.reason)
+        bundle = prepare_jules_semiauto_bundle(next_action.request, claim_res.request, **common)
+        self.assertEqual(bundle.status, "PREPARED", bundle.reason)
+        binding = bundle.request["origin_binding"]
 
-        # 7. validate_request
+        # 7. validate_request with the carrier's own validator
         validated = validate_request(req, now=self.now)
         self.assertEqual(validated["profile"], "JULES_CHAT_SEMIAUTO_V2")
         self.assertEqual(validated["target_branch"], self.work_branch)
@@ -193,10 +206,11 @@ class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
         self.assertEqual(validated["fallback"], "disabled")
         self.assertEqual(validated["merge_allowed"], False)
         self.assertEqual(validated["force_push_allowed"], False)
-        self.assertEqual(validated["origin_loop_id"], "loop-1")
-        self.assertEqual(validated["origin_round"], 1)
-        self.assertEqual(validated["origin_correlation_id"], "loop-1-round-1")
-        self.assertEqual(validated["origin_generation"], self.worker_generation)
+        self.assertEqual(binding["origin_loop_id"], "loop-1")
+        self.assertEqual(binding["origin_round"], 1)
+        self.assertEqual(binding["origin_correlation_id"], "loop-1-round-1")
+        self.assertEqual(binding["origin_generation"], self.worker_generation)
+        self.assertEqual(binding["command_id"], command_id)
 
         # 8. Replay identical event -> duplicate
         classification_dup = classify_blue_jules_result_event(event, lineage, (classification.command_id,))
