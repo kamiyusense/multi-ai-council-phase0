@@ -1,3 +1,4 @@
+import os
 import sys
 import tempfile
 import unittest
@@ -14,6 +15,10 @@ from relay.lifecycle import RelayLifecycle
 from relay.result import RelayState
 
 _FALSE = {"api_key_present": False, "gateway_configured": False, "external_cloud_configured": False}
+
+# Windows: codex-acp starts CODEX_PATH through cmd.exe, so a .py cannot be used directly.
+_GATE_NAME = "codex_turn_gate.cmd" if os.name == "nt" else "codex_turn_gate.py"
+
 PROFILES = {
     "openai": lambda: build_codex_profile("account", {**_FALSE, "custom_model_provider_configured": False, "arbitrary_codex_config_present": False}),
     "anthropic": lambda: build_claude_profile("account", {**_FALSE, "dangerous_permission_bypass": False, "hide_claude_auth": False}),
@@ -357,8 +362,10 @@ class TestCodexAdapterContract(unittest.TestCase):
             "FAKE_CODEX_LOG": os.path.join(self.home, "backend.log"),
             "RELAY_GATE_LOG": os.path.join(self.home, "gate.log"),
             "RELAY_GATE_BACKEND": fake,
-            "CODEX_PATH": str(repo / "src" / "relay" / "codex_turn_gate.py") if gated else fake,
+            "CODEX_PATH": str(repo / "src" / "relay" / _GATE_NAME) if gated else fake,
         }
+        if os.name == "nt":
+            env["RELAY_GATE_PYTHON"] = sys.executable
         env.update(extra)
         return env
 
@@ -397,6 +404,8 @@ class TestCodexAdapterContract(unittest.TestCase):
 
     def test_upstream_title_second_turn_is_reproduced_without_gate(self):
         """Canary: documents upstream behavior. If this fails, upstream changed; re-audit."""
+        if os.name == "nt":
+            self.skipTest("un-gated canary needs an executable fixture; covered on Linux")
         import asyncio
         from relay.acp_client import acp_mock_text_update_wire
         asyncio.run(acp_mock_text_update_wire(

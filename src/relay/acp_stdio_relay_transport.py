@@ -67,6 +67,8 @@ _FORBIDDEN_ENV = frozenset({
 })
 
 _DEFAULT_TIMEOUT_SECONDS = 5
+_STARTUP_TIMEOUT_SECONDS = 15.0  # adapter start (node, cmd.exe, gate) can be slow, e.g. on Windows
+_TEARDOWN_TIMEOUT_SECONDS = 2.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,9 +108,12 @@ def _validate_official_launch(launch: OfficialAdapterLaunch, profile: ProviderSt
         raise ValueError(f"credential/route env not allowed in STATIC mode: {sorted(forbidden)}")
     # codex-acp may start a second (title-generation) turn on its own. The outer
     # one-generation gate must therefore sit between the adapter and its backend.
-    gate = Path(__file__).with_name("codex_turn_gate.py").resolve()
-    if not launch.env.get(seam) or Path(launch.env[seam]).resolve() != gate:
-        raise ValueError(f"{seam} must be the Relay one-generation gate (codex_turn_gate.py)")
+    gates = {
+        Path(__file__).with_name("codex_turn_gate.py").resolve(),
+        Path(__file__).with_name("codex_turn_gate.cmd").resolve(),  # Windows launcher
+    }
+    if not launch.env.get(seam) or Path(launch.env[seam]).resolve() not in gates:
+        raise ValueError(f"{seam} must be the Relay one-generation gate (codex_turn_gate.py/.cmd)")
     backend = launch.env.get("RELAY_GATE_BACKEND")
     if not backend:
         raise ValueError("RELAY_GATE_BACKEND must point at a fixture backend")
@@ -171,11 +176,11 @@ class AcpStdioStaticTransport:
             self._loop = asyncio.new_event_loop()
         return self._loop.run_until_complete(coro)
 
-    async def _spawn(self, timeout: float) -> dict[str, Any]:
-        self._cm = spawn_stdio_transport(*self.command, env=self._env, shutdown_timeout=timeout)
+    async def _spawn(self) -> dict[str, Any]:
+        self._cm = spawn_stdio_transport(*self.command, env=self._env, shutdown_timeout=_TEARDOWN_TIMEOUT_SECONDS)
         stdout, stdin, _process = await self._cm.__aenter__()
         self._streams = (stdout, stdin)
-        return await _acp_initialize(stdout, stdin, timeout)
+        return await _acp_initialize(stdout, stdin, _STARTUP_TIMEOUT_SECONDS)
 
     async def _teardown(self) -> None:
         cm, self._cm, self._streams = self._cm, None, None
@@ -195,7 +200,7 @@ class AcpStdioStaticTransport:
         self.spawn_count += 1
         self._state = "initialized"
         try:
-            result = self._run(self._spawn(2.0))
+            result = self._run(self._spawn())
         except BaseException:
             self._run(self._teardown())
             self._dispose_loop()
@@ -218,7 +223,7 @@ class AcpStdioStaticTransport:
         if self._state != "initialized" or self._streams is None:
             raise ValueError("transport is not initialized")
         stdout, stdin = self._streams
-        session_id = self._run(_acp_new_session(stdout, stdin, cwd, float(_DEFAULT_TIMEOUT_SECONDS)))
+        session_id = self._run(_acp_new_session(stdout, stdin, cwd, _STARTUP_TIMEOUT_SECONDS))
         self._session_id, self._state = session_id, "open"
         return session_id
 

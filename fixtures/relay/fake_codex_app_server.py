@@ -76,6 +76,8 @@ def _turn_events(thread_id: str, text: str) -> None:
 
 
 def main() -> None:
+    # '\n' only, also on Windows (no CRLF translation of the JSON-RPC stream)
+    sys.stdout.reconfigure(newline="\n")
     if sys.argv[1:] != ["app-server"]:
         sys.exit(2)
     for line in sys.stdin:
