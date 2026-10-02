@@ -1,0 +1,26 @@
+{
+  "binding_checks": {
+    "branch_match": true,
+    "create_time_match": true,
+    "name_match": true,
+    "source_match": true
+  },
+  "create_time": "2026-10-01T13:13:44.273192960Z",
+  "error_category": "NONE",
+  "evidence_sha256": "2eb755747bfe404c95b07d557bad668bf659245fae45fc66c94f47903d76a36b",
+  "exact_commit_sha": "93460dee54948dc6ac3888f4142ab78cd54ce759",
+  "http_method": "GET",
+  "observed_at": "2026-10-02T07:54:12Z",
+  "proof_kind": "JULES_SESSION_GET_READBACK",
+  "raw_state": "COMPLETED",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "retry_count": 0,
+  "run_attempt": "1",
+  "run_id": "36981004299",
+  "schema_version": 1,
+  "session_id": "14533806911319619381",
+  "source": "sources/github/kamiyusense/multi-ai-council-phase0",
+  "starting_branch": "jules-work/relay-dev-loop-120-signal-observed-static-e2e",
+  "status": "PASS",
+  "update_time": "2026-10-01T13:22:53.202156Z"
+}
