@@ -1,0 +1,18 @@
+{
+  "run": 36955281748,
+  "job": 110676775395,
+  "head": "568a30d8847ff38c2a4082badc14cbd2688e2336",
+  "workflow": ".github/workflows/blue-existing-session-readback.yml",
+  "run_attempt": 1,
+  "status": "completed",
+  "conclusion": "failure",
+  "session_id": "12436642121757218108",
+  "observed_error": "ValueError: Jules Session readback unavailable",
+  "cause": "UNKNOWN",
+  "artifact_count": 0,
+  "retry": 0,
+  "fallback": "disabled",
+  "completed_source_lineage": "UNKNOWN",
+  "reexecuted": false,
+  "diagnostic_upgrade": "STATIC_ONLY_NOT_REEXECUTED"
+}

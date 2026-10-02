@@ -1,0 +1,61 @@
+{
+  "full_suite": {
+    "command": "python -m unittest discover -s automation/command_bus/tests -t . -v",
+    "run": 984,
+    "passed": 983,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "duration_seconds": 43.671
+  },
+  "focused": {
+    "run": 35,
+    "passed": 35
+  },
+  "before_original_pr227": {
+    "methods": 8,
+    "assertion_failures": 9,
+    "errors": 5,
+    "counts_include_subcases": true
+  },
+  "compileall": "PASS",
+  "diff_check": "PASS",
+  "source_authentication": "PENDING_EXISTING_SESSION_GET",
+  "raw_jules_result": "FAIL_NOT_ADOPTED",
+  "independent_repaired_review": "PENDING",
+  "logs": {
+    "morning-final-full.txt": {
+      "sha256": "1e2cc4906566d791f2d902909c3e61176db629213d03eac897533d56b5ba89f5",
+      "tail": [
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 984 tests in 43.671s",
+        "",
+        "OK (skipped=1)",
+        "Existing completed Session readback saved; no adoption or successor."
+      ]
+    },
+    "morning-focused.txt": {
+      "sha256": "6e83048a8797334bb3164704f2a8ef413328bafba555f0771494a3704e876574",
+      "tail": [
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 35 tests in 0.030s",
+        "",
+        "OK",
+        "Existing completed Session readback saved; no adoption or successor."
+      ]
+    },
+    "session-before.txt": {
+      "sha256": "d421f904e048414b7a8cf4fd93c648ac07fc7927ebf47ea38abf1bddab7d7f50",
+      "tail": [
+        "AssertionError: ValueError not raised",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 8 tests in 0.015s",
+        "",
+        "FAILED (failures=9, errors=5)"
+      ]
+    }
+  }
+}
