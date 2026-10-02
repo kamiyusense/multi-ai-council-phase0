@@ -47,7 +47,7 @@ reverse, and removes the only mechanical check that tells the two apart.
 
 ## 3. What this branch changes (small, base = main)
 
-16 files, +1055/−224:
+The PR changes **23 files, +1941/−224** in total: 16 code/test/workflow files (+1055/−224, listed below) plus 7 documentation and evidence files (this document, the cleanup manifest, and 5 files under `docs/evidence/carrier-main-reconciliation-20261002/`). The 16 code/test/workflow files:
 
 - `jules_api_request.py` and `tests/test_jules_api_request.py` := carrier versions (byte-identical).
 - `jules_api_request_origin.py`, `tests/test_jules_api_request_origin.py` := main's old versions, renamed.
