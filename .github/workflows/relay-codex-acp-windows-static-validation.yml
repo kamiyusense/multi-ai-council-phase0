@@ -84,8 +84,11 @@ jobs:
             tests.relay.test_acp_stdio_relay_transport.TestOfficialCodexAdapterWithFixtureBackend \
             tests.relay.test_acp_stdio_relay_transport.TestCodexAdapterContract \
             tests.relay.test_acp_stdio_relay_transport.TestOfficialAdapterLaunchGuards 2>&1 | tee windows.txt
-          grep -q '^OK (skipped=1)$' windows.txt
-          grep -q 'test_upstream_title_second_turn_is_reproduced_without_gate.*skipped' windows.txt
+          # Windows output has CRLF line ends: normalize before matching
+          tr -d '\r' < windows.txt > windows-lf.txt
+          grep -q '^OK (skipped=1)$' windows-lf.txt
+          [[ "$(grep -c "skipped '" windows-lf.txt)" == "1" ]]
+          grep -q "skipped 'un-gated canary needs an executable fixture" windows-lf.txt
 
       - name: Record
         shell: bash
