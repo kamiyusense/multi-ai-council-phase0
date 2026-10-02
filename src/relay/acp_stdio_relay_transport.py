@@ -4,10 +4,11 @@ Thin seam: ``RelayLifecycle`` (sync RelayTransport) -> existing
 ``acp_mock_text_update_wire`` (initialize -> session/new -> session/prompt over
 ``spawn_stdio_transport``) -> existing ``acp_mock_text_to_phase0_raw`` mapper.
 
-It launches only a caller-injected command (a fake/local test agent). The
-official live adapter binaries named by the provider profiles are refused, so
-this class can never start a real provider/model turn. No retry, no relaunch,
-no fallback: one request -> one child -> one prompt.
+It launches a caller-injected command intended for a fake/local test agent.
+Known official adapter identities named by the provider profiles are refused.
+That name guard is fail-closed for the known identities but is not a sandbox;
+callers must keep this seam restricted to trusted STATIC/test commands. No
+retry, no relaunch, no fallback: one request -> one child -> one prompt.
 """
 
 from __future__ import annotations
