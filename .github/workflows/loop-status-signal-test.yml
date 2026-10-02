@@ -128,6 +128,11 @@ on:
       - docs/evidence/signal-sf8/**
       - docs/evidence/signal-authority/**
       - docs/evidence/signal-active-proof/**
+      - .github/workflows/signal-step7-live-publish.yml
+      - automation/command_bus/signal_step7_live_proof.py
+      - automation/command_bus/signal_step7_live_proof_cli.py
+      - automation/command_bus/tests/test_signal_step7_live_proof.py
+      - automation/command_bus/tests/test_signal_step7_live_workflow.py
 
 permissions:
   contents: read
