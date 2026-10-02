@@ -1,0 +1,102 @@
+name: Signal SF-8 bounded OIDC proof
+
+# Dedicated-branch, one-shot SF-8 proof. Jobs run only for a push whose commit message starts with the
+# exact proof marker below and only on the first attempt (retry=0, never rerun). Later unrelated pushes
+# match neither the path nor the marker guard.
+#   * oidc-proof: GitHub Actions OIDC identity only (id-token: write, contents: read, no secrets).
+#   * jules-get: ONE read-only GET of one existing Jules Session (existing secret, contents: read, no id-token).
+# The two jobs share no token and no secret. Neither proves owner authority or durable ownership.
+on:
+  push:
+    branches:
+      - claude/signal-sf8-oidc-runtime-integration-20261002
+    paths:
+      - .github/workflows/signal-sf8-oidc-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  offline-preflight:
+    if: "github.run_attempt == 1 && startsWith(github.event.head_commit.message, 'test(signal): run SF-8 bounded OIDC and Jules GET proof once')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Static tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          node --check automation/command_bus/github_oidc_signature_proof.mjs
+          node --test automation/command_bus/tests/test_github_oidc_signature_proof.mjs
+          python3 -m unittest \
+            automation.command_bus.tests.test_github_oidc_claims_policy \
+            automation.command_bus.tests.test_github_oidc_proof_policy_cli \
+            automation.command_bus.tests.test_github_oidc_proof_profiles \
+            automation.command_bus.tests.test_jules_session_api_reader \
+            automation.command_bus.tests.test_sf8_jules_get_evidence -v
+
+  oidc-proof:
+    needs: offline-preflight
+    if: "github.run_attempt == 1 && startsWith(github.event.head_commit.message, 'test(signal): run SF-8 bounded OIDC and Jules GET proof once')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout exact commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Request once, verify GitHub signature and context in memory
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          OIDC_PROOF_PROFILE: sf8
+        run: node automation/command_bus/github_oidc_signature_proof.mjs
+      - name: Show sanitized evidence only
+        if: always()
+        run: cat "${RUNNER_TEMP}/oidc-proof-evidence.json"
+      - name: Save sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sf8-oidc-identity-proof-${{ github.run_id }}
+          path: ${{ runner.temp }}/oidc-proof-evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+  jules-get:
+    needs: offline-preflight
+    if: "github.run_attempt == 1 && startsWith(github.event.head_commit.message, 'test(signal): run SF-8 bounded OIDC and Jules GET proof once')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: One read-only GET of one existing Jules Session
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          SF8_SESSION_ID: '14533806911319619381'
+          SF8_EXPECTED_BRANCH: 'jules-work/relay-dev-loop-120-signal-observed-static-e2e'
+          SF8_EXPECTED_CREATE_TIME: '2026-10-01T22:13:44+09:00'
+        run: python3 -m automation.command_bus.sf8_jules_get_evidence
+      - name: Save sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sf8-jules-get-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/jules-get-evidence.json
+          if-no-files-found: ignore
+          retention-days: 7
