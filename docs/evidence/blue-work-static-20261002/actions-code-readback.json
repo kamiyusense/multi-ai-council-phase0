@@ -1,0 +1,144 @@
+{
+  "run": {
+    "id": 36986471226,
+    "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36986471226",
+    "head": "6d7859d922eaeee9e57ddb7ae590d5a819f9eb63",
+    "path": ".github/workflows/blue-work-reconcile-static.yml",
+    "event": "pull_request",
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "job": {
+    "id": 110772537318,
+    "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/actions/jobs/110772537318",
+    "steps": [
+      {
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "name": "Checkout exact experiment commit",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run existing and new command-bus static tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "Compile and check whitespace",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay only the committed synthetic snapshot",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay formal schema-v3 mock closed loop",
+        "conclusion": "success"
+      },
+      {
+        "name": "Read-only GitHub event preflight",
+        "conclusion": "success"
+      },
+      {
+        "name": "Replay complete four-lane bridge and restart faults without services",
+        "conclusion": "success"
+      },
+      {
+        "name": "Record offline boundary",
+        "conclusion": "success"
+      },
+      {
+        "name": "Save prepare-only artifacts",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Checkout exact experiment commit",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "id": 11217746917,
+      "name": "work-prepare-only-36986471226",
+      "digest": "sha256:53a46a0a7babe91564a6f230faf118749ad3e8a9768ac605ab3f3669acf846dc",
+      "expired": false,
+      "url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36986471226/artifacts/11217746917"
+    }
+  ],
+  "log_summary": [
+    "2026-10-02T08:52:56.2720957Z OK (skipped=1)"
+  ],
+  "push_jobs": [
+    {
+      "id": 110772523505,
+      "conclusion": "success",
+      "status": "completed"
+    }
+  ],
+  "code_tree": "a1c63a96f709f51878e793a2c993af8591c9f3cb",
+  "diff": {
+    "changed_files": 34,
+    "deleted": 0,
+    "preserved_blobs": 639,
+    "exact_blobs_verified": true
+  },
+  "protected_pr_readback": [
+    {
+      "pr": 203,
+      "head": "66d366523ebe28726fcb36b0e5a45cb3368aa52d",
+      "unchanged_head": true,
+      "merged": false,
+      "state": "open"
+    },
+    {
+      "pr": 165,
+      "head": "62ab55d570caf5e95a33a4cea6396b37e1d14d29",
+      "unchanged_head": true,
+      "merged": false,
+      "state": "open"
+    },
+    {
+      "pr": 166,
+      "head": "c94de4276028227e449707d6a076141d5a251daa",
+      "unchanged_head": true,
+      "merged": false,
+      "state": "open"
+    },
+    {
+      "pr": 167,
+      "head": "5f9e210bc17ed695610e23b1c1699e11f5c8ed4b",
+      "unchanged_head": true,
+      "merged": false,
+      "state": "open"
+    },
+    {
+      "pr": 171,
+      "head": "cd16ceb8932350808ff2efb47bc504eb9a37add9",
+      "unchanged_head": true,
+      "merged": false,
+      "state": "open"
+    },
+    {
+      "pr": 227,
+      "head": "b4c5608f983ef42b5bd206bfc9c4f0f465ae7869",
+      "unchanged_head": true,
+      "merged": false,
+      "state": "open"
+    }
+  ],
+  "live": {
+    "new_trials": 0,
+    "new_session_gets": 0,
+    "new_claim_reservations": 0,
+    "prior_budget_used": 10,
+    "prior_budget_max": 10,
+    "trial10": "UNKNOWN_NO_RECEIPT_NO_RESEND"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "batch_id": "pr217-bwj-night-20261001T183834Z",
+  "live_limit": 10,
+  "counting_rule": "Each external Work command or new Jules session counts once; static Actions and readbacks are observations, not new trials.",
+  "trials": [
+    {
+      "number": 1,
+      "kind": "BLUE_READONLY_WAKE",
+      "command": {
+        "protocol_version": 1,
+        "command_id": "blue-20261001T183834Z-pr217-readonly-01",
+        "worker_generation": 1,
+        "target_repository": "kamiyusense/multi-ai-council-phase0",
+        "target_pr": 217,
+        "target_branch": "experiment/blue-work-autonomous-development",
+        "expected_target_head": "044e96b69f4bcf7c2efb43cb325f8b5181e086e1",
+        "expires_at": "2026-10-01T20:38:34Z",
+        "task": "LIVE trial 1 of at most 10 for PR #217 Jules x Work development. READ ONLY. Fresh-read this exact triggering review, Blue carrier protocol and worker-state, then PR #217 identity, branch, HEAD and Git commit tree. Require PR OPEN/DRAFT/unmerged, exact HEAD 044e96b69f4bcf7c2efb43cb325f8b5181e086e1 and tree d152694485762e81efd6c9536e5d9790b3c528d8. Confirm independently that the latest exact-head Blue offline validation Actions is successful and report its run/job references. Do not modify ANY target file, branch, PR metadata or settings. Do not start Jules/provider/model or send a successor command. Write exactly one terminal carrier Conversation receipt, with worker_generation=1 and exact command_id/repository/target_pr/branch/before/after HEAD plus observed tree, review ID and evidence URLs. Before receipt, read back target again and verify unchanged. Missing capability or ambiguity => terminal BLOCKED/UNKNOWN, never fabricate PASS. Stop after this single receipt. No local-user-machine dependencies. retry=0; fallback=disabled; no resend; terminal receipt forbids replay.",
+        "allowed_paths": [],
+        "verification": [
+          "Exact triggering COMMENT review and unique command; generation fence 1/1/1",
+          "Target PR #217 OPEN/DRAFT/unmerged; branch, HEAD and Git tree exact",
+          "Exact-head Actions run/job evidence read back; target before/after unchanged",
+          "One matching terminal receipt; no target write, no Jules/provider or successor"
+        ],
+        "live_provider_or_model_allowed": false,
+        "retry": 0,
+        "fallback": "disabled"
+      },
+      "review": {
+        "id": 5383867576,
+        "body": "[CW_BLUE_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-20261001T183834Z-pr217-readonly-01\",\n  \"worker_generation\": 1,\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 217,\n  \"target_branch\": \"experiment/blue-work-autonomous-development\",\n  \"expected_target_head\": \"044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n  \"expires_at\": \"2026-10-01T20:38:34Z\",\n  \"task\": \"LIVE trial 1 of at most 10 for PR #217 Jules x Work development. READ ONLY. Fresh-read this exact triggering review, Blue carrier protocol and worker-state, then PR #217 identity, branch, HEAD and Git commit tree. Require PR OPEN/DRAFT/unmerged, exact HEAD 044e96b69f4bcf7c2efb43cb325f8b5181e086e1 and tree d152694485762e81efd6c9536e5d9790b3c528d8. Confirm independently that the latest exact-head Blue offline validation Actions is successful and report its run/job references. Do not modify ANY target file, branch, PR metadata or settings. Do not start Jules/provider/model or send a successor command. Write exactly one terminal carrier Conversation receipt, with worker_generation=1 and exact command_id/repository/target_pr/branch/before/after HEAD plus observed tree, review ID and evidence URLs. Before receipt, read back target again and verify unchanged. Missing capability or ambiguity => terminal BLOCKED/UNKNOWN, never fabricate PASS. Stop after this single receipt. No local-user-machine dependencies. retry=0; fallback=disabled; no resend; terminal receipt forbids replay.\",\n  \"allowed_paths\": [],\n  \"verification\": [\n    \"Exact triggering COMMENT review and unique command; generation fence 1/1/1\",\n    \"Target PR #217 OPEN/DRAFT/unmerged; branch, HEAD and Git tree exact\",\n    \"Exact-head Actions run/job evidence read back; target before/after unchanged\",\n    \"One matching terminal receipt; no target write, no Jules/provider or successor\"\n  ],\n  \"live_provider_or_model_allowed\": false,\n  \"retry\": 0,\n  \"fallback\": \"disabled\"\n}",
+        "state": "COMMENTED",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/167#pullrequestreview-5383867576",
+        "submitted_at": "2026-10-01T18:39:28Z"
+      },
+      "receipt": {
+        "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/comments/5938151988",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/167#issuecomment-5938151988",
+        "issue_url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/167",
+        "id": 5938151988,
+        "created_at": "2026-10-01T18:42:04Z",
+        "updated_at": "2026-10-01T18:42:04Z",
+        "body": "[CW_BLUE_RECEIPT_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-20261001T183834Z-pr217-readonly-01\",\n  \"worker_generation\": 1,\n  \"status\": \"PASS\",\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 217,\n  \"target_branch\": \"experiment/blue-work-autonomous-development\",\n  \"target_head_before\": \"044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n  \"target_head_after\": \"044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n  \"verification\": [\n    \"Generation fence matched: WORKER_GENERATION=1, active_generation=1, command.worker_generation=1.\",\n    \"Exact triggering COMMENT review ID 5383867576 was fresh-read: https://github.com/kamiyusense/multi-ai-council-phase0/pull/167#pullrequestreview-5383867576\",\n    \"Target PR #217 was fresh-read before and after verification: OPEN, DRAFT, unmerged; branch and exact HEAD matched.\",\n    \"Git commit tree matched d152694485762e81efd6c9536e5d9790b3c528d8: https://github.com/kamiyusense/multi-ai-council-phase0/commit/044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n    \"Latest pull-request-triggered Blue Work reconciliation offline validation for the exact target HEAD completed successfully: run 36870839334, https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870839334\",\n    \"Run 36870839334 job 110397876104 (offline-validation) completed successfully: https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870839334/job/110397876104\",\n    \"No target file, branch, PR metadata, settings, Jules session, provider/model, or successor command was written or started.\"\n  ],\n  \"capability_boundary\": \"Cloud-only readback was sufficient; no user-local Windows/WSL, Docker, terminal, GUI, or local credentials were accessed or claimed.\",\n  \"terminal\": true\n}",
+        "reactions": {
+          "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/comments/5938151988/reactions",
+          "total_count": 0,
+          "+1": 0,
+          "-1": 0,
+          "laugh": 0,
+          "hooray": 0,
+          "confused": 0,
+          "heart": 0,
+          "rocket": 0,
+          "eyes": 0
+        },
+        "minimized": null
+      },
+      "outcome": "PASS"
+    },
+    {
+      "number": 2,
+      "kind": "INDEPENDENT_REVIEW",
+      "command": {
+        "protocol_version": 1,
+        "command_id": "blue-20261001T184700Z-pr217-independent-review-02",
+        "worker_generation": 1,
+        "target_repository": "kamiyusense/multi-ai-council-phase0",
+        "target_pr": 217,
+        "target_branch": "experiment/blue-work-autonomous-development",
+        "expected_target_head": "044e96b69f4bcf7c2efb43cb325f8b5181e086e1",
+        "expires_at": "2026-10-01T20:47:00Z",
+        "task": "LIVE trial 2 of at most 10. Independent read-only inspection of PR #217 exact HEAD 044e96b69f4bcf7c2efb43cb325f8b5181e086e1 and tree d152694485762e81efd6c9536e5d9790b3c528d8. You are the independent reviewer, not the implementer. Read current main navigation/Blue roadmap, PR #217 diff/current implementation/tests and docs/BLUE_WORK_AUTONOMOUS_BATCH_20261001.md. Focus on formal terminal receipt binding; source lineage→result PR/HEAD/tree→review request/response→next task binding; Session/dispatch/job/log authenticity vs mock; all-page completeness/readback races; schema-v3 global claim and 4-color isolation. Examine production code and concrete negative assertions, not reported PASS. Specifically check whether assess_result_review ties current_result and allowed_paths to the verified lineage, whether result_files guards PR mutation during file pagination, and whether next candidates establish any dispatch authority. Check exact-head Actions logs independently when available. Report each material finding with exact file/function, triggering input, observable consequence, required minimal repair and suggested regression. If no material finding, report scope and direct evidence. Make NO target changes; no Jules/provider/model/successor, no settings/auth/billing. Write exactly one terminal carrier receipt with full command/HEAD/generation binding and findings/evidence. PASS only for inspected semantics; FAIL for reproduced contract gap; UNKNOWN if evidence/capability missing. Stop after receipt. Hold exact target identity and check before/after. retry=0, fallback=disabled; never resend a terminal command.",
+        "allowed_paths": [],
+        "verification": [
+          "Exact command/review/generation and target HEAD/tree bound",
+          "Independently inspect source/review/receipt/global-claim/4-lane semantics with specific negative cases",
+          "Report reproducible findings and current exact-head Actions evidence; no target write",
+          "Exactly one terminal carrier receipt; stop without successor"
+        ],
+        "live_provider_or_model_allowed": false,
+        "retry": 0,
+        "fallback": "disabled"
+      },
+      "review": {
+        "id": 5383944482,
+        "body": "[CW_BLUE_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-20261001T184700Z-pr217-independent-review-02\",\n  \"worker_generation\": 1,\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 217,\n  \"target_branch\": \"experiment/blue-work-autonomous-development\",\n  \"expected_target_head\": \"044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n  \"expires_at\": \"2026-10-01T20:47:00Z\",\n  \"task\": \"LIVE trial 2 of at most 10. Independent read-only inspection of PR #217 exact HEAD 044e96b69f4bcf7c2efb43cb325f8b5181e086e1 and tree d152694485762e81efd6c9536e5d9790b3c528d8. You are the independent reviewer, not the implementer. Read current main navigation/Blue roadmap, PR #217 diff/current implementation/tests and docs/BLUE_WORK_AUTONOMOUS_BATCH_20261001.md. Focus on formal terminal receipt binding; source lineage→result PR/HEAD/tree→review request/response→next task binding; Session/dispatch/job/log authenticity vs mock; all-page completeness/readback races; schema-v3 global claim and 4-color isolation. Examine production code and concrete negative assertions, not reported PASS. Specifically check whether assess_result_review ties current_result and allowed_paths to the verified lineage, whether result_files guards PR mutation during file pagination, and whether next candidates establish any dispatch authority. Check exact-head Actions logs independently when available. Report each material finding with exact file/function, triggering input, observable consequence, required minimal repair and suggested regression. If no material finding, report scope and direct evidence. Make NO target changes; no Jules/provider/model/successor, no settings/auth/billing. Write exactly one terminal carrier receipt with full command/HEAD/generation binding and findings/evidence. PASS only for inspected semantics; FAIL for reproduced contract gap; UNKNOWN if evidence/capability missing. Stop after receipt. Hold exact target identity and check before/after. retry=0, fallback=disabled; never resend a terminal command.\",\n  \"allowed_paths\": [],\n  \"verification\": [\n    \"Exact command/review/generation and target HEAD/tree bound\",\n    \"Independently inspect source/review/receipt/global-claim/4-lane semantics with specific negative cases\",\n    \"Report reproducible findings and current exact-head Actions evidence; no target write\",\n    \"Exactly one terminal carrier receipt; stop without successor\"\n  ],\n  \"live_provider_or_model_allowed\": false,\n  \"retry\": 0,\n  \"fallback\": \"disabled\"\n}",
+        "state": "COMMENTED",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/167#pullrequestreview-5383944482",
+        "submitted_at": "2026-10-01T18:45:06Z"
+      },
+      "receipt": {
+        "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/comments/5938273083",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/167#issuecomment-5938273083",
+        "issue_url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/167",
+        "id": 5938273083,
+        "created_at": "2026-10-01T18:48:26Z",
+        "updated_at": "2026-10-01T18:48:26Z",
+        "body": "[CW_BLUE_RECEIPT_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-20261001T184700Z-pr217-independent-review-02\",\n  \"worker_generation\": 1,\n  \"status\": \"FAIL\",\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 217,\n  \"target_branch\": \"experiment/blue-work-autonomous-development\",\n  \"target_head_before\": \"044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n  \"target_head_after\": \"044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n  \"observed_tree\": \"d152694485762e81efd6c9536e5d9790b3c528d8\",\n  \"trigger_review_id\": 5383944482,\n  \"findings\": [\n    {\n      \"severity\": \"material\",\n      \"location\": \"automation/command_bus/blue_work_reconcile_prepare.py::_records\",\n      \"trigger\": \"A correctly bound terminal receipt omits verification, or supplies verification=[]/non-list, while retaining protocol_version, command_id, worker_generation, status, target identity, before/after HEAD and terminal=true.\",\n      \"consequence\": \"_records accepts it into terminal_ids; assess_cloud_review then returns NO_OP, so an evidence-free receipt can durably block the real command despite the protocol requiring a verification/evidence summary.\",\n      \"minimal_repair\": \"Validate the exact required receipt schema before adding terminal_ids, including a nonempty list of nonempty verification strings; allow capability_boundary only as an optional typed field.\",\n      \"suggested_regression\": \"Delete verification, set it to [], null, a string, and an entry containing an empty/non-string value; each case must return UNKNOWN and must not mark the command terminal.\"\n    },\n    {\n      \"severity\": \"material\",\n      \"location\": \"automation/command_bus/github_readonly.py::result_files\",\n      \"trigger\": \"The result PR head or changed_files set changes after the supplied PR snapshot but during multi-page /pulls/{number}/files retrieval.\",\n      \"consequence\": \"The function validates page count and tree modes against the original head but never re-reads the PR before/after pagination; a mixed-time file collection can be accepted when counts and paths still align.\",\n      \"minimal_repair\": \"Have result_files fetch and compare exact PR number/head/changed_files before and after file pagination (or require an immutable commit-scoped file manifest), and fail closed on any change.\",\n      \"suggested_regression\": \"Use a fake reader whose PR head/changed_files changes between file pages while final row count remains equal; require UNKNOWN/ValueError and no review preparation.\"\n    }\n  ],\n  \"verification\": [\n    \"Generation fence matched: WORKER_GENERATION=1, active_generation=1, command.worker_generation=1; carrier PR #167 remained OPEN with cloud-blue.\",\n    \"Exact triggering COMMENT review 5383944482 was fresh-read: https://github.com/kamiyusense/multi-ai-council-phase0/pull/167#pullrequestreview-5383944482\",\n    \"Target PR #217 was read before and immediately before receipt: OPEN, DRAFT, unmerged; branch and exact HEAD unchanged.\",\n    \"Commit tree independently matched d152694485762e81efd6c9536e5d9790b3c528d8: https://github.com/kamiyusense/multi-ai-council-phase0/commit/044e96b69f4bcf7c2efb43cb325f8b5181e086e1\",\n    \"Exact-head Actions run 36870839334 and job 110397876104 were independently read; checkout ref was 044e96b69f4bcf7c2efb43cb325f8b5181e086e1 and logs ended Ran 938 tests / OK (skipped=1): https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/36870839334/job/110397876104\",\n    \"assess_result_review binds current_result HEAD to the generated review request and receives allowed_paths from the verified formal source request in prepare_static_cycle; however source authentication remains NOT_WIRED and the live event path stops UNKNOWN before review/dispatch.\",\n    \"next_jules_prepare returns only PREPARED with reservation_state=NOT_RESERVED and external_write_attempted=false; recheck_next_jules never promotes it to RESERVED/SENT, so no dispatch authority is established.\",\n    \"Four-color isolation uses lane-specific prefixes/labels and formal Jules lane IDs; inspected negative tests cover cross-prefix and other-color reserved-ID rejection.\",\n    \"No target write, Jules/provider/model start, successor command, merge, settings/auth/billing change, or local-machine access occurred.\"\n  ],\n  \"capability_boundary\": \"Cloud GitHub readback was sufficient for this static independent inspection. User-local Windows/WSL, Docker, terminal, GUI and local credentials were not accessed or claimed. Authenticated live Jules Session GET remains NOT_WIRED by the inspected implementation.\",\n  \"terminal\": true\n}",
+        "reactions": {
+          "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/comments/5938273083/reactions",
+          "total_count": 0,
+          "+1": 0,
+          "-1": 0,
+          "laugh": 0,
+          "hooray": 0,
+          "confused": 0,
+          "heart": 0,
+          "rocket": 0,
+          "eyes": 0
+        },
+        "minimized": null
+      },
+      "outcome": "FAIL",
+      "action": "Reproduce and repair, then a newly-scoped delta review; no replay of terminal command."
+    }
+  ],
+  "counts": {
+    "work_commands": 2,
+    "jules_submits": 0,
+    "ambiguous_sends": 0,
+    "retries": 0
+  },
+  "merge_allowed": false,
+  "actions_generated_review_transport": "UNKNOWN"
+}

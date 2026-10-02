@@ -1,0 +1,65 @@
+test_diagnostic_does_not_weaken_output_uniqueness (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_diagnostic_does_not_weaken_output_uniqueness) ... ok
+test_field_failures_are_distinct (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_field_failures_are_distinct) ... ok
+test_invalid_expected_nanos_zero_get (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_invalid_expected_nanos_zero_get) ... ok
+test_nanosecond_mismatch_is_not_truncated_into_exact_match (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_nanosecond_mismatch_is_not_truncated_into_exact_match) ... ok
+test_non_200_response_uses_same_safe_http_stage (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_non_200_response_uses_same_safe_http_stage) ... ok
+test_only_known_boolean_comparisons_exported (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_only_known_boolean_comparisons_exported) ... ok
+test_safe_http_failure_labels_without_body_or_key (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_safe_http_failure_labels_without_body_or_key) ... ok
+test_same_nanoseconds_across_timezone_are_exact (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_same_nanoseconds_across_timezone_are_exact) ... ok
+test_seconds_only_dispatch_evidence_is_not_exact_time (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_seconds_only_dispatch_evidence_is_not_exact_time) ... ok
+test_update_nanosecond_before_creation_rejected (automation.command_bus.tests.test_jules_session_diagnostics.SessionDiagnosticTests.test_update_nanosecond_before_creation_rejected) ... ok
+test_attempt_and_permissions_preserve_read_only_boundary (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_attempt_and_permissions_preserve_read_only_boundary) ... ok
+test_boolean_retry_not_integer_zero (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_boolean_retry_not_integer_zero) ... ok
+test_expired_window_and_exact_deadline_blocked (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_expired_window_and_exact_deadline_blocked) ... ok
+test_extra_key_blocked (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_extra_key_blocked) ... ok
+test_modify_delete_and_multiple_file_commit_blocked (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_modify_delete_and_multiple_file_commit_blocked) ... ok
+test_one_fixed_diagnostic_create_selects_exact_path (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_one_fixed_diagnostic_create_selects_exact_path) ... ok
+test_wrong_session_pr_branch_time_purpose_blocked (automation.command_bus.tests.test_blue_session_diagnostic_workflow.DiagnosticWorkflowTests.test_wrong_session_pr_branch_time_purpose_blocked) ... ok
+test_duplicate_keys_in_json (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_duplicate_keys_in_json) ... ok
+test_http_error (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_http_error) ... ok
+test_http_non_200 (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_http_non_200) ... ok
+test_invalid_branch (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_invalid_branch) ... ok
+test_invalid_create_time_format (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_invalid_create_time_format) ... ok
+test_invalid_create_time_naive (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_invalid_create_time_naive) ... ok
+test_invalid_pr (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_invalid_pr) ... ok
+test_invalid_session_id (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_invalid_session_id) ... ok
+test_malformed_json (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_malformed_json) ... ok
+test_not_completed (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_not_completed) ... ok
+test_oversize_response (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_oversize_response) ... ok
+test_positive_path (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_positive_path) ... ok
+test_response_not_dict (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_response_not_dict) ... ok
+test_sanitization (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_sanitization) ... ok
+test_wrong_branch (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_wrong_branch) ... ok
+test_wrong_create_time (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_wrong_create_time) ... ok
+test_wrong_name (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_wrong_name) ... ok
+test_wrong_outputs (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_wrong_outputs) ... ok
+test_wrong_pr_url (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_wrong_pr_url) ... ok
+test_wrong_source (automation.command_bus.tests.test_jules_session_readonly.JulesSessionGetReaderTests.test_wrong_source) ... ok
+test_ascii_only_id_before_io (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_ascii_only_id_before_io) ... ok
+test_duplicate_foreign_and_bad_json (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_duplicate_foreign_and_bad_json) ... ok
+test_equivalent_time_instant (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_equivalent_time_instant) ... ok
+test_exception_text_and_traceback_redacted (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_exception_text_and_traceback_redacted) ... ok
+test_http_timeout_redirect_no_retry (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_http_timeout_redirect_no_retry) ... ok
+test_interrupts_propagate_without_retry (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_interrupts_propagate_without_retry) ... ok
+test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) ... ok
+test_nested_projection_drops_secrets (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_nested_projection_drops_secrets) ... ok
+test_safe_branch_before_io (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_safe_branch_before_io) ... ok
+test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) ... ok
+test_bad_diagnostic_purpose_zero_calls (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_bad_diagnostic_purpose_zero_calls) ... ok
+test_bad_request_zero_calls (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_bad_request_zero_calls) ... ok
+test_classified_failure_saved_once_without_retry (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_classified_failure_saved_once_without_retry) ... ok
+test_cli_failure_no_output (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_cli_failure_no_output) ... ok
+test_cli_mocked_key_not_saved (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_cli_mocked_key_not_saved) ... ok
+test_diagnostic_failure_logs_only_fixed_comparisons (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_diagnostic_failure_logs_only_fixed_comparisons) ... ok
+test_diagnostic_success_is_observation_only (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_diagnostic_success_is_observation_only) ... ok
+test_exact_one_read_and_no_authority (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_exact_one_read_and_no_authority) ... ok
+test_existing_output_is_preserved (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_existing_output_is_preserved) ... ok
+test_read_failure_no_retry (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_read_failure_no_retry) ... ok
+test_stage_cannot_contain_remote_secret (automation.command_bus.tests.test_jules_completed_readback_cli.CompletedReadbackTests.test_stage_cannot_contain_remote_secret) ... ok
+
+----------------------------------------------------------------------
+Ran 58 tests in 0.080s
+
+OK
+Existing Session readback saved: UNKNOWN; no adoption or successor.
+Existing Session readback saved: OBSERVED_COMPLETED; no adoption or successor.

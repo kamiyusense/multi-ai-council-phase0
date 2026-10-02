@@ -1,0 +1,205 @@
+test_ascii_only_id_before_io (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_ascii_only_id_before_io) ... FAIL
+test_equivalent_time_instant (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_equivalent_time_instant) ... ERROR
+test_exception_text_and_traceback_redacted (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_exception_text_and_traceback_redacted) ... FAIL
+test_interrupts_propagate_without_retry (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_interrupts_propagate_without_retry) ... ok
+test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) ... 
+  test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value=None) ... ERROR
+  test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value=True) ... ERROR
+  test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value=12) ... ERROR
+  test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value='secret') ... ERROR
+test_nested_projection_drops_secrets (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_nested_projection_drops_secrets) ... FAIL
+test_safe_branch_before_io (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_safe_branch_before_io) ... FAIL
+test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) ... 
+  test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value='bad') ... FAIL
+  test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value='2026-09-28T03:59:00') ... FAIL
+  test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value=None) ... FAIL
+  test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value={'token': 'fake-valid-key'}) ... FAIL
+  test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value='2026-09-27T00:00:00Z') ... FAIL
+
+======================================================================
+ERROR: test_equivalent_time_instant (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_equivalent_time_instant)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 52, in test_equivalent_time_instant
+    self.assertEqual(self.read(expected_create_time='2026-09-28T12:59:00+09:00')['createTime'], self.valid_time)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read
+    return self.reader.read_completed_session(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 113, in read_completed_session
+    raise ValueError("createTime mismatch")
+ValueError: createTime mismatch
+
+======================================================================
+ERROR: test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 48, in test_malformed_outputs_fail_closed
+    self.read()
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read
+    return self.reader.read_completed_session(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 122, in read_completed_session
+    pr_output = outputs[0].get("pullRequest")
+                ^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+
+======================================================================
+ERROR: test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 48, in test_malformed_outputs_fail_closed
+    self.read()
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read
+    return self.reader.read_completed_session(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 122, in read_completed_session
+    pr_output = outputs[0].get("pullRequest")
+                ^^^^^^^^^^^^^^
+AttributeError: 'bool' object has no attribute 'get'
+
+======================================================================
+ERROR: test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value=12)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 48, in test_malformed_outputs_fail_closed
+    self.read()
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read
+    return self.reader.read_completed_session(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 122, in read_completed_session
+    pr_output = outputs[0].get("pullRequest")
+                ^^^^^^^^^^^^^^
+AttributeError: 'int' object has no attribute 'get'
+
+======================================================================
+ERROR: test_malformed_outputs_fail_closed (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_malformed_outputs_fail_closed) (value='secret')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 48, in test_malformed_outputs_fail_closed
+    self.read()
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read
+    return self.reader.read_completed_session(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 122, in read_completed_session
+    pr_output = outputs[0].get("pullRequest")
+                ^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'get'
+
+======================================================================
+FAIL: test_ascii_only_id_before_io (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_ascii_only_id_before_io)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 22, in test_ascii_only_id_before_io
+    opener.open.assert_not_called()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 910, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected 'open' to not have been called. Called 3 times.
+Calls: [call(<urllib.request.Request object at 0x7f115e52bda0>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e9047a0>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e908a40>, timeout=30)].
+
+======================================================================
+FAIL: test_exception_text_and_traceback_redacted (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_exception_text_and_traceback_redacted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 35, in test_exception_text_and_traceback_redacted
+    self.read()
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read
+    return self.reader.read_completed_session(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 78, in read_completed_session
+    raise e from None
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 70, in read_completed_session
+    with self._opener.open(request, timeout=30) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+ValueError: fake-valid-key
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 38, in test_exception_text_and_traceback_redacted
+    self.assertNotIn(self.valid_key, ''.join(traceback.format_exception(exc)))
+AssertionError: 'fake-valid-key' unexpectedly found in 'Traceback (most recent call last):\n  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 35, in test_exception_text_and_traceback_redacted\n    self.read()\n  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 15, in read\n    return self.reader.read_completed_session(**kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 78, in read_completed_session\n    raise e from None\n  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/jules_session_readonly.py", line 70, in read_completed_session\n    with self._opener.open(request, timeout=30) as response:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1139, in __call__\n    return self._mock_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1143, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call\n    raise effect\nValueError: fake-valid-key\n'
+
+======================================================================
+FAIL: test_nested_projection_drops_secrets (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_nested_projection_drops_secrets)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 62, in test_nested_projection_drops_secrets
+    self.assertNotIn(self.valid_key, json.dumps(result))
+AssertionError: 'fake-valid-key' unexpectedly found in '{"name": "sessions/123456789", "createTime": "2026-09-28T03:59:00Z", "state": "COMPLETED", "sourceContext": {"source": "sources/github/kamiyusense/multi-ai-council-phase0", "githubRepoContext": {"startingBranch": "jules-work/test-branch", "token": "fake-valid-key"}, "extra": "fake-valid-key"}, "outputs": [{"pullRequest": {"url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/42", "description": "fake-valid-key"}}], "updateTime": "2026-09-28T03:59:00Z"}'
+
+======================================================================
+FAIL: test_safe_branch_before_io (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_safe_branch_before_io)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 30, in test_safe_branch_before_io
+    opener.open.assert_not_called()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 910, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected 'open' to not have been called. Called 6 times.
+Calls: [call(<urllib.request.Request object at 0x7f115e5c4710>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e5c4890>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e5c4950>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e5c4a10>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e5c4ad0>, timeout=30),
+ call(<urllib.request.Request object at 0x7f115e5c4b90>, timeout=30)].
+
+======================================================================
+FAIL: test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value='bad')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 71, in test_update_time_validated
+    with self.subTest(value=value), self.assertRaises(ValueError):
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value='2026-09-28T03:59:00')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 71, in test_update_time_validated
+    with self.subTest(value=value), self.assertRaises(ValueError):
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 71, in test_update_time_validated
+    with self.subTest(value=value), self.assertRaises(ValueError):
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value={'token': 'fake-valid-key'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 71, in test_update_time_validated
+    with self.subTest(value=value), self.assertRaises(ValueError):
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_update_time_validated (automation.command_bus.tests.test_jules_session_readonly_boundaries.SessionBoundaryTests.test_update_time_validated) (value='2026-09-27T00:00:00Z')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/7371808bc95c/repo/automation/command_bus/tests/test_jules_session_readonly_boundaries.py", line 71, in test_update_time_validated
+    with self.subTest(value=value), self.assertRaises(ValueError):
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.015s
+
+FAILED (failures=9, errors=5)

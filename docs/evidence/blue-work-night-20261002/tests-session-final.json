@@ -1,0 +1,29 @@
+{
+  "local_full": {
+    "command": "python -m unittest discover -s automation/command_bus/tests -t . -v",
+    "run": 987,
+    "passed": 986,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 47.665
+  },
+  "compileall": "PASS",
+  "diff_check": "PASS",
+  "mock_formal_cycle": "PASS",
+  "prior_exact_head_ci": {
+    "head": "568a30d8847ff38c2a4082badc14cbd2688e2336",
+    "run": 36955285231,
+    "job": 110676786533,
+    "tests": 984,
+    "passed": 983,
+    "skipped": 1,
+    "seconds": 53.684
+  },
+  "saved_source_ci": "PENDING",
+  "local_exec_connection": "DISCONNECTED_AFTER_SUCCESSFUL_TESTS",
+  "later_verification": "GITHUB_STATIC_ACTIONS",
+  "reconstructed_patches": "same recorded bounded patch operations; exact GitHub CI/readback required",
+  "new_request_added": false,
+  "new_readback_attempt": false
+}

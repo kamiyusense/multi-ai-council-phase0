@@ -1,0 +1,77 @@
+{
+  "event": {
+    "action": "opened",
+    "repository": {
+      "full_name": "kamiyusense/multi-ai-council-phase0"
+    },
+    "pull_request": {
+      "number": 42,
+      "head": {
+        "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "base": {
+        "ref": "jules-work/fixture",
+        "sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    }
+  },
+  "lineage": {
+    "source_command_id": "fixture-not-a-live-command",
+    "work_branch": "jules-work/fixture",
+    "expected_target_head": "cccccccccccccccccccccccccccccccccccccccc",
+    "expected_repository": "kamiyusense/multi-ai-council-phase0"
+  },
+  "result_pr": {
+    "number": 42,
+    "state": "open",
+    "merged": false,
+    "head": {
+      "ref": "jules-result/fixture",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "repo": {
+        "full_name": "kamiyusense/multi-ai-council-phase0"
+      }
+    },
+    "base": {
+      "ref": "jules-work/fixture",
+      "sha": "cccccccccccccccccccccccccccccccccccccccc",
+      "repo": {
+        "full_name": "kamiyusense/multi-ai-council-phase0"
+      }
+    }
+  },
+  "carrier_pr": {
+    "number": 167,
+    "state": "open",
+    "merged": false,
+    "labels": [
+      {
+        "name": "cloud-blue"
+      }
+    ],
+    "head": {
+      "ref": "cloud-work/carrier-blue-v1",
+      "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "repo": {
+        "full_name": "kamiyusense/multi-ai-council-phase0"
+      }
+    }
+  },
+  "worker_state": {
+    "schema_version": 1,
+    "lane": "blue",
+    "carrier_pr": 167,
+    "carrier_branch": "cloud-work/carrier-blue-v1",
+    "active_generation": 1
+  },
+  "protocol": {
+    "protocol_version": 1,
+    "lane": "blue",
+    "command_prefix": "[CW_BLUE_V1]",
+    "worker_generation": 1
+  },
+  "reviews": [],
+  "comments": [],
+  "records_complete": true,
+  "expires_at": "2026-10-01T13:00:00Z"
+}

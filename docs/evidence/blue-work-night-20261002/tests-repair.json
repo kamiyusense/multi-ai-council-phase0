@@ -1,0 +1,37 @@
+{
+  "full": {
+    "count": 949,
+    "seconds": 44.71,
+    "summary": "OK (skipped=1)",
+    "failures": 0,
+    "errors": 0,
+    "log_sha256": "df0d5bdd77f7ef3e20d1bf4c165819aaa41a4357aa13a9d9848d8f6fd0165b17",
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 949 tests in 44.710s",
+      "",
+      "OK (skipped=1)"
+    ]
+  },
+  "focused": {
+    "count": 87,
+    "seconds": 0.443,
+    "summary": "OK",
+    "failures": 0,
+    "errors": 0,
+    "log_sha256": "917d4f9dc44155b90469d981f59e114e8ce2222cfea906e8b9367a09a0a2dc5c",
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 87 tests in 0.443s",
+      "",
+      "OK"
+    ]
+  },
+  "receipt_test_harness": {
+    "initial_harness_error": 1,
+    "cause": "Test used the fixture body helper with two arguments although it accepts one. Fixed test formatting; no production workaround. Corrected replay of GitHub-pinned original module produced 12 subcase failures and 0 errors."
+  },
+  "source_commit": "044e96b69f4bcf7c2efb43cb325f8b5181e086e1"
+}
