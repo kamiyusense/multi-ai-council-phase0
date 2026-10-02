@@ -261,5 +261,56 @@ class BudgetCapHoldsUnderContention(CrossLaneBase):
         self.assertTrue(all(o in {"ACQUIRED", "EXHAUSTED", "UNKNOWN"} for o in outcomes), outcomes)
 
 
+class OwnerGenerationRace(CrossLaneBase):
+    def test_two_controllers_racing_for_the_next_generation_produce_exactly_one_owner(self):
+        """A create-only generation race: one handoff wins, the other is refused, the chain stays valid."""
+        clone_b = self.second_clone()
+        previous = owner_event()
+        events = {
+            "a": owner_event(generation=2, role="SEMI_AUTO", holder="chatgpt-controller-a",
+                             event_type="HANDOFF", previous=previous),
+            "b": owner_event(generation=2, role="SEMI_AUTO", holder="chatgpt-controller-b",
+                             event_type="HANDOFF", previous=previous),
+        }
+        outcomes, errors = {}, []
+        barrier = threading.Barrier(2)
+
+        def append(name, client):
+            try:
+                backend = LoopOwnerGitHubBackend(client, branch=DATA)
+                barrier.wait(timeout=10)
+                outcomes[name] = backend.append(events[name]).status
+            except Exception as exc:
+                errors.append(exc)
+
+        threads = [threading.Thread(target=append, args=("a", self.c)), threading.Thread(target=append, args=("b", clone_b))]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=120)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(outcomes), 2)
+        self.assertEqual(list(outcomes.values()).count("ACCEPTED"), 1, outcomes)
+        self.assertTrue(all(o in {"ACCEPTED", "BLOCKED", "UNKNOWN"} for o in outcomes.values()), outcomes)
+        self.c.invalidate()
+        chain = LoopOwnerGitHubBackend(self.c, branch=DATA).read_chain(LOOP)
+        self.assertEqual((chain.status, chain.chain_length), ("READ", 2), chain)  # contiguous, validated, one holder at gen 2
+
+
+class WorkBranchIsolation(CrossLaneBase):
+    def test_existing_work_branch_at_another_commit_is_a_collision_and_is_not_touched(self):
+        loop = self.loop()
+        request = {"work_branch": "jules-work/relay-dev-loop-777-collision", "expected_target_head": "a" * 40}
+        created = []
+        loop.dispatcher.refs.get_branch_head = lambda branch: "f" * 40  # somebody else's commit
+        loop.dispatcher.refs.create_branch = lambda branch, head: created.append((branch, head))
+        result = loop.dispatcher._work_branch(request)
+        self.assertEqual(result.status, "COLLISION", result.reason)
+        self.assertEqual(created, [], "a colliding work branch must never be recreated or moved")
+        loop.dispatcher.refs.get_branch_head = lambda branch: "a" * 40  # same snapshot: idempotent recovery
+        self.assertEqual(loop.dispatcher._work_branch(request).status, "RECOVERED")
+        self.assertEqual(created, [])
+
+
 if __name__ == "__main__":
     unittest.main()
