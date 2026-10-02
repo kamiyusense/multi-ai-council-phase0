@@ -458,3 +458,12 @@ class TestCodexAdapterContract(unittest.TestCase):
         self.assertEqual((dup.state, conflict.state), (RelayState.BLOCKED, RelayState.BLOCKED))
         methods = self._backend()
         self.assertEqual((t.spawn_count, methods.count("initialize"), methods.count("turn/start")), (1, 1, 1))
+
+    def test_adapter_version_matches_phase0_pin(self):
+        """The adapter under test must be the Phase 0 pin, not 'whatever is latest'."""
+        import asyncio
+        from providers.policy import CODEX_POLICY
+        from relay.acp_client import acp_initialize_wire
+        result = asyncio.run(acp_initialize_wire(*self._adapter(), timeout=20.0, env=self._env()))
+        self.assertEqual(result["agentInfo"]["version"], CODEX_POLICY.pinned_version)
+        self.assertEqual(CODEX_POLICY.pinned_version, "2.1.0")

@@ -119,3 +119,9 @@ M0 COMPLETE · M1 PARTIAL · M2 PARTIAL (gate proven on fixture; no real backend
 
 ## No-LIVE (this update)
 Real provider/model execution NO; Codex/Claude/Antigravity real turns 0; processes started: official codex-acp (node) + gate + fixture backend, TCK, fake agents. API-key route NO; retry/fallback added NO (the gate adds a block, not a retry); Billing/settings/permissions/credentials NO; main write NO; merge NO.
+
+---
+
+# Update 4 — GitHub reproduction of the one-generation gate contract (STATIC)
+
+Exact-head validation of the full suite skipped the Node/adapter tests (`OK (skipped=8)`), so the gate contract had no GitHub-side evidence. A separate carrier workflow, `relay-codex-acp-static-validation.yml` (on `feature/chat-work-command-bus`, same append-only request trigger and `target_sha`), now installs the **pinned** `@agentclientprotocol/codex-acp@2.1.0` with `--ignore-scripts --omit=optional` (asserts version 2.1.0 and that no native Codex package exists), then runs `TestOfficialCodexAdapterWithFixtureBackend`, `TestCodexAdapterContract` (incl. gate 1-turn / title turn blocked, init+session/new no generation, timeout cancel without relaunch, duplicate/conflict, version == Phase 0 pin), `TestOfficialAdapterLaunchGuards` (un-gated launch and credential/route env refused), `TestLifecycleMapping` (malformed/permission request fail closed) and `TestLiveLaunchRefused`, failing on any skip. Backend = `fixtures/relay/fake_codex_app_server.py` behind `src/relay/codex_turn_gate.py`; no credentials, no provider/model connection. The existing exact-head workflow is unchanged. Pin stays 2.1.0; TCK is not part of CI (M5 PARTIAL). The run IDs are recorded in the PR comment, not here (a doc edit would change the validated HEAD).
