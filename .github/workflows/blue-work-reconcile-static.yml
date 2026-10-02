@@ -83,6 +83,23 @@ jobs:
           assert set(soak['invariant_violations'].values()) == {0}
           assert soak['external_execution'] == 0
           PY
+      - name: Replay BWJ-4 delivery boundary and BWJ-5/6 MOCK handoff
+        run: |
+          python -m automation.command_bus.tests.test_blue_review_delivery_prepare > bwj4-6-boundary-static.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          proof = json.loads(Path('bwj4-6-boundary-static.json').read_text())
+          assert proof['status'] == 'PASS'
+          assert proof['source_authentication'] == 'MOCK_ONLY'
+          assert proof['production_source_authentication'] == 'NOT_WIRED'
+          assert proof['reservation_state'] == 'NOT_RESERVED'
+          for name in ('provider_execution', 'model_execution', 'github_review_post',
+                       'work_wake_execution', 'claim_reservation', 'jules_dispatch',
+                       'external_execution', 'permission_change', 'adoption',
+                       'network_calls', 'process_calls'):
+              assert proof[name] == 0
+          PY
       - name: Record offline boundary
         run: |
           python - <<'PY'
@@ -119,5 +136,6 @@ jobs:
             bridge-review-candidate.json
             bridge-next-candidate.json
             four-lane-static-soak.json
+            bwj4-6-boundary-static.json
           if-no-files-found: error
           retention-days: 7

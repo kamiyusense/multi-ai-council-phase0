@@ -1,7 +1,7 @@
 # Blue Work ↔ Jules Webhook Closed-Loop Roadmap
 
-Updated: 2026-10-01  
-Status: proposed execution roadmap / documentation only  
+Updated: 2026-10-02
+Status: BWJ-0–3 STATIC complete in main; BWJ-4/5 static boundary readiness and BWJ-6 prepare-only; LIVE NOT_WIRED
 Pilot lane: 💙 J-BLUE + 💙 Cloud Work Blue  
 Source policy: PR #191 Controller Operating Guide + PR #192 Development Acceleration Playbook + PR #193 Signal roadmap pattern + PR #194 Relay minimal-reuse roadmap + PR #115 Work-event-loop static research
 
@@ -47,7 +47,17 @@ Fresh GitHub state wins over every PR number, SHA, generation, session ID and sn
 
 ## 3. Current checkpoint
 
-Fresh readback at roadmap creation:
+Fresh reassessment after #249 main integration:
+
+- main `7e1c90b72c7523f4265803da7ee82671c9dbd800` contains the existing Blue STATIC bridge;
+- BWJ-0–3 and M1 static bridge are complete; do not rebuild them;
+- BWJ-5 independent review/receipt contract and BWJ-6 schema-v3 NOT_RESERVED preparation already exist;
+- production capture source authentication, actual review POST and real Work wake remain NOT_WIRED;
+- #253 is historical/superseded; #256's two import cleanups remain a separate Draft;
+- [BWJ-4–6 readiness](BLUE_BWJ4_6_STATIC_READINESS.md) records reuse, official research,
+  the prepare-only delivery contract and [disabled one-shot activation package](BLUE_BWJ4_ONE_SHOT_ACTIVATION.json).
+
+The following roadmap-creation snapshot is historical navigation only:
 
 - main = `63ae5fc8f83a6f5e24ed960c4347e59a26954fdd`;
 - PR #191 and PR #192 are merged and define current Controller/reuse-first policy;

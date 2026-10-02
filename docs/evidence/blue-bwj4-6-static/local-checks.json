@@ -1,0 +1,199 @@
+{
+  "activation_package_sha256": "6a9b99a4a834a431684cd5ef063dd134bd77a687d0f946fc9dc00a61b40b6b3f",
+  "base_file_bytes_verified": 1337,
+  "commands": [
+    "python -m unittest (15 focused command_bus test modules) -v",
+    "python -m unittest discover -s automation/command_bus/tests -t . -v",
+    "python -m compileall -q automation/command_bus",
+    "git diff --cached --check",
+    "python -m automation.command_bus.tests.test_blue_review_delivery_prepare",
+    "python -m automation.command_bus.tests.static_bridge_simulation"
+  ],
+  "compileall": "PASS",
+  "delivery_final": {
+    "errors": 0,
+    "failures": 0,
+    "result": "OK",
+    "tests": 22
+  },
+  "diff_check": "PASS",
+  "focused_final": {
+    "errors": 0,
+    "failures": 0,
+    "result": "OK",
+    "seconds": 2.723,
+    "tests": 210
+  },
+  "focused_initial": {
+    "errors": 0,
+    "failures": 0,
+    "result": "OK",
+    "tests": 131
+  },
+  "focused_source": {
+    "errors": 0,
+    "failures": 0,
+    "result": "OK",
+    "tests": 78
+  },
+  "four_lane": {
+    "execution_mode": "PREPARE_ONLY",
+    "external_execution": 0,
+    "fake_submissions": 32,
+    "fault_observations": 1280,
+    "invariant_violations": {
+      "claim_reservation": 0,
+      "cross_color_consumption": 0,
+      "duplicate_dispatch": 0,
+      "external_send": 0,
+      "force": 0,
+      "foreign_receipt_adoption": 0,
+      "global_loop_collision": 0,
+      "merge": 0,
+      "stale_generation_execution": 0,
+      "target_mismatch_adoption": 0,
+      "terminal_replay": 0,
+      "unauthenticated_adoption": 0
+    },
+    "limitations": [
+      "Assertions cover deterministic fixture cases only.",
+      "No provider/source authentication or live wake proven.",
+      "Concurrent unreserved candidates may collide; formal reservation recheck must BLOCK, never retry."
+    ],
+    "loops_per_lane": 8,
+    "source_mode": "MOCK",
+    "unreserved_next_candidates": 32,
+    "virtual_loops": 32
+  },
+  "full_final": {
+    "errors": 0,
+    "failures": 0,
+    "result": "OK",
+    "seconds": 64.328,
+    "skip_reason": "Windows-only production bootstrap ACL boundary; Linux runner",
+    "skipped": 1,
+    "tests": 1333
+  },
+  "logs_sha256": {
+    "readiness-delivery-tests-final.txt": "d78a1b3e273ae29547a5a0fdd1713904e47615be28f9ffdd2fbb86f2a84dac03",
+    "readiness-focused-final.txt": "cf30e210fc758d1676ab8e6b25f62d95d6c040ef25d7b204ef6df9e94cd6e5c4",
+    "readiness-full-final.txt": "4a187523c81a5a1b3a77ba25a85346e2fa22ae6215473c466a444137326fff87"
+  },
+  "mock_delivery": {
+    "adoption": 0,
+    "claim_reservation": 0,
+    "duplicate_result": "NO_OP",
+    "execution_mode": "PREPARE_ONLY",
+    "external_execution": 0,
+    "fallback": "disabled",
+    "github_review_post": 0,
+    "jules_dispatch": 0,
+    "model_execution": 0,
+    "network_calls": 0,
+    "next_claim_schema": 3,
+    "permission_change": 0,
+    "process_calls": 0,
+    "production_source_authentication": "NOT_WIRED",
+    "provider_execution": 0,
+    "reservation_state": "NOT_RESERVED",
+    "restart": "NO_OP",
+    "retry": 0,
+    "review_candidate": {
+      "adoption_performed": false,
+      "blockers": [
+        "production Session source authentication",
+        "human posting authorization",
+        "job-scoped permission approval",
+        "durable attempt record before a POST"
+      ],
+      "carrier_head": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "carrier_pr": 167,
+      "carrier_state": "open",
+      "claim_reserved": false,
+      "command_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "execution_mode": "PREPARE_ONLY",
+      "external_send_attempted": false,
+      "fallback": "disabled",
+      "live_transport": "NOT_WIRED",
+      "model_executed": false,
+      "permission_enabled": false,
+      "posting_authority": false,
+      "readback": {
+        "get_review": "/repos/kamiyusense/multi-ai-council-phase0/pulls/167/reviews/{fresh_review_id}",
+        "list_reviews": "/repos/kamiyusense/multi-ai-council-phase0/pulls/167/reviews",
+        "match": [
+          "id",
+          "state=COMMENTED",
+          "body byte equality",
+          "commit_id=carrier_head",
+          "user.id/login/type from approved principal slot",
+          "submitted_at"
+        ],
+        "origin_run_authentication": "NOT_WIRED"
+      },
+      "reason": "MOCK descriptor only; production source and posting NOT_WIRED",
+      "request": {
+        "body": {
+          "body": "[CW_BLUE_V1]\n{\n  \"protocol_version\": 1,\n  \"command_id\": \"blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"worker_generation\": 1,\n  \"target_repository\": \"kamiyusense/multi-ai-council-phase0\",\n  \"target_pr\": 42,\n  \"target_branch\": \"jules-result/fixture\",\n  \"expected_target_head\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"expires_at\": \"2026-10-01T13:00:00Z\",\n  \"task\": \"fresh-read GitHub; verify exact J-BLUE claim/command/session/result lineage and current result head; independently inspect paths/semantics/negative tests/test evidence; return PASS/FAIL/BLOCKED/UNKNOWN plus one bounded next-task proposal; perform no target write and do not dispatch Jules.\",\n  \"allowed_paths\": [],\n  \"verification\": [\n    \"fresh result PR/branch/head readback\",\n    \"durable J-BLUE lineage verification\",\n    \"independent diff/test evidence inspection\",\n    \"confirmation no target write/Jules dispatch/live provider execution occurred\"\n  ],\n  \"live_provider_or_model_allowed\": false,\n  \"retry\": 0,\n  \"fallback\": \"disabled\"\n}",
+          "commit_id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "event": "COMMENT"
+        },
+        "endpoint": "/repos/kamiyusense/multi-ai-council-phase0/pulls/167/reviews",
+        "method": "POST"
+      },
+      "required_permission_candidate": {
+        "pull-requests": "write"
+      },
+      "resend_allowed": false,
+      "retry": 0,
+      "source_authentication": "MOCK_ONLY",
+      "status": "PREPARED",
+      "target": {
+        "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "target_branch": "jules-result/fixture",
+        "target_pr": 42,
+        "target_repository": "kamiyusense/multi-ai-council-phase0"
+      },
+      "target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+      "worker_generation": 1
+    },
+    "source_authentication": "MOCK_ONLY",
+    "source_mode": "MOCK",
+    "status": "PASS",
+    "terminal_review": "PASS",
+    "wake_inspection": {
+      "adoption_performed": false,
+      "claim_reserved": false,
+      "execution_mode": "PREPARE_ONLY",
+      "external_send_attempted": false,
+      "fallback": "disabled",
+      "model_executed": false,
+      "origin_run_authentication": "NOT_WIRED",
+      "posting_authority": false,
+      "reason": "MOCK wake preflight valid; terminal receipt missing, never resend",
+      "resend_allowed": false,
+      "retry": 0,
+      "source_authentication": "MOCK_ONLY",
+      "status": "UNKNOWN",
+      "wake_identity": {
+        "carrier_pr": 167,
+        "command_id": "blue-jules-result-pr42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "lane": "blue",
+        "target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "target_tree": "dddddddddddddddddddddddddddddddddddddddd",
+        "trigger_review": 101,
+        "worker_generation": 1
+      },
+      "worker_preflight": "VALIDATED"
+    },
+    "work_wake_execution": 0
+  },
+  "note": "Content identity only; disabled plan, no execution or authorization",
+  "protected_files_unchanged": [
+    ".github/workflows/jules-chat-semiauto.yml",
+    "automation/command_bus/jules_api_request.py",
+    "automation/command_bus/loop_id_claim.py",
+    "automation/command_bus/jules_result_lineage.py",
+    "automation/command_bus/work_result_review.py"
+  ]
+}

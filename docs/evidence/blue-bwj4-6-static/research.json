@@ -1,0 +1,41 @@
+{
+  "official_sources": [
+    {
+      "url": "https://docs.github.com/en/rest/pulls/reviews",
+      "finding": "COMMENT review creation requires Pull requests repository write. Readback exposes review ID/user/state/body/commit_id/submitted_at, not Actions run/job/token identity."
+    },
+    {
+      "url": "https://docs.github.com/en/actions/concepts/security/github_token",
+      "finding": "GITHUB_TOKEN-caused pull_request_review does not start another Actions workflow. Dispatch exceptions and approval-required PR opened/synchronize/reopened exceptions do not establish external Work delivery."
+    },
+    {
+      "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows",
+      "finding": "pull_request_review submitted is distinct from issue_comment and diff review comments. GITHUB_SHA may be merge commit, so read actual PR head and tree."
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/automations",
+      "finding": "GitHub task filters include PR/author/title/label and activity reviews/comments/commit/merge; close events may coalesce. No documented latency or Actions-originated review guarantee found."
+    },
+    {
+      "url": "https://docs.github.com/en/rest/actions/artifacts",
+      "finding": "Artifact readback exposes ID/digest/workflow run/head repository/head SHA, not which job produced a member nor whether member came from provider HTTPS."
+    },
+    {
+      "url": "https://docs.github.com/en/rest/actions/workflow-runs",
+      "finding": "Fresh run/event/path/actor/attempt/head/repository records available, but actor is not provider origin."
+    },
+    {
+      "url": "https://docs.github.com/en/rest/actions/workflow-jobs",
+      "finding": "Fresh run/job/head/steps can bind execution; no sanitized provider capture origin proof built in."
+    },
+    {
+      "url": "https://docs.github.com/en/actions/concepts/security/artifact-attestations",
+      "finding": "Verified attestations link build provenance to workflow/commit/event, not provider response truth. Reusable workflow helps stronger build isolation, not mandatory for minimal transport proof; no new attestation permissions adopted."
+    }
+  ],
+  "prior_art": {
+    "opencara": "https://github.com/OpenCara/OpenCara; separate event stages and prefilter only; no platform, retries, fallback, auto-Merge or permissions adopted",
+    "hivemind": "https://github.com/BUZASLAN128/HiveMind-Actions; source retrieval failed DisabledError; current upstream implementation UNKNOWN, roadmap concept only",
+    "pr115": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/115; read fresh metadata and pinned research file at bd7d63017ddc3daf3b7c439545a3f593a5accbe0; retained hint/reconcile rule"
+  }
+}
