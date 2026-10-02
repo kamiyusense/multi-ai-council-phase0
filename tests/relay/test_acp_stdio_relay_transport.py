@@ -282,7 +282,6 @@ class TestOfficialCodexAdapterWithFixtureBackend(unittest.TestCase):
             self.skipTest("RELAY_CODEX_ACP_DIR / node not available (TEST_ENVIRONMENT_NOT_PREPARED)")
 
     def test_lifecycle_through_official_adapter(self):
-        import os
         from pathlib import Path
         from relay.acp_stdio_relay_transport import OfficialAdapterLaunch
         root = Path(__file__).resolve().parents[2] / "fixtures" / "relay"
@@ -290,10 +289,12 @@ class TestOfficialCodexAdapterWithFixtureBackend(unittest.TestCase):
         log = os.path.join(home, "backend.log")
         env = {
             "HOME": home, "CODEX_HOME": home, "APP_SERVER_LOGS": home, "FAKE_CODEX_LOG": log,
-            "CODEX_PATH": str(root.parents[1] / "src" / "relay" / "codex_turn_gate.py"),
+            "CODEX_PATH": str(root.parents[1] / "src" / "relay" / _GATE_NAME),
             "RELAY_GATE_BACKEND": str(root / "fake_codex_app_server.py"),
             "RELAY_GATE_LOG": os.path.join(home, "gate.log"),
         }
+        if os.name == "nt":
+            env["RELAY_GATE_PYTHON"] = sys.executable
         launch = OfficialAdapterLaunch(("node", os.path.join(self.dir, "dist", "index.js")), env, root)
         t = AcpStdioStaticTransport(PROFILES["openai"](), official=launch)
         res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(
@@ -414,14 +415,18 @@ class TestCodexAdapterContract(unittest.TestCase):
                         "BLOCKED_TITLE_GENERATION_SECOND_TURN canary: second turn/start no longer observed")
 
     def test_gate_limits_backend_to_one_generation_and_blocks_title_turn(self):
-        import asyncio
         import json
-        import os
-        from relay.acp_client import acp_mock_text_update_wire
-        asyncio.run(acp_mock_text_update_wire(
-            *self._adapter(), cwd=self.home, prompt_text="hi", timeout=20.0, env=self._env()))
         gate_log = os.path.join(self.home, "gate.log")
-        self.assertTrue(self._wait_for(lambda: os.path.exists(gate_log) and "blocked" in self._read(gate_log)))
+        t = self._transport()
+        t.initialize("openai")
+        sid = t.open_session("openai", cwd=self.home)
+        self.assertIn(b"fake codex reply", t.prompt("openai", sid, {"prompt": "hi"}, 20))
+        # Keep the session open until codex-acp's own title-generation attempt arrives
+        # (it starts after the first turn completes), so the gate decision is observed.
+        self.assertTrue(
+            self._wait_for(lambda: os.path.exists(gate_log) and "blocked" in self._read(gate_log), 15.0),
+            "title-generation turn/start never reached the gate (blocked not logged)")
+        t.close("openai", sid)
         with open(gate_log) as fh:
             decisions = [json.loads(line)["decision"] for line in fh if line.strip()]
         self.assertEqual(decisions, ["allowed", "blocked"])
