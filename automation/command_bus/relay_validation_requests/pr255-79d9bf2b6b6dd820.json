@@ -1,0 +1,5 @@
+{
+  "target_sha": "79d9bf2b6b6dd820ec2e49c8f64e30b4dc3ec3a6",
+  "source_pr": 255,
+  "purpose": "relay exact-head validation latest-main clean successor"
+}
