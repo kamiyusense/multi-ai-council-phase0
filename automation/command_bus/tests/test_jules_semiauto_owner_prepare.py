@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from automation.command_bus.github_backend import GitHubContent
 from automation.command_bus.jules_semiauto_owner_prepare import (
+    prepare_current_jules_semiauto_acquire,
     prepare_jules_semiauto_acquire,
 )
 from automation.command_bus.runtime_transition_coordinator import (
@@ -18,6 +19,8 @@ NOW = datetime(2026, 9, 28, 4, 0, tzinfo=timezone.utc)
 HEAD = "a" * 40
 TREE = "b" * 40
 BRANCH = "feature/relay-transport-7070955470193506982"
+CURRENT_COMMAND = "relay-dev-loop-900-current-runtime-binding"
+WORK_BRANCH = f"jules-work/{CURRENT_COMMAND}"
 REPO = "kamiyusense/multi-ai-council-phase0"
 
 
@@ -38,6 +41,52 @@ def request(**changes):
         "fallback": "disabled",
         "merge_allowed": False,
         "force_push_allowed": False,
+    }
+    value.update(changes)
+    return value
+
+
+def current_request(**changes):
+    value = {
+        "schema_version": 2,
+        "profile": "JULES_CHAT_SEMIAUTO_V2",
+        "command_id": CURRENT_COMMAND,
+        "target_repo": REPO,
+        "target_branch": BRANCH,
+        "work_branch": WORK_BRANCH,
+        "expected_target_head": HEAD,
+        "expected_target_tree": TREE,
+        "allowed_paths": ["tests/relay/test_dispatcher.py"],
+        "prompt": "Prepare one bounded static regression test.",
+        "created_at": "2026-09-28T03:30:00+00:00",
+        "expires_at": "2026-09-28T05:30:00+00:00",
+        "retry": 0,
+        "fallback": "disabled",
+        "merge_allowed": False,
+        "force_push_allowed": False,
+    }
+    value.update(changes)
+    return value
+
+
+def carrier_claim(**changes):
+    value = {
+        "schema_version": 3,
+        "loop_number": 900,
+        "loop_id": "900",
+        "lane_id": "J-YELLOW",
+        "lane_display": "💛",
+        "task_id": "current-runtime-binding",
+        "command_id": CURRENT_COMMAND,
+        "target_branch": BRANCH,
+        "expected_target_head": HEAD,
+        "expected_target_tree": TREE,
+        "work_branch": WORK_BRANCH,
+        "state": "CLAIMED",
+        "claimed_at": "2026-09-28T03:31:00+00:00",
+        "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+        "retry": 0,
+        "fallback": "disabled",
     }
     value.update(changes)
     return value
@@ -69,6 +118,13 @@ def session(**changes):
     return value
 
 
+def current_session(**changes):
+    value = session()
+    value["sourceContext"]["githubRepoContext"]["startingBranch"] = WORK_BRANCH
+    value.update(changes)
+    return value
+
+
 def target(**changes):
     value = {
         "number": 4,
@@ -86,6 +142,18 @@ def bundle(**kwargs):
         request=kwargs.pop("request", request()),
         durable_context=kwargs.pop("durable_context", context()),
         session_response=kwargs.pop("session_response", session()),
+        target_pr_readback=kwargs.pop("target_pr_readback", target()),
+        now=NOW,
+        **kwargs,
+    )
+
+
+def current_bundle(**kwargs):
+    return prepare_current_jules_semiauto_acquire(
+        request=kwargs.pop("request", current_request()),
+        carrier_claim=kwargs.pop("carrier_claim", carrier_claim()),
+        durable_context=kwargs.pop("durable_context", context()),
+        session_response=kwargs.pop("session_response", current_session()),
         target_pr_readback=kwargs.pop("target_pr_readback", target()),
         now=NOW,
         **kwargs,
@@ -254,6 +322,38 @@ class JulesSemiAutoOwnerPrepareTests(unittest.TestCase):
         bad["sourceContext"]["githubRepoContext"]["startingBranch"] = "feature/other"
         with self.assertRaisesRegex(ValueError, "branch mismatch"):
             bundle(session_response=bad)
+
+    def test_current_carrier_keeps_target_and_provider_branches_separate(self):
+        prepared = current_bundle()
+        self.assertEqual(prepared.target_branch, BRANCH)
+        self.assertEqual(prepared.provider_starting_branch, WORK_BRANCH)
+        self.assertEqual(prepared.owner_event["expected_target_head"], HEAD)
+        self.assertEqual(prepared.owner_event["loop_id"], "chatgpt-semi-auto-v1")
+
+    def test_current_carrier_requires_exact_schema_v3_claim(self):
+        cases = [
+            carrier_claim(work_branch="jules-work/other"),
+            carrier_claim(expected_target_head="c" * 40),
+            carrier_claim(command_id="relay-dev-loop-900-other", task_id="other",
+                          work_branch="jules-work/relay-dev-loop-900-other"),
+        ]
+        for bad_claim in cases:
+            with self.subTest(bad_claim=bad_claim):
+                with self.assertRaises(ValueError):
+                    current_bundle(carrier_claim=bad_claim)
+
+    def test_current_carrier_session_must_start_on_isolated_work_branch(self):
+        with self.assertRaisesRegex(ValueError, "branch mismatch"):
+            current_bundle(session_response=session())
+
+    def test_current_carrier_target_pr_stays_on_canonical_target_branch(self):
+        bad_target = target(head={"ref": WORK_BRANCH, "sha": HEAD})
+        with self.assertRaisesRegex(ValueError, "head branch mismatch"):
+            current_bundle(target_pr_readback=bad_target)
+
+    def test_contracts_are_not_blended(self):
+        with self.assertRaisesRegex(ValueError, "keys mismatch"):
+            bundle(request=current_request())
 
     def test_owner_lease_is_bounded_from_provider_acceptance_time(self):
         with self.assertRaisesRegex(ValueError, "expire after"):
