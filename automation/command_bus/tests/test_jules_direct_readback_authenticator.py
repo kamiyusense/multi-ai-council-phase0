@@ -12,6 +12,8 @@ from automation.command_bus.runtime_verifier_sources import VerifiedSourceAttest
 HEAD = "a" * 40
 REPO = "kamiyusense/multi-ai-council-phase0"
 SESSION_ID = "31415926535897932384"
+TARGET_BRANCH = TARGET_BRANCH
+WORK_BRANCH = "jules-work/relay-dev-loop-900-current-runtime-binding"
 OBSERVED = "2026-09-28T03:59:00+00:00"
 EXPIRES = "2026-09-28T06:00:00+00:00"
 
@@ -91,7 +93,7 @@ def session(**changes):
         "sourceContext": {
             "source": f"sources/github/{REPO}",
             "githubRepoContext": {
-                "startingBranch": "feature/relay-transport-7070955470193506982",
+                "startingBranch": TARGET_BRANCH,
             },
         },
     }
@@ -105,7 +107,7 @@ def target(**changes):
         "state": "open",
         "merged": False,
         "head": {
-            "ref": "feature/relay-transport-7070955470193506982",
+            "ref": TARGET_BRANCH,
             "sha": HEAD,
         },
         "repo": {"full_name": REPO},
@@ -215,7 +217,7 @@ class JulesDirectReadbackAuthenticatorTests(unittest.TestCase):
             session(sourceContext={
                 "source": "sources/github/other/repo",
                 "githubRepoContext": {
-                    "startingBranch": "feature/relay-transport-7070955470193506982"
+                    "startingBranch": TARGET_BRANCH
                 },
             }),
             session(sourceContext={
@@ -234,7 +236,7 @@ class JulesDirectReadbackAuthenticatorTests(unittest.TestCase):
             target(number=5),
             target(repo={"full_name": "other/repo"}),
             target(head={
-                "ref": "feature/relay-transport-7070955470193506982",
+                "ref": TARGET_BRANCH,
                 "sha": "b" * 40,
             }),
             target(head={"ref": "feature/other", "sha": HEAD}),
@@ -245,6 +247,40 @@ class JulesDirectReadbackAuthenticatorTests(unittest.TestCase):
             with self.subTest(raw_target=raw_target):
                 auth, _, _, _ = authenticator(raw_target=raw_target)
                 self.assertIsNone(auth.authenticate(raw, expected=expected(raw)))
+
+    def test_current_carrier_separates_target_and_provider_branch_proofs(self):
+        refs = [
+            f"jules-session:{SESSION_ID}",
+            "github-pr:4",
+            f"github-head:{HEAD}",
+            f"github-branch:{TARGET_BRANCH}",
+            f"jules-branch:{WORK_BRANCH}",
+        ]
+        raw = source(proof_refs=refs)
+        raw_session = session(sourceContext={
+            "source": f"sources/github/{REPO}",
+            "githubRepoContext": {"startingBranch": WORK_BRANCH},
+        })
+        raw_target = target(head={"ref": TARGET_BRANCH, "sha": HEAD})
+        auth, _, _, _ = authenticator(
+            raw_session=raw_session,
+            raw_target=raw_target,
+        )
+        self.assertIsNotNone(auth.authenticate(raw, expected=expected(raw)))
+
+        for bad_refs in (
+            [ref for ref in refs if not ref.startswith("github-branch:")],
+            [ref for ref in refs if not ref.startswith("jules-branch:")],
+            [ref if not ref.startswith("github-branch:") else "github-branch:feature/other" for ref in refs],
+            [ref if not ref.startswith("jules-branch:") else "jules-branch:jules-work/other" for ref in refs],
+        ):
+            with self.subTest(bad_refs=bad_refs):
+                bad = source(proof_refs=bad_refs)
+                auth, _, _, _ = authenticator(
+                    raw_session=raw_session,
+                    raw_target=raw_target,
+                )
+                self.assertIsNone(auth.authenticate(bad, expected=expected(bad)))
 
     def test_source_must_be_verified_before_authentication_is_attempted(self):
         raw = source(verification_state="UNKNOWN")
