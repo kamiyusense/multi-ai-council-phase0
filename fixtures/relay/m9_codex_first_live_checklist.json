@@ -1,0 +1,35 @@
+{
+  "schema": "relay-m9-prepare-only-checklist-v1",
+  "status": "PREPARE_ONLY",
+  "live_enabled": false,
+  "human_approval": "NOT_GRANTED",
+  "provider": "openai",
+  "adapter": "@agentclientprotocol/codex-acp@2.1.0",
+  "scope": {"dispatches": 1, "prompts": 1, "max_generations": 1, "retry": 0, "fallback": "disabled", "stop_after": "first terminal outcome (success, failure or UNKNOWN)"},
+  "items": [
+    {"id": "provider-codex-only", "requirement": "provider is openai/Codex only; claude/google not admitted", "state": "STATIC_VERIFIED", "evidence": "AcpStdioStaticTransport._VERIFIED_BACKEND_SEAMS; TestOfficialAdapterLaunchGuards.test_claude_and_antigravity_have_no_verified_seam"},
+    {"id": "one-dispatch", "requirement": "exactly one dispatch envelope", "state": "STATIC_VERIFIED", "evidence": "RelayLifecycle + DuplicateGuard; TestCodexAdapterContract.test_duplicate_and_conflict_start_no_new_process_or_generation"},
+    {"id": "one-prompt", "requirement": "exactly one session/prompt", "state": "STATIC_VERIFIED", "evidence": "AcpStdioStaticTransport.prompt_count; test_second_prompt_rejected"},
+    {"id": "one-generation", "requirement": "at most one generation-starting request reaches the backend", "state": "STATIC_VERIFIED", "evidence": "codex_turn_gate.py; run 37057442393 (Linux), Windows run recorded in docs/RELAY_M8_M9_PREPARE_ONLY.md"},
+    {"id": "title-generation-blocked", "requirement": "codex-acp title-generation turn is BLOCKED by the gate", "state": "STATIC_VERIFIED", "evidence": "test_gate_limits_backend_to_one_generation_and_blocks_title_turn; canary test_upstream_title_second_turn_is_reproduced_without_gate"},
+    {"id": "retry-zero", "requirement": "retry=0", "state": "STATIC_VERIFIED", "evidence": "ProviderStaticProfile.retry_count==0; test_timeout_cancels_without_relaunch_or_retry"},
+    {"id": "fallback-disabled", "requirement": "fallback disabled", "state": "STATIC_VERIFIED", "evidence": "ProviderStaticProfile.fallback_state=='disabled'; no fallback code path"},
+    {"id": "explicit-timeout", "requirement": "the single envelope carries an explicit timeout_seconds (envelope allows None, so the M9 request must set it)", "state": "PREPARE_ONLY", "evidence": "DispatchEnvelope.timeout_seconds"},
+    {"id": "duplicate-guard", "requirement": "duplicate guard enabled; same request is NO-OP, same slot with different hash is a conflict", "state": "STATIC_VERIFIED", "evidence": "src/relay/duplicate_guard.py; contract duplicate/conflict test"},
+    {"id": "stop-cancel-path", "requirement": "stop before dispatch creates no process; cancel/close are bounded", "state": "STATIC_VERIFIED", "evidence": "test_stop_blocks_without_spawn; test_cancel_and_close_are_bounded_and_do_not_relaunch"},
+    {"id": "receipt-saved", "requirement": "a receipt is saved for the single dispatch (RelayResult + approval receipt)", "state": "PREPARE_ONLY", "evidence": "src/relay/result.py RelayResult; src/providers/live_approval_receipt.py (decision APPROVE_FIRST_LIVE_POC must be recorded by the human first)"},
+    {"id": "gate-log-saved", "requirement": "RELAY_GATE_LOG is set to a persistent path and saved with the receipt", "state": "PREPARE_ONLY", "evidence": "codex_turn_gate.py writes one JSON line per decision"},
+    {"id": "backend-turn-start-count-saved", "requirement": "number of turn/start forwarded to the backend is recorded (count of 'allowed' gate decisions)", "state": "PREPARE_ONLY", "evidence": "gate log decisions: allowed/blocked"},
+    {"id": "stop-after-one", "requirement": "stop after the first terminal outcome regardless of success", "state": "STATIC_VERIFIED", "evidence": "RelayLifecycle one prompt; gate allows one generation per process"},
+    {"id": "no-resend-on-unknown", "requirement": "an UNKNOWN outcome is never resent", "state": "STATIC_VERIFIED", "evidence": "RelayState.UNKNOWN path has no retry; DuplicateGuard keeps the slot reserved"},
+    {"id": "no-api-key-route", "requirement": "API key / gateway / custom provider env are refused", "state": "STATIC_VERIFIED", "evidence": "acp_stdio_relay_transport._FORBIDDEN_ENV; guard test"},
+    {"id": "subscription-account-only", "requirement": "stop unless the account is a ChatGPT subscription/account route (read-only account/read at M9; nothing queried now)", "state": "PREPARE_ONLY", "evidence": "src/relay/codex_account_readonly.py (design only)"},
+    {"id": "no-billing-change", "requirement": "no Billing / Credits / Overages change; no login/logout/token refresh", "state": "STATIC_VERIFIED", "evidence": "codex_account_readonly.READ_ONLY_METHODS allow-list; no such code exists"}
+  ],
+  "disabled_until_human_approval": [
+    "allowing a backend outside fixtures/relay (OfficialAdapterLaunch currently refuses it: fail closed)",
+    "passing the real HOME/CODEX_HOME that holds the subscription login to the adapter",
+    "pointing codex_turn_gate.py (RELAY_GATE_BACKEND) at the real Codex executable",
+    "any real account/read or account/rateLimits/read query"
+  ]
+}
