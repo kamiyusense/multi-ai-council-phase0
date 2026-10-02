@@ -99,6 +99,20 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         self.assertEqual(queued.provider_state, "QUEUED")
         self.assertEqual(completed.provider_state, "COMPLETED")
 
+    def test_real_api_in_progress_regression_binds_without_losing_raw_state(self):
+        prepared = bundle()
+        candidate = prepare_jules_provider_readback_candidate(
+            bundle=prepared,
+            session_readback=session_get(state="IN_PROGRESS"),
+        )
+        binding = bind_jules_active_provider_readback(
+            bundle=prepared,
+            candidate=candidate,
+        )
+        self.assertEqual(candidate.provider_state, "IN_PROGRESS")
+        self.assertEqual(binding.evidence_document["provider_state"], "RUNNING")
+        self.assertEqual(binding.provider_observation_input["state"], "RUNNING")
+
     def test_verified_text_alone_never_grants_provider_verification(self):
         prepared = bundle()
         candidate = prepare_jules_provider_readback_candidate(
@@ -167,15 +181,39 @@ class JulesProviderReadbackCandidateTests(unittest.TestCase):
         )
         self.assertEqual(len(auth.calls), 1)
 
-    def test_only_explicit_running_readback_can_bind_active_acquire(self):
+    def test_conservative_active_states_bind_as_canonical_running(self):
         prepared = bundle()
-        for state in ("QUEUED", "COMPLETED"):
+        for state in ("QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"):
             with self.subTest(state=state):
                 candidate = prepare_jules_provider_readback_candidate(
                     bundle=prepared,
                     session_readback=session_get(state=state),
                 )
-                with self.assertRaisesRegex(ValueError, "explicit RUNNING"):
+                binding = bind_jules_active_provider_readback(
+                    bundle=prepared,
+                    candidate=candidate,
+                )
+                # Preserve the provider's raw state on the candidate, but keep
+                # the durable runtime vocabulary canonical.
+                self.assertEqual(candidate.provider_state, state)
+                self.assertEqual(binding.evidence_document["provider_state"], "RUNNING")
+                self.assertEqual(binding.provider_observation_input["state"], "RUNNING")
+
+    def test_non_active_states_cannot_bind_active_acquire(self):
+        prepared = bundle()
+        for state in (
+            "COMPLETED",
+            "FAILED",
+            "PAUSED",
+            "AWAITING_PLAN_APPROVAL",
+            "AWAITING_USER_FEEDBACK",
+        ):
+            with self.subTest(state=state):
+                candidate = prepare_jules_provider_readback_candidate(
+                    bundle=prepared,
+                    session_readback=session_get(state=state),
+                )
+                with self.assertRaisesRegex(ValueError, "conservatively active"):
                     bind_jules_active_provider_readback(
                         bundle=prepared,
                         candidate=candidate,
