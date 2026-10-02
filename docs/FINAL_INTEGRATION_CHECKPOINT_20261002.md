@@ -36,7 +36,7 @@ Carrier request contract is canonical for anything that dispatches Jules (`jules
 | compileall (automation, src, tests) | OK |
 | workflow YAML parse | 19 files OK |
 | schema JSON | 21 files OK |
-| #237 alone | command_bus 842 OK (1 skipped); GitHub Actions result is on the PR checks |
+| #237 alone (`aa7f686`) | command_bus **843 OK (1 skipped) in GitHub Actions** (job log read back; 842 before the trigger-guard test was added) |
 | `git diff --check` | clean in #237; the stack shows 16 whitespace-at-EOF findings that belong to the lanes: Relay #4 (5 files), Blue #217 (4 files), Signal #236 (1 file) |
 The 842 / 1357 / 801 figures are real counts of the code at those SHAs; earlier figures (811, 937, 1153, 1278) belong to earlier heads.
 
