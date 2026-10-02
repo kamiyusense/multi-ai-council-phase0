@@ -171,6 +171,19 @@ class DuplicateRunsCollapseToOne(CrossLaneBase):
             self.assertEqual(again.status, "WAITING_FOR_RESULT", again.reason)
         self.assertEqual((self.remote.head(CARRIER), self.remote.head(DATA)), before)
 
+    def test_redispatching_a_dispatched_intent_returns_the_receipt_without_writes(self):
+        """Dispatcher-level replay (a second controller holding the same intent) must not resend."""
+        loop = self.loop()
+        first = loop.step(now=NOW)
+        self.assertEqual(first.status, "DISPATCHED", first.reason)
+        intent = loop._intents()[-1]
+        before = (self.remote.head(CARRIER), self.remote.head(DATA))
+        again = self.loop().dispatcher.dispatch(intent, now=NOW, dispatches_used=1)
+        self.assertEqual(again.status, "NO-OP", again.reason)
+        self.assertIn("receipt already exists", again.reason)
+        self.assertEqual((self.remote.head(CARRIER), self.remote.head(DATA)), before)
+        self.assertEqual(len(self.carrier_commands()), 1)
+
 
 class UnknownWritesAreNotResent(CrossLaneBase):
     def test_lost_response_after_command_write_is_recovered_by_readback_not_resend(self):
