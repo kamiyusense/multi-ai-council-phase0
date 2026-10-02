@@ -37,5 +37,5 @@ A. Merge the `chatgpt-semi-auto` PLACEHOLDER -> DURABLE adoption only after the 
 
 - `assess_lane_registration_readiness`: adoption transaction for one named lane only. It requires that lane to be enabled + DURABLE + backed by an accepted exact-loop `TransitionProjectionResult`. Other lanes may remain PLACEHOLDER.
 - `assess_registration_readiness`: unchanged global gate. It still requires every enabled lane to be DURABLE and verified before Issue #33 migration can become READY.
-- Current STATIC candidate proof: `chatgpt-semi-auto` target-lane registration = READY with fixture transition; global production registration = NOT_WIRED.
+- Current state: the lane-scoped helper is STATIC-tested, but the existing fixture transition uses a fixture loop_id, not `chatgpt-semi-auto`; therefore current real-id lane registration remains BLOCKED/NOT_RUN until the approved LIVE proof produces an exact `chatgpt-semi-auto` transition. Global production registration remains NOT_WIRED.
 - STATIC READY does not satisfy the LIVE SF-8 requirement. The additional bounded LIVE proof is still required before adoption can reach human approval.

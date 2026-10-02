@@ -41,10 +41,10 @@
       "evidence_ref": "test:test_sf8_step7_10_report"
     },
     "registration_ready": {
-      "status": "PASS",
+      "status": "BLOCKED",
       "scope": "STATIC",
       "evidence_ref": "docs/evidence/signal-sf8/readiness-report-20261003.json",
-      "note": "candidate target-lane registration: READY; fixture registry chain: READY; global production registration for Issue #33: NOT_WIRED"
+      "note": "target-lane helper is available but no real-id live transition exists yet; fixture registry chain: READY; global production registration for Issue #33: NOT_WIRED"
     },
     "negative_stale_mismatch_tests": {
       "status": "PASS",
@@ -82,7 +82,7 @@
       "provider_authentication: BLOCKED",
       "publisher_accepted: STATIC pass is not LIVE evidence",
       "collector_readback: STATIC pass is not LIVE evidence",
-      "registration_ready: STATIC pass is not LIVE evidence"
+      "registration_ready: BLOCKED"
     ]
   },
   "recorded_provider": {
