@@ -1,0 +1,5 @@
+{
+  "target_sha": "c53435432b3b355dfcf3f4063e49fbffd447b904",
+  "source_pr": "relay-m3-m6-static-v1",
+  "purpose": "relay validation: M3-M6 static evidence (Claude tripwire boundary tests, TCK informational), exact-head + Linux + Windows + Claude ACP workflow (STATIC, no LIVE)"
+}
