@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from .duplicate_guard import DuplicateDecision, DuplicateGuard
 from .envelope import DispatchEnvelope
 from .result import RelayResult, RelayState
-from .transport import RelayTransport
+from .transport import AdmissionRefused, RelayTransport
 
 
 @dataclass(slots=True)
@@ -71,6 +71,16 @@ class RelayLifecycle:
                 correlation_id=envelope.correlation_id,
                 state=RelayState.SIMULATED,
                 raw=raw,
+                packet_sha256=envelope.packet_sha256,
+                session_id=session_id,
+                prompt_attempts=prompt_attempts,
+            )
+        except AdmissionRefused as exc:
+            return RelayResult(
+                provider_id=provider_id,
+                correlation_id=envelope.correlation_id,
+                state=RelayState.BLOCKED,
+                error=str(exc),
                 packet_sha256=envelope.packet_sha256,
                 session_id=session_id,
                 prompt_attempts=prompt_attempts,

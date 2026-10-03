@@ -28,7 +28,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,6 +39,7 @@ from providers.base import ProviderStaticProfile
 from .acp_client import (
     _acp_exchange,
     _acp_initialize,
+    _acp_await_auth_status,
     _acp_new_session,
     _IGNORABLE_SESSION_UPDATES,
     _acp_prompt_text,
@@ -46,6 +47,7 @@ from .acp_client import (
 )
 from .acp_stdio_transport import spawn_stdio_transport
 from .m9_live_state import LiveAuthorization, verify_live_authorization
+from .transport import AdmissionRefused
 
 __all__ = ["AcpStdioStaticTransport", "OfficialAdapterLaunch", "LiveAuthorization", "LIVE_ADAPTER_MARKERS"]
 
@@ -144,6 +146,8 @@ class AcpStdioStaticTransport:
         command: tuple[str, ...] | None = None,
         *,
         official: OfficialAdapterLaunch | None = None,
+        route_admission: Callable[[Sequence[Mapping[str, Any]]], tuple[bool, str]] | None = None,
+        route_admission_wait_seconds: float = 6.0,
     ) -> None:
         if not isinstance(profile, ProviderStaticProfile):
             raise TypeError("profile must be a ProviderStaticProfile")
@@ -161,6 +165,11 @@ class AcpStdioStaticTransport:
             _refuse_live_command(command, profile)
             self.command, self._env = command, None
             self._live = False
+        if route_admission is not None and profile.provider_id != "anthropic":
+            raise ValueError("route_admission is the Claude auth-status extension; other providers must not set it")
+        self._route_admission = route_admission
+        self._route_wait = float(route_admission_wait_seconds)
+        self.route_admission_decisions: list[tuple[bool, str]] = []
         self.profile = profile
         self.live = self._live
         self._startup_timeout = 45.0 if self._live else _STARTUP_TIMEOUT_SECONDS
@@ -237,14 +246,39 @@ class AcpStdioStaticTransport:
             "live_process_started": self._live,
         }
 
+    def _admit(self) -> None:
+        """Ask the injected policy (``providers.policy.claude_route_admission``); refuse before any prompt."""
+        allowed, reason = self._route_admission(tuple(self.auth_status_evidence))
+        self.route_admission_decisions.append((allowed, reason))
+        if not allowed:
+            self._run(self._teardown())
+            self._dispose_loop()
+            self._state = "closed"
+            raise AdmissionRefused(f"route admission refused before any prompt: {reason}")
+
     def open_session(self, provider_id: str, *, cwd: str) -> str:
         self._check_provider(provider_id)
         if self._state != "initialized" or self._streams is None:
             raise ValueError("transport is not initialized")
         stdout, stdin = self._streams
         auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
-        session_id = self._run(_acp_new_session(
-            stdout, stdin, cwd, self._startup_timeout, self.profile.session_meta, auth_sink))
+        if self._route_admission is not None:
+            # The adapter pushes its identity right after `initialize`; wait for it (bounded), then decide
+            # before `session/new` starts the Claude CLI. A late or missing push is refused (fail closed).
+            if not self.auth_status_evidence:
+                self._run(_acp_await_auth_status(stdout, self._route_wait, self.auth_status_evidence))
+            self._admit()
+        try:
+            session_id = self._run(_acp_new_session(
+                stdout, stdin, cwd, self._startup_timeout, self.profile.session_meta, auth_sink))
+        except BaseException:
+            # No session id exists, so the lifecycle will not close; do not leave the adapter child running.
+            self._run(self._teardown())
+            self._dispose_loop()
+            self._state = "closed"
+            raise
+        if self._route_admission is not None:
+            self._admit()  # observations that arrived while session/new was answered count too
         self._session_id, self._state = session_id, "open"
         return session_id
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 
@@ -85,3 +86,23 @@ def antigravity_launch_args(platform: str, architecture: str) -> tuple[str, ...]
     """
     antigravity_binary_name(platform, architecture)
     return ("--uid=",) if platform.lower() == "linux" else ()
+
+
+CLAUDE_ADMISSIBLE_AUTH_STATE = "CLAUDE_SUBSCRIPTION_ACCOUNT"
+
+
+def claude_route_admission(auth_status_evidence: Sequence[Mapping[str, Any]]) -> tuple[bool, str]:
+    """The single Phase 0 policy for the dynamic Claude route (STATIC; transports only call it).
+
+    Input: sanitized classifications (``summarize_claude_auth_status_update``) observed from the official
+    adapter *before* a prompt is sent. Allowed only if at least one was observed and every observation is the
+    subscription account. Anything else - API key, gateway/3P, not authenticated, UNKNOWN, malformed, or no
+    observation at all - is refused (fail closed). Returns ``(allowed, reason)``.
+    """
+    if not auth_status_evidence:
+        return False, "NO_AUTH_STATUS_OBSERVED"
+    for item in auth_status_evidence:
+        state = item.get("auth_state") if isinstance(item, Mapping) else None
+        if state != CLAUDE_ADMISSIBLE_AUTH_STATE:
+            return False, f"ROUTE_{state if isinstance(state, str) and state else 'UNKNOWN'}"
+    return True, "OK"

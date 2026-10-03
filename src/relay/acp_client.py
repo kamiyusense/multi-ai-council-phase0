@@ -252,6 +252,39 @@ async def _acp_read_terminal_response(
     return result
 
 
+async def _acp_await_auth_status(
+    stdout: asyncio.StreamReader, timeout: float, auth_sink: list[dict[str, Any]]
+) -> None:
+    """Wait (bounded) until the official adapter's first ``_auth/status_update`` is in ``auth_sink``.
+
+    Used between ``initialize`` and ``session/new``: the adapter pushes its identity right after the
+    ``initialize`` response (async CLI probe). Returns without raising on timeout (the caller's policy then
+    sees no observation and refuses); other notifications are skipped (bounded); any response/request frame
+    here is unexpected and fails closed.
+    """
+    skipped = 0
+    while not auth_sink:
+        try:
+            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+        except asyncio.TimeoutError:
+            return
+        if not line:
+            raise EOFError("Unexpected EOF waiting for the ACP auth status")
+        try:
+            frame = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError("Malformed JSON while waiting for the ACP auth status") from e
+        if not isinstance(frame, dict) or frame.get("jsonrpc") != "2.0" or "method" not in frame or "id" in frame:
+            raise ValueError("Unexpected ACP frame while waiting for the auth status")
+        evidence = _auth_status_evidence(frame)
+        if evidence is not None:
+            auth_sink.append(evidence)
+            return
+        skipped += 1
+        if skipped > _MAX_INTERLEAVED_NOTIFICATIONS:
+            raise ValueError("Too many interleaved notifications while waiting for the auth status")
+
+
 async def _acp_exchange(
     stdout: asyncio.StreamReader,
     stdin: asyncio.StreamWriter,
