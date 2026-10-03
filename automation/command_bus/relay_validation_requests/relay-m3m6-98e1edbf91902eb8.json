@@ -1,0 +1,5 @@
+{
+  "target_sha": "98e1edbf91902eb820e3dce18a075e21d6d4bcdb",
+  "source_pr": "relay-m3-m6-static-v1",
+  "purpose": "relay validation: M3-M6 static evidence + session/new _meta no-bypass fix, exact-head + Linux + Windows + Claude ACP workflow (STATIC, no LIVE)"
+}
