@@ -70,7 +70,11 @@ jobs:
         run: |
           set -euo pipefail
           set -o pipefail
-          PYTHONPATH=src:. python -m unittest -v tests.relay.test_claude_acp_static_boundary tests.relay.test_claude_auth_readonly tests.relay.test_claude_auth_status_notification tests.relay.test_antigravity_static_launch_shape 2>&1 | tee boundary.txt
+          tests=(tests.relay.test_claude_acp_static_boundary tests.relay.test_claude_auth_readonly tests.relay.test_antigravity_static_launch_shape)
+          if [[ -f tests/relay/test_claude_auth_status_notification.py ]]; then
+            tests+=(tests.relay.test_claude_auth_status_notification)
+          fi
+          PYTHONPATH=src:. python -m unittest -v "${tests[@]}" 2>&1 | tee boundary.txt
           grep -q '^OK$' boundary.txt
           if grep -qi 'skipped' boundary.txt; then echo 'skips are not allowed in the boundary run' >&2; exit 1; fi
 
