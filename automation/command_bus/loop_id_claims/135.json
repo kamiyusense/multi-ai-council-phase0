@@ -1,0 +1,18 @@
+{
+  "claimed_at": "2026-10-03T04:38:39+00:00",
+  "command_id": "relay-dev-loop-135-signal-active-proof-4",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "expected_target_head": "ec0b750aa65879b1e02f37bf63271164f52bd71a",
+  "expected_target_tree": "0deaa686a8b2971db3fe0da5b2efde5b1dad6cee",
+  "fallback": "disabled",
+  "lane_display": "💛",
+  "lane_id": "J-YELLOW",
+  "loop_id": "135",
+  "loop_number": 135,
+  "retry": 0,
+  "schema_version": 3,
+  "state": "CLAIMED",
+  "target_branch": "signal/chatgpt-semi-auto-active-proof-4-target",
+  "task_id": "signal-active-proof-4",
+  "work_branch": "jules-work/relay-dev-loop-135-signal-active-proof-4"
+}
