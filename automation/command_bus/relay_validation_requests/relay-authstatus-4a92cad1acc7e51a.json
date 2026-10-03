@@ -1,0 +1,5 @@
+{
+  "target_sha": "4a92cad1acc7e51a6652a78f93b28c567c9784ee",
+  "source_pr": "relay-claude-auth-status-static-v1",
+  "purpose": "relay validation: Claude _auth/status_update sanitized classification (STATIC, synthetic payloads, no LIVE), exact-head + Linux + Windows + Claude ACP workflow"
+}
