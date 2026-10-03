@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "SIGNAL_STEP7_LATE_OUTPUT_READBACK",
+  "observed_at": "2026-10-03T01:49:44Z",
+  "proof_status": "UNKNOWN",
+  "proof_code": "PUBLISH_NOT_READY",
+  "proof_promotion_allowed": false,
+  "session_id": "5943440322658150300",
+  "output_pr": 265,
+  "output_pr_state": "open",
+  "output_pr_merged": false,
+  "base_branch": "jules-work/relay-dev-loop-133-signal-active-proof-2",
+  "base_sha": "151575ed03a1c2c4f528fbcf8b11ededc3202bd9",
+  "head_branch": "jules-work/relay-dev-loop-133-signal-active-proof-2-5943440322658150300",
+  "head_sha": "c19fb205d903877af9788d5d21daebf68ca1cbff",
+  "head_tree": "780cfcae650c9152f4edc2b1d3a8fc68af3a59d4",
+  "changed_files": [
+    "docs/evidence/signal-active-proof-2/PROOF.md"
+  ],
+  "changed_file_blob_sha": "f8c17936e8ac04450163b2212ef1929354e50881",
+  "changed_file_content": "signal active proof 2\n",
+  "output_contract": "PASS",
+  "additional_jules_get_used": 0,
+  "live_reexecution_used": 0,
+  "note": "GitHub-only late output readback. This record does not alter the authoritative UNKNOWN terminal receipt and cannot promote Step 7 to COMPLETE."
+}
