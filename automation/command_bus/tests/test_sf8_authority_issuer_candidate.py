@@ -7,10 +7,11 @@ from pathlib import Path
 from automation.command_bus.control_tower import validate_registry
 from automation.command_bus.github_oidc_proof_policy_cli import SF8_AUTHORITY_PROFILE
 from automation.command_bus.lane_identity_adoption import registry_digest, validate_lane_adoption_diff
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 ROOT = Path(__file__).resolve().parents[3]
 CAND = (ROOT / ".github/workflows/signal-sf8-authority-issuer.yml").read_text()
-REG = json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text())
+REG = pre_adoption(json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text()))
 REC = {"schema_version": 1, "record_id": "adopt-chatgpt-semi-auto-1", "lane_loop_id": "chatgpt-semi-auto",
        "approved_by_actor_id": "20355232", "approval_ref": "github-actions:run/123",
        "approved_at": "2026-10-03T00:00:00Z", "decision": "ADOPT_DURABLE",

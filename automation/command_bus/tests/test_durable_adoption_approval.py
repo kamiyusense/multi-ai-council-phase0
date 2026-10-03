@@ -190,10 +190,11 @@ class RegistryDiffTests(unittest.TestCase):
         self.assertEqual(CANDIDATE["status"], "PENDING_HUMAN_APPROVAL")
         self.assertEqual(dap.durable_lanes(CURRENT), ())
 
-    def test_production_registry_today_has_no_durable_lane(self):
+    def test_every_durable_lane_in_production_has_a_valid_approval(self):
+        from automation.command_bus.tests.pre_adoption_registry import approved_lanes
         production = load(ROOT / cli.REGISTRY_PATH)
-        durable = dap.durable_lanes(production)
-        self.assertEqual(durable, (), "a DURABLE lane in production needs a merged DURABLE_ADOPTION_APPROVAL_V1")
+        self.assertEqual(dap.durable_lanes(production), approved_lanes(),
+                         "a DURABLE lane in production needs a merged valid DURABLE_ADOPTION_APPROVAL_V1")
 
 
 class FakeGitHub:

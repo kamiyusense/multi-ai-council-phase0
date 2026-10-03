@@ -11,6 +11,7 @@ from automation.command_bus.control_tower_registration import (
 from automation.command_bus.loop_owner import OwnerDecision
 from automation.command_bus.loop_status_issue import StatusProjection
 from automation.command_bus.loop_status_transition import TransitionProjectionResult
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 
 ROOT = Path(__file__).parents[1]
@@ -18,7 +19,7 @@ REGISTRY_PATH = ROOT / "config" / "control_tower_registry.json"
 
 
 def registry():
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    return pre_adoption(json.loads(REGISTRY_PATH.read_text(encoding="utf-8")))
 
 
 def one_lane_registry(loop_id="loop-015", *, identity_state="DURABLE"):

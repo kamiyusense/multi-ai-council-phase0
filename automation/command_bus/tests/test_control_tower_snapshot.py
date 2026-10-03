@@ -17,6 +17,7 @@ from automation.command_bus.control_tower_snapshot import (
 )
 from automation.command_bus.loop_status_issue import project_state
 from automation.command_bus.tests.test_loop_status_issue import state
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 
 ROOT = Path(__file__).parents[1]
@@ -30,7 +31,7 @@ def fixture():
 
 
 def registry():
-    return json.loads(REGISTRY.read_text(encoding="utf-8"))
+    return pre_adoption(json.loads(REGISTRY.read_text(encoding="utf-8")))
 
 
 def rendered_body():

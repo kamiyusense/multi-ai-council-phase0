@@ -36,6 +36,7 @@ from automation.command_bus.tests.test_oidc_workflow_execution import (
 from automation.command_bus.tests.test_semiauto_stable_identity_static_e2e import (
     CURRENT_TIME, LOOP_ID, Clock, SourceReader, TargetReader, build_chain, fixture_registry,
 )
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 REGISTRY_PATH = Path(__file__).parents[1] / "config" / "control_tower_registry.json"
 SHA = "c" * 40
@@ -161,7 +162,7 @@ class Sf8OidcRuntimeStaticE2ETests(unittest.TestCase):
         self.assertEqual(client.creates, creates, again)
 
     def test_production_registry_stays_placeholder_and_issue33_not_ready(self):
-        registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+        registry = pre_adoption(json.loads(REGISTRY_PATH.read_text(encoding="utf-8")))
         self.assertTrue(all(l["identity_state"] == "PLACEHOLDER" for l in registry["loops"]))
         pre = prepare_verified_control_tower_migration(
             registry=registry, verified_transitions=None, lane_presentation={},

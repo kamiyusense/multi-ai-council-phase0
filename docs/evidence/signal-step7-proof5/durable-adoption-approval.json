@@ -1,0 +1,23 @@
+{
+  "accepted_deviation": "MISSING_TRAILING_NEWLINE_ONLY",
+  "approval_id": "adopt-durable-chatgpt-semi-auto-37155730052",
+  "approval_kind": "DURABLE_ADOPTION_APPROVAL_V1",
+  "approval_ref": "github-actions:run/37155730052",
+  "approval_run_attempt": 1,
+  "approved_at": "2026-10-03T21:37:15Z",
+  "approved_by_actor_id": "20355232",
+  "current_registry_sha256": "6af0268e17fd99adf4901e6a3be294c7e24c3b38241281a7b4cb0571b36b5eb0",
+  "decision": "ADOPT_DURABLE",
+  "evidence_payload_sha256": "dba63ba423cd5e8284dd01d3ccdb919ac1dcdddbe20482038d41e7ce44b62494",
+  "fallback": "disabled",
+  "lane_id": "chatgpt-semi-auto",
+  "loop_number": 136,
+  "output_assessment": "DEVIATION",
+  "proof_task_id": "signal-active-proof-5",
+  "proposed_registry_sha256": "3b6fb4d6248bee0f7c507096574035a2314c1d24aacf0a042af2bfc892e4372b",
+  "retry": 0,
+  "schema_version": 1,
+  "terminal_receipt_sha256": "a91c81af14e3fb7f28061142cf38957d401daf101cc17df1d5269249fa5bd831",
+  "transition": "PLACEHOLDER->DURABLE",
+  "valid_until": "2026-10-04T21:37:15Z"
+}

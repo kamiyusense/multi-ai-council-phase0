@@ -17,6 +17,7 @@ from automation.command_bus.tests.test_jules_semiauto_owner_prepare import (
 )
 from automation.command_bus.tests.test_oidc_workflow_execution import evidence_for, run_for
 from automation.command_bus.tests.test_runtime_transition_publisher import Client
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 ROOT = Path(__file__).resolve().parents[3]
 CANDIDATE_REGISTRY = json.loads(
@@ -411,7 +412,7 @@ class ChainIntegrityTests(unittest.TestCase):
         result, ports = run()
         self.assertEqual(result.status, "COMPLETE")
         self.assertTrue(all(not path.endswith("control_tower_registry.json") for path in ports.store.data))
-        registry = json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8"))
+        registry = pre_adoption(json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8")))
         self.assertTrue(all(e["identity_state"] == "PLACEHOLDER" for e in registry["loops"]))
 
     def test_the_exact_lane_is_the_collected_lane(self):
