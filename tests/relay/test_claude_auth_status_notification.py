@@ -136,7 +136,10 @@ class TestRelayConsumesTheNotification(unittest.TestCase):
         self.assertEqual(t.auth_status_evidence, [])
 
     def test_claude_auth_extension_is_not_accepted_for_codex(self):
-        codex = build_codex_profile("account", dict(_FALSE))
+        codex = build_codex_profile(
+            "account",
+            {**_FALSE, "custom_model_provider_configured": False, "arbitrary_codex_config_present": False},
+        )
         t, res = dispatch(fake_agent(frames_in_prompt=[notification(SUBSCRIPTION)]), provider_profile=codex)
         self.assertEqual(res.state, RelayState.UNKNOWN)
         self.assertEqual(t.auth_status_evidence, [])
