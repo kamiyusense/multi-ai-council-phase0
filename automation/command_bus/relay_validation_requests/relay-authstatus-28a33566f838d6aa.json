@@ -1,0 +1,5 @@
+{
+  "target_sha": "28a33566f838d6aadb8432258fa6051bb122dd2b",
+  "source_pr": "relay-claude-auth-status-static-v1",
+  "purpose": "relay validation: PR 284 head synced with post-283 main, Claude auth-status STATIC (synthetic payloads, no LIVE), exact-head + Linux + Windows + Claude workflow"
+}
