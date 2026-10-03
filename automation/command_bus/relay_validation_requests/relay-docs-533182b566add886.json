@@ -1,0 +1,5 @@
+{
+  "target_sha": "533182b566add8861d41e625e6dc1257cf392ee9",
+  "source_pr": "283",
+  "purpose": "relay docs-only final validation after current-main sync and Claude carrier compatibility fix; exact-head + Linux + Windows + Claude STATIC/TCK; no LIVE"
+}
