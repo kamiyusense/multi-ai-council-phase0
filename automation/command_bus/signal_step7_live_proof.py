@@ -59,10 +59,10 @@ FORBIDDEN_SESSION_IDS = frozenset({
 })
 RESERVED_AUTHORITY_RUNS = frozenset({"37031275812"})  # reserved for the adoption record
 PROVIDER_OIDC_RUN_ID = "36981004299"  # finished SF-8 OIDC proof run: workflow-identity anchor
-ALLOWED_PATH = "docs/evidence/signal-active-proof-3/PROOF.md"
-ALLOWED_CONTENT = "signal active proof 3\n"
+ALLOWED_PATH = "docs/evidence/signal-active-proof-4/PROOF.md"
+ALLOWED_CONTENT = "signal active proof 4\n"
 ACTIVE_RAW_STATES = frozenset({"QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"})
-DATA_RECORD_DIR = "docs/evidence/signal-active-proof-3"
+DATA_RECORD_DIR = "docs/evidence/signal-active-proof-4"
 TERMINAL_RECEIPT_PATH = f"{DATA_RECORD_DIR}/live-terminal-receipt.json"
 BOUND_PLAN_PATH = f"{DATA_RECORD_DIR}/plan.bound.json"
 ATTEMPT_MARKER_PATH = f"{DATA_RECORD_DIR}/live-attempt-marker.json"
@@ -245,7 +245,7 @@ UNBOUND_SHA = "0" * 40
 PROVIDER_OIDC_EXPECTED_SHA = "93460dee54948dc6ac3888f4142ab78cd54ce759"
 CARRIER_LANE_ID = "J-YELLOW"
 CARRIER_LANE_DISPLAY = "💛"
-PROOF_TASK_ID = "signal-active-proof-3"
+PROOF_TASK_ID = "signal-active-proof-4"
 
 
 def _iso(value: datetime) -> str:
