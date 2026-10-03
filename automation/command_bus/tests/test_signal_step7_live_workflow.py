@@ -423,6 +423,7 @@ class EndToEndCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             code, result = self.run_main(world, tmp)
         self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+        self.assertIsNone(result["failure_detail"])
         jules = [c for c in world.calls if c[1].startswith(cli.JULES_API)]
         self.assertEqual(len(jules), 1)
         self.assertEqual([c for c in world.calls if c[0] == "POST"], [])
@@ -468,6 +469,8 @@ class EndToEndCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             code, result = self.run_main(world, tmp)
         self.assertEqual((code, result["status"], result["code"]), (1, "UNKNOWN", "PROVIDER_NOT_ACTIVE"))
+        self.assertEqual(result["stage"], "provider_get")
+        self.assertEqual(result["failure_detail"], "PROVIDER_NOT_ACTIVE: provider_get:COMPLETED")
         self.assertEqual(len([c for c in world.calls if c[1].startswith(cli.JULES_API)]), 1)
         self.assertNotIn((world.bound["data_branch"], live.EVIDENCE_PATH), world.files)
 
