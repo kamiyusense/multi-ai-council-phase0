@@ -58,7 +58,28 @@ jobs:
           ref: ${{ needs.locate.outputs.target_sha }}
           persist-credentials: false
 
+      - name: Select - does this target carry the tests this workflow validates?
+        id: select
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A target that predates the Codex gate / M9 runner is NOT_APPLICABLE here: report that explicitly
+          # instead of failing, and never call it validated. Applicable targets keep the exact checks below.
+          ok=true
+          f=tests/relay/test_acp_stdio_relay_transport.py
+          for need in "${f}" tests/relay/test_codex_turn_gate.py tests/relay/test_m9_codex_first_live.py RUN_M9_CODEX_FIRST_LIVE.cmd src/relay/codex_turn_gate.cmd; do
+            [[ -f "${need}" ]] || ok=false
+          done
+          if [[ "${ok}" == "true" ]]; then
+            for c in TestOfficialCodexAdapterWithFixtureBackend TestCodexAdapterContract TestOfficialAdapterLaunchGuards; do
+              grep -q "^class ${c}\b" "${f}" || ok=false
+            done
+          fi
+          echo "applicable=${ok}" >> "${GITHUB_OUTPUT}"
+          echo "applicable=${ok}"
+
       - name: Install official codex-acp 2.1.0 (no scripts, no optional native Codex)
+        if: steps.select.outputs.applicable == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -75,6 +96,7 @@ jobs:
           echo "RELAY_CODEX_ACP_DIR=$(cygpath -w "${dir}/node_modules/@agentclientprotocol/codex-acp")" >> "${GITHUB_ENV}"
 
       - name: Gate launcher + official codex-acp 2.1.0 contract on Windows (only the un-gated canary may skip)
+        if: steps.select.outputs.applicable == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -92,6 +114,7 @@ jobs:
           grep -q "skipped 'un-gated canary needs an executable fixture" windows-lf.txt
 
       - name: Runner entry-point smoke (Windows .cmd must stop at preflight, never reach LIVE)
+        if: steps.select.outputs.applicable == 'true'
         shell: bash
         run: |
           set +e
@@ -109,6 +132,7 @@ jobs:
           {
             echo "## Relay codex-acp 2.1.0 Windows STATIC gate validation"
             echo "- target_sha: \`${{ needs.locate.outputs.target_sha }}\`"
+            if [[ "${{ steps.select.outputs.applicable }}" != "true" ]]; then echo "- NOT_APPLICABLE: the target predates the Codex gate / M9 runner; nothing was validated"; fi
             echo "- chain: codex-acp 2.1.0 -> CODEX_PATH=codex_turn_gate.cmd -> codex_turn_gate.py -> fixture backend"
             echo "- live provider/model execution: NO"
           } >> "${GITHUB_STEP_SUMMARY}"

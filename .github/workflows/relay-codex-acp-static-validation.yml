@@ -51,7 +51,26 @@ jobs:
           ref: ${{ steps.locate.outputs.target_sha }}
           persist-credentials: false
 
+      - name: Select - does this target carry the tests this workflow validates?
+        id: select
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A target that predates the Codex gate / M9 runner tests is NOT_APPLICABLE here: report that
+          # explicitly instead of failing with ModuleNotFoundError, and never call it validated.
+          ok=true
+          f=tests/relay/test_acp_stdio_relay_transport.py
+          [[ -f "${f}" && -f tests/relay/test_m9_codex_first_live.py ]] || ok=false
+          if [[ "${ok}" == "true" ]]; then
+            for c in TestOfficialCodexAdapterWithFixtureBackend TestCodexAdapterContract TestOfficialAdapterLaunchGuards TestLifecycleMapping TestLiveLaunchRefused; do
+              grep -q "^class ${c}\b" "${f}" || ok=false
+            done
+          fi
+          echo "applicable=${ok}" >> "${GITHUB_OUTPUT}"
+          echo "applicable=${ok}"
+
       - name: Install official codex-acp 2.1.0 (no scripts, no optional native Codex)
+        if: steps.select.outputs.applicable == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -68,6 +87,7 @@ jobs:
           echo "RELAY_CODEX_ACP_DIR=${dir}/node_modules/@agentclientprotocol/codex-acp" >> "${GITHUB_ENV}"
 
       - name: Run codex-acp 2.1.0 + one-generation gate + fixture backend contract tests (no skips allowed)
+        if: steps.select.outputs.applicable == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -83,6 +103,7 @@ jobs:
           if grep -qi 'skipped' contract.txt; then echo 'skips are not allowed in the contract run' >&2; exit 1; fi
 
       - name: Full unit suite with the adapter available (record skips)
+        if: steps.select.outputs.applicable == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -96,6 +117,7 @@ jobs:
           {
             echo "## Relay codex-acp 2.1.0 STATIC gate validation"
             echo "- target_sha: \`${{ steps.locate.outputs.target_sha }}\`"
+            if [[ "${{ steps.select.outputs.applicable }}" != "true" ]]; then echo "- NOT_APPLICABLE: the target predates the Codex gate / M9 runner tests; nothing was validated"; fi
             echo "- adapter: @agentclientprotocol/codex-acp 2.1.0 (--ignore-scripts --omit=optional)"
             echo "- backend: fixtures/relay/fake_codex_app_server.py via src/relay/codex_turn_gate.py"
             echo "- contract tests: PASS if job green (no skips allowed)"
