@@ -1,5 +1,18 @@
 # Control Tower real durable loop ID adoption plan
 
+> **2026-10-04 status override (design principles below are unchanged; per-lane statuses are historical)**
+>
+> | Lane | Current status |
+> | --- | --- |
+> | A ChatGPT Semi-Auto (`chatgpt-semi-auto`) | **DURABLE adopted** (PR #290, merge `faa04a7`; proof 5 + `DURABLE_ADOPTION_APPROVAL_V1`) |
+> | B Claude -> Gemini (`claude-gemini`) | PLACEHOLDER / NOT_WIRED; SF-10 inventory: BLOCKED |
+> | C Claude -> Claude (`claude-claude`) | PLACEHOLDER / NOT_WIRED; SF-10 inventory: BLOCKED |
+> | D Work -> Gemini (`work-gemini`) | PLACEHOLDER / NOT_WIRED; SF-10 inventory: BLOCKED |
+> | Global registration | NOT_WIRED until every enabled lane is ready |
+> | Issue #33 migration | not started (Issue STOPPED / owner NONE) |
+>
+> Details: `docs/SIGNAL_SF10_LANE_INVENTORY_20261004.md`, `docs/evidence/signal-sf10/`.
+
 ## Purpose
 
 This document defines the final pre-live-migration adoption boundary for the
@@ -77,6 +90,8 @@ Human loop numbers may continue as presentation metadata
 Until that exists:
 
 `ChatGPT Semi-Auto = PLACEHOLDER / NOT_WIRED`
+
+_(historical; Lane A is `DURABLE` since 2026-10-04, see the status override at the top)_
 
 ## Lane B — Claude -> Gemini
 

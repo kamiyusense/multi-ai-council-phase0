@@ -1,0 +1,208 @@
+{
+  "accepted_durable_transition": {
+    "note": "Function is generic but no accepted TransitionProjectionResult for claude-gemini can exist without state/owner/receipt.",
+    "source_refs": [
+      "automation/command_bus/loop_status_transition.py:28 (project_durable_transition)"
+    ],
+    "status": "ABSENT"
+  },
+  "canonical_evidence": {
+    "note": "No evidence/claude-gemini/ records.",
+    "source_refs": [
+      "automation/command_bus/signal_step7_live_proof.py:613 (evidence path evidence/<LANE_ID>/<authority_id>.json, LANE_ID=chatgpt-semi-auto)"
+    ],
+    "status": "ABSENT"
+  },
+  "collector_readback": {
+    "note": "Collector generic; would return BLOCKED/UNKNOWN for missing state. Not run.",
+    "source_refs": [
+      "automation/command_bus/control_tower_durable_collector.py:61-86 (generic collect_transition(loop_id))"
+    ],
+    "status": "ABSENT"
+  },
+  "controller_implementation": {
+    "files": [
+      "automation/command_bus/claude_loop.py:30-33 (BackendMode = JULES_BACKEND | CLAUDE_BACKEND only)",
+      "automation/command_bus/claude_loop.py:301-480 (prepare_jules_semiauto_request/prepare_loop_claim/prepare_jules_semiauto_bundle: Jules only)",
+      "automation/command_bus/claude_loop.py:481-495 (prepare_claude_transport requires CLAUDE_BACKEND, static, retry=0/fallback disabled)",
+      "automation/command_bus/claude_jules_autoloop.py, claude_jules_dispatch.py, claude_jules_live.py (Claude->Jules loop)"
+    ],
+    "note": "claude_loop.py loop_id is a caller argument (claude_loop.py:58,99,402-418; loop_id_claim numeric loop_number). docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:83 states 'The current Claude loop implementation accepts loop_id as caller input.'",
+    "status": "PARTIAL (controller is Claude but is wired only to Jules or Claude-only backends, never Gemini)"
+  },
+  "current_blockers": [
+    "No Gemini worker path in the Claude loop controller (BackendMode has no GEMINI backend; claude_loop.py:30-33)",
+    "No runtime-chosen stable loop_id; id is caller input (adoption plan :83)",
+    "Gemini/Antigravity provider route is unproven and live-blocked by docs (RELAY_LIVE_BLOCKERS.md:85-101); Gemini CLI deferred",
+    "Provider verification and carrier/readback code are Jules-only",
+    "signal_step7 live proof and approval code hard-wired to chatgpt-semi-auto",
+    "A live provider turn for Gemini needs separate explicit user approval (RELAY_LIVE_BLOCKERS.md:103+)"
+  ],
+  "current_identity_state": "PLACEHOLDER / NOT_WIRED (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:81-99; registry.json:24)",
+  "existing_live_proof": {
+    "exists": false,
+    "source_refs": [
+      "docs/SIGNAL_STEP7_PROOF5_RESULT_20261004.md:1-30",
+      "automation/command_bus/signal_step7_live_proof.py:54,327-334,776 (LANE_ID hard-coded chatgpt-semi-auto, WRONG_LANE_ID)",
+      "automation/command_bus/durable_adoption_approval.py:29,135-136 (WRONG_LANE for any other lane; tests/test_durable_adoption_approval.py:122 asserts claude-gemini refused)"
+    ],
+    "summary": "No LIVE proof for claude-gemini. Proof 5 is the only recent LIVE proof and is for chatgpt-semi-auto (Claude->Jules-like/Jules worker via carrier J-YELLOW), single-use terminal receipt rerun_allowed=false. It cannot be reused as authority for this lane: wrong lane, wrong worker, id not same, terminal."
+  },
+  "existing_static_proof": {
+    "source_refs": [
+      "automation/command_bus/tests/test_control_tower.py:125-190,268",
+      "automation/command_bus/tests/test_control_tower_registration.py:82,189",
+      "automation/command_bus/tests/test_control_tower_live_preflight.py:139-164",
+      "automation/command_bus/tests/test_control_tower_schedule.py:197-211",
+      "src/providers/antigravity_acp.py:9"
+    ],
+    "summary": "Only generic Control Tower display/registry fixtures that use 'claude-gemini' as a hypothetical lane, plus static Claude->Jules loop tests and static Antigravity profile tests. None is a durable-chain proof for this lane."
+  },
+  "fencing": {
+    "note": "Generic fencing exists (reused by chatgpt-semi-auto); not applied to this lane. Not re-verified in depth.",
+    "source_refs": [
+      "automation/command_bus/loop_owner_authority.py",
+      "automation/command_bus/loop_status_transition.py:28-60 (state/owner/receipt/target binding)"
+    ],
+    "status": "PARTIAL"
+  },
+  "fresh_target_binding": {
+    "note": "Generic target binding exists; nothing bound for this lane.",
+    "source_refs": [
+      "automation/command_bus/loop_status_transition.py:44-60 (expected_target vs owner generation)",
+      "automation/command_bus/control_tower_durable_collector.py:36 (DurableTargetReader protocol)"
+    ],
+    "status": "PARTIAL"
+  },
+  "generation": {
+    "note": "Generic generation numbering exists in owner chain; no generation exists for this lane.",
+    "source_refs": [
+      "automation/command_bus/loop_owner_backend.py:30-35",
+      "automation/command_bus/claude_loop.py:499 (verdict has generation)"
+    ],
+    "status": "PARTIAL"
+  },
+  "human_approval_needed": true,
+  "intended_registry_entry": {
+    "controller_kind": "CLAUDE",
+    "display_name": "Claude -> Gemini",
+    "enabled": true,
+    "identity_state": "PLACEHOLDER",
+    "loop_id": "claude-gemini",
+    "mode": "AUTO",
+    "note": "The literal 'claude-gemini' is a registry placeholder label written by the Control Tower. No runtime loop ever chose it.",
+    "source_refs": [
+      "automation/command_bus/config/control_tower_registry.json:15-25"
+    ],
+    "worker_kind": "GEMINI"
+  },
+  "lane_id": "claude-gemini",
+  "lane_registration_readiness": {
+    "note": "Readiness requires a verified transition; none. Lane is reported as placeholder.",
+    "source_refs": [
+      "automation/command_bus/control_tower_registration.py:158-175 (assess_lane_registration_readiness, generic per lane)",
+      "automation/command_bus/tests/test_durable_adoption_applied.py:56 and test_signal_step7_proof5_candidate.py:184 (claude-gemini listed in placeholder_loop_ids)"
+    ],
+    "status": "ABSENT"
+  },
+  "minimum_next_component": "A static, no-network 'Claude->Gemini lane identity contract' module (analogue of semiauto_stable_identity.py) that defines how a runtime-chosen stable loop_id for the CLAUDE/GEMINI lane is derived and validated, and rejects caller loop_id/PR/branch/numeric/color ids. It must be paired with a decision on the actual Gemini worker transport. Neither exists.",
+  "missing_requirements": [
+    "runtime-chosen stable loop_id for CLAUDE/GEMINI lane (not invented here)",
+    "Gemini worker/provider adapter and transport decision (Antigravity ACP is static-only; Gemini CLI deferred)",
+    "Gemini provider verification/readback source (non-Jules)",
+    "state/<loop_id>.json, owner event chain, generation/fencing, source receipt, canonical evidence under that id",
+    "lane-parameterized live-proof and approval code",
+    "LIVE proof for this exact lane/id/target/generation with terminal receipt, not replayed",
+    "explicit human approval for any live provider turn and for registry flip"
+  ],
+  "new_live_needed": true,
+  "next_task": {
+    "do": [
+      "First obtain from the user/runtime owner the real stable id source for this lane; do not invent one",
+      "Reuse validate_registry and runtime_state_path for validation",
+      "Write static tests only, with a hypothetical fixture id"
+    ],
+    "do_not": [
+      "do not invent or hardcode a loop_id",
+      "do not flip registry identity_state",
+      "do not reuse proof 5 as authority",
+      "do not call Gemini/Antigravity/any provider live",
+      "do not treat display name, color, PR number, workflow name or caller loop_id as durable id"
+    ],
+    "existing_local_destination": "automation/command_bus/ (new module and tests under automation/command_bus/tests/)",
+    "exit": "Static tests pass for identity validation; lane remains PLACEHOLDER; report STATIC_READY only for the identity contract, not for adoption.",
+    "small_component": "Static claude_gemini_stable_identity.py (identity contract, modeled on automation/command_bus/semiauto_stable_identity.py) with fixture-only tests, taking a hypothetical DURABLE registry entry like that file's fixture approach",
+    "upstream_accepted_source": "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md Lane B (accepted plan) plus docs/RELAY_LIVE_BLOCKERS.md (Google route constraints); user decision needed on which Gemini transport is the worker path"
+  },
+  "owner_event_chain": {
+    "note": "Generic code exists; zero events for this lane.",
+    "source_refs": [
+      "automation/command_bus/loop_owner_backend.py:17,30-35,47-99 (generic create-only chain at loop_owner_events/<loop_id>/<gen>.json)",
+      "automation/command_bus/loop_owner.py"
+    ],
+    "status": "ABSENT"
+  },
+  "provider_verification": {
+    "note": "All provider verification code is provider_kind JULES. No Gemini/Antigravity readback verifier exists; live provider route is explicitly blocked/unproven.",
+    "source_refs": [
+      "automation/command_bus/jules_provider_verification_source.py:86",
+      "automation/command_bus/jules_provider_readback_candidate.py:129",
+      "docs/RELAY_LIVE_BLOCKERS.md:85-101"
+    ],
+    "status": "ABSENT"
+  },
+  "readiness_class": "BLOCKED",
+  "readiness_reason": "There is no Gemini worker path, no runtime-owned stable loop_id, no state/owner/receipt/evidence/provider-verification for this lane, and no applicable past LIVE proof. Prerequisite design/implementation is missing, so even a static adoption chain cannot be built from existing code alone.",
+  "reusable_components": [
+    "automation/command_bus/runtime_state_initializer.py (state/<loop_id>.json)",
+    "automation/command_bus/loop_owner_backend.py + loop_owner.py + loop_owner_authority.py (owner chain)",
+    "automation/command_bus/loop_status_transition.py (project_durable_transition)",
+    "automation/command_bus/control_tower_durable_collector.py",
+    "automation/command_bus/control_tower_registration.py (assess_lane_registration_readiness)",
+    "automation/command_bus/lane_identity_adoption.py and sf8_readiness.py (adoption diff and readiness gate)",
+    "automation/command_bus/claude_loop.py + claude_admission_gate.py (Claude controller prep, CLAUDE_BACKEND, retry=0/no fallback)",
+    "src/providers/antigravity_acp.py, policy.py, preflight.py (static Google/Antigravity profile)",
+    "patterns only: signal_step7_live_proof.py, durable_adoption_approval.py (lane hard-coded to chatgpt-semi-auto; would need parameterization, not reuse as-is)"
+  ],
+  "source_receipt": {
+    "note": "Generic receipt machinery exists; no receipt for this lane. Existing receipt/provider code is Jules-oriented.",
+    "source_refs": [
+      "automation/command_bus/loop_status_transition.py:55-60 (requires receipt_ref matching owner event)",
+      "automation/command_bus/runtime_transition_receipt.py"
+    ],
+    "status": "ABSENT"
+  },
+  "stable_durable_loop_id": {
+    "caller_input_only": true,
+    "chosen_by": "nobody (runtime has not chosen any); 'claude-gemini' is only a Control Tower registry placeholder; docs/PHASE0_CONTROL_TOWER_V2_ROADMAP.md:187,282,317 uses a different hypothetical 'auto-claude-gemini' (design sketch, not runtime)",
+    "evidence": [
+      "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:83-99",
+      "automation/command_bus/claude_loop.py:58,99 (loop_id parameters supplied by caller)",
+      "automation/command_bus/semiauto_stable_identity.py:20-60 is hard-wired to CHATGPT/SEMI_AUTO/JULES lane, so no CLAUDE/GEMINI equivalent exists",
+      "no file or dir named claude-gemini under state/, loop_owner_events/, evidence/ (find returned none; loop_owner_events dir absent in this checkout)"
+    ],
+    "exists": false,
+    "value_or_null": null
+  },
+  "state_file": {
+    "note": "No state/claude-gemini.json and no loop_id exists to name it. Generic initializer is reusable once a real id exists.",
+    "source_refs": [
+      "automation/command_bus/runtime_state_initializer.py:30-33 (path automation/command_bus/state/<loop_id>.json; generic helper)",
+      "automation/command_bus/control_tower_durable_collector.py:86"
+    ],
+    "status": "ABSENT"
+  },
+  "worker_provider": {
+    "files": [
+      "automation/command_bus/control_tower.py:45,63 (GEMINI worker enum/label only)",
+      "automation/command_bus/control_tower_snapshot.py:53",
+      "automation/command_bus/schema/control_tower_registry.schema.json:59",
+      "src/providers/antigravity_acp.py:9-40 (static profile builder only)",
+      "src/providers/policy.py:50-90 (ANTIGRAVITY_POLICY provider_id=google, antigravity-acp)",
+      "docs/RELAY_LIVE_BLOCKERS.md:85-101 (Antigravity live proof required; Gemini CLI DEFERRED, not auto-fallback)",
+      "automation/command_bus/jules_provider_verification_source.py:86 and jules_provider_readback_candidate.py:28,129 (provider verification hardcoded provider_kind JULES)"
+    ],
+    "gemini_worker_path_exists": false,
+    "summary": "The repo has NO Gemini worker path for a Claude->Gemini loop. Gemini appears only as an enum value (WORKER set), registry schema enum, review/audit role in docs, and a DEFERRED/not-selected CLI. The only Google route is a static Antigravity ACP provider profile/policy (no live execution, no loop wiring, live blocked)."
+  }
+}
