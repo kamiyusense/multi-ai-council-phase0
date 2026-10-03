@@ -1,72 +1,155 @@
 # Step 7 LIVE publish half for the durable lane chatgpt-semi-auto.
 #
-# CANDIDATE. It is inert until this file is on main (a human merge) and a human
-# dispatches it by hand. It never runs on push or pull_request events.
+# CANDIDATE. It is inert until this file is on main (a human merge).
 #
-# One dispatch spends exactly ONE fresh Jules GET (the whole proof then totals POST 1,
-# GET 2 counting the carrier's create + timing read). It never POSTs to Jules, never
-# merges, never writes main, the production registry or Issue #33. retry=0, fallback
-# disabled, no rerun: the run records a terminal receipt that blocks any second attempt.
+# Primary path (no second human action): when the carrier workflow "Phase 0 Chat to Jules semi-auto"
+# finishes successfully on feature/chat-work-command-bus, this workflow starts by itself via
+# workflow_run. The provider session was created seconds earlier, so the one fresh Jules GET happens
+# while the session is still active. Every other carrier run is a NOOP: it is recognised as not this
+# proof's command BEFORE any Jules or write permission is used.
+#
+# Two jobs keep the authority boundary visible:
+#   prepare - read-only token, NO Jules key. Re-reads the triggering run from the API, finds the bound
+#             plan, the one carrier session and the one authority run, and runs the read-only preflight.
+#   publish - runs only if prepare said go. Only this job has contents:write and the Jules key; it
+#             recomputes everything and stops if it disagrees with prepare.
+#
+# Emergency path: workflow_dispatch needs a typed confirmation and uses the same duplicate guards
+# (terminal receipt + attempt marker on the data branch), so it can never run the same proof twice.
+#
+# One dispatch spends exactly ONE fresh Jules GET (the whole proof then totals POST 1, GET 2 counting
+# the carrier's create + timing read). It never POSTs to Jules, never merges, never writes main, the
+# production registry or Issue #33. retry=0, fallback disabled, no rerun: the run records a terminal
+# receipt that blocks any second attempt.
 name: Signal Step 7 live publish
 on:
+  workflow_run:
+    workflows: ["Phase 0 Chat to Jules semi-auto"]
+    types: [completed]
+    branches: [feature/chat-work-command-bus]
   workflow_dispatch:
     inputs:
+      emergency_confirm:
+        description: EMERGENCY ONLY. The normal path is automatic after the carrier succeeds. To run by hand type EMERGENCY_MANUAL_PUBLISH
+        required: true
+        type: string
       session_id:
         description: Leave EMPTY. The session id is read from the carrier run itself; a typed value is only a cross-check and must match
         required: false
         default: ''
         type: string
       authority_run_id:
-        description: Run id of the finished authority issuer dispatch (digits only)
-        required: true
+        description: Leave EMPTY. The authority run is found from GitHub's own issuer run list (fresh, owner, before the carrier run, unique); a typed value must be one of those candidates
+        required: false
+        default: ''
         type: string
       plan_sha256:
-        description: sha256 of the bound plan stored on the data branch
-        required: true
+        description: Leave EMPTY. The bound plan is read from the data branch; a typed value is only a cross-check and must match
+        required: false
+        default: ''
         type: string
 permissions:
-  contents: write
+  contents: read
   actions: read
   pull-requests: read
 concurrency:
-  group: signal-step7-live-publish
+  group: signal-step7-live-publish-${{ github.event.workflow_run.id || github.run_id }}
   cancel-in-progress: false
 jobs:
-  publish:
+  prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.event_name == 'workflow_dispatch' && contains(fromJSON('["20355232"]'), github.actor_id)
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      go: ${{ steps.prepare.outputs.go }}
+      session_id: ${{ steps.prepare.outputs.session_id }}
+      authority_run_id: ${{ steps.prepare.outputs.authority_run_id }}
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && ((github.event_name == 'workflow_dispatch' && contains(fromJSON('["20355232"]'), github.actor_id)) || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Phase 0 Chat to Jules semi-auto' && github.event.workflow_run.path == '.github/workflows/jules-chat-semiauto.yml' && github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'feature/chat-work-command-bus' && github.event.workflow_run.run_attempt == 1 && github.event.workflow_run.repository.full_name == 'kamiyusense/multi-ai-council-phase0' && github.event.workflow_run.head_repository.full_name == 'kamiyusense/multi-ai-council-phase0' && contains(fromJSON('["20355232"]'), format('{0}', github.event.workflow_run.actor.id)) && contains(fromJSON('["20355232"]'), format('{0}', github.event.workflow_run.triggering_actor.id))))
     steps:
-      - name: Checkout the dispatched main commit without persisted credentials
+      - name: Checkout the exact main commit without persisted credentials
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - name: Validate inputs and the committed plan template (no secrets, no network)
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          EMERGENCY_CONFIRM: ${{ inputs.emergency_confirm }}
           SESSION_ID: ${{ inputs.session_id }}
           AUTHORITY_RUN_ID: ${{ inputs.authority_run_id }}
           PLAN_SHA256: ${{ inputs.plan_sha256 }}
         run: |
           set -euo pipefail
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            [[ "${EMERGENCY_CONFIRM}" == "EMERGENCY_MANUAL_PUBLISH" ]] || { echo "manual publish needs the emergency confirmation" >&2; exit 1; }
+          fi
           if [[ -n "${SESSION_ID}" ]]; then
             [[ "${SESSION_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad session id" >&2; exit 1; }
-            [[ "${SESSION_ID}" != "301196275118188780" && "${SESSION_ID}" != "5943440322658150300" ]] || { echo "old session is forbidden" >&2; exit 1; }
+            [[ "${SESSION_ID}" != "301196275118188780" && "${SESSION_ID}" != "5943440322658150300" && "${SESSION_ID}" != "11944164406087664763" && "${SESSION_ID}" != "569271609782168660" ]] || { echo "old session is forbidden" >&2; exit 1; }
           fi
-          [[ "${AUTHORITY_RUN_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad authority run id" >&2; exit 1; }
-          [[ "${PLAN_SHA256}" =~ ^[0-9a-f]{64}$ ]] || { echo "bad plan digest" >&2; exit 1; }
+          if [[ -n "${AUTHORITY_RUN_ID}" ]]; then
+            [[ "${AUTHORITY_RUN_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad authority run id" >&2; exit 1; }
+          fi
+          if [[ -n "${PLAN_SHA256}" ]]; then
+            [[ "${PLAN_SHA256}" =~ ^[0-9a-f]{64}$ ]] || { echo "bad plan digest" >&2; exit 1; }
+          fi
           python -m automation.command_bus.signal_step7_live_proof_cli \
             --plan docs/evidence/signal-sf8/step7-live-plan-template.json \
             --registry docs/evidence/signal-sf8/registry-candidate-chatgpt-semi-auto-durable.json \
             --check
+      - name: Resolve and verify everything read-only (no Jules key, no writes)
+        id: prepare
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          GITHUB_TOKEN: ${{ github.token }}
+          CARRIER_RUN_ID: ${{ github.event.workflow_run.id }}
+          SESSION_ID: ${{ inputs.session_id }}
+          AUTHORITY_RUN_ID: ${{ inputs.authority_run_id }}
+          PLAN_SHA256: ${{ inputs.plan_sha256 }}
+        run: |
+          python -m automation.command_bus.signal_step7_live_proof_cli \
+            --plan docs/evidence/signal-sf8/step7-live-plan-template.json \
+            --registry docs/evidence/signal-sf8/registry-candidate-chatgpt-semi-auto-durable.json \
+            --bound-plan-from-data-branch --prepare-only \
+            --github-output "${GITHUB_OUTPUT}" \
+            --result-out "${RUNNER_TEMP}/step7-prepare-result.json"
+      - name: Save the sanitized prepare result only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: step7-prepare-result-${{ github.run_id }}
+          path: ${{ runner.temp }}/step7-prepare-result.json
+          if-no-files-found: warn
+          retention-days: 30
+  publish:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
+    if: needs.prepare.outputs.go == 'true' && github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && ((github.event_name == 'workflow_dispatch' && contains(fromJSON('["20355232"]'), github.actor_id)) || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Phase 0 Chat to Jules semi-auto' && github.event.workflow_run.path == '.github/workflows/jules-chat-semiauto.yml' && github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'feature/chat-work-command-bus' && github.event.workflow_run.run_attempt == 1 && github.event.workflow_run.repository.full_name == 'kamiyusense/multi-ai-council-phase0' && github.event.workflow_run.head_repository.full_name == 'kamiyusense/multi-ai-council-phase0' && contains(fromJSON('["20355232"]'), format('{0}', github.event.workflow_run.actor.id)) && contains(fromJSON('["20355232"]'), format('{0}', github.event.workflow_run.triggering_actor.id))))
+    steps:
+      - name: Checkout the exact main commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Publish once with one fresh Jules read
         env:
           PYTHONDONTWRITEBYTECODE: '1'
           GITHUB_TOKEN: ${{ github.token }}
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          CARRIER_RUN_ID: ${{ github.event.workflow_run.id }}
           SESSION_ID: ${{ inputs.session_id }}
           AUTHORITY_RUN_ID: ${{ inputs.authority_run_id }}
           PLAN_SHA256: ${{ inputs.plan_sha256 }}
+          EXPECT_SESSION_ID: ${{ needs.prepare.outputs.session_id }}
+          EXPECT_AUTHORITY_RUN_ID: ${{ needs.prepare.outputs.authority_run_id }}
           PROVIDER_OIDC_EVIDENCE_PATH: docs/evidence/signal-sf8/oidc-identity-proof-36981004299.json
         run: |
           python -m automation.command_bus.signal_step7_live_proof_cli \

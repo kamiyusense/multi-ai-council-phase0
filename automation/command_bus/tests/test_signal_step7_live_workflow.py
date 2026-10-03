@@ -35,28 +35,72 @@ def code_lines(text: str) -> list[str]:
 
 
 class WorkflowStaticTests(unittest.TestCase):
-    def test_only_workflow_dispatch_can_start_it(self):
+    def test_only_the_carrier_workflow_run_and_a_manual_emergency_dispatch_can_start_it(self):
         body = "\n".join(code_lines(WORKFLOW))
         on_block = re.search(r"^on:\n((?:[ ]{2,}.*\n)+)", body + "\n", re.M).group(1)
-        self.assertEqual(re.findall(r"^  ([a-z_]+):", on_block, re.M), ["workflow_dispatch"])
-        for forbidden in ("push:", "pull_request", "schedule:", "workflow_run", "workflow_call", "issue_comment",
+        self.assertEqual(re.findall(r"^  ([a-z_]+):", on_block, re.M), ["workflow_run", "workflow_dispatch"])
+        run_block = on_block.split("  workflow_dispatch:", 1)[0]
+        self.assertIn('workflows: ["Phase 0 Chat to Jules semi-auto"]', run_block)
+        self.assertIn("types: [completed]", run_block)
+        self.assertIn("branches: [feature/chat-work-command-bus]", run_block)
+        for forbidden in ("push:", "pull_request", "schedule:", "workflow_call", "issue_comment",
                           "repository_dispatch", "pull_request_target"):
             self.assertNotIn(forbidden, body)
 
-    def test_job_guard_is_main_attempt_one_dispatch_and_the_single_owner(self):
-        condition = re.search(r"^    if: (.+)$", WORKFLOW, re.M).group(1)
-        for part in ("github.repository == 'kamiyusense/multi-ai-council-phase0'",
-                     "github.ref == 'refs/heads/main'", "github.run_attempt == 1",
-                     "github.event_name == 'workflow_dispatch'",
-                     "contains(fromJSON('[\"20355232\"]'), github.actor_id)"):
-            self.assertIn(part, condition)
+    def test_both_jobs_guard_repository_main_attempt_one_and_the_exact_carrier_event(self):
+        conditions = re.findall(r"^    if: (.+)$", WORKFLOW, re.M)
+        self.assertEqual(len(conditions), 2)
+        for condition in conditions:
+            for part in ("github.repository == 'kamiyusense/multi-ai-council-phase0'",
+                         "github.ref == 'refs/heads/main'", "github.run_attempt == 1",
+                         "github.event_name == 'workflow_dispatch'",
+                         "contains(fromJSON('[\"20355232\"]'), github.actor_id)",
+                         "github.event_name == 'workflow_run'",
+                         "github.event.workflow_run.name == 'Phase 0 Chat to Jules semi-auto'",
+                         "github.event.workflow_run.path == '.github/workflows/jules-chat-semiauto.yml'",
+                         "github.event.workflow_run.event == 'push'",
+                         "github.event.workflow_run.conclusion == 'success'",
+                         "github.event.workflow_run.head_branch == 'feature/chat-work-command-bus'",
+                         "github.event.workflow_run.run_attempt == 1",
+                         "github.event.workflow_run.repository.full_name == 'kamiyusense/multi-ai-council-phase0'",
+                         "github.event.workflow_run.head_repository.full_name == 'kamiyusense/multi-ai-council-phase0'",
+                         "format('{0}', github.event.workflow_run.actor.id)",
+                         "format('{0}', github.event.workflow_run.triggering_actor.id)"):
+                self.assertIn(part, condition)
+        self.assertIn("needs.prepare.outputs.go == 'true'", conditions[1])
         self.assertNotIn("triggering_actor_id", WORKFLOW, "undocumented context must never be used")
 
-    def test_permissions_are_minimal_and_have_no_id_token(self):
-        block = re.search(r"^permissions:\n((?:  .+\n)+)", WORKFLOW, re.M).group(1)
-        self.assertEqual(sorted(line.strip() for line in block.splitlines()),
-                         ["actions: read", "contents: write", "pull-requests: read"])
+    def test_only_the_publish_job_can_write_and_no_job_has_an_id_token(self):
+        top = re.search(r"^permissions:\n((?:  .+\n)+)", WORKFLOW, re.M).group(1)
+        self.assertEqual(sorted(line.strip() for line in top.splitlines()),
+                         ["actions: read", "contents: read", "pull-requests: read"])
+        prepare = WORKFLOW.split("\n  prepare:", 1)[1].split("\n  publish:", 1)[0]
+        publish = WORKFLOW.split("\n  publish:", 1)[1]
+        self.assertNotIn("contents: write", prepare)
+        self.assertIn("contents: write", publish)
+        self.assertEqual(WORKFLOW.count("contents: write"), 1)
         self.assertNotIn("id-token", WORKFLOW)
+
+    def test_prepare_job_has_no_jules_key_and_the_publish_job_needs_prepare(self):
+        prepare = WORKFLOW.split("\n  prepare:", 1)[1].split("\n  publish:", 1)[0]
+        publish = WORKFLOW.split("\n  publish:", 1)[1]
+        self.assertNotIn("JULES", prepare)
+        self.assertNotIn("secrets.", prepare)
+        self.assertIn("--prepare-only", prepare)
+        self.assertNotIn("--prepare-only", publish)
+        self.assertIn("needs: prepare", publish)
+        self.assertIn("EXPECT_SESSION_ID: ${{ needs.prepare.outputs.session_id }}", publish)
+        self.assertIn("EXPECT_AUTHORITY_RUN_ID: ${{ needs.prepare.outputs.authority_run_id }}", publish)
+
+    def test_concurrency_is_per_event_so_unrelated_carrier_runs_cannot_cancel_this_one(self):
+        self.assertIn("group: signal-step7-live-publish-${{ github.event.workflow_run.id || github.run_id }}", WORKFLOW)
+        self.assertIn("cancel-in-progress: false", WORKFLOW)
+
+    def test_manual_dispatch_is_emergency_only_and_needs_the_typed_confirmation(self):
+        block = WORKFLOW.split("      emergency_confirm:", 1)[1].split("      session_id:", 1)[0]
+        self.assertIn("required: true", block)
+        self.assertIn("EMERGENCY_MANUAL_PUBLISH", block)
+        self.assertIn('[[ "${EMERGENCY_CONFIRM}" == "EMERGENCY_MANUAL_PUBLISH" ]]', WORKFLOW)
 
     def test_actions_are_pinned_and_credentials_not_persisted(self):
         uses = re.findall(r"uses:\s*(\S+)", WORKFLOW)
@@ -68,6 +112,7 @@ class WorkflowStaticTests(unittest.TestCase):
     def test_the_jules_key_is_only_in_the_one_publish_step(self):
         self.assertEqual(WORKFLOW.count("secrets.JULES_API_KEY"), 1)
         self.assertEqual(WORKFLOW.count("JULES_API_KEY:"), 1)
+        self.assertEqual(len([l for l in code_lines(WORKFLOW) if "JULES_API_KEY" in l]), 1)
         publish = WORKFLOW.split("- name: Publish once with one fresh Jules read", 1)[1].split("- name:", 1)[0]
         self.assertIn("JULES_API_KEY: ${{ secrets.JULES_API_KEY }}", publish)
         validate = WORKFLOW.split("- name: Validate inputs", 1)[1].split("- name:", 1)[0]
@@ -81,13 +126,15 @@ class WorkflowStaticTests(unittest.TestCase):
     def test_workflow_cannot_post_merge_message_or_retry(self):
         body = "\n".join(code_lines(WORKFLOW))
         for forbidden in ("curl", "--retry", "-X POST", "jules.googleapis.com", "sendMessage", "approvePlan",
-                          "merge", "force", "rebase", "continue-on-error", "workflow_dispatch(", "gh api",
+                          "force", "rebase", "continue-on-error", "workflow_dispatch(", "gh api",
                           "control_tower_registry.json", "issues/33"):
             self.assertNotIn(forbidden, body)
+        self.assertIsNone(re.search(r"\bmerge\b", body, re.I))
 
     def test_inputs_are_validated_before_any_secret_step(self):
         validate = WORKFLOW.split("- name: Validate inputs", 1)[1].split("- name:", 1)[0]
-        for needle in ("^[0-9]{1,24}$", "301196275118188780", "5943440322658150300", "^[0-9a-f]{64}$", "--check"):
+        for needle in ("^[0-9]{1,24}$", "301196275118188780", "5943440322658150300", "11944164406087664763",
+                       "569271609782168660", "^[0-9a-f]{64}$", "--check"):
             self.assertIn(needle, validate)
         self.assertLess(WORKFLOW.index("- name: Validate inputs"), WORKFLOW.index("- name: Publish once"))
 
@@ -96,10 +143,18 @@ class WorkflowStaticTests(unittest.TestCase):
         self.assertIn("required: false", block)
         self.assertIn("default: ''", block)
 
+    def test_authority_run_and_digest_inputs_are_optional_and_only_cross_checks(self):
+        for name, after in (("authority_run_id", "      plan_sha256:"), ("plan_sha256", "permissions:")):
+            block = WORKFLOW.split(f"      {name}:", 1)[1].split(after, 1)[0]
+            self.assertIn("required: false", block, name)
+            self.assertIn("default: ''", block, name)
+            self.assertIn("Leave EMPTY", block, name)
+
     def test_artifact_is_the_sanitized_result_only(self):
-        upload = WORKFLOW.split("uses: actions/upload-artifact", 1)[1]
-        self.assertIn("path: ${{ runner.temp }}/step7-live-result.json", upload)
-        self.assertEqual(len(re.findall(r"upload-artifact", WORKFLOW)), 1)
+        uploads = WORKFLOW.split("uses: actions/upload-artifact")[1:]
+        self.assertEqual(len(uploads), 2)
+        self.assertIn("path: ${{ runner.temp }}/step7-prepare-result.json", uploads[0])
+        self.assertIn("path: ${{ runner.temp }}/step7-live-result.json", uploads[1])
 
     def test_no_other_workflow_references_or_chains_this_one(self):
         for path in (ROOT / ".github/workflows").glob("*.yml"):
@@ -115,6 +170,8 @@ class WorkflowStaticTests(unittest.TestCase):
                      "automation/command_bus/signal_step7_live_proof_cli.py",
                      "automation/command_bus/tests/test_signal_step7_live_proof.py",
                      "automation/command_bus/tests/test_signal_step7_live_workflow.py",
+                     "automation/command_bus/tests/test_signal_step7_auto_publish.py",
+                     "automation/command_bus/tests/fixtures/workflow_run_carrier_success.json",
                      "docs/evidence/signal-sf8/**"):
             self.assertIn(f"- {path}", TEST_WORKFLOW)
 
@@ -144,7 +201,7 @@ class CarrierFilesTests(unittest.TestCase):
         self.assertEqual((plan["request"]["retry"], plan["request"]["fallback"]), (0, "disabled"))
         self.assertFalse(plan["request"]["merge_allowed"])
         self.assertFalse(plan["request"]["force_push_allowed"])
-        self.assertIn("signal active proof 4", plan["request"]["prompt"])
+        self.assertIn("signal active proof 5", plan["request"]["prompt"])
         self.assertNotIn(live.LANE_ID, (plan["request"]["command_id"], plan["durable_context"]["correlation_id"]))
 
     def test_command_file_names_match_the_carrier_path_filters(self):
@@ -317,6 +374,24 @@ def carrier_log(command_id, session_id):
         f"{stamp}   LOOP_ID: 133", ""])
 
 
+def issuer_run(run_id, **changes):
+    run = {"id": int(run_id), "conclusion": "success", "event": "workflow_dispatch", "head_branch": "main",
+           "run_attempt": 1, "created_at": "2026-10-03T00:02:00Z",
+           "actor": {"id": int(live.OWNER_ACTOR_ID)}, "triggering_actor": {"id": int(live.OWNER_ACTOR_ID)}}
+    run.update(changes)
+    return run
+
+
+def carrier_run(run_id=9001, **changes):
+    run = {"id": run_id, "name": cli.CARRIER_RUN_NAME, "path": cli.CARRIER_RUN_PATH, "event": "push",
+           "head_branch": cli.CARRIER_BRANCH, "status": "completed", "conclusion": "success", "run_attempt": 1,
+           "repository": {"full_name": live.REPOSITORY}, "head_repository": {"full_name": live.REPOSITORY},
+           "actor": {"id": int(live.OWNER_ACTOR_ID)}, "triggering_actor": {"id": int(live.OWNER_ACTOR_ID)},
+           "head_sha": "d" * 40, "created_at": "2026-10-03T00:04:30Z"}
+    run.update(changes)
+    return run
+
+
 class FakeWorld:
     """In-memory GitHub + Jules REST surface for an end-to-end run of cli.main (no real network)."""
 
@@ -329,6 +404,13 @@ class FakeWorld:
         self.session_id = "424242424242424242"
         self.authority_run = "7700000002"
         self.carrier_logs: dict[int, str] = {}
+        self.carrier_created_at = "2026-10-03T00:04:30Z"
+        self.issuer_runs: list[dict] = []
+        self.carrier_run_json = None
+        self.compare = None  # callable(base, head) -> (status, body)
+        self.pr_head, self.pr_draft = HEAD, True
+        self.branch_head: dict[str, str] = {}
+        self.commit_tree: dict[str, str] = {}
 
     def seed(self, branch, path, text):
         self.files[(branch, path)] = (text, f"sha-{len(self.files)}")
@@ -351,20 +433,35 @@ class FakeWorld:
             return 200, {}, buf.getvalue()
         path = url.split(f"/repos/{live.REPOSITORY}/", 1)[1]
         if path.startswith("pulls/"):
-            return 200, {}, json.dumps({"number": 7, "state": "open", "merged": False, "draft": True,
-                                        "head": {"ref": self.target_branch, "sha": HEAD,
+            return 200, {}, json.dumps({"number": 7, "state": "open", "merged": False, "draft": self.pr_draft,
+                                        "head": {"ref": self.target_branch, "sha": self.pr_head,
                                                  "repo": {"full_name": live.REPOSITORY}}}).encode()
         if path.startswith("branches/"):
             name = self.unquote(path.split("/", 1)[1])
-            sha = "c" * 40 if name == "main" else HEAD
+            sha = "c" * 40 if name == "main" else self.branch_head.get(name, HEAD)
             if name not in {"main", self.target_branch, self.work_branch}:
                 return 404, {}, b"{}"
             return 200, {}, json.dumps({"commit": {"sha": sha}}).encode()
         if path.startswith("git/commits/"):
-            return 200, {}, json.dumps({"tree": {"sha": "e" * 40 if path.endswith("c" * 40) else TREE}}).encode()
+            commit = path.rsplit("/", 1)[1]
+            default_tree = "e" * 40 if commit == "c" * 40 else TREE
+            return 200, {}, json.dumps({"tree": {"sha": self.commit_tree.get(commit, default_tree)}}).encode()
+        if path.startswith("compare/"):
+            if self.compare is None:
+                return 404, {}, b"{}"
+            base, _, head = path[len("compare/"):].split("?", 1)[0].partition("...")
+            status, body = self.compare(base, head)
+            return status, {}, json.dumps(body).encode()
+        if re.fullmatch(r"actions/runs/90\d\d", path):
+            if self.carrier_run_json is None:
+                return 404, {}, b"{}"
+            return 200, {}, json.dumps(self.carrier_run_json).encode()
         if path.startswith(f"actions/workflows/{cli.CARRIER_WORKFLOW}/runs"):
             return 200, {}, json.dumps({"workflow_runs": [
-                {"id": 9000 + n, "conclusion": "success"} for n in sorted(self.carrier_logs)]}).encode()
+                {"id": 9000 + n, "conclusion": "success", "created_at": self.carrier_created_at}
+                for n in sorted(self.carrier_logs)]}).encode()
+        if path.startswith("actions/workflows/signal-sf8-authority-issuer.yml/runs"):
+            return 200, {}, json.dumps({"workflow_runs": self.issuer_runs}).encode()
         if path.startswith("actions/runs/90") and path.endswith("/jobs"):
             n = int(path.split("/")[2]) - 9000
             return 200, {}, json.dumps({"jobs": [{"id": 100 + n, "conclusion": "success"}]}).encode()
@@ -414,7 +511,7 @@ class FixedClock:
 
 
 class EndToEndCliTests(unittest.TestCase):
-    def world(self, **kwargs):
+    def world(self, *, authority_sha="c" * 40, **kwargs):
         from automation.command_bus.github_oidc_proof_policy_cli import SF8_AUTHORITY_PROFILE, SF8_PROFILE
         from automation.command_bus.tests.test_oidc_workflow_execution import evidence_for, run_for
 
@@ -424,10 +521,12 @@ class EndToEndCliTests(unittest.TestCase):
         world.bound = bound
         world.carrier_logs[1] = carrier_log(bound["request"]["command_id"], world.session_id)
         world.seed(bound["data_branch"], live.BOUND_PLAN_PATH, json.dumps(bound))
-        main_sha = "c" * 40
+        main_sha = authority_sha
+        world.carrier_run_json = carrier_run()
         world.authority_run_json = run_for(SF8_AUTHORITY_PROFILE, run_id=world.authority_run, sha=main_sha,
                                            created_at="2026-10-03T00:02:00Z")
         world.authority_evidence = evidence_for(SF8_AUTHORITY_PROFILE, run_id=world.authority_run, sha=main_sha)
+        world.issuer_runs = [issuer_run(world.authority_run)]
         world.provider_run_json = run_for(SF8_PROFILE, run_id=live.PROVIDER_OIDC_RUN_ID,
                                           sha=live.PROVIDER_OIDC_EXPECTED_SHA)
         world.provider_evidence = evidence_for(SF8_PROFILE, run_id=live.PROVIDER_OIDC_RUN_ID,
@@ -548,6 +647,62 @@ class EndToEndCliTests(unittest.TestCase):
                     code, result = self.run_main(world, tmp, SESSION_ID="")
                 self.assertEqual((code, result["code"]), (1, "CARRIER_SESSION_NOT_UNIQUE"))
                 self.assertEqual(self.jules_calls(world), [])
+
+    def test_authority_run_and_plan_digest_are_found_automatically_when_nothing_is_typed(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, SESSION_ID="", AUTHORITY_RUN_ID="", PLAN_SHA256="")
+        self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+        self.assertEqual(len(self.jules_calls(world)), 1)
+        evidence = json.loads(world.files[(world.bound["data_branch"], live.EVIDENCE_PATH)][0])
+        self.assertEqual(evidence["authority_run_id"], world.authority_run)
+
+    def test_authority_run_resolution_stops_before_any_jules_call_unless_exactly_one_valid_candidate(self):
+        run_id = "7700000002"
+        owner = {"id": int(live.OWNER_ACTOR_ID)}
+        cases = {
+            "none": [],
+            "after_the_carrier_run": [issuer_run(run_id, created_at="2026-10-03T00:05:00Z")],
+            "before_the_plan": [issuer_run(run_id, created_at="2000-01-01T00:00:00Z")],
+            "too_old": [issuer_run(run_id, created_at="2026-10-02T22:00:00Z")],
+            "not_owner": [issuer_run(run_id, actor={"id": 1})],
+            "not_owner_trigger": [issuer_run(run_id, triggering_actor={"id": 1})],
+            "not_main": [issuer_run(run_id, head_branch="other")],
+            "rerun": [issuer_run(run_id, run_attempt=2)],
+            "failed": [issuer_run(run_id, conclusion="failure")],
+            "reserved": [issuer_run("37031275812")],
+            "provider_run": [issuer_run(live.PROVIDER_OIDC_RUN_ID)],
+            "two_candidates": [issuer_run(run_id), issuer_run("7700000003", created_at="2026-10-03T00:03:00Z")],
+        }
+        for name, runs in cases.items():
+            with self.subTest(name):
+                world = self.world()
+                world.issuer_runs = runs
+                with tempfile.TemporaryDirectory() as tmp:
+                    code, result = self.run_main(world, tmp, SESSION_ID="", AUTHORITY_RUN_ID="", PLAN_SHA256="")
+                self.assertEqual((code, result["code"]), (1, "AUTHORITY_RUN_NOT_UNIQUE"))
+                self.assertEqual(self.jules_calls(world), [])
+                self.assertNotIn((world.bound["data_branch"], live.TERMINAL_RECEIPT_PATH), world.files)
+
+    def test_a_typed_authority_run_must_be_one_of_the_valid_candidates(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, AUTHORITY_RUN_ID="1234567")
+        self.assertEqual((code, result["code"]), (1, "AUTHORITY_RUN_INPUT_MISMATCH"))
+        self.assertEqual(self.jules_calls(world), [])
+        # a typed id may disambiguate between two valid candidates, but only to one of them
+        world = self.world()
+        world.issuer_runs = [issuer_run("7700000003", created_at="2026-10-03T00:03:00Z"), issuer_run("7700000002")]
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, AUTHORITY_RUN_ID="7700000002")
+        self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+
+    def test_a_typed_digest_that_differs_from_the_data_branch_plan_still_stops(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, PLAN_SHA256="0" * 64)
+        self.assertEqual((code, result["code"]), (1, "BOUND_PLAN_DIGEST_MISMATCH"))
+        self.assertEqual(self.jules_calls(world), [])
 
     def test_old_sessions_are_forbidden_even_if_the_carrier_record_names_them(self):
         for old in ("301196275118188780", "5943440322658150300"):
