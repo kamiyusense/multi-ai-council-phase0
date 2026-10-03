@@ -1,0 +1,5 @@
+{
+  "target_sha": "e16a82b5cfb487b8b73dbf6942bdab64c5ad36a9",
+  "source_pr": "relay-m9-local-runner-v4",
+  "purpose": "relay validation: v4 runner with M10 reply-shape receipt diagnostics, Linux + Windows (STATIC, fixture backends only)"
+}
