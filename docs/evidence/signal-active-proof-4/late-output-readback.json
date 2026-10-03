@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "evidence_kind": "SIGNAL_STEP7_LATE_OUTPUT_READBACK",
-  "observed_at": "2026-10-03T05:10:00Z",
+  "observed_at": "2026-10-03T05:09:45Z",
   "proof_status": "UNKNOWN",
   "proof_code": "PROVIDER_NOT_ACTIVE",
   "proof_promotion_allowed": false,
