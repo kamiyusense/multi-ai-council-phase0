@@ -517,5 +517,44 @@ class WholeProofBudgetTests(unittest.TestCase):
             counters.spend("retry")
 
 
+
+class FailureDiagnosticPersistenceTests(unittest.TestCase):
+    def test_terminal_receipt_preserves_bounded_publish_diagnostic(self):
+        counters = live.LiveCounters(jules_get=1)
+        detail = (
+            "PUBLISH_NOT_READY: publish:NOT_WIRED:"
+            "independent provider verification is unavailable or mismatched"
+        )
+        receipt = live._terminal_receipt(
+            "UNKNOWN",
+            "PUBLISH_NOT_READY",
+            None,
+            counters,
+            failure_stage="publish",
+            failure_detail=detail,
+        )
+        self.assertEqual(receipt["failure_stage"], "publish")
+        self.assertEqual(receipt["failure_detail"], detail)
+        self.assertFalse(receipt["rerun_allowed"])
+        self.assertFalse(receipt["additional_jules_get_allowed"])
+        self.assertFalse(receipt["additional_jules_post_allowed"])
+        self.assertRegex(receipt["receipt_payload_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_failure_detail_is_bounded_and_secret_markers_are_redacted(self):
+        self.assertEqual(live.safe_failure_detail("x" * 500), "x" * 200)
+        for value in (
+            "Authorization: Bearer abc",
+            "token=abc",
+            "JULES_API_KEY=abc",
+            "github_pat_abc",
+            "ghp_abc",
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(live.safe_failure_detail(value), "REDACTED")
+        self.assertEqual(live.safe_failure_detail("provider mismatch\nretry 0"), "provider mismatch retry 0")
+        self.assertEqual(live.safe_failure_detail("provider mismatch: 日本語"), "REDACTED")
+        self.assertIsNone(live.safe_failure_detail(None))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -316,8 +316,14 @@ def main(argv: list[str] | None = None, *, env: dict[str, str] | None = None, ht
     except Exception as exc:  # setup failed before any provider read: nothing spent
         print(json.dumps({"status": "STOPPED", "stage": "setup", "code": getattr(exc, "code", type(exc).__name__)}))
         return 1
-    document = {"status": result.status, "stage": result.stage, "code": result.code,
-                "counters": result.counters, "evidence_payload_sha256": (result.evidence or {}).get("evidence_payload_sha256")}
+    document = {
+        "status": result.status,
+        "stage": result.stage,
+        "code": result.code,
+        "failure_detail": live.safe_failure_detail(result.reasons[0] if result.reasons else None),
+        "counters": result.counters,
+        "evidence_payload_sha256": (result.evidence or {}).get("evidence_payload_sha256"),
+    }
     print(json.dumps(document, sort_keys=True))
     if args.result_out:
         Path(args.result_out).write_text(json.dumps(document, sort_keys=True), encoding="utf-8")
