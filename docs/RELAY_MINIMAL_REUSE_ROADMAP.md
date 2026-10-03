@@ -1,6 +1,6 @@
 # Relay Minimal-Reuse Roadmap
 
-Updated: 2026-10-01
+Updated: 2026-10-04
 Status: proposed execution roadmap / documentation only
 Source policy: PR #191 Controller Operating Guide + PR #192 Development Acceleration Playbook
 
@@ -29,6 +29,28 @@ Fixed Phase 0 boundaries still apply:
 - no live provider/model execution without explicit approval;
 - no default-branch direct write, force push or automatic Merge;
 - UNKNOWN at a live safety boundary fails closed.
+
+### Current checkpoint after PR #281
+
+Accepted main checkpoint: `7b1d29b0b3f20833d70a6924d01d1e03b0a4e39c` (PR #281).
+
+| Milestone | Current state | Evidence / boundary |
+|---|---|---|
+| M0 | COMPLETE | checklist-expansion phase is frozen by default; use reuse-first roadmap |
+| M1 | PARTIAL | existing Relay seam hosts official Codex ACP in fixture-backed STATIC mode |
+| M2 Codex | PARTIAL | official `codex-acp` 2.1.0 path, Linux/Windows STATIC gate tests green; live proof remains separate |
+| M3 Claude | STATIC_BOUNDARY | official `claude-agent-acp` 0.84.0 initializes with a tripwire CLI; `session/new` requires a Claude CLI and remains a live/account boundary |
+| M4 Antigravity | LIVE_BOUNDARY / UNKNOWN | launch/binary shape is recorded; proprietary `agy_acp_server` has not been downloaded or executed |
+| M5 ACP-TCK | PARTIAL | Codex evidence retained; Claude informational tripwire run added; Antigravity NOT_RUN |
+| M6 account/quota | PARTIAL | Codex read-only mapper exists; Claude auth-status summarizer exists; Claude quota and Antigravity account/quota remain UNKNOWN |
+| M7 three-provider E2E | PARTIAL | shared mock/fixture lifecycle remains green; official-adapter full path is proven only where a safe backend seam exists |
+| M8 one-generation boundary | PARTIAL | Codex gate and existing Claude Admission Gate are STATIC-verified; Antigravity interception remains UNKNOWN |
+| M9 | HUMAN BOUNDARY / PARTIAL | no additional LIVE is authorized by this checkpoint; any further provider/model or real-account proof requires explicit approval |
+| M10 | IN PROGRESS | observed defects only; PR #281 fixed Claude `session/new` no-bypass metadata propagation and a fail-closed auth-parser edge case |
+
+PR #281 final pre-merge validation checked out exact head `2309167232416a603d3845ea6796ac966e9c67fa` in all four carrier workflows: exact-head `37147461352`, Codex Linux `37147461374`, Codex Windows `37147461345`, and Claude STATIC/TCK `37147461311`; all completed successfully with no provider/model LIVE.
+
+This checkpoint does **not** authorize an Antigravity pin bump/binary download, a real Claude/Antigravity connection, a real-account read, or another Codex LIVE run. Those remain deferred human decisions.
 
 ## 2. Controller rule inherited from PR #191
 
