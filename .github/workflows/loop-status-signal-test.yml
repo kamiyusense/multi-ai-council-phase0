@@ -134,6 +134,8 @@ on:
       - automation/command_bus/tests/test_signal_step7_live_proof.py
       - automation/command_bus/tests/test_signal_step7_live_workflow.py
       - automation/command_bus/tests/test_signal_step7_auto_publish.py
+      - automation/command_bus/tests/test_signal_step7_proof5_candidate.py
+      - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/tests/fixtures/workflow_run_carrier_success.json
 
 permissions:

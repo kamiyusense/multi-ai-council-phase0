@@ -1,0 +1,28 @@
+{
+  "assessment": "DEVIATION",
+  "assessment_reasons": [
+    "proof content is not the exact allowed content"
+  ],
+  "deviation_note": "The file has the right path and the right text, but no trailing newline (21 bytes instead of 22). Exactly one file changed; nothing merged; base and branch are as expected.",
+  "expected_content_bytes": 22,
+  "merged": false,
+  "observed_at_utc": "2026-10-03T20:20:00Z",
+  "output": {
+    "base_branch": "jules-work/relay-dev-loop-136-signal-active-proof-5",
+    "base_sha": "5ebad97c41d1700e105356383ace1ee323282b9c",
+    "changed_file_content": "signal active proof 5",
+    "changed_files": [
+      "docs/evidence/signal-active-proof-5/PROOF.md"
+    ],
+    "head_branch": "jules-work/relay-dev-loop-136-signal-active-proof-5-7218641455365522473",
+    "head_sha": "847bc6a45b1eea873cf53d370e916de5f4a1d04f",
+    "merged": false,
+    "pull_request": 286
+  },
+  "output_blob_bytes": 21,
+  "output_blob_sha": "83e266eecdb268ad7cf824f6eff8d83812cae260",
+  "proof_task_id": "signal-active-proof-5",
+  "readback_kind": "SIGNAL_STEP7_JULES_OUTPUT_GITHUB_READBACK",
+  "schema_version": 1,
+  "source": "GitHub only (PR #286 files/blob/branch refs); no Jules GET or POST was used for this readback"
+}
