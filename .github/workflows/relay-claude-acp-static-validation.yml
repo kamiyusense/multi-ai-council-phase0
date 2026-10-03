@@ -1,0 +1,111 @@
+name: Phase 0 Relay Claude ACP STATIC boundary + TCK validation
+
+# Reproduces, on GitHub, the M3 Claude STATIC boundary against the OFFICIAL
+# @agentclientprotocol/claude-agent-acp@0.84.0 (current Phase 0 pin) with a tripwire CLI,
+# and records upstream ACP-TCK results (informational). No provider/model connection,
+# no credentials, no npm lifecycle scripts, no optional (native Claude CLI) packages. Triggered by the same append-only request file as the
+# exact-head validation; it validates the request's target_sha.
+
+on:
+  push:
+    branches:
+      - feature/chat-work-command-bus
+    paths:
+      - automation/command_bus/relay_validation_requests/*.json
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout carrier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Locate one append-only validation request
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit_json="$(curl --fail-with-body --retry 0 -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/${REPOSITORY}/commits/${COMMIT_SHA}")"
+          [[ "$(jq '.files | length' <<<"${commit_json}")" == "1" ]] || { echo "Expected exactly one file." >&2; exit 1; }
+          [[ "$(jq -r '.files[0].status' <<<"${commit_json}")" == "added" ]] || { echo "Request must be append-only." >&2; exit 1; }
+          path="$(jq -r '.files[0].filename' <<<"${commit_json}")"
+          [[ "${path}" =~ ^automation/command_bus/relay_validation_requests/[a-z0-9][a-z0-9._-]{0,63}\.json$ ]] || { echo "Unexpected request path." >&2; exit 1; }
+          target_sha="$(jq -er '.target_sha' "${path}")"
+          [[ "${target_sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid target_sha." >&2; exit 1; }
+          echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout exact Relay head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.locate.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Install official claude-agent-acp 0.84.0 (no scripts, no optional native CLI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="${RUNNER_TEMP}/claude-agent-acp-0.84.0"
+          mkdir -p "${dir}"
+          cd "${dir}"
+          npm init -y >/dev/null
+          npm install --ignore-scripts --omit=optional --no-audit --no-fund @agentclientprotocol/claude-agent-acp@0.84.0
+          [[ "$(node -p "require('./node_modules/@agentclientprotocol/claude-agent-acp/package.json').version")" == "0.84.0" ]]
+          # no platform-native Claude CLI may exist: the adapter would run it at initialize
+          if ls node_modules/@anthropic-ai | grep -q 'claude-agent-sdk-'; then echo 'native Claude CLI package present' >&2; exit 1; fi
+          echo "RELAY_CLAUDE_ACP_DIR=${dir}/node_modules/@agentclientprotocol/claude-agent-acp" >> "${GITHUB_ENV}"
+
+      - name: Claude STATIC boundary tests (tripwire CLI, no skips allowed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          PYTHONPATH=src:. python -m unittest -v tests.relay.test_claude_acp_static_boundary tests.relay.test_claude_auth_readonly tests.relay.test_antigravity_static_launch_shape 2>&1 | tee boundary.txt
+          grep -q '^OK$' boundary.txt
+          if grep -qi 'skipped' boundary.txt; then echo 'skips are not allowed in the boundary run' >&2; exit 1; fi
+
+      - name: Full unit suite (record skips)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          PYTHONPATH=src python -m unittest discover -s tests -t . 2>&1 | tee full.txt
+          tail -3 full.txt
+
+      - name: Upstream ACP-TCK 0.2.0 (informational, experimental, Python 3.14 via uv)
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          python -m pip install --quiet uv
+          tck="git+https://github.com/agentclientprotocol/acp-tck@fa00ccd"
+          home="$(mktemp -d)"
+          tripwire="$PWD/fixtures/relay/claude_cli_tripwire.py"
+          uv run --python 3.14 --with "${tck}" acp-tck --agent-cwd "${home}" --agent-env HOME="${home}" \
+            --agent-env CLAUDE_CODE_EXECUTABLE="${tripwire}" --agent-env RELAY_TRIPWIRE_LOG="${home}/tw.log" \
+            --timeout 15 --startup-timeout 30 --test-timeout 30 \
+            -- node "${RELAY_CLAUDE_ACP_DIR}/dist/index.js" 2>&1 | tee tck_claude.txt | grep -E 'MANDATORY +PASS|VERDICT' || true
+          # the only process the adapter may have executed is the tripwire
+          [[ -f "${home}/tw.log" ]] && wc -l "${home}/tw.log"
+
+      - name: Record
+        shell: bash
+        run: |
+          {
+            echo "## Relay Claude ACP STATIC boundary validation"
+            echo "- target_sha: \`${{ steps.locate.outputs.target_sha }}\`"
+            echo "- adapter: @agentclientprotocol/claude-agent-acp 0.84.0 (--ignore-scripts --omit=optional); CLI = tripwire"
+            echo "- boundary tests: PASS if job green (no skips allowed)"
+            echo "- ACP-TCK: informational only (see step log); session-dependent MANDATORY items cannot pass without a CLI"
+            echo "- live provider/model execution: NO"
+          } >> "${GITHUB_STEP_SUMMARY}"
