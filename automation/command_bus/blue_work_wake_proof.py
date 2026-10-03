@@ -30,6 +30,13 @@ CONSUMED_PROOF = {
     'workflow_blob': '16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb',
     'run_attempt': 1, 'conclusion': 'failure', 'activation_consumed': True,
 }
+CONSUMED_PROOF_2 = {
+    'proof_id': 'blue-bwj4-20261003T194515Z-transport-proof-01',
+    'proof_generation': 2, 'run_id': 37155471365, 'job_id': 111297860366,
+    'head_sha': '48aba4780d571534e9b6db471a2dcd5435cb61bd',
+    'workflow_blob': '16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb',
+    'run_attempt': 1, 'conclusion': 'failure', 'activation_consumed': True,
+}
 PRINCIPAL = {'id': 41898282, 'login': 'github-actions[bot]', 'type': 'Bot'}
 ZERO = {'provider_create': 0, 'provider_get': 0, 'provider_model_execution': 0,
         'jules_submit': 0, 'jules_get': 0, 'claim_reservation': 0,
@@ -104,29 +111,39 @@ def check_run(reader, ctx: dict, authorization: dict) -> int:
     return selected[0]['id']
 
 
+def retained_failures(generation: int) -> list:
+    required(type(generation) is int and generation in (1, 2, 3), 'proof generation')
+    return [] if generation == 1 else [CONSUMED_PROOF] if generation == 2 else [CONSUMED_PROOF, CONSUMED_PROOF_2]
+
+
 def check_activation_history(reader, runs: list, ctx: dict, authorization: dict) -> None:
-    """Only a separately approved generation-2 proof can retain this exact FAIL.
+    """Separately approved generations retain only these exact consumed FAILs.
 
     Default generation 1 keeps the original one-run fence. This is not a
     retry switch: unknown, cancelled, later or missing runs always STOP.
     """
     generation = authorization.get('proof_generation', 1)
-    required(type(generation) is int and generation in (1, 2), 'proof generation')
+    prior = retained_failures(generation)
     if generation == 1:
         required('prior_terminal_runs' not in authorization and len(runs) == 1
                  and runs[0].get('id') == ctx['run_id'] and runs[0].get('run_attempt') == 1,
                  'one run budget already consumed')
         return
     required(authorization.get('approved') is True
-             and json.dumps(authorization.get('prior_terminal_runs'), sort_keys=True) == json.dumps([CONSUMED_PROOF], sort_keys=True)
+             and json.dumps(authorization.get('prior_terminal_runs'), sort_keys=True) == json.dumps(prior, sort_keys=True)
              and isinstance(authorization.get('proof_id'), str)
              and re.fullmatch(r'blue-bwj4-[0-9]{8}T[0-9]{6}Z-transport-proof-01', authorization['proof_id']) is not None
-             and authorization.get('proof_id') != CONSUMED_PROOF['proof_id']
-             and ctx['run_id'] != CONSUMED_PROOF['run_id'], 'separate follow-up approval/identity')
-    required(len(runs) == 2 and {r.get('id') for r in runs} == {ctx['run_id'], CONSUMED_PROOF['run_id']}
-             and all(r.get('run_attempt') == 1 for r in runs), 'complete exact two-generation history')
-    old = reader.get(ROOT + f"/actions/runs/{CONSUMED_PROOF['run_id']}").data
-    required(old.get('id') == CONSUMED_PROOF['run_id'] and old.get('head_sha') == CONSUMED_PROOF['head_sha']
+             and authorization.get('proof_id') not in {p['proof_id'] for p in prior}
+             and ctx['run_id'] not in {p['run_id'] for p in prior}, 'separate follow-up approval/identity')
+    required(len(runs) == generation and {r.get('id') for r in runs} == {ctx['run_id']} | {p['run_id'] for p in prior}
+             and all(r.get('run_attempt') == 1 for r in runs), 'complete exact consumed history')
+    for consumed in prior:
+        check_consumed_failure(reader, consumed, authorization)
+
+
+def check_consumed_failure(reader, consumed: dict, authorization: dict) -> None:
+    old = reader.get(ROOT + f"/actions/runs/{consumed['run_id']}").data
+    required(old.get('id') == consumed['run_id'] and old.get('head_sha') == consumed['head_sha']
              and old.get('run_attempt') == 1 and old.get('path') == WORKFLOW
              and old.get('status') == 'completed' and old.get('conclusion') == 'failure'
              and old.get('event') == 'workflow_dispatch' and old.get('head_branch') == 'main'
@@ -135,15 +152,19 @@ def check_activation_history(reader, runs: list, ctx: dict, authorization: dict)
     for field in ('actor', 'triggering_actor'):
         required(old.get(field, {}).get('id') == authorization['approved_actor_id']
                  and old.get(field, {}).get('login') == authorization['approved_actor_login'], 'old run actor drift')
-    old_auth = json.loads(content_at(reader, AUTHORIZATION, CONSUMED_PROOF['head_sha']), object_pairs_hook=_pairs)
-    required(old_auth.get('proof_id') == CONSUMED_PROOF['proof_id']
-             and blob(content_at(reader, WORKFLOW, CONSUMED_PROOF['head_sha']).encode()) == CONSUMED_PROOF['workflow_blob'],
+    old_auth = json.loads(content_at(reader, AUTHORIZATION, consumed['head_sha']), object_pairs_hook=_pairs)
+    required(old_auth.get('proof_id') == consumed['proof_id']
+             and blob(content_at(reader, WORKFLOW, consumed['head_sha']).encode()) == consumed['workflow_blob'],
              'old proof/code binding')
-    jobs = read_all(reader, ROOT + f"/actions/runs/{CONSUMED_PROOF['run_id']}/jobs?per_page=100", array_key='jobs')
+    if consumed['proof_generation'] == 2:
+        required(type(old_auth.get('proof_generation')) is int and old_auth['proof_generation'] == 2
+                 and json.dumps(old_auth.get('prior_terminal_runs'), sort_keys=True) == json.dumps([CONSUMED_PROOF], sort_keys=True),
+                 'old generation-2 lineage drift')
+    jobs = read_all(reader, ROOT + f"/actions/runs/{consumed['run_id']}/jobs?per_page=100", array_key='jobs')
     required(len(jobs) == 1, 'old job collection')
     job = jobs[0]
-    required(job.get('id') == CONSUMED_PROOF['job_id'] and job.get('run_id') == CONSUMED_PROOF['run_id']
-             and job.get('run_attempt') == 1 and job.get('head_sha') == CONSUMED_PROOF['head_sha']
+    required(job.get('id') == consumed['job_id'] and job.get('run_id') == consumed['run_id']
+             and job.get('run_attempt') == 1 and job.get('head_sha') == consumed['head_sha']
              and job.get('name') == JOB and job.get('status') == 'completed'
              and job.get('conclusion') == 'failure', 'old job binding')
     expected = {
@@ -156,7 +177,7 @@ def check_activation_history(reader, runs: list, ctx: dict, authorization: dict)
         selected = [s for s in steps if s.get('name') == name]
         required(len(selected) == 1 and selected[0].get('status') == 'completed'
                  and selected[0].get('conclusion') == conclusion, 'old pre-POST failure evidence')
-    artifacts = read_all(reader, ROOT + f"/actions/runs/{CONSUMED_PROOF['run_id']}/artifacts?per_page=100", array_key='artifacts')
+    artifacts = read_all(reader, ROOT + f"/actions/runs/{consumed['run_id']}/artifacts?per_page=100", array_key='artifacts')
     required(not artifacts, 'unexpected old artifact; STOP')
 
 
@@ -177,8 +198,8 @@ def collect(reader, ctx: dict, authorization: dict, now: datetime) -> dict:
     required(lane.worker_state['active_generation'] == authorization['worker_generation'], 'worker generation drift')
     identities, terminals = _records(lane.reviews, lane.comments, True)
     required(authorization['proof_id'] not in identities | terminals, 'existing Blue command/receipt')
-    if authorization.get('proof_generation', 1) == 2:
-        required(CONSUMED_PROOF['proof_id'] not in identities | terminals, 'old proof record drift')
+    for consumed in retained_failures(authorization.get('proof_generation', 1)):
+        required(consumed['proof_id'] not in identities | terminals, 'old proof record drift')
     # A same-ID record on another lane must not be repurposed as this proof.
     open_prs = read_all(reader, ROOT + '/pulls?state=open&per_page=100')
     for color in LANES:
@@ -234,8 +255,8 @@ def create_attempt(reader, authorization: dict, ctx: dict, now: datetime, output
                    job_id=job_id, snapshot=second, command=command, review_body=body,
                    review_body_sha256=hashlib.sha256(body.encode()).hexdigest(), approved_principal=PRINCIPAL,
                    created_at=now.isoformat(), retry=0, fallback='disabled', limits=authorization['limits'])
-    if authorization.get('proof_generation', 1) == 2:
-        attempt.update(proof_generation=2, prior_terminal_runs=authorization['prior_terminal_runs'])
+    if authorization.get('proof_generation', 1) in (2, 3):
+        attempt.update(proof_generation=authorization['proof_generation'], prior_terminal_runs=authorization['prior_terminal_runs'])
     output.mkdir()
     with (output / 'attempt.json').open('x') as handle:
         json.dump(attempt, handle, ensure_ascii=False, indent=2)
@@ -294,8 +315,8 @@ def submit_once(reader, poster, authorization: dict, ctx: dict, output: Path,
                 artifact_id: str, digest: str, now: datetime) -> dict:
     attempt = json.loads((output / 'attempt.json').read_text(), object_pairs_hook=_pairs)
     required(all(attempt.get(k) == v for k, v in ctx.items()) and attempt.get('proof_id') == authorization['proof_id'], 'attempt/run binding')
-    if authorization.get('proof_generation', 1) == 2:
-        required(attempt.get('proof_generation') == 2
+    if authorization.get('proof_generation', 1) in (2, 3):
+        required(type(attempt.get('proof_generation')) is int and attempt['proof_generation'] == authorization['proof_generation']
                  and attempt.get('prior_terminal_runs') == authorization['prior_terminal_runs'], 'attempt generation/history binding')
     required(attempt.get('status') == 'ATTEMPTING' and attempt.get('retry') == 0 and attempt.get('fallback') == 'disabled', 'attempt policy')
     required(now < _time(attempt['command']['expires_at']), 'command expired')

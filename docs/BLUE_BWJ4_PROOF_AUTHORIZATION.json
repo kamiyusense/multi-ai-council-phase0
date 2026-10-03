@@ -3,8 +3,8 @@
   "purpose": "BWJ-4_TRANSPORT_ONLY",
   "repository": "kamiyusense/multi-ai-council-phase0",
   "approved": true,
-  "proof_id": "blue-bwj4-20261003T194515Z-transport-proof-01",
-  "approval_expires_at": "2026-10-04T02:10:00Z",
+  "proof_id": "blue-bwj4-20261003T220252Z-transport-proof-01",
+  "approval_expires_at": "2026-10-04T03:50:00Z",
   "approved_actor_login": "kamiyusense",
   "approved_actor_id": 20355232,
   "target_pr": 172,
@@ -34,9 +34,9 @@
     "logical_blue_wake": 1,
     "terminal_receipt": 1
   },
-  "approval_basis": "Explicit user approval 2026-10-04T05:18:21+09:00: inspect/Merge #285 and necessary activation authorization PR, then one separately identified BWJ-4 transport-only proof. Old proof remains FAIL/activation consumed; no retry/provider/Jules/claim/target budget.",
+  "approval_basis": "Explicit user approval 2026-10-04T06:55:06+09:00: generation-3 STATIC implementation, necessary authorization/activation PR Merge after exact-head inspection/CI, then exactly one NEW transport-only proof. Expiry is within six hours of that approval. Both old FAIL activations remain consumed; retry=0, fallback=disabled; provider/Jules/claim/target mutation budgets remain zero.",
   "not_authority": "This fixture does not authenticate Jules Session origin. Automation ID/prompt and bot metadata are not source authentication.",
-  "proof_generation": 2,
+  "proof_generation": 3,
   "prior_terminal_runs": [
     {
       "proof_id": "blue-bwj4-20261002T212217Z-transport-proof-01",
@@ -44,6 +44,17 @@
       "run_id": 37147398998,
       "job_id": 111274071729,
       "head_sha": "5faf37def13dc6678e0f8cba7396f06183d2c048",
+      "workflow_blob": "16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb",
+      "run_attempt": 1,
+      "conclusion": "failure",
+      "activation_consumed": true
+    },
+    {
+      "proof_id": "blue-bwj4-20261003T194515Z-transport-proof-01",
+      "proof_generation": 2,
+      "run_id": 37155471365,
+      "job_id": 111297860366,
+      "head_sha": "48aba4780d571534e9b6db471a2dcd5435cb61bd",
       "workflow_blob": "16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb",
       "run_attempt": 1,
       "conclusion": "failure",

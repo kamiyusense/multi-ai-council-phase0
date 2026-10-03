@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "purpose": "BWJ-4_TRANSPORT_ONLY",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "approved": false,
+  "proof_id": "blue-bwj4-20261003T220252Z-transport-proof-01",
+  "approval_expires_at": null,
+  "approved_actor_login": "kamiyusense",
+  "approved_actor_id": 20355232,
+  "target_pr": 172,
+  "target": {
+    "pr": 172,
+    "branch": "cloud-work/replacement-proof-v1",
+    "head": "0e7d96df29cfedbe4f95de444e4f7a9a7efd6577",
+    "tree": "815045e5162b717c14a833ca0104c885cfbc1feb"
+  },
+  "worker_generation": 1,
+  "retry": 0,
+  "fallback": "disabled",
+  "limits": {
+    "provider_create": 0,
+    "provider_get": 0,
+    "provider_model_execution": 0,
+    "jules_submit": 0,
+    "jules_get": 0,
+    "claim_reservation": 0,
+    "next_command_publication": 0,
+    "target_mutation": 0,
+    "adoption": 0,
+    "retry": 0,
+    "proof_activation": 1,
+    "workflow_run": 1,
+    "review_post": 1,
+    "logical_blue_wake": 1,
+    "terminal_receipt": 1
+  },
+  "approval_basis": "Prepare-only mirror of generation-3 identity/history. This candidate is not dispatch authority; only the separately inspected active authorization can authorize one new activation.",
+  "not_authority": "This fixture does not authenticate Jules Session origin. Automation ID/prompt and bot metadata are not source authentication.",
+  "proof_generation": 3,
+  "prior_terminal_runs": [
+    {
+      "proof_id": "blue-bwj4-20261002T212217Z-transport-proof-01",
+      "proof_generation": 1,
+      "run_id": 37147398998,
+      "job_id": 111274071729,
+      "head_sha": "5faf37def13dc6678e0f8cba7396f06183d2c048",
+      "workflow_blob": "16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb",
+      "run_attempt": 1,
+      "conclusion": "failure",
+      "activation_consumed": true
+    },
+    {
+      "proof_id": "blue-bwj4-20261003T194515Z-transport-proof-01",
+      "proof_generation": 2,
+      "run_id": 37155471365,
+      "job_id": 111297860366,
+      "head_sha": "48aba4780d571534e9b6db471a2dcd5435cb61bd",
+      "workflow_blob": "16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb",
+      "run_attempt": 1,
+      "conclusion": "failure",
+      "activation_consumed": true
+    }
+  ]
+}
