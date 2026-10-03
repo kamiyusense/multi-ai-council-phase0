@@ -1,7 +1,13 @@
 # Blue Work ↔ Jules Webhook Closed-Loop Roadmap
 
 Updated: 2026-10-02
-Status: BWJ-0–3 STATIC complete in main; BWJ-4/5 static boundary readiness and BWJ-6 prepare-only; LIVE NOT_WIRED
+Status: BWJ-0–3 STATIC complete; BWJ-4 LIVE attempt FAIL/consumed, pagination fix merged; follow-up STATIC only; BWJ-5/6 STATIC, M2 not proven
+
+2026-10-04 fresh checkpoint: old BWJ-4 run 37147398998 failed before durable attempt/POST;
+activation is consumed even though review/receipt are zero. #282 merged the exact-repository
+canonical pagination fix. A separate disabled generation-2 proof candidate retains that FAIL.
+See [follow-up STATIC / activation boundary](BLUE_BWJ4_FOLLOWUP_STATIC_20261004.md).
+No new LIVE is authorized by this roadmap; do not rerun the old proof.
 Pilot lane: 💙 J-BLUE + 💙 Cloud Work Blue  
 Source policy: PR #191 Controller Operating Guide + PR #192 Development Acceleration Playbook + PR #193 Signal roadmap pattern + PR #194 Relay minimal-reuse roadmap + PR #115 Work-event-loop static research
 
