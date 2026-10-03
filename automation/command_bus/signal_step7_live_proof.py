@@ -526,7 +526,11 @@ def run_publish_half(
             provider_verifier=provider_verifier, status_boundary=status_boundary, clock=ports.clock)
         published = publisher.publish(binding.transition_request)
         if published.status != "READY":
-            raise _fail_unknown("PUBLISH_NOT_READY", stage, f"{published.status}:{getattr(published, 'reason', '')}"[:200])
+            raise _fail_unknown(
+                "PUBLISH_NOT_READY",
+                stage,
+                f"{published.status}:{published.stage}:{getattr(published, 'reason', '')}"[:200],
+            )
 
         stage = "collect"
         collected = ControlTowerDurableCollector(
@@ -627,12 +631,36 @@ def _evidence_document(
     return document
 
 
+_SENSITIVE_FAILURE_MARKERS = (
+    "authorization", "bearer", "token", "secret", "api_key", "api-key",
+    "x-goog-api-key", "ghp_", "github_pat_",
+)
+
+
+def safe_failure_detail(value: Any) -> str | None:
+    """Bounded diagnostic text for durable receipts/artifacts; never preserve likely secrets."""
+    if value is None:
+        return None
+    text = " ".join(str(value).split())[:200]
+    if not text:
+        return None
+    lowered = text.lower()
+    if any(marker in lowered for marker in _SENSITIVE_FAILURE_MARKERS):
+        return "REDACTED"
+    if any(ord(ch) < 32 or ord(ch) > 126 for ch in text):
+        return "REDACTED"
+    return text
+
+
 def _terminal_receipt(status: str, code: str, document: dict[str, Any] | None,
-                      counters: LiveCounters) -> dict[str, Any]:
+                      counters: LiveCounters, *, failure_stage: str | None = None,
+                      failure_detail: str | None = None) -> dict[str, Any]:
     receipt = {
         "schema_version": 1, "receipt_kind": "SIGNAL_STEP7_LIVE_TERMINAL_RECEIPT", "lane_id": LANE_ID,
         "status": status, "code": code, "counters": counters.as_dict(),
         "evidence_payload_sha256": (document or {}).get("evidence_payload_sha256"),
+        "failure_stage": failure_stage,
+        "failure_detail": safe_failure_detail(failure_detail),
         "additional_jules_get_allowed": False, "additional_jules_post_allowed": False,
         "rerun_allowed": False,
     }
@@ -649,8 +677,19 @@ def _stopped(stage: str, exc: LiveProofError, counters: LiveCounters, plan: Any,
     if exc.code not in {"TERMINAL_RECEIPT_EXISTS", "ATTEMPT_MARKER_UNVERIFIED_OR_DUPLICATE"} \
             and stage not in {"plan"} and isinstance(plan, dict) and plan.get("data_branch"):
         try:
-            _write_once(ports.store, TERMINAL_RECEIPT_PATH,
-                        _terminal_receipt(status, exc.code, None, counters), plan["data_branch"])
+            _write_once(
+                ports.store,
+                TERMINAL_RECEIPT_PATH,
+                _terminal_receipt(
+                    status,
+                    exc.code,
+                    None,
+                    counters,
+                    failure_stage=stage,
+                    failure_detail=str(exc),
+                ),
+                plan["data_branch"],
+            )
         except Exception:
             pass  # terminal receipt unverified: the stop result below is the only record
     return LiveProofResult(status, stage, exc.code, counters.as_dict(), None, (str(exc),))
