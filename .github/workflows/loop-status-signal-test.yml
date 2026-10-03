@@ -53,6 +53,7 @@ on:
       - docs/evidence/signal-sf10/**
       - docs/evidence/signal-lane-model/**
       - automation/command_bus/tests/test_signal_lane_model_correction.py
+      - automation/command_bus/tests/test_signal_lane_naming_policy.py
       - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/loop_status_development.py
       - automation/command_bus/loop_owner.py
@@ -152,6 +153,7 @@ on:
       - docs/evidence/signal-sf10/**
       - docs/evidence/signal-lane-model/**
       - automation/command_bus/tests/test_signal_lane_model_correction.py
+      - automation/command_bus/tests/test_signal_lane_naming_policy.py
       - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/durable_adoption_approval.py
       - automation/command_bus/durable_adoption_approval_cli.py

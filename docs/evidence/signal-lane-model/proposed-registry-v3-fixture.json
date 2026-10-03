@@ -1,0 +1,60 @@
+{
+  "loops": [
+    {
+      "controller_kind": "CHATGPT",
+      "display_name": "Chat -> Jules",
+      "display_order": 10,
+      "enabled": true,
+      "identity_state": "DURABLE",
+      "loop_id": "chatgpt-semi-auto",
+      "mode": "SEMI_AUTO",
+      "safe_detail_ref": "issue:33",
+      "worker_kind": "JULES"
+    },
+    {
+      "controller_kind": "CHATGPT",
+      "display_name": "Chat -> Work",
+      "display_order": 20,
+      "enabled": true,
+      "identity_state": "PLACEHOLDER",
+      "loop_id": "chat-work-semi-auto",
+      "mode": "SEMI_AUTO",
+      "safe_detail_ref": "issue:33",
+      "worker_kind": "WORK"
+    },
+    {
+      "controller_kind": "CLAUDE",
+      "display_name": "Claude -> Jules",
+      "display_order": 30,
+      "enabled": true,
+      "identity_state": "PLACEHOLDER",
+      "loop_id": "claude-jules-auto",
+      "mode": "AUTO",
+      "safe_detail_ref": "issue:33",
+      "worker_kind": "JULES"
+    },
+    {
+      "controller_kind": "WORK",
+      "display_name": "Work -> Jules",
+      "display_order": 40,
+      "enabled": true,
+      "identity_state": "PLACEHOLDER",
+      "loop_id": "work-jules-auto",
+      "mode": "AUTO",
+      "safe_detail_ref": "issue:33",
+      "worker_kind": "JULES"
+    },
+    {
+      "controller_kind": "CLAUDE",
+      "display_name": "Claude -> Claude",
+      "display_order": 50,
+      "enabled": false,
+      "identity_state": "FROZEN",
+      "loop_id": "claude-claude-auto",
+      "mode": "AUTO",
+      "safe_detail_ref": "issue:33",
+      "worker_kind": "CLAUDE"
+    }
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,93 @@
+{
+  "decided_by": "owner, 2026-10-04 (cmsg 22:56Z)",
+  "display_rules": {
+    "detail_view": [
+      "Display",
+      "Durable ID",
+      "Controller",
+      "Worker",
+      "Mode"
+    ],
+    "internal_id_in_list_view": false,
+    "list_view": "icon + display name + [MODE]; FROZEN lanes in a separate line, not counted active",
+    "registry_display_name_charset_note": "registry display_name regex allows '->' but not the arrow glyph; the runtime table already renders 'Controller -> Worker' from controller_kind/worker_kind"
+  },
+  "lanes": [
+    {
+      "controller": "CHATGPT",
+      "display": "Chat -> Jules",
+      "id_status": "DURABLE_FIXED",
+      "internal_id": "chatgpt-semi-auto",
+      "mode": "SEMI_AUTO",
+      "state": "ACTIVE",
+      "worker": "JULES"
+    },
+    {
+      "controller": "CHATGPT",
+      "display": "Chat -> Work",
+      "id_status": "RESERVED_NAME_NOT_DURABLE",
+      "identity_state": "PLACEHOLDER",
+      "internal_id": "chat-work-semi-auto",
+      "mode": "SEMI_AUTO",
+      "state": "ACTIVE",
+      "worker": "WORK"
+    },
+    {
+      "controller": "CLAUDE",
+      "display": "Claude -> Jules",
+      "id_status": "RESERVED_NAME_NOT_DURABLE",
+      "identity_state": "PLACEHOLDER",
+      "internal_id": "claude-jules-auto",
+      "mode": "AUTO",
+      "state": "ACTIVE",
+      "worker": "JULES"
+    },
+    {
+      "controller": "WORK",
+      "display": "Work -> Jules",
+      "id_status": "RESERVED_NAME_NOT_DURABLE",
+      "identity_state": "PLACEHOLDER",
+      "internal_id": "work-jules-auto",
+      "mode": "AUTO",
+      "state": "IN_DEVELOPMENT",
+      "worker": "JULES"
+    },
+    {
+      "controller": "CLAUDE",
+      "display": "Claude -> Claude",
+      "id_status": "RESERVED_NAME_NOT_DURABLE",
+      "identity_state": "PLACEHOLDER",
+      "internal_id": "claude-claude-auto",
+      "mode": "AUTO",
+      "state": "FROZEN",
+      "worker": "CLAUDE"
+    }
+  ],
+  "old_labels_historical": {
+    "claude-claude": "claude-claude-auto",
+    "claude-gemini": "claude-jules-auto",
+    "work-gemini": "work-jules-auto"
+  },
+  "policy_kind": "SIGNAL_LANE_NAMING_POLICY_V1",
+  "principles": [
+    "internal machine id is fixed once DURABLE; never renamed for looks",
+    "humans see the display name; the internal id appears only in the detail view",
+    "new lane ids are readable from the start",
+    "a chosen/reserved id is a NAME decided by a human, not evidence of a runtime durable loop_id; lanes stay PLACEHOLDER until the full durable chain exists"
+  ],
+  "registry_changes_needed_not_applied": [
+    "add worker_kind WORK (control_tower._WORKERS, _WORKER_LABELS, control_tower_registry.schema.json)",
+    "add an explicit FROZEN representation (optional identity_state or lifecycle field), or keep enabled=false",
+    "rename display_name of chatgpt-semi-auto to 'Chat -> Jules' (display only)",
+    "replace placeholder rows claude-gemini/work-gemini with claude-jules-auto/work-jules-auto (PLACEHOLDER; no durable state exists under old labels)",
+    "add chat-work-semi-auto row; keep claude-claude as claude-claude-auto FROZEN",
+    "update post_adoption_verification item 13 and tests/pre_adoption_registry.py: today they pin the WHOLE production registry digest, so ANY registry edit (even display_name) fails them; they must move to 'chatgpt-semi-auto entry unchanged and DURABLE' pins in the same PR"
+  ],
+  "safety": {
+    "durable_ids_invented": 0,
+    "issue33_writes": 0,
+    "live": 0,
+    "production_registry_changes": 0
+  },
+  "schema_version": 1
+}
