@@ -1,0 +1,5 @@
+{
+  "target_sha": "57935aaf7f50d1b50d72083801f3e5c3091c3646",
+  "source_pr": "relay-post-281-status",
+  "purpose": "relay docs-only post-281 checkpoint validation; no LIVE"
+}
