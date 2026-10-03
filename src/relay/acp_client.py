@@ -299,8 +299,14 @@ async def _acp_initialize(stdout: asyncio.StreamReader, stdin: asyncio.StreamWri
     return init_result
 
 
-async def _acp_new_session(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float) -> str:
-    """Internal helper: ACP session/new round-trip (request id 1)."""
+async def _acp_new_session(
+    stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float, meta: dict[str, Any] | None = None
+) -> str:
+    """Internal helper: ACP session/new round-trip (request id 1).
+
+    ``meta`` (the provider profile's ``session_meta``, e.g. Claude's ``allowDangerouslySkipPermissions=False``)
+    is sent as ``params._meta`` so the official adapter receives the Phase 0 permission policy.
+    """
     session_request = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -310,6 +316,8 @@ async def _acp_new_session(stdout: asyncio.StreamReader, stdin: asyncio.StreamWr
             "mcpServers": [],
         },
     }
+    if meta is not None:
+        session_request["params"]["_meta"] = meta
     session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new")
 
     session_id = session_result.get("sessionId")

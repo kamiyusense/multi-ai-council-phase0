@@ -75,3 +75,13 @@ def antigravity_binary_name(platform: str, architecture: str) -> str:
         return supported[(platform.lower(), architecture.lower())]
     except KeyError as exc:
         raise ValueError("unsupported Antigravity ACP platform/architecture") from exc
+
+
+def antigravity_launch_args(platform: str, architecture: str) -> tuple[str, ...]:
+    """Static launch arguments the Google registry manifest lists for ``agy_acp_server`` (read-only data).
+
+    Only linux needs ``--uid=``; validated through ``antigravity_binary_name`` so unsupported
+    platforms fail closed. Nothing is launched here.
+    """
+    antigravity_binary_name(platform, architecture)
+    return ("--uid=",) if platform.lower() == "linux" else ()
