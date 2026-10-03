@@ -50,6 +50,10 @@ Accepted main checkpoint: `7b1d29b0b3f20833d70a6924d01d1e03b0a4e39c` (PR #281).
 
 PR #281 final pre-merge validation checked out exact head `2309167232416a603d3845ea6796ac966e9c67fa` in all four carrier workflows: exact-head `37147461352`, Codex Linux `37147461374`, Codex Windows `37147461345`, and Claude STATIC/TCK `37147461311`; all completed successfully with no provider/model LIVE.
 
+### Addendum after PR #284 and the route-admission branch (Updated 2026-10-04)
+
+M3 Claude: still `STATIC_BOUNDARY` (initialize, identity push, no-bypass `_meta`, route admission before `session/new` proven with a synthetic CLI answer; `session/new` itself needs a real CLI). M6: Claude identity classification + prepare-only quota mappers (nothing queried). M8: Codex STATIC PROVEN; Claude STATIC PARTIAL / LIVE_BOUNDARY; Antigravity UNKNOWN / LIVE_BOUNDARY. Nothing is promoted to PASS/COMPLETE. Details and Deferred Decisions: `docs/RELAY_CLAUDE_ROUTE_ADMISSION_STATIC_EVIDENCE.md`.
+
 This checkpoint does **not** authorize an Antigravity pin bump/binary download, a real Claude/Antigravity connection, a real-account read, or another Codex LIVE run. Those remain deferred human decisions.
 
 ## 2. Controller rule inherited from PR #191

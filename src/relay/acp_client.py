@@ -252,6 +252,54 @@ async def _acp_read_terminal_response(
     return result
 
 
+_AUTH_SETTLE_SECONDS = 0.25
+
+
+async def _acp_await_auth_status(
+    stdout: asyncio.StreamReader,
+    timeout: float,
+    auth_sink: list[dict[str, Any]],
+    settle_seconds: float = _AUTH_SETTLE_SECONDS,
+) -> None:
+    """Wait (bounded) for the official adapter's identity push(es) and collect them in ``auth_sink``.
+
+    Used between ``initialize`` and ``session/new``: the adapter pushes its identity right after the
+    ``initialize`` response (async CLI probe). One overall ``timeout`` deadline covers the wait for the first
+    push (timeout returns without raising: the caller's policy then sees no observation and refuses). After the
+    first push, frames that follow immediately are drained for a short quiet window (``settle_seconds``) so a
+    conflicting second push is judged **before** ``session/new``. Other notifications are skipped (bounded); any
+    response/request/malformed frame here is unexpected and fails closed.
+    """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    skipped = 0
+    seen = bool(auth_sink)
+    while True:
+        wait = settle_seconds if seen else deadline - loop.time()
+        if wait <= 0:
+            return
+        try:
+            line = await asyncio.wait_for(stdout.readline(), timeout=wait)
+        except asyncio.TimeoutError:
+            return
+        if not line:
+            raise EOFError("Unexpected EOF waiting for the ACP auth status")
+        try:
+            frame = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError("Malformed JSON while waiting for the ACP auth status") from e
+        if not isinstance(frame, dict) or frame.get("jsonrpc") != "2.0" or "method" not in frame or "id" in frame:
+            raise ValueError("Unexpected ACP frame while waiting for the auth status")
+        evidence = _auth_status_evidence(frame)
+        if evidence is not None:
+            auth_sink.append(evidence)
+            seen = True
+            continue
+        skipped += 1
+        if skipped > _MAX_INTERLEAVED_NOTIFICATIONS:
+            raise ValueError("Too many interleaved notifications while waiting for the auth status")
+
+
 async def _acp_exchange(
     stdout: asyncio.StreamReader,
     stdin: asyncio.StreamWriter,

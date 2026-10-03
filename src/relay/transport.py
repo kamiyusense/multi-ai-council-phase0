@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 
 
+class AdmissionRefused(ValueError):
+    """A pre-generation admission check refused the dispatch; nothing was prompted."""
+
+
 @runtime_checkable
 class RelayTransport(Protocol):
     """Transport boundary. Implementations must not retry or fallback."""
