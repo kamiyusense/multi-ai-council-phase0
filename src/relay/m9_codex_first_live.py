@@ -439,6 +439,20 @@ def _best_effort_cancel(transport: AcpStdioStaticTransport, session_id: str | No
             pass
 
 
+def response_shape(text: Any) -> dict[str, Any]:
+    """Secret-free shape of the reply (never the text itself) so an unexpected reply can be diagnosed later."""
+    if not isinstance(text, str):
+        return {"response_stripped_char_count": None, "response_line_count": None, "response_starts_with_M9_OK": None,
+                "response_contains_M9_OK": None, "response_text_sha256": None}
+    stripped = text.strip()
+    return {
+        "response_stripped_char_count": len(stripped), "response_line_count": len(stripped.splitlines()),
+        "response_starts_with_M9_OK": stripped.startswith(EXPECTED_TEXT),
+        "response_contains_M9_OK": EXPECTED_TEXT in text,
+        "response_text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    }
+
+
 def build_terminal_receipt(cfg: Config, approval: dict[str, Any], pre: dict[str, Any], account: dict[str, Any],
                            live: dict[str, Any], gate: dict[str, int]) -> dict[str, Any]:
     state = live["state"]
@@ -459,6 +473,7 @@ def build_terminal_receipt(cfg: Config, approval: dict[str, Any], pre: dict[str,
         "terminal_state": state, "error_class": live.get("error_class"),
         "response_was_M9_OK": isinstance(text, str) and text.strip() == EXPECTED_TEXT,
         "response_char_count": len(text) if isinstance(text, str) else None,
+        **response_shape(text),
         "retry_count": 0, "fallback_state": "disabled",
     }
     receipt["receipt_sha256"] = canonical_sha256(receipt)

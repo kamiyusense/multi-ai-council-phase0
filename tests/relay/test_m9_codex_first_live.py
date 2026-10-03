@@ -1,4 +1,5 @@
 """M9 one-shot runner: STATIC tests with fixture backends only (no real Codex, no provider)."""
+import hashlib
 import json
 import os
 import shutil
@@ -334,3 +335,32 @@ class TestFullFlowWithOfficialAdapterAndFixtureBackend(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestResponseShapeDiagnostics(unittest.TestCase):
+    """M10: an unexpected reply must be diagnosable from the receipt without storing the reply text."""
+
+    def receipt(self, text):
+        from types import SimpleNamespace
+        cfg = SimpleNamespace(timeout_seconds=60)
+        approval = {"approval_sha256": "a" * 64, "record": {
+            "correlation_id": "c", "code_sha256": "b" * 64, "checklist_sha256": "d" * 64,
+            "provenance_basis": "LOCAL_INTERACTIVE_CONSOLE_CONFIRMATION"}}
+        live = {"state": "COMPLETED_UNEXPECTED_TEXT", "text": text, "prompt_count": 1, "spawn_count": 1, "error_class": None}
+        return m.build_terminal_receipt(cfg, approval, {"head": "h", "branch": "b"},
+                                        {"auth_state": "CHATGPT_ACCOUNT", "plan_type": "plus"}, live,
+                                        {"allowed": 1, "blocked": 0})
+
+    def test_unexpected_reply_shape_is_recorded_without_the_text(self):
+        reply = "M9_OK\n(no files or tools used)"
+        r = self.receipt(reply)
+        self.assertEqual((r["response_starts_with_M9_OK"], r["response_contains_M9_OK"], r["response_line_count"],
+                          r["response_stripped_char_count"], r["response_was_M9_OK"]), (True, True, 2, len(reply), False))
+        self.assertEqual(r["response_text_sha256"], hashlib.sha256(reply.encode("utf-8")).hexdigest())
+        self.assertNotIn(reply, json.dumps(r, ensure_ascii=False))
+
+    def test_exact_reply_and_missing_reply(self):
+        self.assertTrue(self.receipt(" M9_OK\n")["response_was_M9_OK"])
+        none = self.receipt(None)
+        self.assertIsNone(none["response_text_sha256"])
+        self.assertIsNone(none["response_contains_M9_OK"])
