@@ -70,10 +70,12 @@ jobs:
         run: |
           set -euo pipefail
           set -o pipefail
-          tests=(tests.relay.test_claude_acp_static_boundary tests.relay.test_claude_auth_readonly tests.relay.test_antigravity_static_launch_shape)
-          if [[ -f tests/relay/test_claude_auth_status_notification.py ]]; then
-            tests+=(tests.relay.test_claude_auth_status_notification)
-          fi
+          # Only modules that exist in the TARGET are run (never force carrier-HEAD test names onto an older target).
+          tests=()
+          for mod in test_claude_acp_static_boundary test_claude_auth_readonly test_claude_auth_status_notification test_claude_route_admission test_claude_quota_readonly test_antigravity_static_launch_shape; do
+            if [[ -f "tests/relay/${mod}.py" ]]; then tests+=("tests.relay.${mod}"); fi
+          done
+          if [[ "${#tests[@]}" -eq 0 ]]; then echo "no Claude STATIC boundary tests exist in this target"; exit 0; fi
           PYTHONPATH=src:. python -m unittest -v "${tests[@]}" 2>&1 | tee boundary.txt
           grep -q '^OK$' boundary.txt
           if grep -qi 'skipped' boundary.txt; then echo 'skips are not allowed in the boundary run' >&2; exit 1; fi
