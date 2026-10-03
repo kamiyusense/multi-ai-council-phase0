@@ -167,6 +167,10 @@ class RestCarrierSessionResolver:
         self.api = api
 
     def resolve(self, command_id: str) -> str:
+        return self.resolve_record(command_id)[0]
+
+    def resolve_record(self, command_id: str) -> tuple[str, str]:
+        """(session_id, created_at of the earliest carrier run that executed this command)."""
         if not isinstance(command_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,120}", command_id):
             raise live.LiveProofError("CARRIER_COMMAND_ID_INVALID")
         status, body = self.api.request(
@@ -176,6 +180,7 @@ class RestCarrierSessionResolver:
         if not isinstance(runs, list):
             raise live.LiveProofError("CARRIER_RUNS_UNREADABLE")
         found: set[str] = set()
+        run_times: list[str] = []
         for run in runs[:_RUNS_SCANNED]:
             if not isinstance(run, dict) or run.get("conclusion") != "success" or not isinstance(run.get("id"), int):
                 continue
@@ -192,12 +197,154 @@ class RestCarrierSessionResolver:
                 if command_id not in set(_LOG_COMMAND.findall(text)):
                     continue
                 found.update(_LOG_SESSION.findall(text))
+                run_times.append(str(run.get("created_at")))
         if len(found) != 1:
             raise live.LiveProofError("CARRIER_SESSION_NOT_UNIQUE", str(len(found)))
         session_id = next(iter(found))
         if session_id in live.FORBIDDEN_SESSION_IDS:
             raise live.LiveProofError("CARRIER_SESSION_FORBIDDEN")
-        return session_id
+        try:
+            created = min(live._time(t) for t in run_times)
+        except Exception:
+            raise live.LiveProofError("CARRIER_RUN_TIME_UNREADABLE") from None
+        return session_id, live._iso(created)
+
+
+CARRIER_RUN_NAME = "Phase 0 Chat to Jules semi-auto"
+CARRIER_RUN_PATH = ".github/workflows/jules-chat-semiauto.yml"
+_SHA40 = re.compile(r"^[0-9a-f]{40}$")
+
+
+class AutoNoop(Exception):
+    """The workflow_run event is not this proof's carrier success: nothing to do, nothing spent."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
+
+
+def scan_carrier_run(api: "RestApi", run_id: int) -> tuple[set[str], set[str]]:
+    """(command ids, session ids) printed by the successful jobs of ONE carrier run. GitHub reads only."""
+    status, jobs = api.request("GET", f"actions/runs/{int(run_id)}/jobs")
+    if status != 200 or not isinstance(jobs, dict):
+        raise live.LiveProofError("CARRIER_JOBS_UNREADABLE")
+    commands: set[str] = set()
+    sessions: set[str] = set()
+    for job in jobs.get("jobs") or []:
+        if not isinstance(job, dict) or job.get("conclusion") != "success" or not isinstance(job.get("id"), int):
+            continue
+        raw = api.download(f"actions/jobs/{job['id']}/logs")
+        if raw is None:
+            continue
+        text = raw.decode("utf-8", errors="replace")
+        commands.update(_LOG_COMMAND.findall(text))
+        sessions.update(_LOG_SESSION.findall(text))
+    return commands, sessions
+
+
+def verify_carrier_event_run(api: "RestApi", run_id: str) -> dict[str, Any]:
+    """Re-read the triggering carrier run from the API; the event payload alone is never trusted.
+
+    Any mismatch means this is not the Signal carrier success we may act on: NOOP before anything else.
+    """
+    if not re.fullmatch(r"[0-9]{1,18}", str(run_id)):
+        raise AutoNoop("CARRIER_RUN_ID_INVALID")
+    status, run = api.request("GET", f"actions/runs/{int(run_id)}")
+    if status != 200 or not isinstance(run, dict):
+        raise AutoNoop("CARRIER_RUN_UNREADABLE")
+    owner = live.OWNER_ACTOR_ID
+    checks = {
+        "id": run.get("id") == int(run_id), "name": run.get("name") == CARRIER_RUN_NAME,
+        "path": run.get("path") == CARRIER_RUN_PATH, "event": run.get("event") == "push",
+        "branch": run.get("head_branch") == CARRIER_BRANCH, "status": run.get("status") == "completed",
+        "conclusion": run.get("conclusion") == "success", "attempt": run.get("run_attempt") == 1,
+        "repository": (run.get("repository") or {}).get("full_name") == live.REPOSITORY,
+        "head_repository": (run.get("head_repository") or {}).get("full_name") == live.REPOSITORY,
+        "actor": str((run.get("actor") or {}).get("id")) == owner,
+        "triggering_actor": str((run.get("triggering_actor") or {}).get("id")) == owner,
+        "head_sha": isinstance(run.get("head_sha"), str) and bool(_SHA40.fullmatch(run["head_sha"])),
+    }
+    bad = sorted(name for name, ok in checks.items() if not ok)
+    if bad:
+        raise AutoNoop("CARRIER_RUN_NOT_ELIGIBLE:" + ",".join(bad))
+    try:
+        live._time(run.get("created_at"))
+    except Exception:
+        raise AutoNoop("CARRIER_RUN_TIME_UNREADABLE") from None
+    return run
+
+
+class RestCompareReader:
+    """GitHub compare of two exact SHAs (per_page=100). A failed or odd answer is None (fail closed)."""
+
+    def __init__(self, api: "RestApi"):
+        self.api = api
+
+    def compare(self, base: str, head: str) -> dict[str, Any] | None:
+        if not (_SHA40.fullmatch(str(base)) and _SHA40.fullmatch(str(head))):
+            return None
+        status, body = self.api.request("GET", f"compare/{base}...{head}?per_page=100")
+        if status != 200 or not isinstance(body, dict):
+            return None
+        return {"status": body.get("status"), "ahead_by": body.get("ahead_by"),
+                "behind_by": body.get("behind_by"), "files": body.get("files")}
+
+
+ISSUER_WORKFLOW = "signal-sf8-authority-issuer.yml"
+
+
+class RestAuthorityRunResolver:
+    """Finds the one fresh owner-issued authority run instead of trusting a typed run id.
+
+    Only GitHub is read. A candidate is a successful first-attempt workflow_dispatch of the
+    issuer on main by the single owner, created after the plan's not_before, BEFORE the
+    carrier run that created the Jules session, inside the authority max age, and not one of
+    the reserved runs. Several candidates are ambiguous and stop the run before Jules; a
+    typed id is only accepted if it is one of the candidates.
+    """
+
+    def __init__(self, api: RestApi):
+        self.api = api
+
+    def candidates(self, plan: dict[str, Any], carrier_created_at: str, now: str) -> list[str]:
+        status, body = self.api.request(
+            "GET", f"actions/workflows/{ISSUER_WORKFLOW}/runs?branch=main&event=workflow_dispatch"
+                   f"&status=success&per_page={_RUNS_SCANNED}")
+        runs = (body or {}).get("workflow_runs") if status == 200 and isinstance(body, dict) else None
+        if not isinstance(runs, list):
+            raise live.LiveProofError("AUTHORITY_RUNS_UNREADABLE")
+        found: list[str] = []
+        not_before, before, current = live._time(plan["not_before"]), live._time(carrier_created_at), live._time(now)
+        for run in runs[:_RUNS_SCANNED]:
+            if not isinstance(run, dict) or not isinstance(run.get("id"), int):
+                continue
+            run_id = str(run["id"])
+            actor = str((run.get("actor") or {}).get("id"))
+            trigger = str((run.get("triggering_actor") or {}).get("id"))
+            if run.get("conclusion") != "success" or run.get("event") != "workflow_dispatch" \
+                    or run.get("head_branch") != "main" or run.get("run_attempt") != 1 \
+                    or actor != live.OWNER_ACTOR_ID or trigger != live.OWNER_ACTOR_ID \
+                    or run_id in live.RESERVED_AUTHORITY_RUNS or run_id == live.PROVIDER_OIDC_RUN_ID:
+                continue
+            try:
+                created = live._time(run.get("created_at"))
+            except Exception:
+                continue
+            if created < not_before or created >= before \
+                    or (current - created).total_seconds() > plan["authority_max_age_seconds"]:
+                continue
+            found.append(run_id)
+        return found
+
+    def resolve(self, plan: dict[str, Any], carrier_created_at: str, now: str, typed: str = "") -> str:
+        found = self.candidates(plan, carrier_created_at, now)
+        if typed:
+            if typed not in found:
+                raise live.LiveProofError("AUTHORITY_RUN_INPUT_MISMATCH")
+            return typed
+        if len(found) != 1:
+            raise live.LiveProofError("AUTHORITY_RUN_NOT_UNIQUE", str(len(found)))
+        return found[0]
 
 
 class RestBranchReader:
@@ -299,6 +446,22 @@ def load_inputs(plan_path: Path, registry_path: Path) -> tuple[dict[str, Any], d
     return plan, registry
 
 
+_OUTPUT_VALUE = re.compile(r"^[A-Za-z0-9._-]{0,160}$")
+
+
+def _write_outputs(path: str | None, values: dict[str, str]) -> None:
+    """Append key=value lines for later jobs. Values are validated; nothing secret ever goes here."""
+    if not path:
+        return
+    lines = []
+    for key, value in values.items():
+        if key == "status" or not _OUTPUT_VALUE.fullmatch(str(value)):
+            continue
+        lines.append(f"{key}={value}\n")
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.writelines(lines)
+
+
 def main(argv: list[str] | None = None, *, env: dict[str, str] | None = None, http: Http = urllib_http,
          clock: Any = None) -> int:
     parser = argparse.ArgumentParser()
@@ -308,6 +471,9 @@ def main(argv: list[str] | None = None, *, env: dict[str, str] | None = None, ht
     parser.add_argument("--check", action="store_true", help="validate plan and registry only; no network")
     parser.add_argument("--bound-plan-from-data-branch", action="store_true",
                         help="read the bound plan from the data branch; its sha256 must equal PLAN_SHA256")
+    parser.add_argument("--prepare-only", action="store_true",
+                        help="resolve and verify everything read-only (no Jules key, no writes); write go/no-go outputs")
+    parser.add_argument("--github-output", help="file to append go/session/authority outputs to (GITHUB_OUTPUT)")
     parser.add_argument("--bind-out", help="bind the template to a target snapshot and write the bound plan + carrier files here")
     parser.add_argument("--loop-number", type=int)
     parser.add_argument("--target-pr", type=int)
@@ -339,41 +505,98 @@ def main(argv: list[str] | None = None, *, env: dict[str, str] | None = None, ht
     if args.check:
         print(json.dumps({"status": "CHECKED", "lane_id": plan["lane_id"], "plan_sha256": live.plan_digest(plan)}))
         return 0
+    clock_port = clock or SystemClock()
     try:
         api = RestApi(env.get("GITHUB_TOKEN", ""), http=http)
         store = RestContentsClient(api)
+        carrier_run_id = env.get("CARRIER_RUN_ID", "")
+        auto = bool(carrier_run_id)
+        if auto:
+            if env.get("GITHUB_EVENT_NAME") != "workflow_run" or not args.bound_plan_from_data_branch:
+                raise AutoNoop("EVENT_NOT_WORKFLOW_RUN")
+            verify_carrier_event_run_result = verify_carrier_event_run(api, carrier_run_id)
         if args.bound_plan_from_data_branch:
             found = store.get(live.BOUND_PLAN_PATH, plan["data_branch"])
             if found is None:
+                if auto:
+                    raise AutoNoop("NO_BOUND_PLAN")
                 raise live.LiveProofError("BOUND_PLAN_MISSING")
             bound = json.loads(found.text)
-            if live.plan_digest(bound) != env.get("PLAN_SHA256", ""):
+            typed_digest = env.get("PLAN_SHA256", "")
+            if typed_digest and live.plan_digest(bound) != typed_digest:
                 raise live.LiveProofError("BOUND_PLAN_DIGEST_MISMATCH")
             live.validate_plan(bound, registry, require_bound=True)
             if {k: bound[k] for k in ("lane_id", "repository", "data_branch", "target_branch")} != \
                     {k: plan[k] for k in ("lane_id", "repository", "data_branch", "target_branch")}:
                 raise live.LiveProofError("BOUND_PLAN_NOT_FROM_TEMPLATE")
             plan = bound
-        reader = JulesActiveSessionGetReader(env.get("JULES_API_KEY", ""), http=http)
-        # The session id comes from the carrier run's own record, never from a typed value. An
-        # optional typed value is only a cross-check; any disagreement stops before the Jules GET.
-        resolved_session = RestCarrierSessionResolver(api).resolve(plan["request"]["command_id"])
-        typed_session = env.get("SESSION_ID", "")
+        # No Jules key in the read-only prepare job; otherwise the reader exists before any resolution.
+        reader = None if args.prepare_only else JulesActiveSessionGetReader(env.get("JULES_API_KEY", ""), http=http)
+        resolver = RestCarrierSessionResolver(api)
+        command_id = plan["request"]["command_id"]
+        if auto:
+            commands, sessions = scan_carrier_run(api, int(carrier_run_id))
+            if command_id not in commands:
+                raise AutoNoop("CARRIER_COMMAND_NOT_THIS_PROOF")
+            # From here on this IS the proof's carrier success: every mismatch is a hard stop, not a no-op.
+            if len(sessions) != 1:
+                raise live.LiveProofError("CARRIER_SESSION_NOT_UNIQUE", str(len(sessions)))
+            resolved_session = next(iter(sessions))
+            if resolved_session in live.FORBIDDEN_SESSION_IDS:
+                raise live.LiveProofError("CARRIER_SESSION_FORBIDDEN")
+            carrier_created_at = live._iso(live._time(verify_carrier_event_run_result["created_at"]))
+            if store.get(live.TERMINAL_RECEIPT_PATH, plan["data_branch"]) is not None:
+                raise AutoNoop("TERMINAL_RECEIPT_EXISTS")
+            if store.get(live.ATTEMPT_MARKER_PATH, plan["data_branch"]) is not None:
+                raise AutoNoop("ATTEMPT_MARKER_EXISTS")
+        else:
+            # The session id comes from the carrier run's own record, never from a typed value. An
+            # optional typed value is only a cross-check; any disagreement stops before the Jules GET.
+            resolved_session, carrier_created_at = resolver.resolve_record(command_id)
+        typed_session = env.get("SESSION_ID", "") or env.get("EXPECT_SESSION_ID", "")
         if typed_session and typed_session != resolved_session:
             raise live.LiveProofError("SESSION_ID_INPUT_MISMATCH")
-        evidence_path = Path(env["PROVIDER_OIDC_EVIDENCE_PATH"])
+        # Same for the authority run: derived from GitHub's own run list (fresh, owner, before the
+        # carrier run, unique). A typed id may only pick one of the valid candidates.
+        resolved_authority = RestAuthorityRunResolver(api).resolve(
+            plan, carrier_created_at, clock_port.now(), env.get("AUTHORITY_RUN_ID", ""))
+        expected_authority = env.get("EXPECT_AUTHORITY_RUN_ID", "")
+        if expected_authority and expected_authority != resolved_authority:
+            raise live.LiveProofError("AUTHORITY_RUN_EXPECTATION_MISMATCH")
+        executing_sha = env.get("GITHUB_SHA") or None
+        evidence_path = None if args.prepare_only else Path(env["PROVIDER_OIDC_EVIDENCE_PATH"])
         ports = live.PublishPorts(
-            clock=clock or SystemClock(), target_reader=RestTargetReader(api), branch_reader=RestBranchReader(api),
+            clock=clock_port, target_reader=RestTargetReader(api), branch_reader=RestBranchReader(api),
             session_reader=reader, run_reader=RestRunReader(api),
             authority_evidence=RestAuthorityEvidenceLoader(api),
-            provider_oidc_evidence=json.loads(evidence_path.read_text(encoding="utf-8")),
-            store=store, is_live=True)
+            provider_oidc_evidence=json.loads(evidence_path.read_text(encoding="utf-8")) if evidence_path else {},
+            store=store, is_live=not args.prepare_only, compare_reader=RestCompareReader(api),
+            executing_sha=executing_sha)
+        # Read-only gate before the attempt marker, any write and any Jules call.
+        live.preflight_publish(plan=plan, candidate_registry=registry, session_id=resolved_session,
+                               authority_run_id=resolved_authority, ports=ports)
+        if args.prepare_only:
+            go = {"status": "READY", "go": "true", "session_id": resolved_session,
+                  "authority_run_id": resolved_authority, "command_id": command_id}
+            print(json.dumps(go, sort_keys=True))
+            _write_outputs(args.github_output, go)
+            if args.result_out:
+                Path(args.result_out).write_text(json.dumps(go, sort_keys=True), encoding="utf-8")
+            return 0
         result = live.run_publish_half(
             plan=plan, candidate_registry=registry, session_id=resolved_session,
-            authority_run_id=env.get("AUTHORITY_RUN_ID", ""), ports=ports)
+            authority_run_id=resolved_authority, ports=ports)
+    except AutoNoop as noop:  # not this proof's carrier success (or a duplicate event): nothing spent
+        done = {"status": "NOOP", "stage": "event", "code": noop.code, "go": "false"}
+        print(json.dumps(done, sort_keys=True))
+        _write_outputs(args.github_output, {"go": "false"})
+        if args.result_out:
+            Path(args.result_out).write_text(json.dumps(done, sort_keys=True), encoding="utf-8")
+        return 0
     except Exception as exc:  # setup failed before any provider read: nothing spent
         stopped = {"status": "STOPPED", "stage": "setup", "code": getattr(exc, "code", type(exc).__name__)}
         print(json.dumps(stopped))
+        _write_outputs(args.github_output, {"go": "false"})
         if args.result_out:
             Path(args.result_out).write_text(json.dumps(stopped, sort_keys=True), encoding="utf-8")
         return 1

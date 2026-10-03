@@ -56,13 +56,15 @@ OWNER_ACTOR_ID = "20355232"
 FORBIDDEN_SESSION_IDS = frozenset({
     "301196275118188780",  # old Session 132: GET budget exhausted
     "5943440322658150300",  # proof 2 session: GET budget exhausted and a publish already read it by mistake
+    "11944164406087664763",  # proof 3 session: closed UNKNOWN, never read again
+    "569271609782168660",  # proof 4 session: closed UNKNOWN (provider COMPLETED), never read again
 })
 RESERVED_AUTHORITY_RUNS = frozenset({"37031275812"})  # reserved for the adoption record
 PROVIDER_OIDC_RUN_ID = "36981004299"  # finished SF-8 OIDC proof run: workflow-identity anchor
-ALLOWED_PATH = "docs/evidence/signal-active-proof-4/PROOF.md"
-ALLOWED_CONTENT = "signal active proof 4\n"
+ALLOWED_PATH = "docs/evidence/signal-active-proof-5/PROOF.md"
+ALLOWED_CONTENT = "signal active proof 5\n"
 ACTIVE_RAW_STATES = frozenset({"QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"})
-DATA_RECORD_DIR = "docs/evidence/signal-active-proof-4"
+DATA_RECORD_DIR = "docs/evidence/signal-active-proof-5"
 TERMINAL_RECEIPT_PATH = f"{DATA_RECORD_DIR}/live-terminal-receipt.json"
 BOUND_PLAN_PATH = f"{DATA_RECORD_DIR}/plan.bound.json"
 ATTEMPT_MARKER_PATH = f"{DATA_RECORD_DIR}/live-attempt-marker.json"
@@ -245,7 +247,7 @@ UNBOUND_SHA = "0" * 40
 PROVIDER_OIDC_EXPECTED_SHA = "93460dee54948dc6ac3888f4142ab78cd54ce759"
 CARRIER_LANE_ID = "J-YELLOW"
 CARRIER_LANE_DISPLAY = "💛"
-PROOF_TASK_ID = "signal-active-proof-4"
+PROOF_TASK_ID = "signal-active-proof-5"
 
 
 def _iso(value: datetime) -> str:
@@ -378,6 +380,107 @@ def _fail_unknown(code: str, stage: str, detail: str = "") -> LiveProofError:
     return LiveProofError(code, f"{stage}:{detail}" if detail else stage)
 
 
+# --- main drift policy (decision: CONSERVATIVE-BOUND, not a weakening of the authority contract) ---
+# The authority issuer proves the owner dispatched the issuer at exact main SHA X. Unrelated lanes merge to
+# main all the time, so demanding X == current main would waste a LIVE proof on any harmless merge. Instead
+# the authority SHA X is bound to BOTH the SHA that is actually executing this code (Y) and current main (Z):
+# each of Y and Z must equal X or be strictly AHEAD of X (GitHub compare API) with NO change to a contract
+# path in between. A contract path is anything that decides authority, publish or provider handling:
+# every workflow, every non-test/non-data automation/command_bus file, and the SF-8 evidence. Any other
+# difference, a truncated/unreadable compare, or a missing compare port stops BEFORE any Jules call.
+CONTRACT_DRIFT_FREE_PREFIXES = (
+    "automation/command_bus/tests/", "automation/command_bus/jules_api_requests/",
+    "automation/command_bus/loop_id_claims/",
+)
+_COMPARE_FILE_CAP = 100  # the CLI asks GitHub for per_page=100: a full page may hide more files, so it fails closed
+
+
+def is_contract_path(path: Any) -> bool:
+    if not isinstance(path, str) or not path:
+        return True  # unreadable name: fail closed
+    if path.startswith(CONTRACT_DRIFT_FREE_PREFIXES):
+        return False
+    return path.startswith((".github/", "docs/evidence/signal-sf8/", "automation/command_bus/"))
+
+
+def check_authority_sha_binding(authority_sha: Any, main_sha: Any, executing_sha: Any, compare_reader: Any) -> None:
+    """Raise unless the authority run's SHA is exactly bound to the executing code and to main."""
+    if not isinstance(authority_sha, str) or not _SHA.fullmatch(authority_sha) \
+            or not isinstance(main_sha, str) or not _SHA.fullmatch(main_sha):
+        raise LiveProofError("AUTHORITY_RUN_NOT_EXACT_MAIN")
+    if executing_sha is not None and (not isinstance(executing_sha, str) or not _SHA.fullmatch(executing_sha)):
+        raise LiveProofError("EXECUTING_SHA_INVALID")
+    targets = [sha for sha in dict.fromkeys([main_sha, executing_sha]) if sha and sha != authority_sha]
+    if not targets:
+        return
+    if compare_reader is None:
+        raise LiveProofError("AUTHORITY_RUN_NOT_EXACT_MAIN")
+    for target in targets:
+        result = compare_reader.compare(authority_sha, target)
+        if not isinstance(result, dict) or result.get("status") != "ahead" or result.get("behind_by") != 0:
+            raise LiveProofError("MAIN_DRIFT_UNVERIFIED")
+        files = result.get("files")
+        if not isinstance(files, list) or len(files) >= _COMPARE_FILE_CAP or result.get("ahead_by", 0) < 1:
+            raise LiveProofError("MAIN_DRIFT_UNVERIFIED")
+        for item in files:
+            if not isinstance(item, dict) or not isinstance(item.get("filename"), str):
+                raise LiveProofError("MAIN_DRIFT_CONTRACT_CHANGED")
+            names = [item["filename"]] + ([item["previous_filename"]] if "previous_filename" in item else [])
+            if any(is_contract_path(n) for n in names):
+                raise LiveProofError("MAIN_DRIFT_CONTRACT_CHANGED")
+
+
+def _check_target(plan: dict[str, Any], ports: "PublishPorts") -> dict[str, Any]:
+    flat = ports.target_reader.read_target(REPOSITORY, plan["target_pr"])
+    if not isinstance(flat, dict) or flat.get("state") != "open" or flat.get("merged") is not False:
+        raise LiveProofError("TARGET_PR_NOT_OPEN")
+    if flat.get("draft") is not True:
+        raise LiveProofError("TARGET_PR_NOT_DRAFT")
+    head = flat.get("head") or {}
+    if head.get("ref") != plan["target_branch"] or head.get("sha") != plan["expected_target_head"]:
+        raise LiveProofError("TARGET_HEAD_MISMATCH")
+    for name in ("target_branch", "work_branch"):
+        snap = ports.branch_reader.read_branch(REPOSITORY, plan[name])
+        if not isinstance(snap, dict) or snap.get("head") != plan["expected_target_head"] \
+                or snap.get("tree") != plan["expected_target_tree"]:
+            raise LiveProofError("BRANCH_HEAD_OR_TREE_MISMATCH", name)
+    return flat
+
+
+def preflight_publish(*, plan: dict[str, Any], candidate_registry: dict[str, Any], session_id: str,
+                      authority_run_id: str, ports: "PublishPorts") -> None:
+    """Read-only gate that runs BEFORE the attempt marker, any write and any Jules call.
+
+    Same target, branch and authority-SHA-binding checks as the publish half, so an unrelated
+    change (target drift, contract drift on main, a stale or foreign authority run) stops the auto
+    path with nothing recorded and nothing spent. It never touches Jules and never writes.
+    """
+    validate_plan(plan, candidate_registry, require_bound=True)
+    claim, request = plan["carrier_claim"], plan["request"]
+    if claim.get("lane_id") != CARRIER_LANE_ID or claim.get("task_id") != PROOF_TASK_ID \
+            or claim.get("command_id") != request.get("command_id") \
+            or not str(request.get("command_id", "")).endswith(f"-{PROOF_TASK_ID}") \
+            or claim.get("retry") != 0 or claim.get("fallback") != "disabled":
+        raise LiveProofError("CARRIER_IDENTITY_MISMATCH")
+    if _digits(session_id, "session_id") in FORBIDDEN_SESSION_IDS:
+        raise LiveProofError("OLD_SESSION_FORBIDDEN")
+    authority_run_id = _digits(authority_run_id, "authority_run_id")
+    if authority_run_id in RESERVED_AUTHORITY_RUNS or authority_run_id == PROVIDER_OIDC_RUN_ID:
+        raise LiveProofError("AUTHORITY_RUN_RESERVED_OR_REUSED")
+    store, branch = ports.store, plan["data_branch"]
+    if store.get(TERMINAL_RECEIPT_PATH, branch) is not None:
+        raise LiveProofError("TERMINAL_RECEIPT_EXISTS")
+    if store.get(ATTEMPT_MARKER_PATH, branch) is not None:
+        raise LiveProofError("ATTEMPT_MARKER_EXISTS")
+    _check_target(plan, ports)
+    main_snap = ports.branch_reader.read_branch(REPOSITORY, "main")
+    run = ports.run_reader.read_run(authority_run_id)
+    if not isinstance(run, dict) or not isinstance(main_snap, dict):
+        raise LiveProofError("AUTHORITY_RUN_NOT_EXACT_MAIN")
+    check_authority_sha_binding(run.get("head_sha"), main_snap.get("head"), ports.executing_sha,
+                                ports.compare_reader)
+
+
 @dataclass
 class PublishPorts:
     clock: Clock
@@ -389,6 +492,8 @@ class PublishPorts:
     provider_oidc_evidence: dict[str, Any]
     store: Any  # GitHubContentsClient (non-default data branch)
     is_live: bool = False  # only the workflow's real ports may set this True
+    compare_reader: Any = None  # GitHub compare port; None keeps the strict "authority SHA == main" rule
+    executing_sha: str | None = None  # the exact SHA the running workflow code was checked out at
 
 
 def run_publish_half(
@@ -423,27 +528,16 @@ def run_publish_half(
             raise LiveProofError("ATTEMPT_MARKER_UNVERIFIED_OR_DUPLICATE")
 
         stage = "target"
-        flat = ports.target_reader.read_target(REPOSITORY, plan["target_pr"])
-        if not isinstance(flat, dict) or flat.get("state") != "open" or flat.get("merged") is not False:
-            raise LiveProofError("TARGET_PR_NOT_OPEN")
-        if flat.get("draft") is not True:
-            raise LiveProofError("TARGET_PR_NOT_DRAFT")
-        head = flat.get("head") or {}
-        if head.get("ref") != plan["target_branch"] or head.get("sha") != plan["expected_target_head"]:
-            raise LiveProofError("TARGET_HEAD_MISMATCH")
-        for name in ("target_branch", "work_branch"):
-            snap = ports.branch_reader.read_branch(REPOSITORY, plan[name])
-            if not isinstance(snap, dict) or snap.get("head") != plan["expected_target_head"] \
-                    or snap.get("tree") != plan["expected_target_tree"]:
-                raise LiveProofError("BRANCH_HEAD_OR_TREE_MISMATCH", name)
+        flat = _check_target(plan, ports)
 
         stage = "authority"
         main_snap = ports.branch_reader.read_branch(REPOSITORY, "main")
         evidence = ports.authority_evidence.load(authority_run_id)
         run = ports.run_reader.read_run(authority_run_id)
-        if not isinstance(run, dict) or not isinstance(main_snap, dict) \
-                or run.get("head_sha") != main_snap.get("head"):
+        if not isinstance(run, dict) or not isinstance(main_snap, dict):
             raise LiveProofError("AUTHORITY_RUN_NOT_EXACT_MAIN")
+        check_authority_sha_binding(run.get("head_sha"), main_snap.get("head"), ports.executing_sha,
+                                    ports.compare_reader)
         authority_exec = verify_oidc_workflow_execution(
             evidence=evidence, run_reader=ports.run_reader, profile=SF8_AUTHORITY_PROFILE,
             expected_run_id=authority_run_id, expected_sha=run["head_sha"])

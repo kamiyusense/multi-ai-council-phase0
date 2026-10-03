@@ -26,13 +26,13 @@ AUTHORITY_RUN = "7700000001"
 MAIN_SHA = "c" * 40
 PROVIDER_SHA = live.PROVIDER_OIDC_EXPECTED_SHA
 NOW = "2026-09-28T04:10:00+00:00"
-DATA_BRANCH = "signal/chatgpt-semi-auto-active-proof-4-data"
+DATA_BRANCH = "signal/chatgpt-semi-auto-active-proof-5-data"
 
 
 def make_plan(**changes):
     request = current_request(
         allowed_paths=[live.ALLOWED_PATH],
-        prompt="Create docs/evidence/signal-active-proof-4/PROOF.md with exactly: signal active proof 4")
+        prompt="Create docs/evidence/signal-active-proof-5/PROOF.md with exactly: signal active proof 5")
     plan = {
         "schema_version": 1, "plan_kind": "SIGNAL_STEP7_LIVE_PROOF_PLAN", "repository": REPO,
         "lane_id": live.LANE_ID, "target_branch": BRANCH, "target_pr": 4, "work_branch": WORK_BRANCH,
@@ -203,7 +203,7 @@ class PlanGuardTests(unittest.TestCase):
             "context_lane": make_plan(durable_context=context(loop_id="other-lane", target_pr=4)),
             "lane_equals_command": make_plan(durable_context=context(loop_id=live.LANE_ID, correlation_id=live.LANE_ID),
                                              request=current_request(allowed_paths=[live.ALLOWED_PATH],
-                                                                     prompt="signal active proof 4",
+                                                                     prompt="signal active proof 5",
                                                                      command_id=live.LANE_ID,
                                                                      work_branch=f"jules-work/{live.LANE_ID}")),
         }
