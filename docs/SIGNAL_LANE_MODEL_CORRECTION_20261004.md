@@ -38,6 +38,10 @@ or runs anything LIVE.
 - Chat -> Work: Cloud Work carriers exist (`docs/CLOUD_WORK_LANES_INDEX.md`); no stable id,
   no registry row. UNKNOWN. No new id is invented here.
 
+> **Update 2026-10-04:** the placeholder labels proposed below were superseded by the owner's naming policy
+> (`docs/SIGNAL_LANE_NAMING_POLICY_20261004.md`: `chat-work-semi-auto`, `claude-jules-auto`, `work-jules-auto`,
+> `claude-claude-auto`, FROZEN shown apart; `chatgpt-semi-auto` fixed).
+
 ## 3. Registry migration design (prepare-only, NOT applied)
 
 Proposed fixture: `docs/evidence/signal-lane-model/proposed-registry-v2-fixture.json`
