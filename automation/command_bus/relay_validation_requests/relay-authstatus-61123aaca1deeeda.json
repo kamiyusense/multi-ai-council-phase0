@@ -1,0 +1,5 @@
+{
+  "target_sha": "61123aaca1deeeda76a4e862dc553b676771898e",
+  "source_pr": "284",
+  "purpose": "relay final validation after current-main sync and independent Claude auth-status provider-scope fix; exact-head + Linux + Windows + Claude STATIC/TCK; no LIVE"
+}
