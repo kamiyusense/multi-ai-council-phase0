@@ -1,0 +1,112 @@
+{
+  "active_lane_count": 4,
+  "active_lanes": [
+    {
+      "evidence": "registry entry; docs/evidence/signal-sf10/post-adoption-checkpoint.json",
+      "identity_state": "DURABLE",
+      "lane": "Chat -> Jules",
+      "mode": "SEMI_AUTO",
+      "readiness_class": "DURABLE_READY",
+      "registry_loop_id": "chatgpt-semi-auto",
+      "status": "ACTIVE"
+    },
+    {
+      "existing_parts": [
+        "docs/CLOUD_WORK_LANES_INDEX.md (Cloud Work carriers: cloud-yellow/green/blue/red)",
+        "automation/command_bus/cloud_work_lanes.py"
+      ],
+      "identity_state": "UNKNOWN",
+      "lane": "Chat -> Work",
+      "mode": "SEMI_AUTO",
+      "note": "no registry row exists; worker_kind WORK is not in the registry v1 enum; no stable id chosen. Do not invent one.",
+      "readiness_class": "UNKNOWN",
+      "registry_loop_id": null,
+      "stable_id_source": "UNKNOWN",
+      "status": "ACTIVE"
+    },
+    {
+      "existing_parts": [
+        "automation/command_bus/claude_jules_*.py",
+        "docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md",
+        "docs/evidence/claude-jules-autoloop-20261001/"
+      ],
+      "identity_state": "PLACEHOLDER",
+      "lane": "Claude -> Jules",
+      "mode": "AUTO",
+      "note": "most mature of the three non-durable lanes: real Jules worker path and 4 LIVE dispatches (Loops 128-131) exist, but only on the Claude x Jules feature branch with caller-supplied loop numbers; no Signal durable chain (state/owner/receipt/evidence) under a runtime-chosen stable id.",
+      "readiness_class": "BLOCKED",
+      "registry_loop_id": "claude-gemini (OLD placeholder label, worker_kind GEMINI is wrong)",
+      "stable_id_source": "UNKNOWN",
+      "status": "ACTIVE"
+    },
+    {
+      "existing_parts": [
+        "docs/BLUE_BWJ4_6_STATIC_READINESS.md",
+        "automation/command_bus/blue_work_*.py",
+        "automation/command_bus/work_bridge_prepare.py"
+      ],
+      "identity_state": "PLACEHOLDER",
+      "lane": "Work -> Jules",
+      "mode": "AUTO",
+      "note": "Blue Work BWJ-0..6 STATIC complete; BWJ-7 real Work->Jules->Work turn BLOCKED (separate budget/approval); identity is colour/carrier based, not a stable loop id.",
+      "readiness_class": "BLOCKED",
+      "registry_loop_id": "work-gemini (OLD placeholder label, worker_kind GEMINI is wrong)",
+      "stable_id_source": "UNKNOWN",
+      "status": "IN_DEVELOPMENT"
+    }
+  ],
+  "frozen_lanes": [
+    {
+      "counts_as_active": false,
+      "forbidden_now": [
+        "DURABLE adoption work",
+        "LIVE run",
+        "deletion",
+        "counting as an active lane"
+      ],
+      "identity_state": "PLACEHOLDER",
+      "keep": [
+        "name",
+        "origin/history",
+        "docs",
+        "evidence",
+        "branches"
+      ],
+      "lane": "Claude -> Claude",
+      "registry_enabled_today": true,
+      "registry_loop_id": "claude-claude",
+      "required_for_global_ready": false,
+      "status": "FROZEN"
+    }
+  ],
+  "historical_old_placeholders": [
+    {
+      "do_not_treat_as": "a durable identity or a current lane name",
+      "label": "claude-gemini",
+      "meaning": "old placeholder for Claude -> Jules; 'Gemini' was wrong"
+    },
+    {
+      "do_not_treat_as": "a durable identity or a current lane name",
+      "label": "work-gemini",
+      "meaning": "old placeholder for Work -> Jules; 'Gemini' was wrong"
+    }
+  ],
+  "model_kind": "SIGNAL_LANE_MODEL_V2_CORRECTION",
+  "policy": "design record only: production registry untouched, no durable id invented, no evidence deleted, historical names kept as historical",
+  "registry_gaps_v1": [
+    "no row for Chat -> Work",
+    "worker_kind enum has no WORK (JULES, GEMINI, CLAUDE, OTHER only)",
+    "no FROZEN representation; enabled=false is the existing non-destructive way to exclude a lane from global readiness",
+    "two rows carry the wrong worker_kind GEMINI"
+  ],
+  "safety": {
+    "durable_ids_invented": 0,
+    "evidence_deleted": 0,
+    "issue33_writes": 0,
+    "live": 0,
+    "production_registry_changes": 0,
+    "provider_calls": 0
+  },
+  "schema_version": 1,
+  "source": "user correction 2026-10-04 (cmsg 22:39Z) reconciled with registry/docs/code at main b8e57fe; STATIC, read-only"
+}

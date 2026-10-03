@@ -57,6 +57,11 @@ checkpoint text.
 > - Jules output PR #286 keeps the recorded deviation `MISSING_TRAILING_NEWLINE_ONLY`; authentication
 >   success and exact-output conformity remain separate facts.
 > - Post-adoption evidence: `docs/evidence/signal-sf10/post-adoption-checkpoint.json`.
+>
+> **Lane model correction (owner, 2026-10-04):** the real lanes are Chat -> Jules (DURABLE), Chat -> Work,
+> Claude -> Jules, Work -> Jules (in development); Claude -> Claude is FROZEN (name kept, not active).
+> `claude-gemini` / `work-gemini` are historical old placeholder labels ("Gemini" was wrong). See
+> `docs/SIGNAL_LANE_MODEL_CORRECTION_20261004.md`. Read the three "BLOCKED lanes" of SF-10 through that model.
 
 Fresh readback at v2 creation (historical):
 

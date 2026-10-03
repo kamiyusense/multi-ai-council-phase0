@@ -1,5 +1,8 @@
 # SF-10 Lane inventory and SF-9 post-adoption checkpoint (STATIC, 2026-10-04)
 
+> **Superseded labels:** the lane names below follow the old registry placeholders. The owner's correction
+> (Gemini -> Jules, Chat -> Work added, Claude -> Claude FROZEN) is in `docs/SIGNAL_LANE_MODEL_CORRECTION_20261004.md`.
+
 Scope: static, read-only and test-only. No Jules / Gemini / Claude / Work provider call, no
 issuer dispatch, no Issue #33 write, no registry change, no Merge. Machine-readable sources
 live in `docs/evidence/signal-sf10/`. UNKNOWN stays UNKNOWN.
