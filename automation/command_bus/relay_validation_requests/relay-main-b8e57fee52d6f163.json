@@ -1,0 +1,5 @@
+{
+  "target_sha": "b8e57fee52d6f163bed82de058e9211b26114185",
+  "source_pr": "relay-carrier-codex-compat-291",
+  "purpose": "relay validation: current main with the post-291 carrier workflows; expects applicable=true on Linux and Windows (STATIC, no LIVE)"
+}
