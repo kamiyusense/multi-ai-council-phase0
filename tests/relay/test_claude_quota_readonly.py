@@ -29,8 +29,9 @@ class TestClaudeQuotaReadonly(unittest.TestCase):
     def test_usage_response_windows(self):
         u = usage(USAGE)
         self.assertEqual(u["rate_limits_available"], True)
-        self.assertEqual(u["five_hour"], {"used_percent": 12, "resets_at_epoch": int(datetime(2026, 10, 4, tzinfo=timezone.utc).timestamp())})
-        self.assertEqual(u["seven_day"], {"used_percent": 40.5, "resets_at_epoch": "UNKNOWN"})
+        epoch = int(datetime(2026, 10, 4, tzinfo=timezone.utc).timestamp())
+        self.assertEqual(u["five_hour"], {"used_percent": 12, "resets_at_epoch": epoch, "stale": "UNKNOWN"})
+        self.assertEqual(u["seven_day"], {"used_percent": 40.5, "resets_at_epoch": "UNKNOWN", "stale": "UNKNOWN"})
 
     def test_malformed_is_unknown_never_ok(self):
         for bad in (None, [], "x", {}, {"status": "fine", "rateLimitType": "hourly", "utilization": 101, "resetsAt": -1},
@@ -42,6 +43,38 @@ class TestClaudeQuotaReadonly(unittest.TestCase):
             with self.subTest(bad=bad):
                 u = usage(bad)
                 self.assertEqual((u["five_hour"], u["seven_day"]), ("UNKNOWN", "UNKNOWN"))
+
+    def test_non_finite_and_absurd_numbers_are_unknown_not_a_crash(self):
+        """Observed defect: Python's json accepts Infinity/NaN and int(inf) raised OverflowError."""
+        for text in ('{"status": "allowed", "resetsAt": Infinity, "utilization": 5}',
+                     '{"status": "allowed", "resetsAt": 1e400, "utilization": NaN}',
+                     '{"status": "allowed", "resetsAt": -Infinity, "utilization": Infinity}',
+                     '{"resetsAt": 99999999999999999999}'):
+            with self.subTest(text=text):
+                r = rate(json.loads(text))
+                self.assertEqual(r["resets_at_epoch"], "UNKNOWN")
+                if "NaN" in text or "utilization\": Infinity" in text:
+                    self.assertEqual(r["used_percent"], "UNKNOWN")
+        u = usage(json.loads('{"rate_limits": {"five_hour": {"utilization": 5, "resets_at": "9999999999999999-01-01"}, "seven_day": {"utilization": Infinity}}}'))
+        self.assertEqual(u["five_hour"]["resets_at_epoch"], "UNKNOWN")
+        self.assertEqual(u["seven_day"], "UNKNOWN")
+
+    def test_stale_window_needs_a_clock_and_conflicting_status_is_flagged(self):
+        self.assertEqual(rate(INFO)["stale"], "UNKNOWN")  # no clock supplied
+        self.assertIs(rate(INFO, now_epoch=1790000001)["stale"], True)   # reset time already passed
+        self.assertIs(rate(INFO, now_epoch=1789999999)["stale"], False)
+        self.assertIs(rate({**INFO, "status": "rejected", "utilization": 10})["conflict"], True)
+        self.assertIs(rate({**INFO, "status": "allowed", "utilization": 100})["conflict"], True)
+        self.assertIs(rate({**INFO, "status": "rejected", "utilization": 100})["conflict"], False)
+        self.assertIs(rate({**INFO, "status": "allowed_warning", "utilization": 99})["conflict"], False)
+        self.assertEqual(rate({"status": "allowed"})["conflict"], "UNKNOWN")  # partial data: not judged
+        self.assertIs(usage(USAGE, now_epoch=2000000000)["five_hour"]["stale"], True)
+
+    def test_partial_and_unknown_schema_keep_only_what_is_safe(self):
+        r = rate({"status": "allowed", "someNewField": {"secret": "x"}, "rateLimitType": "five_hour"})
+        self.assertEqual((r["status"], r["limit_type"], r["used_percent"]), ("allowed", "five_hour", "UNKNOWN"))
+        self.assertNotIn("someNewField", json.dumps(r))
+        self.assertEqual(usage({"rate_limits": {"five_hour": {"utilization": 5}}})["five_hour"]["resets_at_epoch"], "UNKNOWN")
 
 
 if __name__ == "__main__":

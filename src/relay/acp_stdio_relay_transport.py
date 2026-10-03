@@ -263,10 +263,16 @@ class AcpStdioStaticTransport:
         stdout, stdin = self._streams
         auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
         if self._route_admission is not None:
-            # The adapter pushes its identity right after `initialize`; wait for it (bounded), then decide
-            # before `session/new` starts the Claude CLI. A late or missing push is refused (fail closed).
-            if not self.auth_status_evidence:
+            # The adapter pushes its identity right after `initialize`; wait for it (bounded) and drain what
+            # follows immediately, then decide before `session/new` starts the Claude CLI. A late or missing
+            # push is refused (fail closed). Any failure here must not leave the adapter child running.
+            try:
                 self._run(_acp_await_auth_status(stdout, self._route_wait, self.auth_status_evidence))
+            except BaseException:
+                self._run(self._teardown())
+                self._dispose_loop()
+                self._state = "closed"
+                raise
             self._admit()
         try:
             session_id = self._run(_acp_new_session(

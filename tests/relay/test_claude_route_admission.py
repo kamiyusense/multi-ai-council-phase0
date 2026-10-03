@@ -48,7 +48,7 @@ def profile():
 class FakeAgent:
     """Programmable fake ACP agent; logs the methods it receives and its pid."""
 
-    def __init__(self, after_init=(), before_session_reply=(), after_session=(), in_prompt=(), session_error=False):
+    def __init__(self, after_init=(), before_session_reply=(), after_session=(), in_prompt=(), session_error=False, raw_after_init=(), drip_after_init=0.0):
         self.dir = tempfile.mkdtemp()
         self.log, self.pidfile = os.path.join(self.dir, "methods.log"), os.path.join(self.dir, "pid")
         code = (
@@ -64,6 +64,11 @@ class FakeAgent:
             "    if m == 'initialize':\n"
             "        send({'jsonrpc': '2.0', 'id': r['id'], 'result': {'protocolVersion': 1}})\n"
             f"        [send(f) for f in {list(after_init)!r}]\n"
+            f"        [(sys.stdout.write(x + '\\n'), sys.stdout.flush()) for x in {list(raw_after_init)!r}]\n"
+            f"        if {float(drip_after_init)!r}:\n"
+            "            import time\n"
+            "            for _ in range(12):\n"
+            f"                time.sleep({float(drip_after_init)!r}); send({{'jsonrpc': '2.0', 'method': 'unrelated/notice', 'params': {{}}}})\n"
             "    elif m == 'session/new':\n"
             f"        [send(f) for f in {list(before_session_reply)!r}]\n"
             f"        if {session_error!r}:\n"
@@ -198,6 +203,80 @@ class TestAdmissionBeforeAnyPrompt(unittest.TestCase):
             self.assertNotIn(secret, blob)
 
 
+class TestPreSessionDrainHardening(unittest.TestCase):
+    """Independent review of PR #289: what is decided *before* session/new must not depend on arrival luck."""
+
+    def test_conflicting_pushes_that_follow_immediately_are_seen_before_session_new(self):
+        agent = FakeAgent(after_init=[push(SUB), push(API_KEY)])
+        t, res = dispatch(agent)
+        self.assertEqual((res.state, res.prompt_attempts), (RelayState.BLOCKED, 0))
+        self.assertEqual(agent.methods(), ["initialize"])  # no session/new: the second push was drained first
+        self.assertIn("ROUTE_API_KEY_ROUTE_VIOLATION", res.error)
+        self.assertFalse(agent.alive())
+
+    def test_duplicate_subscription_pushes_are_admitted(self):
+        t, res = dispatch(FakeAgent(after_init=[push(SUB), push(SUB)]))
+        self.assertEqual(res.state, RelayState.SIMULATED, res.error)
+
+    def test_malformed_frame_while_waiting_fails_closed_and_stops_the_child(self):
+        for raw in ("not json", json.dumps({"jsonrpc": "2.0", "id": 99, "result": {}}), json.dumps([1, 2])):
+            with self.subTest(raw=raw):
+                agent = FakeAgent(raw_after_init=[raw])
+                t, res = dispatch(agent)
+                self.assertEqual((res.state, res.prompt_attempts), (RelayState.UNKNOWN, 0))
+                self.assertEqual(agent.methods(), ["initialize"])
+                self.assertFalse(agent.alive())
+
+    def test_unrelated_notifications_never_pass_as_subscription_and_the_wait_has_one_deadline(self):
+        agent = FakeAgent(drip_after_init=0.2)
+        t, res = dispatch(agent, wait=0.6)
+        self.assertEqual((res.state, res.prompt_attempts), (RelayState.BLOCKED, 0))
+        self.assertIn("NO_AUTH_STATUS_OBSERVED", res.error)
+        self.assertFalse(agent.alive())
+
+    def test_wait_helper_has_one_overall_deadline_not_one_per_frame(self):
+        async def go():
+            reader = asyncio.StreamReader()
+
+            async def drip():
+                for _ in range(12):
+                    await asyncio.sleep(0.2)
+                    reader.feed_data(b'{"jsonrpc": "2.0", "method": "unrelated/notice"}\n')
+
+            task = asyncio.ensure_future(drip())
+            sink = []
+            started = time.monotonic()
+            await _acp_await_auth_status(reader, 0.6, sink)
+            elapsed = time.monotonic() - started
+            task.cancel()
+            return sink, elapsed
+
+        sink, elapsed = asyncio.run(go())
+        self.assertEqual(sink, [])
+        self.assertLess(elapsed, 1.2)  # per-frame timeouts would have waited ~2.4s for the 12 frames
+
+    def test_malformed_identity_push_is_unknown_and_refused(self):
+        bad = [{"jsonrpc": "2.0", "method": AUTH_STATUS_UPDATE_METHOD, "params": {"authStatus": "account"}},
+               {"jsonrpc": "2.0", "method": AUTH_STATUS_UPDATE_METHOD}]
+        for frame in bad:
+            with self.subTest(frame=frame):
+                agent = FakeAgent(after_init=[frame])
+                t, res = dispatch(agent)
+                self.assertEqual((res.state, res.prompt_attempts), (RelayState.BLOCKED, 0))
+                self.assertIn("ROUTE_UNKNOWN", res.error)
+
+    def test_mid_turn_violation_is_recorded_without_extra_generation_retry_or_fallback(self):
+        agent = FakeAgent(after_init=[push(SUB)], in_prompt=[push(API_KEY), push(EXTERNAL)])
+        t, res = dispatch(agent)
+        self.assertEqual(res.state, RelayState.SIMULATED)
+        self.assertEqual(agent.methods().count("session/prompt"), 1)
+        self.assertEqual(agent.methods().count("initialize"), 1)
+        self.assertEqual((t.spawn_count, t.prompt_count, res.prompt_attempts), (1, 1, 1))
+        self.assertEqual([e["auth_state"] for e in t.auth_status_evidence],
+                         ["CLAUDE_SUBSCRIPTION_ACCOUNT", "API_KEY_ROUTE_VIOLATION", "EXTERNAL_ROUTE_VIOLATION"])
+        self.assertNotIn("synthetic@example.invalid", json.dumps(t.auth_status_evidence) + repr(res))
+
+
 class TestSessionNewFailureStopsTheChild(unittest.TestCase):
     """M10 (observed): when session/new failed, the lifecycle had no session id to close and the adapter child kept running."""
 
@@ -230,6 +309,14 @@ class TestM7ProviderScope(unittest.TestCase):
                 t, res = self.run_one(provider_id, prof, FakeAgent())
                 self.assertEqual((res.state, res.prompt_attempts, res.simulated, t.spawn_count), (RelayState.SIMULATED, 1, True, 1))
                 self.assertEqual(t.auth_status_evidence, [])
+
+    def test_a_claude_identity_push_before_the_prompt_is_ignored_and_never_recorded_for_other_providers(self):
+        for provider_id, prof in self.profiles():
+            if provider_id == "anthropic":
+                continue
+            with self.subTest(provider=provider_id):
+                t, res = self.run_one(provider_id, prof, FakeAgent(after_init=[push(SUB)]))
+                self.assertEqual(t.auth_status_evidence, [])  # skipped like any unknown notification, never evidence
 
     def test_the_claude_identity_push_is_not_accepted_for_other_providers(self):
         for provider_id, prof in self.profiles():

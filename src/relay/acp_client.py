@@ -252,20 +252,34 @@ async def _acp_read_terminal_response(
     return result
 
 
+_AUTH_SETTLE_SECONDS = 0.25
+
+
 async def _acp_await_auth_status(
-    stdout: asyncio.StreamReader, timeout: float, auth_sink: list[dict[str, Any]]
+    stdout: asyncio.StreamReader,
+    timeout: float,
+    auth_sink: list[dict[str, Any]],
+    settle_seconds: float = _AUTH_SETTLE_SECONDS,
 ) -> None:
-    """Wait (bounded) until the official adapter's first ``_auth/status_update`` is in ``auth_sink``.
+    """Wait (bounded) for the official adapter's identity push(es) and collect them in ``auth_sink``.
 
     Used between ``initialize`` and ``session/new``: the adapter pushes its identity right after the
-    ``initialize`` response (async CLI probe). Returns without raising on timeout (the caller's policy then
-    sees no observation and refuses); other notifications are skipped (bounded); any response/request frame
-    here is unexpected and fails closed.
+    ``initialize`` response (async CLI probe). One overall ``timeout`` deadline covers the wait for the first
+    push (timeout returns without raising: the caller's policy then sees no observation and refuses). After the
+    first push, frames that follow immediately are drained for a short quiet window (``settle_seconds``) so a
+    conflicting second push is judged **before** ``session/new``. Other notifications are skipped (bounded); any
+    response/request/malformed frame here is unexpected and fails closed.
     """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
     skipped = 0
-    while not auth_sink:
+    seen = bool(auth_sink)
+    while True:
+        wait = settle_seconds if seen else deadline - loop.time()
+        if wait <= 0:
+            return
         try:
-            line = await asyncio.wait_for(stdout.readline(), timeout=timeout)
+            line = await asyncio.wait_for(stdout.readline(), timeout=wait)
         except asyncio.TimeoutError:
             return
         if not line:
@@ -279,7 +293,8 @@ async def _acp_await_auth_status(
         evidence = _auth_status_evidence(frame)
         if evidence is not None:
             auth_sink.append(evidence)
-            return
+            seen = True
+            continue
         skipped += 1
         if skipped > _MAX_INTERLEAVED_NOTIFICATIONS:
             raise ValueError("Too many interleaved notifications while waiting for the auth status")
