@@ -1,0 +1,5 @@
+{
+  "target_sha": "64c42ac3279d88955e1cd554da3224984859778b",
+  "source_pr": "relay-m9-local-runner-v4",
+  "purpose": "relay validation: v4 runner branch synced with current main fd18a80, Linux + Windows (STATIC, fixture backends only)"
+}
