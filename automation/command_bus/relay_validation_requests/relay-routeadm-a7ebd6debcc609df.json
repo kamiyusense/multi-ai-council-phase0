@@ -1,0 +1,5 @@
+{
+  "target_sha": "a7ebd6debcc609dfe6b77fe1caf6dcdf01fd0bd5",
+  "source_pr": "relay-claude-route-admission-static-v1",
+  "purpose": "relay validation: PR 289 final pre-merge head synced with current main, exact-head + Linux + Windows + Claude workflow (STATIC, no LIVE)"
+}
