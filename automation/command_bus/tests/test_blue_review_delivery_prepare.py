@@ -315,5 +315,16 @@ class DeliveryTests(unittest.TestCase):
                 self.assert_closed(result)
 
 
+    def test_unverified_work_start_claim_does_not_replace_receipt(self):
+        value, event = submitted_snapshot()
+        event['work_execution_id'] = 'MOCK-unverified-run'
+        event['work_started_at'] = NOW.isoformat()
+        result = inspect(value, event)
+        self.assertEqual(result['status'], 'UNKNOWN')
+        self.assertEqual(result['worker_preflight'], 'VALIDATED')
+        self.assertEqual(result['origin_run_authentication'], 'NOT_WIRED')
+        self.assert_closed(result)
+
+
 if __name__ == '__main__':
     print(json.dumps(run_delivery_replay(), indent=2, sort_keys=True))
