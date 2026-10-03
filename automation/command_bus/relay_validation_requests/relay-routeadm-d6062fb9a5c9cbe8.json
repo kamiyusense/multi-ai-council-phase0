@@ -1,0 +1,5 @@
+{
+  "target_sha": "d6062fb9a5c9cbe8cf08a28a648f49488960946a",
+  "source_pr": "relay-claude-route-admission-static-v1",
+  "purpose": "relay validation: Claude route admission before session/new (STATIC, synthetic payloads, no LIVE), exact-head + Linux + Windows + Claude workflow"
+}
