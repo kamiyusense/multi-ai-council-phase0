@@ -22,6 +22,10 @@ class TestClaudeAuthReadonly(unittest.TestCase):
 
     def test_logged_out_and_unknown_never_pass(self):
         self.assertEqual(summarize({"loggedIn": False})["auth_state"], "NOT_AUTHENTICATED")
+        self.assertEqual(
+            summarize({"loggedIn": False, "apiProvider": "firstParty", "subscriptionType": "max"})["auth_state"],
+            "NOT_AUTHENTICATED",
+        )
         for bad in (None, [], {}, {"loggedIn": "yes"}, "not json", b"{", 3):
             with self.subTest(bad=bad):
                 self.assertEqual(summarize(bad)["auth_state"], "UNKNOWN")
