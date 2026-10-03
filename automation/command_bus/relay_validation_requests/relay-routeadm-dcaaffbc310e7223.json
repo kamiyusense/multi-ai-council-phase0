@@ -1,0 +1,5 @@
+{
+  "target_sha": "dcaaffbc310e72235e2162725f3580b91cea4b3c",
+  "source_pr": "relay-claude-route-admission-static-v1",
+  "purpose": "relay validation: PR 289 after independent re-inspection fixes (pre-session drain, child teardown, quota mapper), exact-head + Linux + Windows + Claude workflow (STATIC, no LIVE)"
+}
