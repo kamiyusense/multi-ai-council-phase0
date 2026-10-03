@@ -1,0 +1,5 @@
+{
+  "target_sha": "fd18a80f55c6be9ea56d50f818d58faf7e552d3d",
+  "source_pr": "relay-carrier-codex-compat-291",
+  "purpose": "relay validation: PR 291 post-merge, old-target backward compatibility, NOT_APPLICABLE path verification on a pre-270 target (STATIC only, no provider/model LIVE)"
+}
