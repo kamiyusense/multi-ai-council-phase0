@@ -3,7 +3,7 @@
 Status: **prepared, NOT executed.** It must be run by the human on their own Windows PC (where Codex is already logged in). The cloud environment never runs it, never reads `~/.codex`, never copies credentials.
 
 ## Run (user)
-1. Open the repository folder (branch `feature/relay-m9-local-runner-v3`) and update it: `git pull`.
+1. Open the repository folder (branch `feature/relay-m9-local-runner-v4`) and update it: `git pull`.
 2. Run `RUN_M9_CODEX_FIRST_LIVE.cmd` (PowerShell: `.\RUN_M9_CODEX_FIRST_LIVE.cmd`). Starting the file never starts LIVE by itself: the runner asks for a typed confirmation `APPROVE_FIRST_LIVE_POC <first 7 chars of HEAD>`.
 3. Paste the printed sanitized receipt (between `-----8<-----` and `----->8-----`) back to Claude.
 
@@ -46,3 +46,6 @@ the attempt and a second launch cannot perform another account probe.
 The runner also fetches current `origin/main` and refuses LIVE unless current main is
 an ancestor of the exact local/remote runner HEAD. A branch that has fallen behind main
 must be replaced by a freshly validated current-main successor before LIVE.
+
+## Branch history
+This branch (`feature/relay-m9-local-runner-v4`) is a plain merge of the Reviewer's current-main successor #263 (`feature/relay-m9-local-runner-v3`, itself a port of #255) into main `28938169b825fb199a4a54a710c5db32cb06f838`, plus the one-line branch-name constant required by the runner's own current-main guard. #263's base was 18 commits behind main, so its runner would have refused LIVE (`CURRENT_MAIN`); this branch contains current main.
