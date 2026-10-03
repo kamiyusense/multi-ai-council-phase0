@@ -64,8 +64,9 @@ class ProofTests(unittest.TestCase):
         self.assertNotIn(value['target_pr'], {217, 227})
         self.assertEqual(set(proof.ZERO.values()), {0})
         self.assertEqual(value['limits']['review_post'], 1)
+        expiry = datetime.fromisoformat(value['approval_expires_at'].replace('Z', '+00:00'))
         with self.assertRaises(ValueError):
-            proof.load_authorization(root / proof.AUTHORIZATION, NOW + timedelta(days=1))
+            proof.load_authorization(root / proof.AUTHORIZATION, expiry + timedelta(seconds=1))
 
     def test_context_negative_events_refs_actor_attempt_and_id(self):
         a = authorization()
