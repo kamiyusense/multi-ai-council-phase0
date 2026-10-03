@@ -23,6 +23,13 @@ from .github_readonly import ROOT, GitHubGetReader, _NoRedirect, content_at, rea
 WORKFLOW = '.github/workflows/blue-work-wake-proof.yml'
 JOB = 'one-shot-readonly-wake-proof'
 AUTHORIZATION = 'docs/BLUE_BWJ4_PROOF_AUTHORIZATION.json'
+CONSUMED_PROOF = {
+    'proof_id': 'blue-bwj4-20261002T212217Z-transport-proof-01',
+    'proof_generation': 1, 'run_id': 37147398998, 'job_id': 111274071729,
+    'head_sha': '5faf37def13dc6678e0f8cba7396f06183d2c048',
+    'workflow_blob': '16c9564b4b9c612fbf8a84cbb039d00bc0c08cfb',
+    'run_attempt': 1, 'conclusion': 'failure', 'activation_consumed': True,
+}
 PRINCIPAL = {'id': 41898282, 'login': 'github-actions[bot]', 'type': 'Bot'}
 ZERO = {'provider_create': 0, 'provider_get': 0, 'provider_model_execution': 0,
         'jules_submit': 0, 'jules_get': 0, 'claim_reservation': 0,
@@ -89,12 +96,68 @@ def check_run(reader, ctx: dict, authorization: dict) -> int:
     # Run history is durable replay protection even after artifacts expire. A
     # prior blocked/cancelled/ambiguous run consumes this workflow activation.
     runs = read_all(reader, ROOT + '/actions/workflows/blue-work-wake-proof.yml/runs?per_page=100', array_key='workflow_runs')
-    required(len(runs) == 1 and runs[0].get('id') == ctx['run_id'] and runs[0].get('run_attempt') == 1, 'one run budget already consumed')
+    check_activation_history(reader, runs, ctx, authorization)
     jobs = read_all(reader, ROOT + f"/actions/runs/{ctx['run_id']}/jobs?per_page=100", array_key='jobs')
     selected = [j for j in jobs if j.get('name') == JOB]
     required(len(selected) == 1 and selected[0].get('head_sha') == ctx['workflow_commit']
              and selected[0].get('run_attempt') == 1 and selected[0].get('status') == 'in_progress', 'exact running proof job')
     return selected[0]['id']
+
+
+def check_activation_history(reader, runs: list, ctx: dict, authorization: dict) -> None:
+    """Only a separately approved generation-2 proof can retain this exact FAIL.
+
+    Default generation 1 keeps the original one-run fence. This is not a
+    retry switch: unknown, cancelled, later or missing runs always STOP.
+    """
+    generation = authorization.get('proof_generation', 1)
+    required(type(generation) is int and generation in (1, 2), 'proof generation')
+    if generation == 1:
+        required('prior_terminal_runs' not in authorization and len(runs) == 1
+                 and runs[0].get('id') == ctx['run_id'] and runs[0].get('run_attempt') == 1,
+                 'one run budget already consumed')
+        return
+    required(authorization.get('approved') is True
+             and json.dumps(authorization.get('prior_terminal_runs'), sort_keys=True) == json.dumps([CONSUMED_PROOF], sort_keys=True)
+             and isinstance(authorization.get('proof_id'), str)
+             and re.fullmatch(r'blue-bwj4-[0-9]{8}T[0-9]{6}Z-transport-proof-01', authorization['proof_id']) is not None
+             and authorization.get('proof_id') != CONSUMED_PROOF['proof_id']
+             and ctx['run_id'] != CONSUMED_PROOF['run_id'], 'separate follow-up approval/identity')
+    required(len(runs) == 2 and {r.get('id') for r in runs} == {ctx['run_id'], CONSUMED_PROOF['run_id']}
+             and all(r.get('run_attempt') == 1 for r in runs), 'complete exact two-generation history')
+    old = reader.get(ROOT + f"/actions/runs/{CONSUMED_PROOF['run_id']}").data
+    required(old.get('id') == CONSUMED_PROOF['run_id'] and old.get('head_sha') == CONSUMED_PROOF['head_sha']
+             and old.get('run_attempt') == 1 and old.get('path') == WORKFLOW
+             and old.get('status') == 'completed' and old.get('conclusion') == 'failure'
+             and old.get('event') == 'workflow_dispatch' and old.get('head_branch') == 'main'
+             and old.get('repository', {}).get('full_name') == EXPECTED_REPOSITORY,
+             'old failure origin/terminal drift')
+    for field in ('actor', 'triggering_actor'):
+        required(old.get(field, {}).get('id') == authorization['approved_actor_id']
+                 and old.get(field, {}).get('login') == authorization['approved_actor_login'], 'old run actor drift')
+    old_auth = json.loads(content_at(reader, AUTHORIZATION, CONSUMED_PROOF['head_sha']), object_pairs_hook=_pairs)
+    required(old_auth.get('proof_id') == CONSUMED_PROOF['proof_id']
+             and blob(content_at(reader, WORKFLOW, CONSUMED_PROOF['head_sha']).encode()) == CONSUMED_PROOF['workflow_blob'],
+             'old proof/code binding')
+    jobs = read_all(reader, ROOT + f"/actions/runs/{CONSUMED_PROOF['run_id']}/jobs?per_page=100", array_key='jobs')
+    required(len(jobs) == 1, 'old job collection')
+    job = jobs[0]
+    required(job.get('id') == CONSUMED_PROOF['job_id'] and job.get('run_id') == CONSUMED_PROOF['run_id']
+             and job.get('run_attempt') == 1 and job.get('head_sha') == CONSUMED_PROOF['head_sha']
+             and job.get('name') == JOB and job.get('status') == 'completed'
+             and job.get('conclusion') == 'failure', 'old job binding')
+    expected = {
+        'Fresh gates and secret-free ATTEMPTING record': 'failure',
+        'Make attempt durable BEFORE the single review POST': 'skipped',
+        'Verify artifact and final reread fence, POST at most once, GET readback': 'skipped',
+    }
+    steps = job.get('steps', [])
+    for name, conclusion in expected.items():
+        selected = [s for s in steps if s.get('name') == name]
+        required(len(selected) == 1 and selected[0].get('status') == 'completed'
+                 and selected[0].get('conclusion') == conclusion, 'old pre-POST failure evidence')
+    artifacts = read_all(reader, ROOT + f"/actions/runs/{CONSUMED_PROOF['run_id']}/artifacts?per_page=100", array_key='artifacts')
+    required(not artifacts, 'unexpected old artifact; STOP')
 
 
 def collect(reader, ctx: dict, authorization: dict, now: datetime) -> dict:
@@ -114,6 +177,8 @@ def collect(reader, ctx: dict, authorization: dict, now: datetime) -> dict:
     required(lane.worker_state['active_generation'] == authorization['worker_generation'], 'worker generation drift')
     identities, terminals = _records(lane.reviews, lane.comments, True)
     required(authorization['proof_id'] not in identities | terminals, 'existing Blue command/receipt')
+    if authorization.get('proof_generation', 1) == 2:
+        required(CONSUMED_PROOF['proof_id'] not in identities | terminals, 'old proof record drift')
     # A same-ID record on another lane must not be repurposed as this proof.
     open_prs = read_all(reader, ROOT + '/pulls?state=open&per_page=100')
     for color in LANES:
@@ -169,6 +234,8 @@ def create_attempt(reader, authorization: dict, ctx: dict, now: datetime, output
                    job_id=job_id, snapshot=second, command=command, review_body=body,
                    review_body_sha256=hashlib.sha256(body.encode()).hexdigest(), approved_principal=PRINCIPAL,
                    created_at=now.isoformat(), retry=0, fallback='disabled', limits=authorization['limits'])
+    if authorization.get('proof_generation', 1) == 2:
+        attempt.update(proof_generation=2, prior_terminal_runs=authorization['prior_terminal_runs'])
     output.mkdir()
     with (output / 'attempt.json').open('x') as handle:
         json.dump(attempt, handle, ensure_ascii=False, indent=2)
@@ -227,6 +294,9 @@ def submit_once(reader, poster, authorization: dict, ctx: dict, output: Path,
                 artifact_id: str, digest: str, now: datetime) -> dict:
     attempt = json.loads((output / 'attempt.json').read_text(), object_pairs_hook=_pairs)
     required(all(attempt.get(k) == v for k, v in ctx.items()) and attempt.get('proof_id') == authorization['proof_id'], 'attempt/run binding')
+    if authorization.get('proof_generation', 1) == 2:
+        required(attempt.get('proof_generation') == 2
+                 and attempt.get('prior_terminal_runs') == authorization['prior_terminal_runs'], 'attempt generation/history binding')
     required(attempt.get('status') == 'ATTEMPTING' and attempt.get('retry') == 0 and attempt.get('fallback') == 'disabled', 'attempt policy')
     required(now < _time(attempt['command']['expires_at']), 'command expired')
     required(attempt.get('review_body_sha256') == hashlib.sha256(attempt['review_body'].encode()).hexdigest(), 'body hash')

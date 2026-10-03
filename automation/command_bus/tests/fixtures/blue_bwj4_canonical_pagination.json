@@ -1,0 +1,7 @@
+{
+  "first_url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/pulls?state=open&per_page=100",
+  "next_url": "https://api.github.com/repositories/1378815294/pulls?state=open&per_page=100&page=2",
+  "link": "<https://api.github.com/repositories/1378815294/pulls?state=open&per_page=100&page=2>; rel=\"next\"",
+  "observed_failure_run": 37147398998,
+  "note": "Synthetic Link shape matching diagnosed failure; actual raw Link bytes were not retained by the failed run."
+}
