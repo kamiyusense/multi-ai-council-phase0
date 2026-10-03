@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "SIGNAL_STEP7_LATE_OUTPUT_READBACK",
+  "observed_at": "2026-10-03T04:31:00Z",
+  "proof_status": "UNKNOWN",
+  "proof_code": "PROVIDER_NOT_ACTIVE",
+  "proof_promotion_allowed": false,
+  "session_id": "11944164406087664763",
+  "publish_run_session_id_used": "5943440322658150300",
+  "publish_run_session_id_note": "The publish run 37096372533 was dispatched with the OLD proof 2 session id; the new session was not read by the publish half.",
+  "output_pr": 271,
+  "output_pr_state": "open",
+  "output_pr_merged": false,
+  "base_branch": "jules-work/relay-dev-loop-134-signal-active-proof-3",
+  "base_sha": "8ee70dc735596eb2c0537bfd0292c92cb27c7b33",
+  "head_branch": "jules-11944164406087664763-c53190a6",
+  "head_sha": "749a0fb6771972c360f487482b083fa9df687c8b",
+  "head_tree": "20170a55ac07cf4ff222ca213905415926847697",
+  "changed_files": [
+    "docs/evidence/signal-active-proof-3/PROOF.md"
+  ],
+  "changed_file_content": "signal active proof 3\n",
+  "output_contract": "PASS",
+  "additional_jules_get_used": 0,
+  "live_reexecution_used": 0,
+  "note": "GitHub-only late output readback. This record does not alter the authoritative UNKNOWN terminal receipt and cannot promote Step 7 to COMPLETE."
+}
