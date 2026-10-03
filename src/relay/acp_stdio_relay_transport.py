@@ -239,7 +239,7 @@ class AcpStdioStaticTransport:
         if self._state != "initialized" or self._streams is None:
             raise ValueError("transport is not initialized")
         stdout, stdin = self._streams
-        session_id = self._run(_acp_new_session(stdout, stdin, cwd, self._startup_timeout))
+        session_id = self._run(_acp_new_session(stdout, stdin, cwd, self._startup_timeout, self.profile.session_meta))
         self._session_id, self._state = session_id, "open"
         return session_id
 

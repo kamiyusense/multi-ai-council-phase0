@@ -15,7 +15,7 @@ Official `@agentclientprotocol/claude-agent-acp` 0.84.0 (pin) and 0.85.1 (latest
 | `initialize` | succeeds with no provider: protocolVersion 1, `authMethods: []`, session capabilities incl. `close` |
 | side effect of `initialize` | the adapter itself runs `<cli> auth status --json` in the background (`dist/acp-agent.js` `probeCliAuthStatus`). With a real CLI this is a **read of the real Claude login state**, so a real CLI must never be present in STATIC runs |
 | `session/new` | the SDK spawns the CLI (`--output-format stream-json ... --permission-mode default --permission-prompt-tool stdio`); with the tripwire, `session/new` returns an error |
-| permission primitive | official: `--permission-mode default`, `--permission-prompt-tool stdio`; no `--dangerously-skip-permissions` flag is passed |
+| permission primitive | official: `--permission-mode default`, `--permission-prompt-tool stdio`. **Finding (M10, found by GitHub Linux CI as a non-root user):** without `session/new` `_meta.claudeCode.options.allowDangerouslySkipPermissions=false` the adapter also passes `--allow-dangerously-skip-permissions` to the CLI (bypass becomes *allowed*, mode stays `default`). The adapter enables it unless root (`ALLOW_BYPASS`). Relay's transport did not send the profile's `session_meta`, so the Phase 0 no-bypass policy never reached the adapter. Fixed: `AcpStdioStaticTransport.open_session` now sends `profile.session_meta` (Claude only; Codex/Antigravity send no `_meta`); with it the flag is absent. Canary test pins the upstream default (`IS_SANDBOX=1` reproduces the non-root behavior as root) |
 
 Consequence: a full Relay lifecycle (`initialize -> session/new -> prompt`) through the official Claude adapter cannot be shown without a real or genuine
 CLI, i.e. without a provider. `OfficialAdapterLaunch` therefore keeps failing closed for `anthropic` (no verified backend seam). No fake is dressed up as official.
@@ -49,6 +49,7 @@ The TCK was not copied into the repo and no duplicate local tests were written f
 ## M7 / M8 / M10
 - M7: existing 3-provider mock lifecycle tests unchanged and green; the official-adapter path exists for Codex only (above explains why not Claude/Antigravity).
 - M8: Codex one-generation gate unchanged; Claude = existing Admission Gate (59 tests OK); Antigravity: no interception point, UNKNOWN.
+- M10 (static defect): session/new `_meta` (Claude no-bypass policy) now actually reaches the official adapter - see the M3 table. Regression: `TestSessionMetaReachesTheAdapter` + the boundary canary.
 - M10 (observed from the user's first run): startup stops now print Japanese install hints (Node via `winget`, Codex via `npm.cmd`, login by the user via `codex.cmd login`;
   PowerShell blocks `npm.ps1`). Message text only; no behavior change. The earlier reply-shape receipt fields (PR #270) remain the diagnostic for the `COMPLETED_UNEXPECTED_TEXT` result.
 

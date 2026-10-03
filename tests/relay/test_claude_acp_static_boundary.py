@@ -19,6 +19,7 @@ import time
 import unittest
 from pathlib import Path
 
+from providers.policy import claude_session_meta
 from relay.acp_client import _acp_initialize, _acp_new_session
 from relay.acp_stdio_transport import spawn_stdio_transport
 
@@ -57,8 +58,10 @@ class TestOfficialClaudeAdapterWithTripwireCli(unittest.TestCase):
             time.sleep(0.1)
         return self.calls()
 
-    def run_adapter(self, with_session):
+    def run_adapter(self, with_session, meta=None, bypass_possible=False):
         env = {"HOME": self.home, "CLAUDE_CODE_EXECUTABLE": str(TRIPWIRE), "RELAY_TRIPWIRE_LOG": self.log}
+        if bypass_possible:
+            env["IS_SANDBOX"] = "1"  # makes the adapter behave as for a non-root user (ALLOW_BYPASS), even as root
         out = {}
 
         async def go():
@@ -70,7 +73,7 @@ class TestOfficialClaudeAdapterWithTripwireCli(unittest.TestCase):
                 out["after_init"] = await asyncio.get_running_loop().run_in_executor(None, self.wait_for_calls, 1)
                 if with_session:
                     try:
-                        out["session"] = await _acp_new_session(stdout, stdin, self.home, 30)
+                        out["session"] = await _acp_new_session(stdout, stdin, self.home, 30, meta)
                     except RuntimeError as exc:
                         out["session_error"] = str(exc)
                     out["after_session"] = await asyncio.get_running_loop().run_in_executor(None, self.wait_for_calls, 2)
@@ -94,18 +97,24 @@ class TestOfficialClaudeAdapterWithTripwireCli(unittest.TestCase):
         self.assertEqual(out["after_init"], [["auth", "status", "--json"]])
 
     def test_session_new_needs_the_cli_so_the_lifecycle_stops_at_the_live_boundary(self):
-        out = self.run_adapter(with_session=True)
+        out = self.run_adapter(with_session=True, meta=claude_session_meta(), bypass_possible=True)
         self.assertNotIn("session", out)
         self.assertIn("session/new returned error", out["session_error"])
         probe, cli = out["after_session"][0], out["after_session"][1]
         self.assertEqual(probe, ["auth", "status", "--json"])
         self.assertIn("stream-json", cli)  # the SDK's CLI process, not a model call: the tripwire exited
-        # permission primitive stays the official one; no bypass flag is passed to the CLI
+        # permission primitive stays the official one; the Phase 0 meta removes any bypass flag
         self.assertEqual(cli[cli.index("--permission-mode") + 1], "default")
         self.assertEqual(cli[cli.index("--permission-prompt-tool") + 1], "stdio")
         self.assertFalse([a for a in cli if "dangerously" in a.lower()])
         self.assertEqual(len(self.calls()), 2)  # nothing else was executed
 
+    def test_canary_without_the_meta_a_non_root_adapter_allows_bypass(self):
+        """Why the profile's session_meta must be sent: the adapter default permits bypass mode."""
+        out = self.run_adapter(with_session=True, meta=None, bypass_possible=True)
+        cli = out["after_session"][1]
+        self.assertIn("--allow-dangerously-skip-permissions", cli)
+        self.assertEqual(cli[cli.index("--permission-mode") + 1], "default")  # allowed, not selected
 
 if __name__ == "__main__":
     unittest.main()

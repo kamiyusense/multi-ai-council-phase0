@@ -172,7 +172,7 @@ class TestContractAndGuards(Base):
 
     def test_fixed_prompt_and_no_auto_live_entry_point(self):
         self.assertEqual(m.PROMPT, "M9_OK とだけ返答してください。ファイルを読まない、ファイルを書かない、commandを実行しない、toolを使用しない。")
-        script = (REPO / "RUN_M9_CODEX_FIRST_LIVE.cmd").read_text()
+        script = (REPO / "RUN_M9_CODEX_FIRST_LIVE.cmd").read_text(encoding="utf-8")
         self.assertIn("relay.m9_codex_first_live", script)
         self.assertNotIn("APPROVE_FIRST_LIVE_POC", script)  # the approval phrase is typed by the human, never scripted
 

@@ -262,6 +262,44 @@ class TestLiveLaunchRefused(unittest.TestCase):
         self.assertIs(meta["claudeCode"]["options"]["allowDangerouslySkipPermissions"], False)
 
 
+class TestSessionMetaReachesTheAdapter(unittest.TestCase):
+    """M10: the profile's permission policy must be sent in ``session/new`` ``_meta``.
+
+    Found by the Claude CLI-argv boundary test: without ``_meta`` the official claude-agent-acp
+    passes ``--allow-dangerously-skip-permissions`` to the CLI for any non-root user.
+    """
+
+    def new_session_params(self, provider_id):
+        out = os.path.join(tempfile.mkdtemp(), "session_new.json")
+        recorder = (
+            "import sys, json\n"
+            "def send(o):\n"
+            "    sys.stdout.write(json.dumps(o) + '\\n'); sys.stdout.flush()\n"
+            "r = json.loads(sys.stdin.readline())\n"
+            "send({'jsonrpc': '2.0', 'id': r['id'], 'result': {'protocolVersion': 1}})\n"
+            "r = json.loads(sys.stdin.readline())\n"
+            f"open({out!r}, 'w').write(json.dumps(r['params']))\n"
+            "send({'jsonrpc': '2.0', 'id': r['id'], 'result': {'sessionId': 's1'}})\n"
+            "sys.stdin.readline()\n"
+        )
+        t = AcpStdioStaticTransport(PROFILES[provider_id](), (sys.executable, "-c", recorder))
+        t.initialize(provider_id)
+        t.open_session(provider_id, cwd=tempfile.gettempdir())
+        t.close(provider_id, "s1")
+        with open(out, encoding="utf-8") as fh:
+            import json
+            return json.load(fh)
+
+    def test_claude_session_new_carries_no_bypass_meta(self):
+        params = self.new_session_params("anthropic")
+        self.assertIs(params["_meta"]["claudeCode"]["options"]["allowDangerouslySkipPermissions"], False)
+
+    def test_other_providers_send_no_meta(self):
+        for pid in ("openai", "google"):
+            with self.subTest(pid):
+                self.assertNotIn("_meta", self.new_session_params(pid))
+
+
 if __name__ == "__main__":
     unittest.main()
 
