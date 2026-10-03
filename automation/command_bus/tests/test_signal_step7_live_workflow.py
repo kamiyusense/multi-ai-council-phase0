@@ -144,7 +144,7 @@ class CarrierFilesTests(unittest.TestCase):
         self.assertEqual((plan["request"]["retry"], plan["request"]["fallback"]), (0, "disabled"))
         self.assertFalse(plan["request"]["merge_allowed"])
         self.assertFalse(plan["request"]["force_push_allowed"])
-        self.assertIn("signal active proof 3", plan["request"]["prompt"])
+        self.assertIn("signal active proof 4", plan["request"]["prompt"])
         self.assertNotIn(live.LANE_ID, (plan["request"]["command_id"], plan["durable_context"]["correlation_id"]))
 
     def test_command_file_names_match_the_carrier_path_filters(self):
