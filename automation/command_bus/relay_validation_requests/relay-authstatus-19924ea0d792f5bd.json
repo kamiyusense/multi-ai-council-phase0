@@ -1,0 +1,5 @@
+{
+  "target_sha": "19924ea0d792f5bde3ef1f67aaea8320356347a9",
+  "source_pr": "284",
+  "purpose": "relay validation after provider-scoped Claude auth-status fix and Codex preflight test correction; exact-head + Linux + Windows + Claude STATIC/TCK; no LIVE"
+}
