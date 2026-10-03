@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "SIGNAL_STEP7_LATE_OUTPUT_READBACK",
+  "observed_at": "2026-10-03T05:10:00Z",
+  "proof_status": "UNKNOWN",
+  "proof_code": "PROVIDER_NOT_ACTIVE",
+  "proof_promotion_allowed": false,
+  "session_id": "569271609782168660",
+  "publish_run_session_id_used": "569271609782168660",
+  "publish_run_session_id_note": "The publish run 37098873248 read the correct new session automatically, but Jules had already finished (state COMPLETED; output PR #275 created 05:01:44Z) before the publish run started at 05:08:47Z, so the active-state requirement failed.",
+  "output_pr": 275,
+  "output_pr_state": "open",
+  "output_pr_merged": false,
+  "base_branch": "jules-work/relay-dev-loop-135-signal-active-proof-4",
+  "base_sha": "ec0b750aa65879b1e02f37bf63271164f52bd71a",
+  "head_branch": "jules-work/relay-dev-loop-135-signal-active-proof-4-569271609782168660",
+  "head_sha": "a475640af6f0425f9b0be447d7e214b2c87c70b7",
+  "head_tree": "7c5648ae804b17617c0e10530d37fa42c32b0f62",
+  "changed_files": [
+    "docs/evidence/signal-active-proof-4/PROOF.md"
+  ],
+  "changed_file_content": "signal active proof 4\n",
+  "output_contract": "PASS",
+  "additional_jules_get_used": 0,
+  "live_reexecution_used": 0,
+  "note": "GitHub-only late output readback. This record does not alter the authoritative UNKNOWN terminal receipt and cannot promote Step 7 to COMPLETE."
+}
