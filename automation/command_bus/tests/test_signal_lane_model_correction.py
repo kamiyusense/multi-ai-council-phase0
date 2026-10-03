@@ -50,9 +50,9 @@ class LaneModelTests(unittest.TestCase):
         self.assertEqual(states["chatgpt-semi-auto"], "DURABLE")
         self.assertEqual([k for k, v in states.items() if v == "DURABLE"], ["chatgpt-semi-auto"])
 
-    def test_registry_gaps_match_the_real_v1_enum_and_production_is_untouched(self):
+    def test_work_worker_exists_now_and_production_is_untouched(self):
         from automation.command_bus import control_tower
-        self.assertNotIn("WORK", control_tower._WORKERS)
+        self.assertIn("WORK", control_tower._WORKERS)  # gap closed by the additive WORK/FROZEN support change
         self.assertEqual({e["loop_id"] for e in PROD["loops"]},
                          {"chatgpt-semi-auto", "claude-gemini", "claude-claude", "work-gemini"})
         self.assertEqual({e["worker_kind"] for e in PROD["loops"] if e["loop_id"] in ("claude-gemini", "work-gemini")}, {"GEMINI"})

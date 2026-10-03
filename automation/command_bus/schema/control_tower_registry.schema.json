@@ -58,6 +58,7 @@
               "JULES",
               "GEMINI",
               "CLAUDE",
+              "WORK",
               "OTHER"
             ]
           },
@@ -76,7 +77,8 @@
           "identity_state": {
             "enum": [
               "PLACEHOLDER",
-              "DURABLE"
+              "DURABLE",
+              "FROZEN"
             ]
           }
         }
