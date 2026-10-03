@@ -169,6 +169,8 @@ class AcpStdioStaticTransport:
         self.cancel_sent = 0
         self.close_requests = 0
         self.agent_capabilities: dict[str, Any] = {}
+        # Sanitized classifications of official ``_auth/status_update`` pushes (never the raw account data).
+        self.auth_status_evidence: list[dict[str, Any]] = []
         self._loop: asyncio.AbstractEventLoop | None = None
         self._cm: AbstractAsyncContextManager | None = None
         self._streams: tuple[asyncio.StreamReader, asyncio.StreamWriter] | None = None
@@ -196,7 +198,8 @@ class AcpStdioStaticTransport:
         self._cm = spawn_stdio_transport(*self.command, env=self._env, shutdown_timeout=_TEARDOWN_TIMEOUT_SECONDS)
         stdout, stdin, _process = await self._cm.__aenter__()
         self._streams = (stdout, stdin)
-        return await _acp_initialize(stdout, stdin, self._startup_timeout)
+        auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
+        return await _acp_initialize(stdout, stdin, self._startup_timeout, auth_sink)
 
     async def _teardown(self) -> None:
         cm, self._cm, self._streams = self._cm, None, None
@@ -239,7 +242,9 @@ class AcpStdioStaticTransport:
         if self._state != "initialized" or self._streams is None:
             raise ValueError("transport is not initialized")
         stdout, stdin = self._streams
-        session_id = self._run(_acp_new_session(stdout, stdin, cwd, self._startup_timeout, self.profile.session_meta))
+        auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
+        session_id = self._run(_acp_new_session(
+            stdout, stdin, cwd, self._startup_timeout, self.profile.session_meta, auth_sink))
         self._session_id, self._state = session_id, "open"
         return session_id
 
@@ -265,12 +270,14 @@ class AcpStdioStaticTransport:
         if self._live:
             # Real streaming: many small text deltas and metadata updates are normal; the whole
             # prompt (not each read) is bounded by timeout_seconds. Tool calls etc. still fail closed.
+            auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
             coro = _acp_prompt_text(
                 stdout, stdin, session_id, text, total, max_chunks=2000, max_ignored=2000,
-                ignorable=_IGNORABLE_SESSION_UPDATES | {"agent_thought_chunk"},
+                ignorable=_IGNORABLE_SESSION_UPDATES | {"agent_thought_chunk"}, auth_sink=auth_sink,
             )
         else:
-            coro = _acp_prompt_text(stdout, stdin, session_id, text, total)
+            auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
+            coro = _acp_prompt_text(stdout, stdin, session_id, text, total, auth_sink=auth_sink)
         result = self._run(asyncio.wait_for(coro, timeout=total))
         # Non end_turn / empty text raises -> lifecycle reports UNKNOWN, never success.
         return acp_mock_text_to_phase0_raw(result)

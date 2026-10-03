@@ -9,6 +9,7 @@ from typing import Any
 from providers.policy import ProviderPolicy
 
 from .acp_stdio_transport import spawn_stdio_transport
+from .claude_auth_readonly import AUTH_STATUS_UPDATE_METHOD, summarize_claude_auth_status_update
 
 
 class ACPClient:
@@ -180,11 +181,23 @@ _IGNORABLE_SESSION_UPDATES = frozenset({
 })
 
 
+def _auth_status_evidence(frame: dict[str, Any]) -> dict[str, Any] | None:
+    """Sanitized classification if ``frame`` is the official ``_auth/status_update`` notification, else None.
+
+    The raw ``authStatus`` (label, detail, account email/organization) is read here and dropped.
+    """
+    if frame.get("method") != AUTH_STATUS_UPDATE_METHOD or "id" in frame:
+        return None
+    params = frame.get("params")
+    return summarize_claude_auth_status_update(params.get("authStatus") if isinstance(params, dict) else None)
+
+
 async def _acp_read_terminal_response(
     stdout: asyncio.StreamReader,
     expected_id: int,
     timeout: float,
     method_name: str,
+    auth_sink: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Internal helper to read and validate a JSON-RPC terminal response.
 
@@ -220,6 +233,9 @@ async def _acp_read_terminal_response(
             skipped += 1
             if skipped > _MAX_INTERLEAVED_NOTIFICATIONS:
                 raise ValueError(f"ACP {method_name}: too many interleaved notifications")
+            evidence = _auth_status_evidence(response)
+            if evidence is not None and auth_sink is not None:
+                auth_sink.append(evidence)
             continue
         break
 
@@ -243,13 +259,14 @@ async def _acp_exchange(
     expected_id: int,
     timeout: float,
     method_name: str,
+    auth_sink: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Internal helper to execute a single JSON-RPC request and validate its response."""
     request_bytes = json.dumps(request).encode("utf-8") + b"\n"
     stdin.write(request_bytes)
     await stdin.drain()
 
-    return await _acp_read_terminal_response(stdout, expected_id, timeout, method_name)
+    return await _acp_read_terminal_response(stdout, expected_id, timeout, method_name, auth_sink)
 
 
 async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0, env: Mapping[str, str] | None = None) -> dict[str, Any]:
@@ -281,7 +298,9 @@ async def acp_initialize_wire(command: str, *args: str, timeout: float = 2.0, en
         return result
 
 
-async def _acp_initialize(stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, timeout: float) -> dict[str, Any]:
+async def _acp_initialize(
+    stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, timeout: float, auth_sink: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
     """Internal helper: ACP initialize round-trip (request id 0)."""
     init_request = {
         "jsonrpc": "2.0",
@@ -293,14 +312,15 @@ async def _acp_initialize(stdout: asyncio.StreamReader, stdin: asyncio.StreamWri
             "clientInfo": {"name": "relay", "version": "0.1.0"},
         },
     }
-    init_result = await _acp_exchange(stdout, stdin, init_request, 0, timeout, "initialize")
+    init_result = await _acp_exchange(stdout, stdin, init_request, 0, timeout, "initialize", auth_sink)
     if type(init_result.get("protocolVersion")) is not int or init_result["protocolVersion"] != 1:
         raise ValueError("ACP initialize response unsupported protocol version")
     return init_result
 
 
 async def _acp_new_session(
-    stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float, meta: dict[str, Any] | None = None
+    stdout: asyncio.StreamReader, stdin: asyncio.StreamWriter, cwd: str, timeout: float, meta: dict[str, Any] | None = None,
+    auth_sink: list[dict[str, Any]] | None = None,
 ) -> str:
     """Internal helper: ACP session/new round-trip (request id 1).
 
@@ -318,7 +338,7 @@ async def _acp_new_session(
     }
     if meta is not None:
         session_request["params"]["_meta"] = meta
-    session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new")
+    session_result = await _acp_exchange(stdout, stdin, session_request, 1, timeout, "session/new", auth_sink)
 
     session_id = session_result.get("sessionId")
     if not isinstance(session_id, str) or not session_id.strip():
@@ -371,6 +391,7 @@ async def _acp_prompt_text(
     max_chunks: int = 3,
     max_ignored: int = _MAX_INTERLEAVED_NOTIFICATIONS,
     ignorable: frozenset[str] = _IGNORABLE_SESSION_UPDATES,
+    auth_sink: list[dict[str, Any]] | None = None,
 ) -> dict[str, str]:
     """Internal helper: session/prompt (request id 2) -> text chunks (default 1..3) + stopReason."""
     prompt_request = {
@@ -428,6 +449,18 @@ async def _acp_prompt_text(
             # Notification
             if notification_count >= max_chunks:
                 raise ValueError(f"Maximum of {max_chunks} text updates exceeded")
+
+            if auth_sink is not None:
+                evidence = _auth_status_evidence(frame)
+                if evidence is not None:
+                    # Claude-only identity push (also sent mid-turn at prompt start):
+                    # classification only, no text. A missing sink means this extension
+                    # is not enabled for the current provider and therefore remains unknown.
+                    auth_sink.append(evidence)
+                    ignored += 1
+                    if ignored > max_ignored:
+                        raise ValueError("Too many ignorable session updates")
+                    continue
 
             if frame.get("method") != "session/update":
                 raise ValueError("ACP session/update notification method must be 'session/update'")

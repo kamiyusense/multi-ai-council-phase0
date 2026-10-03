@@ -14,11 +14,24 @@ from __future__ import annotations
 import json
 from typing import Any
 
-__all__ = ["READ_ONLY_COMMAND", "summarize_claude_auth_evidence"]
+__all__ = [
+    "AUTH_STATUS_UPDATE_METHOD", "READ_ONLY_COMMAND", "summarize_claude_auth_evidence", "summarize_claude_auth_status_update",
+]
 
 # The one read-only probe the official adapter itself runs (never executed by Relay code).
 READ_ONLY_COMMAND = ("auth", "status", "--json")
+# Official adapter -> client notification (``params: {authStatus: {kind, label, detail?, account?}}``).
+# The adapter has already applied its own precedence (3P/gateway > API key > subscription > none);
+# Relay only translates its ``kind`` and never recomputes the precedence.
+AUTH_STATUS_UPDATE_METHOD = "_auth/status_update"
 UNKNOWN = "UNKNOWN"
+_KIND_TO_STATE = {
+    "account": "CLAUDE_SUBSCRIPTION_ACCOUNT",
+    "api_key": "API_KEY_ROUTE_VIOLATION",
+    "gateway": "EXTERNAL_ROUTE_VIOLATION",
+    "external": "EXTERNAL_ROUTE_VIOLATION",
+    "none": "NOT_AUTHENTICATED",
+}
 
 
 def summarize_claude_auth_evidence(cli_status: Any) -> dict[str, Any]:
@@ -44,4 +57,20 @@ def summarize_claude_auth_evidence(cli_status: Any) -> dict[str, Any]:
     elif subscription:
         evidence["auth_state"] = "CLAUDE_SUBSCRIPTION_ACCOUNT"
         evidence["plan_type"] = subscription if isinstance(subscription, str) else UNKNOWN
+    return evidence
+
+
+def summarize_claude_auth_status_update(auth_status: Any) -> dict[str, Any]:
+    """Sanitized classification of an official ``_auth/status_update`` ``authStatus`` object.
+
+    Only ``kind`` is read. ``label``/``detail``/``account`` (plan, email, organization) are never copied,
+    so the evidence carries the classification only (plan stays UNKNOWN). Missing/unknown ``kind`` -> UNKNOWN.
+    """
+    evidence: dict[str, Any] = {
+        "auth_state": UNKNOWN, "plan_type": UNKNOWN, "quota": UNKNOWN, "side_effects": 0,
+        "source": "acp_auth_status_update",
+    }
+    kind = auth_status.get("kind") if isinstance(auth_status, dict) else None
+    if isinstance(kind, str) and kind in _KIND_TO_STATE:
+        evidence["auth_state"] = _KIND_TO_STATE[kind]
     return evidence
