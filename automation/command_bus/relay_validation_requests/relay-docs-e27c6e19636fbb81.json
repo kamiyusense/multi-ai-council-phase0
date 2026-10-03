@@ -1,0 +1,5 @@
+{
+  "target_sha": "e27c6e19636fbb811f227480c01965e2c1a16ac5",
+  "source_pr": "relay-docs-post-281",
+  "purpose": "relay validation: PR 283 docs-only head after literal newline fix, exact-head + Linux + Windows + Claude workflow (STATIC, no LIVE)"
+}
