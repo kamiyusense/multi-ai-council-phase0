@@ -19,6 +19,11 @@ from .blue_jules_result_event import EXPECTED_REPOSITORY
 from .blue_work_reconcile_prepare import _pairs
 
 ROOT = "https://api.github.com/repos/" + EXPECTED_REPOSITORY
+EXPECTED_REPOSITORY_ID = "1378815294"
+REPOSITORY_PATH_PREFIXES = (
+    "/repos/" + EXPECTED_REPOSITORY + "/",
+    "/repositories/" + EXPECTED_REPOSITORY_ID + "/",
+)
 
 
 @dataclass(frozen=True)
@@ -31,6 +36,13 @@ class Reader(Protocol):
     def get(self, url: str) -> ReadResponse: ...
 
 
+def _repository_suffix(path: str) -> str:
+    matches = [prefix for prefix in REPOSITORY_PATH_PREFIXES if path.startswith(prefix)]
+    if len(matches) != 1:
+        raise ValueError("GitHub read scope violation")
+    return path[len(matches[0]):]
+
+
 def checked_url(url: str) -> str:
     if not isinstance(url, str) or any(ord(c) < 32 or ord(c) == 127 for c in url):
         raise ValueError("URL contains control characters")
@@ -38,12 +50,14 @@ def checked_url(url: str) -> str:
     pairs = parse_qsl(value.query, keep_blank_values=True)
     if len({key for key, _ in pairs}) != len(pairs):
         raise ValueError("duplicate URL query field")
-    sha_comparison = re.fullmatch(r"/repos/" + re.escape(EXPECTED_REPOSITORY) + r"/compare/[0-9a-f]{40}\.\.\.[0-9a-f]{40}", value.path)
+    try:
+        suffix = _repository_suffix(value.path)
+    except ValueError:
+        raise ValueError("GitHub read scope violation")
+    sha_comparison = re.fullmatch(r"compare/[0-9a-f]{40}\.\.\.[0-9a-f]{40}", suffix)
     if (value.scheme != "https" or value.netloc != "api.github.com" or value.fragment
-            or not value.path.startswith("/repos/" + EXPECTED_REPOSITORY + "/")
             or "%" in value.path or (".." in value.path and sha_comparison is None) or "\\" in value.path):
         raise ValueError("GitHub read scope violation")
-    suffix = value.path[len("/repos/" + EXPECTED_REPOSITORY + "/"):]
     if suffix.split("/", 1)[0] not in {"pulls", "issues", "git", "contents", "commits", "actions", "compare", "branches"}:
         raise ValueError("unsupported read endpoint")
     return url
@@ -83,6 +97,7 @@ def read_all(reader: Reader, url: str, *, array_key: str | None = None,
     if type(max_pages) is not int or max_pages < 1:
         raise ValueError("invalid pagination bound")
     original = urlsplit(url)
+    original_path = _repository_suffix(original.path)
     original_query = dict(parse_qsl(original.query))
     visited: set[str] = set()
     rows: list[dict[str, Any]] = []
@@ -91,8 +106,9 @@ def read_all(reader: Reader, url: str, *, array_key: str | None = None,
     while url:
         checked_url(url)
         current = urlsplit(url)
+        current_path = _repository_suffix(current.path)
         query = dict(parse_qsl(current.query))
-        if current.path != original.path or {k: v for k, v in query.items() if k != "page"} != {
+        if current_path != original_path or {k: v for k, v in query.items() if k != "page"} != {
                 k: v for k, v in original_query.items() if k != "page"}:
             raise ValueError("pagination changed endpoint or filter")
         if url in visited or len(visited) >= max_pages:
