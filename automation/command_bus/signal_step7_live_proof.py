@@ -53,7 +53,10 @@ from .sf8_readiness import CheckResult, assess_pre_adoption_readiness
 REPOSITORY = "kamiyusense/multi-ai-council-phase0"
 LANE_ID = "chatgpt-semi-auto"
 OWNER_ACTOR_ID = "20355232"
-FORBIDDEN_SESSION_IDS = frozenset({"301196275118188780"})  # old Session 132: GET budget exhausted
+FORBIDDEN_SESSION_IDS = frozenset({
+    "301196275118188780",  # old Session 132: GET budget exhausted
+    "5943440322658150300",  # proof 2 session: GET budget exhausted and a publish already read it by mistake
+})
 RESERVED_AUTHORITY_RUNS = frozenset({"37031275812"})  # reserved for the adoption record
 PROVIDER_OIDC_RUN_ID = "36981004299"  # finished SF-8 OIDC proof run: workflow-identity anchor
 ALLOWED_PATH = "docs/evidence/signal-active-proof-3/PROOF.md"

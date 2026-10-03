@@ -87,9 +87,14 @@ class WorkflowStaticTests(unittest.TestCase):
 
     def test_inputs_are_validated_before_any_secret_step(self):
         validate = WORKFLOW.split("- name: Validate inputs", 1)[1].split("- name:", 1)[0]
-        for needle in ("^[0-9]{1,24}$", "301196275118188780", "^[0-9a-f]{64}$", "--check"):
+        for needle in ("^[0-9]{1,24}$", "301196275118188780", "5943440322658150300", "^[0-9a-f]{64}$", "--check"):
             self.assertIn(needle, validate)
         self.assertLess(WORKFLOW.index("- name: Validate inputs"), WORKFLOW.index("- name: Publish once"))
+
+    def test_session_id_input_is_optional_and_only_a_cross_check(self):
+        block = WORKFLOW.split("      session_id:", 1)[1].split("      authority_run_id:", 1)[0]
+        self.assertIn("required: false", block)
+        self.assertIn("default: ''", block)
 
     def test_artifact_is_the_sanitized_result_only(self):
         upload = WORKFLOW.split("uses: actions/upload-artifact", 1)[1]
@@ -301,6 +306,17 @@ class CliPortTests(unittest.TestCase):
         self.assertEqual(target["head"], {"ref": "b", "sha": HEAD})
 
 
+def carrier_log(command_id, session_id):
+    """Same line shapes as the real carrier job log (timestamp prefix, env block of the summary step)."""
+    stamp = "2026-10-03T04:20:54.9554643Z"
+    return "\n".join([
+        f"{stamp} \x1b[36;1m  echo \"- command_id: \\`${{COMMAND_ID:-UNKNOWN}}\\`\"\x1b[0m",
+        f"{stamp} env:",
+        f"{stamp}   COMMAND_ID: {command_id}",
+        f"{stamp}   SESSION_ID: {session_id}",
+        f"{stamp}   LOOP_ID: 133", ""])
+
+
 class FakeWorld:
     """In-memory GitHub + Jules REST surface for an end-to-end run of cli.main (no real network)."""
 
@@ -312,6 +328,7 @@ class FakeWorld:
         self.session_state, self.session_status = session_state, session_status
         self.session_id = "424242424242424242"
         self.authority_run = "7700000002"
+        self.carrier_logs: dict[int, str] = {}
 
     def seed(self, branch, path, text):
         self.files[(branch, path)] = (text, f"sha-{len(self.files)}")
@@ -325,6 +342,8 @@ class FakeWorld:
                 "state": self.session_state,
                 "sourceContext": {"source": f"sources/github/{live.REPOSITORY}",
                                   "githubRepoContext": {"startingBranch": self.work_branch}}}).encode())
+        if url.startswith("https://blob.example/log/"):
+            return 200, {}, self.carrier_logs[int(url.rsplit("/", 1)[1])].encode()
         if url == "https://blob.example/zip":
             buf = io.BytesIO()
             with zipfile.ZipFile(buf, "w") as archive:
@@ -343,6 +362,14 @@ class FakeWorld:
             return 200, {}, json.dumps({"commit": {"sha": sha}}).encode()
         if path.startswith("git/commits/"):
             return 200, {}, json.dumps({"tree": {"sha": "e" * 40 if path.endswith("c" * 40) else TREE}}).encode()
+        if path.startswith(f"actions/workflows/{cli.CARRIER_WORKFLOW}/runs"):
+            return 200, {}, json.dumps({"workflow_runs": [
+                {"id": 9000 + n, "conclusion": "success"} for n in sorted(self.carrier_logs)]}).encode()
+        if path.startswith("actions/runs/90") and path.endswith("/jobs"):
+            n = int(path.split("/")[2]) - 9000
+            return 200, {}, json.dumps({"jobs": [{"id": 100 + n, "conclusion": "success"}]}).encode()
+        if path.startswith("actions/jobs/1") and path.endswith("/logs"):
+            return 302, {"Location": f"https://blob.example/log/{int(path.split('/')[2]) - 100}"}, b""
         if path == f"actions/runs/{self.authority_run}":
             return 200, {}, json.dumps(self.authority_run_json).encode()
         if path == f"actions/runs/{live.PROVIDER_OIDC_RUN_ID}":
@@ -395,6 +422,7 @@ class EndToEndCliTests(unittest.TestCase):
         bound = live.bind_plan(TEMPLATE, loop_number=133, target_pr=7, target_head=HEAD, target_tree=TREE, now=NOW)
         world.target_branch, world.work_branch = bound["target_branch"], bound["work_branch"]
         world.bound = bound
+        world.carrier_logs[1] = carrier_log(bound["request"]["command_id"], world.session_id)
         world.seed(bound["data_branch"], live.BOUND_PLAN_PATH, json.dumps(bound))
         main_sha = "c" * 40
         world.authority_run_json = run_for(SF8_AUTHORITY_PROFILE, run_id=world.authority_run, sha=main_sha,
@@ -487,6 +515,49 @@ class EndToEndCliTests(unittest.TestCase):
                     code, result = self.run_main(world, tmp)
                 self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
                 self.assertEqual(len([c for c in world.calls if c[1].startswith(cli.JULES_API)]), 1)
+
+    def jules_calls(self, world):
+        return [c for c in world.calls if c[1].startswith(cli.JULES_API)]
+
+    def test_session_id_is_read_from_the_carrier_run_when_nothing_is_typed(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, SESSION_ID="")
+        self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+        called = self.jules_calls(world)
+        self.assertEqual([c[1].rsplit("/", 1)[1] for c in called], [world.session_id])
+
+    def test_a_typed_session_id_that_differs_from_the_carrier_record_stops_before_any_jules_call(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, SESSION_ID="5943440322658150300")
+        self.assertEqual((code, result["code"]), (1, "SESSION_ID_INPUT_MISMATCH"))
+        self.assertEqual(self.jules_calls(world), [])
+        self.assertNotIn((world.bound["data_branch"], live.ATTEMPT_MARKER_PATH), world.files)
+        self.assertNotIn((world.bound["data_branch"], live.TERMINAL_RECEIPT_PATH), world.files)
+
+    def test_no_or_ambiguous_carrier_record_stops_before_any_jules_call(self):
+        command_id = self.world().bound["request"]["command_id"]
+        cases = {"none": {}, "other_command": {1: carrier_log("relay-dev-loop-1-other", "111")},
+                 "two_sessions": {1: carrier_log(command_id, "111"), 2: carrier_log(command_id, "222")}}
+        for name, logs in cases.items():
+            with self.subTest(name):
+                world = self.world()
+                world.carrier_logs = dict(logs)
+                with tempfile.TemporaryDirectory() as tmp:
+                    code, result = self.run_main(world, tmp, SESSION_ID="")
+                self.assertEqual((code, result["code"]), (1, "CARRIER_SESSION_NOT_UNIQUE"))
+                self.assertEqual(self.jules_calls(world), [])
+
+    def test_old_sessions_are_forbidden_even_if_the_carrier_record_names_them(self):
+        for old in ("301196275118188780", "5943440322658150300"):
+            with self.subTest(old):
+                world = self.world()
+                world.carrier_logs[1] = carrier_log(world.bound["request"]["command_id"], old)
+                with tempfile.TemporaryDirectory() as tmp:
+                    code, result = self.run_main(world, tmp, SESSION_ID="")
+                self.assertEqual((code, result["code"]), (1, "CARRIER_SESSION_FORBIDDEN"))
+                self.assertEqual(self.jules_calls(world), [])
 
     def test_a_completed_provider_state_never_publishes(self):
         world = self.world(session_state="COMPLETED")

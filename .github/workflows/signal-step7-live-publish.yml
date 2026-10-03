@@ -12,8 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       session_id:
-        description: Jules session id created by the carrier command (digits only)
-        required: true
+        description: Leave EMPTY. The session id is read from the carrier run itself; a typed value is only a cross-check and must match
+        required: false
+        default: ''
         type: string
       authority_run_id:
         description: Run id of the finished authority issuer dispatch (digits only)
@@ -48,8 +49,10 @@ jobs:
           PLAN_SHA256: ${{ inputs.plan_sha256 }}
         run: |
           set -euo pipefail
-          [[ "${SESSION_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad session id" >&2; exit 1; }
-          [[ "${SESSION_ID}" != "301196275118188780" ]] || { echo "old session is forbidden" >&2; exit 1; }
+          if [[ -n "${SESSION_ID}" ]]; then
+            [[ "${SESSION_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad session id" >&2; exit 1; }
+            [[ "${SESSION_ID}" != "301196275118188780" && "${SESSION_ID}" != "5943440322658150300" ]] || { echo "old session is forbidden" >&2; exit 1; }
+          fi
           [[ "${AUTHORITY_RUN_ID}" =~ ^[0-9]{1,24}$ ]] || { echo "bad authority run id" >&2; exit 1; }
           [[ "${PLAN_SHA256}" =~ ^[0-9a-f]{64}$ ]] || { echo "bad plan digest" >&2; exit 1; }
           python -m automation.command_bus.signal_step7_live_proof_cli \

@@ -148,6 +148,58 @@ class RestTargetReader:
                 "repo": {"full_name": ((head.get("repo") or {}).get("full_name"))}}
 
 
+CARRIER_WORKFLOW = "jules-chat-semiauto.yml"
+CARRIER_BRANCH = "feature/chat-work-command-bus"
+_LOG_COMMAND = re.compile(r"^\S*\s*COMMAND_ID:\s*(\S+)\s*$", re.M)
+_LOG_SESSION = re.compile(r"^\S*\s*SESSION_ID:\s*([0-9]{1,24})\s*$", re.M)
+_RUNS_SCANNED = 10
+
+
+class RestCarrierSessionResolver:
+    """Reads the Jules session id from the carrier run that executed THIS plan's command.
+
+    The id is never typed by a person: a mistyped or stale id spent the whole GET budget of
+    proof 2 and proof 3. Only GitHub is read (workflow runs, jobs and their logs); Jules is
+    not touched. Exactly one distinct session id must be found for the command id.
+    """
+
+    def __init__(self, api: RestApi):
+        self.api = api
+
+    def resolve(self, command_id: str) -> str:
+        if not isinstance(command_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,120}", command_id):
+            raise live.LiveProofError("CARRIER_COMMAND_ID_INVALID")
+        status, body = self.api.request(
+            "GET", f"actions/workflows/{CARRIER_WORKFLOW}/runs?branch={quote(CARRIER_BRANCH, safe='')}"
+                   f"&event=push&status=success&per_page={_RUNS_SCANNED}")
+        runs = (body or {}).get("workflow_runs") if status == 200 and isinstance(body, dict) else None
+        if not isinstance(runs, list):
+            raise live.LiveProofError("CARRIER_RUNS_UNREADABLE")
+        found: set[str] = set()
+        for run in runs[:_RUNS_SCANNED]:
+            if not isinstance(run, dict) or run.get("conclusion") != "success" or not isinstance(run.get("id"), int):
+                continue
+            status, jobs = self.api.request("GET", f"actions/runs/{run['id']}/jobs")
+            if status != 200 or not isinstance(jobs, dict):
+                raise live.LiveProofError("CARRIER_JOBS_UNREADABLE")
+            for job in jobs.get("jobs") or []:
+                if not isinstance(job, dict) or job.get("conclusion") != "success" or not isinstance(job.get("id"), int):
+                    continue
+                raw = self.api.download(f"actions/jobs/{job['id']}/logs")
+                if raw is None:
+                    continue
+                text = raw.decode("utf-8", errors="replace")
+                if command_id not in set(_LOG_COMMAND.findall(text)):
+                    continue
+                found.update(_LOG_SESSION.findall(text))
+        if len(found) != 1:
+            raise live.LiveProofError("CARRIER_SESSION_NOT_UNIQUE", str(len(found)))
+        session_id = next(iter(found))
+        if session_id in live.FORBIDDEN_SESSION_IDS:
+            raise live.LiveProofError("CARRIER_SESSION_FORBIDDEN")
+        return session_id
+
+
 class RestBranchReader:
     def __init__(self, api: RestApi):
         self.api = api
@@ -303,6 +355,12 @@ def main(argv: list[str] | None = None, *, env: dict[str, str] | None = None, ht
                 raise live.LiveProofError("BOUND_PLAN_NOT_FROM_TEMPLATE")
             plan = bound
         reader = JulesActiveSessionGetReader(env.get("JULES_API_KEY", ""), http=http)
+        # The session id comes from the carrier run's own record, never from a typed value. An
+        # optional typed value is only a cross-check; any disagreement stops before the Jules GET.
+        resolved_session = RestCarrierSessionResolver(api).resolve(plan["request"]["command_id"])
+        typed_session = env.get("SESSION_ID", "")
+        if typed_session and typed_session != resolved_session:
+            raise live.LiveProofError("SESSION_ID_INPUT_MISMATCH")
         evidence_path = Path(env["PROVIDER_OIDC_EVIDENCE_PATH"])
         ports = live.PublishPorts(
             clock=clock or SystemClock(), target_reader=RestTargetReader(api), branch_reader=RestBranchReader(api),
@@ -311,10 +369,13 @@ def main(argv: list[str] | None = None, *, env: dict[str, str] | None = None, ht
             provider_oidc_evidence=json.loads(evidence_path.read_text(encoding="utf-8")),
             store=store, is_live=True)
         result = live.run_publish_half(
-            plan=plan, candidate_registry=registry, session_id=env.get("SESSION_ID", ""),
+            plan=plan, candidate_registry=registry, session_id=resolved_session,
             authority_run_id=env.get("AUTHORITY_RUN_ID", ""), ports=ports)
     except Exception as exc:  # setup failed before any provider read: nothing spent
-        print(json.dumps({"status": "STOPPED", "stage": "setup", "code": getattr(exc, "code", type(exc).__name__)}))
+        stopped = {"status": "STOPPED", "stage": "setup", "code": getattr(exc, "code", type(exc).__name__)}
+        print(json.dumps(stopped))
+        if args.result_out:
+            Path(args.result_out).write_text(json.dumps(stopped, sort_keys=True), encoding="utf-8")
         return 1
     document = {
         "status": result.status,
