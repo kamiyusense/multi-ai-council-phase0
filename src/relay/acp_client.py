@@ -450,15 +450,17 @@ async def _acp_prompt_text(
             if notification_count >= max_chunks:
                 raise ValueError(f"Maximum of {max_chunks} text updates exceeded")
 
-            evidence = _auth_status_evidence(frame)
-            if evidence is not None:
-                # Official identity push (also sent mid-turn at prompt start): classification only, no text.
-                if auth_sink is not None:
+            if auth_sink is not None:
+                evidence = _auth_status_evidence(frame)
+                if evidence is not None:
+                    # Claude-only identity push (also sent mid-turn at prompt start):
+                    # classification only, no text. A missing sink means this extension
+                    # is not enabled for the current provider and therefore remains unknown.
                     auth_sink.append(evidence)
-                ignored += 1
-                if ignored > max_ignored:
-                    raise ValueError("Too many ignorable session updates")
-                continue
+                    ignored += 1
+                    if ignored > max_ignored:
+                        raise ValueError("Too many ignorable session updates")
+                    continue
 
             if frame.get("method") != "session/update":
                 raise ValueError("ACP session/update notification method must be 'session/update'")
