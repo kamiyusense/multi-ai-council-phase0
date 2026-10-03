@@ -1,0 +1,5 @@
+{
+  "target_sha": "2309167232416a603d3845ea6796ac966e9c67fa",
+  "source_pr": "281",
+  "purpose": "relay validation after current-main sync: exact-head + Linux + Windows + Claude ACP STATIC/TCK; no LIVE"
+}
