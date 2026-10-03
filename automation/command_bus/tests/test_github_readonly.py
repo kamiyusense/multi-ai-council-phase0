@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from automation.command_bus.github_readonly import (
-    ROOT, GitHubGetReader, ReadResponse, checked_url, content_at, read_all, recursive_tree, _NoRedirect,
-    result_files, compare_ancestry,
+    ROOT, EXPECTED_REPOSITORY_ID, GitHubGetReader, ReadResponse, checked_url, content_at, read_all,
+    recursive_tree, _NoRedirect, result_files, compare_ancestry,
 )
 
 
@@ -56,6 +56,25 @@ class PaginationTests(unittest.TestCase):
         reader = self.reader({"total_count": 2, "workflow_runs": [{"id": 1}]},
                              {"total_count": 2, "workflow_runs": [{"id": 2}]}, f'<{self.second}>; rel="next"')
         self.assertEqual(len(read_all(reader, self.first, array_key="workflow_runs")), 2)
+
+    def test_github_canonical_repository_id_pagination_is_same_repository(self):
+        canonical = (
+            f"https://api.github.com/repositories/{EXPECTED_REPOSITORY_ID}"
+            "/pulls?state=open&per_page=100&page=2"
+        )
+        reader = FakeReader({
+            self.first: ReadResponse([{"id": 1}], {"link": f'<{canonical}>; rel="next"'}),
+            canonical: ReadResponse([{"id": 2}], {}),
+        })
+        self.assertEqual(read_all(reader, self.first), [{"id": 1}, {"id": 2}])
+        self.assertEqual(reader.calls, [self.first, canonical])
+
+    def test_other_canonical_repository_id_is_rejected(self):
+        wrong = "https://api.github.com/repositories/1/pulls?state=open&per_page=100&page=2"
+        reader = self.reader([{"id": 1}], link=f'<{wrong}>; rel="next"')
+        with self.assertRaises(ValueError):
+            read_all(reader, self.first)
+        self.assertEqual(reader.calls, [self.first])
 
     def test_incomplete_total_and_changed_total_fail_closed(self):
         for data in ({"total_count": 2, "workflow_runs": [{"id": 1}]},
