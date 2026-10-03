@@ -1,0 +1,20 @@
+{
+  "allowed_paths": [
+    "docs/evidence/signal-active-proof-3/PROOF.md"
+  ],
+  "command_id": "relay-dev-loop-134-signal-active-proof-3",
+  "created_at": "2026-10-03T03:57:15+00:00",
+  "expected_target_head": "8ee70dc735596eb2c0537bfd0292c92cb27c7b33",
+  "expected_target_tree": "cae1150347b3e710e81d35fe0109f757c4757237",
+  "expires_at": "2026-10-03T05:27:15+00:00",
+  "fallback": "disabled",
+  "force_push_allowed": false,
+  "merge_allowed": false,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "prompt": "Create exactly one file docs/evidence/signal-active-proof-3/PROOF.md whose entire content is the single line: signal active proof 3\nChange no other file. Do not add tests, code, or dependencies. Open the normal pull request when done.",
+  "retry": 0,
+  "schema_version": 2,
+  "target_branch": "signal/chatgpt-semi-auto-active-proof-3-target",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "work_branch": "jules-work/relay-dev-loop-134-signal-active-proof-3"
+}
