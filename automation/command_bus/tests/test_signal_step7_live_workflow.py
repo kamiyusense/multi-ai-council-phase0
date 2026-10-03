@@ -96,6 +96,13 @@ class WorkflowStaticTests(unittest.TestCase):
         self.assertIn("required: false", block)
         self.assertIn("default: ''", block)
 
+    def test_authority_run_and_digest_inputs_are_optional_and_only_cross_checks(self):
+        for name, after in (("authority_run_id", "      plan_sha256:"), ("plan_sha256", "permissions:")):
+            block = WORKFLOW.split(f"      {name}:", 1)[1].split(after, 1)[0]
+            self.assertIn("required: false", block, name)
+            self.assertIn("default: ''", block, name)
+            self.assertIn("Leave EMPTY", block, name)
+
     def test_artifact_is_the_sanitized_result_only(self):
         upload = WORKFLOW.split("uses: actions/upload-artifact", 1)[1]
         self.assertIn("path: ${{ runner.temp }}/step7-live-result.json", upload)
@@ -317,6 +324,14 @@ def carrier_log(command_id, session_id):
         f"{stamp}   LOOP_ID: 133", ""])
 
 
+def issuer_run(run_id, **changes):
+    run = {"id": int(run_id), "conclusion": "success", "event": "workflow_dispatch", "head_branch": "main",
+           "run_attempt": 1, "created_at": "2026-10-03T00:02:00Z",
+           "actor": {"id": int(live.OWNER_ACTOR_ID)}, "triggering_actor": {"id": int(live.OWNER_ACTOR_ID)}}
+    run.update(changes)
+    return run
+
+
 class FakeWorld:
     """In-memory GitHub + Jules REST surface for an end-to-end run of cli.main (no real network)."""
 
@@ -329,6 +344,8 @@ class FakeWorld:
         self.session_id = "424242424242424242"
         self.authority_run = "7700000002"
         self.carrier_logs: dict[int, str] = {}
+        self.carrier_created_at = "2026-10-03T00:04:30Z"
+        self.issuer_runs: list[dict] = []
 
     def seed(self, branch, path, text):
         self.files[(branch, path)] = (text, f"sha-{len(self.files)}")
@@ -364,7 +381,10 @@ class FakeWorld:
             return 200, {}, json.dumps({"tree": {"sha": "e" * 40 if path.endswith("c" * 40) else TREE}}).encode()
         if path.startswith(f"actions/workflows/{cli.CARRIER_WORKFLOW}/runs"):
             return 200, {}, json.dumps({"workflow_runs": [
-                {"id": 9000 + n, "conclusion": "success"} for n in sorted(self.carrier_logs)]}).encode()
+                {"id": 9000 + n, "conclusion": "success", "created_at": self.carrier_created_at}
+                for n in sorted(self.carrier_logs)]}).encode()
+        if path.startswith("actions/workflows/signal-sf8-authority-issuer.yml/runs"):
+            return 200, {}, json.dumps({"workflow_runs": self.issuer_runs}).encode()
         if path.startswith("actions/runs/90") and path.endswith("/jobs"):
             n = int(path.split("/")[2]) - 9000
             return 200, {}, json.dumps({"jobs": [{"id": 100 + n, "conclusion": "success"}]}).encode()
@@ -428,6 +448,7 @@ class EndToEndCliTests(unittest.TestCase):
         world.authority_run_json = run_for(SF8_AUTHORITY_PROFILE, run_id=world.authority_run, sha=main_sha,
                                            created_at="2026-10-03T00:02:00Z")
         world.authority_evidence = evidence_for(SF8_AUTHORITY_PROFILE, run_id=world.authority_run, sha=main_sha)
+        world.issuer_runs = [issuer_run(world.authority_run)]
         world.provider_run_json = run_for(SF8_PROFILE, run_id=live.PROVIDER_OIDC_RUN_ID,
                                           sha=live.PROVIDER_OIDC_EXPECTED_SHA)
         world.provider_evidence = evidence_for(SF8_PROFILE, run_id=live.PROVIDER_OIDC_RUN_ID,
@@ -548,6 +569,62 @@ class EndToEndCliTests(unittest.TestCase):
                     code, result = self.run_main(world, tmp, SESSION_ID="")
                 self.assertEqual((code, result["code"]), (1, "CARRIER_SESSION_NOT_UNIQUE"))
                 self.assertEqual(self.jules_calls(world), [])
+
+    def test_authority_run_and_plan_digest_are_found_automatically_when_nothing_is_typed(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, SESSION_ID="", AUTHORITY_RUN_ID="", PLAN_SHA256="")
+        self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+        self.assertEqual(len(self.jules_calls(world)), 1)
+        evidence = json.loads(world.files[(world.bound["data_branch"], live.EVIDENCE_PATH)][0])
+        self.assertEqual(evidence["authority_run_id"], world.authority_run)
+
+    def test_authority_run_resolution_stops_before_any_jules_call_unless_exactly_one_valid_candidate(self):
+        run_id = "7700000002"
+        owner = {"id": int(live.OWNER_ACTOR_ID)}
+        cases = {
+            "none": [],
+            "after_the_carrier_run": [issuer_run(run_id, created_at="2026-10-03T00:05:00Z")],
+            "before_the_plan": [issuer_run(run_id, created_at="2000-01-01T00:00:00Z")],
+            "too_old": [issuer_run(run_id, created_at="2026-10-02T22:00:00Z")],
+            "not_owner": [issuer_run(run_id, actor={"id": 1})],
+            "not_owner_trigger": [issuer_run(run_id, triggering_actor={"id": 1})],
+            "not_main": [issuer_run(run_id, head_branch="other")],
+            "rerun": [issuer_run(run_id, run_attempt=2)],
+            "failed": [issuer_run(run_id, conclusion="failure")],
+            "reserved": [issuer_run("37031275812")],
+            "provider_run": [issuer_run(live.PROVIDER_OIDC_RUN_ID)],
+            "two_candidates": [issuer_run(run_id), issuer_run("7700000003", created_at="2026-10-03T00:03:00Z")],
+        }
+        for name, runs in cases.items():
+            with self.subTest(name):
+                world = self.world()
+                world.issuer_runs = runs
+                with tempfile.TemporaryDirectory() as tmp:
+                    code, result = self.run_main(world, tmp, SESSION_ID="", AUTHORITY_RUN_ID="", PLAN_SHA256="")
+                self.assertEqual((code, result["code"]), (1, "AUTHORITY_RUN_NOT_UNIQUE"))
+                self.assertEqual(self.jules_calls(world), [])
+                self.assertNotIn((world.bound["data_branch"], live.TERMINAL_RECEIPT_PATH), world.files)
+
+    def test_a_typed_authority_run_must_be_one_of_the_valid_candidates(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, AUTHORITY_RUN_ID="1234567")
+        self.assertEqual((code, result["code"]), (1, "AUTHORITY_RUN_INPUT_MISMATCH"))
+        self.assertEqual(self.jules_calls(world), [])
+        # a typed id may disambiguate between two valid candidates, but only to one of them
+        world = self.world()
+        world.issuer_runs = [issuer_run("7700000003", created_at="2026-10-03T00:03:00Z"), issuer_run("7700000002")]
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, AUTHORITY_RUN_ID="7700000002")
+        self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+
+    def test_a_typed_digest_that_differs_from_the_data_branch_plan_still_stops(self):
+        world = self.world()
+        with tempfile.TemporaryDirectory() as tmp:
+            code, result = self.run_main(world, tmp, PLAN_SHA256="0" * 64)
+        self.assertEqual((code, result["code"]), (1, "BOUND_PLAN_DIGEST_MISMATCH"))
+        self.assertEqual(self.jules_calls(world), [])
 
     def test_old_sessions_are_forbidden_even_if_the_carrier_record_names_them(self):
         for old in ("301196275118188780", "5943440322658150300"):
