@@ -118,7 +118,7 @@ def check_activation_history(reader, runs: list, ctx: dict, authorization: dict)
                  'one run budget already consumed')
         return
     required(authorization.get('approved') is True
-             and authorization.get('prior_terminal_runs') == [CONSUMED_PROOF]
+             and json.dumps(authorization.get('prior_terminal_runs'), sort_keys=True) == json.dumps([CONSUMED_PROOF], sort_keys=True)
              and isinstance(authorization.get('proof_id'), str)
              and re.fullmatch(r'blue-bwj4-[0-9]{8}T[0-9]{6}Z-transport-proof-01', authorization['proof_id']) is not None
              and authorization.get('proof_id') != CONSUMED_PROOF['proof_id']

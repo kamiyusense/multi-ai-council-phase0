@@ -80,7 +80,8 @@ class FollowupTests(unittest.TestCase):
     def test_same_id_unapproved_wrong_generation_or_altered_history_cannot_bypass(self):
         for changes in ({'proof_id': proof.CONSUMED_PROOF['proof_id']}, {'proof_id': None}, {'approved': False},
                         {'proof_generation': True}, {'proof_generation': 3}, {'prior_terminal_runs': []},
-                        {'prior_terminal_runs': [dict(proof.CONSUMED_PROOF, activation_consumed=False)]}):
+                        {'prior_terminal_runs': [dict(proof.CONSUMED_PROOF, activation_consumed=False)]},
+                        {'prior_terminal_runs': [dict(proof.CONSUMED_PROOF, run_attempt=True)]}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 self.auth = dict(followup(), **changes)
                 self.check()
