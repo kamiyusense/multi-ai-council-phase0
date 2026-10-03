@@ -1,0 +1,5 @@
+{
+  "target_sha": "bb4aa5b89b2ad9185c1f147ca1518fe0bd060069",
+  "source_pr": "relay-m9-local-runner-v4",
+  "purpose": "relay validation: M9 one-shot runner successor on current main, Linux + Windows (STATIC, fixture backends only, no live provider/model)"
+}
