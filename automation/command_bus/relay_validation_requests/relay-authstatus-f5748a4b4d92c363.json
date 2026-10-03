@@ -1,0 +1,5 @@
+{
+  "target_sha": "f5748a4b4d92c3632c6e303942938f35a3b9b5b2",
+  "source_pr": "284",
+  "purpose": "relay validation after independent provider-scope fix for Claude auth-status extension; exact-head + Linux + Windows + Claude STATIC/TCK; no LIVE"
+}
