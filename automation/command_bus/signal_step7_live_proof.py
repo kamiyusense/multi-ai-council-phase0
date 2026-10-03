@@ -56,10 +56,10 @@ OWNER_ACTOR_ID = "20355232"
 FORBIDDEN_SESSION_IDS = frozenset({"301196275118188780"})  # old Session 132: GET budget exhausted
 RESERVED_AUTHORITY_RUNS = frozenset({"37031275812"})  # reserved for the adoption record
 PROVIDER_OIDC_RUN_ID = "36981004299"  # finished SF-8 OIDC proof run: workflow-identity anchor
-ALLOWED_PATH = "docs/evidence/signal-active-proof-2/PROOF.md"
-ALLOWED_CONTENT = "signal active proof 2\n"
+ALLOWED_PATH = "docs/evidence/signal-active-proof-3/PROOF.md"
+ALLOWED_CONTENT = "signal active proof 3\n"
 ACTIVE_RAW_STATES = frozenset({"QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"})
-DATA_RECORD_DIR = "docs/evidence/signal-active-proof-2"
+DATA_RECORD_DIR = "docs/evidence/signal-active-proof-3"
 TERMINAL_RECEIPT_PATH = f"{DATA_RECORD_DIR}/live-terminal-receipt.json"
 BOUND_PLAN_PATH = f"{DATA_RECORD_DIR}/plan.bound.json"
 ATTEMPT_MARKER_PATH = f"{DATA_RECORD_DIR}/live-attempt-marker.json"
@@ -134,6 +134,25 @@ class LiveCounters:
         }
 
 
+_FRACTION = re.compile(r"\.[0-9]+(?=Z$|[+-][0-9]{2}:[0-9]{2}$)")
+
+
+def _floor_provider_times(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Floor the Jules session createTime/updateTime to whole seconds.
+
+    Jules returns sub-second timestamps, while the owner claim, the provider observation
+    and the exact-equality check in the direct readback authenticator all use whole
+    seconds. Without this the authenticator compares updateTime 00:55:08.43Z with the
+    observed_at 00:55:08Z and refuses (proof 2 stopped here with the single GET spent).
+    """
+    result = dict(snapshot)
+    for key in ("createTime", "updateTime"):
+        value = result.get(key)
+        if isinstance(value, str):
+            result[key] = _FRACTION.sub("", value)
+    return result
+
+
 class BudgetedSessionReader:
     """Wraps the single real GET: spends budget BEFORE any I/O, and never repeats."""
 
@@ -152,6 +171,7 @@ class BudgetedSessionReader:
             raise LiveProofError("PROVIDER_READ_UNKNOWN", type(exc).__name__) from None
         if not isinstance(snapshot, dict):
             raise LiveProofError("PROVIDER_READ_UNKNOWN", "non-object response")
+        snapshot = _floor_provider_times(snapshot)
         self.snapshot = copy.deepcopy(snapshot)
         return copy.deepcopy(snapshot)
 
@@ -222,7 +242,7 @@ UNBOUND_SHA = "0" * 40
 PROVIDER_OIDC_EXPECTED_SHA = "93460dee54948dc6ac3888f4142ab78cd54ce759"
 CARRIER_LANE_ID = "J-YELLOW"
 CARRIER_LANE_DISPLAY = "💛"
-PROOF_TASK_ID = "signal-active-proof-2"
+PROOF_TASK_ID = "signal-active-proof-3"
 
 
 def _iso(value: datetime) -> str:
