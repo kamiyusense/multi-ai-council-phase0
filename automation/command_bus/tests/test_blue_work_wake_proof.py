@@ -25,6 +25,11 @@ SNAPSHOT = {'main_head': CTX['workflow_commit'], 'main_tree': 'f' * 40, 'workflo
 def authorization():
     root = Path(__file__).resolve().parents[3]
     value = json.loads((root / proof.AUTHORIZATION).read_text())
+    # Legacy generation-1 contract fakes must stay independent of whichever
+    # separately approved LIVE generation is current in the repository.
+    value['proof_id'] = proof.CONSUMED_PROOF['proof_id']
+    value.pop('proof_generation', None)
+    value.pop('prior_terminal_runs', None)
     value['target'] = deepcopy(TARGET)
     return value
 
