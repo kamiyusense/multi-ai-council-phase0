@@ -1,0 +1,5 @@
+{
+  "target_sha": "ae2303b82b0dcab775edbd7b224478dc315a91a6",
+  "source_pr": "relay-m3-m6-static-v1",
+  "purpose": "relay validation: post-review Claude auth fail-closed fix; exact-head + Linux + Windows + Claude ACP STATIC/TCK; no LIVE"
+}
