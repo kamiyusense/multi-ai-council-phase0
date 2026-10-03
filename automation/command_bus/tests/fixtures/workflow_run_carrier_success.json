@@ -1,0 +1,20 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "id": 37098060038,
+    "name": "Phase 0 Chat to Jules semi-auto",
+    "path": ".github/workflows/jules-chat-semiauto.yml",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "head_branch": "feature/chat-work-command-bus",
+    "head_sha": "54083aea49d93682d74f0814fb8574971a9a940a",
+    "actor": {"login": "owner", "id": 20355232},
+    "triggering_actor": {"login": "owner", "id": 20355232},
+    "repository": {"full_name": "kamiyusense/multi-ai-council-phase0"},
+    "head_repository": {"full_name": "kamiyusense/multi-ai-council-phase0"},
+    "created_at": "2026-10-03T04:53:58Z"
+  },
+  "repository": {"full_name": "kamiyusense/multi-ai-council-phase0"}
+}

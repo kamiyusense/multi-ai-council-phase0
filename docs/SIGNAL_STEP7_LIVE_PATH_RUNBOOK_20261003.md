@@ -1,5 +1,7 @@
 # Signal Step 7 追加 LIVE 証明: LIVE 経路（STATIC 完成）と開始手順
 
+> **更新（proof 4 の事後分析後）:** 下の「実行順」のうち、publish の人手 dispatch（手順 5）は廃止しました。carrier 成功を受けて publish が自動起動します。最新の手順と理由は [SIGNAL_STEP7_AUTO_PUBLISH_20261003.md](SIGNAL_STEP7_AUTO_PUBLISH_20261003.md) を参照してください。人の操作は issuer の 1 回だけです。
+
 状態: **STATIC で検証済み。LIVE は 1 回も実行していません。**
 カウンタ: Jules POST 0 / Jules GET 0 / issuer dispatch 0 / OIDC LIVE 0 / retry 0。旧 Session 132 には一切アクセスしていません。
 
