@@ -117,9 +117,13 @@ jobs:
           {
             echo "## Relay codex-acp 2.1.0 STATIC gate validation"
             echo "- target_sha: \`${{ steps.locate.outputs.target_sha }}\`"
-            if [[ "${{ steps.select.outputs.applicable }}" != "true" ]]; then echo "- NOT_APPLICABLE: the target predates the Codex gate / M9 runner tests; nothing was validated"; fi
-            echo "- adapter: @agentclientprotocol/codex-acp 2.1.0 (--ignore-scripts --omit=optional)"
-            echo "- backend: fixtures/relay/fake_codex_app_server.py via src/relay/codex_turn_gate.py"
-            echo "- contract tests: PASS if job green (no skips allowed)"
+            if [[ "${{ steps.select.outputs.applicable }}" == "true" ]]; then
+              echo "- adapter: @agentclientprotocol/codex-acp 2.1.0 (--ignore-scripts --omit=optional)"
+              echo "- backend: fixtures/relay/fake_codex_app_server.py via src/relay/codex_turn_gate.py"
+              echo "- contract tests: PASS if job green (no skips allowed)"
+            else
+              echo "- NOT_APPLICABLE: the target predates the Codex gate / M9 runner tests"
+              echo "- nothing was validated; this is not a PASS"
+            fi
             echo "- live provider/model execution: NO"
           } >> "${GITHUB_STEP_SUMMARY}"
