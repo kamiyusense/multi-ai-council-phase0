@@ -1,5 +1,7 @@
 {
-  "adoption_record_ref": "docs/evidence/signal-sf8/adoption-record-candidate-chatgpt-semi-auto.json",
+  "adoption_approval_kind_required": "DURABLE_ADOPTION_APPROVAL_V1",
+  "adoption_approval_ref": null,
+  "adoption_record_ref": null,
   "base_main_sha": "aebae14695cfaaf1dc8bcc2ec35faca9c898fd48",
   "candidate_kind": "SIGNAL_STEP7_DURABLE_ADOPTION_CANDIDATE",
   "current_registry_digest_sha256": "6af0268e17fd99adf4901e6a3be294c7e24c3b38241281a7b4cb0571b36b5eb0",
@@ -9,12 +11,18 @@
   "issue33_changed_by_this_candidate": false,
   "jules_output": {
     "assessment": "DEVIATION",
-    "note": "one file, right path and text, missing trailing newline; not merged",
+    "deviation_type": "MISSING_TRAILING_NEWLINE_ONLY",
+    "note": "one file, right path and text, missing trailing newline (21 bytes vs 22); not merged, not edited, checker not loosened",
     "pull_request": 286,
     "readback_ref": "docs/evidence/signal-step7-proof5/jules-output-github-readback.json"
   },
   "lane_id": "chatgpt-semi-auto",
   "lane_registration": "READY",
+  "legacy_adoption_record": {
+    "reason": "cites authority run 37031275812 (identity proof only) and predates proof 5",
+    "ref": "docs/evidence/signal-sf8/adoption-record-candidate-chatgpt-semi-auto.json",
+    "status": "SUPERSEDED_NOT_AN_APPROVAL"
+  },
   "pre_adoption_gate": "READY_FOR_HUMAN_APPROVAL",
   "production_registry_changed_by_this_candidate": false,
   "proof": {
@@ -39,6 +47,7 @@
     "observed_at": "2026-10-03T20:09:35+00:00",
     "plan_sha256": "6d77f7ab36bf5ff01a889f6fc644002a32550edf07167206a76e7768aaf7cd54",
     "prepare_artifact_digest": "sha256:977d782e8b2d14ad1ecbf27b53fbff2b0101ca16b97093cfea7161fcfdca34c7",
+    "proof_completed_at": "2026-10-03T20:09:53Z",
     "proof_task_id": "signal-active-proof-5",
     "provider_raw_state": "IN_PROGRESS",
     "receipt_payload_sha256": "a91c81af14e3fb7f28061142cf38957d401daf101cc17df1d5269249fa5bd831",
@@ -54,8 +63,9 @@
   "registry_write_allowed": false,
   "required_before_registry_write": [
     "a human reads this candidate and the proof 5 result",
-    "a human decides about the missing trailing newline in the Jules output (cosmetic, does not affect the authentication chain)",
-    "a separate adoption change flips only identity_state of chatgpt-semi-auto and adjusts the guard tests that pin the all-PLACEHOLDER state",
+    "a human dispatches the Signal DURABLE adoption approval issuer once (separate from the authority proof)",
+    "the issued DURABLE_ADOPTION_APPROVAL_V1 record names the missing-trailing-newline deviation explicitly",
+    "a separate adoption change flips only identity_state of chatgpt-semi-auto, attaches the approval record and adjusts the guard tests that pin the all-PLACEHOLDER state",
     "a human merges that adoption change",
     "after the merge: rerun the strict full DURABLE/registration verification"
   ],

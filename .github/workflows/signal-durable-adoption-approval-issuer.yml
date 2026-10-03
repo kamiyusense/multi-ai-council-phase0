@@ -1,0 +1,37 @@
+# DURABLE adoption approval issuer (design only until a human dispatches it once).
+# It is NOT the owner-authority proof. It records one human decision: "adopt chatgpt-semi-auto as
+# DURABLE on the strength of Step 7 proof 5". It reads GitHub, writes one sanitized artifact and
+# nothing else: no registry write, no Issue #33 change, no provider call, no secret, no id-token.
+name: Signal DURABLE adoption approval issuer
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+concurrency:
+  group: signal-durable-adoption-approval-issuer
+  cancel-in-progress: false
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.event_name == 'workflow_dispatch' && contains(fromJSON('["20355232"]'), github.actor_id)
+    steps:
+      - name: Checkout the dispatched main commit without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Re-read proof 5 from GitHub and write one approval record
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -m automation.command_bus.durable_adoption_approval_cli --issue --output "${{ runner.temp }}/durable-adoption-approval.json"
+      - name: Save the approval record only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: durable-adoption-approval-${{ github.run_id }}
+          path: ${{ runner.temp }}/durable-adoption-approval.json
+          if-no-files-found: error
+          retention-days: 30

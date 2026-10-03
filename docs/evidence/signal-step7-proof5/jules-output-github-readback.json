@@ -4,6 +4,7 @@
     "proof content is not the exact allowed content"
   ],
   "deviation_note": "The file has the right path and the right text, but no trailing newline (21 bytes instead of 22). Exactly one file changed; nothing merged; base and branch are as expected.",
+  "deviation_type": "MISSING_TRAILING_NEWLINE_ONLY",
   "expected_content_bytes": 22,
   "merged": false,
   "observed_at_utc": "2026-10-03T20:20:00Z",

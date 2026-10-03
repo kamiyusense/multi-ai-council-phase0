@@ -14,7 +14,8 @@ from pathlib import Path
 
 from automation.command_bus import signal_step7_live_proof as live
 from automation.command_bus.control_tower_registration import assess_registration_readiness
-from automation.command_bus.lane_identity_adoption import registry_digest, validate_lane_adoption_diff
+from automation.command_bus import durable_adoption_approval as dap
+from automation.command_bus.lane_identity_adoption import registry_digest
 from automation.command_bus.sf8_readiness import CheckResult, assess_pre_adoption_readiness
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -43,7 +44,7 @@ PLAN = load(P5 / "plan.bound.json")
 READBACK = load(P5 / "jules-output-github-readback.json")
 CANDIDATE = load(P5 / "adoption-candidate.json")
 CANDIDATE_REGISTRY = load(SF8 / "registry-candidate-chatgpt-semi-auto-durable.json")
-RECORD = load(SF8 / "adoption-record-candidate-chatgpt-semi-auto.json")
+LEGACY_RECORD = load(SF8 / "adoption-record-candidate-chatgpt-semi-auto.json")
 ACTIVE_RAW = {"QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"}
 
 
@@ -151,14 +152,10 @@ class AdoptionCandidateTests(unittest.TestCase):
     def test_candidate_is_bound_to_the_exact_current_registry_digest(self):
         current = pre_adoption_production()
         self.assertEqual(CANDIDATE["current_registry_digest_sha256"], registry_digest(current))
-        self.assertEqual(RECORD["expected_registry_sha256"], registry_digest(current))
 
-    def test_candidate_diff_is_accepted_and_touches_only_the_adopted_lane(self):
+    def test_candidate_diff_touches_only_the_adopted_lane(self):
         current = pre_adoption_production()
-        adopted = validate_lane_adoption_diff(
-            current=current, proposed=CANDIDATE_REGISTRY, record=RECORD,
-            allowed_approver_ids=frozenset({live.OWNER_ACTOR_ID}) if hasattr(live, "OWNER_ACTOR_ID") else frozenset({"20355232"}))
-        self.assertEqual(adopted, LANE)
+        dap.check_single_lane_diff(current, CANDIDATE_REGISTRY, LANE)
         before = {e["loop_id"]: e for e in current["loops"]}
         after = {e["loop_id"]: e for e in CANDIDATE_REGISTRY["loops"]}
         self.assertEqual(set(before), set(after))
@@ -166,12 +163,20 @@ class AdoptionCandidateTests(unittest.TestCase):
         self.assertEqual(changed, [LANE])
         self.assertEqual(after[LANE]["identity_state"], "DURABLE")
 
-    def test_stale_registry_digest_is_refused(self):
-        stale = copy.deepcopy(RECORD)
-        stale["expected_registry_sha256"] = "0" * 64
-        with self.assertRaises(ValueError):
-            validate_lane_adoption_diff(current=pre_adoption_production(), proposed=CANDIDATE_REGISTRY,
-                                        record=stale, allowed_approver_ids=frozenset({"20355232"}))
+    def test_legacy_record_is_not_an_adoption_approval(self):
+        # the old record cites an authority (identity) run; it is marked superseded and never counts
+        self.assertEqual(CANDIDATE["legacy_adoption_record"]["status"], "SUPERSEDED_NOT_AN_APPROVAL")
+        self.assertIsNone(CANDIDATE["adoption_approval_ref"])
+        self.assertIsNone(CANDIDATE["adoption_record_ref"])
+        self.assertEqual(CANDIDATE["adoption_approval_kind_required"], dap.APPROVAL_KIND)
+        run_id = LEGACY_RECORD["approval_ref"].rsplit("/", 1)[-1]
+        self.assertIn(run_id, dap.KNOWN_AUTHORITY_RUN_IDS)
+
+    def test_deviation_is_recorded_not_hidden(self):
+        self.assertEqual(READBACK["deviation_type"], "MISSING_TRAILING_NEWLINE_ONLY")
+        self.assertEqual(CANDIDATE["jules_output"]["deviation_type"], READBACK["deviation_type"])
+        self.assertEqual(dap.classify_output(READBACK["output"], EVIDENCE),
+                         (dap.OUTPUT_DEVIATION, dap.DEVIATION_MISSING_NEWLINE))
 
     def test_global_registration_stays_not_wired_with_three_placeholder_lanes(self):
         result = assess_registration_readiness(CANDIDATE_REGISTRY, None)
