@@ -66,6 +66,7 @@ jobs:
           echo "RELAY_CLAUDE_ACP_DIR=${dir}/node_modules/@agentclientprotocol/claude-agent-acp" >> "${GITHUB_ENV}"
 
       - name: Claude STATIC boundary tests (tripwire CLI, no skips allowed)
+        id: boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -75,10 +76,15 @@ jobs:
           for mod in test_claude_acp_static_boundary test_claude_auth_readonly test_claude_auth_status_notification test_claude_route_admission test_claude_quota_readonly test_antigravity_static_launch_shape; do
             if [[ -f "tests/relay/${mod}.py" ]]; then tests+=("tests.relay.${mod}"); fi
           done
-          if [[ "${#tests[@]}" -eq 0 ]]; then echo "no Claude STATIC boundary tests exist in this target"; exit 0; fi
+          if [[ "${#tests[@]}" -eq 0 ]]; then
+            echo "no Claude STATIC boundary tests exist in this target"
+            echo "ran=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
           PYTHONPATH=src:. python -m unittest -v "${tests[@]}" 2>&1 | tee boundary.txt
           grep -q '^OK$' boundary.txt
           if grep -qi 'skipped' boundary.txt; then echo 'skips are not allowed in the boundary run' >&2; exit 1; fi
+          echo "ran=true" >> "${GITHUB_OUTPUT}"
 
       - name: Full unit suite (record skips)
         shell: bash
@@ -97,6 +103,7 @@ jobs:
           tck="git+https://github.com/agentclientprotocol/acp-tck@fa00ccd"
           home="$(mktemp -d)"
           tripwire="$PWD/fixtures/relay/claude_cli_tripwire.py"
+          if [[ ! -f "${tripwire}" ]]; then echo "NOT_APPLICABLE: this target has no tripwire CLI fixture; TCK not run"; exit 0; fi
           uv run --python 3.14 --with "${tck}" acp-tck --agent-cwd "${home}" --agent-env HOME="${home}" \
             --agent-env CLAUDE_CODE_EXECUTABLE="${tripwire}" --agent-env RELAY_TRIPWIRE_LOG="${home}/tw.log" \
             --timeout 15 --startup-timeout 30 --test-timeout 30 \
@@ -110,8 +117,12 @@ jobs:
           {
             echo "## Relay Claude ACP STATIC boundary validation"
             echo "- target_sha: \`${{ steps.locate.outputs.target_sha }}\`"
-            echo "- adapter: @agentclientprotocol/claude-agent-acp 0.84.0 (--ignore-scripts --omit=optional); CLI = tripwire"
-            echo "- boundary tests: PASS if job green (no skips allowed)"
-            echo "- ACP-TCK: informational only (see step log); session-dependent MANDATORY items cannot pass without a CLI"
+            if [[ "${{ steps.boundary.outputs.ran }}" == "true" ]]; then
+              echo "- adapter: @agentclientprotocol/claude-agent-acp 0.84.0 (--ignore-scripts --omit=optional); CLI = tripwire"
+              echo "- boundary tests: PASS if job green (no skips allowed)"
+              echo "- ACP-TCK: informational only (see step log); session-dependent MANDATORY items cannot pass without a CLI"
+            else
+              echo "- NOT_APPLICABLE: the target has no Claude STATIC boundary tests; the Claude boundary was not validated and this is not a PASS"
+            fi
             echo "- live provider/model execution: NO"
           } >> "${GITHUB_STEP_SUMMARY}"
