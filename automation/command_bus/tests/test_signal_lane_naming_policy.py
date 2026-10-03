@@ -1,7 +1,6 @@
 """STATIC checks of the lane naming policy (fixed machine ids, readable display names, reserved new ids)."""
 from __future__ import annotations
 
-import copy
 import json
 import os
 import re
@@ -80,17 +79,9 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual([e["loop_id"] for e in frozen], ["claude-claude-auto"])
         self.assertIs(frozen[0]["enabled"], False)
 
-    def test_v1_rejects_exactly_the_two_missing_features(self):
-        with self.assertRaises(ValueError):
-            validate_registry(V3)
-        adapted = copy.deepcopy(V3)
-        for entry in adapted["loops"]:
-            if entry["worker_kind"] == "WORK":
-                entry["worker_kind"] = "OTHER"
-            if entry["identity_state"] == "FROZEN":
-                entry["identity_state"] = "PLACEHOLDER"
-        self.assertEqual(len(validate_registry(adapted)), 5)
-        self.assertEqual(assess_registration_readiness(adapted, None).status, "NOT_WIRED")
+    def test_fixture_validates_now_that_work_and_frozen_are_supported(self):
+        self.assertEqual(len(validate_registry(V3)), 5)
+        self.assertEqual(assess_registration_readiness(V3, None).status, "NOT_WIRED")
 
     def test_production_registry_is_untouched(self):
         self.assertEqual([e["loop_id"] for e in PROD["loops"]],

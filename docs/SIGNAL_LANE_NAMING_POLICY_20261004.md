@@ -47,6 +47,10 @@ Registry `display_name` allows `->` but not the arrow glyph.
 
 ## 4. What a registry PR would have to change (NOT done here)
 
+> **Status:** items 1 and 2 (worker `WORK`, lifecycle `FROZEN`) are implemented additively in the
+> `WORK/FROZEN support` change (validator, schema, frozen line in the rendering; a FROZEN lane must be disabled).
+> The production registry itself is still untouched; items 3-6 wait for a decision on the digest pins (item 5).
+
 1. Add worker `WORK` (`control_tower._WORKERS`, `_WORKER_LABELS`, registry schema enum).
 2. Add an explicit FROZEN representation (new lifecycle value), or keep `enabled=false`.
 3. Display rename of `chatgpt-semi-auto` to `Chat -> Jules` (display only).

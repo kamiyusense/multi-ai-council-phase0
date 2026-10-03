@@ -42,8 +42,8 @@ _ENTRY_KEYS = {
 }
 _MODES = {"SEMI_AUTO", "AUTO"}
 _CONTROLLERS = {"CHATGPT", "CLAUDE", "WORK", "OTHER"}
-_WORKERS = {"JULES", "GEMINI", "CLAUDE", "OTHER"}
-_IDENTITY_STATES = {"PLACEHOLDER", "DURABLE"}
+_WORKERS = {"JULES", "GEMINI", "CLAUDE", "WORK", "OTHER"}
+_IDENTITY_STATES = {"PLACEHOLDER", "DURABLE", "FROZEN"}
 
 _LOOP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+()/>-]{0,63}$")
@@ -60,7 +60,7 @@ _CONTROLLER_LABELS = {
     "CHATGPT": "ChatGPT", "CLAUDE": "Claude", "WORK": "Work", "OTHER": "Other",
 }
 _WORKER_LABELS = {
-    "JULES": "Jules", "GEMINI": "Gemini", "CLAUDE": "Claude", "OTHER": "Other",
+    "JULES": "Jules", "GEMINI": "Gemini", "CLAUDE": "Claude", "WORK": "Work", "OTHER": "Other",
 }
 
 SNAPSHOT_START = "<!-- phase0-control-tower-json:v1"
@@ -116,6 +116,7 @@ class ControlTowerLane:
 class ControlTowerModel:
     generated_at: str
     lanes: tuple[ControlTowerLane, ...]
+    frozen_lane_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -179,6 +180,8 @@ def validate_registry(registry: dict[str, Any]) -> tuple[RegistryEntry, ...]:
             raise ValueError("invalid Control Tower safe_detail_ref")
         if identity_state not in _IDENTITY_STATES:
             raise ValueError("invalid Control Tower identity_state")
+        if identity_state == "FROZEN" and enabled:
+            raise ValueError("a FROZEN Control Tower lane must be disabled")
 
         seen_loop_ids.add(loop_id)
         seen_orders.add(order)
@@ -202,6 +205,7 @@ def build_control_tower(
         raise ValueError("lane_inputs must be a mapping")
 
     lanes = []
+    frozen = tuple(entry.display_name for entry in entries if entry.identity_state == "FROZEN")
     for entry in entries:
         if not entry.enabled:
             continue
@@ -211,7 +215,7 @@ def build_control_tower(
         except (ValueError, TypeError, KeyError, AssertionError) as exc:
             lane = _unknown_lane(entry, str(exc))
         lanes.append(lane)
-    return ControlTowerModel(generated_at=generated_at, lanes=tuple(lanes))
+    return ControlTowerModel(generated_at=generated_at, lanes=tuple(lanes), frozen_lane_names=frozen)
 
 
 def render_title(model: ControlTowerModel) -> str:
@@ -419,6 +423,9 @@ def _render_runtime_content(model: ControlTowerModel, snapshot: str) -> str:
                 _cell(lane.human_action),
             ]) + " |"
         )
+
+    if model.frozen_lane_names:
+        lines += ["", "❄ **Frozen (not counted as active):** " + ", ".join(_cell(name) for name in model.frozen_lane_names)]
 
     lines += [
         "",
