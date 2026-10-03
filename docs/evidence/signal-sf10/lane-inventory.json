@@ -1,0 +1,89 @@
+{
+  "inventory_kind": "SIGNAL_SF10_LANE_INVENTORY",
+  "lanes": [
+    {
+      "identity_state": "DURABLE",
+      "lane_id": "chatgpt-semi-auto",
+      "readiness_class": "DURABLE_READY",
+      "reason": "adopted; proof 5 + DURABLE_ADOPTION_APPROVAL_V1; see post-adoption-checkpoint.json",
+      "source": "docs/evidence/signal-sf10/post-adoption-checkpoint.json"
+    },
+    {
+      "human_approval_needed": true,
+      "identity_state": "PLACEHOLDER / NOT_WIRED (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:81-99; registry.json:24)",
+      "lane_id": "claude-gemini",
+      "missing_requirements": [
+        "runtime-chosen stable loop_id for CLAUDE/GEMINI lane (not invented here)",
+        "Gemini worker/provider adapter and transport decision (Antigravity ACP is static-only; Gemini CLI deferred)",
+        "Gemini provider verification/readback source (non-Jules)",
+        "state/<loop_id>.json, owner event chain, generation/fencing, source receipt, canonical evidence under that id",
+        "lane-parameterized live-proof and approval code",
+        "LIVE proof for this exact lane/id/target/generation with terminal receipt, not replayed",
+        "explicit human approval for any live provider turn and for registry flip"
+      ],
+      "new_live_needed": true,
+      "readiness_class": "BLOCKED",
+      "reason": "There is no Gemini worker path, no runtime-owned stable loop_id, no state/owner/receipt/evidence/provider-verification for this lane, and no applicable past LIVE proof. Prerequisite design/implementation is missing, so even a static adoption chain cannot be built from existing code alone.",
+      "source": "docs/evidence/signal-sf10/lane-inventory/claude-gemini.json",
+      "stable_durable_loop_id_exists": false
+    },
+    {
+      "human_approval_needed": true,
+      "identity_state": "PLACEHOLDER / NOT_WIRED (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:101-112; registry json:34). The string 'claude-claude' is a registry placeholder label only; no runtime chose or uses it. Must be a separate durable id from claude-gemini (plan:103-105).",
+      "lane_id": "claude-claude",
+      "missing_requirements": [
+        "runtime-chosen stable durable loop_id for Claude->Claude distinct from claude-gemini",
+        "Claude-as-worker dispatch and provider verification source",
+        "state/<loop_id>.json",
+        "append-only owner event chain with generation and fencing",
+        "source receipt and canonical evidence",
+        "fresh target binding for the Claude worker result",
+        "accepted durable transition (project_durable_transition) and collector readback",
+        "lane registration readiness for this lane",
+        "a new LIVE proof (single-use, exact target, current owner generation, terminal receipt) with human approval",
+        "human-approved PLACEHOLDER->DURABLE adoption (lane_identity_adoption record via OIDC issuer run)"
+      ],
+      "new_live_needed": true,
+      "readiness_class": "BLOCKED",
+      "reason": "The repo has no Claude->Claude runtime path that exports durable facts and no runtime-chosen stable id. Existing Claude code is caller-supplied-loop_id, Claude x Jules (frozen) or static; no state, chain, receipt, provider verification or projection exists; no reusable LIVE proof.",
+      "source": "docs/evidence/signal-sf10/lane-inventory/claude-claude.json",
+      "stable_durable_loop_id_exists": false
+    },
+    {
+      "human_approval_needed": true,
+      "identity_state": "PLACEHOLDER / NOT_WIRED (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:114-128; registry line 46)",
+      "lane_id": "work-gemini",
+      "missing_requirements": [
+        "Real Gemini worker path (adapter/CLI/workflow) or corrected worker_kind decision",
+        "Work controller path that exposes a runtime-chosen stable loop_id (not caller input, not color/PR/thread)",
+        "state/<loop_id>.json with initializer",
+        "Append-only owner event chain with generation and fencing",
+        "Source receipt and canonical evidence bound to that id",
+        "Provider verification of the worker",
+        "Fresh exact target binding",
+        "Accepted durable transition (project_durable_transition) and collector readback",
+        "Lane registration readiness",
+        "New LIVE proof for this lane/id/target/generation/terminal receipt, not replayed",
+        "Human approval of PLACEHOLDER->DURABLE adoption"
+      ],
+      "new_live_needed": true,
+      "readiness_class": "BLOCKED",
+      "reason": "No Gemini worker implementation exists, no Work->Gemini controller path or runtime-chosen stable loop_id exists, and no state/owner chain/evidence exists. The closest implementation (Cloud Work Blue + Jules) has a different worker (Jules) and identity (color/carrier), so it is not this lane. Past LIVE proof 5 is for another lane and cannot be reused. Even after identity exists a new LIVE proof and human approval for PLACEHOLDER->DURABLE are required.",
+      "source": "docs/evidence/signal-sf10/lane-inventory/work-gemini.json",
+      "stable_durable_loop_id_exists": false
+    }
+  ],
+  "live_needed_now": false,
+  "method": "read-only code and docs investigation of the checkout; nothing executed against any provider; UNKNOWN stays UNKNOWN",
+  "next_proof_candidate": null,
+  "next_recommended_lane": null,
+  "next_recommended_lane_reason": "all three remaining lanes are BLOCKED on the same two missing facts (a runtime-chosen stable loop_id and a real worker path); none is READY_FOR_LIVE_PROOF, so no LIVE proof plan is prepared (it would have to invent facts)",
+  "read_from_main": "0d433d7e1c8cd2299a244199835c3e5ee7034899",
+  "rules": [
+    "no durable loop_id is invented",
+    "colors/J-RED/J-BLUE are routing metadata only",
+    "a past LIVE proof is never reused as another lane's adoption authority",
+    "this is an inventory shape, not a provider/runtime abstraction"
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,273 @@
+{
+  "checkpoint_kind": "SIGNAL_SF9_POST_ADOPTION_CHECKPOINT",
+  "durable_projection": {
+    "as_of_proof": {
+      "display_state": "SEMI_AUTO",
+      "transition": "VALID"
+    },
+    "at_now": {
+      "display_state": "BLOCKED",
+      "reason": "owner verification failed closed: owner lease is expired",
+      "transition": "BLOCKED"
+    },
+    "note": "BLOCKED after the proof 5 owner lease expired; registration readiness is identity, not liveness"
+  },
+  "failed_items": [],
+  "fresh_github_facts": {
+    "approval_run": {
+      "actor_id": "20355232",
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "head_branch": "main",
+      "id": 37155730052,
+      "run_attempt": 1,
+      "triggering_actor_id": "20355232"
+    },
+    "issue33": {
+      "owner_none": true,
+      "state": "open",
+      "title_has_stopped": true,
+      "updated_at": "2026-10-02T09:35:13Z"
+    },
+    "main_sha": "0d433d7e1c8cd2299a244199835c3e5ee7034899",
+    "pr278": {
+      "head_sha": "5ebad97c41d1700e105356383ace1ee323282b9c",
+      "merged": false,
+      "number": 278,
+      "state": "open"
+    },
+    "pr286": {
+      "head_sha": "847bc6a45b1eea873cf53d370e916de5f4a1d04f",
+      "merged": false,
+      "number": 286,
+      "state": "open"
+    },
+    "read_at": "2026-10-03T22:22:00Z",
+    "read_by": "thread via GitHub connector (read-only)"
+  },
+  "global_registration": "NOT_WIRED",
+  "issue33_migration_ready": "NO",
+  "items": [
+    {
+      "detail": "digest 3b6fb4d6248bee0f7c507096574035a2314c1d24aacf0a042af2bfc892e4372b",
+      "n": 1,
+      "name": "registry_fresh_readback",
+      "status": "PASS"
+    },
+    {
+      "detail": "durable=['chatgpt-semi-auto']",
+      "n": 2,
+      "name": "exactly_one_durable_lane",
+      "status": "PASS"
+    },
+    {
+      "detail": "durable=['chatgpt-semi-auto']",
+      "n": 3,
+      "name": "durable_lane_is_chatgpt_semi_auto",
+      "status": "PASS"
+    },
+    {
+      "detail": "{\"claude-claude\": \"PLACEHOLDER\", \"claude-gemini\": \"PLACEHOLDER\", \"work-gemini\": \"PLACEHOLDER\"}",
+      "n": 4,
+      "name": "other_three_lanes_placeholder",
+      "status": "PASS"
+    },
+    {
+      "detail": "valid as of its own issue time",
+      "n": 5,
+      "name": "committed_adoption_approval_valid",
+      "status": "PASS"
+    },
+    {
+      "detail": "github-actions:run/37155730052",
+      "n": 6,
+      "name": "approval_run_id",
+      "status": "PASS"
+    },
+    {
+      "detail": "approval=20355232 run_actor=20355232 triggering=20355232",
+      "n": 7,
+      "name": "approval_actor_and_triggering_actor",
+      "status": "PASS"
+    },
+    {
+      "detail": "attempt=1 conclusion=success",
+      "n": 8,
+      "name": "approval_attempt_one",
+      "status": "PASS"
+    },
+    {
+      "detail": "a91c81af14e3fb7f28061142cf38957d401daf101cc17df1d5269249fa5bd831",
+      "n": 9,
+      "name": "proof5_terminal_receipt_digest",
+      "status": "PASS"
+    },
+    {
+      "detail": "dba63ba423cd5e8284dd01d3ccdb919ac1dcdddbe20482038d41e7ce44b62494",
+      "n": 10,
+      "name": "proof5_evidence_digest",
+      "status": "PASS"
+    },
+    {
+      "detail": "6af0268e17fd99adf4901e6a3be294c7e24c3b38241281a7b4cb0571b36b5eb0",
+      "n": 11,
+      "name": "approved_current_registry_digest",
+      "status": "PASS"
+    },
+    {
+      "detail": "3b6fb4d6248bee0f7c507096574035a2314c1d24aacf0a042af2bfc892e4372b",
+      "n": 12,
+      "name": "approved_proposed_registry_digest",
+      "status": "PASS"
+    },
+    {
+      "detail": "3b6fb4d6248bee0f7c507096574035a2314c1d24aacf0a042af2bfc892e4372b",
+      "n": 13,
+      "name": "current_registry_equals_approved_proposal",
+      "status": "PASS"
+    },
+    {
+      "detail": "only chatgpt-semi-auto.identity_state PLACEHOLDER->DURABLE",
+      "n": 14,
+      "name": "exact_one_lane_diff",
+      "status": "PASS"
+    },
+    {
+      "detail": "head=5ebad97c41d1700e105356383ace1ee323282b9c state=open",
+      "n": 15,
+      "name": "proof5_target_head_tree",
+      "status": "PASS"
+    },
+    {
+      "detail": "session=7218641455365522473 raw=IN_PROGRESS",
+      "n": 16,
+      "name": "provider_evidence",
+      "status": "PASS"
+    },
+    {
+      "detail": "authority_run=37150285702",
+      "n": 17,
+      "name": "owner_authority_evidence",
+      "status": "PASS"
+    },
+    {
+      "detail": "state=RUNNING",
+      "n": 18,
+      "name": "runtime_transition_published",
+      "status": "PASS"
+    },
+    {
+      "detail": "as_of_proof=COLLECTED/VALID at_now=COLLECTED",
+      "n": 19,
+      "name": "collector_result",
+      "status": "PASS"
+    },
+    {
+      "detail": "as_of_proof=READY at_now=READY",
+      "n": 20,
+      "name": "lane_scoped_registration",
+      "status": "PASS"
+    },
+    {
+      "detail": "READY; reasons=[]",
+      "n": 21,
+      "name": "strict_sf8_post_adoption_gate",
+      "status": "PASS"
+    },
+    {
+      "detail": "NOT_WIRED; issue33_migration_ready=NO",
+      "n": 22,
+      "name": "global_registration_not_wired",
+      "status": "PASS"
+    },
+    {
+      "detail": "updated_at=2026-10-02T09:35:13Z",
+      "n": 23,
+      "name": "issue33_unchanged",
+      "status": "PASS"
+    },
+    {
+      "detail": "head=847bc6a45b1eea873cf53d370e916de5f4a1d04f merged=False",
+      "n": 24,
+      "name": "jules_output_pr_286_unmerged_unchanged",
+      "status": "PASS"
+    },
+    {
+      "detail": "('DEVIATION', 'MISSING_TRAILING_NEWLINE_ONLY')",
+      "n": 25,
+      "name": "recorded_deviation_unchanged",
+      "status": "PASS"
+    }
+  ],
+  "lane_id": "chatgpt-semi-auto",
+  "lane_registration": {
+    "as_of_proof": "READY",
+    "at_now": "READY"
+  },
+  "now": "2026-10-03T22:22:30+00:00",
+  "required_checks": {
+    "canonical_receipt": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/live-terminal-receipt.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "collector_readback": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/durable-chain/automation/command_bus/state/chatgpt-semi-auto.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "negative_stale_mismatch_tests": {
+      "evidence_ref": "automation/command_bus/tests/test_durable_adoption_approval.py",
+      "scope": "STATIC",
+      "status": "PASS"
+    },
+    "owner_authority_authentication": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/live-proof-evidence.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "prepared_persistence": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/plan.bound.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "provider_authentication": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/live-proof-evidence.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "publisher_accepted": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/live-proof-evidence.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "recovery_test": {
+      "evidence_ref": "automation/command_bus/tests/test_signal_step7_auto_publish.py",
+      "scope": "STATIC",
+      "status": "PASS"
+    },
+    "registration_ready": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/live-proof-evidence.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    },
+    "stable_identity": {
+      "evidence_ref": "docs/evidence/signal-step7-proof5/live-proof-evidence.json",
+      "scope": "LIVE",
+      "status": "PASS"
+    }
+  },
+  "safety": {
+    "fallback": "disabled",
+    "issue33_written": false,
+    "new_jules_get": 0,
+    "new_jules_post": 0,
+    "provider_calls": 0,
+    "registry_written": false,
+    "retry": 0,
+    "workflow_dispatch": 0
+  },
+  "schema_version": 1,
+  "status": "PASS",
+  "strict_gate": "READY"
+}

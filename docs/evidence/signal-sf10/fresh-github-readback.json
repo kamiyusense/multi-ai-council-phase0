@@ -1,0 +1,32 @@
+{
+  "approval_run": {
+    "actor_id": "20355232",
+    "conclusion": "success",
+    "event": "workflow_dispatch",
+    "head_branch": "main",
+    "id": 37155730052,
+    "run_attempt": 1,
+    "triggering_actor_id": "20355232"
+  },
+  "issue33": {
+    "owner_none": true,
+    "state": "open",
+    "title_has_stopped": true,
+    "updated_at": "2026-10-02T09:35:13Z"
+  },
+  "pr278": {
+    "head_sha": "5ebad97c41d1700e105356383ace1ee323282b9c",
+    "merged": false,
+    "number": 278,
+    "state": "open"
+  },
+  "pr286": {
+    "head_sha": "847bc6a45b1eea873cf53d370e916de5f4a1d04f",
+    "merged": false,
+    "number": 286,
+    "state": "open"
+  },
+  "read_at": "2026-10-03T22:22:00Z",
+  "read_by": "thread via GitHub connector (read-only)",
+  "main_sha": "0d433d7e1c8cd2299a244199835c3e5ee7034899"
+}

@@ -47,6 +47,11 @@ on:
       - automation/command_bus/github_oidc_signature_proof.mjs
       - automation/command_bus/claude_loop.py
       - automation/command_bus/config/control_tower_registry.json
+      - automation/command_bus/post_adoption_verification.py
+      - automation/command_bus/tests/test_post_adoption_verification.py
+      - automation/command_bus/tests/test_sf10_lane_inventory.py
+      - docs/evidence/signal-sf10/**
+      - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/loop_status_development.py
       - automation/command_bus/loop_owner.py
       - automation/command_bus/loop_owner_backend.py
@@ -139,6 +144,11 @@ on:
       - automation/command_bus/tests/test_durable_adoption_applied.py
       - automation/command_bus/tests/pre_adoption_registry.py
       - automation/command_bus/config/control_tower_registry.json
+      - automation/command_bus/post_adoption_verification.py
+      - automation/command_bus/tests/test_post_adoption_verification.py
+      - automation/command_bus/tests/test_sf10_lane_inventory.py
+      - docs/evidence/signal-sf10/**
+      - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/durable_adoption_approval.py
       - automation/command_bus/durable_adoption_approval_cli.py
       - .github/workflows/signal-durable-adoption-approval-issuer.yml

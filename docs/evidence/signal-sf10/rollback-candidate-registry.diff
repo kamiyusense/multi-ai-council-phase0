@@ -1,0 +1,13 @@
+diff --git a/automation/command_bus/config/control_tower_registry.json b/automation/command_bus/config/control_tower_registry.json
+index 2c56559..cccafa1 100644
+--- a/automation/command_bus/config/control_tower_registry.json
++++ b/automation/command_bus/config/control_tower_registry.json
+@@ -10,7 +10,7 @@
+       "display_order": 10,
+       "enabled": true,
+       "safe_detail_ref": "issue:33",
+-      "identity_state": "DURABLE"
++      "identity_state": "PLACEHOLDER"
+     },
+     {
+       "loop_id": "claude-gemini",

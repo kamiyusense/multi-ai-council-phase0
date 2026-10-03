@@ -1,0 +1,215 @@
+{
+  "accepted_durable_transition": {
+    "note": "project_durable_transition has never been produced for claude-claude; none found.",
+    "source_refs": [
+      "automation/command_bus/control_tower_registration.py:196-233 (requires TransitionProjectionResult for the lane)"
+    ],
+    "status": "ABSENT"
+  },
+  "canonical_evidence": {
+    "note": "No evidence for a Claude->Claude lane.",
+    "source_refs": [
+      "automation/command_bus/evidence/",
+      "docs/evidence/"
+    ],
+    "status": "ABSENT"
+  },
+  "classification_of_existing_code": {
+    "experiment_evidence": [
+      "automation/command_bus/claude_admission_gate.py, claude_gate_compose.yaml, docs/CLAUDE_ADMISSION_GATE_*.md, docs/CLAUDE_PHASE0_AUDIT_V1_1.md, docs/CLAUDE_OAUTH_CONTROL_PLANE_STATIC_DESIGN.md, docs/CLAUDE_LITERAL_RETRY_ZERO_* (Claude auth/admission static design and probes)",
+      "automation/command_bus/claude_loop.py (static prepare-only; caller-supplied loop_id)",
+      "automation/command_bus/signal_step7_live_proof.py:54 (LANE_ID hard-coded 'chatgpt-semi-auto'; pattern to copy, not to reuse for this lane)",
+      "automation/command_bus/semiauto_stable_identity.py:28-35 (hard-coded to CHATGPT/SEMI_AUTO/JULES; a Claude analogue would be new code)"
+    ],
+    "frozen_historical": [
+      "automation/command_bus/claude_jules_*.py (Loop A, Claude x Jules AUTO controller; docs/CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_PLAN.md:7 'executed (superseded)')",
+      "docs/CLAUDE_JULES_*, docs/CLAUDE_AUTOLOOP_HANDOVER_CURRENT.md ('historical evidence' per its own header, :17-20), docs/CLAUDE_JULES_AUTOLOOP_LIVE_PROOF_NOTE.md (output of Jules session for Loop 128 - Claude->Jules, not Claude->Claude)",
+      "automation/command_bus/loop_id_claims/*.json (Jules carrier claims keyed by numeric Loop number; not durable ids)"
+    ],
+    "production_candidate": [
+      "automation/command_bus/loop_owner.py, loop_owner_authority.py, loop_owner_backend.py, loop_owner_observation.py (generic owner chain / generation / fencing; reusable for any lane id)",
+      "automation/command_bus/runtime_state_initializer.py (state/<loop_id>.json init)",
+      "automation/command_bus/runtime_transition_coordinator.py, runtime_transition_receipt.py, runtime_verifier_sources.py, oidc_workflow_execution.py (accepted durable transition / provider and authority verification seams)",
+      "automation/command_bus/control_tower_durable_collector.py:77,185-238 (collector readback; lane-agnostic over registry DURABLE entries)",
+      "automation/command_bus/control_tower_registration.py:158-235 (assess_lane_registration_readiness, per-lane)",
+      "automation/command_bus/lane_identity_adoption.py:60-90 (PLACEHOLDER->DURABLE diff validator, generic)",
+      "automation/command_bus/durable_adoption_approval.py, durable_adoption_approval_cli.py, sf8_readiness.py (approval / pre-adoption readiness; confirm lane-agnostic before reuse)"
+    ]
+  },
+  "collector_readback": {
+    "note": "Collector is generic but only iterates DURABLE registry entries (:211); claude-claude is PLACEHOLDER so nothing is collected.",
+    "source_refs": [
+      "automation/command_bus/control_tower_durable_collector.py:185-238"
+    ],
+    "status": "ABSENT"
+  },
+  "controller_implementation": {
+    "canonical_current_claude_to_claude_controller": "NONE FOUND. No module in the checkout is a Claude controller whose worker is Claude and that exports durable facts.",
+    "nearest_existing_claude_controller_code": [
+      "automation/command_bus/claude_loop.py:1-9 (static fail-closed orchestration; prepares executor records only; CLAUDE_BACKEND is only 'describes a prepared Claude-only coding step for the no-Jules contingency'); BackendMode at :26-32; loop_id is a caller argument at :58,:77,:99",
+      "automation/command_bus/claude_jules_autoloop.py:1-24,104-109 (Claude AUTO controller for the Claude x Jules loop; origin_loop_id and lane_id are constructor args)",
+      "automation/command_bus/claude_jules_live.py:476-489 (CLI: --origin-loop-id and --lane-id are required caller-supplied flags)",
+      "automation/command_bus/claude_jules_dispatch.py:414-425 (controller_fence reads owner chain for a supplied origin_loop_id)"
+    ],
+    "note": "All of the above are Claude->JULES (worker Jules via carrier). docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:83-85 states the Claude loop accepts loop_id as caller input, which is not an adopted durable identity. No code references the lane id 'claude-claude' outside the registry, tests and docs (grep)."
+  },
+  "current_blockers": [
+    "No Claude->Claude runtime exists that chooses and continuously uses a durable loop_id (all Claude loop code takes loop_id as caller input).",
+    "No Claude-as-worker dispatch/provider verification path in Signal scope; claude_loop CLAUDE_BACKEND is a static description only.",
+    "No state file, owner chain, generation, source receipt, evidence, or accepted transition for this lane.",
+    "No LIVE proof for this lane; proof 5 and Loop A are for other lanes and cannot be reused.",
+    "The Claude lane code that exists (Claude x Jules Loop A) is frozen historical.",
+    "Roadmap: lane must export its own accepted durable evidence; Signal must not invent ids (SIGNAL_FOUNDATION_ROADMAP.md:244,538-546)."
+  ],
+  "current_identity_state": "PLACEHOLDER / NOT_WIRED (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:101-112; registry json:34). The string 'claude-claude' is a registry placeholder label only; no runtime chose or uses it. Must be a separate durable id from claude-gemini (plan:103-105).",
+  "existing_live_proof": {
+    "detail": "No LIVE proof exists for claude-claude. The only Signal step 7 LIVE proof (proof 5, docs/SIGNAL_STEP7_PROOF5_RESULT_20261004.md) is for chatgpt-semi-auto (signal_step7_live_proof.py:54); the Loop A live runs are Claude x Jules (Loop 128 etc.). None is for this lane, stable id, owner generation, or terminal receipt, so none can be reused as adoption authority. Proof 5 itself is single-use (receipt COMPLETE, rerun_allowed=false).",
+    "present": false
+  },
+  "existing_static_proof": {
+    "detail": "Only generic/synthetic references: tests use 'claude-claude' as a fixture lane label (automation/command_bus/tests/test_control_tower.py:126,163; test_control_tower_registration.py:83; test_control_tower_issue_plan.py:88; test_control_tower_live_preflight.py:143; test_durable_adoption_applied.py:56 asserts it stays PLACEHOLDER). Frozen Claude x Jules static tests (test_claude_jules_*.py, test_claude_loop.py) are not Claude->Claude proof. None is adoption authority.",
+    "present": "PARTIAL"
+  },
+  "fencing": {
+    "note": "Generic owner-chain fencing code exists (reusable) but is wired only to the Claude x Jules dispatch for a caller-supplied origin_loop_id; not wired to a Claude->Claude lane.",
+    "source_refs": [
+      "automation/command_bus/claude_jules_dispatch.py:414-426",
+      "automation/command_bus/loop_owner.py"
+    ],
+    "status": "PARTIAL"
+  },
+  "fresh_target_binding": {
+    "note": "Target HEAD/tree binding exists in the frozen Claude x Jules path only; nothing for Claude worker.",
+    "source_refs": [
+      "automation/command_bus/claude_jules_autoloop.py:152,196 (re-fence/re-read target; Jules loop)",
+      "automation/command_bus/claude_jules_origin_binding.py"
+    ],
+    "status": "PARTIAL"
+  },
+  "generation": {
+    "note": "Generation logic exists only inside the Claude x Jules owner fence; no Claude->Claude generation.",
+    "source_refs": [
+      "automation/command_bus/claude_jules_dispatch.py:414-425"
+    ],
+    "status": "ABSENT"
+  },
+  "human_approval_needed": true,
+  "intended_registry_entry": {
+    "controller_kind": "CLAUDE",
+    "display_name": "Claude -> Claude",
+    "display_order": 30,
+    "enabled": true,
+    "identity_state": "PLACEHOLDER",
+    "loop_id": "claude-claude",
+    "mode": "AUTO",
+    "safe_detail_ref": "issue:33",
+    "source_refs": [
+      "automation/command_bus/config/control_tower_registry.json:26-35"
+    ],
+    "worker_kind": "CLAUDE"
+  },
+  "lane_id": "claude-claude",
+  "lane_registration_readiness": {
+    "note": "Would be BLOCKED today (identity PLACEHOLDER, no projection).",
+    "source_refs": [
+      "automation/command_bus/control_tower_registration.py:190-195 (BLOCKED while PLACEHOLDER)",
+      "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:112"
+    ],
+    "status": "ABSENT"
+  },
+  "minimum_next_component": "A Claude->Claude runtime-side export of facts (owned by the Claude lane, not Signal): the runtime chooses its own stable id, initializes state/<id>.json and an owner chain, and records one Claude-worker result with source receipt and provider verification. Without that, Signal can only keep the lane UNKNOWN/PLACEHOLDER. A Signal-side static piece (fixture-based test that a Claude->Claude projection passes assess_lane_registration_readiness) is possible only after such an id/projection shape is defined.",
+  "missing_requirements": [
+    "runtime-chosen stable durable loop_id for Claude->Claude distinct from claude-gemini",
+    "Claude-as-worker dispatch and provider verification source",
+    "state/<loop_id>.json",
+    "append-only owner event chain with generation and fencing",
+    "source receipt and canonical evidence",
+    "fresh target binding for the Claude worker result",
+    "accepted durable transition (project_durable_transition) and collector readback",
+    "lane registration readiness for this lane",
+    "a new LIVE proof (single-use, exact target, current owner generation, terminal receipt) with human approval",
+    "human-approved PLACEHOLDER->DURABLE adoption (lane_identity_adoption record via OIDC issuer run)"
+  ],
+  "new_live_needed": true,
+  "next_task": {
+    "do": "Record that claude-claude stays PLACEHOLDER/UNKNOWN; reuse loop_owner*.py, runtime_state_initializer.py, control_tower_durable_collector.py, control_tower_registration.py, lane_identity_adoption.py when a runtime export exists.",
+    "do_not": "Do not invent or derive a loop_id from the registry label, display name, color, PR number, Jules loop number, workflow name or CLI flag; do not reuse proof 5 or Loop A as authority; do not touch the registry or Issue #33; do not treat src/relay or src/providers Claude code as Signal evidence; no LIVE run.",
+    "existing_local_destination": "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md (Lane C section, lines 101-112)",
+    "exit": "Either a human-approved scope decision plus an explicit runtime-chosen id contract, or the lane remains BLOCKED/PLACEHOLDER with this inventory as the record.",
+    "small_component": "Decision/spec only (no code yet): a short design note defining where a Claude->Claude runtime would choose its own stable id and which existing seams it exports facts through. Requires the Claude lane owner/human to decide whether Claude-as-worker is in scope.",
+    "upstream_accepted_source": "NONE accepted. Nothing upstream (no Claude->Claude runtime export) exists. Proof 5 (chatgpt-semi-auto) is accepted for that lane only."
+  },
+  "owner_event_chain": {
+    "note": "Owner chain machinery exists (loop_owner*.py) but no chain for any Claude->Claude id is present in this checkout; data-branch contents not verified (UNKNOWN beyond checkout).",
+    "source_refs": [
+      "automation/command_bus/loop_owner_events/ does not exist in checkout",
+      "automation/command_bus/claude_jules_live.py:418 (reads loop_owner_events/<origin_loop_id>/ for the Jules loop only)"
+    ],
+    "status": "ABSENT"
+  },
+  "provider_verification": {
+    "note": "Provider verification sources are Jules-specific (and OIDC workflow); no Claude-as-worker provider verifier exists. Relay Claude readonly code is another team's and is an input fact only.",
+    "source_refs": [
+      "automation/command_bus/runtime_verifier_sources.py",
+      "automation/command_bus/jules_provider_verification_source.py"
+    ],
+    "status": "ABSENT"
+  },
+  "readiness_class": "BLOCKED",
+  "readiness_reason": "The repo has no Claude->Claude runtime path that exports durable facts and no runtime-chosen stable id. Existing Claude code is caller-supplied-loop_id, Claude x Jules (frozen) or static; no state, chain, receipt, provider verification or projection exists; no reusable LIVE proof.",
+  "reusable_components": [
+    "automation/command_bus/loop_owner.py / loop_owner_backend.py / loop_owner_authority.py",
+    "automation/command_bus/runtime_state_initializer.py",
+    "automation/command_bus/runtime_transition_coordinator.py",
+    "automation/command_bus/runtime_verifier_sources.py and oidc_workflow_execution.py (authority/provider verification seam; need a Claude provider source)",
+    "automation/command_bus/control_tower_durable_collector.py",
+    "automation/command_bus/control_tower_registration.py (assess_lane_registration_readiness)",
+    "automation/command_bus/lane_identity_adoption.py",
+    "automation/command_bus/durable_adoption_approval.py and sf8_readiness.py",
+    "automation/command_bus/signal_step7_live_proof.py (as a pattern only)"
+  ],
+  "source_receipt": {
+    "note": "No Claude->Claude source receipt. Existing receipts are Jules/ChatGPT lanes.",
+    "source_refs": [
+      "automation/command_bus/receipts/",
+      "automation/command_bus/runtime_transition_receipt.py"
+    ],
+    "status": "ABSENT"
+  },
+  "stable_durable_loop_id": {
+    "caller_input_only": true,
+    "chosen_by": "nobody; no Claude->Claude runtime has chosen or used an id",
+    "evidence": [
+      "automation/command_bus/claude_jules_live.py:482-483 (--origin-loop-id/--lane-id required CLI inputs)",
+      "automation/command_bus/claude_loop.py:58,77",
+      "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:83-85,101-112",
+      "docs/SIGNAL_FOUNDATION_ROADMAP.md:244 (Signal must never invent durable IDs for Claude/Work lanes)",
+      "The registry key 'claude-claude' (registry json:27) is a Signal-side placeholder label and must not be treated as the runtime's chosen id. Do not invent a value."
+    ],
+    "exists": false,
+    "value_or_null": null
+  },
+  "state_file": {
+    "note": "No state/<loop_id>.json for this lane.",
+    "source_refs": [
+      "automation/command_bus/state/ (listing: no claude-claude.json and no claude-* files)",
+      "automation/command_bus/runtime_state_initializer.py (generic initializer exists, never run for this lane)"
+    ],
+    "status": "ABSENT"
+  },
+  "verification_note": "Findings come from reading code/docs and grep in the checkout; no tests run. Contents of data/carrier branches (owner events, receipts) are not in the checkout and are UNKNOWN.",
+  "worker_provider": {
+    "claude_as_worker_path_in_signal_lane": "ABSENT. No Claude-as-worker dispatch, provider verification or terminal receipt path was found under automation/command_bus.",
+    "input_fact_note": "Relay/providers Claude code is owned by another team; recorded as an input fact only, NOT Signal lane evidence (no loop_id, owner chain, or Signal receipt references found there).",
+    "input_fact_only_other_team": [
+      "src/providers/claude_acp.py",
+      "src/relay/claude_auth_readonly.py",
+      "src/relay/claude_quota_readonly.py"
+    ],
+    "refs": [
+      "automation/command_bus/claude_loop.py:31-32,489-490 (CLAUDE_BACKEND = static description of a Claude-only step; gate transport only; no execution, no provider verification)",
+      "automation/command_bus/claude_admission_gate.py (Claude Admission Gate / egress proxy design; static; docs/CLAUDE_ADMISSION_GATE_DESIGN.md; not a Signal worker path)",
+      "docs/CLAUDE_AUTOLOOP_HANDOVER_CURRENT.md:19-24 (live use of the Gate stays blocked)"
+    ]
+  }
+}

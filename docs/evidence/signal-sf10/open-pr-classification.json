@@ -1,0 +1,77 @@
+{
+  "branches_deleted": 0,
+  "classification_kind": "SIGNAL_OPEN_PR_CLASSIFICATION",
+  "policy": "classification only; no PR closed, merged or edited and no branch deleted in this batch; closing is a human decision",
+  "proof_validity_without_historical_branches": "post-adoption verification reads committed files (proof 5 evidence, durable-chain copy, approval record) plus fresh facts for #278, #286, Issue #33; it does not need proof 2/3/4 branches or PRs",
+  "prs": [
+    {
+      "class": "SUPERSEDED",
+      "close_is_human_decision": true,
+      "note": "Step 7-10 integration Draft; content reached main via #261/#254; safe to close if the owner wants",
+      "number": 262
+    },
+    {
+      "class": "SUPERSEDED",
+      "note": "publish auto-resolve Draft; replaced by merged #279 (auto publish)",
+      "number": 276
+    },
+    {
+      "class": "ACTIVE_DEPENDENCY",
+      "note": "proof 5 target PR; the post-adoption verifier re-reads it as the fresh target (must stay open, unmerged, head 5ebad97)",
+      "number": 278
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "proof 4 target (ended UNKNOWN)",
+      "number": 273
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "proof 3 target (ended UNKNOWN)",
+      "number": 268
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "proof 2 target",
+      "number": 264
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "Jules output of proof 4, open, unmerged",
+      "number": 275
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "Jules output of proof 3, open, unmerged",
+      "number": 271
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "Jules output of proof 2, open, unmerged",
+      "number": 265
+    },
+    {
+      "class": "ACTIVE_DEPENDENCY",
+      "note": "Jules output of proof 5; recorded deviation MISSING_TRAILING_NEWLINE_ONLY; the approval cites head 847bc6a; never edit or merge",
+      "number": 286
+    },
+    {
+      "class": "SUPERSEDED",
+      "note": "SF-8 authority issuer integration Draft; content merged via later integrations",
+      "number": 239
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "authority issuer post-merge checkpoint",
+      "number": 241
+    },
+    {
+      "class": "HISTORICAL_EVIDENCE",
+      "note": "SF-8 bounded LIVE provider/authority proof records",
+      "number": 242
+    }
+  ],
+  "prs_closed": 0,
+  "read_at": "2026-10-03T22:30:00Z",
+  "schema_version": 1
+}

@@ -1,0 +1,223 @@
+{
+  "accepted_durable_transition": {
+    "note": "project_durable_transition collection in proof is asserted against LANE_ID chatgpt-semi-auto only.",
+    "source_refs": [
+      "automation/command_bus/signal_step7_live_proof.py:658"
+    ],
+    "status": "ABSENT"
+  },
+  "canonical_evidence": {
+    "note": "Step7 evidence builder is hard-bound to LANE_ID='chatgpt-semi-auto'. No work-gemini canonical evidence.",
+    "source_refs": [
+      "automation/command_bus/signal_step7_live_proof.py:54"
+    ],
+    "status": "ABSENT"
+  },
+  "closest_existing_implementation_and_mismatch": {
+    "closest": "Blue Work <-> J-BLUE (Cloud Work blue carrier + Jules result event bridge) - INPUT FACT ONLY, owned by another team and still changing; not designed here.",
+    "mismatch": [
+      "Worker: Blue Work reviews/reconciles JULES results (jules_lane 'J-BLUE', result_review_task fetches Jules claim/command/session lineage: cloud_work_lanes.py:14-24; docs/CLOUD_WORK_LANES_INDEX.md:60-75). Worker is Jules, not Gemini -> would be worker_kind JULES, contradicting registry GEMINI.",
+      "Identity: Blue lane key is the color 'blue' / label cloud-blue / CW_BLUE_V1 (cloud_work_lanes.py:5-11); these are routing metadata, not a durable loop id. blue_work_reconcile_prepare.py:347 passes loop_id=command['command_id'] into make_request_v2 (a per-command id, not a stable lane id).",
+      "Generation: worker_generation/active_generation is the Work-replacement fence read from a carrier branch state file (cloud_work_snapshot.py:67-85; blue_work_reconcile_prepare.py:152-159), not the owner-chain generation of state/<loop_id>.json.",
+      "Colors are four lanes shared by Jules/Work; none is a single 'Work -> Gemini' lane. Must not be treated as the same lane."
+    ],
+    "refs": [
+      "automation/command_bus/blue_work_reconcile_prepare.py:347",
+      "automation/command_bus/blue_work_wake_prepare.py",
+      "automation/command_bus/blue_work_wake_proof.py",
+      "automation/command_bus/cloud_work_lanes.py:9,16",
+      "docs/BLUE_WORK_JULES_WEBHOOK_LOOP_ROADMAP.md:45-48",
+      "docs/CLOUD_WORK_LANES_INDEX.md:60-75"
+    ]
+  },
+  "collector_readback": {
+    "note": "Collector is generic code but has no work-gemini durable state/chain to read.",
+    "source_refs": [
+      "automation/command_bus/control_tower_durable_collector.py"
+    ],
+    "status": "ABSENT"
+  },
+  "controller_implementation": {
+    "note": "A WORK controller exists only as the Cloud Work carrier/review protocol (4 colors: yellow/green/blue/red; carrier PR + label cloud-<color> + [CW_<COLOR>_V1] command review + worker_generation fencing) and the GitHub->Work/Luna event worker contract. Nothing in the repo names a 'work-gemini' controller or ties Work to a Gemini worker. Adoption plan says 'once the actual Work controller path exists' (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:195).",
+    "refs": [
+      "automation/command_bus/cloud_work_lanes.py:1-25",
+      "automation/command_bus/cloud_work_snapshot.py:21-98",
+      "docs/CLOUD_WORK_LANES_INDEX.md:1-50",
+      "docs/WORK_COMMAND_BUS_RUNTIME_CONTRACT.md:35"
+    ],
+    "status": "UNKNOWN_NO_WORK_GEMINI_CONTROLLER"
+  },
+  "current_blockers": [
+    "No Gemini worker path anywhere in repo (worker_kind GEMINI unbacked)",
+    "No Work->Gemini controller path distinct from Cloud Work colors (which pair with Jules)",
+    "No runtime-chosen stable durable loop_id; adoption plan forbids inventing one",
+    "No state/<id>.json, no owner chain, no lane-specific evidence/receipt",
+    "Blue Work (nearest input) owned by another team and still changing",
+    "Existing proof 5 is lane-pinned to chatgpt-semi-auto",
+    "Whether registry worker_kind GEMINI is intended or should be JULES is an undecided product question (UNKNOWN)"
+  ],
+  "current_identity_state": "PLACEHOLDER / NOT_WIRED (docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:114-128; registry line 46)",
+  "existing_live_proof": {
+    "exists": false,
+    "note": "Only LIVE proof (proof 5, Loop 136) is for chatgpt-semi-auto (Jules worker). It is for a different lane/id/worker and is hard-coded to that lane (durable_adoption_approval.py:135 rejects other lanes); it cannot be reused as adoption authority for work-gemini. Blue Work wake proof (blue_work_wake_proof.py) is a Blue/Jules carrier proof, not this lane's.",
+    "refs": [
+      "docs/SIGNAL_STEP7_PROOF5_RESULT_20261004.md:1-40",
+      "automation/command_bus/signal_step7_live_proof.py:1,54",
+      "automation/command_bus/durable_adoption_approval.py:29,135"
+    ]
+  },
+  "existing_static_proof": {
+    "exists": "PARTIAL",
+    "note": "Only display/fixture tests that use work-gemini as a label, and Blue Work static completion for the Jules-based blue lane. No static proof of a work-gemini durable record path. Tests not run.",
+    "refs": [
+      "automation/command_bus/blue_work_wake_proof.py:241",
+      "automation/command_bus/tests/test_control_tower_issue_plan.py:97,202-245",
+      "automation/command_bus/tests/test_control_tower.py:127",
+      "docs/BLUE_WORK_STATIC_COMPLETION_20261002.md"
+    ]
+  },
+  "fencing": {
+    "note": "Work-generation fencing + exactly-one-carrier discovery exist for Cloud Work colors. No owner fencing for a work-gemini durable lane.",
+    "source_refs": [
+      "automation/command_bus/blue_work_reconcile_prepare.py:152-159",
+      "docs/CLOUD_WORK_LANES_INDEX.md:76-100"
+    ],
+    "status": "PARTIAL"
+  },
+  "fresh_target_binding": {
+    "note": "collect_lane_snapshot does fresh GitHub readback of carrier + result PR with double-read change detection for a Cloud Work color; not bound to a durable work-gemini id or Gemini worker.",
+    "source_refs": [
+      "automation/command_bus/cloud_work_snapshot.py:50-98"
+    ],
+    "status": "PARTIAL"
+  },
+  "generation": {
+    "note": "Only Cloud Work worker_generation (carrier replacement fence). Not the owner-chain generation for a durable loop_id; must not be conflated.",
+    "source_refs": [
+      "automation/command_bus/cloud_work_snapshot.py:84",
+      "automation/command_bus/blue_work_reconcile_prepare.py:152-159"
+    ],
+    "status": "PARTIAL"
+  },
+  "human_approval_needed": true,
+  "intended_registry_entry": {
+    "controller_kind": "WORK",
+    "display_name": "Work -> Gemini",
+    "display_order": 40,
+    "enabled": true,
+    "identity_state": "PLACEHOLDER",
+    "loop_id": "work-gemini",
+    "mode": "AUTO",
+    "note": "loop_id here is a display-registry key chosen by the registry author; docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:6-19 says these are presentation placeholders and the final id is NOT chosen.",
+    "ref": "automation/command_bus/config/control_tower_registry.json:37-47",
+    "worker_kind": "GEMINI"
+  },
+  "lane_id": "work-gemini",
+  "lane_registration_readiness": {
+    "note": "Registration blocks while any enabled lane is PLACEHOLDER; work-gemini is PLACEHOLDER.",
+    "source_refs": [
+      "automation/command_bus/control_tower_registration.py:44-49,166,192",
+      "automation/command_bus/config/control_tower_registry.json:46"
+    ],
+    "status": "ABSENT"
+  },
+  "minimum_next_component": "A decision/inventory-level artifact, not code: resolve what 'Work -> Gemini' actually is (is there a Gemini worker? or is the registry worker_kind wrong for the Blue/Jules Work lane?) and which runtime component owns and exposes its stable loop_id. No LIVE-capable code until that is settled.",
+  "missing_requirements": [
+    "Real Gemini worker path (adapter/CLI/workflow) or corrected worker_kind decision",
+    "Work controller path that exposes a runtime-chosen stable loop_id (not caller input, not color/PR/thread)",
+    "state/<loop_id>.json with initializer",
+    "Append-only owner event chain with generation and fencing",
+    "Source receipt and canonical evidence bound to that id",
+    "Provider verification of the worker",
+    "Fresh exact target binding",
+    "Accepted durable transition (project_durable_transition) and collector readback",
+    "Lane registration readiness",
+    "New LIVE proof for this lane/id/target/generation/terminal receipt, not replayed",
+    "Human approval of PLACEHOLDER->DURABLE adoption"
+  ],
+  "new_live_needed": true,
+  "next_task": {
+    "do": [
+      "Record factually that no Gemini worker path exists and Cloud Work Blue uses Jules",
+      "Obtain owner decision on lane definition before any code",
+      "Then parameterise (not fork) lane-pinned proof/approval modules only if the owner confirms the lane exists"
+    ],
+    "do_not": [
+      "Do not invent a loop_id or reuse cloud-blue/CW_BLUE_V1/PR number/thread/color/worker_generation",
+      "Do not treat Blue Work/Jules as Gemini",
+      "Do not reuse proof 5",
+      "Do not edit the registry identity_state",
+      "Do not run LIVE, provider, Jules or Gemini calls",
+      "Do not design Blue Work"
+    ],
+    "existing_local_destination": "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md (Lane D section)",
+    "exit": "Written owner decision naming the controller component and stable-id source (or a decision to change worker_kind/retire the lane); readiness stays BLOCKED until then.",
+    "small_component": "Static lane-definition note: confirm worker/controller identity and name the runtime component that will own the stable loop_id",
+    "upstream_accepted_source": "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md Lane D plus owner/operator answer on whether Work->Gemini exists or worker_kind should be JULES; Blue Work remains an external input fact"
+  },
+  "owner_event_chain": {
+    "note": "Generic owner-chain code exists (loop_owner*.py, jules_semiauto_owner_prepare.py is the Jules semi-auto producer) but nothing emits a work-gemini owner event; no loop_owner_events/ directory in checkout.",
+    "source_refs": [
+      "automation/command_bus/loop_owner.py",
+      "automation/command_bus/loop_owner_backend.py"
+    ],
+    "status": "ABSENT"
+  },
+  "provider_verification": {
+    "note": "No Gemini provider path exists to verify. (Blue's Jules provider verification is for a different worker.)",
+    "source_refs": [
+      "automation/command_bus/control_tower.py:45"
+    ],
+    "status": "ABSENT"
+  },
+  "readiness_class": "BLOCKED",
+  "readiness_reason": "No Gemini worker implementation exists, no Work->Gemini controller path or runtime-chosen stable loop_id exists, and no state/owner chain/evidence exists. The closest implementation (Cloud Work Blue + Jules) has a different worker (Jules) and identity (color/carrier), so it is not this lane. Past LIVE proof 5 is for another lane and cannot be reused. Even after identity exists a new LIVE proof and human approval for PLACEHOLDER->DURABLE are required.",
+  "reusable_components": [
+    "automation/command_bus/signal_step7_live_proof.py (pattern; currently lane-pinned)",
+    "automation/command_bus/durable_adoption_approval.py",
+    "automation/command_bus/control_tower_durable_collector.py",
+    "automation/command_bus/control_tower_registration.py",
+    "automation/command_bus/sf8_readiness.py",
+    "automation/command_bus/lane_identity_adoption.py (validate_lane_adoption_diff)",
+    "automation/command_bus/loop_owner.py / loop_owner_backend.py / loop_owner_authority.py / loop_owner_observation.py",
+    "automation/command_bus/cloud_work_snapshot.py (fresh lane readback, Blue is an input fact)",
+    "automation/command_bus/cloud_work_lanes.py"
+  ],
+  "source_receipt": {
+    "note": "[CW_<COLOR>_RECEIPT_V1] terminal receipts exist for Cloud Work colors; no receipt bound to a work-gemini loop_id or Gemini worker.",
+    "source_refs": [
+      "automation/command_bus/blue_work_reconcile_prepare.py:213",
+      "docs/CLOUD_WORK_LANES_INDEX.md:97"
+    ],
+    "status": "PARTIAL"
+  },
+  "stable_durable_loop_id": {
+    "caller_input_only": "UNKNOWN",
+    "chosen_by": "nobody (UNKNOWN runtime owner); 'work-gemini' was chosen by the registry/display author as placeholder",
+    "evidence": [
+      "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:114-128 (no final durable Work->Gemini identity established)",
+      "automation/command_bus/config/control_tower_registry.json:46 PLACEHOLDER",
+      "ls automation/command_bus: no loop_owner_events dir; no state/work-gemini.json (state/ holds only validation/proof records)",
+      "cloud-blue/CW_BLUE_V1/carrier PR/worker_generation are not accepted as ids"
+    ],
+    "exists": false,
+    "value_or_null": null
+  },
+  "state_file": {
+    "note": "No work-gemini-specific implementation; the only grep hits for 'work-gemini' in *.py are tests using it as a fixture lane id (tests/test_control_tower*.py, test_durable_adoption_applied.py:56).",
+    "source_refs": [
+      "automation/command_bus/state/ (listing: no work-gemini*.json)"
+    ],
+    "status": "ABSENT"
+  },
+  "worker_provider": {
+    "note": "GEMINI appears only as an allowed worker_kind enum value / display label in Control Tower code and schemas. Grep over *.py finds no Gemini adapter, client, CLI, workflow or worker path. Remaining 'gemini' mentions in docs are review-role notes (HANDOVER_CURRENT.md:279, README.md:25 'Gemini/agy review'), Relay ACP option discussion (RELAY_JULES_HANDOFF.md:271,297, UNKNOWN), and the Control Tower roadmap lane names. Not verified by running anything.",
+    "refs": [
+      "automation/command_bus/control_tower.py:45,63",
+      "automation/command_bus/control_tower_snapshot.py:53",
+      "automation/command_bus/schema/control_tower_registry.schema.json:59",
+      "docs/CONTROL_TOWER_REAL_LOOP_ID_ADOPTION_PLAN.md:114-122"
+    ],
+    "status": "ABSENT"
+  }
+}

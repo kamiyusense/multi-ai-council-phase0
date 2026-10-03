@@ -45,7 +45,20 @@ checkpoint text.
 
 ## 3. Current checkpoint
 
-Fresh readback at v2 creation:
+> **2026-10-04 status override (current state; the readback below is historical)**
+>
+> - SF-8 Minimum real trust proof: **complete** (Step 7 proof 5, Loop 136; terminal receipt COMPLETE).
+> - SF-9 One-lane DURABLE promotion: **complete**. `chatgpt-semi-auto` is `DURABLE` in the production
+>   registry (PR #290, merge `faa04a7`) under a separate `DURABLE_ADOPTION_APPROVAL_V1` record
+>   (issuer run 37155730052). The other three lanes stay `PLACEHOLDER`; global registration stays `NOT_WIRED`.
+> - SF-10 Other lanes adapt into the proven seams: **active**. Factual inventory:
+>   `docs/SIGNAL_SF10_LANE_INVENTORY_20261004.md` (all three remaining lanes `BLOCKED`).
+> - Issue #33 verified multi-loop migration: **not started** (Issue stays STOPPED / owner NONE).
+> - Jules output PR #286 keeps the recorded deviation `MISSING_TRAILING_NEWLINE_ONLY`; authentication
+>   success and exact-output conformity remain separate facts.
+> - Post-adoption evidence: `docs/evidence/signal-sf10/post-adoption-checkpoint.json`.
+
+Fresh readback at v2 creation (historical):
 
 - current main:
   63ae5fc8f83a6f5e24ed960c4347e59a26954fdd
@@ -62,7 +75,7 @@ Fresh readback at v2 creation:
 - historical Signal branch:
   feature/signal-semiauto-stable-id-adoption-v1
   is evidence/parts only; it is not the current integration base
-- production Control Tower registry remains PLACEHOLDER
+- production Control Tower registry remains PLACEHOLDER (historical; see the 2026-10-04 override above)
 - verified Issue #33 multi-loop runtime migration remains NOT STARTED
 
 ## 4. Two layers, deliberately separate
