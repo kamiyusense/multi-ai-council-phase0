@@ -1,0 +1,5 @@
+{
+  "target_sha": "813f73141dd63d404d3139bea32d9067d1cac373",
+  "source_pr": "283",
+  "purpose": "relay docs-only validation after current-main sync; exact-head + Linux + Windows + Claude STATIC/TCK; no LIVE"
+}
