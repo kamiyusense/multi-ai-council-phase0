@@ -13,6 +13,7 @@ import unittest
 from pathlib import Path
 
 from providers.claude_acp import build_claude_profile
+from providers.codex_acp import build_codex_profile
 from relay.acp_client import _acp_initialize
 from relay.acp_stdio_relay_transport import AcpStdioStaticTransport
 from relay.acp_stdio_transport import spawn_stdio_transport
@@ -66,9 +67,15 @@ def fake_agent(frames_after_init=(), frames_in_prompt=(), prompt_text="synthetic
     return (sys.executable, "-c", code)
 
 
-def dispatch(command):
-    t = AcpStdioStaticTransport(profile(), command)
-    env = DispatchEnvelope.build(slot=DispatchSlot("case", "anthropic", 0), correlation_id="corr-auth", payload={"prompt": "hi"}, timeout_seconds=10)
+def dispatch(command, provider_profile=None):
+    provider_profile = provider_profile or profile()
+    t = AcpStdioStaticTransport(provider_profile, command)
+    env = DispatchEnvelope.build(
+        slot=DispatchSlot("case", provider_profile.provider_id, 0),
+        correlation_id="corr-auth",
+        payload={"prompt": "hi"},
+        timeout_seconds=10,
+    )
     res = RelayLifecycle(transport=t, duplicate_guard=DuplicateGuard()).dispatch_mock(env, cwd=tempfile.gettempdir())
     return t, res
 
@@ -125,6 +132,12 @@ class TestRelayConsumesTheNotification(unittest.TestCase):
 
     def test_other_unknown_notification_methods_still_fail_closed_in_prompt(self):
         t, res = dispatch(fake_agent(frames_in_prompt=[notification(NONE, method="_other/notice")]))
+        self.assertEqual(res.state, RelayState.UNKNOWN)
+        self.assertEqual(t.auth_status_evidence, [])
+
+    def test_claude_auth_extension_is_not_accepted_for_codex(self):
+        codex = build_codex_profile("account", dict(_FALSE))
+        t, res = dispatch(fake_agent(frames_in_prompt=[notification(SUBSCRIPTION)]), provider_profile=codex)
         self.assertEqual(res.state, RelayState.UNKNOWN)
         self.assertEqual(t.auth_status_evidence, [])
 
