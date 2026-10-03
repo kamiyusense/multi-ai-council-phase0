@@ -35,11 +35,13 @@ def summarize_claude_auth_evidence(cli_status: Any) -> dict[str, Any]:
     subscription = cli_status.get("subscriptionType")
     if provider == "gateway" or (isinstance(provider, str) and provider and provider != "firstParty"):
         evidence["auth_state"] = "EXTERNAL_ROUTE_VIOLATION"  # Phase 0 forbids gateway / 3P cloud routes
+    elif not cli_status["loggedIn"] and not key_source:
+        # Mirror the official adapter: outside a 3P backend, a known logged-out
+        # verdict wins before any stale subscription fields are considered.
+        evidence["auth_state"] = "NOT_AUTHENTICATED"
     elif key_source:
         evidence["auth_state"] = "API_KEY_ROUTE_VIOLATION"  # an API key outranks a stored subscription login
     elif subscription:
         evidence["auth_state"] = "CLAUDE_SUBSCRIPTION_ACCOUNT"
         evidence["plan_type"] = subscription if isinstance(subscription, str) else UNKNOWN
-    elif not cli_status["loggedIn"]:
-        evidence["auth_state"] = "NOT_AUTHENTICATED"
     return evidence
