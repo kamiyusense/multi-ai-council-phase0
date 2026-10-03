@@ -219,11 +219,14 @@ def preflight(cfg: Config) -> dict[str, Any]:
     need(git.get("main_is_ancestor") is True, "CURRENT_MAIN",
          "この M9 branch は現在の main を含んでいません。LIVE は行わず停止します。最新 main 起点の検証済み successor を用意してください。")
     need(sys.version_info >= (3, 11), "PYTHON", "Python 3.11 以上が必要です。")
-    need(bool(cfg.node_path), "NODE", "Node.js が見つかりません。Node.js をインストールしてから再実行してください（自動ではインストールしません）。")
+    need(bool(cfg.node_path), "NODE", "Node.js が見つかりません。Node.js をインストールしてから再実行してください（自動ではインストールしません）。"
+         "例: PowerShell で `winget install -e --id OpenJS.NodeJS.LTS` のあと PowerShell を開き直す。")
     need(bool(cfg.codex_path) and Path(cfg.codex_path).exists(), "CODEX_EXE",
-         "Codex の実行ファイル（codex）が見つかりません。この PC に Codex がインストールされていないようです。ログインや導入は自動では行いません。停止します。")
+         "Codex の実行ファイル（codex）が見つかりません。この PC に Codex がインストールされていないようです。ログインや導入は自動では行いません。停止します。"
+         "例: `npm.cmd install -g @openai/codex`（PowerShell が npm.ps1 を拒否する場合は npm.cmd を使う）のあと PowerShell を開き直す。")
     need(Path(cfg.codex_home).is_dir(), "CODEX_HOME",
-         "Codex のログイン情報の置き場所（CODEX_HOME / ~/.codex）が見つかりません。この PC では Codex にログインしていないようです。自動ログインは行いません。停止します。")
+         "Codex のログイン情報の置き場所（CODEX_HOME / ~/.codex）が見つかりません。この PC では Codex にログインしていないようです。自動ログインは行いません。停止します。"
+         "ログインはあなた自身が `codex.cmd login`（ChatGPT アカウント）で行ってください。")
     need(Path(cfg.gate_launcher).is_file() and (cfg.repo_root / "src/relay/codex_turn_gate.py").is_file(),
          "GATE", "1 回生成ゲート（codex_turn_gate）が見つかりません。リポジトリを最新にしてください。")
     need(not (cfg.state_dir / TERMINAL_FILE).exists(), "NOT_FINISHED", "すでに 1 回実行済みです。再実行しません。")
