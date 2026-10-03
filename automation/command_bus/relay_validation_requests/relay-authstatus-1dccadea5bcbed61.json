@@ -1,0 +1,5 @@
+{
+  "target_sha": "1dccadea5bcbed61b79c8fac333d8c46fb16d0bc",
+  "source_pr": "284",
+  "purpose": "relay validation after restoring tripwire executable mode on final current-main-synced Claude auth-status branch; exact-head + Linux + Windows + Claude STATIC/TCK; no LIVE"
+}
