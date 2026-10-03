@@ -1,10 +1,10 @@
 {
-  "allowed_content": "signal active proof 3\n",
-  "allowed_path": "docs/evidence/signal-active-proof-3/PROOF.md",
+  "allowed_content": "signal active proof 4\n",
+  "allowed_path": "docs/evidence/signal-active-proof-4/PROOF.md",
   "authority_max_age_seconds": 3600,
   "carrier_claim": {
     "claimed_at": "1970-01-01T00:00:00+00:00",
-    "command_id": "relay-dev-loop-0-signal-active-proof-3",
+    "command_id": "relay-dev-loop-0-signal-active-proof-4",
     "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
     "expected_target_head": "0000000000000000000000000000000000000000",
     "expected_target_tree": "0000000000000000000000000000000000000000",
@@ -16,13 +16,13 @@
     "retry": 0,
     "schema_version": 3,
     "state": "CLAIMED",
-    "target_branch": "signal/chatgpt-semi-auto-active-proof-3-target",
-    "task_id": "signal-active-proof-3",
-    "work_branch": "jules-work/relay-dev-loop-0-signal-active-proof-3"
+    "target_branch": "signal/chatgpt-semi-auto-active-proof-4-target",
+    "task_id": "signal-active-proof-4",
+    "work_branch": "jules-work/relay-dev-loop-0-signal-active-proof-4"
   },
-  "data_branch": "signal/chatgpt-semi-auto-active-proof-3-data",
+  "data_branch": "signal/chatgpt-semi-auto-active-proof-4-data",
   "durable_context": {
-    "correlation_id": "signal-active-proof-3",
+    "correlation_id": "signal-active-proof-4",
     "holder_id": "chatgpt-controller",
     "loop_id": "chatgpt-semi-auto",
     "owner_expires_at": "1970-01-01T02:00:00+00:00",
@@ -47,9 +47,9 @@
   "repository": "kamiyusense/multi-ai-council-phase0",
   "request": {
     "allowed_paths": [
-      "docs/evidence/signal-active-proof-3/PROOF.md"
+      "docs/evidence/signal-active-proof-4/PROOF.md"
     ],
-    "command_id": "relay-dev-loop-0-signal-active-proof-3",
+    "command_id": "relay-dev-loop-0-signal-active-proof-4",
     "created_at": "1970-01-01T00:00:00+00:00",
     "expected_target_head": "0000000000000000000000000000000000000000",
     "expected_target_tree": "0000000000000000000000000000000000000000",
@@ -58,16 +58,16 @@
     "force_push_allowed": false,
     "merge_allowed": false,
     "profile": "JULES_CHAT_SEMIAUTO_V2",
-    "prompt": "Create exactly one file docs/evidence/signal-active-proof-3/PROOF.md whose entire content is the single line: signal active proof 3\nChange no other file. Do not add tests, code, or dependencies. Open the normal pull request when done.",
+    "prompt": "Create exactly one file docs/evidence/signal-active-proof-4/PROOF.md whose entire content is the single line: signal active proof 4\nChange no other file. Do not add tests, code, or dependencies. Open the normal pull request when done.",
     "retry": 0,
     "schema_version": 2,
-    "target_branch": "signal/chatgpt-semi-auto-active-proof-3-target",
+    "target_branch": "signal/chatgpt-semi-auto-active-proof-4-target",
     "target_repo": "kamiyusense/multi-ai-council-phase0",
-    "work_branch": "jules-work/relay-dev-loop-0-signal-active-proof-3"
+    "work_branch": "jules-work/relay-dev-loop-0-signal-active-proof-4"
   },
   "retry": 0,
   "schema_version": 1,
-  "target_branch": "signal/chatgpt-semi-auto-active-proof-3-target",
+  "target_branch": "signal/chatgpt-semi-auto-active-proof-4-target",
   "target_pr": 1,
-  "work_branch": "jules-work/relay-dev-loop-0-signal-active-proof-3"
+  "work_branch": "jules-work/relay-dev-loop-0-signal-active-proof-4"
 }
