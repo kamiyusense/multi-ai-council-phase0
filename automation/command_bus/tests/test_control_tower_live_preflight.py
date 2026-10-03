@@ -21,6 +21,7 @@ from automation.command_bus.loop_status_issue import (
     managed_block,
 )
 from automation.command_bus.loop_status_transition import TransitionProjectionResult
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 
 ROOT = Path(__file__).parents[1]
@@ -29,7 +30,7 @@ NOW = "2026-09-28T06:00:00+00:00"
 
 
 def repository_registry():
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    return pre_adoption(json.loads(REGISTRY_PATH.read_text(encoding="utf-8")))
 
 
 def one_lane_registry(

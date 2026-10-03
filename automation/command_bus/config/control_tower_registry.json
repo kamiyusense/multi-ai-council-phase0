@@ -10,7 +10,7 @@
       "display_order": 10,
       "enabled": true,
       "safe_detail_ref": "issue:33",
-      "identity_state": "PLACEHOLDER"
+      "identity_state": "DURABLE"
     },
     {
       "loop_id": "claude-gemini",

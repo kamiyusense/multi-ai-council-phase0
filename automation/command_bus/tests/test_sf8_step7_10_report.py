@@ -28,10 +28,11 @@ from automation.command_bus.tests.test_control_tower_live_preflight import issue
 from automation.command_bus.tests.test_semiauto_stable_identity_static_e2e import (
     CURRENT_TIME, LOOP_ID, Clock, TargetReader, fixture_registry,
 )
+from automation.command_bus.tests.pre_adoption_registry import pre_adoption
 
 ROOT = Path(__file__).resolve().parents[3]
 EVID = ROOT / "docs/evidence/signal-sf8"
-REGISTRY = json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8"))
+REGISTRY = pre_adoption(json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8")))
 RECORD = json.loads((EVID / "adoption-record-candidate-chatgpt-semi-auto.json").read_text(encoding="utf-8"))
 CANDIDATE = json.loads((EVID / "registry-candidate-chatgpt-semi-auto-durable.json").read_text(encoding="utf-8"))
 REPORT_PATH = EVID / "readiness-report-20261003.json"
