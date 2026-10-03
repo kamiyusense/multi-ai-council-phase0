@@ -134,6 +134,25 @@ class LiveCounters:
         }
 
 
+_FRACTION = re.compile(r"\.[0-9]+(?=Z$|[+-][0-9]{2}:[0-9]{2}$)")
+
+
+def _floor_provider_times(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Floor the Jules session createTime/updateTime to whole seconds.
+
+    Jules returns sub-second timestamps, while the owner claim, the provider observation
+    and the exact-equality check in the direct readback authenticator all use whole
+    seconds. Without this the authenticator compares updateTime 00:55:08.43Z with the
+    observed_at 00:55:08Z and refuses (proof 2 stopped here with the single GET spent).
+    """
+    result = dict(snapshot)
+    for key in ("createTime", "updateTime"):
+        value = result.get(key)
+        if isinstance(value, str):
+            result[key] = _FRACTION.sub("", value)
+    return result
+
+
 class BudgetedSessionReader:
     """Wraps the single real GET: spends budget BEFORE any I/O, and never repeats."""
 
@@ -152,6 +171,7 @@ class BudgetedSessionReader:
             raise LiveProofError("PROVIDER_READ_UNKNOWN", type(exc).__name__) from None
         if not isinstance(snapshot, dict):
             raise LiveProofError("PROVIDER_READ_UNKNOWN", "non-object response")
+        snapshot = _floor_provider_times(snapshot)
         self.snapshot = copy.deepcopy(snapshot)
         return copy.deepcopy(snapshot)
 

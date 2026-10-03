@@ -464,6 +464,30 @@ class EndToEndCliTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual([c for c in world.calls if c[1].startswith(cli.JULES_API)], [])
 
+    def test_sub_second_provider_times_are_floored_and_still_publish(self):
+        # Proof 2 stopped with PUBLISH_NOT_READY because Jules returns sub-second times
+        # while the owner claim / observation / authenticator compare whole seconds.
+        for create, update in (("2026-10-03T00:05:00Z", "2026-10-03T00:08:00.123456789Z"),
+                               ("2026-10-03T00:05:00.9Z", "2026-10-03T00:09:59.500000Z"),
+                               ("2026-10-03T00:05:00.250Z", "2026-10-03T00:05:00.250Z")):
+            with self.subTest(create=create, update=update):
+                world = self.world()
+                original = world.__class__.__call__
+
+                def call(method, url, headers, body, original=original, world=world, create=create, update=update):
+                    status, hdrs, raw = original(world, method, url, headers, body)
+                    if url.startswith(cli.JULES_API):
+                        data = json.loads(raw)
+                        data["createTime"], data["updateTime"] = create, update
+                        raw = json.dumps(data).encode()
+                    return status, hdrs, raw
+
+                world.__class__ = type("SubSecondWorld", (world.__class__,), {"__call__": lambda self, m, u, h, b: call(m, u, h, b)})
+                with tempfile.TemporaryDirectory() as tmp:
+                    code, result = self.run_main(world, tmp)
+                self.assertEqual((code, result["status"]), (0, "COMPLETE"), result)
+                self.assertEqual(len([c for c in world.calls if c[1].startswith(cli.JULES_API)]), 1)
+
     def test_a_completed_provider_state_never_publishes(self):
         world = self.world(session_state="COMPLETED")
         with tempfile.TemporaryDirectory() as tmp:
