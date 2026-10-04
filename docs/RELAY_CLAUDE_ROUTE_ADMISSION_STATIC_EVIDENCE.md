@@ -69,3 +69,14 @@ The Admission Gate's production behavior is unchanged; route admission is not a 
 
 ### Carrier
 `feature/relay-carrier-codex-compat-v1` (separate Draft PR, base = carrier branch): the Codex Linux/Windows workflows fail on targets that predate #270 (`fd18a80`: none of the required test files/classes/`.cmd` exist). A select step now reports `NOT_APPLICABLE` for such targets; applicable targets keep their exact checks. Selection logic verified locally against `fd18a80` / `703b1bc` / main; not run on GitHub Actions yet.
+
+## 10. Minimal mid-turn rule (human-approved scope, STATIC)
+Scope was frozen by the human: only what the spec needs plus what is free with existing parts.
+- `providers.policy.claude_route_midturn(item)` (same policy module): a reason only for a **confirmed** API-key / external classification; unknown, malformed and not-authenticated -> `None` (recorded only, never acted on).
+- `AcpStdioStaticTransport(route_midturn=...)` (Claude profile only, off by default): when the identity push arrives during the prompt, the injected rule decides; on a reason the transport raises `RouteViolationCancelled`.
+- `RelayLifecycle`: calls the **existing** `transport.cancel`, sets the **existing** stop flag (`_stop_requested`, so the next dispatch is `BLOCKED: stop requested`), and returns `CANCELLED` with the reason in `error`. No new state machine, no lock/unlock, no retry, no relaunch, no fallback; nothing private is copied.
+- `monitor_only(policy, neutral)`: the single wrapper for "monitor only" - it records the real decision in `.observed` and always returns the neutral allow value (`(True, "MONITOR_ONLY")` for admission, `None` for the mid-turn rule). **There is no "protection off"**: the spec requires the route to be confirmed as subscription before dispatch, so an off switch would contradict it; to use API keys later is a spec change for a later phase.
+- Tests: `tests/relay/test_claude_route_midturn.py` (9). They run on the exact-head full suite (no adapter needed).
+- Honest limits (unchanged): prompt-start pushes can still arrive after generation began, so this limits further spend only; tokens already used are not refunded and file operations are not rolled back; none of this is proven against a real CLI/account.
+
+Deferred (one line each, not built): unlock-reason UI and recording; `COMPLETED_WITH_ROUTE_VIOLATION` and any after-completion detection; a finer state taxonomy; saving partial reply text; a warning window and any switch UI; selecting allowed routes (API key etc.); persistent incident log file (to be built together with a real-Claude trial runner); quota meter.

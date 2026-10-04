@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from copy import deepcopy
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from providers.policy import ProviderPolicy
@@ -440,6 +440,7 @@ async def _acp_prompt_text(
     max_ignored: int = _MAX_INTERLEAVED_NOTIFICATIONS,
     ignorable: frozenset[str] = _IGNORABLE_SESSION_UPDATES,
     auth_sink: list[dict[str, Any]] | None = None,
+    on_auth: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, str]:
     """Internal helper: session/prompt (request id 2) -> text chunks (default 1..3) + stopReason."""
     prompt_request = {
@@ -505,6 +506,8 @@ async def _acp_prompt_text(
                     # classification only, no text. A missing sink means this extension
                     # is not enabled for the current provider and therefore remains unknown.
                     auth_sink.append(evidence)
+                    if on_auth is not None:
+                        on_auth(evidence)  # may raise to abort the turn (mid-turn route rule)
                     ignored += 1
                     if ignored > max_ignored:
                         raise ValueError("Too many ignorable session updates")
