@@ -57,6 +57,10 @@ on:
       - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/lane_runtime_export.py
       - automation/command_bus/tests/test_lane_runtime_export.py
+      - automation/command_bus/claude_jules_lane_proof.py
+      - automation/command_bus/tests/test_claude_jules_lane_proof.py
+      - automation/command_bus/claude_jules_lane_proof_launcher.py
+      - automation/command_bus/tests/test_claude_jules_lane_proof_launcher.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
       - automation/command_bus/lane_stable_identity.py
       - automation/command_bus/tests/test_lane_stable_identity.py
@@ -164,6 +168,8 @@ on:
       - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/lane_runtime_export.py
       - automation/command_bus/tests/test_lane_runtime_export.py
+      - automation/command_bus/claude_jules_lane_proof.py
+      - automation/command_bus/tests/test_claude_jules_lane_proof.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
       - automation/command_bus/lane_stable_identity.py
       - automation/command_bus/tests/test_lane_stable_identity.py
@@ -213,6 +219,8 @@ jobs:
             automation.command_bus.tests.test_github_oidc_proof_policy_cli
             automation.command_bus.tests.test_github_oidc_workflow_evidence_link
             automation.command_bus.tests.test_claude_loop
+            automation.command_bus.tests.test_claude_jules_lane_proof
+            automation.command_bus.tests.test_claude_jules_lane_proof_launcher
             automation.command_bus.tests.test_loop_status_development
             automation.command_bus.tests.test_loop_owner
             automation.command_bus.tests.test_loop_owner_backend
