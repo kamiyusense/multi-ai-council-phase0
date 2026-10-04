@@ -80,3 +80,12 @@ Scope was frozen by the human: only what the spec needs plus what is free with e
 - Honest limits (unchanged): prompt-start pushes can still arrive after generation began, so this limits further spend only; tokens already used are not refunded and file operations are not rolled back; none of this is proven against a real CLI/account.
 
 Deferred (one line each, not built): unlock-reason UI and recording; `COMPLETED_WITH_ROUTE_VIOLATION` and any after-completion detection; a finer state taxonomy; saving partial reply text; a warning window and any switch UI; selecting allowed routes (API key etc.); persistent incident log file (to be built together with a real-Claude trial runner); quota meter.
+
+## 11. Dispatch integration (STATIC, prepare-only)
+#301 is merged (`b269f01`). `src/relay/claude_dispatch.py` (`ClaudeStaticDispatcher`) only **assembles existing parts**; it adds no policy, state machine, cancel or stop flag.
+- Order: Claude provider check -> Admission Gate prepared-contract check (UUID id, `PREPARED`, launch/live/external false, retry 0, fallback disabled, `CLAUDE_CODE_MAX_RETRIES=0`, header id == dispatch id) -> `AcpStdioStaticTransport` with `claude_route_admission` / `claude_route_midturn` -> `RelayLifecycle.dispatch_mock` (initialize -> auth evidence -> admission -> `session/new` -> re-judge -> exactly one prompt -> terminal). Any failed check is `BLOCKED` before a transport or process exists.
+- Roles: route admission = payment/auth route before generation; Admission Gate = generation count (<=1 upstream request); mid-turn cancel (#301) = confirmed API-key/external only, existing cancel + existing stop flag. Unknown / malformed / not-authenticated mid-turn: record only.
+- Mode: `enforce` or `monitor_only` (the existing wrapper). Any other value (including "off") raises `ValueError`.
+- Tests: `tests/relay/test_claude_dispatch_static.py` (11): normal, pre-start API key / gateway / external, unknown / malformed / no evidence (fail closed), mid-turn API key / external / gateway (cancel, no second prompt, next dispatch blocked), mid-turn unknown / malformed / none (no cancel), monitor-only, duplicate request.
+- Counts for this change: LIVE 0, real account read 0, pin changes 0 (Codex 2.1.0, Claude ACP 0.84.0, Antigravity 1.2.1), Billing/API-key operations 0, retry 0, fallback disabled. Quota: existing read-only mapper only, no new implementation.
+- Remaining LIVE boundary: real CLI / real account behavior is UNKNOWN until an approved real trial.
