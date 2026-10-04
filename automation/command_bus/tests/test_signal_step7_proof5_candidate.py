@@ -29,12 +29,12 @@ def load(path: Path):
 
 
 def pre_adoption_production():
-    """The production registry with the adopted lane at PLACEHOLDER (valid before and after adoption)."""
-    reg = load(ROOT / "automation/command_bus/config/control_tower_registry.json")
-    for entry in reg["loops"]:
-        if entry["loop_id"] == LANE:
-            entry["identity_state"] = "PLACEHOLDER"
-    return reg
+    """The registry as it was before the adoption: the committed candidate with the lane at PLACEHOLDER.
+
+    Reached only through the production guard, so the live file must still carry the approved DURABLE row.
+    """
+    from automation.command_bus.tests.pre_adoption_registry import pre_adoption
+    return pre_adoption(load(ROOT / "automation/command_bus/config/control_tower_registry.json"))
 
 
 RECEIPT = load(P5 / "live-terminal-receipt.json")

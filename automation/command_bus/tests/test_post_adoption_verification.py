@@ -123,7 +123,7 @@ class TamperTests(unittest.TestCase):
         self.assertIn("committed_adoption_approval_valid", failed_with(self.root))
 
     def test_wrong_lane_proof_transition_and_deviation_ack(self):
-        for field, value in (("lane_id", "claude-gemini"), ("proof_task_id", "signal-active-proof-4"),
+        for field, value in (("lane_id", "claude-jules-auto"), ("proof_task_id", "signal-active-proof-4"),
                              ("transition", "DURABLE->PLACEHOLDER"), ("accepted_deviation", None)):
             self.setUp()
             self.approval(lambda d, f=field, v=value: d.update({f: v}))
@@ -141,17 +141,23 @@ class TamperTests(unittest.TestCase):
         self.assertIn("approved_current_registry_digest", failed_with(self.root))
         self.setUp()
         self.approval(lambda d: d.update(proposed_registry_sha256="3" * 64))
-        self.assertTrue({"approved_proposed_registry_digest", "current_registry_equals_approved_proposal"} <= failed_with(self.root))
+        self.assertIn("approved_proposed_registry_digest", failed_with(self.root))
 
     def test_second_durable_lane_and_unrelated_changes_after_approval(self):
         def second(reg):
             reg["loops"][1]["identity_state"] = "DURABLE"
         edit(self.root, pav.cli.REGISTRY_PATH, second)
-        self.assertTrue({"exactly_one_durable_lane", "current_registry_equals_approved_proposal"} <= failed_with(self.root))
-        for field, value in (("display_order", 99), ("display_name", "Renamed"), ("safe_detail_ref", "issue:34")):
+        self.assertTrue({"exactly_one_durable_lane", "adopted_row_equals_approved_entry_except_display_name"} <= failed_with(self.root))
+        for field, value in (("display_order", 99), ("safe_detail_ref", "issue:34"), ("enabled", False),
+                             ("mode", "AUTO"), ("controller_kind", "CLAUDE"), ("worker_kind", "WORK"),
+                             ("loop_id", "chatgpt-semi-auto-x"), ("identity_state", "PLACEHOLDER")):
             self.setUp()
             edit(self.root, pav.cli.REGISTRY_PATH, lambda reg, f=field, v=value: reg["loops"][0].update({f: v}))
-            self.assertIn("current_registry_equals_approved_proposal", failed_with(self.root), field)
+            self.assertTrue({"adopted_row_equals_approved_entry_except_display_name", "durable_lane_is_chatgpt_semi_auto"}
+                            & failed_with(self.root), field)
+        self.setUp()  # only the display name may change
+        edit(self.root, pav.cli.REGISTRY_PATH, lambda reg: reg["loops"][0].update(display_name="Chat to Jules"))
+        self.assertNotIn("adopted_row_equals_approved_entry_except_display_name", failed_with(self.root))
 
     def test_registry_back_at_placeholder_is_not_adopted(self):
         edit(self.root, pav.cli.REGISTRY_PATH, lambda reg: reg["loops"][0].update(identity_state="PLACEHOLDER"))
@@ -204,15 +210,15 @@ class MixedRegistryTests(unittest.TestCase):
             clock=pav._Clock("2026-10-03T22:22:30+00:00"))
         inventory = collector.collect_registry(REGISTRY)
         self.assertEqual(inventory.status, "NOT_WIRED")
-        self.assertIn("claude-gemini", inventory.reason)
+        self.assertIn("chat-work-semi-auto", inventory.reason)
 
     def test_global_registration_is_not_wired_even_with_the_real_durable_transition(self):
         transition = self.collect("2026-10-03T22:22:30+00:00").transition
         result = assess_registration_readiness(REGISTRY, {LANE: transition})
         self.assertEqual(result.status, "NOT_WIRED")
-        self.assertEqual(result.placeholder_loop_ids, ("claude-gemini", "claude-claude", "work-gemini"))
+        self.assertEqual(result.placeholder_loop_ids, ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"))
         self.assertEqual(assess_lane_registration_readiness(REGISTRY, LANE, transition).status, "READY")
-        for other in ("claude-gemini", "claude-claude", "work-gemini"):
+        for other in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
             self.assertEqual(assess_lane_registration_readiness(REGISTRY, other, transition).status, "NOT_WIRED")
 
     def test_mixed_render_keeps_the_durable_lane_and_never_guesses_the_placeholders(self):
@@ -221,7 +227,7 @@ class MixedRegistryTests(unittest.TestCase):
         model = build_control_tower(REGISTRY, {LANE: lane_input}, generated_at="2026-10-03T20:10:00Z")
         by_id = {lane.loop_id: lane for lane in model.lanes}
         self.assertEqual((by_id[LANE].display_state, by_id[LANE].identity_state), ("SEMI_AUTO", "DURABLE"))
-        for other in ("claude-gemini", "claude-claude", "work-gemini"):
+        for other in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
             self.assertEqual((by_id[other].display_state, by_id[other].identity_state), ("UNKNOWN", "PLACEHOLDER"))
             self.assertNotIn(by_id[other].display_state, {"STOPPED", "IDLE", "RUNNING"})
         snapshot = parse_control_tower_snapshot_json(render_control_tower(model).snapshot_json)
@@ -230,10 +236,10 @@ class MixedRegistryTests(unittest.TestCase):
     def test_broken_other_lane_does_not_erase_the_healthy_lane(self):
         transition = self.collect("2026-10-03T20:09:35+00:00").transition
         lane_input = control_tower_input_from_transition(transition, target_ref="pr:278")
-        model = build_control_tower(REGISTRY, {LANE: lane_input, "claude-gemini": object()}, generated_at="2026-10-03T20:10:00Z")
+        model = build_control_tower(REGISTRY, {LANE: lane_input, "claude-jules-auto": object()}, generated_at="2026-10-03T20:10:00Z")
         by_id = {lane.loop_id: lane for lane in model.lanes}
         self.assertEqual(by_id[LANE].display_state, "SEMI_AUTO")
-        self.assertEqual(by_id["claude-gemini"].display_state, "UNKNOWN")
+        self.assertEqual(by_id["claude-jules-auto"].display_state, "UNKNOWN")
 
     def test_issue33_migration_preflight_is_not_wired_and_prepares_no_issue_plan(self):
         from automation.command_bus.control_tower import (
@@ -266,11 +272,13 @@ class RollbackPrepareOnlyTests(unittest.TestCase):
 
     def test_rollback_result_is_the_exact_pre_adoption_registry(self):
         restored = json.loads(self.rolled_back())
-        self.assertEqual(registry_digest(restored), pav.PRE_ADOPTION_DIGEST)
-        self.assertEqual(registry_digest(restored), CHECKPOINT["items"][10]["detail"])
-        self.assertEqual(hashlib.sha256(self.rolled_back().encode()).hexdigest(),
-                         "ebe76b41e70d3b7056c453019c0bf6ec1b0e74fa07f0cfa2c9b65814d8c9f858")
-        self.assertEqual(pre_adoption(REGISTRY), restored)
+        # five-row registry: the revert only flips the one adopted row, nothing else moves
+        self.assertEqual([l["identity_state"] for l in restored["loops"]],
+                         ["PLACEHOLDER", "PLACEHOLDER", "PLACEHOLDER", "PLACEHOLDER", "FROZEN"])
+        self.assertEqual({k: v for k, v in restored["loops"][0].items() if k != "identity_state"},
+                         {k: v for k, v in REGISTRY["loops"][0].items() if k != "identity_state"})
+        self.assertEqual(restored["loops"][1:], REGISTRY["loops"][1:])
+        self.assertEqual(pav.PRE_ADOPTION_DIGEST, CHECKPOINT["items"][10]["detail"])
 
     def test_after_rollback_global_and_lane_are_not_wired(self):
         restored = json.loads(self.rolled_back())

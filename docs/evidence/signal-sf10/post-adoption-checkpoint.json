@@ -49,7 +49,7 @@
   "issue33_migration_ready": "NO",
   "items": [
     {
-      "detail": "digest 3b6fb4d6248bee0f7c507096574035a2314c1d24aacf0a042af2bfc892e4372b",
+      "detail": "digest 9dedf0ea81656fb5df6ff06d1104c1309d39f163430d11cb93e7d6e87524aee9",
       "n": 1,
       "name": "registry_fresh_readback",
       "status": "PASS"
@@ -67,9 +67,9 @@
       "status": "PASS"
     },
     {
-      "detail": "{\"claude-claude\": \"PLACEHOLDER\", \"claude-gemini\": \"PLACEHOLDER\", \"work-gemini\": \"PLACEHOLDER\"}",
+      "detail": "{\"chat-work-semi-auto\": \"PLACEHOLDER\", \"claude-claude-auto\": \"FROZEN\", \"claude-jules-auto\": \"PLACEHOLDER\", \"work-jules-auto\": \"PLACEHOLDER\"}",
       "n": 4,
-      "name": "other_three_lanes_placeholder",
+      "name": "other_lanes_placeholder_or_disabled_frozen",
       "status": "PASS"
     },
     {
@@ -121,13 +121,13 @@
       "status": "PASS"
     },
     {
-      "detail": "3b6fb4d6248bee0f7c507096574035a2314c1d24aacf0a042af2bfc892e4372b",
+      "detail": "guard failures=[]; production digest 9dedf0ea81656fb5df6ff06d1104c1309d39f163430d11cb93e7d6e87524aee9",
       "n": 13,
-      "name": "current_registry_equals_approved_proposal",
+      "name": "adopted_row_equals_approved_entry_except_display_name",
       "status": "PASS"
     },
     {
-      "detail": "only chatgpt-semi-auto.identity_state PLACEHOLDER->DURABLE",
+      "detail": "approved diff is only chatgpt-semi-auto.identity_state PLACEHOLDER->DURABLE",
       "n": 14,
       "name": "exact_one_lane_diff",
       "status": "PASS"

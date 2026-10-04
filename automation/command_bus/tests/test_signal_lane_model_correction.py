@@ -54,8 +54,8 @@ class LaneModelTests(unittest.TestCase):
         from automation.command_bus import control_tower
         self.assertIn("WORK", control_tower._WORKERS)  # gap closed by the additive WORK/FROZEN support change
         self.assertEqual({e["loop_id"] for e in PROD["loops"]},
-                         {"chatgpt-semi-auto", "claude-gemini", "claude-claude", "work-gemini"})
-        self.assertEqual({e["worker_kind"] for e in PROD["loops"] if e["loop_id"] in ("claude-gemini", "work-gemini")}, {"GEMINI"})
+                         {"chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "work-jules-auto", "claude-claude-auto"})
+        self.assertEqual({e["worker_kind"] for e in PROD["loops"] if e["loop_id"] in ("claude-jules-auto", "work-jules-auto")}, {"JULES"})
 
     def test_no_forbidden_ids_anywhere_in_the_design_files(self):
         text = json.dumps([MODEL, PROPOSED])
@@ -70,8 +70,9 @@ class ProposedRegistryTests(unittest.TestCase):
     def test_durable_entry_is_byte_identical_to_production(self):
         prod = next(e for e in PROD["loops"] if e["loop_id"] == "chatgpt-semi-auto")
         new = next(e for e in PROPOSED["loops"] if e["loop_id"] == "chatgpt-semi-auto")
-        expected = dict(prod)
-        self.assertEqual({k: v for k, v in new.items() if k != "display_order"}, {k: v for k, v in expected.items() if k != "display_order"})
+        # production now carries the naming-policy display name; every other field is unchanged
+        self.assertEqual({k: v for k, v in new.items() if k not in ("display_order", "display_name")},
+                         {k: v for k, v in prod.items() if k not in ("display_order", "display_name")})
 
     def test_frozen_lane_is_kept_by_name_but_disabled(self):
         entry = next(e for e in PROPOSED["loops"] if e["loop_id"] == "claude-claude")

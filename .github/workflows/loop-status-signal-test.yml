@@ -54,6 +54,7 @@ on:
       - docs/evidence/signal-lane-model/**
       - automation/command_bus/tests/test_signal_lane_model_correction.py
       - automation/command_bus/tests/test_signal_lane_naming_policy.py
+      - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
       - automation/command_bus/lane_stable_identity.py
       - automation/command_bus/tests/test_lane_stable_identity.py
@@ -158,6 +159,7 @@ on:
       - docs/evidence/signal-lane-model/**
       - automation/command_bus/tests/test_signal_lane_model_correction.py
       - automation/command_bus/tests/test_signal_lane_naming_policy.py
+      - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
       - automation/command_bus/lane_stable_identity.py
       - automation/command_bus/tests/test_lane_stable_identity.py

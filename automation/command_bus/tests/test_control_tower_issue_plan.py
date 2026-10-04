@@ -22,6 +22,7 @@ from automation.command_bus.loop_status_issue import (
     managed_block,
     project_state,
 )
+from automation.command_bus.tests.pre_adoption_registry import adopted_snapshot
 from automation.command_bus.tests.test_loop_status_issue import state
 
 
@@ -31,7 +32,8 @@ NOW = "2026-09-28T03:45:00+00:00"
 
 
 def registry():
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    # behavioural tests over the registry exactly as approved for the adoption (four lanes, old placeholder ids)
+    return adopted_snapshot()
 
 
 def lane_input(

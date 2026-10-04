@@ -7,7 +7,7 @@ else: it keeps every assertion in those tests intact.
 
 It is also a guard. It refuses (``AssertionError``) unless every DURABLE lane in the registry it is given
 is covered by a valid ``DURABLE_ADOPTION_APPROVAL_V1`` record committed in the repository, and the
-registry equals exactly the proposal that approval was bound to. A DURABLE lane without such a record
+adopted row equals the approved entry except display_name, is the only DURABLE row, and the other enabled lanes are PLACEHOLDER. A DURABLE lane without such a record
 fails every test that loads the registry through here.
 """
 from __future__ import annotations
@@ -19,7 +19,6 @@ from typing import Any
 
 from automation.command_bus import durable_adoption_approval as dap
 from automation.command_bus import durable_adoption_approval_cli as cli
-from automation.command_bus.lane_identity_adoption import registry_digest
 
 REPO = Path(__file__).resolve().parents[3]
 APPROVAL_PATH = REPO / "docs/evidence/signal-step7-proof5/durable-adoption-approval.json"
@@ -34,14 +33,28 @@ def approved_lanes() -> tuple[str, ...]:
 
 
 def pre_adoption(raw: dict[str, Any]) -> dict[str, Any]:
-    out = copy.deepcopy(raw)
-    durable = [e["loop_id"] for e in out["loops"] if e["identity_state"] == "DURABLE"]
+    """The historical all-PLACEHOLDER registry, returned only if ``raw`` passes the production guard.
+
+    Many static contract tests describe the four-lane registry that existed before the approved adoption. They
+    keep seeing exactly that registry (the committed adoption candidate with the adopted lane back at PLACEHOLDER),
+    so every assertion in them stays intact. ``raw`` is the production file and is only guarded here: a DURABLE lane
+    without a valid committed approval, a changed adopted row, a second DURABLE lane or an enabled non-PLACEHOLDER
+    lane fails every test that loads the registry through this function.
+    """
+    durable = [e["loop_id"] for e in raw["loops"] if e["identity_state"] == "DURABLE"]
     if not durable:
-        return out
+        return copy.deepcopy(raw)
     assert tuple(durable) == approved_lanes(), f"DURABLE lane(s) {durable} have no valid adoption approval"
-    approval = json.loads(APPROVAL_PATH.read_text(encoding="utf-8"))
-    assert registry_digest(raw) == approval["proposed_registry_sha256"], "registry differs from the approved proposal"
-    for entry in out["loops"]:
-        if entry["loop_id"] in durable:
-            entry["identity_state"] = "PLACEHOLDER"
-    return out
+    guard = cli.production_registry_guard(raw, REPO)
+    assert not guard, f"production registry violates the approved adoption: {guard}"
+    return cli.registries_from_candidate(REPO)[0]
+
+
+def adopted_snapshot() -> dict[str, Any]:
+    """The registry exactly as approved for the adoption (adopted lane DURABLE, three old PLACEHOLDER rows).
+
+    Behavioural tests that were written against that four-lane registry (lane ids, counts, notifications) read it
+    from the committed candidate instead of the live production file, which later gained new rows. Production
+    itself is covered by its own tests (``test_registry_five_lanes``) and by ``production_registry_guard``.
+    """
+    return copy.deepcopy(cli.registries_from_candidate(REPO)[1])

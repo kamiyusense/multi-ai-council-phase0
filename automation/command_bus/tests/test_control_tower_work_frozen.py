@@ -46,10 +46,10 @@ class ValidatorTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_registry(bad)
 
-    def test_production_registry_is_untouched_by_this_change(self):
+    def test_production_registry_is_the_five_row_registry(self):
         self.assertEqual([e["loop_id"] for e in PROD["loops"]],
-                         ["chatgpt-semi-auto", "claude-gemini", "claude-claude", "work-gemini"])
-        self.assertNotIn("FROZEN", [e["identity_state"] for e in PROD["loops"]])
+                         ["chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "work-jules-auto", "claude-claude-auto"])
+        self.assertEqual([e["identity_state"] for e in PROD["loops"]].count("FROZEN"), 1)
 
 
 class FrozenBehaviourTests(unittest.TestCase):
@@ -77,8 +77,10 @@ class FrozenBehaviourTests(unittest.TestCase):
         self.assertEqual(with_frozen, render_control_tower(build_control_tower(without, {}, generated_at=NOW)).title)
 
     def test_registry_without_frozen_lanes_renders_exactly_as_before(self):
-        render = render_control_tower(build_control_tower(PROD, {}, generated_at=NOW))
+        four = {"schema_version": 1, "loops": [e for e in PROD["loops"] if e["identity_state"] != "FROZEN"]}
+        render = render_control_tower(build_control_tower(four, {}, generated_at=NOW))
         self.assertNotIn("Frozen", render.body)
+        self.assertIn("Frozen", render_control_tower(build_control_tower(PROD, {}, generated_at=NOW)).body)
 
     def test_work_worker_label_is_rendered(self):
         render = render_control_tower(build_control_tower(V3, {}, generated_at=NOW))
