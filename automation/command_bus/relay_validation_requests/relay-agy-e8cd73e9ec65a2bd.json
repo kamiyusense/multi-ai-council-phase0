@@ -1,0 +1,5 @@
+{
+  "target_sha": "e8cd73e9ec65a2bd2d3258d69ac2c854ba4ef79f",
+  "source_pr": "relay-antigravity-dispatch-static-v1",
+  "purpose": "relay validation: Antigravity STATIC dispatch (route admission on settings snapshot + existing lifecycle), fake agent only, no LIVE"
+}
