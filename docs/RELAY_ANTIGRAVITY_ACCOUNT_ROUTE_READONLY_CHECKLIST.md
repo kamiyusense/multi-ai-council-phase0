@@ -63,3 +63,11 @@ Any observed API-key, ADC, Vertex, gateway, external-cloud, or mismatched produc
 Evidence must be bounded to a specific inspection event and provider. Evidence from OpenAI, Anthropic, another Google account, another product route, or another inspection cannot satisfy this gap.
 
 If proof would require sending a model/provider turn, reading a raw secret/private account identifier, changing login/auth/settings/permissions/billing, enabling an API key/Cloud Billing/overage route, or widening access, that proof method is outside this batch and forbidden.
+
+## STATIC dispatch integration (2026-10-04; still no LIVE evidence)
+`src/relay/antigravity_dispatch.py` (`AntigravityStaticDispatcher`) assembles existing parts only: provider must be Google -> `providers.policy.antigravity_route_admission(settings)` on a host-owned settings snapshot, **before any transport or process exists** -> existing `RelayLifecycle` (initialize -> `session/new` -> one prompt -> terminal). Tests: `tests/relay/test_antigravity_dispatch_static.py` (fake agent only).
+- Admitted only when `auth.type == "oauth-personal"`. `gemini-api-key`, `agent-platform`, `oauth-business`, missing, unknown, malformed -> BLOCKED (`NO_AUTH_SELECTION` / `ROUTE_<type>`). `monitor_only` (existing wrapper) records the decision and blocks nothing; there is no "off".
+- Basis (public sources only, nothing downloaded or run): `initialize` lists the *available* auth methods, not the selected one; `session/new` without a selection returns `-32000 "Authentication required"`; the server does not inherit the `agy` CLI login.
+- **Not built (UNKNOWN):** a mid-turn identity signal (none found in public sources), so no mid-turn cancel; an Admission-Gate equivalent, so Google's one-generation boundary is UNKNOWN.
+- **Limits:** a settings snapshot is not proof of the account actually used or billed; it can change after the check (TOCTOU). The real server's behavior is UNKNOWN until an approved LIVE trial (binary download, Google login and terms are human-only steps).
+- Counts: LIVE 0, real account read 0, pin change 0 (Antigravity 1.2.1), Billing/API-key operations 0, retry 0, fallback disabled.
