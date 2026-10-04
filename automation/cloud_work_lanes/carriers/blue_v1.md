@@ -123,3 +123,22 @@ A replacement chat should:
 5. later read the matching terminal receipt from this carrier PR.
 
 GitHub state is the durable source of truth.
+
+## Scheduled durable reconciliation mode
+
+The active Blue worker may be a scheduled durable reconciler instead of a PR-review event worker when the worker-state metadata names that reconciler.
+
+In this mode:
+
+- the schedule is only a wake hint; durable GitHub state remains authoritative;
+- fresh-read complete carrier reviews and Conversation comments on every run;
+- consider only exact submitted COMMENT reviews beginning at byte zero with `[CW_BLUE_V1]`;
+- for polling selection, admit only reserved `blue-jules-result-pr<PR>-<FULL_HEAD_SHA>` command IDs;
+- never select or terminalize `blue-bwj4-*` transport proof history, ordinary `blue-chat-*` commands, human-control diagnostics, or foreign-lane commands;
+- review author identity is evidence only and does not grant or remove command authority;
+- select at most one eligible unprocessed result command per run, oldest submitted_at then lowest review id;
+- all normal generation, duplicate, expiry, target HEAD/tree, lineage, path, verification, retry=0 and fallback=disabled gates still apply;
+- if no eligible command exists, finish NO_OP without a receipt;
+- the retired PR-review event worker must remain disabled while this scheduled reconciler is active unless a separately reviewed distributed mutual-exclusion mechanism is introduced.
+
+This mode does not change protocol_version=1 or the receipt format. It only changes the wake mechanism from event delivery to durable reconciliation.
