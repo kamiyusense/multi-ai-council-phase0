@@ -88,6 +88,28 @@ class CliTests(unittest.TestCase):
         git.assert_not_called()
         ports.assert_not_called()
 
+    def test_proxy_injected_key_source_is_opt_in_and_never_a_secret(self):
+        self.assertEqual(cli.PROXY_KEY_SOURCE, "PROXY_INJECTED")
+        self.assertNotIn("AIza", cli.PROXY_KEY_PLACEHOLDER)
+        plan_doc = _plan()
+        args = ["run", "--repo-dir", self.dir.name, "--plan", self._write("plan.json", plan_doc),
+                "--policy", "p.json", "--roadmap", "r.json", "--origin-loop-id", "x", "--lane-id", "y"]
+        policy = {"schema_version": 1, "profile": "CLAUDE_AUTO_JULES_POLICY_V1", "controller_id": "claude-auto",
+                  "holder_id": "h", "target_repo": "o/r", "default_branch": "main", "carrier_branch": "carrier",
+                  "data_branch": "data", "allowed_target_branches": ["claude/target"], "allowed_lane_ids": [],
+                  "expected_pr": 7, "max_rounds": 6, "live_dispatch_authorization": None}
+        args[args.index("p.json")] = self._write("p.json", policy)
+        args[args.index("r.json")] = self._write("r.json", {})
+        env = {"CLAUDE_JULES_PROOF_CONFIRM": f"RUN_ONCE_{plan_doc['plan_sha256']}"}
+        with patch.object(cli, "GitLiveClient") as git, patch.object(cli, "GitHubRestReader"), \
+                patch.object(cli, "LiveBudgetLedger") as ledger, patch.dict(os.environ, env, clear=True):
+            ledger.return_value.slots.return_value = []  # wrong budget count: stops before any dispatch
+            self.assertEqual(cli.main(args, FixedClock()), 2)  # no opt-in: key still missing
+            git.assert_not_called()
+            os.environ["CLAUDE_JULES_KEY_SOURCE"] = "PROXY_INJECTED"
+            self.assertEqual(cli.main(args, FixedClock()), 2)  # key accepted; refused later by the budget check
+            git.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

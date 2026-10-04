@@ -34,6 +34,9 @@ OLD_SESSION_IDS = [
 ]
 REGISTRY_PATH = "automation/command_bus/config/control_tower_registry.json"
 CARRIER_WAIT_SECONDS = 15 * 60
+# Opt-in: the key may be injected by the cloud environment's credential proxy and never be visible as an env var.
+PROXY_KEY_SOURCE = "PROXY_INJECTED"
+PROXY_KEY_PLACEHOLDER = "PROXY_INJECTED_NOT_A_SECRET"
 
 
 class ZuluClock:
@@ -110,6 +113,8 @@ def command_run(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
     if os.environ.get("CLAUDE_JULES_PROOF_CONFIRM") != f"RUN_ONCE_{plan['plan_sha256']}":
         raise ProofError("CONFIRMATION_MISSING")
     key = os.environ.get("JULES_API_KEY", "")
+    if not key and os.environ.get("CLAUDE_JULES_KEY_SOURCE") == PROXY_KEY_SOURCE:
+        key = PROXY_KEY_PLACEHOLDER  # the environment's credential proxy adds the real X-Goog-Api-Key in transit
     if not key:
         raise ProofError("JULES_KEY_MISSING")
     git, rest = GitLiveClient(args.repo_dir, message_trailer=args.trailer), GitHubRestReader(policy["target_repo"])
