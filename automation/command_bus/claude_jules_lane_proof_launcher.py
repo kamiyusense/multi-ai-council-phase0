@@ -46,6 +46,34 @@ class StableLaneTargetReader:
         }
 
 
+class StableLaneSessionReader:
+    """Normalize the existing Jules GET reader into the proof runtime-facts shape."""
+
+    def __init__(self, reader: Any):
+        self.reader = reader
+
+    def read_active_session(self, session_id: str, *, expected_branch: str) -> dict[str, Any]:
+        snapshot = self.reader.read_active_session(session_id, expected_branch=expected_branch)
+        if not isinstance(snapshot, dict):
+            raise ProofError("SESSION_SHAPE")
+        context = snapshot.get("sourceContext")
+        github = context.get("githubRepoContext") if isinstance(context, dict) else None
+        state = snapshot.get("state")
+        branch = github.get("startingBranch") if isinstance(github, dict) else None
+        create_time = snapshot.get("createTime")
+        update_time = snapshot.get("updateTime")
+        if not all(isinstance(v, str) and v for v in (state, branch, create_time)):
+            raise ProofError("SESSION_SHAPE")
+        if update_time is not None and not isinstance(update_time, str):
+            raise ProofError("SESSION_SHAPE")
+        return {
+            "provider_raw_state": state,
+            "starting_branch": branch,
+            "create_time": create_time,
+            "update_time": update_time,
+        }
+
+
 class CarrierSessionIdSource:
     """Resolve exactly one Jules session from the verified carrier run evidence."""
 
@@ -118,7 +146,7 @@ def build_live_proof_ports(
     )
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=scratch_dir)
     session_source = CarrierSessionIdSource(facts)
-    session_reader = JulesActiveSessionGetReader(jules_api_key)
+    session_reader = StableLaneSessionReader(JulesActiveSessionGetReader(jules_api_key))
     collector = ControlTowerDurableCollector(
         git,
         ref=data_branch,
