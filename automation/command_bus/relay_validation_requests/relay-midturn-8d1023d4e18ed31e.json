@@ -1,0 +1,5 @@
+{
+  "target_sha": "8d1023d4e18ed31ec3d7074151817eae746b73f4",
+  "source_pr": "relay-claude-route-midturn-cancel-v1",
+  "purpose": "relay validation: minimal mid-turn route rule (confirmed API-key/external -> existing cancel + stop flag), monitor-only wrapper, STATIC mocks only, no LIVE"
+}
