@@ -1,0 +1,48 @@
+name: Blue bot comment wake diagnostic (one-shot, inert)
+
+on:
+  workflow_dispatch:
+    inputs:
+      diag_id:
+        description: Fresh diagnostic id (blue-wake-diag-YYYYMMDDTHHMMSSZ-NN)
+        required: true
+        type: string
+      approved_main:
+        description: Fresh independently inspected main HEAD
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: blue-bot-comment-wake-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  post-one-inert-comment:
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && github.actor == 'kamiyusense' && inputs.approved_main == github.sha
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout vetted exact main only
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Gates, durable record, single inert comment POST (never rerun)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DIAG_ID: ${{ inputs.diag_id }}
+        run: python -m automation.command_bus.blue_bot_comment_wake_diag
+      - name: Preserve result including ambiguous outcome
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blue-bot-comment-diag-${{ github.run_id }}
+          path: blue-bot-comment-diag/*.json
+          if-no-files-found: warn
+          retention-days: 90
+          overwrite: false
