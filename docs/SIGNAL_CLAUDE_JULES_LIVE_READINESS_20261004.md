@@ -25,7 +25,12 @@ dispatch, no DURABLE flip, no Issue #33 write was done.** The LIVE run itself is
     for this lane exists and nothing is issued.
   - `LiveProofPorts`: glue from the existing live objects (dispatcher, Contents client, session-id source, active-session reader,
     collector) to the driver. Tested with fakes.
-- Tests: `test_claude_jules_lane_proof.py` (31) incl. the fixture E2E Claude runtime -> export -> collector -> accepted
+- `claude_jules_lane_proof_launcher.py`: STATIC production-object wiring only. It reuses `GitLiveClient`,
+  `GitHubRestReader`, `ClaudeJulesDispatcher`, `CarrierQuietGuard`, `LiveResultFacts`,
+  `JulesActiveSessionGetReader` and `ControlTowerDurableCollector`; construction itself performs no dispatch, Jules GET,
+  GitHub write or provider execution. A small normalization adapter converts the existing Jules GET shape
+  (`createTime/state/sourceContext`) into the proof runtime-facts shape (`create_time/provider_raw_state/starting_branch`).
+- Tests: `test_claude_jules_lane_proof.py` (31) plus `test_claude_jules_lane_proof_launcher.py`, including the fixture E2E Claude runtime -> export -> collector -> accepted
   transition -> lane registration READY -> terminal receipt -> adoption candidate -> prepared approval, plus negative and
   recovery cases.
 
@@ -41,9 +46,15 @@ The second real consumer needed only `check_single_lane_diff` (already lane-gene
    driver reads the session ONCE, writes the chain under `claude-jules-auto`, collects, checks registration and writes the terminal receipt.
 3. Result: COMPLETE (candidate prepared, still PLACEHOLDER) or terminal UNKNOWN/STOPPED. The run is never repeated.
 
+## Boundary after STATIC launcher wiring
+
+The code-level production-object wiring for the bounded proof now exists. This does **not** authorize or execute LIVE.
+Before any real proof, a human still must explicitly authorize ONE dispatch in an expiring plan, bind that plan to a
+fresh non-default target snapshot/data branch, and deliberately invoke the proof in an approved environment. None of
+those LIVE actions were performed by this STATIC change.
+
 ## Still needed AFTER a successful LIVE (not part of the run, each a separate human-reviewed step)
 
-- Construct the real objects for `LiveProofPorts` from the existing live modules (no new behaviour) in a small launcher.
 - An issuer workflow for `CLAUDE_JULES_DURABLE_ADOPTION_APPROVAL_V1` (owner-dispatched), then the flip PR.
 - The flip PR must generalize `production_registry_guard`, `post_adoption_verification` item 2/3/13 and `pre_adoption()` from the single approved
   lane to the set of approved lanes (today a second DURABLE row is rejected on purpose). That is a security-check change and needs a
