@@ -90,6 +90,36 @@ class ClaudeJulesLaneProofLauncherTests(unittest.TestCase):
                 with self.assertRaises(launcher.ProofError):
                     launcher.CarrierSessionIdSource(_Facts(value))("loop-999")
 
+    def test_session_source_waits_for_the_carrier_run_without_touching_jules(self):
+        class Later:
+            def __init__(self):
+                self.calls = 0
+
+            def dispatch_observation(self, command_id):
+                self.calls += 1
+                return None if self.calls < 3 else {"conclusion": "success", "session_id": "12345"}
+
+        facts, sleeps, clock = Later(), [], [0]
+        source = launcher.CarrierSessionIdSource(
+            facts, wait_seconds=60, interval_seconds=10, sleep=lambda n: (sleeps.append(n), clock.__setitem__(0, clock[0] + n)),
+            monotonic=lambda: clock[0])
+        self.assertEqual(source("loop-999"), "12345")
+        self.assertEqual((facts.calls, sleeps), (3, [10, 10]))
+
+    def test_session_source_wait_is_bounded_and_failure_ends_it_at_once(self):
+        clock = [0]
+        never = _Facts(None)
+        source = launcher.CarrierSessionIdSource(
+            never, wait_seconds=30, interval_seconds=10, sleep=lambda n: clock.__setitem__(0, clock[0] + n),
+            monotonic=lambda: clock[0])
+        with self.assertRaises(launcher.ProofError):
+            source("loop-999")
+        self.assertEqual(never.calls, ["loop-999"] * 4)
+        failed = _Facts({"conclusion": "failure", "session_id": None})
+        with self.assertRaises(launcher.ProofError):
+            launcher.CarrierSessionIdSource(failed, wait_seconds=30, sleep=lambda n: None)("loop-999")
+        self.assertEqual(len(failed.calls), 1)
+
     def test_builder_only_constructs_existing_ports_and_performs_no_effect(self):
         repository = "kamiyusense/multi-ai-council-phase0"
         policy = {

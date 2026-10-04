@@ -9,6 +9,7 @@ unexpired plan.
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 
 from .claude_jules_dispatch import ClaudeJulesDispatcher, validate_dispatch_intent
@@ -77,11 +78,21 @@ class StableLaneSessionReader:
 class CarrierSessionIdSource:
     """Resolve exactly one Jules session from the verified carrier run evidence."""
 
-    def __init__(self, facts: Any):
+    def __init__(self, facts: Any, *, wait_seconds: int = 0, interval_seconds: int = 10,
+                 sleep: Any = time.sleep, monotonic: Any = time.monotonic):
         self.facts = facts
+        self.wait_seconds, self.interval_seconds = wait_seconds, interval_seconds
+        self.sleep, self.monotonic = sleep, monotonic
 
     def __call__(self, command_id: str) -> str:
-        observation = self.facts.dispatch_observation(command_id)
+        # The carrier workflow finishes some time after the dispatch push. Waiting only re-reads GitHub (never Jules);
+        # a completed run that did not succeed ends the wait at once, and the wait is bounded.
+        deadline = self.monotonic() + self.wait_seconds
+        while True:
+            observation = self.facts.dispatch_observation(command_id)
+            if isinstance(observation, dict) or self.monotonic() >= deadline:
+                break
+            self.sleep(self.interval_seconds)
         if not isinstance(observation, dict) or observation.get("conclusion") != "success":
             raise ProofError("CARRIER_SESSION_NOT_SINGLE")
         session_id = observation.get("session_id")
@@ -99,6 +110,7 @@ def build_live_proof_ports(
     dispatches_used: int,
     scratch_dir: str,
     clock: Any | None = None,
+    carrier_wait_seconds: int = 0,
 ) -> LiveProofPorts:
     """Construct the existing production adapters without performing any effect.
 
@@ -145,7 +157,7 @@ def build_live_proof_ports(
         carrier_guard=carrier_guard,
     )
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=scratch_dir)
-    session_source = CarrierSessionIdSource(facts)
+    session_source = CarrierSessionIdSource(facts, wait_seconds=carrier_wait_seconds)
     session_reader = StableLaneSessionReader(JulesActiveSessionGetReader(jules_api_key))
     collector = ControlTowerDurableCollector(
         git,

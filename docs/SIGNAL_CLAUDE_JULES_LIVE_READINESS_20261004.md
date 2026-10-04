@@ -59,3 +59,14 @@ those LIVE actions were performed by this STATIC change.
 - The flip PR must generalize `production_registry_guard`, `post_adoption_verification` item 2/3/13 and `pre_adoption()` from the single approved
   lane to the set of approved lanes (today a second DURABLE row is rejected on purpose). That is a security-check change and needs a
   human-read Draft PR.
+
+## Runner and the two gaps found when preparing the real run (2026-10-04)
+
+- **Carrier wait:** the carrier workflow finishes after the dispatch push, so `CarrierSessionIdSource` now waits (bounded, 15 min in
+  the runner, GitHub reads only, never Jules) for the carrier run before the ONE session read. A completed non-success run ends the wait at once.
+- **Z-form clock:** the proof plan requires `...Z` times, so the runner uses `ZuluClock`.
+- **Runner:** `claude_jules_lane_proof_cli.py` (`plan`, `check`, `run`). `run` needs an authorized plan, `JULES_API_KEY` in the
+  environment and `CLAUDE_JULES_PROOF_CONFIRM=RUN_ONCE_<plan_sha256>`; it reuses the real Loop A planner (dispatch captured, not sent), refuses if the
+  planned target differs from the plan or the budget count is not 4, then runs the one-shot driver.
+- **Why not a GitHub workflow:** a push made with GITHUB_TOKEN does not start the push-triggered carrier workflow, so the dispatch must run from
+  a session with real git credentials (as Loop A did). Nothing here was run: LIVE 0, Jules calls 0.
