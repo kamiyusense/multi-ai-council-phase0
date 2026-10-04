@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m automation.command_bus.claude_jules_live:*)",
+      "Bash(python3 -m automation.command_bus.claude_jules_lane_proof_cli:*)"
+    ]
+  }
+}
