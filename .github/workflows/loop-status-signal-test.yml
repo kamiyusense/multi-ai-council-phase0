@@ -56,6 +56,9 @@ on:
       - automation/command_bus/tests/test_signal_lane_naming_policy.py
       - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
+      - automation/command_bus/lane_stable_identity.py
+      - automation/command_bus/tests/test_lane_stable_identity.py
+      - automation/command_bus/tests/test_issue33_dry_run_render.py
       - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/loop_status_development.py
       - automation/command_bus/loop_owner.py
@@ -158,6 +161,9 @@ on:
       - automation/command_bus/tests/test_signal_lane_naming_policy.py
       - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
+      - automation/command_bus/lane_stable_identity.py
+      - automation/command_bus/tests/test_lane_stable_identity.py
+      - automation/command_bus/tests/test_issue33_dry_run_render.py
       - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/durable_adoption_approval.py
       - automation/command_bus/durable_adoption_approval_cli.py
