@@ -67,7 +67,7 @@ class BluePollReconcileTests(unittest.TestCase):
             fixed_generation=fixed_generation,
         )
 
-    def test_bot_authored_review_is_selected_without_author_authority(self):
+    def test_bot_authored_result_review_is_selected_without_author_authority(self):
         result = self.select(reviews=[self.review()])
         self.assertEqual(result.status, "SELECTED")
         self.assertEqual(result.review_id, 42)
@@ -78,7 +78,7 @@ class BluePollReconcileTests(unittest.TestCase):
         self.assertEqual(result.retry, 0)
         self.assertEqual(result.fallback, "disabled")
 
-    def test_human_author_is_equivalent_for_selection(self):
+    def test_human_author_is_equivalent_for_result_selection(self):
         result = self.select(reviews=[
             self.review(login="kamiyusense", actor_type="User")
         ])
@@ -86,7 +86,7 @@ class BluePollReconcileTests(unittest.TestCase):
         self.assertEqual(result.author_login, "kamiyusense")
         self.assertEqual(result.command_id, self.command()["command_id"])
 
-    def test_terminal_receipt_makes_command_noop(self):
+    def test_terminal_receipt_makes_result_command_noop(self):
         command = self.command()
         result = self.select(
             reviews=[self.review(command=command)],
@@ -95,12 +95,12 @@ class BluePollReconcileTests(unittest.TestCase):
         self.assertEqual(result.status, "NO_OP")
         self.assertEqual(result.pending_count, 0)
 
-    def test_oldest_pending_command_is_selected_deterministically(self):
+    def test_oldest_pending_result_command_is_selected_deterministically(self):
         first = self.command()
         second = copy.deepcopy(first)
-        second["command_id"] = "blue-chat-second-fixture"
-        second["task"] = "Inspect docs only."
-        second["allowed_paths"] = ["docs/example.md"]
+        second["target_pr"] = first["target_pr"] + 1
+        second["expected_target_head"] = "b" * 40
+        second["command_id"] = f"blue-jules-result-pr{second['target_pr']}-{'b' * 40}"
         result = self.select(reviews=[
             self.review(review_id=90, submitted_at="2026-10-01T11:30:00Z", command=second),
             self.review(review_id=42, submitted_at="2026-10-01T11:00:00Z", command=first),
@@ -109,7 +109,7 @@ class BluePollReconcileTests(unittest.TestCase):
         self.assertEqual(result.review_id, 42)
         self.assertEqual(result.pending_count, 2)
 
-    def test_duplicate_command_identity_is_unknown(self):
+    def test_duplicate_result_command_identity_is_unknown(self):
         command = self.command()
         result = self.select(reviews=[
             self.review(review_id=42, command=command),
@@ -123,7 +123,21 @@ class BluePollReconcileTests(unittest.TestCase):
         result = self.select(reviews=[row])
         self.assertEqual(result.status, "NO_OP")
 
-    def test_matching_prefix_requires_submitted_comment_review(self):
+    def test_consumed_bwj4_transport_proof_is_never_selected(self):
+        command = self.command()
+        command["command_id"] = "blue-bwj4-20261003T220252Z-transport-proof-01"
+        result = self.select(reviews=[self.review(command=command)])
+        self.assertEqual(result.status, "NO_OP")
+
+    def test_ordinary_blue_chat_command_is_outside_poller_authority(self):
+        command = self.command()
+        command["command_id"] = "blue-chat-fixture"
+        command["task"] = "Inspect docs only."
+        command["allowed_paths"] = ["docs/example.md"]
+        result = self.select(reviews=[self.review(command=command)])
+        self.assertEqual(result.status, "NO_OP")
+
+    def test_matching_result_prefix_requires_submitted_comment_review(self):
         for state in ("PENDING", "APPROVED", "CHANGES_REQUESTED", None):
             with self.subTest(state=state):
                 self.assertEqual(
@@ -159,7 +173,7 @@ class BluePollReconcileTests(unittest.TestCase):
                 )
                 self.assertEqual(result.status, "UNKNOWN")
 
-    def test_expired_command_is_still_selected_for_downstream_terminal_gate(self):
+    def test_expired_result_command_is_still_selected_for_downstream_terminal_gate(self):
         command = self.command()
         command["expires_at"] = "2026-09-01T00:00:00Z"
         result = self.select(reviews=[self.review(command=command)])
