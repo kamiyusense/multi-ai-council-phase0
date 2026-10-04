@@ -65,16 +65,34 @@ Conceptual flow:
 
 ```text
 GitHub Actions / other controller
-  -> durable [CW_BLUE_V1] review on #167
+  -> durable [CW_BLUE_V1] Jules-result review on #167
   -> webhook wake may or may not happen
   -> scheduled Blue reconciler fresh-reads #167
-  -> selects oldest unprocessed durable Blue command
+  -> selects oldest unprocessed durable Blue Jules-result command
   -> existing generation/target/expiry/duplicate gates
   -> normal Blue terminal receipt
 ```
 
 The review remains the durable command. The schedule is only a wake hint.
 Author identity is diagnostic metadata, not execution authority.
+
+### Important scope fence
+
+The polling reconciler is intentionally authorized only for the reserved
+`blue-jules-result-pr<PR>-<HEAD>` command class used by the real Jules-result
+loop.
+
+It must **not** select:
+
+- `blue-bwj4-*` transport proof commands, including generation 1/2/3 history;
+- ordinary `blue-chat-*` commands;
+- human-control diagnostics;
+- foreign-lane commands.
+
+This prevents a future polling task from retroactively "finishing" generation 3
+or manufacturing a late receipt for a consumed transport proof. G3 remains
+UNKNOWN/consumed forever unless separately reclassified by new independent
+evidence; the poller has no authority to change that history.
 
 ## New STATIC primitive
 
@@ -86,26 +104,27 @@ It:
 2. applies the fixed Work generation fence first;
 3. validates the existing terminal receipt set;
 4. parses exact `[CW_BLUE_V1]` submitted COMMENT reviews;
-5. validates each command with the existing command contract;
-6. treats bot and human authors identically for selection;
-7. removes commands already covered by a terminal receipt;
-8. deterministically selects the oldest remaining command;
-9. returns metadata only; it performs no GitHub write, Work scheduling, target
+5. admits only the reserved Jules-result command identity class;
+6. validates each eligible command with the existing command contract;
+7. treats bot and human authors identically for selection;
+8. removes commands already covered by a terminal receipt;
+9. deterministically selects the oldest remaining eligible command;
+10. returns metadata only; it performs no GitHub write, Work scheduling, target
    mutation, provider call or Jules/model execution;
-10. keeps `retry=0` and `fallback=disabled`.
+11. keeps `retry=0` and `fallback=disabled`.
 
-Expired or stale commands are still selected so the existing downstream worker
-gate can terminalize them as STALE/BLOCKED/UNKNOWN instead of leaving them
-invisible forever.
+Expired or stale **eligible Jules-result commands** are still selected so the
+existing downstream worker gate can terminalize them as STALE/BLOCKED/UNKNOWN
+instead of leaving them invisible forever.
 
-Duplicate command identities or malformed/conflicting durable records return
-UNKNOWN.
+Duplicate eligible command identities or malformed/conflicting durable records
+return UNKNOWN.
 
 ## Concurrency rule
 
 Do **not** run the event-triggered Blue worker and a polling Blue worker as two
-independent active executors over the same command stream without an additional
-mutual-exclusion primitive.
+independent active executors over the same Jules-result command stream without an
+additional mutual-exclusion primitive.
 
 The current terminal-receipt dedupe is a replay guard, not a proven distributed
 lock. Two workers starting before either receipt exists could race.
@@ -116,7 +135,7 @@ Therefore the preferred first fallback activation is:
 2. pause the current Blue PR Review Lane;
 3. enable one Blue scheduled reconciler using the same fixed
    `WORKER_GENERATION=1`;
-4. process at most one logical command per run;
+4. process at most one logical Jules-result command per run;
 5. after terminal receipt, stop;
 6. leave Yellow/Green/Red event lanes unchanged.
 
@@ -142,6 +161,7 @@ Before enabling the fallback:
 
 - fresh-read current main, #167, #172 and worker generation;
 - verify generation-3 remains consumed and has no terminal receipt;
+- verify the poll selector excludes `blue-bwj4-*` history;
 - inspect the current Blue task and intended replacement task configuration;
 - verify no other active Blue executor would race;
 - run exact-head CI for this STATIC change;
@@ -155,6 +175,7 @@ Forbidden without that approval:
 - generation 4 LIVE;
 - Run now;
 - repost generation-3 command;
+- terminalize generation 3 through the poller;
 - manual receipt fabrication;
 - provider/Jules/model start;
 - permission/secret/PAT/App changes;
