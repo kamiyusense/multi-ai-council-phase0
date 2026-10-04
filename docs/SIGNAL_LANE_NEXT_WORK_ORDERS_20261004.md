@@ -3,7 +3,7 @@
 Shape per order: Upstream / Small component / Existing local destination / Do / Do not / Exit.
 No order allows LIVE, a DURABLE flip, an Issue #33 write or a production registry edit.
 
-## A. Registry apply plan (WAITING FOR A HUMAN DECISION)
+## A. Registry apply plan (DONE: merged as PR #300, main 2fcde0b; the text below is the historical plan)
 
 Goal: replace the four old rows by the five rows of `docs/evidence/signal-lane-model/proposed-registry-v3-fixture.json`
 (display `Chat -> Jules` for the durable row; `chat-work-semi-auto`, `claude-jules-auto`, `work-jules-auto` PLACEHOLDER;
@@ -31,7 +31,7 @@ Decision needed from the owner: approve editing those checks in one reviewed Dra
 
 ## B. Chat -> Work (`chat-work-semi-auto`, reserved, PLACEHOLDER)
 
-- Upstream: Cloud Work carriers (`docs/CLOUD_WORK_LANES_INDEX.md`), owner decision on which component owns the stable id.
+- Upstream: Cloud Work carriers (`docs/CLOUD_WORK_LANES_INDEX.md`). Owner decision (2026-10-04): the Chat-led SEMI_AUTO runtime owns the stable id; see `docs/SIGNAL_LANE_RUNTIME_EXPORT_20261004.md`.
 - Small component: use `lane_stable_identity.validate_lane_stable_identity("chat-work", ...)` (added) plus a Chat -> Work
   runtime export of facts (state file, owner chain, receipt, evidence) from the Chat-led Work path.
 - Destination: `automation/command_bus/` (new export adapter + tests next to `cloud_work_lanes.py`).
