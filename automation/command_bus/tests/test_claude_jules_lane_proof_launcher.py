@@ -47,6 +47,33 @@ class ClaudeJulesLaneProofLauncherTests(unittest.TestCase):
         self.assertIsNone(reader.read_target("other/repo", 304))
         self.assertEqual(rest.calls, [304])
 
+    def test_session_reader_normalizes_existing_jules_get_shape(self):
+        raw = Mock()
+        raw.read_active_session.return_value = {
+            "name": "sessions/12345",
+            "createTime": "2026-10-04T09:00:00Z",
+            "updateTime": "2026-10-04T09:01:00Z",
+            "state": "IN_PROGRESS",
+            "sourceContext": {
+                "source": "github",
+                "githubRepoContext": {"startingBranch": "jules-work/loop-999"},
+            },
+        }
+        reader = launcher.StableLaneSessionReader(raw)
+        self.assertEqual(
+            reader.read_active_session("12345", expected_branch="jules-work/loop-999"),
+            {
+                "provider_raw_state": "IN_PROGRESS",
+                "starting_branch": "jules-work/loop-999",
+                "create_time": "2026-10-04T09:00:00Z",
+                "update_time": "2026-10-04T09:01:00Z",
+            },
+        )
+        raw.read_active_session.assert_called_once_with("12345", expected_branch="jules-work/loop-999")
+        raw.read_active_session.return_value = {"state": "IN_PROGRESS"}
+        with self.assertRaises(launcher.ProofError):
+            reader.read_active_session("12345", expected_branch="jules-work/loop-999")
+
     def test_session_source_requires_one_successful_numeric_session(self):
         facts = _Facts({"conclusion": "success", "session_id": "12345"})
         source = launcher.CarrierSessionIdSource(facts)
@@ -115,7 +142,8 @@ class ClaudeJulesLaneProofLauncherTests(unittest.TestCase):
         collector_cls.assert_called_once()
         self.assertIs(ports.client, git)
         self.assertIs(ports.dispatcher, dispatcher)
-        self.assertIs(ports.session_reader, session_reader)
+        self.assertIsInstance(ports.session_reader, launcher.StableLaneSessionReader)
+        self.assertIs(ports.session_reader.reader, session_reader)
         self.assertIs(ports.collector, collector)
         self.assertIs(ports.clock, clock)
         dispatcher.dispatch.assert_not_called()
