@@ -9,6 +9,19 @@ Writing Block / Canvas / 編集カードでは代用しない。この規則を�
 
 Updated: 2026-10-01
 
+## 0.0.1 2026-10-04 Relay / Claude STATIC status (read before any Relay work)
+
+- Claude Relay STATIC path is complete on main: route admission, #301 mid-turn
+  cancel (confirmed API-key/external only), and #303 dispatch integration
+  (`src/relay/claude_dispatch.py`). Details: `docs/RELAY_CLAUDE_ROUTE_ADMISSION_STATIC_EVIDENCE.md` (sections 10-11).
+- **Claude LIVE is deliberately postponed** by the human ("do it later, all together").
+  Do not start it without a new explicit approval. Checklist for that day:
+  `docs/RELAY_CLAUDE_LIVE_TRIAL_CHECKLIST.md`.
+- Pins unchanged: Codex ACP 2.1.0, Claude ACP 0.84.0, Antigravity 1.2.1.
+  Newer public versions exist (Codex ACP 2.1.1, Claude ACP 0.85.1, checked 2026-10-04);
+  bumping them is an open human decision, best decided together with the LIVE trial.
+- Counts so far for this line: LIVE 0, real account reads 0, Billing/API-key operations 0.
+
 ## 0. Current development worker routing — read this first
 
 Before selecting an implementation worker, read
