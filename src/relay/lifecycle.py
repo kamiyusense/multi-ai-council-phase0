@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from .duplicate_guard import DuplicateDecision, DuplicateGuard
 from .envelope import DispatchEnvelope
 from .result import RelayResult, RelayState
-from .transport import AdmissionRefused, RelayTransport
+from .transport import AdmissionRefused, RelayTransport, RouteViolationCancelled
 
 
 @dataclass(slots=True)
@@ -71,6 +71,19 @@ class RelayLifecycle:
                 correlation_id=envelope.correlation_id,
                 state=RelayState.SIMULATED,
                 raw=raw,
+                packet_sha256=envelope.packet_sha256,
+                session_id=session_id,
+                prompt_attempts=prompt_attempts,
+            )
+        except RouteViolationCancelled as exc:
+            if session_id is not None:
+                self.transport.cancel(provider_id, session_id)  # existing cancel
+            self._stop_requested = True  # existing stop flag: no new dispatch until a human clears it
+            return RelayResult(
+                provider_id=provider_id,
+                correlation_id=envelope.correlation_id,
+                state=RelayState.CANCELLED,
+                error=str(exc),
                 packet_sha256=envelope.packet_sha256,
                 session_id=session_id,
                 prompt_attempts=prompt_attempts,

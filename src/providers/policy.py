@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 
@@ -106,3 +106,32 @@ def claude_route_admission(auth_status_evidence: Sequence[Mapping[str, Any]]) ->
         if state != CLAUDE_ADMISSIBLE_AUTH_STATE:
             return False, f"ROUTE_{state if isinstance(state, str) and state else 'UNKNOWN'}"
     return True, "OK"
+
+
+CLAUDE_CONFIRMED_VIOLATION_STATES = frozenset({"API_KEY_ROUTE_VIOLATION", "EXTERNAL_ROUTE_VIOLATION"})
+
+
+def claude_route_midturn(auth_status_item: Mapping[str, Any]) -> str | None:
+    """Mid-turn rule (same policy module): a reason only for a *confirmed* API-key / external route.
+
+    Unknown, malformed and not-authenticated classifications return ``None`` (recorded, never acted on), so a
+    mis-classification cannot kill a legitimate subscription turn.
+    """
+    state = auth_status_item.get("auth_state") if isinstance(auth_status_item, Mapping) else None
+    return f"ROUTE_{state}" if state in CLAUDE_CONFIRMED_VIOLATION_STATES else None
+
+
+def monitor_only(policy: Callable[..., Any], neutral: Any) -> Callable[..., Any]:
+    """The one "monitor only" wrapper: call the real policy, record what it decided, always return ``neutral``.
+
+    ``neutral`` is the allow value of the wrapped policy (``(True, "MONITOR_ONLY")`` for admission, ``None`` for the
+    mid-turn rule). Decisions are in ``wrapper.observed`` as ``(args, real_result)``. There is no "protection off".
+    """
+    observed: list[tuple[Any, Any]] = []
+
+    def wrapper(*args: Any) -> Any:
+        observed.append((args, policy(*args)))
+        return neutral
+
+    wrapper.observed = observed  # type: ignore[attr-defined]
+    return wrapper

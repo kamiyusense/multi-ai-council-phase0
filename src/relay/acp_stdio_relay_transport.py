@@ -47,7 +47,7 @@ from .acp_client import (
 )
 from .acp_stdio_transport import spawn_stdio_transport
 from .m9_live_state import LiveAuthorization, verify_live_authorization
-from .transport import AdmissionRefused
+from .transport import AdmissionRefused, RouteViolationCancelled
 
 __all__ = ["AcpStdioStaticTransport", "OfficialAdapterLaunch", "LiveAuthorization", "LIVE_ADAPTER_MARKERS"]
 
@@ -148,6 +148,7 @@ class AcpStdioStaticTransport:
         official: OfficialAdapterLaunch | None = None,
         route_admission: Callable[[Sequence[Mapping[str, Any]]], tuple[bool, str]] | None = None,
         route_admission_wait_seconds: float = 6.0,
+        route_midturn: Callable[[Mapping[str, Any]], str | None] | None = None,
     ) -> None:
         if not isinstance(profile, ProviderStaticProfile):
             raise TypeError("profile must be a ProviderStaticProfile")
@@ -167,6 +168,10 @@ class AcpStdioStaticTransport:
             self._live = False
         if route_admission is not None and profile.provider_id != "anthropic":
             raise ValueError("route_admission is the Claude auth-status extension; other providers must not set it")
+        if route_midturn is not None and profile.provider_id != "anthropic":
+            raise ValueError("route_midturn is the Claude auth-status extension; other providers must not set it")
+        self._route_midturn = route_midturn
+        self.route_midturn_decisions: list[str | None] = []
         self._route_admission = route_admission
         self._route_wait = float(route_admission_wait_seconds)
         self.route_admission_decisions: list[tuple[bool, str]] = []
@@ -288,6 +293,13 @@ class AcpStdioStaticTransport:
         self._session_id, self._state = session_id, "open"
         return session_id
 
+    def _on_auth(self, evidence: dict[str, Any]) -> None:
+        """Ask the injected mid-turn rule about a classification that arrived during the turn."""
+        reason = self._route_midturn(evidence)
+        self.route_midturn_decisions.append(reason)
+        if reason:
+            raise RouteViolationCancelled(f"route violation reported mid-turn ({reason}); turn cancelled")
+
     def prompt(
         self,
         provider_id: str,
@@ -314,10 +326,14 @@ class AcpStdioStaticTransport:
             coro = _acp_prompt_text(
                 stdout, stdin, session_id, text, total, max_chunks=2000, max_ignored=2000,
                 ignorable=_IGNORABLE_SESSION_UPDATES | {"agent_thought_chunk"}, auth_sink=auth_sink,
+                on_auth=self._on_auth if self._route_midturn is not None else None,
             )
         else:
             auth_sink = self.auth_status_evidence if self.profile.provider_id == "anthropic" else None
-            coro = _acp_prompt_text(stdout, stdin, session_id, text, total, auth_sink=auth_sink)
+            coro = _acp_prompt_text(
+                stdout, stdin, session_id, text, total, auth_sink=auth_sink,
+                on_auth=self._on_auth if self._route_midturn is not None else None,
+            )
         result = self._run(asyncio.wait_for(coro, timeout=total))
         # Non end_turn / empty text raises -> lifecycle reports UNKNOWN, never success.
         return acp_mock_text_to_phase0_raw(result)

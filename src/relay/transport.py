@@ -7,6 +7,10 @@ class AdmissionRefused(ValueError):
     """A pre-generation admission check refused the dispatch; nothing was prompted."""
 
 
+class RouteViolationCancelled(Exception):
+    """A confirmed API-key / external route was reported mid-turn; the lifecycle cancels and stops."""
+
+
 @runtime_checkable
 class RelayTransport(Protocol):
     """Transport boundary. Implementations must not retry or fallback."""
