@@ -1,0 +1,5 @@
+{
+  "target_sha": "9e8823e573aa0dc14c0fe12af6bba8b8fc6f14ea",
+  "source_pr": "relay-claude-dispatch-integration-static-v1",
+  "purpose": "relay validation: Claude STATIC dispatch integration (route admission + Admission Gate contract + mid-turn cancel assembled), STATIC mocks only, no LIVE"
+}
