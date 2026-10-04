@@ -1,5 +1,5 @@
 diff --git a/automation/command_bus/config/control_tower_registry.json b/automation/command_bus/config/control_tower_registry.json
-index 2c56559..cccafa1 100644
+index 3a77881..94783c4 100644
 --- a/automation/command_bus/config/control_tower_registry.json
 +++ b/automation/command_bus/config/control_tower_registry.json
 @@ -10,7 +10,7 @@
@@ -10,4 +10,4 @@ index 2c56559..cccafa1 100644
 +      "identity_state": "PLACEHOLDER"
      },
      {
-       "loop_id": "claude-gemini",
+       "loop_id": "chat-work-semi-auto",

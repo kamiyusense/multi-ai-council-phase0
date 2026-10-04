@@ -10,7 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 SF10 = ROOT / "docs/evidence/signal-sf10"
 SUMMARY = json.loads((SF10 / "lane-inventory.json").read_text(encoding="utf-8"))
-REGISTRY = json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8"))
+# The inventory is the historical 4-lane snapshot taken at adoption time (the committed candidate registry);
+# the live registry now has five rows under the corrected lane model.
+REGISTRY = json.loads((ROOT / "docs/evidence/signal-sf8/registry-candidate-chatgpt-semi-auto-durable.json").read_text(encoding="utf-8"))
 PRS = json.loads((SF10 / "open-pr-classification.json").read_text(encoding="utf-8"))
 OTHER_LANES = ("claude-gemini", "claude-claude", "work-gemini")
 CLASSES = {"DURABLE_READY", "READY_FOR_LIVE_PROOF", "STATIC_READY", "BLOCKED", "UNKNOWN"}

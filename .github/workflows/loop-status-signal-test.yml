@@ -54,6 +54,7 @@ on:
       - docs/evidence/signal-lane-model/**
       - automation/command_bus/tests/test_signal_lane_model_correction.py
       - automation/command_bus/tests/test_signal_lane_naming_policy.py
+      - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
       - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/loop_status_development.py
@@ -155,6 +156,7 @@ on:
       - docs/evidence/signal-lane-model/**
       - automation/command_bus/tests/test_signal_lane_model_correction.py
       - automation/command_bus/tests/test_signal_lane_naming_policy.py
+      - automation/command_bus/tests/test_production_registry_guard.py
       - automation/command_bus/tests/test_control_tower_work_frozen.py
       - docs/evidence/signal-step7-proof5/**
       - automation/command_bus/durable_adoption_approval.py

@@ -66,6 +66,47 @@ def registries_from_production(root: Path) -> tuple[dict[str, Any], dict[str, An
     return current, proposed
 
 
+def registries_from_candidate(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    """(current, proposed) of the historical approval, taken from the committed candidate, not the live file.
+
+    The approval is the record of one decision, bound to exactly these two registries (the proposed one is the
+    committed candidate, the current one is that candidate with the lane still PLACEHOLDER). Later changes to
+    the production file must neither invalidate nor re-validate it, so it is checked against these digests only.
+    """
+    proposed = _load(root / CANDIDATE_REGISTRY_PATH)
+    return _with_lane_state(proposed, "PLACEHOLDER"), proposed
+
+
+PRODUCTION_GUARD_FAILURES = (
+    "ADOPTED_LANE_MISSING_OR_NOT_DURABLE", "ADOPTED_LANE_CHANGED", "SECOND_DURABLE_LANE",
+    "ACTIVE_LANE_NOT_PLACEHOLDER", "FROZEN_LANE_ENABLED",
+)
+
+
+def production_registry_guard(production: dict[str, Any], root: Path) -> list[str]:
+    """Failure codes (empty = ok) for the production registry versus the approved DURABLE adoption.
+
+    The adopted row must equal the approved entry in every field except ``display_name``; it must be the only
+    DURABLE row; every other enabled row must be PLACEHOLDER; a FROZEN row must be disabled. A new
+    PLACEHOLDER row never counts as adoption: only the committed approval bound to the candidate does.
+    """
+    approved = {e["loop_id"]: e for e in _load(root / CANDIDATE_REGISTRY_PATH)["loops"]}[dap.LANE_ID]
+    rows = production.get("loops", [])
+    failures: list[str] = []
+    adopted = [e for e in rows if e.get("loop_id") == dap.LANE_ID]
+    if len(adopted) != 1 or adopted[0].get("identity_state") != "DURABLE":
+        failures.append("ADOPTED_LANE_MISSING_OR_NOT_DURABLE")
+    elif {k: v for k, v in adopted[0].items() if k != "display_name"} != {k: v for k, v in approved.items() if k != "display_name"}:
+        failures.append("ADOPTED_LANE_CHANGED")
+    if [e.get("loop_id") for e in rows if e.get("identity_state") == "DURABLE"] != [dap.LANE_ID]:
+        failures.append("SECOND_DURABLE_LANE")
+    if any(e.get("loop_id") != dap.LANE_ID and e.get("enabled") and e.get("identity_state") != "PLACEHOLDER" for e in rows):
+        failures.append("ACTIVE_LANE_NOT_PLACEHOLDER")
+    if any(e.get("identity_state") == "FROZEN" and e.get("enabled") for e in rows):
+        failures.append("FROZEN_LANE_ENABLED")
+    return failures
+
+
 def verify_own_run(api: RestApi, env: dict[str, str]) -> dict[str, Any]:
     run_id = env.get("GITHUB_RUN_ID", "")
     if not re.fullmatch(r"[0-9]{1,18}", run_id):
@@ -179,7 +220,7 @@ def verify_file(path: Path, root: Path, now: str) -> str:
     evidence = _load(root / EVID_DIR / "live-proof-evidence.json")
     output = _load(root / EVID_DIR / "jules-output-github-readback.json")["output"]
     completed = _load(root / EVID_DIR / "adoption-candidate.json")["proof"]["proof_completed_at"]
-    current, proposed = registries_from_production(root)
+    current, proposed = registries_from_candidate(root)
     return dap.validate_durable_adoption_approval(
         approval, receipt=receipt, evidence=evidence, readback_output=output, current_registry=current,
         proposed_registry=proposed, proof_completed_at=completed,

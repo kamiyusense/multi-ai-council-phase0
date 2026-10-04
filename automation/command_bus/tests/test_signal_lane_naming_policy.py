@@ -42,7 +42,7 @@ class PolicyTests(unittest.TestCase):
             self.assertFalse(os.path.exists(ROOT / runtime_state_path(lane_id)), lane_id)
             hits = [p for p in (ROOT / "docs/evidence").rglob("*.json")
                     if re.search(r"(?<![\w-])" + re.escape(lane_id) + r"(?![\w-])", p.read_text(encoding="utf-8", errors="ignore"))
-                    and DIR not in p.parents]
+                    and DIR not in p.parents and p.name != "post-adoption-checkpoint.json"]
             self.assertEqual(hits, [], lane_id)
 
     def test_old_labels_map_as_historical_only(self):
@@ -69,8 +69,7 @@ class FixtureTests(unittest.TestCase):
     def test_chatgpt_semi_auto_row_differs_from_production_only_by_display_name(self):
         prod = next(e for e in PROD["loops"] if e["loop_id"] == "chatgpt-semi-auto")
         new = next(e for e in V3["loops"] if e["loop_id"] == "chatgpt-semi-auto")
-        diff = {k for k in prod if prod[k] != new[k]}
-        self.assertEqual(diff, {"display_name"})
+        self.assertEqual(prod, new)  # the production row is exactly the approved v3 row
         self.assertEqual(new["identity_state"], "DURABLE")
 
     def test_only_one_durable_and_frozen_lane_is_disabled(self):
@@ -83,10 +82,9 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual(len(validate_registry(V3)), 5)
         self.assertEqual(assess_registration_readiness(V3, None).status, "NOT_WIRED")
 
-    def test_production_registry_is_untouched(self):
-        self.assertEqual([e["loop_id"] for e in PROD["loops"]],
-                         ["chatgpt-semi-auto", "claude-gemini", "claude-claude", "work-gemini"])
-        self.assertEqual(PROD["loops"][0]["display_name"], "ChatGPT Semi-Auto")
+    def test_production_registry_is_the_v3_five_rows(self):
+        self.assertEqual(PROD, V3)
+        self.assertEqual(PROD["loops"][0]["display_name"], "Chat -> Jules")
 
 
 if __name__ == "__main__":

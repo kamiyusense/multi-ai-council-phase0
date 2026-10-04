@@ -124,7 +124,8 @@ def verify(root: Path, fresh: dict[str, Any], now: str) -> dict[str, Any]:
     add(2, "exactly_one_durable_lane", len(durable) == 1, f"durable={durable}")
     add(3, "durable_lane_is_chatgpt_semi_auto", durable == [LANE], f"durable={durable}")
     others = {k: v for k, v in entries.items() if k != LANE}
-    add(4, "other_three_lanes_placeholder", len(others) == 3 and set(others.values()) == {"PLACEHOLDER"}, json.dumps(others, sort_keys=True))
+    add(4, "other_lanes_placeholder_or_disabled_frozen", len(others) >= 1 and set(others.values()) <= {"PLACEHOLDER", "FROZEN"}
+        and not cli.production_registry_guard(production, root), json.dumps(others, sort_keys=True))
 
     try:
         verified_lane = cli.verify_file(root / APPROVAL, root, approval["approved_at"])
@@ -146,7 +147,7 @@ def verify(root: Path, fresh: dict[str, Any], now: str) -> dict[str, Any]:
     add(10, "proof5_evidence_digest", approval["evidence_payload_sha256"] == evidence.get("evidence_payload_sha256")
         and receipt.get("evidence_payload_sha256") == evidence.get("evidence_payload_sha256"), approval["evidence_payload_sha256"])
     try:
-        current_registry, proposed_registry = cli.registries_from_production(root)
+        current_registry, proposed_registry = cli.registries_from_candidate(root)
     except cli.Stop:  # the production registry is no longer the committed candidate: fail closed, never raise
         current_registry = proposed_registry = None
     add(11, "approved_current_registry_digest", current_registry is not None
@@ -154,16 +155,17 @@ def verify(root: Path, fresh: dict[str, Any], now: str) -> dict[str, Any]:
         approval["current_registry_sha256"])
     add(12, "approved_proposed_registry_digest", proposed_registry is not None
         and approval["proposed_registry_sha256"] == registry_digest(proposed_registry), approval["proposed_registry_sha256"])
-    add(13, "current_registry_equals_approved_proposal", registry_digest(production) == approval["proposed_registry_sha256"],
-        registry_digest(production))
+    guard = cli.production_registry_guard(production, root)
+    add(13, "adopted_row_equals_approved_entry_except_display_name", not guard,
+        f"guard failures={guard}; production digest {registry_digest(production)}")
     try:
         if current_registry is None:
             raise dap.ApprovalError("REGISTRY_NOT_THE_CANDIDATE")
-        dap.check_single_lane_diff(current_registry, production, LANE)
+        dap.check_single_lane_diff(current_registry, proposed_registry, LANE)
         diff_ok = True
     except dap.ApprovalError:
         diff_ok = False
-    add(14, "exact_one_lane_diff", diff_ok, "only chatgpt-semi-auto.identity_state PLACEHOLDER->DURABLE")
+    add(14, "exact_one_lane_diff", diff_ok, "approved diff is only chatgpt-semi-auto.identity_state PLACEHOLDER->DURABLE")
     pr278 = fresh["pr278"]
     add(15, "proof5_target_head_tree", pr278.get("head_sha") == evidence.get("target_head") == candidate["proof"]["target_head"]
         and evidence.get("target_tree") == candidate["proof"]["target_tree"] and pr278.get("number") == evidence.get("target_pr")
@@ -221,7 +223,7 @@ def verify(root: Path, fresh: dict[str, Any], now: str) -> dict[str, Any]:
     add(21, "strict_sf8_post_adoption_gate", gate.status == "READY" and tuple(checks) == REQUIRED_CHECKS,
         f"{gate.status}; reasons={list(gate.reasons)}")
     add(22, "global_registration_not_wired", global_ready.status == "NOT_WIRED"
-        and global_ready.placeholder_loop_ids == ("claude-gemini", "claude-claude", "work-gemini") and migration == "NO",
+        and global_ready.placeholder_loop_ids == ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto") and migration == "NO",
         f"{global_ready.status}; issue33_migration_ready={migration}")
     issue = fresh["issue33"]
     add(23, "issue33_unchanged", issue.get("state") == "open" and issue.get("title_has_stopped") is True and issue.get("owner_none") is True

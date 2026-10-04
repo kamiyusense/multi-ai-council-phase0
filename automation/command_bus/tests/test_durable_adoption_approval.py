@@ -40,7 +40,28 @@ RECEIPT = load(P5 / "live-terminal-receipt.json")
 EVIDENCE = load(P5 / "live-proof-evidence.json")
 OUTPUT = load(P5 / "jules-output-github-readback.json")["output"]
 CANDIDATE = load(P5 / "adoption-candidate.json")
-CURRENT, PROPOSED = cli.registries_from_production(ROOT)
+CURRENT, PROPOSED = cli.registries_from_candidate(ROOT)
+
+
+def pre_flip_root():
+    """A scratch repository root in the state the one-shot issuer was designed for: production == approval CURRENT.
+
+    The live production registry has moved on (new PLACEHOLDER rows, FROZEN row); the issuer must keep failing closed
+    there (see ``test_issuer_stops_on_the_live_registry``), so its own behaviour is exercised on this scratch copy.
+    """
+    import atexit, shutil
+    tmp = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, tmp, True)
+    root = Path(tmp)
+    for rel in ("docs/evidence/signal-step7-proof5", "docs/evidence/signal-sf8"):
+        shutil.copytree(ROOT / rel, root / rel)
+    registry = root / cli.REGISTRY_PATH
+    registry.parent.mkdir(parents=True)
+    registry.write_text(json.dumps(CURRENT, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return root
+
+
+PRE_FLIP_ROOT = pre_flip_root()
 
 
 def exact_output():
@@ -260,7 +281,7 @@ def run_cli(fake, environment=None, output_exists=False):
             out.write_text("{}")
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            rc = cli.main(["--issue", "--output", str(out)], env=environment or env(), http=fake, clock=Clock(), root=ROOT)
+            rc = cli.main(["--issue", "--output", str(out)], env=environment or env(), http=fake, clock=Clock(), root=PRE_FLIP_ROOT)
         status = json.loads(buf.getvalue())
         record = json.loads(out.read_text()) if rc == 0 else None
     return rc, status, record
@@ -308,6 +329,12 @@ class IssuerCliTests(unittest.TestCase):
         fake = FakeGitHub()
         self.stopped(fake, "ValueError", environment=bad)
         self.assertEqual(fake.calls, [])
+
+    def test_issuer_stops_on_the_live_registry(self):
+        """The live production registry is no longer the candidate: issuing a new approval from it fails closed."""
+        with self.assertRaises(cli.Stop) as ctx:
+            cli.registries_from_production(ROOT)
+        self.assertEqual(ctx.exception.code, "PROPOSED_REGISTRY_IS_NOT_THE_COMMITTED_CANDIDATE")
 
     def test_proposed_registry_must_be_the_committed_candidate(self):
         self.assertEqual(registry_digest(PROPOSED), registry_digest(load(ROOT / cli.CANDIDATE_REGISTRY_PATH)))

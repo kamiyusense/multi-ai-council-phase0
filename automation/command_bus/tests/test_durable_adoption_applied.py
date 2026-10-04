@@ -31,13 +31,15 @@ class AppliedAdoptionTests(unittest.TestCase):
     def test_exactly_one_lane_is_durable_and_it_is_the_approved_one(self):
         self.assertEqual(dap.durable_lanes(PRODUCTION), (LANE,))
         others = {k: v for k, v in states(PRODUCTION).items() if k != LANE}
-        self.assertEqual(len(others), 3)
-        self.assertEqual(set(others.values()), {"PLACEHOLDER"})
+        self.assertEqual(set(others.values()), {"PLACEHOLDER", "FROZEN"})
+        for entry in PRODUCTION["loops"]:
+            if entry["identity_state"] == "FROZEN":
+                self.assertIs(entry["enabled"], False)
 
-    def test_registry_equals_the_proposal_the_approval_was_bound_to(self):
-        self.assertEqual(registry_digest(PRODUCTION), APPROVAL["proposed_registry_sha256"])
-        self.assertEqual(registry_digest(PRODUCTION),
-                         registry_digest(json.loads((SF8 / "registry-candidate-chatgpt-semi-auto-durable.json").read_text())))
+    def test_the_approval_stays_bound_to_the_committed_candidate_and_the_live_row_matches_it(self):
+        candidate = json.loads((SF8 / "registry-candidate-chatgpt-semi-auto-durable.json").read_text())
+        self.assertEqual(registry_digest(candidate), APPROVAL["proposed_registry_sha256"])
+        self.assertEqual(cli.production_registry_guard(PRODUCTION, ROOT), [])
 
     def test_committed_approval_is_valid_as_of_its_own_issue_time(self):
         self.assertEqual(cli.verify_file(helper.APPROVAL_PATH, ROOT, APPROVAL["approved_at"]), LANE)
@@ -47,13 +49,14 @@ class AppliedAdoptionTests(unittest.TestCase):
 
     def test_diff_against_the_pre_adoption_registry_is_one_identity_state(self):
         before = helper.pre_adoption(PRODUCTION)
-        dap.check_single_lane_diff(before, PRODUCTION, LANE)
+        candidate = json.loads((SF8 / "registry-candidate-chatgpt-semi-auto-durable.json").read_text())
+        dap.check_single_lane_diff(before, candidate, LANE)
         self.assertEqual(registry_digest(before), APPROVAL["current_registry_sha256"])
 
     def test_global_registration_stays_not_wired_with_three_placeholder_lanes(self):
         result = assess_registration_readiness(PRODUCTION, None)
         self.assertEqual(result.status, "NOT_WIRED")
-        self.assertEqual(result.placeholder_loop_ids, ("claude-gemini", "claude-claude", "work-gemini"))
+        self.assertEqual(result.placeholder_loop_ids, ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"))
 
     def test_issue_33_candidate_stays_stopped(self):
         candidate = json.loads((ROOT / "docs/evidence/signal-step7-proof5/adoption-candidate.json").read_text())
@@ -72,7 +75,7 @@ class GuardTests(unittest.TestCase):
     def test_a_second_durable_lane_is_refused(self):
         tampered = copy.deepcopy(PRODUCTION)
         for entry in tampered["loops"]:
-            if entry["loop_id"] == "claude-gemini":
+            if entry["loop_id"] == "claude-jules-auto":
                 entry["identity_state"] = "DURABLE"
         with self.assertRaises(AssertionError):
             helper.pre_adoption(tampered)
