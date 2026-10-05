@@ -1,0 +1,26 @@
+# Relay Claude gated LIVE — Path A runbook (DRAFT; nothing executed)
+
+Status: DRAFT written 2026-10-05. Steps R0-R1 are read-only/local. R2 and later touch the human's real Claude account or the model and need a fresh explicit approval **per step group**. Steps R2-R5 are reconstructed from code and from the 2026-09-28 Issue #23 records, **not validated**; the original commands were not recorded (the record files were written by hand and no script in the repository produces them).
+
+## Findings that decide the path (from the human's PC, read-only)
+- The earlier real proof (r3, 2026-09-28, dispatch `e80d615b-...`) ran in **WSL** (`/home/yuuki/work/multi-ai-council-phase0`), Docker Engine 29.8.0. Its record: Claude process 1, Gate-observed `POST /v1/messages` 1, exit 0, restart 0, terminal `SUCCEEDED`. That approval is consumed.
+- On the PC: volumes `command_bus_claude-auth`, `command_bus_gate-state`; images `phase0-claude-runtime:2.1.283`, `phase0-claude-gate:1`; no running containers; bootstrap receipt `phase0-runs/gate-control/claude-gate-bootstrap-receipt.json` present (store identity matched before/after r3).
+- The PC repo is at `751a694` (PR #25 head = the proven configuration; compose has **no** `auth-control-proxy`). Current `main` adds an `auth-control-proxy` service that is documented as **STATIC CANDIDATE; NOT LIVE-READY** and its image does not exist on the PC.
+
+## Decision: use the proven configuration (751a694), do not update the repo, do not use the proxy
+Reason: it is the only configuration with a real success. Using current `main` compose would run the never-run proxy path.
+Known risk (UNKNOWN until R2): the runtime is on an internal-only network, so an **expired OAuth token cannot refresh**; an earlier attempt ended in an upstream 401 (Issue #102). If `claude auth status` shows not-logged-in or the run ends 401, stop; a re-login (human browser step via the `auth-bootstrap` profile) needs its own approval.
+
+## Steps
+R0 (read-only) — done: Docker, volumes, images, containers, receipt present, repo head.
+R1 (local) — read the store identity from the bootstrap receipt (non-secret) and start only the Gate: `docker compose` with profile `human-approval-required`, service `gate`, env `PHASE0_GATE_EXPECTED_STORE_ID=<id from receipt>`. Check: `HEAD /api/hello` -> 204 from the internal network. No account touched.
+R2 (**account read; approval needed**) — one-off `claude auth status --json` inside the runtime image/auth volume. Proceed only if `loggedIn=true`, `authMethod=claude.ai`, subscription type present, no API-key source. Anything else: stop.
+R3 (local) — register ONE new dispatch in the Gate store (`DispatchStore.register`: uuid, expiry in the future, loop id, correlation uuid, `CLAUDE_BACKEND`, 40-hex target head, generation 1) via a one-off container from `phase0-claude-gate:1` mounting `command_bus_gate-state`. Write `dispatch-intent.json` (state `REGISTERED`, retry 0, fallback disabled, `CONTAINER_INTERNAL`). Registration does not call the model.
+R4 (**model run; separate explicit "run OK" approval**) — create the named runtime container (`CREATED_NOT_STARTED` record), then start it once with `PHASE0_LIVE_EXECUTION=1`, `PHASE0_DISPATCH_ID=<id>` and the fixed prompt "Reply with exactly: PHASE0_CLAUDE_LIVE_OK". retry 0, no restart, no second dispatch. Never resend after an unknown outcome — read back first.
+R5 (read-only) — after exit: stop the Gate; read the Gate DB: evidence for this dispatch must be exactly 1, `ADMITTED`, upstream status recorded; write `runtime-attempt.json` / `terminal-receipt.json`; retain volumes and receipts; no logout, no deletion.
+
+## What a success means (and does not)
+PASS only for: subscription route confirmed by CLI metadata + exactly one Gate-admitted generation + one process. **Not exercised, stays UNKNOWN:** Relay `_auth/status_update` and the mid-turn cancel against a real adapter, model name, billing state, quota.
+
+## Stop immediately if
+Not logged in / API-key source reported; a login, logout, API key, extra-usage or billing prompt; any second `/v1/messages`; Gate refuses to start (do not bootstrap again); anything unexpected. No retry.
