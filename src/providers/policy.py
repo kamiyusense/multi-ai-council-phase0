@@ -88,6 +88,26 @@ def antigravity_launch_args(platform: str, architecture: str) -> tuple[str, ...]
     return ("--uid=",) if platform.lower() == "linux" else ()
 
 
+ANTIGRAVITY_ADMISSIBLE_AUTH_TYPE = "oauth-personal"
+
+
+def antigravity_route_admission(settings: Mapping[str, Any] | None) -> tuple[bool, str]:
+    """Phase 0 admission for the Antigravity route (STATIC; the caller passes a host-owned settings snapshot).
+
+    ``agy_acp_server`` publishes no "who is logged in" notification (checked in public sources only), and
+    ``initialize`` only lists the *available* auth methods. The selected method is ``auth.type`` in the server's
+    settings (or the ``authenticate`` call). Allowed only when it is exactly the personal Google account OAuth
+    type; API key, enterprise, agent-platform, missing, unknown or malformed are refused (fail closed).
+    """
+    auth = settings.get("auth") if isinstance(settings, Mapping) else None
+    kind = auth.get("type") if isinstance(auth, Mapping) else None
+    if kind is None:
+        return False, "NO_AUTH_SELECTION"
+    if kind != ANTIGRAVITY_ADMISSIBLE_AUTH_TYPE:
+        return False, f"ROUTE_{kind if isinstance(kind, str) and kind else 'UNKNOWN'}"
+    return True, "OK"
+
+
 CLAUDE_ADMISSIBLE_AUTH_STATE = "CLAUDE_SUBSCRIPTION_ACCOUNT"
 
 
