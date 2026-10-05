@@ -24,3 +24,10 @@ PASS only for: subscription route confirmed by CLI metadata + exactly one Gate-a
 
 ## Stop immediately if
 Not logged in / API-key source reported; a login, logout, API key, extra-usage or billing prompt; any second `/v1/messages`; Gate refuses to start (do not bootstrap again); anything unexpected. No retry.
+
+## Result of the first Path A attempt (2026-10-05, human's PC, WSL) — FAIL (stopped safely)
+- R1 Gate started (`OPEN_EXISTING_ONLY`, store id from the external receipt) and stayed up. R2 `claude auth status --json` (network none, read-only mount): `loggedIn=true`, `authMethod=claude.ai`, `subscriptionType=pro`, no API-key source. R3 one dispatch registered (`1da811ef-a710-4fe8-a4ba-cf6d5ad3fb3b`, generation 1, retry 0, fallback disabled).
+- R4 (one run, human-approved): runtime image id matched the 2026-09-28 proof (`sha256:111c427b...`). Output: `Failed to authenticate. API Error: 401 OAuth access token has been revoked.` Container exit 1, process count 1, restart 0.
+- Gate DB: `claimed=1`, evidence `[(1, 'ADMITTED', 401)]` -> exactly one upstream `POST /v1/messages` was admitted (and rejected 401). Terminal receipt written as `FAILED` (`mark_terminal` True); Gate stopped; volumes, receipts and containers retained. No second request, no retry, no re-login, no logout.
+- Lessons: (1) `loggedIn=true` from the local auth metadata does **not** prove the OAuth token still works; a revoked/expired token only shows at the first request. (2) The Gate's one-upstream-request boundary held on the real path. (3) Response contract = FAIL; subscription route = UNKNOWN. Not exercised: Relay `_auth/status_update` / mid-turn cancel, model name, billing, quota.
+- A new attempt needs: human re-login (browser, changes the auth volume), a new dispatch id and a new explicit approval. Nothing was changed in the auth volume.
