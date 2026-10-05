@@ -433,7 +433,18 @@ def run_stable_lane_proof(plan: dict[str, Any], *, current_registry: dict[str, A
     except (ProofError, ExportError, ValueError, KeyError, TypeError) as exc:
         return finish("UNKNOWN", getattr(exc, "code", type(exc).__name__))
     except Exception as exc:  # an ambiguous external failure is never retried
-        return finish("UNKNOWN", f"AMBIGUOUS:{type(exc).__name__}")
+        return finish("UNKNOWN", f"AMBIGUOUS:{type(exc).__name__}{safe_error_detail(exc)}")
+
+
+_URL_USERINFO = re.compile(r"://[^/@\s]+@")
+_TOKEN_LIKE = re.compile(r"[A-Za-z0-9_\-]{24,}")
+
+
+def safe_error_detail(exc: BaseException, limit: int = 200) -> str:
+    """Short, secret-free hint of WHY an ambiguous failure happened (an exception type alone cannot be diagnosed)."""
+    text = " ".join(str(exc).split())
+    text = _TOKEN_LIKE.sub("<redacted>", _URL_USERINFO.sub("://<redacted>@", text))
+    return f": {text[:limit]}" if text else ""
 
 
 def _zulu(value: str) -> str:
