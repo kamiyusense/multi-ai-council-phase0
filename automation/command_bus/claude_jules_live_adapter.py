@@ -82,7 +82,7 @@ class GitLiveClient:
     def _git(self, *args: str, input: str | None = None, check: bool = True,
              env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
         proc = subprocess.run(["git", *args], cwd=self.repo_dir, input=input, text=True, capture_output=True,
-                              env=env or self.env, timeout=self.timeout)
+                              encoding="utf-8", errors="replace", env=env or self.env, timeout=self.timeout)
         if check and proc.returncode != 0:
             raise RuntimeError(f"git {args[0]} failed: {proc.stderr.strip()[:300]}")
         return proc

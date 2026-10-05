@@ -421,6 +421,15 @@ class DriverTests(unittest.TestCase):
         self.assertTrue(result.code.startswith("AMBIGUOUS:"))
         self.assertIsNone(result.candidate)
 
+    def test_ambiguous_failure_records_a_short_secret_free_reason(self):
+        secret = "AIza" + "x" * 30
+        _, ports, result = self.run_it(session_error=RuntimeError(f"push to https://user:pw@host/r failed {secret}"))
+        self.assertTrue(result.code.startswith("AMBIGUOUS:RuntimeError: push to"))
+        self.assertNotIn(secret, result.code)
+        self.assertNotIn("user:pw", result.code)
+        self.assertLessEqual(len(result.code), 260)
+        self.assertEqual(proof.safe_error_detail(RuntimeError("")), "")
+
     def test_terminal_provider_state_or_bad_session_is_unknown(self):
         _, ports, result = self.run_it(session_state="COMPLETED")
         self.assertEqual((result.status, result.code), ("UNKNOWN", "SESSION_NOT_ACTIVE_ON_WORK_BRANCH"))
