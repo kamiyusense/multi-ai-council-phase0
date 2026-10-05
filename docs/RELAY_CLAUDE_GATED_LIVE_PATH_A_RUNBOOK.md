@@ -31,3 +31,11 @@ Not logged in / API-key source reported; a login, logout, API key, extra-usage o
 - Gate DB: `claimed=1`, evidence `[(1, 'ADMITTED', 401)]` -> exactly one upstream `POST /v1/messages` was admitted (and rejected 401). Terminal receipt written as `FAILED` (`mark_terminal` True); Gate stopped; volumes, receipts and containers retained. No second request, no retry, no re-login, no logout.
 - Lessons: (1) `loggedIn=true` from the local auth metadata does **not** prove the OAuth token still works; a revoked/expired token only shows at the first request. (2) The Gate's one-upstream-request boundary held on the real path. (3) Response contract = FAIL; subscription route = UNKNOWN. Not exercised: Relay `_auth/status_update` / mid-turn cancel, model name, billing, quota.
 - A new attempt needs: human re-login (browser, changes the auth volume), a new dispatch id and a new explicit approval. Nothing was changed in the auth volume.
+
+## Result of the second Path A attempt (2026-10-05, after human re-login) — PASS (scope below)
+- Human-approved re-login in the dedicated `auth-bootstrap` container (`claude.ai` account flow, `Login successful`); no Console/API-key route chosen, no credential shown or shared.
+- New dispatch `be3efc7c-4897-4b14-82e1-1047f6eb0d54` (generation 1, retry 0, fallback disabled, 30-minute expiry), Gate restarted `OPEN_EXISTING_ONLY` with the same store id, runtime image id unchanged from the 2026-09-28 proof.
+- One human-approved run: output `PHASE0_CLAUDE_LIVE_OK`; container `exit=0 restarts=0`; Gate DB evidence for this dispatch exactly `[(1, 'ADMITTED', 200)]`; terminal receipt marked `SUCCEEDED` (`mark_terminal` True) only after that evidence matched; Gate stopped; volumes, receipts and containers retained.
+- **PASS** for: subscription login path used (as reported by the CLI) + exactly one Gate-admitted upstream `POST /v1/messages` (200) + exactly one Claude process + exact response string.
+- **Not exercised / UNKNOWN:** Relay `_auth/status_update`, route admission and the #301 mid-turn cancel against a real adapter; model name; billing state / usage consumed; quota.
+- Totals for this day on this path: real Claude runs 2 (first: upstream 401, revoked token; second: success), account metadata reads 1, human re-login 1, API-key / Billing / extra-usage operations 0, retries 0, fallbacks 0.
