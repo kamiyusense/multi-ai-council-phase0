@@ -1,0 +1,18 @@
+{
+  "schema_version": 3,
+  "loop_number": 138,
+  "loop_id": "138",
+  "lane_id": "J-BLUE",
+  "lane_display": "💙",
+  "task_id": "work-jules-lap",
+  "command_id": "relay-dev-loop-138-work-jules-lap",
+  "target_branch": "cloud-work/replacement-proof-v1",
+  "expected_target_head": "0e7d96df29cfedbe4f95de444e4f7a9a7efd6577",
+  "expected_target_tree": "815045e5162b717c14a833ca0104c885cfbc1feb",
+  "work_branch": "jules-work/relay-dev-loop-138-work-jules-lap",
+  "state": "CLAIMED",
+  "claimed_at": "2026-10-05T01:21:19+00:00",
+  "duplicate_guard": "one file per loop number; create-only; if exists choose a new number",
+  "retry": 0,
+  "fallback": "disabled"
+}
