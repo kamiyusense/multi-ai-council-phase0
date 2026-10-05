@@ -44,7 +44,7 @@ CODEX_POLICY = ProviderPolicy(
 CLAUDE_POLICY = ProviderPolicy(
     provider_id="anthropic",
     external_agent="@agentclientprotocol/claude-agent-acp",
-    pinned_version="0.84.0",
+    pinned_version="0.85.1",
 )
 
 ANTIGRAVITY_POLICY = ProviderPolicy(

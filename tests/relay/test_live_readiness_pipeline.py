@@ -34,7 +34,7 @@ def get_valid_preflights():
             "reasons": ["ready"],
             "provider_id": "anthropic",
             "external_agent": "@agentclientprotocol/claude-agent-acp",
-            "pinned_version": "0.84.0",
+            "pinned_version": "0.85.1",
             "retry_count": 0,
             "fallback_state": "disabled",
             "live_ready": False
