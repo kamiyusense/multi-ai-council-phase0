@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "profile": "JULES_CHAT_SEMIAUTO_V2",
+  "command_id": "relay-dev-loop-138-work-jules-lap",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "target_branch": "cloud-work/replacement-proof-v1",
+  "work_branch": "jules-work/relay-dev-loop-138-work-jules-lap",
+  "expected_target_head": "0e7d96df29cfedbe4f95de444e4f7a9a7efd6577",
+  "expected_target_tree": "815045e5162b717c14a833ca0104c885cfbc1feb",
+  "allowed_paths": [
+    "docs/evidence/work-jules-lap-20261005.txt"
+  ],
+  "prompt": "Loop 138 — bounded SHORT evidence-file task proposed by Blue Work and recorded in terminal receipt on carrier #167.\n\nGoal:\nCreate exactly one new text file docs/evidence/work-jules-lap-20261005.txt whose entire content is the single line 'work-jules-lap-ok' followed by exactly one newline (no other bytes).\nNon-goals: No code, test, workflow, configuration or other documentation change.\n\nAllowed changed paths only:\n- docs/evidence/work-jules-lap-20261005.txt (ADD)\n\nHard scope / Do Not Touch:\n- any file other than docs/evidence/work-jules-lap-20261005.txt\n- retry=0\n- fallback=disabled\n- no Merge\n- no direct default-branch write\n- no force push, history rewrite, rebase or branch deletion\n- no live provider/model/API call\n- no secrets, credentials, billing, settings or permission changes\n- no workflow changes\n\nRequired semantics:\n1. The file content is exactly 'work-jules-lap-ok\\n'.\n\nNegative/tamper cases:\n- Do not create any second file.\n- Do not omit or add a trailing newline beyond exactly one.\n\nAcceptance criteria:\n- The changed-path set is exactly docs/evidence/work-jules-lap-20261005.txt (ADD).\n- The file has exactly 18 bytes.\n- Machine acceptance check ids: exact_content_present\n\nValidation:\ngit diff --check\n\nPublication:\nPublish the normal isolated Jules PR only if git diff --check passes and only the allowed file was added.\nDo not Merge.\n\nStop and report instead of guessing if:\n- the work branch HEAD is not the expected snapshot\n- any other file would need to change\n- a safety/permission/live/architecture boundary is reached\n\nOperation bounds:\n- docs/evidence/work-jules-lap-20261005.txt: permitted operations ADD\nDo not perform DELETE or RENAME. If an operation cannot stay within these bounds, make no edit and report BLOCKED.",
+  "created_at": "2026-10-05T01:21:19+00:00",
+  "expires_at": "2026-10-05T02:51:19+00:00",
+  "retry": 0,
+  "fallback": "disabled",
+  "merge_allowed": false,
+  "force_push_allowed": false
+}
