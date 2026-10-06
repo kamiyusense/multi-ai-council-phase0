@@ -516,7 +516,7 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
     for key in ("expected_target_head", "expected_target_tree"):
         if not re.fullmatch(r"[0-9a-f]{40}", verdict[key]):
             raise ValueError(f"invalid {key}")
-    if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= 6:
+    if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= 1000:
         raise ValueError("invalid verdict round")
     if isinstance(verdict["generation"], bool) or not isinstance(verdict["generation"], int) or verdict["generation"] < 1:
         raise ValueError("invalid verdict generation")
