@@ -1,5 +1,7 @@
 # Jules → Claude wake via Claude Routines (V1 design + test evidence)
 
+> **North Star note (2026-10-07):** This file is a component proof / wake design, not the final autonomous-loop completion target. Read `AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md` and `CLAUDE_JULES_AUTOLOOP_HANDOVER_CURRENT.md` before extending it. The final target is wake -> restore -> continue authorized multi-round work, not wake -> report -> human.
+
 Status: DESIGN + TEST EVIDENCE only. Nothing in code or workflows changes. No LIVE run, no Jules call,
 no ledger change (Loop A ledger is 5/10 per slot-01..05 on the data branch), no Secret, no API key.
 
