@@ -1,354 +1,566 @@
-# Autonomous Development Loop North Star
+# Autonomous Development Loop — North Star v2
 
-Status: design authority for the autonomous-loop line on PR #320 and successors.
+Status: TARGET ARCHITECTURE / COMPLETION VISION. This document is not an implementation recipe.
+It exists to prevent future controllers from shrinking the goal into a one-turn, read-only, or human-gated half-loop.
 
-> **Safety protects continuation. Safety is not the goal of stopping.**
+## 0. Authority of this document
 
-This document defines what counts as the finished autonomous loop. It is not a
-Phase 0 runtime rule set and it must not be reduced to a one-command proof.
+For the autonomous-development-loop work, this document is the top-level completion target.
+Older Phase 0 safety documents, one-shot proofs, Routine wake notes, and retry=0 records remain useful components/evidence,
+but they MUST NOT be interpreted as requiring the whole autonomous campaign to stop after one task, one UNKNOWN,
+one expired session, one transient failure, or one wake.
+
+The loop is being developed inside the Phase 0 repository because Phase 0 components are useful here.
+The loop itself is not a Phase 0 runtime component and does not inherit every Phase 0 operational restriction as a global policy.
+
+Core principle:
+
+> Safety protects continuation. Safety is not the goal of stopping.
+
+If a safety invariant blocks one action, isolate that action and continue every independent safe action that remains.
 
 ## 1. Purpose
 
-The autonomous loop exists to reduce human relay work while using already-paid
-subscription capacity productively during unattended periods such as sleep or
-work.
+The system exists to provide a useful unattended development loop that can run while the user sleeps or is away.
 
-The target experience is:
+Primary goals:
 
-1. the human authorizes a bounded campaign once;
-2. the controller restores current durable state;
-3. it selects the next safe task;
-4. an agent works;
-5. results are verified;
-6. failures are repaired or converted into corrective work when safe;
-7. success advances to the next task;
-8. a sleeping/dead controller session can be replaced and resume from durable
-   state;
-9. the campaign stops only at a true human boundary, confirmed quota
-   exhaustion, completion, or a configured campaign limit.
+- continue for long periods without repeated human "continue" messages;
+- survive Chat / Work / Claude / coding-agent session death;
+- use durable state instead of session memory;
+- consume already-paid subscription allowance productively;
+- recover from transient failures;
+- correct failed agent work and continue;
+- complete multiple tasks / rounds in one campaign;
+- stop only at a real human boundary, configured campaign limit, exhausted subscription allowance,
+  or a condition from which no safe recovery path remains.
 
-A successful single dispatch, single wake, single turn, or single round is only
-a component proof.
+The target is not "one safe turn".
+The target is "safe multi-round autonomous development".
 
-## 2. Relationship to Phase 0 and upstream Symphony
+## 2. Separation from Phase 0
 
-Phase 0 contributes safety components such as evidence, target binding,
-duplicate suppression, durable state and readback. The autonomous loop has a
-different optimization target: unattended continuation and throughput.
+Phase 0 emphasizes:
 
-Official OpenAI Symphony is the functional reference for long-running polling,
-workspace lifecycle, multi-turn continuation, reconciliation, retries and
-multi-work-item operation.
+- correctness;
+- evidence;
+- fail-closed validation;
+- conservative boundaries.
 
-The Phase 0 / "Chinponey" implementation MUST NOT permanently hard-code away
-capabilities that may later be needed to approach upstream Symphony. A
-restriction may be conservative by default, but it should be represented as
-policy/config/profile whenever practical so the valve can be opened later
-without replacing the architecture.
+The Autonomous Development Loop emphasizes:
 
-It is acceptable to keep two tracks:
+- unattended execution;
+- continuation;
+- recovery;
+- productivity;
+- bounded autonomy.
 
-- **Upstream Symphony track:** minimally modified official/reference behavior,
-  used as a compatibility and capability baseline.
-- **New Chinponey track:** hardened integration that reuses project-specific
-  durable guards and evidence.
+It reuses Phase 0 components such as exact HEAD/tree checks, durable records, duplicate guards, lineage checks,
+create-only ledgers, safe adoption, and ownership fencing.
 
-The two tracks may coexist. They do not need to be forced into one code path if
-that would slow progress or weaken either design.
+Those mechanisms remain strong.
+Their failure result, however, is not automatically "terminate the whole campaign".
 
-## 3. Target runtime flow
+## 3. Campaign model
 
-```text
-campaign authorization
-  -> controller wake / poll
-  -> durable-state restore
-  -> next bounded task
-  -> workspace preparation
-  -> agent execution
-  -> test / evidence / review
-  -> PASS: adopt safely and select next task
-     or
-     repair / corrective task
-     or
-     transient recovery
-  -> durable checkpoint
-  -> continue
-```
+The top-level unit is a campaign.
 
-Normal completion of one task MUST lead to the next safe task without a human
-"continue" message.
+A campaign contains multiple tasks and rounds:
 
-Wake mechanisms are starters, not reporters. A wake should restore campaign
-authority from durable state and continue the authorized workflow.
+Campaign
+  -> task
+     -> initial attempt
+     -> inspection
+     -> optional repair / corrective attempts
+     -> terminal task result
+  -> next task
+  -> ...
+  -> campaign terminal result
 
-## 4. Continuation policy
+Human authorization should normally happen at the campaign boundary, not at every round.
 
-The default question after every event is:
+A campaign authorization may bind:
 
-> **Is there a safe next action inside the campaign?**
+- repository;
+- target branch / allowed branches;
+- allowed lane(s);
+- allowed action classes;
+- max_rounds;
+- max_corrective_rounds_per_task;
+- max_transient_retries;
+- max_consecutive_failures;
+- max_concurrent_agents;
+- idle_check_interval / idle_timeout policy;
+- task_timeout;
+- overall_campaign_timeout;
+- dispatch budget if applicable;
+- subscription-only cost boundary.
 
-If yes, continue.
+Within that authorization, routine safe work continues without asking the user every round.
 
-Examples of safe continuation:
+## 4. Target runtime loop
 
-- fresh readback;
-- test rerun;
-- evidence reacquisition;
-- transient network/read retry;
-- safe local repair;
-- corrective agent mission;
-- stale-target replan after reading the new target;
-- next-task selection;
-- non-default branch commit/push within campaign scope;
-- controller/session replacement and resume;
-- independent work while one subtask is blocked.
+Human starts campaign once
+  -> controller restores durable state
+  -> choose next safe task
+  -> prepare workspace
+  -> dispatch coding agent
+  -> agent works
+  -> result event
+  -> wake a controller session
+  -> restore campaign from durable state
+  -> independent inspection
+  -> classify result
+       PASS
+         -> safe adoption
+         -> next task
+       SMALL_REPAIR
+         -> controller repair
+         -> verify
+         -> next task
+       CORRECTIVE
+         -> create a new corrective task
+         -> dispatch agent
+         -> wait for next result event
+       TRANSIENT_UNKNOWN
+         -> bounded read/test/evidence retry
+         -> reinspect
+       RECOVERABLE_UNKNOWN
+         -> alternate safe evidence / replanning path
+       TASK_BLOCKED
+         -> isolate task
+         -> continue independent tasks
+       HUMAN_REQUIRED
+         -> stop only the affected campaign boundary
+  -> repeat until campaign completion / configured limit / true blocker
 
-A blocked subtask does not automatically block the campaign.
+A successful task MUST naturally lead to next-task selection.
+A controller session ending MUST NOT mean the campaign ended.
 
-## 5. Retry semantics
+## 5. Wake semantics
 
-"Do not resend an ambiguous side effect" and "do not try to solve the problem
-again" are different rules.
+Wake infrastructure is an alarm clock, not the controller and not merely a notification system.
 
-### 5.1 Ambiguous side-effect retry
+A wake event should start a fresh controller session.
+The controller then:
 
-Blind resend is forbidden when the first operation may already have succeeded,
-for example:
+1. reads fresh GitHub / durable campaign state;
+2. validates campaign identity and authority;
+3. validates current owner/generation where applicable;
+4. restores the current task / pending result;
+5. performs the next authorized safe action;
+6. continues through review / repair / corrective / adoption / next dispatch when allowed.
 
-- GitHub create/update outcome unknown;
-- provider dispatch/POST outcome unknown;
-- adoption mutation outcome unknown.
+A design that ends with:
 
-Required behavior:
+wake -> read -> report -> human
 
-```text
-ambiguous write
-  -> readback
-  -> confirmed success: continue
-  -> confirmed absence and a new safe action is valid: proceed as a new action
-  -> unverifiable duplicate risk: isolate that subtask
-```
+is only a component proof, not the completed autonomous loop.
 
-Do not automatically stop unrelated safe work.
+The target is:
 
-### 5.2 Transient diagnostic retry
+wake -> restore -> act -> continue campaign.
 
-Bounded retry is allowed for operations without duplicate side-effect risk, for
-example:
+## 6. Session independence
 
-- GitHub/read-only fetch;
-- tests;
-- evidence acquisition;
-- status checks;
-- transient filesystem setup;
-- temporary network reads;
-- wake/read acquisition.
+Correctness must not depend on:
 
-### 5.3 Corrective work
+- one Claude session;
+- one Chat thread;
+- one Work session;
+- one browser session;
+- one local process;
+- one disposable provider task.
 
-A failed agent result may create a **new corrective mission**. This is not a
-blind resend of the original dispatch.
+Durable state must be sufficient for a fresh controller to reconstruct:
 
-## 6. UNKNOWN classification
-
-UNKNOWN is information about uncertainty, not an unconditional campaign-stop
-instruction.
-
-Suggested classes:
-
-- **TRANSIENT_UNKNOWN:** retry/re-read is likely to resolve it.
-- **RECOVERABLE_UNKNOWN:** an alternate proof/readback/replan path exists.
-- **HARD_UNKNOWN:** no safe continuation can be established.
-
-A target HEAD change is NOT automatically HARD_UNKNOWN. If another actor safely
-advanced the target:
-
-```text
-HEAD changed
-  -> read latest state
-  -> inspect intervening changes
-  -> confirm campaign objective still applies
-  -> replan against the new head
-  -> continue
-```
-
-Only loss of authoritative lineage/identity, unverifiable dangerous side
-effects, broken authorization, or an equivalent condition should force a
-campaign-wide hard stop.
-
-## 7. Four durable safety components to preserve
-
-### 7.1 Duplicate execution prevention
-
-Stable task/logical identities and claims prevent the same logical work from
-being executed twice accidentally. Duplicate events become NO-OP.
-
-A failed task may still produce a distinct corrective task.
-
-### 7.2 Stale target protection
-
-Bind work to the target revision observed when the task is prepared. Before a
-mutation/adoption, verify the current target again.
-
-A stale target triggers readback and replan when safe. It is not inherently a
-campaign stop.
-
-### 7.3 Durable execution ledger
-
-Important campaign state must survive Chat, Work, agent, browser and process
-lifetimes.
-
-The durable control plane should be able to reconstruct at least:
-
-- campaign identity and authorization;
-- round/generation/correlation;
+- campaign_id;
+- campaign authorization;
+- current round;
 - current task;
-- claim/owner state;
-- dispatch result;
-- verification/adoption state;
-- retry/corrective counters;
-- terminal/blocked state;
-- next safe action/checkpoint.
+- task dependency status;
+- current / previous attempts;
+- outstanding dispatch;
+- result identity;
+- inspection status;
+- retry counters;
+- corrective counters;
+- adopted target state;
+- owner/generation;
+- blocked tasks;
+- deferred decisions;
+- next_safe_action;
+- campaign terminal status.
 
-### 7.4 Ambiguous-write readback
+next_safe_action is advisory, not blindly trusted.
+Every resumed controller revalidates fresh state before executing it.
 
-When a write outcome is uncertain, do not repeat the same side effect merely
-because the response was lost. Read the authoritative remote state first.
+## 7. Configurable limits
 
-## 8. Configurable policy, not permanent hard-coded throttles
+Do not hard-code "6 rounds" as the architecture.
 
-The architecture should support configuration such as:
+The design must support configuration such as:
 
-```text
-max_rounds
-max_turns_per_task
-max_model_starts_per_task
-max_corrective_rounds_per_task
-max_transient_retries
-max_consecutive_failures
-max_concurrent_agents
-idle_observation_interval
-task_timeout
-campaign_timeout
-```
+- max_rounds;
+- max_corrective_rounds_per_task;
+- max_transient_retries;
+- max_consecutive_failures;
+- max_concurrent_agents;
+- task_timeout;
+- campaign_timeout;
+- idle_check_interval;
+- dispatch / provider budget.
 
-Conservative defaults are acceptable during proof stages.
+Examples:
 
-The schema/design may support a future unlimited/null campaign limit. The
-runtime does not need to enable every value on day one.
+- short proof: max_rounds = 3;
+- normal campaign: max_rounds = 6;
+- overnight campaign: max_rounds = 20 or 30.
 
-Current proof-only limits such as one turn, one start, one path or one commit
-must remain a **strict proof profile**, not become permanent architectural
-limits.
+The schema may allow "unbounded" in the future, but early production defaults should remain finite.
+Increasing the limit must not require rewriting controller code.
 
-## 9. Idle, timeout and lease behavior
+max_concurrent_agents should initially remain 1 unless parallel ownership / target isolation is proven.
+The schema should leave room for safe future expansion.
 
-Idle timeout is primarily a re-observation trigger:
+## 8. Retry semantics
 
-```text
-idle threshold
-  -> fresh provider/GitHub status
-  -> still running: wait/check later
-  -> session disappeared: recovery/reclaim path
-  -> true blocker: isolate/stop as appropriate
-```
+Never use one global retry=0 rule for all operations.
 
-An expired controller lease should normally permit safe reclaim by a fresh
-controller when generation/ownership fences verify it.
+### 8.1 Ambiguous external / mutating write
 
-## 10. Subscription-only cost boundary
+Examples:
 
-The unattended loop is intended to consume already-paid ChatGPT/Codex
-subscription allowance, not metered API spend.
+- provider dispatch POST;
+- GitHub create/update where the response is ambiguous;
+- adoption ref write;
+- external side-effecting request.
 
-Policy target:
+Do not blindly send the same logical write again.
 
-- no automatic API-key fallback;
-- no automatic paid-credit/overage enablement or purchase;
-- no automatic fallback to a metered third-party provider;
-- do not infer quota exhaustion merely because usage balance is unreadable;
-- **stop new model work when quota exhaustion is explicitly confirmed**;
-- unknown remaining allowance alone is not a stop condition.
+Flow:
 
-Before live unattended operation, authentication and quota observations must be
-verified sufficiently to enforce this policy. Billing, credit, API key,
-permission or secret changes remain human-controlled unless a future explicit
-policy says otherwise.
+write
+ -> ambiguous response
+ -> readback
+ -> confirmed success: continue
+ -> confirmed absent and issuing a distinct safe action is valid: replan
+ -> unverifiable with duplicate risk: isolate that subtask
 
-## 11. Human boundary
+This is duplicate prevention, not a ban on recovery.
 
-Within campaign authorization, do not ask for approval for every round.
+### 8.2 Transient read / verification retry
 
-Human intervention is normally reserved for:
+Bounded retries are allowed for:
 
-- PR merge;
-- direct default-branch mutation;
-- force push/history rewrite/destructive deletion;
-- billing/credits/overage changes;
-- credential/permission/secret changes;
+- GitHub reads;
+- status reads;
+- test invocation;
+- evidence retrieval;
+- network reads;
+- temporary filesystem operations;
+- wake acquisition;
+- verification reads;
+- other non-destructive transient failures.
+
+Retry count/backoff are campaign configuration.
+
+### 8.3 Corrective attempt
+
+A failed artifact is not retried by replaying the same ambiguous write.
+Create a new corrective task with a new identity.
+
+Corrective work is a normal autonomous continuation path up to its configured limit.
+
+## 9. UNKNOWN taxonomy
+
+The string UNKNOWN alone is never a sufficient campaign-stop reason.
+
+Classify the cause.
+
+### TRANSIENT_UNKNOWN
+
+Examples:
+
+- test command failed to start;
+- temporary GitHub read failure;
+- temporary network failure;
+- evidence source temporarily unavailable.
+
+Action:
+bounded retry / evidence reacquisition / reinspection.
+
+### RECOVERABLE_UNKNOWN
+
+Examples:
+
+- local environment cannot run the test but an authorized cloud exact-head test can;
+- cached evidence missing but fresh remote evidence can be acquired;
+- stale target HEAD with an unambiguous new canonical state.
+
+Action:
+alternate safe path or replan.
+
+### TASK_BLOCKED
+
+One task has exhausted its safe repair/retry options, but independent tasks remain.
+
+Action:
+record blocker, isolate the task, continue the campaign with independent work.
+
+### HARD_UNKNOWN
+
+Reserve this for cases where correctness / authority itself cannot be established, for example:
+
+- conflicting or corrupted durable lineage with no trustworthy source of truth;
+- an ambiguous side-effecting write whose duplicate risk cannot be resolved;
+- incompatible ownership records where no valid reclaim / generation path exists;
+- authorization identity cannot be established and no authorized work remains.
+
+Even HARD_UNKNOWN should first isolate its scope.
+Only stop the whole campaign when the unknown affects campaign authority or all remaining safe work.
+
+## 10. Stale HEAD is a replan trigger
+
+A changed target HEAD is not automatically HARD_UNKNOWN.
+
+Flow:
+
+stale HEAD detected
+ -> fresh readback
+ -> inspect intervening changes
+ -> is the task still valid on the new canonical state?
+      yes -> replan against new HEAD without destructive history rewrite
+      no  -> mark the old attempt stale and create / choose a new task
+ -> continue
+
+Stop only if there is no trustworthy canonical state or safe replan path.
+
+## 11. Failure / corrective limit handling
+
+A task reaching its corrective limit does not automatically terminate the campaign.
+
+Flow:
+
+task A reaches its limit
+ -> TASK_BLOCKED
+ -> persist blocker / evidence
+ -> identify independent ready tasks
+ -> continue B/C/D when safe
+
+Stop the entire campaign only when:
+
+- the blocked task is a prerequisite for every remaining task;
+- campaign correctness depends on its unresolved state;
+- no independent safe work remains;
+- or a configured campaign-level stop condition is reached.
+
+## 12. Deferred Decisions
+
+Do not stop for every architectural choice.
+
+If:
+
+- multiple options are reversible;
+- a conservative default exists;
+- choosing the default does not exceed campaign authority;
+- later correction is cheap and safe;
+
+record a Deferred Decision and continue.
+
+Recommended durable fields:
+
+- decision_id;
+- question;
+- reason;
+- options;
+- selected_safe_default;
+- reversibility;
+- affected scope;
+- reconsider_by condition.
+
+Stop for a design/product decision only when the choice materially changes user intent,
+cost, permissions, irreversible architecture, or correctness and no safe default exists.
+
+## 13. Timeout semantics
+
+Timeout is a check trigger, not automatically a terminal state.
+
+idle timeout:
+ -> read fresh status
+ -> still running: schedule / await next observation
+ -> stalled: attempt bounded recovery
+ -> disappeared: reconcile durable records
+ -> unrecoverable: isolate / stop as appropriate
+
+task timeout:
+ -> reconcile provider / result state
+ -> recover if possible
+ -> classify task only after evidence
+
+campaign timeout:
+ -> checkpoint all state
+ -> continue non-model safe cleanup / evidence if useful
+ -> stop new model work when the configured boundary truly requires it
+
+## 14. Blocker isolation
+
+A blocked subtask must not hold unrelated work hostage.
+
+Durable campaign state should distinguish:
+
+- READY;
+- RUNNING;
+- WAITING;
+- BLOCKED;
+- DEFERRED;
+- COMPLETE.
+
+The planner selects READY tasks whose dependencies are satisfied.
+
+This allows campaign progress even when one branch of work is blocked.
+
+## 15. Durable control plane
+
+Important campaign state must be reconstructible from GitHub or another approved durable control plane.
+
+At minimum preserve:
+
+- campaign request / authorization;
+- task definitions;
+- claims / ownership;
+- attempts / dispatches;
+- result events;
+- inspections;
+- evidence;
+- repairs / corrective relationships;
+- adoption receipts;
+- blocked task records;
+- deferred decisions;
+- current campaign state;
+- round / generation / correlation;
+- next_safe_action;
+- terminal receipts.
+
+Session memory is a cache, not the source of truth.
+
+## 16. Duplicate and stale work prevention
+
+Keep strong safety primitives:
+
+- stable logical identities;
+- create-only records where practical;
+- duplicate event -> NO-OP;
+- stale generation rejection;
+- stale role rejection;
+- exact expected target state where the action requires it;
+- readback after writes;
+- terminal replay prevention.
+
+These prevent duplicate effects.
+They must not prohibit new corrective tasks or safe replanning.
+
+## 17. Ownership and recovery
+
+Ownership fencing remains useful.
+
+However, an expired controller lease should normally be recoverable:
+
+controller session disappears
+ -> lease expires
+ -> fresh controller wakes
+ -> validates no conflicting live owner
+ -> safe reclaim / next generation
+ -> campaign resumes
+
+Do not require the user to manually reclaim every expired normal controller lease if campaign authorization and the ownership chain make automatic reclaim safe.
+
+## 18. Subscription-only cost boundary
+
+The loop should use already-paid subscription allowance where possible.
+
+Never automatically:
+
+- switch to usage-billed API fallback;
+- create/use an API key as fallback;
+- purchase credits;
+- enable overages / auto-recharge;
+- switch to another metered provider.
+
+If the provider explicitly reports quota / subscription allowance exhausted,
+stop starting new model work and checkpoint normally.
+
+If exact remaining quota is not observable, lack of a percentage reading alone is not a failure.
+Continue until the provider reports an actual limit or another configured boundary is reached.
+
+## 19. Human approval boundary
+
+Routine campaign work should continue without per-round confirmation.
+
+Human approval remains appropriate for:
+
+- PR Merge;
+- direct default-branch write;
+- force push / destructive history rewrite;
+- destructive delete;
+- billing / credits / overage changes;
+- credentials / permissions / Secret changes under current policy;
+- expanding beyond the campaign's authorized purpose/repository/targets;
 - irreversible actions;
-- campaign-scope expansion;
-- architecture/product choices with no conservative reversible default;
-- genuine HARD_UNKNOWN affecting campaign correctness;
-- configured campaign/failure limits;
-- campaign completion.
+- a true product/design decision with no safe reversible default;
+- campaign-level HARD_UNKNOWN;
+- configured campaign completion / exhaustion.
 
-A decision that blocks only one task should be deferred when independent safe
-work remains.
+These are boundaries, not reasons to ask after each normal task.
 
-## 12. Current #320 interpretation
+## 20. Completion criteria
 
-PR #320 began as a strict one-dispatch proof. Its one-turn, one-start,
-retry-zero, proof-file and exact-commit constraints are evidence fixtures, not
-the North Star.
+Do NOT call the autonomous loop complete because:
 
-The first real LIVE attempt proved useful pieces:
+- one agent dispatch worked;
+- one result PR appeared;
+- one Routine woke Claude;
+- one review succeeded;
+- one round completed;
+- a wake produced a report.
 
-- controller reached a real Codex app-server run;
-- exactly one model start occurred;
-- Codex created the requested proof content;
-- durable terminal UNKNOWN was written;
-- a second poll did not redispatch.
+Component proofs are useful but not completion proofs.
 
-It did not produce the required commit/push, so it is not a closed-loop PASS.
-The consumed command must not be replayed.
+A completion proof should demonstrate, without intermediate human intervention:
 
-This failure must not be used to conclude that the autonomous architecture
-should remain one-turn or one-job.
+- multiple distinct tasks / rounds;
+- success -> adoption -> next task;
+- failure -> correction -> reinspection;
+- at least one fresh controller/session resume;
+- duplicate event suppression;
+- durable reconstruction;
+- safe write/readback;
+- stale-state recovery / replanning;
+- blocker isolation where applicable;
+- configured normal stopping behavior;
+- no unapproved metered fallback.
 
-## 13. Near-term architecture direction
+Minimum LIVE completion proof target: at least 3 consecutive autonomous rounds after the components are statically proven.
+The number is a proof target, not a permanent runtime limit.
 
-Before more live proof, evolve the design so that:
+## 21. Non-goal: safety theater
 
-1. strict proof limits are isolated into an explicit proof profile;
-2. autonomous runtime policy is configurable;
-3. model-start budgets are per task/campaign policy, not runner-lifetime traps;
-4. multi-turn/continuation can be enabled without rewriting the controller;
-5. stale HEAD becomes a replan path when safe;
-6. UNKNOWN classification and blocker isolation exist;
-7. subscription-only policy has an enforceable gate;
-8. upstream Symphony behavior remains reachable either through progressive
-   feature gates or a separate upstream-compatible track.
+Do not optimize the system into a tool that is safe because it does almost nothing.
 
-## 14. Completion standard
+The following are explicitly not the target:
 
-Do not call the autonomous loop complete because one component works.
+- "wake, read, report, stop";
+- "one task completed, ask the human";
+- "UNKNOWN appeared, terminate campaign";
+- "one task exceeded retries, terminate unrelated tasks";
+- "target HEAD moved, terminate";
+- "session ended, campaign ended";
+- "safe next action exists, but wait for the human anyway".
 
-Completion evidence should demonstrate, at minimum:
+The governing rule is:
 
-- zero human intervention across multiple rounds;
-- success automatically advances;
-- failure can produce safe recovery/corrective work;
-- controller/session replacement can resume;
-- durable duplicate suppression works;
-- stale target can be replanned when safe;
-- ambiguous writes do not blind-resend;
-- independent work continues around isolated blockers;
-- configured stopping conditions are honored;
-- no unauthorized metered billing path is used.
-
-The long-term target is simple:
-
-> **Human starts a campaign once. The system keeps doing safe useful work until
-> completion, a real human boundary, confirmed subscription exhaustion, or a
-> configured campaign limit, then reports once.**
+> Work possible -> continue.
+> Safe recovery possible -> recover.
+> Safe replan possible -> replan.
+> Independent safe work remains -> continue.
+> Only when safe continuation is exhausted -> stop.
