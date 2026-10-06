@@ -110,6 +110,7 @@ _TRANSIENT_MARKERS = (
     "network",
     "evidence unverifiable",
     "evidence unavailable",
+    "evidence missing",
     "temporar",
     "status unavailable",
     "owner chain unavailable",
