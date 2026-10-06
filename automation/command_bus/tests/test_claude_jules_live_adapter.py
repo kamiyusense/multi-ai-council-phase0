@@ -18,7 +18,7 @@ from datetime import datetime
 from automation.command_bus.claude_jules_autoloop import ClaudeJulesAutoLoop
 from automation.command_bus.claude_jules_dispatch import command_path, dispatch_receipt_path
 from automation.command_bus.claude_jules_live import (
-    LiveResultFacts, build_review, poll_results, review_path,
+    LiveResultFacts, build_review, poll_results, review_path, wake_resume,
 )
 from automation.command_bus.claude_jules_live_adapter import GitLiveClient, PushRejected
 from automation.command_bus.claude_jules_live_budget import LOOP_A_LIVE_BUDGET, LiveBudgetLedger, slot_path
@@ -336,19 +336,39 @@ class LiveControllerIntegrationTests(unittest.TestCase):
         self.rest.prs[502] = {"number": 502, "state": "open", "merged": False, "merged_at": None,
                               "body": "*PR created automatically by Jules for task [777001](https://jules.google.com/task/777001) started*",
                               "base": {"ref": work, "repo": repo}, "head": {"ref": f"{work}-777001", "sha": head, "repo": repo}}
-        poll_results(git=self.c, rest=self.rest, policy=self.policy, origin_loop_id=LOOP)
         obs = {n: {"result": "PASS", "evidence": "asserted in test_alpha"} for n in
                task_spec()["acceptance_checks"] + ["negative_cases_exercised", "regression_suite_reviewed"]}
         review = build_review(command_id=command_id, head=head, tree=self.c.get_commit_tree(head),
                               observations=obs, findings=[], summary="ok", reviewed_at=NOW)
         self.c.create(review_path(command_id, head), canonical_json(review), "review", DATA)
-        inspected = self.loop().step(now=NOW)
-        self.assertEqual((inspected.action, inspected.status), ("INSPECT", "PASS"), inspected.reason)
-        adopted = self.loop().step(now=NOW)
-        self.assertEqual((adopted.action, adopted.status), ("ADOPT", "ADOPTED"), adopted.reason)
+
+        resumed = wake_resume(
+            loop=self.loop(), git=self.c, rest=self.rest, policy=self.policy,
+            origin_loop_id=LOOP, now=NOW, max_steps=6,
+        )
+        self.assertEqual([entry["inbox"] for entry in resumed["poll"]], ["RECORDED"])
+        self.assertEqual([step["status"] for step in resumed["steps"]], ["PASS", "ADOPTED", "COMPLETE"])
         self.assertEqual(self.remote.head(TARGET), head)
-        done = self.loop().step(now=NOW)
-        self.assertEqual((done.action, done.status), ("COMPLETE", "COMPLETE"))
+
+    def test_wake_resume_step_budget_is_bounded(self):
+        loop = self.loop()
+        with self.assertRaisesRegex(ValueError, "max_steps"):
+            wake_resume(loop=loop, git=self.c, rest=self.rest, policy=self.policy,
+                        origin_loop_id=LOOP, now=NOW, max_steps=0)
+        with self.assertRaisesRegex(ValueError, "max_steps"):
+            wake_resume(loop=loop, git=self.c, rest=self.rest, policy=self.policy,
+                        origin_loop_id=LOOP, now=NOW, max_steps=101)
+
+    def test_wake_resume_without_result_stops_at_wait_not_human(self):
+        first = self.loop().step(now=NOW)
+        self.assertEqual(first.status, "DISPATCHED")
+        resumed = wake_resume(
+            loop=self.loop(), git=self.c, rest=self.rest, policy=self.policy,
+            origin_loop_id=LOOP, now=NOW, max_steps=4,
+        )
+        self.assertEqual(resumed["poll"], [])
+        self.assertEqual([(step["action"], step["status"]) for step in resumed["steps"]],
+                         [("WAIT", "WAITING_FOR_RESULT")])
 
     def test_budget_exhaustion_blocks_before_any_carrier_write(self):
         ledger = LiveBudgetLedger(self.c, data_branch=DATA)
