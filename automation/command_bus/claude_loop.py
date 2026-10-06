@@ -108,6 +108,7 @@ def make_structured_verdict(
     evidence_refs: Iterable[str],
     next_prompt: str | None = None,
     terminal: bool = False,
+    round_cap: int = 6,
 ) -> dict[str, Any]:
     """Create the provider-neutral structured verdict contract."""
     verdict = {
@@ -131,7 +132,7 @@ def make_structured_verdict(
         "model_executed": False,
         "external_send_attempted": False,
     }
-    _validate_verdict(verdict)
+    _validate_verdict(verdict, round_cap=round_cap)
     return verdict
 
 
@@ -139,10 +140,11 @@ def prepare_next_action(
     verdict: dict[str, Any], *, expected_repo: str, expected_pr: int,
     expires_at: str, path_policy: Iterable[dict[str, Any]],
     existing_terminal_receipts: Iterable[dict[str, Any]] = (),
+    round_cap: int = 6,
 ) -> LoopResult:
     """Turn one validated verdict into one durable prepare-only request."""
     try:
-        _validate_verdict(verdict)
+        _validate_verdict(verdict, round_cap=round_cap)
         receipts = list(existing_terminal_receipts)
         if any(
             isinstance(receipt, dict)
@@ -494,7 +496,7 @@ def prepare_claude_transport(*, mode: str, dispatch_id: str, gate_base_url: str,
                                        external_send=external_send)
 
 
-def _validate_verdict(verdict: dict[str, Any]) -> None:
+def _validate_verdict(verdict: dict[str, Any], *, round_cap: int = 6) -> None:
     required = {
         "schema_version", "verdict_id", "loop_id", "round", "generation", "correlation_id",
         "backend_mode", "decision", "reasons", "next_prompt", "evidence_refs",
@@ -516,7 +518,10 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
     for key in ("expected_target_head", "expected_target_tree"):
         if not re.fullmatch(r"[0-9a-f]{40}", verdict[key]):
             raise ValueError(f"invalid {key}")
-    if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= 6:
+    if isinstance(round_cap, bool) or not isinstance(round_cap, int) or not 1 <= round_cap <= 1000:
+        raise ValueError("invalid verdict round cap")
+    if (isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int)
+            or not 1 <= verdict["round"] <= round_cap):
         raise ValueError("invalid verdict round")
     if isinstance(verdict["generation"], bool) or not isinstance(verdict["generation"], int) or verdict["generation"] < 1:
         raise ValueError("invalid verdict generation")

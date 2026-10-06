@@ -82,8 +82,16 @@ def _time(value: Any, name: str) -> datetime:
     return parsed
 
 
-def validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
-    """Validate the Claude AUTO controller policy (grants are explicit lists)."""
+def validate_policy(policy: dict[str, Any], *, max_round_cap: int = 6) -> dict[str, Any]:
+    """Validate the Claude AUTO controller policy (grants are explicit lists).
+
+    max_round_cap is a caller-selected schema envelope. The historical
+    dispatch contract keeps its default cap of six. The autonomous campaign
+    controller may opt into a larger finite envelope while LIVE authorization
+    and the fixed global dispatch budget remain separate.
+    """
+    if isinstance(max_round_cap, bool) or not isinstance(max_round_cap, int) or not 1 <= max_round_cap <= 1000:
+        raise ValueError("invalid policy max_round_cap")
     if not isinstance(policy, dict) or set(policy) != _POLICY_KEYS:
         raise ValueError("policy keys mismatch")
     if policy["schema_version"] != 1 or policy["profile"] != POLICY_PROFILE:
@@ -104,8 +112,9 @@ def validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
         carrier_claim_validator.lane_display_for(lane)
     if isinstance(policy["expected_pr"], bool) or not isinstance(policy["expected_pr"], int) or policy["expected_pr"] < 1:
         raise ValueError("policy expected_pr must be positive")
-    if isinstance(policy["max_rounds"], bool) or not isinstance(policy["max_rounds"], int) or not 1 <= policy["max_rounds"] <= 6:
-        raise ValueError("policy max_rounds must be 1..6")
+    if (isinstance(policy["max_rounds"], bool) or not isinstance(policy["max_rounds"], int)
+            or not 1 <= policy["max_rounds"] <= max_round_cap):
+        raise ValueError(f"policy max_rounds must be 1..{max_round_cap}")
     auth = policy["live_dispatch_authorization"]
     if auth is not None:
         if not isinstance(auth, dict) or set(auth) != _AUTH_KEYS:
@@ -291,11 +300,11 @@ class ClaudeJulesDispatcher:
     """Execute one dispatch intent through the existing carrier contract."""
 
     def __init__(self, *, client: GitHubContentsClient, refs: GitRefClient, policy: dict[str, Any],
-                 owner_reader: Any, carrier_guard: Any = None):
+                 owner_reader: Any, carrier_guard: Any = None, max_round_cap: int = 6):
         self.client, self.refs = client, refs
         # Optional no-write check that the shared carrier is quiet (see CarrierQuietGuard).
         self.carrier_guard = carrier_guard
-        self.policy = validate_policy(policy)
+        self.policy = validate_policy(policy, max_round_cap=max_round_cap)
         self.owner_reader = owner_reader
         self.binding_store = ClaudeJulesOriginBindingStore(client, self.policy["data_branch"])
         from .claude_jules_live_budget import LiveBudgetLedger  # local import: the ledger reuses this module

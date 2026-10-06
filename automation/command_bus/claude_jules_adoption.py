@@ -85,9 +85,10 @@ def validate_adoption_receipt(receipt: Any, *, intent: dict[str, Any], inspectio
 
 
 class SafeAdoption:
-    def __init__(self, *, client: Any, refs: AdoptionRefClient, policy: dict[str, Any]):
+    def __init__(self, *, client: Any, refs: AdoptionRefClient, policy: dict[str, Any],
+                 max_round_cap: int = 6):
         self.client, self.refs = client, refs
-        self.policy = validate_policy(policy)
+        self.policy = validate_policy(policy, max_round_cap=max_round_cap)
         self.branch = self.policy["data_branch"]
 
     def adopt(self, *, intent: dict[str, Any], inspection: dict[str, Any], adopted_at: str) -> AdoptionResult:
