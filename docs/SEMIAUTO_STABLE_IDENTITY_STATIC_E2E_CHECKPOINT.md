@@ -51,3 +51,9 @@ remain in the full command-bus suite.
   authorized runtime data branch are still required before production use.
 - This branch does not mutate Issue #33, promote the registry, start Jules,
   request OIDC tokens, publish runtime status, or perform a live takeover.
+
+---
+
+# Connector writeback reproduction fixture
+
+This disposable branch intentionally adds this documentation path from the pre-PR-121 main commit so the test pull request conflicts with current main. It must not be merged.
