@@ -1,5 +1,19 @@
 # Symphony-inspired minimal orchestrator (Phase 0 static scope)
 
+> **Architecture status notice (2026-10-07):** This document describes the
+> strict proof profile currently implemented on PR #320. It is not the final
+> autonomous-loop product definition. The current one-turn, one-model-start,
+> retry-zero and exact-proof-file constraints must stay scoped to proof/safety
+> profiles and must not become permanent architecture limits.
+>
+> The autonomous-loop design authority is
+> [AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md](AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md).
+> The North Star prioritizes unattended multi-round continuation, distinguishes
+> blind side-effect resend from safe diagnostic/corrective retry, treats stale
+> HEAD as a replan condition when possible, isolates blocked subtasks, and keeps
+> a path open toward upstream Symphony capability. Safety protects continuation;
+> safety is not the goal of stopping.
+
 Status: static controller, bounded Codex app-server adapter, GitHub Contents
 transport, and separate Symphony LIVE durable command/claim/result schema.
 LIVE remains blocked until GitHub state is freshly verified and remote proof
