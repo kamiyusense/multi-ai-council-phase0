@@ -266,13 +266,14 @@ class ClaudeJulesAutoLoop:
             if decision == "CLAUDE_SMALL_REPAIR":
                 return self._small_repair(latest, spec, current, mine, now=now)
             if decision in {"JULES_CORRECTIVE", "JULES_CORRECTIVE_REDUCED"}:
-                attempt = sum(1 for i in intents if _family(i["task_id"]) == _family(spec["task_id"]))
-                corrective = corrective_task_spec(spec, attempt=attempt, findings=current["findings"],
-                                                  reduce_size=decision == "JULES_CORRECTIVE_REDUCED")
-                return self._plan_and_dispatch(now=now, round_number=latest["origin_round"] + 1,
-                                               attempt=1, spec=corrective)
+                return self._corrective_or_block(
+                    latest, spec, current, intents, now=now,
+                    reduce_size=decision == "JULES_CORRECTIVE_REDUCED",
+                )
             if decision == "STOP_HUMAN":
-                return self._block_task(latest, spec, current["reason"], now=now)
+                return self._corrective_or_block(
+                    latest, spec, current, intents, now=now, reduce_size=True,
+                )
             if decision == "INVESTIGATE":
                 boundary = classify_boundary("UNKNOWN", current["reason"])
                 if boundary is not None and boundary.retry_safe:
@@ -320,7 +321,8 @@ class ClaudeJulesAutoLoop:
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable event records unverifiable: {exc}")
         if not events:
-            deadline = datetime.fromisoformat(intent["prepared_at"]) + RESULT_DEADLINE
+            deadline = (datetime.fromisoformat(intent["prepared_at"])
+                        + timedelta(seconds=self.campaign_policy["task_timeout_seconds"]))
             if datetime.fromisoformat(now.replace("Z", "+00:00")) >= deadline:
                 return self._block_task(
                     intent, spec,
@@ -473,6 +475,27 @@ class ClaudeJulesAutoLoop:
     def next_roadmap_task(self) -> dict[str, Any] | None:
         return self._roadmap_position()[0]
 
+    def _corrective_or_block(
+        self, intent: dict[str, Any], spec: dict[str, Any], inspection: dict[str, Any],
+        intents: list[dict[str, Any]], *, now: str, reduce_size: bool,
+    ) -> StepResult:
+        family = _family(spec["task_id"])
+        family_dispatches = sum(1 for item in intents if _family(item["task_id"]) == family)
+        correctives_used = max(0, family_dispatches - 1)
+        if correctives_used >= self.campaign_policy["max_corrective_rounds_per_task"]:
+            return self._block_task(
+                intent, spec,
+                f"corrective budget exhausted after {correctives_used} corrective round(s): {inspection['reason']}",
+                now=now,
+            )
+        corrective = corrective_task_spec(
+            spec, attempt=family_dispatches, findings=inspection["findings"],
+            reduce_size=reduce_size,
+        )
+        return self._plan_and_dispatch(
+            now=now, round_number=intent["origin_round"] + 1, attempt=1, spec=corrective,
+        )
+
     def _block_task(self, intent: dict[str, Any], spec: dict[str, Any], reason: str, *, now: str) -> StepResult:
         task_id = _family(spec["task_id"])
         event = build_task_blocked_event(
@@ -522,7 +545,15 @@ class ClaudeJulesAutoLoop:
                                         generation=generation, head=head, tree=tree)
         except (KeyError, TypeError, ValueError) as exc:
             return StepResult("STOP", "BLOCKED", f"cannot prepare dispatch: {exc}")
-        pre = self.dispatcher.preflight(intent, now=now, dispatches_used=self._dispatches_used())
+        dispatches_used = self._dispatches_used()
+        campaign_budget = self.campaign_policy["dispatch_provider_budget"]
+        if campaign_budget is not None and dispatches_used >= campaign_budget:
+            return StepResult(
+                "STOP", "PREPARED_NOT_AUTHORIZED",
+                "campaign dispatch/provider budget exhausted before carrier write",
+                {"command_id": intent["carrier_request"]["command_id"], "intent": intent},
+            )
+        pre = self.dispatcher.preflight(intent, now=now, dispatches_used=dispatches_used)
         if pre.status == "WAIT":
             return StepResult("WAIT", "CARRIER_BUSY", pre.reason)  # nothing written; plan again later
         if pre.status != "PASS":
