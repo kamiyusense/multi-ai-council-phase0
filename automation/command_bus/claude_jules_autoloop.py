@@ -119,8 +119,11 @@ class ClaudeJulesAutoLoop:
         self.data = self.policy["data_branch"]
         self.campaign_state = CampaignStateStore(
             client, data_branch=self.data, campaign_id=self.campaign_policy["campaign_id"])
-        self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader,
-                                                carrier_guard=carrier_guard)
+        dispatch_policy = dict(self.policy, max_rounds=self.campaign_policy["max_rounds"])
+        self.dispatcher = ClaudeJulesDispatcher(
+            client=client, refs=refs, policy=dispatch_policy, owner_reader=owner_reader,
+            carrier_guard=carrier_guard,
+        )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
         self.reinspections = ReinspectionStore(client, data_branch=self.data)
