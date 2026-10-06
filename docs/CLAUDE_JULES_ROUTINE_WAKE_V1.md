@@ -41,3 +41,31 @@ UNKNOWN until a real Jules PR appears: whether a Jules-created PR fires the Rout
   event recorded. LIVE budget is 5/10 (slot-01..05). The LIVE proof policy is expired, so a production wake
   would no-op until a new LIVE stream, owner event and policy are approved.
 - Fallback stays the in-session `poll`.
+
+
+## Stop-resistant implementation candidate (2026-10-07)
+
+The implementation branch `feature/autonomous-loop-stop-resistant-core-v1`
+adds a STATIC-tested controller entrypoint named `wake-resume`.  This does
+not create or change a Claude Routine.  It is the runtime target a future
+approved event wake can invoke:
+
+```text
+wake
+  -> poll result PRs into the existing create-only inbox
+  -> reconstruct campaign/controller state from GitHub
+  -> validate owner/generation/authorization on each step
+  -> inspect/adopt/replan/recover when evidence permits
+  -> select and dispatch the next READY task when already authorized
+  -> stop at WAIT, COMPLETE or a real hard boundary
+```
+
+The command has a bounded `--max-steps` (1..100; default 12).  It grants no
+provider authority by itself.  If Claude's independent review record for the
+exact candidate head/tree is absent, it stops at
+`AWAITING_CLAUDE_REVIEW`; it never fabricates semantic review evidence.
+
+A local bare-git integration test covers
+`poll -> restore -> PASS inspection -> adoption -> COMPLETE` through this
+single entrypoint.  Production Routine creation/connection and a new
+multi-round LIVE proof remain separate explicit-approval boundaries.
