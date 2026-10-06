@@ -1,0 +1,184 @@
+"""Append-only durable campaign events for stop-resistant continuation.
+
+Campaign events describe why a task was isolated or why a reversible decision
+was deferred.  They do not grant provider, owner, merge or repository authority.
+Every event is content-addressed, create-only and read back after a write.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from datetime import datetime
+from typing import Any
+
+PROFILE = "CLAUDE_AUTO_CAMPAIGN_EVENT_V1"
+EVIDENCE_ROOT = "automation/command_bus/evidence/claude-auto-campaign-events"
+_EVENT_TYPES = {"TASK_BLOCKED", "DEFERRED_DECISION"}
+_SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+_TASK_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_KEYS = {"schema_version", "profile", "campaign_id", "event_type", "event_id", "recorded_at", "payload"}
+
+
+def _canonical(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _aware_time(value: Any, name: str) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be an ISO-8601 string")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError(f"{name} must include timezone")
+    return parsed
+
+
+def _event_id(record_without_id: dict[str, Any]) -> str:
+    return hashlib.sha256(_canonical(record_without_id).encode("utf-8")).hexdigest()
+
+
+def _build(campaign_id: str, event_type: str, payload: dict[str, Any], recorded_at: str) -> dict[str, Any]:
+    record = {
+        "schema_version": 1,
+        "profile": PROFILE,
+        "campaign_id": campaign_id,
+        "event_type": event_type,
+        "recorded_at": recorded_at,
+        "payload": payload,
+    }
+    record["event_id"] = _event_id(record)
+    return validate_campaign_event(record)
+
+
+def build_task_blocked_event(
+    *, campaign_id: str, task_id: str, reason: str, evidence_ref: str, recorded_at: str,
+) -> dict[str, Any]:
+    return _build(campaign_id, "TASK_BLOCKED", {
+        "task_id": task_id,
+        "reason": reason,
+        "evidence_ref": evidence_ref,
+    }, recorded_at)
+
+
+def build_deferred_decision_event(
+    *, campaign_id: str, decision_id: str, question: str, options: list[str], reason: str,
+    selected_safe_default: str, reversibility: str, affected_scope: str,
+    reconsider_condition: str, recorded_at: str,
+) -> dict[str, Any]:
+    return _build(campaign_id, "DEFERRED_DECISION", {
+        "decision_id": decision_id,
+        "question": question,
+        "options": options,
+        "reason": reason,
+        "selected_safe_default": selected_safe_default,
+        "reversibility": reversibility,
+        "affected_scope": affected_scope,
+        "reconsider_condition": reconsider_condition,
+    }, recorded_at)
+
+
+def validate_campaign_event(record: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(record, dict) or set(record) != _KEYS:
+        raise ValueError("campaign event keys mismatch")
+    if record["schema_version"] != 1 or record["profile"] != PROFILE:
+        raise ValueError("unsupported campaign event")
+    if not _SAFE_ID.fullmatch(record["campaign_id"] or ""):
+        raise ValueError("unsafe campaign_id")
+    if record["event_type"] not in _EVENT_TYPES:
+        raise ValueError("unsupported campaign event type")
+    _aware_time(record["recorded_at"], "recorded_at")
+    if not isinstance(record["payload"], dict):
+        raise ValueError("campaign event payload must be an object")
+    unsigned = {k: v for k, v in record.items() if k != "event_id"}
+    if not _SHA256.fullmatch(record["event_id"] or "") or record["event_id"] != _event_id(unsigned):
+        raise ValueError("campaign event digest mismatch")
+
+    payload = record["payload"]
+    if record["event_type"] == "TASK_BLOCKED":
+        if set(payload) != {"task_id", "reason", "evidence_ref"}:
+            raise ValueError("task blocked payload keys mismatch")
+        if not _TASK_ID.fullmatch(payload["task_id"] or ""):
+            raise ValueError("unsafe task_id")
+        for key in ("reason", "evidence_ref"):
+            if not isinstance(payload[key], str) or not payload[key]:
+                raise ValueError(f"{key} required")
+    else:
+        expected = {
+            "decision_id", "question", "options", "reason", "selected_safe_default",
+            "reversibility", "affected_scope", "reconsider_condition",
+        }
+        if set(payload) != expected:
+            raise ValueError("deferred decision payload keys mismatch")
+        if not _SAFE_ID.fullmatch(payload["decision_id"] or ""):
+            raise ValueError("unsafe decision_id")
+        if not isinstance(payload["options"], list) or not payload["options"] or any(
+            not isinstance(value, str) or not value for value in payload["options"]
+        ):
+            raise ValueError("deferred decision options required")
+        for key in expected - {"options"}:
+            if not isinstance(payload[key], str) or not payload[key]:
+                raise ValueError(f"{key} required")
+        if payload["selected_safe_default"] not in payload["options"]:
+            raise ValueError("selected_safe_default must be one of options")
+    return record
+
+
+def campaign_event_path(campaign_id: str, event_id: str) -> str:
+    if not _SAFE_ID.fullmatch(campaign_id or "") or not _SHA256.fullmatch(event_id or ""):
+        raise ValueError("unsafe campaign event identity")
+    return f"{EVIDENCE_ROOT}/{campaign_id}/{event_id}.json"
+
+
+class CampaignStateStore:
+    def __init__(self, client: Any, *, data_branch: str, campaign_id: str):
+        if not isinstance(data_branch, str) or not data_branch:
+            raise ValueError("data_branch required")
+        if not _SAFE_ID.fullmatch(campaign_id or ""):
+            raise ValueError("unsafe campaign_id")
+        self.client, self.branch, self.campaign_id = client, data_branch, campaign_id
+
+    def persist(self, record: dict[str, Any]) -> str:
+        record = validate_campaign_event(record)
+        if record["campaign_id"] != self.campaign_id:
+            raise ValueError("campaign event belongs to another campaign")
+        path = campaign_event_path(self.campaign_id, record["event_id"])
+        existing = self.client.get(path, self.branch)
+        if existing is not None:
+            try:
+                return "RECOVERED" if json.loads(existing.text) == record else "COLLISION"
+            except json.JSONDecodeError:
+                return "COLLISION"
+        try:
+            self.client.create(path, _canonical(record), f"Claude AUTO campaign event {record['event_type']}", self.branch)
+        except Exception:
+            pass
+        readback = self.client.get(path, self.branch)
+        if readback is None:
+            return "UNKNOWN"
+        try:
+            return "CREATED" if json.loads(readback.text) == record else "COLLISION"
+        except json.JSONDecodeError:
+            return "COLLISION"
+
+    def events(self) -> list[dict[str, Any]]:
+        prefix = f"{EVIDENCE_ROOT}/{self.campaign_id}/"
+        records = []
+        for content in self.client.list(prefix, self.branch):
+            record = validate_campaign_event(json.loads(content.text))
+            if record["campaign_id"] != self.campaign_id:
+                raise ValueError("campaign event path/content mismatch")
+            if content.path != campaign_event_path(self.campaign_id, record["event_id"]):
+                raise ValueError("campaign event filename/digest mismatch")
+            records.append(record)
+        return sorted(records, key=lambda r: (r["recorded_at"], r["event_id"]))
+
+    def blocked_tasks(self) -> set[str]:
+        return {
+            event["payload"]["task_id"]
+            for event in self.events()
+            if event["event_type"] == "TASK_BLOCKED"
+        }
+
+    def deferred_decisions(self) -> list[dict[str, Any]]:
+        return [event for event in self.events() if event["event_type"] == "DEFERRED_DECISION"]
