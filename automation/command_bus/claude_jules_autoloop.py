@@ -32,6 +32,7 @@ from .claude_jules_campaign import (
     RECOVERABLE_UNKNOWN, TRANSIENT_UNKNOWN, campaign_policy_from_legacy,
     classify_boundary, validate_campaign_policy,
 )
+from .claude_jules_campaign_state import CampaignStateStore, build_task_blocked_event
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
@@ -116,6 +117,8 @@ class ClaudeJulesAutoLoop:
         self.roadmap = validate_roadmap(roadmap)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
         self.data = self.policy["data_branch"]
+        self.campaign_state = CampaignStateStore(
+            client, data_branch=self.data, campaign_id=self.campaign_policy["campaign_id"])
         self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader,
                                                 carrier_guard=carrier_guard)
         self.inbox = ResultEventInbox(client, data_branch=self.data)
@@ -172,6 +175,13 @@ class ClaudeJulesAutoLoop:
         spec = self._spec(latest["task_id"])
         if spec is None or sha256_of(spec) != latest["task_spec_sha256"]:
             return StepResult("STOP", "UNKNOWN", "task spec for the latest intent is missing or altered")
+        try:
+            blocked_tasks = self.campaign_state.blocked_tasks()
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"campaign state unverifiable: {exc}")
+        if _family(spec["task_id"]) in blocked_tasks:
+            return self._plan_and_dispatch(
+                now=now, round_number=latest["origin_round"] + 1, attempt=1, spec=None)
         receipt = self._read_json(dispatch_receipt_path(command_id))
         if receipt is None:
             return self._dispatch(latest, now=now, resumed=True)
@@ -218,6 +228,8 @@ class ClaudeJulesAutoLoop:
                                                   reduce_size=decision == "JULES_CORRECTIVE_REDUCED")
                 return self._plan_and_dispatch(now=now, round_number=latest["origin_round"] + 1,
                                                attempt=1, spec=corrective)
+            if decision == "STOP_HUMAN":
+                return self._block_task(latest, spec, current["reason"], now=now)
             return StepResult("STOP", current["verdict"], f"human/investigation boundary: {current['reason']}")
         return self._inspect_new_result(latest, spec, now=now)
 
@@ -260,9 +272,11 @@ class ClaudeJulesAutoLoop:
         if not events:
             deadline = datetime.fromisoformat(intent["prepared_at"]) + RESULT_DEADLINE
             if datetime.fromisoformat(now.replace("Z", "+00:00")) >= deadline:
-                return StepResult("STOP", "NO_RESULT_TIMEOUT",
-                                  f"no Jules result PR recorded by {deadline.isoformat()}; the dispatch slot stays consumed",
-                                  {"command_id": request["command_id"]})
+                return self._block_task(
+                    intent, spec,
+                    f"no Jules result PR recorded by {deadline.isoformat()}; the dispatch slot stays consumed",
+                    now=now,
+                )
             return StepResult("WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
                               {"command_id": request["command_id"]})
         receipt = self._read_json(dispatch_receipt_path(request["command_id"]))
@@ -341,7 +355,7 @@ class ClaudeJulesAutoLoop:
                  and r["command_id"] == intent["carrier_request"]["command_id"]]
         return self.adoption.verify_adopted(intent=intent, inspection=match[0] if len(match) == 1 else None)
 
-    def next_roadmap_task(self) -> dict[str, Any] | None:
+    def _roadmap_position(self) -> tuple[dict[str, Any] | None, list[str]]:
         adopted_families: set[str] = set()
         inspections = self.inspections.list_all()
         for intent in self._intents():
@@ -350,14 +364,38 @@ class ClaudeJulesAutoLoop:
                 adopted_families.add(_family(intent["task_id"]))
             elif state.status != "MISSING":
                 raise ValueError(f"unverifiable adoption for {intent['carrier_request']['command_id']}: {state.reason}")
+        blocked = self.campaign_state.blocked_tasks()
+        remaining: list[str] = []
+        ready: dict[str, Any] | None = None
         for entry in self.roadmap["tasks"]:
             spec = entry["task_spec"]
-            if spec["task_id"] in adopted_families:
+            task_id = spec["task_id"]
+            if task_id in adopted_families:
                 continue
-            if all(dep in adopted_families for dep in entry["depends_on"]):
-                return spec
-            return None  # roadmap order is the dependency order; never skip ahead
-        return None
+            remaining.append(task_id)
+            if ready is None and task_id not in blocked and all(dep in adopted_families for dep in entry["depends_on"]):
+                ready = spec
+        return ready, remaining
+
+    def next_roadmap_task(self) -> dict[str, Any] | None:
+        return self._roadmap_position()[0]
+
+    def _block_task(self, intent: dict[str, Any], spec: dict[str, Any], reason: str, *, now: str) -> StepResult:
+        task_id = _family(spec["task_id"])
+        event = build_task_blocked_event(
+            campaign_id=self.campaign_policy["campaign_id"],
+            task_id=task_id,
+            reason=reason,
+            evidence_ref=f"dispatch-intent:{intent['intent_sha256']}",
+            recorded_at=now,
+        )
+        saved = self.campaign_state.persist(event)
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", f"campaign blocker record {saved}")
+        return StepResult(
+            "BLOCK_TASK", "TASK_BLOCKED", reason,
+            {"task_id": task_id, "campaign_event_id": event["event_id"]},
+        )
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
@@ -365,10 +403,16 @@ class ClaudeJulesAutoLoop:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
         if spec is None:
             try:
-                spec = self.next_roadmap_task()
+                spec, remaining = self._roadmap_position()
             except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
                 return StepResult("STOP", "UNKNOWN", f"roadmap position unverifiable: {exc}")
             if spec is None:
+                if remaining:
+                    return StepResult(
+                        "STOP", "TASK_BLOCKED",
+                        "remaining roadmap tasks are blocked or depend on blocked/unadopted tasks",
+                        {"remaining_tasks": remaining},
+                    )
                 return StepResult("COMPLETE", "COMPLETE", "no remaining roadmap task is eligible")
         generation = self._owner_generation()
         if not isinstance(generation, int):
