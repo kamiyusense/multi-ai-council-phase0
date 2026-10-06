@@ -492,6 +492,36 @@ class SymphonyInspiredControllerTests(unittest.TestCase):
                 CodexAppServerAgentRunner(cwd=cwd, live_enabled=True).prepare(
                     command(payload=policy))
 
+    def test_codex_strict_start_budget_is_per_task_not_runner_lifetime(self):
+        from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner
+
+        cwd = Path(__file__).resolve().parents[3]
+        valid_task = "Create evidence/symphony_live_one_round_v1.txt with exact content SYMPHONY_LIVE_ONE_ROUND_V1_PASS only."
+        payload = {
+            "allowed_paths": ["evidence/symphony_live_one_round_v1.txt"],
+            "verification": {"exact_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"},
+            "task": valid_task, "retry": 0, "fallback": "disabled",
+            "target_repository": "owner/repo",
+            "target_branch": "proof/symphony-live-one-round-v1",
+            "default_branch": "main", "concurrency": 1,
+            "max_turns": 1, "max_model_starts": 1,
+        }
+        first = command(payload=payload)
+        second = command(
+            command_id="cmd-2", logical_id="logical-2", correlation_id="corr-2",
+            payload=payload,
+        )
+        with fake_codex_transport() as starts:
+            runner = CodexAppServerAgentRunner(cwd=cwd, live_enabled=True)
+            prepared_first = runner.prepare(first)
+            self.assertEqual(runner.classify_result(runner.dispatch(prepared_first)), "DONE")
+            with self.assertRaisesRegex(RuntimeError, "for task"):
+                runner.dispatch(prepared_first)
+
+            prepared_second = runner.prepare(second)
+            self.assertEqual(runner.classify_result(runner.dispatch(prepared_second)), "DONE")
+            self.assertEqual(starts.call_count, 2)
+
     def test_codex_ambiguous_submit_is_unknown_and_never_retried(self):
         from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner, CodexDispatchResult
 

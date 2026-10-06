@@ -263,3 +263,17 @@ upstream polling/workspace/multi-turn/retry behavior where practical. The next
 integration step is to wire this policy/state layer to the existing controller
 and then move the Codex proof runner's one-start counter from runner lifetime to
 task/profile scope without weakening the consumed-command fence.
+
+
+## 14. Strict Codex proof budget is now task-scoped
+
+The Codex proof adapter still permits exactly one model-start attempt per strict
+proof task. The counter is no longer a runner-lifetime fuse: a distinct durable
+task identity gets its own proof budget, while the same task cannot be submitted
+twice through one runner instance.
+
+This changes no LIVE authorization and does not weaken durable replay
+suppression. The durable claim/result ledger remains the cross-process fence;
+the in-process counter is only a task-level proof budget. Autonomous profiles
+can therefore grow to multiple tasks without requiring a fresh runner merely to
+reset an unrelated proof counter.

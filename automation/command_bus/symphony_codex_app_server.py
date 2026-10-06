@@ -18,12 +18,16 @@ from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
+from .symphony_autonomous_policy import STRICT_PROOF_POLICY
 from .symphony_controller import Command
 
 
-MAX_CONCURRENT_AGENTS = 1
-MAX_TURNS = 1
-MAX_MODEL_STARTS = 1
+# These constants deliberately describe the strict proof profile only. They are
+# sourced from the shared policy layer so changing the autonomous profile never
+# silently widens this proof adapter.
+MAX_CONCURRENT_AGENTS = STRICT_PROOF_POLICY.max_concurrent_agents
+MAX_TURNS = STRICT_PROOF_POLICY.max_turns_per_task
+MAX_MODEL_STARTS = STRICT_PROOF_POLICY.max_model_starts_per_task
 RETRY = 0
 FALLBACK = "disabled"
 PROOF_PATH = "evidence/symphony_live_one_round_v1.txt"
@@ -365,7 +369,9 @@ class CodexAppServerAgentRunner:
         self._app_server = app_server or JsonlCodexAppServer(os.environ.get("CODEX_BIN", "codex"))
         self._workspace_verifier = workspace_verifier or GitWorkspaceVerifier()
         self._live_enabled = live_enabled
-        self._start_attempts = 0
+        # Budget model starts per durable task identity, not per runner lifetime.
+        # Durable tracker claims/results remain the cross-process replay fence.
+        self._start_attempts_by_task: dict[tuple[str, int, str], int] = {}
         self._dispatch_lock = threading.Lock()
         self._last: CodexDispatchResult | None = None
 
@@ -373,11 +379,22 @@ class CodexAppServerAgentRunner:
     def live_enabled(self) -> bool:
         return self._live_enabled
 
+    @staticmethod
+    def _task_budget_key(command: Command) -> tuple[str, int, str]:
+        if (not command.command_id or isinstance(command.generation, bool)
+                or not isinstance(command.generation, int) or command.generation < 1
+                or not command.expected_target_head):
+            raise ValueError("command task identity is incomplete")
+        return command.command_id, command.generation, command.expected_target_head
+
+    def _start_attempts_for(self, command: Command) -> int:
+        return self._start_attempts_by_task.get(self._task_budget_key(command), 0)
+
     def prepare(self, command: Command) -> PreparedCodexCommand:
         if not self.live_enabled:
             raise RuntimeError("Codex LIVE flag is off")
-        if self._start_attempts >= MAX_MODEL_STARTS:
-            raise RuntimeError("maximum model starts reached")
+        if self._start_attempts_for(command) >= MAX_MODEL_STARTS:
+            raise RuntimeError("maximum model starts reached for task")
         if (command.payload.get("retry") != RETRY or command.payload.get("fallback") != FALLBACK
                 or type(command.payload.get("concurrency")) is not int
                 or command.payload.get("concurrency") != MAX_CONCURRENT_AGENTS
@@ -402,10 +419,13 @@ class CodexAppServerAgentRunner:
         if not self._dispatch_lock.acquire(blocking=False):
             raise RuntimeError("Codex concurrency limit is one")
         try:
-            if self._start_attempts >= MAX_MODEL_STARTS:
-                raise RuntimeError("maximum model starts reached")
-            # Count the sole permitted submission attempt before entering transport.
-            self._start_attempts += 1
+            key = self._task_budget_key(prepared.command)
+            if self._start_attempts_by_task.get(key, 0) >= MAX_MODEL_STARTS:
+                raise RuntimeError("maximum model starts reached for task")
+            # Count the strict proof submission before entering transport. A transport
+            # ambiguity therefore consumes only this task's proof budget, while a
+            # different durable task can still use its own configured budget.
+            self._start_attempts_by_task[key] = self._start_attempts_by_task.get(key, 0) + 1
             result = self._app_server.execute_one_turn(cwd=prepared.cwd, prompt=prepared.prompt)
             if result.status == "DONE":
                 try:

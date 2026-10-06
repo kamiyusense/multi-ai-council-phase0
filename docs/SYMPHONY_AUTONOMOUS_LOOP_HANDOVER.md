@@ -169,6 +169,16 @@ integration plus durable GitHub persistence for campaign state, followed by
 restart/fault and exact-head CI evidence. Do not collapse these new semantics
 back into the strict proof profile.
 
+
+
+### Task-scoped strict runner budget
+
+The strict Codex adapter now sources its one-turn/one-start constants from
+`STRICT_PROOF_POLICY` and counts model-start attempts per durable command task
+identity instead of for the entire runner lifetime. Repeating the same strict
+task remains blocked; a distinct task can use a separate proof budget. Durable
+claims/results still prevent cross-session replay.
+
 ## Stop / human boundary
 
 Stop for genuinely human-required operations such as merge, default-branch
