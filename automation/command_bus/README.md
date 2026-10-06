@@ -7,9 +7,20 @@ the existing executor request/claim/result/receipt protocol. Only requests
 marked `SYMPHONY_INSPIRED_STATIC_V1` with complete generation and logical
 identity are eligible. The adapter requires a non-default durable write branch,
 uses fresh target and carrier reads, and preserves the command bus's
-PREPARE_ONLY, retry-zero, fallback-disabled and readback rules. The runner gate
-admits only the built-in static fake class; no real runner or process-level
-GitHub client is included. See [the design, official comparison and limitations](../../docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md).
+PREPARE_ONLY, retry-zero, fallback-disabled and readback rules. The controller
+admits the built-in static fake and the exact `CodexAppServerAgentRunner` type;
+objects that merely expose `live_enabled=True` are rejected. The Codex adapter
+is OFF by default and enforces one turn, one model-start attempt, retry zero,
+and fallback disabled. The concrete GitHub Contents transport sends no
+automatic retry; the executor backend remains responsible for durable record
+validation and write readback. The existing executor schema remains
+PREPARE_ONLY with `model_executed=false`; it is never reused for LIVE results.
+`symphony_live_store.py` adds separate command, claim, and terminal-result
+schemas under `symphony_live/`, with create-only writes and exact readback.
+Missing result verification is terminal UNKNOWN, and the next poll cannot
+replay a claimed or terminal command. The one-round LIVE proof still requires
+fresh GitHub readback and all remote postconditions. See [the design and
+limitations](../../docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md).
 
 > **MANDATORY BEFORE JULES DISPATCH:** read `docs/JULES_TASK_PROMPT_SPEC.md` before creating any new `automation/command_bus/jules_api_requests/*.json`. The prompt contract requires bounded scope, exact allowed paths, reuse-first, semantic acceptance criteria, negative/tamper tests, no vacuous tests, exact validation commands, and explicit stop conditions. Green Jules tests alone are not acceptance.
 

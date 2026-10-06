@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "evidence_type": "SYMPHONY_LIVE_STATIC_VALIDATION_V1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "branch": "codex/symphony-inspired-minimal-controller",
+  "local_base_head": "7271db590b2c4f64d8cb4595c8f1de017e26b8f4",
+  "captured_at_utc": "2026-10-06T05:41:15Z",
+  "focused_controller_tests": {
+    "status": "PASS",
+    "passed": 32,
+    "command": "python3 -m unittest automation.command_bus.tests.test_symphony_controller -q"
+  },
+  "syntax_compile": {
+    "status": "PASS",
+    "files": 5,
+    "method": "compile(source, path, 'exec') without writing bytecode"
+  },
+  "diff_check": "PASS",
+  "full_command_bus_suite": {
+    "status": "FAIL_ENVIRONMENT",
+    "ran": 1791,
+    "failures": 11,
+    "errors": 2,
+    "skipped": 1,
+    "environment_blocker": "jq executable unavailable; dependent shell tests exit 127"
+  },
+  "github_current_state": "UNKNOWN_CONNECTION_FAILED",
+  "exact_head_ci": "UNKNOWN_NOT_READ",
+  "artifact_upload": "NOT_PERFORMED",
+  "live_dispatch_count": 0,
+  "model_start_count": 0,
+  "retry_count": 0,
+  "fallback_count": 0,
+  "github_write_count": 0,
+  "merge_count": 0,
+  "default_branch_write_count": 0,
+  "classification": "STATIC_ONLY_BLOCKED_FROM_LIVE"
+}

@@ -5,6 +5,10 @@ from datetime import datetime, timedelta, timezone
 import threading
 import time
 import unittest
+import json
+import queue
+from pathlib import Path
+from unittest.mock import patch
 
 from automation.command_bus.executor import make_executor_request
 from automation.command_bus.executor_backend import ExecutorContent, GitHubExecutorBackend
@@ -81,23 +85,36 @@ class FakeTracker:
         return self.receipts.get(command_id)
 
 
+class FakeLiveCapableTracker(FakeTracker):
+    supports_live_model_execution = True
+
+
 class FakeGitHubContents:
     def __init__(self):
         self.files = {}
         self.counter = 0
+        self.create_calls = 0
+        self.raise_after_create_path = None
+        self.fail_get_paths = set()
 
     def get(self, path, ref):
+        if path in self.fail_get_paths and path in self.files:
+            raise RuntimeError("fake readback unavailable")
         return self.files.get(path)
 
     def list(self, prefix, ref):
         return [value for path, value in self.files.items() if path.startswith(prefix)]
 
     def create(self, path, text, message, branch):
+        self.create_calls += 1
         if path in self.files:
             raise ValueError("already exists")
         self.counter += 1
         content = ExecutorContent(path, text, f"sha-{self.counter}")
         self.files[path] = content
+        if self.raise_after_create_path == path:
+            self.raise_after_create_path = None
+            raise RuntimeError("ambiguous response after durable create")
         return content
 
     def update(self, path, text, sha, message, branch):
@@ -121,6 +138,58 @@ class FakeTargetReader:
 
     def read_active_generation(self, loop_id):
         return self.generation
+
+
+class FakeLiveTargetReader:
+    def __init__(self, *, head="target-head", tree="tree-1", generation=2,
+                 repository="owner/repo", branch="proof/symphony-live-one-round-v1"):
+        self.head, self.tree, self.generation = head, tree, generation
+        self.repository, self.branch = repository, branch
+
+    def read_target(self, repository, pr_number):
+        return Target(self.repository, self.branch, self.head, self.tree)
+
+    def read_carrier_head(self, branch):
+        return "carrier-head"
+
+    def read_active_generation(self, loop_id):
+        return self.generation
+
+
+def live_command_record():
+    return {
+        "record_type": "SYMPHONY_LIVE_COMMAND_V1", "protocol_version": "SYMPHONY_LIVE_V1",
+        "command_id": "live-cmd-1", "logical_id": "live-logical-1", "correlation_id": "live-corr-1",
+        "generation": 2, "target_repository": "owner/repo",
+        "target_branch": "proof/symphony-live-one-round-v1", "expected_target_head": "target-head",
+        "expected_target_tree": "tree-1", "expires_at": EXPIRY,
+        "allowed_paths": ["evidence/symphony_live_one_round_v1.txt"],
+        "exact_task": "Create evidence/symphony_live_one_round_v1.txt with exact content "
+                       "SYMPHONY_LIVE_ONE_ROUND_V1_PASS and no other changes.",
+        "verification": {"exact_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"},
+        "live_provider_or_model_allowed": True, "max_concurrent_agents": 1,
+        "max_model_starts": 1, "max_turns": 1, "retry": 0,
+        "fallback": "disabled", "status": "READY",
+    }
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def fake_codex_transport(result=None):
+    from automation.command_bus.symphony_codex_app_server import (
+        CodexDispatchResult, GitWorkspaceVerifier, JsonlCodexAppServer,
+    )
+
+    answer = result or CodexDispatchResult("DONE", True, True, "thread-1", "turn-1", ())
+    evidence = ({"status": "LOCAL_PASS", "proof_path": "evidence/symphony_live_one_round_v1.txt",
+                 "proof_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"},
+                ("evidence/symphony_live_one_round_v1.txt",), "a" * 40)
+    with patch.object(JsonlCodexAppServer, "execute_one_turn", return_value=answer) as dispatch, \
+         patch.object(GitWorkspaceVerifier, "prepare", return_value=("target-head", "tree-1")), \
+         patch.object(GitWorkspaceVerifier, "verify", return_value=evidence):
+        yield dispatch
 
 
 def github_executor_tracker(*, head="target-head", tree="tree-1", generation=2):
@@ -165,6 +234,140 @@ class GitHubExecutorTrackerConstructorTests(unittest.TestCase):
                 repository="owner/repo", target_pr=7,
             )
 
+    def test_concrete_github_contents_write_is_single_request_and_blocks_default_branch(self):
+        from automation.command_bus.symphony_github_adapter import GitHubExecutorContentsClient
+
+        client = GitHubExecutorContentsClient("fake-token", "owner/repo")
+        calls = []
+
+        def request(method, path, body=None):
+            calls.append((method, path, body))
+            return 201, {"content": {"sha": "content-sha"}}
+
+        client._request = request
+        written = client.create("execution_results/loop/id.json", "{}", "write result", "feature/proof")
+        self.assertEqual(written.sha, "content-sha")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][0], "PUT")
+        with self.assertRaisesRegex(ValueError, "default branch"):
+            client.create("record.json", "{}", "unsafe", "main")
+        self.assertEqual(len(calls), 1)
+
+
+class SymphonyLiveDurableTrackerTests(unittest.TestCase):
+    def make_tracker(self, client, reader=None):
+        from automation.command_bus.symphony_live_store import GitHubSymphonyLiveTracker
+
+        return GitHubSymphonyLiveTracker(
+            client, reader or FakeLiveTargetReader(), loop_id="loop-live-1", repository="owner/repo",
+            target_pr=9, target_branch="proof/symphony-live-one-round-v1",
+            carrier_branch="feature/controller-carrier", write_branch="feature/controller-records",
+        )
+
+    def test_live_records_are_separate_create_only_and_terminal_replay_is_noop(self):
+        from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner
+        from automation.command_bus.symphony_live_store import RESULT_TYPE
+
+        client = FakeGitHubContents()
+        tracker = self.make_tracker(client)
+        command_path = "symphony_live/commands/live-cmd-1.json"
+        client.raise_after_create_path = command_path
+        self.assertEqual(tracker.create_command(live_command_record()), "ACCEPTED")
+        self.assertEqual(tracker.create_command(live_command_record()), "CONFLICT")
+        duplicate_logical = live_command_record()
+        duplicate_logical["command_id"] = "live-cmd-2"
+        self.assertEqual(tracker.create_command(duplicate_logical), "CONFLICT")
+        self.assertIn(command_path, client.files)
+        self.assertNotIn("execution_requests/loop-live-1/live-cmd-1.json", client.files)
+
+        result_path = "symphony_live/results/live-cmd-1.json"
+        client.raise_after_create_path = result_path
+        with fake_codex_transport() as starts:
+            runner = CodexAppServerAgentRunner(cwd=Path(__file__).resolve().parents[3], live_enabled=True)
+            first = controller(tracker, runner).cycle(now=NOW)
+            self.assertEqual(first.terminal_status, "UNKNOWN")
+            self.assertEqual(first.readback, "UNKNOWN")
+        stored = __import__("json").loads(client.files[result_path].text)
+        self.assertEqual(stored["record_type"], RESULT_TYPE)
+        self.assertEqual((stored["dispatch_count"], stored["model_start_count"], stored["retry_count"]), (1, 1, 0))
+        self.assertTrue(stored["terminal"])
+        self.assertEqual(stored["head_before"], stored["head_after"])
+        self.assertEqual(client.create_calls, 3)
+        restarted = self.make_tracker(client)
+        replay = controller(restarted, CodexAppServerAgentRunner(
+            cwd=Path(__file__).resolve().parents[3], live_enabled=True,
+        )).cycle(now=NOW)
+        self.assertEqual(replay.terminal_status, "NOOP")
+        self.assertEqual(starts.call_count, 1)
+        self.assertEqual(client.create_calls, 3)
+
+    def test_unverifiable_ambiguous_live_result_is_not_recreated_after_restart(self):
+        from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner
+
+        client = FakeGitHubContents()
+        tracker = self.make_tracker(client)
+        self.assertEqual(tracker.create_command(live_command_record()), "ACCEPTED")
+        result_path = "symphony_live/results/live-cmd-1.json"
+        client.raise_after_create_path = result_path
+        client.fail_get_paths.add(result_path)
+        cwd = Path(__file__).resolve().parents[3]
+        from automation.command_bus.symphony_codex_app_server import CodexDispatchResult
+        answer = CodexDispatchResult("UNKNOWN", True, None, None, None, (), "timeout")
+        with fake_codex_transport(answer) as starts:
+            result = controller(tracker, CodexAppServerAgentRunner(
+                cwd=cwd, live_enabled=True,
+            )).cycle(now=NOW)
+        self.assertEqual(result.terminal_status, "UNKNOWN")
+        self.assertIn(result_path, client.files)
+        self.assertEqual(client.create_calls, 3)
+        client.fail_get_paths.clear()
+        replay = controller(self.make_tracker(client), CodexAppServerAgentRunner(
+            cwd=cwd, live_enabled=True,
+        )).cycle(now=NOW)
+        self.assertEqual(replay.terminal_status, "NOOP")
+        self.assertEqual((starts.call_count, client.create_calls), (1, 3))
+
+    def test_live_command_stale_head_or_generation_is_rejected_before_write(self):
+        for reader in (FakeLiveTargetReader(head="moved-head"), FakeLiveTargetReader(generation=3)):
+            with self.subTest(head=reader.head, generation=reader.generation):
+                client = FakeGitHubContents()
+                tracker = self.make_tracker(client, reader)
+                self.assertEqual(tracker.create_command(live_command_record()), "CONFLICT")
+                self.assertEqual(client.create_calls, 0)
+
+    def test_live_command_requires_exact_one_turn_retry_zero_and_fallback_off(self):
+        from automation.command_bus.symphony_live_store import validate_live_command
+
+        for key, value in (("max_concurrent_agents", 2), ("max_model_starts", 2),
+                           ("max_turns", 2), ("retry", 1), ("fallback", "enabled")):
+            bad = live_command_record()
+            bad[key] = value
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "limits"):
+                validate_live_command(bad)
+
+    def test_live_pass_evidence_requires_remote_readback_and_all_no_mutation_counts(self):
+        from automation.command_bus.symphony_live_store import _has_complete_pass_evidence
+
+        head_before = "1" * 40
+        head_after = "2" * 40
+        verification = {
+            "status": "PASS", "proof_path": "evidence/symphony_live_one_round_v1.txt",
+            "proof_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS", "commit_parent": head_before,
+            "normal_commit": True, "force_push_count": 0, "merge_count": 0,
+            "default_branch_mutation_count": 0, "max_turns": 1, "remote_readback": "PASS",
+        }
+        self.assertTrue(_has_complete_pass_evidence(
+            verification, head_before=head_before, head_after=head_after, dispatch_count=1,
+            model_start_count=1, changed_paths=["evidence/symphony_live_one_round_v1.txt"],
+            proof_commit_sha=head_after,
+        ))
+        verification["force_push_count"] = 1
+        self.assertFalse(_has_complete_pass_evidence(
+            verification, head_before=head_before, head_after=head_after, dispatch_count=1,
+            model_start_count=1, changed_paths=["evidence/symphony_live_one_round_v1.txt"],
+            proof_commit_sha=head_after,
+        ))
+
 
 class SymphonyInspiredControllerTests(unittest.TestCase):
     def test_defaults_pin_single_turn_and_static_runner(self):
@@ -172,6 +375,139 @@ class SymphonyInspiredControllerTests(unittest.TestCase):
         self.assertEqual(controller(FakeTracker()).poll_interval_ms, 30_000)
         with self.assertRaisesRegex(ValueError, "static fake runner"):
             controller(FakeTracker(), type("LiveRunner", (), {"live_enabled": True})())
+
+    def test_only_exact_codex_app_server_runner_is_admitted(self):
+        from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner
+
+        with self.assertRaisesRegex(ValueError, "CodexAppServerAgentRunner"):
+            controller(FakeTracker(), type("OtherLiveRunner", (), {"live_enabled": True})())
+        cwd = Path(__file__).resolve().parents[3]
+        disabled = CodexAppServerAgentRunner(cwd=cwd)
+        with self.assertRaisesRegex(ValueError, "LIVE flag"):
+            controller(FakeLiveCapableTracker(), disabled)
+        runner = CodexAppServerAgentRunner(cwd=cwd, live_enabled=True)
+        with self.assertRaisesRegex(ValueError, "truthfully persist LIVE"):
+            controller(FakeTracker(), runner)
+        self.assertIsInstance(controller(FakeLiveCapableTracker(), runner), SymphonyInspiredController)
+
+    def test_codex_adapter_is_off_by_default_and_hard_limits_one_start(self):
+        from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner
+
+        cwd = Path(__file__).resolve().parents[3]
+        runner = CodexAppServerAgentRunner(cwd=cwd)
+        with self.assertRaisesRegex(RuntimeError, "LIVE flag is off"):
+            runner.prepare(command(payload={"task": "one exact task"}))
+        valid_task = "Create evidence/symphony_live_one_round_v1.txt with exact content SYMPHONY_LIVE_ONE_ROUND_V1_PASS only."
+        proof_scope = {"allowed_paths": ["evidence/symphony_live_one_round_v1.txt"],
+                       "verification": {"exact_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"}}
+        with fake_codex_transport() as starts:
+            live_runner = CodexAppServerAgentRunner(cwd=cwd, live_enabled=True)
+            prepared = live_runner.prepare(command(payload={
+                **proof_scope, "task": valid_task, "retry": 0, "fallback": "disabled",
+                "target_repository": "owner/repo", "target_branch": "proof/symphony-live-one-round-v1",
+                "concurrency": 1, "max_turns": 1, "max_model_starts": 1,
+            }))
+            result = live_runner.dispatch(prepared)
+            self.assertEqual(live_runner.classify_result(result), "DONE")
+            self.assertTrue(result.model_started)
+            with self.assertRaisesRegex(RuntimeError, "maximum model starts"):
+                live_runner.dispatch(prepared)
+            self.assertEqual(starts.call_count, 1)
+        for key, unsafe in (("retry", 1), ("fallback", "enabled"), ("concurrency", 2),
+                            ("max_turns", 2), ("max_model_starts", 2), ("max_turns", True)):
+            policy = {**proof_scope, "task": valid_task, "retry": 0, "fallback": "disabled",
+                      "concurrency": 1, "max_turns": 1, "max_model_starts": 1}
+            policy[key] = unsafe
+            with self.subTest(key=key, unsafe=unsafe), self.assertRaisesRegex(ValueError, "policy"):
+                CodexAppServerAgentRunner(cwd=cwd, live_enabled=True).prepare(
+                    command(payload=policy))
+
+    def test_codex_ambiguous_submit_is_unknown_and_never_retried(self):
+        from automation.command_bus.symphony_codex_app_server import CodexAppServerAgentRunner, CodexDispatchResult
+
+        cwd = Path(__file__).resolve().parents[3]
+        ambiguous = CodexDispatchResult("UNKNOWN", True, None, None, None, (), "timeout")
+        live_tracker = FakeLiveCapableTracker([command(payload={
+            "allowed_paths": ["evidence/symphony_live_one_round_v1.txt"],
+            "verification": {"exact_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"},
+            "task": "Create evidence/symphony_live_one_round_v1.txt with exact content SYMPHONY_LIVE_ONE_ROUND_V1_PASS only.",
+            "retry": 0, "fallback": "disabled",
+            "concurrency": 1, "max_turns": 1, "max_model_starts": 1,
+        })])
+        with fake_codex_transport(ambiguous) as starts:
+            runner = CodexAppServerAgentRunner(cwd=cwd, live_enabled=True)
+            result = controller(live_tracker, runner).cycle(now=NOW)
+            replay = controller(live_tracker, runner).cycle(now=NOW)
+        self.assertEqual(result.terminal_status, "UNKNOWN")
+        self.assertIsNone(result.model_started)
+        self.assertEqual(replay.terminal_status, "NOOP")
+        self.assertEqual((starts.call_count, live_tracker.receipt_writes), (1, 1))
+        self.assertIsNone(live_tracker.receipts["cmd-1"]["model_start_count"])
+
+    def test_jsonl_app_server_protocol_uses_one_turn_and_captures_terminal_events(self):
+        from automation.command_bus.symphony_codex_app_server import JsonlCodexAppServer
+
+        class FakeStdout:
+            def __init__(self):
+                self.lines = queue.Queue()
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                line = self.lines.get()
+                if line is None:
+                    raise StopIteration
+                return line
+
+        class FakeStdin:
+            def __init__(self, stdout, calls):
+                self.stdout, self.calls = stdout, calls
+
+            def write(self, line):
+                request = json.loads(line)
+                self.calls.append(request.get("method"))
+                if request.get("method") == "initialized":
+                    return
+                if request.get("method") == "turn/start":
+                    for event in (
+                        {"jsonrpc": "2.0", "method": "turn/started", "params": {"turn": {"id": "turn-1"}}},
+                        {"jsonrpc": "2.0", "method": "turn/completed", "params": {"turn": {"id": "turn-1", "status": "completed"}}},
+                    ):
+                        self.stdout.lines.put(json.dumps(event) + "\n")
+                result = {"thread": {"id": "thread-1"}} if request.get("method") == "thread/start" else (
+                    {"turn": {"id": "turn-1", "status": "inProgress"}} if request.get("method") == "turn/start" else {})
+                self.stdout.lines.put(json.dumps({"jsonrpc": "2.0", "id": request["id"], "result": result}) + "\n")
+
+            def flush(self):
+                pass
+
+            def close(self):
+                pass
+
+        class FakeProcess:
+            def __init__(self):
+                self.stdout = FakeStdout()
+                self.calls = []
+                self.stdin = FakeStdin(self.stdout, self.calls)
+
+            def terminate(self):
+                self.stdout.lines.put(None)
+
+            def wait(self, timeout=None):
+                return 0
+
+            def kill(self):
+                self.terminate()
+
+        process = FakeProcess()
+        cwd = Path(__file__).resolve().parents[3]
+        with patch("automation.command_bus.symphony_codex_app_server.subprocess.Popen", return_value=process) as popen:
+            result = JsonlCodexAppServer().execute_one_turn(cwd=str(cwd), prompt="one turn")
+        self.assertEqual(result.status, "DONE")
+        self.assertTrue(result.dispatch_attempted and result.model_started)
+        self.assertEqual(process.calls.count("turn/start"), 1)
+        self.assertEqual(popen.call_args.args[0][-1], "app-server")
 
     def test_one_cycle_selects_at_most_one_of_several_candidates(self):
         tracker = FakeTracker([command(command_id="cmd-b", logical_id="logical-b"),
@@ -181,6 +517,31 @@ class SymphonyInspiredControllerTests(unittest.TestCase):
         self.assertEqual(result.command_id, "cmd-a")
         self.assertEqual(runner.dispatch_calls, 1)
         self.assertEqual(len(tracker.claims), 1)
+
+    def test_concurrent_cycles_enforce_single_controller_dispatch(self):
+        tracker = FakeTracker([command(command_id="cmd-a", logical_id="logical-a"),
+                               command(command_id="cmd-b", logical_id="logical-b")])
+        runner = FakeRunner()
+        entered, release = threading.Event(), threading.Event()
+
+        def blocked_dispatch(prepared):
+            runner.dispatch_calls += 1
+            entered.set()
+            release.wait(timeout=2)
+            return "DONE"
+
+        runner.dispatch = blocked_dispatch
+        bot = controller(tracker, runner)
+        first_results = []
+        worker = threading.Thread(target=lambda: first_results.append(bot.cycle(now=NOW)))
+        worker.start()
+        self.assertTrue(entered.wait(timeout=1))
+        concurrent = bot.cycle(now=NOW)
+        release.set()
+        worker.join(timeout=1)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(concurrent.terminal_status, "NOOP")
+        self.assertEqual((runner.dispatch_calls, tracker.reserve_calls), (1, 1))
 
     def test_run_forever_stops_gracefully_between_poll_cycles(self):
         tracker, runner = FakeTracker(), FakeRunner()

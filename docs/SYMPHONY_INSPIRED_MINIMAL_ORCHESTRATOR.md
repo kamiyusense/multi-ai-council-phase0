@@ -1,24 +1,52 @@
 # Symphony-inspired minimal orchestrator (Phase 0 static scope)
 
-Status: static controller core and fake GitHub-backed executor tests only.
-No live provider/model runner is implemented or enabled.
+Status: static controller, bounded Codex app-server adapter, GitHub Contents
+transport, and separate Symphony LIVE durable command/claim/result schema.
+LIVE remains blocked until GitHub state is freshly verified and remote proof
+postconditions can be read back.
 
 ## Shape
 
 `automation/command_bus/symphony_controller.py` adds a single-cycle controller
-and `GitHubExecutorTracker`, which adapts the existing `GitHubExecutorBackend`
-request/claim/result/receipt store. A connected process supplies the existing
-`ExecutorContentsClient` and a `GitHubTargetReader` that freshly reads the target
-PR head/tree, carrier branch head, and active generation. Those process-level
-GitHub and generation readers are interfaces; this change does not add a
-credential or network client.
+and `GitHubExecutorTracker` for static PREPARE_ONLY work. The separate
+`GitHubSymphonyLiveTracker` in `symphony_live_store.py` implements LIVE command,
+claim, and result records without invoking or weakening the executor schema.
+Both use the `ExecutorContentsClient` and target-reader interfaces. The concrete
+single-request GitHub Contents transport is in `symphony_github_adapter.py`.
 
 The request must use `symphony_profile=SYMPHONY_INSPIRED_STATIC_V1` and include
 `logical_command_id` and `generation`. The existing executor validator still
 requires `PREPARE_ONLY`, `requires_live_model=false`, `live_start_permitted=false`,
 `retry=0`, and `fallback=disabled`. The runner gate accepts only the exact
-built-in `StaticFakeAgentRunner` class; arbitrary injected or real runners are
-rejected, even if they claim `live_enabled=false`.
+built-in `StaticFakeAgentRunner` and `CodexAppServerAgentRunner` classes. Other
+live runner objects remain rejected regardless of their `live_enabled` value.
+
+`symphony_codex_app_server.py` implements the Codex app-server JSON-RPC JSONL
+route. It is disabled by default, permits one turn submission, and reports
+ambiguous submissions as UNKNOWN without resend. The maximum model-start
+attempt is one; retry is zero and fallback is disabled. The GitHub transport in
+`symphony_github_adapter.py` makes one Contents API request per operation, does
+not follow redirects or retry, and is intended to sit under the existing
+`GitHubExecutorBackend`, which performs PREPARE_ONLY write readback.
+
+`GitWorkspaceVerifier` checks the configured proof worktree before dispatch:
+clean status, exact branch, repository identity, HEAD, and tree. After the single
+turn it verifies one normal commit whose parent is `head_before`, exact changed
+path, exact proof content, and clean final status. It reports local verification
+only. It cannot establish remote force-push, merge, or default-branch counts.
+
+LIVE records use a distinct `record_type` and path family:
+`symphony_live/commands/<command_id>.json`,
+`symphony_live/claims/<command_id>.json`, and
+`symphony_live/results/<command_id>.json`. Commands bind command/correlation,
+generation, target repository/branch, target HEAD/tree, expiry, the sole allowed
+proof path, and execution limits. Claims are create-only and permanently fence
+redispatch. Terminal results record `head_before`, freshly read `head_after`,
+dispatch/model-start counts, retry count, status, and `terminal=true`. Every
+write is followed by exact readback; an uncertain write gets readback only and
+is never resent. Model-start count may be null when an interrupted submission
+cannot be proved either way. A missing complete proof verification cannot be
+reported as PASS.
 
 Each cycle reconciles current durable state, filters one eligible request, and
 checks expiry, generation, target HEAD, duplicate logical identity, claim and
@@ -56,17 +84,22 @@ for evaluation and recommends building a hardened implementation from the spec.
 
 - A durable claim without a terminal receipt is UNKNOWN/blocked for redispatch;
   elapsed time alone does not prove the old attempt stopped.
-- A production `ExecutorContentsClient`, `GitHubTargetReader`, and durable
-  generation source are not wired to a standalone local service in this change.
+- The existing executor request validator admits PREPARE_ONLY requests only and
+  its result schema enforces `model_executed=false`. That contract remains
+  untouched; the Symphony LIVE store is isolated by `record_type` and path.
 - Only explicitly marked `PREPARE_ONLY` executor requests are admitted. Existing
   generic `commands/` records are not silently reinterpreted as runner work.
-- Only the built-in test fake runner is admitted. A future real runner needs a separate
-  approval and must preserve a hard LIVE gate, one dispatch, and ambiguity
-  handling; this module alone does not authorize that work.
+- The exact Codex adapter class is admitted, but this does not authorize LIVE
+  by itself; its constructor defaults `live_enabled=False`.
+- The local app-server adapter does not itself prove remote branch push,
+  force-push count, merge count, or default-branch immutability. Those must be
+  supplied by fresh GitHub readbacks before any LIVE result can be PASS. The
+  current adapter emits `LOCAL_PASS`; the durable store keeps that result
+  UNKNOWN until complete remote evidence is present.
 - Service installation, credential provisioning, a CLI entry point, workspace
   lifecycle, and unattended process supervision remain unimplemented.
 - The in-process loop does not force an immediate repeat after UNKNOWN; the
   durable reservation prevents redispatch when the next poll occurs.
 
-Validation is static/unit only. The tests use fake GitHub contents and a fake
-runner; they do not contact GitHub or any model/provider.
+Validation is static/unit only. Tests use fake GitHub contents and a fake
+app-server; they do not contact GitHub or start any model/provider.

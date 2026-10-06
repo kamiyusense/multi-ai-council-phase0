@@ -72,8 +72,8 @@ class CycleResult:
     selected: bool = False
     command_id: str | None = None
     dispatch_attempted: bool = False
-    model_started: bool = False
-    provider_started: bool = False
+    model_started: bool | None = False
+    provider_started: bool | None = False
     terminal_status: str = "NOOP"
     readback: str = "NOT_REQUIRED"
     reason: str | None = None
@@ -107,6 +107,7 @@ class GitHubExecutorTracker:
     """
 
     PROFILE = "SYMPHONY_INSPIRED_STATIC_V1"
+    supports_live_model_execution = False
 
     def __init__(self, backend: GitHubExecutorBackend, target_reader: GitHubTargetReader,
                  *, loop_id: str, carrier_branch: str, repository: str, target_pr: int,
@@ -360,7 +361,11 @@ def eligible(snapshot: Snapshot, *, now: datetime) -> list[Command]:
 
 
 def _persist_terminal(tracker: Tracker, snapshot: Snapshot, command: Command, *,
-                      cycle_id: str, status: str, dispatch_attempted: bool) -> tuple[str, str | None]:
+                      cycle_id: str, status: str, dispatch_attempted: bool,
+                      model_started: bool | None = False,
+                      verification: dict[str, Any] | None = None,
+                      changed_paths: list[str] | None = None,
+                      proof_commit_sha: str | None = None) -> tuple[str, str | None]:
     receipt = {
         "schema_version": 1,
         "receipt_id": f"receipt-{command.command_id}",
@@ -379,8 +384,12 @@ def _persist_terminal(tracker: Tracker, snapshot: Snapshot, command: Command, *,
         "cycle_id": cycle_id,
         "selected": True,
         "dispatch_attempted": dispatch_attempted,
-        "model_started": False,
-        "provider_started": False,
+        "model_started": model_started,
+        "model_start_count": 1 if model_started is True else (0 if model_started is False else None),
+        "provider_started": model_started,
+        "verification": verification or {"status": "UNKNOWN"},
+        "changed_paths": changed_paths or [],
+        "proof_commit_sha": proof_commit_sha,
         "terminal_status": status,
         "retry_count": 0,
         "fallback_used": False,
@@ -406,18 +415,35 @@ class SymphonyInspiredController:
     def __init__(self, tracker: Tracker, runner: AgentRunner, *, poll_interval_ms: int = DEFAULT_POLL_INTERVAL_MS):
         if isinstance(poll_interval_ms, bool) or not isinstance(poll_interval_ms, int) or poll_interval_ms <= 0:
             raise ValueError("poll_interval_ms must be a positive integer")
-        if type(runner) is not StaticFakeAgentRunner:
-            raise ValueError("only the built-in static fake runner is admitted")
+        # The live boundary is intentionally an exact concrete type check. A
+        # third-party object cannot opt in merely by setting live_enabled=True.
+        from .symphony_codex_app_server import CodexAppServerAgentRunner
+        if type(runner) not in {StaticFakeAgentRunner, CodexAppServerAgentRunner}:
+            raise ValueError("only the built-in static fake runner or CodexAppServerAgentRunner is admitted")
+        if type(runner) is CodexAppServerAgentRunner:
+            if runner.live_enabled is not True:
+                raise ValueError("CodexAppServerAgentRunner LIVE flag must be explicitly enabled")
+            if getattr(tracker, "supports_live_model_execution", False) is not True:
+                raise ValueError("tracker cannot truthfully persist LIVE model execution")
         self.tracker = tracker
         self.runner = runner
         self.poll_interval_ms = poll_interval_ms
         self._stop = threading.Event()
+        self._cycle_lock = threading.Lock()
 
     def stop(self) -> None:
         """Request graceful stop; an active cycle is allowed to finish."""
         self._stop.set()
 
     def cycle(self, *, now: datetime | None = None) -> CycleResult:
+        if not self._cycle_lock.acquire(blocking=False):
+            return CycleResult("BUSY", terminal_status="NOOP", reason="concurrency limit is one")
+        try:
+            return self._cycle(now=now)
+        finally:
+            self._cycle_lock.release()
+
+    def _cycle(self, *, now: datetime | None = None) -> CycleResult:
         at = now or datetime.now(timezone.utc)
         try:
             snapshot = self.tracker.reconcile()
@@ -466,10 +492,22 @@ class SymphonyInspiredController:
             return CycleResult(cycle_id, True, command.command_id, terminal_status="UNKNOWN",
                                readback="UNKNOWN", reason="reservation readback mismatch")
         attempted = False
+        model_started: bool | None = False
+        verification: dict[str, Any] | None = None
+        changed_paths: list[str] = []
+        proof_commit_sha: str | None = None
         try:
             prepared = self.runner.prepare(command)
             attempted = True
             raw = self.runner.dispatch(prepared)
+            observed = getattr(raw, "model_started", False)
+            model_started = observed if observed is True or observed is False or observed is None else None
+            evidence = getattr(raw, "verification", None)
+            verification = evidence if isinstance(evidence, dict) else None
+            paths = getattr(raw, "changed_paths", ())
+            changed_paths = list(paths) if isinstance(paths, (list, tuple)) else []
+            commit_sha = getattr(raw, "proof_commit_sha", None)
+            proof_commit_sha = commit_sha if isinstance(commit_sha, str) else None
             classification = self.runner.classify_result(raw)
         except Exception as exc:
             # A runner exception may have happened after an external start.
@@ -477,22 +515,30 @@ class SymphonyInspiredController:
             readback, receipt_error = _persist_terminal(
                 self.tracker, current, command, cycle_id=cycle_id,
                 status="UNKNOWN", dispatch_attempted=attempted,
+                model_started=model_started,
+                verification=verification, changed_paths=changed_paths,
+                proof_commit_sha=proof_commit_sha,
             )
             reason = f"runner ambiguous: {type(exc).__name__}"
             if receipt_error:
                 reason += "; " + receipt_error
-            return CycleResult(cycle_id, True, command.command_id, attempted, False, False,
+            return CycleResult(cycle_id, True, command.command_id, attempted, model_started,
+                               model_started is True,
                                "UNKNOWN", readback, reason)
         if classification not in {"DONE", "BLOCKED", "FAILED", "UNKNOWN"}:
             classification = "UNKNOWN"
         readback, error = _persist_terminal(
             self.tracker, current, command, cycle_id=cycle_id,
-            status=classification, dispatch_attempted=True,
+            status=classification, dispatch_attempted=True, model_started=model_started,
+            verification=verification, changed_paths=changed_paths,
+            proof_commit_sha=proof_commit_sha,
         )
         if error:
-            return CycleResult(cycle_id, True, command.command_id, True, False, False,
+            return CycleResult(cycle_id, True, command.command_id, True, model_started,
+                               model_started is True,
                                "UNKNOWN", readback, error)
-        return CycleResult(cycle_id, True, command.command_id, True, False, False, classification, readback)
+        return CycleResult(cycle_id, True, command.command_id, True, model_started,
+                           model_started is True, classification, readback)
 
     def run_forever(self) -> None:
         """Poll on the configured cadence until stop() requests shutdown."""
