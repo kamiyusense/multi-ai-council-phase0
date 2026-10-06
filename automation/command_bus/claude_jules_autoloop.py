@@ -40,6 +40,7 @@ from .claude_jules_dispatch import (
 )
 from .claude_jules_handover import append_decision, decide_auto_resume
 from .claude_jules_inspection import InspectionStore, inspect_result, validate_small_repair
+from .claude_jules_reinspection import ReinspectionStore
 from .claude_jules_result_event import ResultEventInbox, verify_result_lineage
 from .claude_jules_task_prompt import (
     corrective_task_spec, path_policy, render_task_prompt, validate_task_spec,
@@ -124,6 +125,7 @@ class ClaudeJulesAutoLoop:
                                                 carrier_guard=carrier_guard)
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
+        self.reinspections = ReinspectionStore(client, data_branch=self.data)
         self.adoption = SafeAdoption(client=client, refs=refs, policy=policy)
 
     # -- durable reads ------------------------------------------------------
@@ -237,7 +239,7 @@ class ClaudeJulesAutoLoop:
             return StepResult("STOP", "UNKNOWN", f"unexpected dispatch receipt state {receipt.get('state')}")
 
         try:
-            all_inspections = self.inspections.list_all()
+            all_inspections = self._all_inspections()
             adopted = self._adoption_state(latest, all_inspections)
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable inspection/adoption records unverifiable: {exc}")
@@ -273,6 +275,10 @@ class ClaudeJulesAutoLoop:
                                                attempt=1, spec=corrective)
             if decision == "STOP_HUMAN":
                 return self._block_task(latest, spec, current["reason"], now=now)
+            if decision == "INVESTIGATE":
+                boundary = classify_boundary("UNKNOWN", current["reason"])
+                if boundary is not None and boundary.retry_safe:
+                    return self._reinspect_unknown(latest, spec, current, now=now)
             return StepResult("STOP", current["verdict"], f"human/investigation boundary: {current['reason']}")
         return self._inspect_new_result(latest, spec, now=now)
 
@@ -300,6 +306,9 @@ class ClaudeJulesAutoLoop:
         return results
 
     # -- phases ------------------------------------------------------------
+    def _all_inspections(self) -> list[dict[str, Any]]:
+        return self.reinspections.extend_all(self.inspections.list_all())
+
     def _current_inspection(self, records: list[dict[str, Any]]) -> dict[str, Any]:
         repaired = {r["repair_of"] for r in records if r.get("repair_of")}
         open_records = [r for r in records if r["candidate_head"] not in repaired]
@@ -309,7 +318,7 @@ class ClaudeJulesAutoLoop:
         request = intent["carrier_request"]
         try:
             events = [e for e in self.inbox.list_events() if e["command_id"] == request["command_id"]]
-            prior = self.inspections.list_all()
+            prior = self._all_inspections()
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable event records unverifiable: {exc}")
         if not events:
@@ -347,8 +356,50 @@ class ClaudeJulesAutoLoop:
                               {"command_id": request["command_id"], "head": lineage["candidate_head"]})
         return self._inspect(intent, spec, lineage, lineage["candidate_head"], now=now, repair_of=None)
 
+    def _reinspect_unknown(self, intent: dict[str, Any], spec: dict[str, Any],
+                           current: dict[str, Any], *, now: str) -> StepResult:
+        if current.get("repair_of") is not None:
+            return self._block_task(intent, spec, "repair evidence stayed UNKNOWN after safe investigation", now=now)
+        base = self.inspections.get(current["command_id"], current["candidate_head"])
+        if base is None:
+            return StepResult("STOP", "UNKNOWN", "legacy base inspection missing for reinspection")
+        try:
+            attempts = len(self.reinspections.all_versions(base)) - 1
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"reinspection history unverifiable: {exc}")
+        if attempts >= self.campaign_policy["max_transient_retries"]:
+            return self._block_task(intent, spec, "transient evidence retry budget exhausted", now=now)
+
+        request = intent["carrier_request"]
+        try:
+            events = [e for e in self.inbox.list_events() if e["command_id"] == request["command_id"]]
+            receipt = self._read_json(dispatch_receipt_path(request["command_id"]))
+            observation = self.facts.dispatch_observation(request["command_id"])
+            fresh = {e["pr_number"]: self.facts.fresh_pr(e["pr_number"]) for e in events}
+        except Exception as exc:
+            return StepResult("STOP", "UNKNOWN", f"reinspection evidence unavailable: {exc}")
+        lineage = None
+        for event in sorted(events, key=lambda e: e["pr_number"], reverse=True):
+            verdict = verify_result_lineage(
+                event, intent=intent, dispatch_receipt=receipt,
+                dispatch_observation=observation, fresh_pr=fresh[event["pr_number"]],
+            )
+            if verdict.status == "PASS" and verdict.record["candidate_head"] == current["candidate_head"]:
+                lineage = verdict.record
+                break
+        if lineage is None:
+            return StepResult("STOP", "UNKNOWN", "same-head lineage unavailable for reinspection")
+        ready = getattr(self.facts, "review_ready", None)
+        if ready is not None and not ready(intent, spec, current["candidate_head"]):
+            return StepResult("WAIT", "AWAITING_CLAUDE_REVIEW", "reinspection review evidence is not ready")
+        return self._inspect(
+            intent, spec, lineage, current["candidate_head"], now=now, repair_of=None,
+            reinspection_base=base,
+        )
+
     def _inspect(self, intent: dict[str, Any], spec: dict[str, Any], lineage: dict[str, Any], head: str,
-                 *, now: str, repair_of: str | None) -> StepResult:
+                 *, now: str, repair_of: str | None,
+                 reinspection_base: dict[str, Any] | None = None) -> StepResult:
         request = intent["carrier_request"]
         compare = self.facts.compare(request["expected_target_head"], head)
         tree = self.facts.commit_tree(head)
@@ -359,9 +410,10 @@ class ClaudeJulesAutoLoop:
             intent=intent, task_spec=spec, lineage=lineage, compare=compare, candidate_tree=tree,
             test_evidence=self.facts.run_tests(head), changed_test_sources=self.facts.test_sources(head, tests),
             acceptance_observations=observations, reviewer_findings=findings,
-            prior_inspections=self.inspections.list_all(), inspected_at=now, repair_of=repair_of,
+            prior_inspections=self._all_inspections(), inspected_at=now, repair_of=repair_of,
         )
-        saved = self.inspections.persist(outcome.record)
+        saved = (self.inspections.persist(outcome.record) if reinspection_base is None
+                 else self.reinspections.persist(base=reinspection_base, inspection=outcome.record))
         if saved not in {"CREATED", "RECOVERED"}:
             return StepResult("STOP", "UNKNOWN", f"inspection record {saved}")
         return StepResult("INSPECT", outcome.verdict, outcome.record["reason"],
@@ -400,7 +452,7 @@ class ClaudeJulesAutoLoop:
 
     def _roadmap_position(self) -> tuple[dict[str, Any] | None, list[str]]:
         adopted_families: set[str] = set()
-        inspections = self.inspections.list_all()
+        inspections = self._all_inspections()
         for intent in self._intents():
             state = self._adoption_state(intent, inspections)
             if state.status == "VERIFIED":
