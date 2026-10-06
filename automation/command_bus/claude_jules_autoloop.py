@@ -42,6 +42,7 @@ from .claude_jules_result_event import ResultEventInbox, verify_result_lineage
 from .claude_jules_task_prompt import (
     corrective_task_spec, path_policy, render_task_prompt, validate_task_spec,
 )
+from .claude_jules_task_block import TaskBlockStore
 from .claude_loop import (
     BackendMode, make_structured_verdict, numbered_command_id, prepare_jules_semiauto_bundle,
     prepare_jules_semiauto_request, prepare_loop_claim, prepare_next_action,
@@ -125,6 +126,9 @@ class ClaudeJulesAutoLoop:
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
         self.recovery = EvidenceRecoveryStore(client, data_branch=self.data)
+        self.task_blocks = TaskBlockStore(
+            client, data_branch=self.data, origin_loop_id=origin_loop_id,
+        )
         self.adoption = SafeAdoption(
             client=client, refs=refs, policy=policy, max_round_cap=MAX_CONFIGURED_ROUNDS,
         )
@@ -225,6 +229,13 @@ class ClaudeJulesAutoLoop:
                                                   reduce_size=decision == "JULES_CORRECTIVE_REDUCED")
                 return self._plan_and_dispatch(now=now, round_number=latest["origin_round"] + 1,
                                                attempt=1, spec=corrective)
+            if decision == "STOP_HUMAN":
+                block = self.task_blocks.persist(intent=latest, inspection=current, blocked_at=now)
+                if block.status in {"CREATED", "RECOVERED"}:
+                    return self._plan_and_dispatch(
+                        now=now, round_number=latest["origin_round"] + 1, attempt=1, spec=None,
+                    )
+                return StepResult("STOP", HARD_UNKNOWN, f"task block record: {block.reason}")
             return StepResult("STOP", current["verdict"], f"human/investigation boundary: {current['reason']}")
         return self._inspect_new_result(latest, spec, now=now)
 
@@ -392,6 +403,12 @@ class ClaudeJulesAutoLoop:
     def _after_adoption(self, intent: dict[str, Any], *, now: str) -> StepResult:
         next_round = intent["origin_round"] + 1
         if next_round > self.campaign_policy["max_rounds"]:
+            try:
+                position = self._roadmap_position()
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+                return StepResult("STOP", HARD_UNKNOWN, f"roadmap position unverifiable: {exc}")
+            if position["state"] == "COMPLETE":
+                return StepResult("COMPLETE", "COMPLETE", "all roadmap tasks are adopted")
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
@@ -405,7 +422,7 @@ class ClaudeJulesAutoLoop:
                  and r["command_id"] == intent["carrier_request"]["command_id"]]
         return self.adoption.verify_adopted(intent=intent, inspection=match[0] if len(match) == 1 else None)
 
-    def next_roadmap_task(self) -> dict[str, Any] | None:
+    def _roadmap_position(self) -> dict[str, Any]:
         adopted_families: set[str] = set()
         inspections = self.inspections.list_all()
         for intent in self._intents():
@@ -414,14 +431,43 @@ class ClaudeJulesAutoLoop:
                 adopted_families.add(_family(intent["task_id"]))
             elif state.status != "MISSING":
                 raise ValueError(f"unverifiable adoption for {intent['carrier_request']['command_id']}: {state.reason}")
+
+        block_records = self.task_blocks.list_all()
+        blocked_families = {record["task_family"] for record in block_records} - adopted_families
+        remaining: list[str] = []
+        dependency_blocked: dict[str, list[str]] = {}
         for entry in self.roadmap["tasks"]:
             spec = entry["task_spec"]
-            if spec["task_id"] in adopted_families:
+            task_id = spec["task_id"]
+            if task_id in adopted_families:
+                continue
+            remaining.append(task_id)
+            if task_id in blocked_families:
+                continue
+            blocked_deps = [dep for dep in entry["depends_on"] if dep in blocked_families]
+            if blocked_deps:
+                dependency_blocked[task_id] = blocked_deps
                 continue
             if all(dep in adopted_families for dep in entry["depends_on"]):
-                return spec
-            return None  # roadmap order is the dependency order; never skip ahead
-        return None
+                return {
+                    "state": "READY", "spec": spec, "adopted": sorted(adopted_families),
+                    "blocked": sorted(blocked_families), "dependency_blocked": dependency_blocked,
+                }
+
+        if not remaining:
+            return {
+                "state": "COMPLETE", "spec": None, "adopted": sorted(adopted_families),
+                "blocked": [], "dependency_blocked": {},
+            }
+        return {
+            "state": "BLOCKED", "spec": None, "adopted": sorted(adopted_families),
+            "blocked": sorted(blocked_families), "remaining": remaining,
+            "dependency_blocked": dependency_blocked,
+        }
+
+    def next_roadmap_task(self) -> dict[str, Any] | None:
+        position = self._roadmap_position()
+        return position["spec"] if position["state"] == "READY" else None
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
@@ -432,11 +478,18 @@ class ClaudeJulesAutoLoop:
             return StepResult("STOP", "CAMPAIGN_DISPATCH_BUDGET", "campaign dispatch budget reached")
         if spec is None:
             try:
-                spec = self.next_roadmap_task()
+                position = self._roadmap_position()
             except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
-                return StepResult("STOP", "UNKNOWN", f"roadmap position unverifiable: {exc}")
-            if spec is None:
-                return StepResult("COMPLETE", "COMPLETE", "no remaining roadmap task is eligible")
+                return StepResult("STOP", HARD_UNKNOWN, f"roadmap position unverifiable: {exc}")
+            if position["state"] == "COMPLETE":
+                return StepResult("COMPLETE", "COMPLETE", "all roadmap tasks are adopted")
+            if position["state"] == "BLOCKED":
+                return StepResult(
+                    "STOP", "HUMAN_REQUIRED",
+                    "no independent READY task remains; blocked/dependent work requires a decision",
+                    {k: position[k] for k in ("blocked", "remaining", "dependency_blocked")},
+                )
+            spec = position["spec"]
         generation = self._owner_generation()
         if not isinstance(generation, int):
             return StepResult("STOP", "UNKNOWN", "owner generation unavailable")
