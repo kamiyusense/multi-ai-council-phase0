@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 import unittest
 
 from automation.command_bus.claude_jules_autoloop import ClaudeJulesAutoLoop
@@ -10,6 +13,7 @@ from automation.command_bus.claude_jules_campaign import (
     validate_campaign_policy,
 )
 from automation.command_bus.loop_owner_backend import LoopOwnerGitHubBackend
+from automation.command_bus.claude_jules_live import load_campaign_policy
 from automation.command_bus.tests.claude_jules_autoloop_fakes import (
     DATA, LOOP, NOW, policy, roadmap, task_spec,
 )
@@ -71,6 +75,20 @@ class CampaignPolicyTests(unittest.TestCase):
         wrong = campaign(campaign_id="another-campaign")
         with self.assertRaisesRegex(ValueError, "campaign_id must match origin_loop_id"):
             CampaignRoundIntegrationTests.controller(w, wrong)
+
+    def test_optional_campaign_policy_loader_preserves_legacy_default(self):
+        self.assertIsNone(load_campaign_policy(None))
+        handle = tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False)
+        try:
+            json.dump(campaign(max_rounds=10, dispatch_budget=None), handle)
+            handle.close()
+            loaded = load_campaign_policy(handle.name)
+            self.assertEqual(loaded["max_rounds"], 10)
+            self.assertEqual(loaded["campaign_id"], LOOP)
+        finally:
+            if not handle.closed:
+                handle.close()
+            os.unlink(handle.name)
 
 
 class CampaignRoundIntegrationTests(unittest.TestCase):
