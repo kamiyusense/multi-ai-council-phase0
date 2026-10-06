@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import pathlib
 import unittest
 
 from automation.command_bus.claude_jules_campaign import (
@@ -16,6 +18,14 @@ from automation.command_bus.tests.claude_jules_autoloop_fakes import policy
 
 
 class CampaignPolicyTests(unittest.TestCase):
+    def test_committed_example_is_valid_finite_and_does_not_grant_provider_authority(self):
+        root = pathlib.Path(__file__).parents[1]
+        record = json.loads((root / "config" / "claude_jules_campaign_policy.example.json").read_text())
+        validated = validate_campaign_policy(record)
+        self.assertEqual(validated["max_rounds"], 30)
+        self.assertEqual(validated["max_concurrent_agents"], 1)
+        self.assertIsNone(validated["dispatch_provider_budget"])
+
     def test_legacy_policy_builds_backward_compatible_campaign_defaults(self):
         legacy = policy(max_rounds=6)
         campaign = campaign_policy_from_legacy(legacy, "claude-auto-loop-test")
