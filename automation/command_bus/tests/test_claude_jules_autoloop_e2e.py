@@ -497,6 +497,57 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual([r.action for r in results], ["DISPATCH", "WAIT"])
         self.assertIsNotNone(w.github.get(dispatch_receipt_path(results[0].details["command_id"]), DATA))
 
+    def test_run_until_boundary_retries_transient_read_failure(self):
+        w = World()
+        w.step()
+        request = w.command(w.commands()[0])
+        w.deliver(w.jules.run(request["command_id"]))
+        real = w.facts.dispatch_observation
+        calls = 0
+
+        def flaky(command_id):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise RuntimeError("temporary network read failed")
+            return real(command_id)
+
+        w.facts.dispatch_observation = flaky
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual(results[0].status, "UNKNOWN")
+        self.assertEqual(results[0].details["boundary_class"], "TRANSIENT_UNKNOWN")
+        self.assertEqual(results[1].status, "PASS")
+        self.assertEqual(results[2].status, "ADOPTED")
+        self.assertEqual(results[3].status, "DISPATCHED")
+
+    def test_run_until_boundary_replans_stale_target_without_human_stop(self):
+        w = World()
+        original = w.github.branches[TARGET]
+        moved = w.github.child(original, {"x.txt": "moved"}, "concurrent change")
+
+        def move_target(path, branch):
+            if path.startswith(CLAIMS):
+                w.github.branches[TARGET] = moved
+            return None
+
+        w.github.create_hook = move_target
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual(results[0].status, "BLOCKED")
+        self.assertEqual(results[0].details["boundary_class"], "RECOVERABLE_UNKNOWN")
+        w.github.create_hook = None
+        resumed = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertIn("DISPATCHED", [r.status for r in resumed])
+        self.assertEqual(resumed[-1].action, "WAIT")
+
+    def test_run_until_boundary_does_not_retry_ambiguous_mutating_write(self):
+        w = World()
+        w.github.create_hook = lambda path, branch: "raise-before-write" if path.startswith(COMMANDS) else None
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].status, "UNKNOWN")
+        self.assertEqual(results[0].details["boundary_class"], "HARD_UNKNOWN")
+        self.assertEqual(w.commands(), [])
+
 
 if __name__ == "__main__":
     unittest.main()
