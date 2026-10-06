@@ -23,7 +23,11 @@ from automation.command_bus.symphony_controller import (
     Target,
 )
 
-# Keep the fixture clock far in the future because GitHubExecutorTracker.reserve()\n# correctly uses the real wall clock for durable claim timestamps. A historical\n# fixed date makes the suite start failing once that fixture expiry passes.\nNOW = datetime(2099, 1, 1, 12, tzinfo=timezone.utc)\nEXPIRY = (NOW + timedelta(hours=1)).isoformat()
+# Keep the fixture clock far in the future because GitHubExecutorTracker.reserve()
+# correctly uses the real wall clock for durable claim timestamps. A historical
+# fixed date makes the suite start failing once that fixture expiry passes.
+NOW = datetime(2099, 1, 1, 12, tzinfo=timezone.utc)
+EXPIRY = (NOW + timedelta(hours=1)).isoformat()
 FakeRunner = StaticFakeAgentRunner
 
 
