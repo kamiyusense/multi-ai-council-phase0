@@ -213,10 +213,14 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertIn("before adoption", result.reason)
         self.assertEqual(w.github.branches[TARGET], before)
 
-    def test_expired_owner_lease_stops(self):
+    def test_expired_same_holder_owner_lease_recovers_and_continues(self):
         w = World(owner=[owner_event(expires_at="2026-10-01T12:30:00+00:00")])
-        self.assertIn("expired", w.step().reason)
-        self.assertEqual(w.github.writes, [])
+        result = w.step()
+        self.assertEqual((result.action, result.status), ("DISPATCH", "DISPATCHED"), result.reason)
+        chain = LoopOwnerGitHubBackend(w.github, branch=DATA).read_events(LOOP)
+        self.assertEqual(len(chain), 2)
+        self.assertEqual((chain[-1]["event_type"], chain[-1]["owner_role"], chain[-1]["holder_id"]),
+                         ("RENEW", "AUTO", HOLDER))
 
     def test_session_loss_mid_dispatch_resumes_without_duplicates(self):
         w = World()
