@@ -32,7 +32,9 @@ from .claude_jules_campaign import (
     RECOVERABLE_UNKNOWN, TRANSIENT_UNKNOWN, campaign_policy_from_legacy,
     classify_boundary, validate_campaign_policy,
 )
-from .claude_jules_campaign_state import CampaignStateStore, build_task_blocked_event
+from .claude_jules_campaign_state import (
+    CampaignStateStore, build_deferred_decision_event, build_task_blocked_event,
+)
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
@@ -195,6 +197,36 @@ class ClaudeJulesAutoLoop:
         return StepResult(
             "RECOVER_OWNER", "RECOVERED", appended.reason,
             {"generation": appended.event["generation"] if appended.event else None},
+        )
+
+    def defer_decision(
+        self, *, decision_id: str, question: str, options: list[str], reason: str,
+        selected_safe_default: str, reversibility: str, affected_scope: str,
+        reconsider_condition: str, now: str,
+    ) -> StepResult:
+        """Persist a reversible safe default without stopping the campaign."""
+        try:
+            event = build_deferred_decision_event(
+                campaign_id=self.campaign_policy["campaign_id"],
+                decision_id=decision_id,
+                question=question,
+                options=options,
+                reason=reason,
+                selected_safe_default=selected_safe_default,
+                reversibility=reversibility,
+                affected_scope=affected_scope,
+                reconsider_condition=reconsider_condition,
+                recorded_at=now,
+            )
+            saved = self.campaign_state.persist(event)
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"deferred decision unverifiable: {exc}")
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", f"deferred decision record {saved}")
+        return StepResult(
+            "DEFER_DECISION", "DEFERRED", "safe reversible default recorded; campaign may continue",
+            {"decision_id": decision_id, "selected_safe_default": selected_safe_default,
+             "campaign_event_id": event["event_id"]},
         )
 
     # -- one step -------------------------------------------------------------
@@ -485,6 +517,16 @@ class ClaudeJulesAutoLoop:
         family = _family(spec["task_id"])
         family_dispatches = sum(1 for item in intents if _family(item["task_id"]) == family)
         correctives_used = max(0, family_dispatches - 1)
+        family_failures = sum(
+            1 for item in self._all_inspections()
+            if _family(item["task_id"]) == family and item["verdict"] in {"FAIL_MINOR", "FAIL_MAJOR"}
+        )
+        if family_failures >= self.campaign_policy["max_consecutive_failures"]:
+            return self._block_task(
+                intent, spec,
+                f"consecutive failure budget exhausted after {family_failures} failure(s): {inspection['reason']}",
+                now=now,
+            )
         if correctives_used >= self.campaign_policy["max_corrective_rounds_per_task"]:
             return self._block_task(
                 intent, spec,
