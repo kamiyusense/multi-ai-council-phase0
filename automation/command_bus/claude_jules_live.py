@@ -398,6 +398,33 @@ def poll_results(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str
     return outcomes
 
 
+def wake_resume(*, loop: ClaudeJulesAutoLoop, git: GitLiveClient, rest: GitHubRestReader,
+                policy: dict[str, Any], origin_loop_id: str, now: str, max_steps: int = 12,
+                poller: Any = poll_results) -> dict[str, Any]:
+    """Ingest result PRs, restore durable controller state and continue to a real boundary.
+
+    The wake itself grants no authority.  The unchanged controller still
+    enforces owner fencing, live authorization, budgets, exact-head checks and
+    append-only duplicate guards on every mutating step.
+    """
+    if isinstance(max_steps, bool) or not isinstance(max_steps, int) or not 1 <= max_steps <= 100:
+        raise ValueError("max_steps must be an integer in 1..100")
+    polled = poller(git=git, rest=rest, policy=policy, origin_loop_id=origin_loop_id)
+    results = loop.run_until_boundary(now=now, max_steps=max_steps)
+    return {
+        "poll": polled,
+        "steps": [
+            {
+                "action": result.action,
+                "status": result.status,
+                "reason": result.reason,
+                "details": {k: v for k, v in result.details.items() if k != "intent"},
+            }
+            for result in results
+        ],
+    }
+
+
 def stream_activity(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str, Any], lane_id: str,
                     target_branch: str, owner_chain: list[dict[str, Any]], now: str):
     """Read the stream's carrier claims and their result PRs (ChatGPT's and Claude's alike)."""
@@ -476,7 +503,7 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="claude_jules_live")
-    parser.add_argument("command", choices=["status", "step", "poll", "budget", "record-review", "record-observation",
+    parser.add_argument("command", choices=["status", "step", "poll", "wake-resume", "budget", "record-review", "record-observation",
                                             "observe", "takeover", "renew", "handback", "reclaim",
                                             "carrier"])
     parser.add_argument("--policy", required=True)
@@ -488,6 +515,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scratch", default=os.path.join(tempfile.gettempdir(), "claude-jules-live"))
     parser.add_argument("--trailer", default="")
     parser.add_argument("--file")
+    parser.add_argument("--max-steps", type=int, default=12, help="wake-resume controller step budget (1..100)")
     parser.add_argument("--write", action="store_true", help="append the owner event (handover commands only)")
     parser.add_argument("--now")
     args = parser.parse_args(argv)
@@ -498,6 +526,11 @@ def main(argv: list[str] | None = None) -> int:
         out: Any = {"used": len(slots), "cap": 10, "slots": [{k: s[k] for k in ("slot", "command_id", "acquired_at")} for s in slots]}
     elif args.command == "poll":
         out = {"now": now, "results": poll_results(git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id)}
+    elif args.command == "wake-resume":
+        out = {"now": now, **wake_resume(
+            loop=loop, git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id,
+            now=now, max_steps=args.max_steps,
+        )}
     elif args.command == "record-review":
         record = validate_review(_load(args.file))
         path = review_path(record["command_id"], record["candidate_head"])
