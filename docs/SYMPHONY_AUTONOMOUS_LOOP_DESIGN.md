@@ -277,3 +277,17 @@ suppression. The durable claim/result ledger remains the cross-process fence;
 the in-process counter is only a task-level proof budget. Autonomous profiles
 can therefore grow to multiple tasks without requiring a fresh runner merely to
 reset an unrelated proof counter.
+
+
+## 15. Observation retry is separated from model redispatch
+
+The durable kernel now keeps a task in `WAITING` while retrying transient
+read/status/evidence acquisition. `next_action()` returns
+`RETRY_OBSERVATION` even if subscription quota is exhausted, because this is
+non-model recovery work. It does not turn a transient UNKNOWN into an implicit
+second model dispatch.
+
+Recoverable UNKNOWN is held as `STALE` until an explicit safe replan. Failed
+corrective attempts become `SUPERSEDED` when a later corrective is created, so
+a successful later repair can genuinely complete the campaign instead of being
+held open by historical failed attempts.

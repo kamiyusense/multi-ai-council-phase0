@@ -143,6 +143,46 @@ class SymphonyAutonomousRuntimeTests(unittest.TestCase):
         self.assertEqual(kernel.state.tasks["A"].status, TaskStatus.COMPLETE)
         self.assertEqual(kernel.next_action(canonical_head="h1").task_id, "B")
 
+    def test_multiple_correctives_do_not_prevent_campaign_completion_after_later_success(self):
+        state = CampaignState(
+            "campaign-corrective-chain",
+            1,
+            {"A": CampaignTask("A", expected_target_head="h1")},
+        )
+        kernel = AutonomousCampaignKernel(state)
+        kernel.mark_dispatched("A", canonical_head="h1")
+        first = kernel.record_result(
+            result_id="fail-root", task_id="A", outcome=TaskOutcome.FAILED,
+        )
+        kernel.mark_dispatched(first.task_id, canonical_head="h1")
+        second = kernel.record_result(
+            result_id="fail-c1", task_id=first.task_id, outcome=TaskOutcome.FAILED,
+        )
+        self.assertEqual(kernel.state.tasks[first.task_id].status, TaskStatus.SUPERSEDED)
+        kernel.mark_dispatched(second.task_id, canonical_head="h1")
+        kernel.record_result(
+            result_id="pass-c2", task_id=second.task_id, outcome=TaskOutcome.DONE,
+        )
+        self.assertEqual(kernel.state.tasks["A"].status, TaskStatus.COMPLETE)
+        self.assertEqual(kernel.next_action(canonical_head="h1").kind, ActionKind.CAMPAIGN_COMPLETE)
+
+    def test_recoverable_unknown_requires_replan_before_model_dispatch(self):
+        state = CampaignState(
+            "campaign-replan-unknown",
+            1,
+            {"A": CampaignTask("A", status=TaskStatus.RUNNING, expected_target_head="old")},
+        )
+        kernel = AutonomousCampaignKernel(state)
+        action = kernel.record_result(
+            result_id="recoverable-1", task_id="A", outcome=TaskOutcome.UNKNOWN,
+            unknown_class=UnknownClass.RECOVERABLE_UNKNOWN,
+        )
+        self.assertEqual(action.kind, ActionKind.REPLAN_TASK)
+        self.assertEqual(kernel.state.tasks["A"].status, TaskStatus.STALE)
+        self.assertEqual(kernel.next_action(canonical_head="new").kind, ActionKind.REPLAN_TASK)
+        kernel.replan_stale_task("A", canonical_head="new", task_still_valid=True)
+        self.assertEqual(kernel.next_action(canonical_head="new").kind, ActionKind.DISPATCH_TASK)
+
     def test_transient_unknown_retries_then_isolates_and_continues_independent_task(self):
         policy = AutonomousRuntimePolicy(
             profile="retry-one", max_rounds=10, max_turns_per_task=2, max_model_starts_per_task=2,
@@ -166,7 +206,13 @@ class SymphonyAutonomousRuntimeTests(unittest.TestCase):
             unknown_class=UnknownClass.TRANSIENT_UNKNOWN,
         )
         self.assertEqual(first.kind, ActionKind.RETRY_OBSERVATION)
-        kernel.mark_dispatched("A", canonical_head="h1")
+        self.assertEqual(kernel.state.tasks["A"].status, TaskStatus.WAITING)
+        self.assertEqual(
+            kernel.next_action(canonical_head="h1", quota_state=QuotaState.EXHAUSTED).kind,
+            ActionKind.RETRY_OBSERVATION,
+        )
+        # A second transient observation failure consumes observation retry
+        # budget without redispatching the model task.
         second = kernel.record_result(
             result_id="u2", task_id="A", outcome=TaskOutcome.UNKNOWN,
             unknown_class=UnknownClass.TRANSIENT_UNKNOWN,

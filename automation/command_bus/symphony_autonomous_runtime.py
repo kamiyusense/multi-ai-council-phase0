@@ -29,6 +29,7 @@ class TaskStatus(str, Enum):
     BLOCKED = "BLOCKED"
     DEFERRED = "DEFERRED"
     COMPLETE = "COMPLETE"
+    SUPERSEDED = "SUPERSEDED"
     STALE = "STALE"
 
 
@@ -222,8 +223,32 @@ class AutonomousCampaignKernel:
             return PlannedAction(ActionKind.STOP_CONFIG_LIMIT, reason="max_rounds reached")
         if self.state.consecutive_failures >= self.policy.max_consecutive_failures:
             return PlannedAction(ActionKind.STOP_CONFIG_LIMIT, reason="max_consecutive_failures reached")
-        if all(task.status is TaskStatus.COMPLETE for task in self.state.tasks.values()):
+        if all(
+            task.status in {TaskStatus.COMPLETE, TaskStatus.SUPERSEDED}
+            for task in self.state.tasks.values()
+        ):
             return PlannedAction(ActionKind.CAMPAIGN_COMPLETE)
+        waiting = sorted(
+            (
+                task for task in self.state.tasks.values()
+                if task.status is TaskStatus.WAITING and self._dependencies_complete(task)
+            ),
+            key=lambda item: item.task_id,
+        )
+        if waiting:
+            return PlannedAction(
+                ActionKind.RETRY_OBSERVATION, waiting[0].task_id,
+                "retry non-destructive observation/evidence acquisition",
+            )
+        stale = sorted(
+            (
+                task for task in self.state.tasks.values()
+                if task.status is TaskStatus.STALE and self._dependencies_complete(task)
+            ),
+            key=lambda item: item.task_id,
+        )
+        if stale:
+            return PlannedAction(ActionKind.REPLAN_TASK, stale[0].task_id, "task requires safe replan")
         ready = self._ready()
         if ready and not model_work_allowed(quota_state, self.policy):
             return PlannedAction(ActionKind.STOP_QUOTA, reason="subscription allowance exhausted")
@@ -313,7 +338,11 @@ class AutonomousCampaignKernel:
             root_id = task.corrective_for or task.task_id
             next_round = task.corrective_round + 1
             if next_round <= self.policy.max_corrective_rounds_per_task:
-                task.status = TaskStatus.BLOCKED
+                # A failed corrective is an attempt in the root task lineage, not a
+                # permanent campaign blocker once a later corrective succeeds.
+                task.status = (
+                    TaskStatus.SUPERSEDED if task.corrective_for else TaskStatus.BLOCKED
+                )
                 corrective_id = f"{root_id}::corrective::{next_round}"
                 if corrective_id in self.state.tasks:
                     raise ValueError("corrective task identity already exists")
@@ -350,10 +379,12 @@ class AutonomousCampaignKernel:
         )
         if action is RecoveryAction.RETRY_OBSERVATION:
             task.transient_retries += 1
-            task.status = TaskStatus.READY
+            # WAITING means retry read/status/evidence acquisition. It must not
+            # fall back into DISPATCH_TASK and accidentally resend model work.
+            task.status = TaskStatus.WAITING
             return PlannedAction(ActionKind.RETRY_OBSERVATION, task_id)
         if action is RecoveryAction.REPLAN:
-            task.status = TaskStatus.READY
+            task.status = TaskStatus.STALE
             return PlannedAction(ActionKind.REPLAN_TASK, task_id)
         if action is RecoveryAction.ISOLATE_TASK_CONTINUE:
             task.status = TaskStatus.BLOCKED
@@ -365,6 +396,13 @@ class AutonomousCampaignKernel:
             else f"{unknown_class.value} with no independent safe work"
         )
         return PlannedAction(ActionKind.STOP_HARD_UNKNOWN, task_id, self.state.terminal_reason)
+
+    def mark_observation_recovered(self, task_id: str) -> None:
+        """Return a WAITING task to READY only after safe read/evidence recovery."""
+        task = self.state.tasks[task_id]
+        if task.status is not TaskStatus.WAITING:
+            raise ValueError("task is not waiting for observation recovery")
+        task.status = TaskStatus.READY
 
     def reclaim_after_restart(
         self,
