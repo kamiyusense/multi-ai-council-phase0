@@ -156,6 +156,9 @@ class GitWorkspaceVerifier:
                 or parents != [head_after, prepared.head_before] or commit_count != "1"
                 or changed != (path,) or proof != "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"):
             raise RuntimeError("Codex output failed exact proof verification")
+        remote_target_before_push = cls._remote_ref(cwd, target_branch)
+        if remote_target_before_push != prepared.head_before:
+            raise RuntimeError("proof target moved before the controller push")
         # The controller, not the model task, performs one ordinary fast-forward
         # push. An uncertain response is never resent; remote refs decide whether
         # the push landed. The exact single-parent check above makes the update
@@ -181,6 +184,7 @@ class GitWorkspaceVerifier:
             "max_turns": 1, "force_push_count": 0, "merge_count": 0,
             "default_branch_mutation_count": 0, "remote_readback": "PASS",
             "remote_target_head": remote_target_after,
+            "remote_target_head_before_push": remote_target_before_push,
             "default_branch_head_before": prepared.default_branch_head_before,
             "default_branch_head_after": remote_default_after,
             "proof_branch_pull_request_count": proof_pr_count,

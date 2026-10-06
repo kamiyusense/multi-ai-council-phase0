@@ -389,6 +389,7 @@ class SymphonyRemoteProofVerificationTests(unittest.TestCase):
             prepared = PreparedCodexCommand(
                 command(payload=payload), directory, "create exact proof", head_before, "tree-before", main_head,
             )
+            target_ref_reads = [0]
 
             def git_read(_cwd, *args):
                 if args == ("rev-parse", "HEAD"):
@@ -404,7 +405,9 @@ class SymphonyRemoteProofVerificationTests(unittest.TestCase):
                 if args[:2] == ("rev-list", "--count"):
                     return "1"
                 if args[:2] == ("ls-remote", "--exit-code") and args[-1] == f"refs/heads/{branch}":
-                    return f"{head_after}\trefs/heads/{branch}"
+                    target_ref_reads[0] += 1
+                    value = head_before if target_ref_reads[0] == 1 else head_after
+                    return f"{value}\trefs/heads/{branch}"
                 if args[:2] == ("ls-remote", "--exit-code") and args[-1] == "refs/heads/main":
                     return f"{main_head}\trefs/heads/main"
                 raise AssertionError(f"unexpected git read: {args}")
@@ -427,6 +430,7 @@ class SymphonyRemoteProofVerificationTests(unittest.TestCase):
         self.assertEqual(evidence["default_branch_mutation_count"], 0)
         self.assertEqual(pushes[0][0], ["git", "push", "origin", f"HEAD:refs/heads/{branch}"])
         self.assertEqual(len(pushes), 1)
+        self.assertEqual(target_ref_reads[0], 2)
         self.assertEqual(paths, ("evidence/symphony_live_one_round_v1.txt",))
         self.assertEqual(commit_sha, head_after)
 
