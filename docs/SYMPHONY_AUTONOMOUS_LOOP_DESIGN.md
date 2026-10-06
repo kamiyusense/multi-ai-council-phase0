@@ -309,3 +309,25 @@ create actually landed.
 
 This is controller-state persistence only. It performs no provider/model work
 and does not authorize LIVE execution.
+
+
+## 17. Durable multi-round controller integration
+
+Track B now has a STATIC controller that restores a durable campaign checkpoint,
+selects the next safe action, writes a pre-dispatch RUNNING checkpoint, executes
+only an exact built-in no-provider fixture runner, records the result, writes
+the next checkpoint and immediately continues to the next safe action.
+
+STATIC integration tests cover:
+
+- three consecutive unattended task rounds;
+- FAIL -> new corrective task -> downstream continuation;
+- fresh-controller resume after a batch/process boundary;
+- transient UNKNOWN -> observation recovery without model redispatch;
+- stale HEAD -> safe replan -> dispatch;
+- one blocked task -> independent task continues;
+- explicit quota exhaustion vs unreadable quota;
+- ambiguous post-result checkpoint -> no resend -> fresh restore continues.
+
+This controller intentionally rejects duck-typed/live runners. It is a
+non-LIVE integration proof, not authorization for a provider/model start.

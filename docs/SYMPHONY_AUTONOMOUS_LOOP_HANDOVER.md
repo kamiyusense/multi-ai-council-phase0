@@ -189,6 +189,23 @@ controller can restore the latest durable `CampaignState` and retain duplicate
 result IDs, task status, blockers, counters and generation. The store never
 updates default branch and does not start a provider/model.
 
+
+
+### STATIC durable controller integration
+
+A new `symphony_autonomous_controller.py` drives the durable Track-B kernel
+through multiple tasks and checkpoints without any provider/model path. It
+writes the RUNNING checkpoint before fixture dispatch, checkpoints the result,
+then keeps selecting safe work. Tests include multi-round continuation,
+corrective recovery, fresh-session resume, observation-only transient recovery,
+stale replan, blocker isolation, quota gating and ambiguous-result checkpoint
+recovery.
+
+The next production step is not to remove the STATIC gate casually. Add a
+separate reviewed adapter that binds real provider dispatch identity/result
+evidence to durable task attempts, then prove restart/reconciliation before any
+new LIVE run.
+
 ## Stop / human boundary
 
 Stop for genuinely human-required operations such as merge, default-branch

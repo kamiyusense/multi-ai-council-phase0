@@ -314,3 +314,13 @@ hash-linked checkpoints on a non-default branch. A stale controller must present
 the latest revision before appending. Ambiguous creates are never resent; exact
 readback can resolve success, and a fresh controller can later restore a
 checkpoint whose original response was unverifiable.
+
+
+### STATIC durable multi-round controller
+
+`symphony_autonomous_controller.py` connects the autonomous kernel to the
+create-only campaign store and proves claim-before-dispatch/result-checkpoint
+continuation across multiple tasks. Its admitted runner/observer/replanner/quota
+adapters are exact built-in STATIC fixtures, so this integration cannot start a
+model or provider. It is the seam where an explicitly authorized production
+adapter can later be attached without changing campaign semantics.
