@@ -224,7 +224,7 @@ class ClaudeJulesAutoLoop:
     def run_until_boundary(self, *, now: str, max_steps: int = 12) -> list[StepResult]:
         """Advance through safe recovery until a real boundary or the step budget ends."""
         results: list[StepResult] = []
-        transient_retries = 0
+        recovery_attempts = 0
         for _ in range(max_steps):
             result = self.step(now=now)
             boundary = classify_boundary(result.status, result.reason)
@@ -236,12 +236,10 @@ class ClaudeJulesAutoLoop:
             results.append(result)
             if result.action in {"WAIT", "COMPLETE"} or result.status == "PREPARED_NOT_AUTHORIZED":
                 break
-            if boundary is not None and boundary.retry_safe:
-                if boundary.kind == RECOVERABLE_UNKNOWN:
-                    continue
-                if boundary.kind == TRANSIENT_UNKNOWN and transient_retries < self.campaign_policy["max_transient_retries"]:
-                    transient_retries += 1
-                    continue
+            if (boundary is not None and boundary.retry_safe
+                    and recovery_attempts < self.campaign_policy["max_transient_retries"]):
+                recovery_attempts += 1
+                continue
             if result.action == "STOP" or result.status == "UNKNOWN":
                 break
         return results
