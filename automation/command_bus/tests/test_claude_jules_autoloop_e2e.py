@@ -534,10 +534,9 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         results = w.controller().run_until_boundary(now=NOW, max_steps=4)
         self.assertEqual(results[0].status, "BLOCKED")
         self.assertEqual(results[0].details["boundary_class"], "RECOVERABLE_UNKNOWN")
-        w.github.create_hook = None
-        resumed = w.controller().run_until_boundary(now=NOW, max_steps=4)
-        self.assertIn("DISPATCHED", [r.status for r in resumed])
-        self.assertEqual(resumed[-1].action, "WAIT")
+        self.assertIn("DISPATCHED", [r.status for r in results])
+        self.assertEqual(results[-1].action, "WAIT")
+        self.assertEqual(results[-1].status, "WAITING_FOR_RESULT")
 
     def test_run_until_boundary_does_not_retry_ambiguous_mutating_write(self):
         w = World()
