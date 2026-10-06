@@ -28,6 +28,10 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
+from .claude_jules_campaign import (
+    RECOVERABLE_UNKNOWN, TRANSIENT_UNKNOWN, campaign_policy_from_legacy,
+    classify_boundary, validate_campaign_policy,
+)
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
@@ -102,9 +106,13 @@ def task_spec_path(task_id: str) -> str:
 class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
-                 lane_id: str, carrier_guard: Any = None):
+                 lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None):
         self.client, self.refs, self.facts = client, refs, facts
         self.policy = validate_policy(policy)
+        self.campaign_policy = (campaign_policy_from_legacy(self.policy, origin_loop_id)
+                                if campaign_policy is None else validate_campaign_policy(campaign_policy))
+        if self.campaign_policy["max_rounds"] > self.policy["max_rounds"]:
+            raise ValueError("campaign max_rounds exceeds dispatch policy max_rounds")
         self.roadmap = validate_roadmap(roadmap)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
         self.data = self.policy["data_branch"]
@@ -214,12 +222,27 @@ class ClaudeJulesAutoLoop:
         return self._inspect_new_result(latest, spec, now=now)
 
     def run_until_boundary(self, *, now: str, max_steps: int = 12) -> list[StepResult]:
-        """Advance until waiting, stopping, completing or the step budget ends."""
+        """Advance through safe recovery until a real boundary or the step budget ends."""
         results: list[StepResult] = []
+        transient_retries = 0
         for _ in range(max_steps):
             result = self.step(now=now)
+            boundary = classify_boundary(result.status, result.reason)
+            if boundary is not None:
+                result = StepResult(
+                    result.action, result.status, result.reason,
+                    dict(result.details, boundary_class=boundary.kind),
+                )
             results.append(result)
-            if result.action in {"WAIT", "STOP", "COMPLETE"} or result.status in {"PREPARED_NOT_AUTHORIZED", "UNKNOWN"}:
+            if result.action in {"WAIT", "COMPLETE"} or result.status == "PREPARED_NOT_AUTHORIZED":
+                break
+            if boundary is not None and boundary.retry_safe:
+                if boundary.kind == RECOVERABLE_UNKNOWN:
+                    continue
+                if boundary.kind == TRANSIENT_UNKNOWN and transient_retries < self.campaign_policy["max_transient_retries"]:
+                    transient_retries += 1
+                    continue
+            if result.action == "STOP" or result.status == "UNKNOWN":
                 break
         return results
 
@@ -306,7 +329,7 @@ class ClaudeJulesAutoLoop:
 
     def _after_adoption(self, intent: dict[str, Any], *, now: str) -> StepResult:
         next_round = intent["origin_round"] + 1
-        if next_round > self.policy["max_rounds"]:
+        if next_round > self.campaign_policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
@@ -340,7 +363,7 @@ class ClaudeJulesAutoLoop:
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
-        if round_number > self.policy["max_rounds"]:
+        if round_number > self.campaign_policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
         if spec is None:
             try:
