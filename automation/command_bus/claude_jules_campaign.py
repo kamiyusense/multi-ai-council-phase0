@@ -118,3 +118,22 @@ def validate_campaign_envelope(campaign: dict[str, Any], dispatch_policy: dict[s
         if campaign["dispatch_budget"] > live_budget:
             raise ValueError("campaign dispatch_budget exceeds live authorization envelope")
     return campaign
+
+
+def narrow_dispatch_policy(campaign: dict[str, Any], dispatch_policy: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of the dispatch policy narrowed to one campaign.
+
+    This never grants a branch, lane, round, or dispatch that the transport
+    policy did not already allow.  It also protects resumed half-written
+    intents, which otherwise could outlive a later controller-side limit.
+    """
+    campaign = validate_campaign_envelope(campaign, dispatch_policy)
+    narrowed = dict(dispatch_policy)
+    narrowed["max_rounds"] = min(dispatch_policy["max_rounds"], campaign["max_rounds"])
+    auth = dispatch_policy.get("live_dispatch_authorization")
+    budget = campaign["dispatch_budget"]
+    if isinstance(auth, dict) and budget is not None:
+        narrowed["live_dispatch_authorization"] = dict(
+            auth, max_dispatches=min(auth["max_dispatches"], budget)
+        )
+    return narrowed
