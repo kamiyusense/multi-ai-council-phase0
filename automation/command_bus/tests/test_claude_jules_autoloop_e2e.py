@@ -349,6 +349,7 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         legacy = policy(max_rounds=10, live_dispatch_authorization=auth)
         campaign = campaign_policy_from_legacy(legacy, LOOP)
         campaign["max_corrective_rounds_per_task"] = 3
+        campaign["max_consecutive_failures"] = 4
         w = World(pol=legacy, plan=roadmap(task_spec("alpha-helper")), campaign=campaign)
 
         dispatched = w.step()
@@ -373,6 +374,27 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         base_inspections = w.controller().inspections.list_all()
         self.assertEqual(len(base_inspections), 4)
         self.assertEqual(sum(1 for item in base_inspections if item["decision"] == "STOP_HUMAN"), 2)
+
+    def test_deferred_decision_survives_restart_and_does_not_stop_ready_work(self):
+        w = World()
+        controller = w.controller()
+        deferred = controller.defer_decision(
+            decision_id="cache-layout-1",
+            question="Which reversible cache layout should be used?",
+            options=["keep-current", "split-later"],
+            reason="Either shape preserves correctness and authority",
+            selected_safe_default="keep-current",
+            reversibility="fully reversible",
+            affected_scope="local cache only",
+            reconsider_condition="cache becomes a measured bottleneck",
+            now=NOW,
+        )
+        self.assertEqual((deferred.action, deferred.status), ("DEFER_DECISION", "DEFERRED"))
+        saved = w.controller().campaign_state.deferred_decisions()
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0]["payload"]["selected_safe_default"], "keep-current")
+        resumed = w.controller().step(now=NOW)
+        self.assertEqual((resumed.action, resumed.status), ("DISPATCH", "DISPATCHED"))
 
     def test_campaign_provider_budget_is_a_tighter_gate_not_new_authority(self):
         auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
