@@ -104,8 +104,12 @@ def validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
         carrier_claim_validator.lane_display_for(lane)
     if isinstance(policy["expected_pr"], bool) or not isinstance(policy["expected_pr"], int) or policy["expected_pr"] < 1:
         raise ValueError("policy expected_pr must be positive")
-    if isinstance(policy["max_rounds"], bool) or not isinstance(policy["max_rounds"], int) or not 1 <= policy["max_rounds"] <= 6:
-        raise ValueError("policy max_rounds must be 1..6")
+    # This is the hard dispatch envelope, not the campaign's preferred length.
+    # Existing policies remain at six unless explicitly changed; higher finite
+    # values only make longer campaign configs representable.  LIVE dispatches
+    # still require the separate explicit authorization/budget below.
+    if isinstance(policy["max_rounds"], bool) or not isinstance(policy["max_rounds"], int) or not 1 <= policy["max_rounds"] <= 1000:
+        raise ValueError("policy max_rounds must be 1..1000")
     auth = policy["live_dispatch_authorization"]
     if auth is not None:
         if not isinstance(auth, dict) or set(auth) != _AUTH_KEYS:
