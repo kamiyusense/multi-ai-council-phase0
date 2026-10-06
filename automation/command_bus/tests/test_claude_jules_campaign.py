@@ -66,6 +66,12 @@ class CampaignPolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, ">= task_timeout"):
             validate_campaign_policy(campaign(task_timeout_seconds=3600, campaign_timeout_seconds=1800))
 
+    def test_controller_rejects_campaign_identity_mismatch(self):
+        w = World()
+        wrong = campaign(campaign_id="another-campaign")
+        with self.assertRaisesRegex(ValueError, "campaign_id must match origin_loop_id"):
+            CampaignRoundIntegrationTests.controller(w, wrong)
+
 
 class CampaignRoundIntegrationTests(unittest.TestCase):
     @staticmethod
@@ -124,6 +130,25 @@ class CampaignRoundIntegrationTests(unittest.TestCase):
         stopped = self.step(w, camp)
         self.assertEqual((stopped.action, stopped.status), ("STOP", "MAX_ROUNDS"))
         self.assertEqual(len(w.commands()), 3)
+
+    def test_campaign_dispatch_budget_narrows_live_authorization(self):
+        specs = [task_spec(f"budget-task-{n}", f"automation/command_bus/budget_task_{n}.py",
+                           f"automation/command_bus/tests/test_budget_task_{n}.py") for n in range(1, 4)]
+        base = policy()
+        auth = dict(base["live_dispatch_authorization"], max_dispatches=6)
+        w = World(pol=policy(max_rounds=6, live_dispatch_authorization=auth), plan=roadmap(*specs))
+        camp = campaign(max_rounds=6, dispatch_budget=2)
+
+        for _ in range(2):
+            dispatched = self.step(w, camp)
+            self.assertEqual(dispatched.status, "DISPATCHED", dispatched.reason)
+            w.deliver(w.jules.run(dispatched.details["command_id"]))
+            self.assertEqual(self.step(w, camp).status, "PASS")
+            self.assertEqual(self.step(w, camp).status, "ADOPTED")
+
+        stopped = self.step(w, camp)
+        self.assertEqual((stopped.action, stopped.status), ("STOP", "CAMPAIGN_DISPATCH_BUDGET"))
+        self.assertEqual(len(w.commands()), 2)
 
 
 if __name__ == "__main__":
