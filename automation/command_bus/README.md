@@ -305,3 +305,12 @@ replan semantics, subscription-only gating, serializable campaign/task state,
 corrective task identities, blocker isolation, duplicate-result suppression and
 guarded restart reclaim. This lets the long-running controller grow without
 turning proof-only one-turn/retry-zero limits into permanent architecture.
+
+
+### Durable autonomous campaign checkpoints
+
+`symphony_campaign_store.py` persists Track-B campaign state as create-only,
+hash-linked checkpoints on a non-default branch. A stale controller must present
+the latest revision before appending. Ambiguous creates are never resent; exact
+readback can resolve success, and a fresh controller can later restore a
+checkpoint whose original response was unverifiable.

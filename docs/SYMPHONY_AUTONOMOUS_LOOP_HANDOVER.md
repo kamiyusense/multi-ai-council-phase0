@@ -179,6 +179,16 @@ identity instead of for the entire runner lifetime. Repeating the same strict
 task remains blocked; a distinct task can use a separate proof budget. Durable
 claims/results still prevent cross-session replay.
 
+
+
+### Durable campaign checkpoint store
+
+`symphony_campaign_store.py` now provides create-only, hash-linked campaign
+checkpoints with stale-revision fencing and ambiguous-write readback. A fresh
+controller can restore the latest durable `CampaignState` and retain duplicate
+result IDs, task status, blockers, counters and generation. The store never
+updates default branch and does not start a provider/model.
+
 ## Stop / human boundary
 
 Stop for genuinely human-required operations such as merge, default-branch

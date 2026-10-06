@@ -291,3 +291,21 @@ Recoverable UNKNOWN is held as `STALE` until an explicit safe replan. Failed
 corrective attempts become `SUPERSEDED` when a later corrective is created, so
 a successful later repair can genuinely complete the campaign instead of being
 held open by historical failed attempts.
+
+
+## 16. Durable campaign restore is now append-only
+
+Track B now has a GitHub-contents campaign store for session-independent restore.
+Each checkpoint is a create-only revision containing the serialized campaign
+state, its SHA-256 state digest, and the previous checkpoint digest. Restore
+validates contiguous revisions, the hash chain, campaign identity and
+non-decreasing generation.
+
+Writers provide the revision they restored from. A stale controller gets
+`CONFLICT` instead of overwriting newer state. An ambiguous create is read back
+once and never resent. If readback is unavailable, the result remains
+`AMBIGUOUS`; a future controller can restore the durable checkpoint if the
+create actually landed.
+
+This is controller-state persistence only. It performs no provider/model work
+and does not authorize LIVE execution.
