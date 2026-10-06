@@ -38,6 +38,7 @@ from .claude_jules_dispatch import (
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
     validate_policy,
 )
+from .claude_jules_handover import append_decision, decide_auto_resume
 from .claude_jules_inspection import InspectionStore, inspect_result, validate_small_repair
 from .claude_jules_result_event import ResultEventInbox, verify_result_lineage
 from .claude_jules_task_prompt import (
@@ -158,11 +159,53 @@ class ClaudeJulesAutoLoop:
             return None
         return read.record.get("generation")
 
+    def _try_owner_resume(self, *, now: str, fence: Any) -> StepResult | None:
+        if fence.status != "BLOCKED" or "owner lease expired" not in fence.reason:
+            return None
+        read_events = getattr(self.owner_reader, "read_events", None)
+        if read_events is None:
+            return StepResult("STOP", "UNKNOWN", "owner backend cannot read full chain for safe resume")
+        try:
+            chain = read_events(self.origin_loop_id)
+            intents = self._intents()
+            half_written = sum(
+                1 for intent in intents
+                if self._read_json(dispatch_receipt_path(intent["carrier_request"]["command_id"])) is None
+            )
+            targets = self.policy["allowed_target_branches"]
+            if len(targets) != 1:
+                return StepResult("STOP", "BLOCKED", "safe owner resume requires exactly one target branch")
+            target_head = self.refs.get_branch_head(targets[0])
+            if target_head is None:
+                return StepResult("STOP", "UNKNOWN", "target head unavailable during owner resume")
+            decision = decide_auto_resume(
+                owner_chain=chain, auto_holder=self.policy["holder_id"],
+                half_written_intents=half_written, target_head=target_head, now=now,
+            )
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError, RuntimeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"owner resume evidence unverifiable: {exc}")
+        if decision.status != "ELIGIBLE":
+            return StepResult("STOP", decision.status, f"owner resume: {decision.reason}")
+        appended = append_decision(self.owner_reader, decision)
+        if appended.status != "APPENDED":
+            return StepResult("STOP", appended.status, f"owner resume append: {appended.reason}")
+        return StepResult(
+            "RECOVER_OWNER", "RECOVERED", appended.reason,
+            {"generation": appended.event["generation"] if appended.event else None},
+        )
+
     # -- one step -------------------------------------------------------------
     def step(self, *, now: str) -> StepResult:
         fence = self.dispatcher.controller_fence(self.origin_loop_id, now)
         if fence.status != "PASS":
-            return StepResult("STOP", fence.status, f"owner fence: {fence.reason}")
+            recovery = self._try_owner_resume(now=now, fence=fence)
+            if recovery is None:
+                return StepResult("STOP", fence.status, f"owner fence: {fence.reason}")
+            if recovery.status != "RECOVERED":
+                return recovery
+            fence = self.dispatcher.controller_fence(self.origin_loop_id, now)
+            if fence.status != "PASS":
+                return StepResult("STOP", fence.status, f"owner fence after resume: {fence.reason}")
         try:
             intents = self._intents()
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
