@@ -54,13 +54,18 @@ class EvidenceRecoveryStoreTests(unittest.TestCase):
         self.assertFalse(first.record["mutating_action_retried"])
         self.assertEqual(validate_recovery_record(first.record), first.record)
 
-        # The identical immutable record is recovered, not written a second time.
-        again = store.record_failure(
+        second = store.record_failure(
             command_id="relay-dev-loop-777-recovery", candidate_head=head,
             missing=["test_evidence"], reason="runner temporarily unavailable",
             observed_at=NOW, max_retries=2,
         )
-        self.assertEqual(again.status, "UNKNOWN")  # same attempt path, different semantic retry would be ambiguous
+        self.assertEqual((second.status, second.record["attempt"]), ("CREATED", 2))
+        exhausted = store.record_failure(
+            command_id="relay-dev-loop-777-recovery", candidate_head=head,
+            missing=["test_evidence"], reason="runner temporarily unavailable",
+            observed_at=NOW, max_retries=2,
+        )
+        self.assertEqual(exhausted.status, "EXHAUSTED")
 
     def test_tampered_recovery_record_is_rejected(self):
         w = World(plan=roadmap(task_spec("alpha-helper")))
