@@ -11,6 +11,7 @@ import unittest
 from datetime import datetime
 
 from automation.command_bus.claude_jules_autoloop import ClaudeJulesAutoLoop
+from automation.command_bus.claude_jules_campaign import campaign_policy_from_legacy
 from automation.command_bus.claude_jules_dispatch import dispatch_receipt_path
 from automation.command_bus.claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
 from automation.command_bus.jules_carrier_current import jules_api_request as carrier_request
@@ -26,12 +27,13 @@ CLAIMS = "automation/command_bus/loop_id_claims/"
 
 
 class World:
-    def __init__(self, *, pol=None, plan=None, owner=None):
+    def __init__(self, *, pol=None, plan=None, owner=None, campaign=None):
         self.github = FakeGitHub()
         self.jules = FakeJules(self.github)
         self.facts = FakeFacts(self.github, self.jules)
         seed_owner(self.github, *(owner or [owner_event()]))
         self.policy = pol or policy()
+        self.campaign = campaign
         self.roadmap = plan or roadmap(task_spec("alpha-helper"),
                                        task_spec("beta-helper", "automation/command_bus/beta.py",
                                                  "automation/command_bus/tests/test_beta.py"))
@@ -42,7 +44,8 @@ class World:
         return ClaudeJulesAutoLoop(
             client=self.github, refs=self.github, policy=self.policy,
             owner_reader=LoopOwnerGitHubBackend(self.github, branch=DATA), roadmap=self.roadmap,
-            facts=self.facts, origin_loop_id=LOOP, lane_id="J-BLUE")
+            facts=self.facts, origin_loop_id=LOOP, lane_id="J-BLUE",
+            campaign_policy=self.campaign)
 
     def step(self, now=NOW):
         return self.controller().step(now=now)
@@ -100,6 +103,31 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual((done.action, done.status), ("COMPLETE", "COMPLETE"))
         self.assertEqual(len(w.commands()), 2)
         self.assertNotIn(("ff", "main", w.github.branches[TARGET]), w.github.writes)
+
+    def test_explicit_campaign_policy_can_run_past_legacy_six_round_cap(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=6, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["max_rounds"] = 8
+        specs = [
+            task_spec(
+                f"task-{index}",
+                f"automation/command_bus/task_{index}.py",
+                f"automation/command_bus/tests/test_task_{index}.py",
+            )
+            for index in range(1, 9)
+        ]
+        w = World(pol=legacy, plan=roadmap(*specs), campaign=campaign)
+        for index in range(1, 9):
+            dispatched = w.step()
+            self.assertEqual(dispatched.status, "DISPATCHED", (index, dispatched.reason))
+            command_id = dispatched.details["command_id"]
+            w.deliver(w.jules.run(command_id))
+            self.assertEqual(w.step().status, "PASS")
+            self.assertEqual(w.step().status, "ADOPTED")
+        boundary = w.step()
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "MAX_ROUNDS"))
+        self.assertEqual(len(w.commands()), 8)
 
     def test_duplicate_and_redelivered_events_are_processed_once(self):
         w = World()
