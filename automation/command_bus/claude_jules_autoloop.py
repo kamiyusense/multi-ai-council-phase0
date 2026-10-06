@@ -118,7 +118,9 @@ class ClaudeJulesAutoLoop:
         )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
-        self.adoption = SafeAdoption(client=client, refs=refs, policy=policy)
+        self.adoption = SafeAdoption(
+            client=client, refs=refs, policy=policy, max_round_cap=MAX_CONFIGURED_ROUNDS,
+        )
 
     # -- durable reads ------------------------------------------------------
     def _read_json(self, path: str, branch: str | None = None) -> dict[str, Any] | None:
