@@ -37,6 +37,7 @@ from .claude_jules_dispatch import (
     validate_policy,
 )
 from .claude_jules_inspection import InspectionStore, inspect_result, validate_small_repair
+from .claude_jules_recovery import EvidenceRecoveryStore, HARD_UNKNOWN, TRANSIENT_UNKNOWN
 from .claude_jules_result_event import ResultEventInbox, verify_result_lineage
 from .claude_jules_task_prompt import (
     corrective_task_spec, path_policy, render_task_prompt, validate_task_spec,
@@ -123,6 +124,7 @@ class ClaudeJulesAutoLoop:
         )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
+        self.recovery = EvidenceRecoveryStore(client, data_branch=self.data)
         self.adoption = SafeAdoption(
             client=client, refs=refs, policy=policy, max_round_cap=MAX_CONFIGURED_ROUNDS,
         )
@@ -285,20 +287,90 @@ class ClaudeJulesAutoLoop:
     def _inspect(self, intent: dict[str, Any], spec: dict[str, Any], lineage: dict[str, Any], head: str,
                  *, now: str, repair_of: str | None) -> StepResult:
         request = intent["carrier_request"]
-        compare = self.facts.compare(request["expected_target_head"], head)
-        tree = self.facts.commit_tree(head)
+        compare = None
+        tree = None
+        test_evidence = None
+        changed_test_sources = None
+        observations: dict[str, Any] = {}
+        findings: list[dict[str, Any]] = []
+        missing: list[str] = []
+        errors: list[str] = []
+
+        try:
+            compare = self.facts.compare(request["expected_target_head"], head)
+        except Exception as exc:
+            errors.append(f"compare: {exc}")
+        if not isinstance(compare, dict):
+            missing.append("compare")
+
+        try:
+            tree = self.facts.commit_tree(head)
+        except Exception as exc:
+            errors.append(f"candidate_tree: {exc}")
+        if not isinstance(tree, str) or not re.fullmatch(r"[0-9a-f]{40}", tree):
+            missing.append("candidate_tree")
+
         changed = [f.get("path") for f in (compare or {}).get("files", []) if isinstance(f, dict)]
         tests = [p for p in changed if isinstance(p, str) and p.endswith(".py") and "/tests/" in f"/{p}"]
-        observations, findings = self.facts.review(intent, spec, head)
+
+        try:
+            observations, findings = self.facts.review(intent, spec, head)
+        except Exception as exc:
+            errors.append(f"review: {exc}")
+            missing.append("review")
+
+        try:
+            test_evidence = self.facts.run_tests(head)
+        except Exception as exc:
+            errors.append(f"test_evidence: {exc}")
+        if not isinstance(test_evidence, dict):
+            missing.append("test_evidence")
+
+        try:
+            changed_test_sources = self.facts.test_sources(head, tests)
+        except Exception as exc:
+            errors.append(f"test_sources: {exc}")
+        if (not isinstance(changed_test_sources, dict)
+                or any(path not in changed_test_sources for path in tests)):
+            missing.append("test_sources")
+
+        missing = sorted(set(missing))
+        retries = self.campaign_policy["max_transient_retries"]
+        if missing and retries > 0:
+            reason = "; ".join(errors) if errors else f"evidence unavailable: {', '.join(missing)}"
+            try:
+                recovery = self.recovery.record_failure(
+                    command_id=request["command_id"], candidate_head=head, missing=missing,
+                    reason=reason, observed_at=now, max_retries=retries,
+                )
+            except Exception as exc:
+                return StepResult("STOP", HARD_UNKNOWN, f"recovery ledger unverifiable: {exc}")
+            if recovery.status in {"CREATED", "RECOVERED"}:
+                return StepResult(
+                    "RECOVER", TRANSIENT_UNKNOWN,
+                    f"{reason}; bounded evidence reacquisition scheduled",
+                    {"command_id": request["command_id"], "head": head,
+                     "attempt": recovery.record["attempt"], "retry_limit": retries, "missing": missing},
+                )
+            if recovery.status != "EXHAUSTED":
+                return StepResult("STOP", HARD_UNKNOWN, recovery.reason)
+            # Retry budget is exhausted. Fall through to the unchanged
+            # inspection contract with the incomplete evidence. It will persist
+            # the terminal UNKNOWN without overwriting any earlier record.
+
+        try:
+            prior_inspections = self.inspections.list_all()
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", HARD_UNKNOWN, f"durable inspection records unverifiable: {exc}")
         outcome = inspect_result(
             intent=intent, task_spec=spec, lineage=lineage, compare=compare, candidate_tree=tree,
-            test_evidence=self.facts.run_tests(head), changed_test_sources=self.facts.test_sources(head, tests),
+            test_evidence=test_evidence, changed_test_sources=changed_test_sources,
             acceptance_observations=observations, reviewer_findings=findings,
-            prior_inspections=self.inspections.list_all(), inspected_at=now, repair_of=repair_of,
+            prior_inspections=prior_inspections, inspected_at=now, repair_of=repair_of,
         )
         saved = self.inspections.persist(outcome.record)
         if saved not in {"CREATED", "RECOVERED"}:
-            return StepResult("STOP", "UNKNOWN", f"inspection record {saved}")
+            return StepResult("STOP", HARD_UNKNOWN, f"inspection record {saved}")
         return StepResult("INSPECT", outcome.verdict, outcome.record["reason"],
                           {"decision": outcome.decision, "head": head})
 
