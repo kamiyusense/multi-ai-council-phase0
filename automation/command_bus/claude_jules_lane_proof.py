@@ -42,6 +42,15 @@ PROOF_TASK_ID = "claude-jules-stable-lane-proof-1"
 LIMITS = {"jules_post": 1, "jules_get": 1, "live_budget_slots": 1, "retry": 0}
 LOOP_A_SLOTS_USED_BEFORE = 4  # Loops 128-131, ledger on claude/claude-jules-autoloop-data (never deleted)
 FORBIDDEN_LOOP_NUMBERS = (128, 129, 130, 131)  # spent; also never a stable id
+PROOF_TASK_ID_2 = "claude-jules-stable-lane-proof-2"
+# The ONLY proof runs this module knows. Each is bound to the exact ledger count it expects (fail closed on any other
+# count), its own spent-loop list, and its own evidence directory. Run 1 is spent (attempt marker + UNKNOWN receipt).
+RUN_PROFILES = {
+    PROOF_TASK_ID: {"slots_used_before": LOOP_A_SLOTS_USED_BEFORE, "forbidden_loop_numbers": FORBIDDEN_LOOP_NUMBERS},
+    # Slot 5 = Loop 137 (proof 1), slot 6 = Loop 139 (a-003, Jules PR #322). Loop 138 was Blue's extra slot.
+    PROOF_TASK_ID_2: {"slots_used_before": 6,
+                      "forbidden_loop_numbers": (128, 129, 130, 131, 137, 138, 139)},
+}
 # Chat -> Jules approval run 37155730052 and every identity-proof run can never approve this lane.
 FORBIDDEN_APPROVAL_RUN_IDS = KNOWN_AUTHORITY_RUN_IDS | frozenset({"37155730052"})
 ACTIVE_RAW_STATES = frozenset({"QUEUED", "PLANNING", "IN_PROGRESS", "RUNNING"})
@@ -80,15 +89,19 @@ def build_proof_plan(
     *, origin_loop_id: str, origin_generation: int, repository: str, default_branch: str, target_branch: str,
     target_pr: int, target_head: str, target_tree: str, allowed_path: str, allowed_content: str, expires_at: str,
     forbidden_session_ids: list[str], live_authorization: dict[str, Any] | None = None,
+    proof_task_id: str = PROOF_TASK_ID,
 ) -> dict[str, Any]:
+    profile = RUN_PROFILES.get(proof_task_id)
+    if profile is None:
+        raise ProofError("PLAN_UNKNOWN_RUN")
     plan = {
         "schema_version": 1, "plan_kind": PLAN_KIND, "lane_id": LANE_ID, "id_owner": ID_OWNER,
-        "proof_task_id": PROOF_TASK_ID, "origin_loop_id": origin_loop_id, "origin_generation": origin_generation,
+        "proof_task_id": proof_task_id, "origin_loop_id": origin_loop_id, "origin_generation": origin_generation,
         "repository": repository, "default_branch": default_branch, "target_branch": target_branch,
         "target_pr": target_pr, "target_head": target_head, "target_tree": target_tree,
         "allowed_path": allowed_path, "allowed_content": allowed_content, "limits": dict(LIMITS),
-        "loop_a_slots_used_before": LOOP_A_SLOTS_USED_BEFORE, "forbidden_session_ids": sorted(forbidden_session_ids),
-        "forbidden_loop_numbers": list(FORBIDDEN_LOOP_NUMBERS), "retry": 0, "fallback": "disabled",
+        "loop_a_slots_used_before": profile["slots_used_before"], "forbidden_session_ids": sorted(forbidden_session_ids),
+        "forbidden_loop_numbers": list(profile["forbidden_loop_numbers"]), "retry": 0, "fallback": "disabled",
         "expires_at": expires_at, "live_authorization": live_authorization,
     }
     plan["plan_sha256"] = _digest(plan, "plan_sha256")
@@ -102,8 +115,11 @@ def validate_proof_plan(plan: Any, *, registry: dict[str, Any] | None, now: str 
         raise ProofError("PLAN_SHAPE")
     if plan["schema_version"] != 1 or plan["plan_kind"] != PLAN_KIND:
         raise ProofError("PLAN_KIND")
-    if plan["lane_id"] != LANE_ID or plan["id_owner"] != ID_OWNER or plan["proof_task_id"] != PROOF_TASK_ID:
+    if plan["lane_id"] != LANE_ID or plan["id_owner"] != ID_OWNER:
         raise ProofError("PLAN_WRONG_LANE")
+    profile = RUN_PROFILES.get(plan["proof_task_id"])
+    if profile is None:
+        raise ProofError("PLAN_UNKNOWN_RUN")
     if plan["plan_sha256"] != _digest(plan, "plan_sha256"):
         raise ProofError("PLAN_DIGEST")
     origin = plan["origin_loop_id"]
@@ -113,9 +129,9 @@ def validate_proof_plan(plan: Any, *, registry: dict[str, Any] | None, now: str 
         raise ProofError("PLAN_ORIGIN_GENERATION")
     if plan["limits"] != LIMITS or (plan["retry"], plan["fallback"]) != (0, "disabled"):
         raise ProofError("PLAN_LIMITS")
-    if plan["loop_a_slots_used_before"] != LOOP_A_SLOTS_USED_BEFORE or LOOP_A_SLOTS_USED_BEFORE + 1 > LOOP_A_LIVE_BUDGET:
+    if plan["loop_a_slots_used_before"] != profile["slots_used_before"] or profile["slots_used_before"] + 1 > LOOP_A_LIVE_BUDGET:
         raise ProofError("PLAN_BUDGET")
-    if plan["forbidden_loop_numbers"] != list(FORBIDDEN_LOOP_NUMBERS):
+    if plan["forbidden_loop_numbers"] != list(profile["forbidden_loop_numbers"]):
         raise ProofError("PLAN_FORBIDDEN_LOOPS")
     if not isinstance(plan["forbidden_session_ids"], list) or not all(
             isinstance(s, str) and _DIGITS.fullmatch(s) for s in plan["forbidden_session_ids"]):
@@ -167,7 +183,7 @@ def runtime_facts_from_dispatch(
     if (receipt.get("retry_count"), receipt.get("fallback_used")) != (0, False):
         raise ProofError("DISPATCH_RECEIPT_RETRY_OR_FALLBACK")
     loop_number = receipt.get("loop_id")
-    if str(loop_number).rsplit("-", 1)[-1].isdigit() and int(str(loop_number).rsplit("-", 1)[-1]) in FORBIDDEN_LOOP_NUMBERS:
+    if str(loop_number).rsplit("-", 1)[-1].isdigit() and int(str(loop_number).rsplit("-", 1)[-1]) in plan["forbidden_loop_numbers"]:
         raise ProofError("DISPATCH_RECEIPT_SPENT_LOOP")
     session_id = session.get("session_id")
     if not isinstance(session_id, str) or not _DIGITS.fullmatch(session_id) or session_id in plan["forbidden_session_ids"]:
@@ -199,7 +215,7 @@ def runtime_facts_from_dispatch(
                     "correlation_id": correlation, "state": "DONE", "executed_once": True, "retry_count": 0,
                     "fallback_used": False, "evidence_refs": [evidence_ref]},
         "evidence": {"provider_raw_state": raw, "result_state": "NONE", "dispatch_intent_sha256": receipt["intent_sha256"],
-                     "plan_sha256": plan["plan_sha256"], "proof_task_id": PROOF_TASK_ID,
+                     "plan_sha256": plan["plan_sha256"], "proof_task_id": plan["proof_task_id"],
                      "create_time": session.get("create_time"), "update_time": session.get("update_time")},
         "provider_observation": {
             "schema_version": 1, "observation_id": "provider-observation-1", "verified": True, "loop_id": LANE_ID,
@@ -224,7 +240,7 @@ def build_terminal_receipt(plan: dict[str, Any], *, status: str, code: str, expo
     if status == "COMPLETE" and (export_summary is None or lane_registration != "READY"):
         raise ProofError("COMPLETE_NEEDS_READY_REGISTRATION")
     receipt = {
-        "schema_version": 1, "receipt_kind": RECEIPT_KIND, "lane_id": LANE_ID, "proof_task_id": PROOF_TASK_ID,
+        "schema_version": 1, "receipt_kind": RECEIPT_KIND, "lane_id": LANE_ID, "proof_task_id": plan["proof_task_id"],
         "plan_sha256": plan["plan_sha256"], "status": status, "code": code, "lane_registration": lane_registration,
         "evidence_sha256": (export_summary or {}).get("evidence_sha256"), "counters": dict(counters),
         "rerun_allowed": False, "retry": 0, "fallback": "disabled",
@@ -246,7 +262,7 @@ def build_adoption_candidate(plan: dict[str, Any], receipt: dict[str, Any], *, c
     except ApprovalError as exc:
         raise ProofError("CANDIDATE_REGISTRY_DIFF", exc.code) from None
     candidate = {
-        "schema_version": 1, "candidate_kind": CANDIDATE_KIND, "lane_id": LANE_ID, "proof_task_id": PROOF_TASK_ID,
+        "schema_version": 1, "candidate_kind": CANDIDATE_KIND, "lane_id": LANE_ID, "proof_task_id": plan["proof_task_id"],
         "transition": "PLACEHOLDER->DURABLE", "plan_sha256": plan["plan_sha256"],
         "terminal_receipt_sha256": receipt["receipt_payload_sha256"], "evidence_sha256": receipt["evidence_sha256"],
         "current_registry_sha256": registry_digest(current_registry), "proposed_registry_sha256": registry_digest(proposed_registry),
@@ -269,7 +285,7 @@ def prepare_adoption_approval(candidate: dict[str, Any], *, approved_by_actor_id
     """Build (never issue) the approval record a human-run issuer would commit for this lane."""
     approval = {
         "schema_version": 1, "approval_kind": APPROVAL_KIND, "approval_id": f"adopt-durable-{LANE_ID}-{approval_run_id}",
-        "lane_id": LANE_ID, "proof_task_id": PROOF_TASK_ID, "transition": candidate["transition"],
+        "lane_id": LANE_ID, "proof_task_id": candidate["proof_task_id"], "transition": candidate["transition"],
         "candidate_sha256": candidate["candidate_sha256"], "terminal_receipt_sha256": candidate["terminal_receipt_sha256"],
         "evidence_sha256": candidate["evidence_sha256"], "current_registry_sha256": candidate["current_registry_sha256"],
         "proposed_registry_sha256": candidate["proposed_registry_sha256"], "approved_by_actor_id": approved_by_actor_id,
@@ -288,7 +304,8 @@ def validate_adoption_approval(
         raise ProofError("APPROVAL_SHAPE")
     if approval["schema_version"] != 1 or approval["approval_kind"] != APPROVAL_KIND:
         raise ProofError("APPROVAL_KIND")
-    if approval["lane_id"] != LANE_ID or approval["proof_task_id"] != PROOF_TASK_ID or candidate.get("lane_id") != LANE_ID:
+    if approval["lane_id"] != LANE_ID or approval["proof_task_id"] != candidate.get("proof_task_id") or approval["proof_task_id"] not in RUN_PROFILES \
+            or candidate.get("lane_id") != LANE_ID:
         raise ProofError("APPROVAL_WRONG_LANE")
     if approval["decision"] != "ADOPT_DURABLE" or approval["transition"] != "PLACEHOLDER->DURABLE" \
             or (approval["retry"], approval["fallback"]) != (0, "disabled") or approval["approval_run_attempt"] != 1:
@@ -328,6 +345,14 @@ def validate_adoption_approval(
 DATA_DIR = "docs/evidence/claude-jules-stable-lane-proof-1"
 ATTEMPT_MARKER_PATH = f"{DATA_DIR}/attempt-marker.json"
 TERMINAL_RECEIPT_PATH = f"{DATA_DIR}/terminal-receipt.json"
+
+
+def evidence_paths(proof_task_id: str) -> tuple[str, str]:
+    """(attempt marker, terminal receipt) of one known run; every run has its own once-only pair."""
+    if proof_task_id not in RUN_PROFILES:
+        raise ProofError("PLAN_UNKNOWN_RUN")
+    directory = f"docs/evidence/{proof_task_id}"
+    return f"{directory}/attempt-marker.json", f"{directory}/terminal-receipt.json"
 
 
 class ProofPorts(Protocol):
@@ -383,20 +408,21 @@ def run_stable_lane_proof(plan: dict[str, Any], *, current_registry: dict[str, A
         check_single_lane_diff(current_registry, proposed_registry, LANE_ID)
     except (ProofError, ApprovalError) as exc:
         return ProofRun("STOPPED", getattr(exc, "code", "PLAN_REFUSED"), None, None, counters.as_dict())
+    marker_path, receipt_path = evidence_paths(plan["proof_task_id"])
 
     def finish(status: str, code: str, summary: dict[str, Any] | None = None, registration: str = "NOT_WIRED") -> ProofRun:
         receipt = build_terminal_receipt(plan, status=status, code=code, export_summary=summary,
                                          lane_registration=registration, counters=counters.as_dict())
-        ports.create_once(TERMINAL_RECEIPT_PATH, receipt)  # a failed proof is terminal too: no rerun
+        ports.create_once(receipt_path, receipt)  # a failed proof is terminal too: no rerun
         candidate = None
         if status == "COMPLETE":
             candidate = build_adoption_candidate(plan, receipt, current_registry=current_registry, proposed_registry=proposed_registry)
         return ProofRun(status, code, receipt, candidate, counters.as_dict())
 
     marker = {"schema_version": 1, "marker_kind": "CLAUDE_JULES_STABLE_LANE_PROOF_ATTEMPT_V1", "lane_id": LANE_ID,
-              "proof_task_id": PROOF_TASK_ID, "plan_sha256": plan["plan_sha256"], "attempted_at": now, "rerun_allowed": False}
+              "proof_task_id": plan["proof_task_id"], "plan_sha256": plan["plan_sha256"], "attempted_at": now, "rerun_allowed": False}
     try:
-        if ports.create_once(ATTEMPT_MARKER_PATH, marker) != "CREATED":
+        if ports.create_once(marker_path, marker) != "CREATED":
             return ProofRun("STOPPED", "ALREADY_ATTEMPTED", None, None, counters.as_dict())  # no dispatch, no read
     except Exception:
         return ProofRun("STOPPED", "ATTEMPT_MARKER_UNVERIFIED", None, None, counters.as_dict())

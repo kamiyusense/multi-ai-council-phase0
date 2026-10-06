@@ -19,7 +19,7 @@ from typing import Any
 from .claude_jules_autoloop import ClaudeJulesAutoLoop, StepResult
 from .claude_jules_dispatch import validate_policy
 from .claude_jules_lane_proof import (
-    LANE_ID, LOOP_A_SLOTS_USED_BEFORE, ProofError, build_proof_plan, run_stable_lane_proof,
+    LANE_ID, PROOF_TASK_ID, ProofError, build_proof_plan, run_stable_lane_proof,
     validate_proof_plan,
 )
 from .claude_jules_lane_proof_launcher import build_live_proof_ports
@@ -31,6 +31,7 @@ from .loop_owner_backend import LoopOwnerGitHubBackend
 # Sessions of every earlier LIVE run: never read or reused by this proof.
 OLD_SESSION_IDS = [
     "301196275118188780", "5943440322658150300", "11944164406087664763", "569271609782168660", "7218641455365522473",
+    "17540857576922617403",  # proof 1 (Loop 137): terminal UNKNOWN, never read again
 ]
 REGISTRY_PATH = "automation/command_bus/config/control_tower_registry.json"
 CARRIER_WAIT_SECONDS = 15 * 60
@@ -92,7 +93,7 @@ def command_plan(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
         repository=policy["target_repo"], default_branch=policy["default_branch"], target_branch=target,
         target_pr=policy["expected_pr"], target_head=head, target_tree=tree, allowed_path=args.allowed_path,
         allowed_content=args.allowed_content, expires_at=_zulu_plus(now, timedelta(minutes=args.valid_minutes)),
-        forbidden_session_ids=OLD_SESSION_IDS, live_authorization=authorization)
+        forbidden_session_ids=OLD_SESSION_IDS, live_authorization=authorization, proof_task_id=args.proof_task_id)
 
 
 def _registries(repo_dir: str) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -119,8 +120,9 @@ def command_run(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
         raise ProofError("JULES_KEY_MISSING")
     git, rest = GitLiveClient(args.repo_dir, message_trailer=args.trailer), GitHubRestReader(policy["target_repo"])
     used = len(LiveBudgetLedger(git, data_branch=policy["data_branch"]).slots())
-    if used != LOOP_A_SLOTS_USED_BEFORE:
-        raise ProofError("BUDGET_COUNT_UNEXPECTED", f"{used} slots used, expected {LOOP_A_SLOTS_USED_BEFORE}")
+    # The count is bound by the validated plan (a known run profile), never trusted from the CLI: fail closed on any other.
+    if used != plan["loop_a_slots_used_before"]:
+        raise ProofError("BUDGET_COUNT_UNEXPECTED", f"{used} slots used, expected {plan['loop_a_slots_used_before']}")
     scratch = os.path.join(tempfile.gettempdir(), "claude-jules-lane-proof")
     loop = PrepareOnlyLoop(
         client=git, refs=git, policy=policy, owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
@@ -158,6 +160,7 @@ def main(argv: list[str] | None = None, clock: Any | None = None) -> int:
     parser.add_argument("--plan")
     parser.add_argument("--origin-loop-id")
     parser.add_argument("--origin-generation", type=int)
+    parser.add_argument("--proof-task-id", default=PROOF_TASK_ID)
     parser.add_argument("--lane-id")
     parser.add_argument("--allowed-path", default="docs/CLAUDE_JULES_STABLE_LANE_PROOF_NOTE.md")
     parser.add_argument("--allowed-content", default="docs-only live-proof marker note")
