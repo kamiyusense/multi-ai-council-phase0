@@ -28,7 +28,9 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
-from .claude_jules_campaign import MAX_CONFIGURED_ROUNDS, legacy_campaign_policy, validate_campaign_envelope
+from .claude_jules_campaign import (
+    MAX_CONFIGURED_ROUNDS, legacy_campaign_policy, narrow_dispatch_policy, validate_campaign_envelope,
+)
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
@@ -110,10 +112,13 @@ class ClaudeJulesAutoLoop:
         if campaign_policy is None:
             campaign_policy = legacy_campaign_policy(self.policy, campaign_id=origin_loop_id)
         self.campaign_policy = validate_campaign_envelope(campaign_policy, self.policy)
+        if self.campaign_policy["campaign_id"] != origin_loop_id:
+            raise ValueError("campaign_id must match origin_loop_id")
+        effective_policy = narrow_dispatch_policy(self.campaign_policy, self.policy)
         self.roadmap = validate_roadmap(roadmap)
         self.data = self.policy["data_branch"]
         self.dispatcher = ClaudeJulesDispatcher(
-            client=client, refs=refs, policy=policy, owner_reader=owner_reader,
+            client=client, refs=refs, policy=effective_policy, owner_reader=owner_reader,
             carrier_guard=carrier_guard, max_round_cap=MAX_CONFIGURED_ROUNDS,
         )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
@@ -350,6 +355,9 @@ class ClaudeJulesAutoLoop:
                            spec: dict[str, Any] | None) -> StepResult:
         if round_number > self.campaign_policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
+        budget = self.campaign_policy["dispatch_budget"]
+        if budget is not None and self._dispatches_used() >= budget:
+            return StepResult("STOP", "CAMPAIGN_DISPATCH_BUDGET", "campaign dispatch budget reached")
         if spec is None:
             try:
                 spec = self.next_roadmap_task()
