@@ -289,7 +289,7 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual(fix["expected_target_head"], request["expected_target_head"])
         self.assertEqual(len(w.commands()), 2)
 
-    def test_repeated_failures_stop_for_human(self):
+    def test_repeated_failures_isolate_task_then_stop_only_when_dependencies_exhaust_safe_work(self):
         w = World()
         w.step()
         for _ in range(2):
@@ -305,9 +305,47 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [{"category": "semantic_gap", "detail": "x"}]
         w.deliver(payload)
         self.assertEqual(w.step().details["decision"], "STOP_HUMAN")
+        blocked = w.step()
+        self.assertEqual((blocked.action, blocked.status), ("BLOCK_TASK", "TASK_BLOCKED"))
         stop = w.step()
-        self.assertEqual(stop.action, "STOP")
+        self.assertEqual((stop.action, stop.status), ("STOP", "TASK_BLOCKED"))
+        self.assertIn("beta-helper", stop.details["remaining_tasks"])
         self.assertEqual(len(w.commands()), 3)
+
+    def test_blocked_task_does_not_stop_independent_ready_task(self):
+        plan = {
+            "schema_version": 1,
+            "profile": "CLAUDE_AUTO_JULES_ROADMAP_V1",
+            "roadmap_id": "independent",
+            "tasks": [
+                {"task_spec": task_spec("alpha-helper"), "depends_on": []},
+                {"task_spec": task_spec(
+                    "beta-helper", "automation/command_bus/beta.py",
+                    "automation/command_bus/tests/test_beta.py"), "depends_on": []},
+            ],
+        }
+        w = World(plan=plan)
+        w.step()
+        for _ in range(2):
+            request = w.command(sorted(w.commands())[-1])
+            payload = w.jules.run(request["command_id"])
+            w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [
+                {"category": "semantic_gap", "detail": "still wrong"}]
+            w.deliver(payload)
+            w.step()
+            w.step()
+        request = w.command(sorted(w.commands())[-1])
+        payload = w.jules.run(request["command_id"])
+        w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [
+            {"category": "semantic_gap", "detail": "third failure"}]
+        w.deliver(payload)
+        self.assertEqual(w.step().details["decision"], "STOP_HUMAN")
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual((results[0].action, results[0].status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertIn("DISPATCHED", [r.status for r in results])
+        self.assertEqual(results[-1].status, "WAITING_FOR_RESULT")
+        beta = [w.command(path) for path in w.commands() if "beta-helper" in path]
+        self.assertEqual(len(beta), 1)
 
     def test_not_authorized_policy_writes_nothing(self):
         w = World(pol=policy(live_dispatch_authorization=None))
