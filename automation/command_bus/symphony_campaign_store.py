@@ -137,6 +137,8 @@ class GitHubCampaignStateStore:
         self.default_branch = default_branch
 
     def _chain(self, campaign_id: str) -> list[CampaignCheckpoint]:
+        if not isinstance(campaign_id, str) or _ID.fullmatch(campaign_id) is None:
+            raise ValueError("invalid campaign identity")
         prefix = f"symphony_campaigns/{campaign_id}/states/"
         contents = self.client.list(prefix, self.write_branch)
         decoded: list[tuple[dict[str, Any], CampaignCheckpoint]] = []

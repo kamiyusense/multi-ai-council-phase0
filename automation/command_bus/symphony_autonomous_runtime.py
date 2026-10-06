@@ -297,7 +297,10 @@ class AutonomousCampaignKernel:
             })
             return PlannedAction(ActionKind.REPLAN_TASK, task_id, "replanned onto fresh canonical HEAD")
         if action is RecoveryAction.ISOLATE_TASK_CONTINUE:
-            task.status = TaskStatus.STALE
+            # The task was explicitly found invalid on the new canonical state.
+            # Mark it BLOCKED so the planner can continue independent READY work
+            # instead of trying to replan the same invalid task forever.
+            task.status = TaskStatus.BLOCKED
             self.state.blockers.append({
                 "task_id": task_id,
                 "reason": "task invalidated by intervening target changes",

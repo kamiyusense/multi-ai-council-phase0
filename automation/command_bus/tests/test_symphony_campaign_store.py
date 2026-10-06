@@ -145,6 +145,12 @@ class SymphonyCampaignStoreTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "digest mismatch"):
             store.restore("campaign-1")
 
+    def test_unsafe_campaign_identity_is_rejected_before_contents_lookup(self):
+        client = FakeCampaignContents()
+        store = GitHubCampaignStateStore(client, write_branch="feature/controller-records")
+        with self.assertRaisesRegex(ValueError, "invalid campaign identity"):
+            store.restore("../escape")
+
     def test_default_branch_checkpoint_write_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "non-default"):
             GitHubCampaignStateStore(FakeCampaignContents(), write_branch="main")
