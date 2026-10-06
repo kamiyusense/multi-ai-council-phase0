@@ -28,16 +28,21 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
+from .claude_jules_campaign import (
+    MAX_CONFIGURED_ROUNDS, legacy_campaign_policy, narrow_dispatch_policy, validate_campaign_envelope,
+)
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
     validate_policy,
 )
 from .claude_jules_inspection import InspectionStore, inspect_result, validate_small_repair
+from .claude_jules_recovery import EvidenceRecoveryStore, HARD_UNKNOWN, TRANSIENT_UNKNOWN
 from .claude_jules_result_event import ResultEventInbox, verify_result_lineage
 from .claude_jules_task_prompt import (
     corrective_task_spec, path_policy, render_task_prompt, validate_task_spec,
 )
+from .claude_jules_task_block import TaskBlockStore
 from .claude_loop import (
     BackendMode, make_structured_verdict, numbered_command_id, prepare_jules_semiauto_bundle,
     prepare_jules_semiauto_request, prepare_loop_claim, prepare_next_action,
@@ -102,17 +107,31 @@ def task_spec_path(task_id: str) -> str:
 class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
-                 lane_id: str, carrier_guard: Any = None):
+                 lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None):
         self.client, self.refs, self.facts = client, refs, facts
-        self.policy = validate_policy(policy)
-        self.roadmap = validate_roadmap(roadmap)
+        self.policy = validate_policy(policy, max_round_cap=MAX_CONFIGURED_ROUNDS)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
+        if campaign_policy is None:
+            campaign_policy = legacy_campaign_policy(self.policy, campaign_id=origin_loop_id)
+        self.campaign_policy = validate_campaign_envelope(campaign_policy, self.policy)
+        if self.campaign_policy["campaign_id"] != origin_loop_id:
+            raise ValueError("campaign_id must match origin_loop_id")
+        effective_policy = narrow_dispatch_policy(self.campaign_policy, self.policy)
+        self.roadmap = validate_roadmap(roadmap)
         self.data = self.policy["data_branch"]
-        self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader,
-                                                carrier_guard=carrier_guard)
+        self.dispatcher = ClaudeJulesDispatcher(
+            client=client, refs=refs, policy=effective_policy, owner_reader=owner_reader,
+            carrier_guard=carrier_guard, max_round_cap=MAX_CONFIGURED_ROUNDS,
+        )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
-        self.adoption = SafeAdoption(client=client, refs=refs, policy=policy)
+        self.recovery = EvidenceRecoveryStore(client, data_branch=self.data)
+        self.task_blocks = TaskBlockStore(
+            client, data_branch=self.data, origin_loop_id=origin_loop_id,
+        )
+        self.adoption = SafeAdoption(
+            client=client, refs=refs, policy=policy, max_round_cap=MAX_CONFIGURED_ROUNDS,
+        )
 
     # -- durable reads ------------------------------------------------------
     def _read_json(self, path: str, branch: str | None = None) -> dict[str, Any] | None:
@@ -210,6 +229,13 @@ class ClaudeJulesAutoLoop:
                                                   reduce_size=decision == "JULES_CORRECTIVE_REDUCED")
                 return self._plan_and_dispatch(now=now, round_number=latest["origin_round"] + 1,
                                                attempt=1, spec=corrective)
+            if decision == "STOP_HUMAN":
+                block = self.task_blocks.persist(intent=latest, inspection=current, blocked_at=now)
+                if block.status in {"CREATED", "RECOVERED"}:
+                    return self._plan_and_dispatch(
+                        now=now, round_number=latest["origin_round"] + 1, attempt=1, spec=None,
+                    )
+                return StepResult("STOP", HARD_UNKNOWN, f"task block record: {block.reason}")
             return StepResult("STOP", current["verdict"], f"human/investigation boundary: {current['reason']}")
         return self._inspect_new_result(latest, spec, now=now)
 
@@ -272,20 +298,90 @@ class ClaudeJulesAutoLoop:
     def _inspect(self, intent: dict[str, Any], spec: dict[str, Any], lineage: dict[str, Any], head: str,
                  *, now: str, repair_of: str | None) -> StepResult:
         request = intent["carrier_request"]
-        compare = self.facts.compare(request["expected_target_head"], head)
-        tree = self.facts.commit_tree(head)
+        compare = None
+        tree = None
+        test_evidence = None
+        changed_test_sources = None
+        observations: dict[str, Any] = {}
+        findings: list[dict[str, Any]] = []
+        missing: list[str] = []
+        errors: list[str] = []
+
+        try:
+            compare = self.facts.compare(request["expected_target_head"], head)
+        except Exception as exc:
+            errors.append(f"compare: {exc}")
+        if not isinstance(compare, dict):
+            missing.append("compare")
+
+        try:
+            tree = self.facts.commit_tree(head)
+        except Exception as exc:
+            errors.append(f"candidate_tree: {exc}")
+        if not isinstance(tree, str) or not re.fullmatch(r"[0-9a-f]{40}", tree):
+            missing.append("candidate_tree")
+
         changed = [f.get("path") for f in (compare or {}).get("files", []) if isinstance(f, dict)]
         tests = [p for p in changed if isinstance(p, str) and p.endswith(".py") and "/tests/" in f"/{p}"]
-        observations, findings = self.facts.review(intent, spec, head)
+
+        try:
+            observations, findings = self.facts.review(intent, spec, head)
+        except Exception as exc:
+            errors.append(f"review: {exc}")
+            missing.append("review")
+
+        try:
+            test_evidence = self.facts.run_tests(head)
+        except Exception as exc:
+            errors.append(f"test_evidence: {exc}")
+        if not isinstance(test_evidence, dict):
+            missing.append("test_evidence")
+
+        try:
+            changed_test_sources = self.facts.test_sources(head, tests)
+        except Exception as exc:
+            errors.append(f"test_sources: {exc}")
+        if (not isinstance(changed_test_sources, dict)
+                or any(path not in changed_test_sources for path in tests)):
+            missing.append("test_sources")
+
+        missing = sorted(set(missing))
+        retries = self.campaign_policy["max_transient_retries"]
+        if missing and retries > 0:
+            reason = "; ".join(errors) if errors else f"evidence unavailable: {', '.join(missing)}"
+            try:
+                recovery = self.recovery.record_failure(
+                    command_id=request["command_id"], candidate_head=head, missing=missing,
+                    reason=reason, observed_at=now, max_retries=retries,
+                )
+            except Exception as exc:
+                return StepResult("STOP", HARD_UNKNOWN, f"recovery ledger unverifiable: {exc}")
+            if recovery.status in {"CREATED", "RECOVERED"}:
+                return StepResult(
+                    "RECOVER", TRANSIENT_UNKNOWN,
+                    f"{reason}; bounded evidence reacquisition scheduled",
+                    {"command_id": request["command_id"], "head": head,
+                     "attempt": recovery.record["attempt"], "retry_limit": retries, "missing": missing},
+                )
+            if recovery.status != "EXHAUSTED":
+                return StepResult("STOP", HARD_UNKNOWN, recovery.reason)
+            # Retry budget is exhausted. Fall through to the unchanged
+            # inspection contract with the incomplete evidence. It will persist
+            # the terminal UNKNOWN without overwriting any earlier record.
+
+        try:
+            prior_inspections = self.inspections.list_all()
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", HARD_UNKNOWN, f"durable inspection records unverifiable: {exc}")
         outcome = inspect_result(
             intent=intent, task_spec=spec, lineage=lineage, compare=compare, candidate_tree=tree,
-            test_evidence=self.facts.run_tests(head), changed_test_sources=self.facts.test_sources(head, tests),
+            test_evidence=test_evidence, changed_test_sources=changed_test_sources,
             acceptance_observations=observations, reviewer_findings=findings,
-            prior_inspections=self.inspections.list_all(), inspected_at=now, repair_of=repair_of,
+            prior_inspections=prior_inspections, inspected_at=now, repair_of=repair_of,
         )
         saved = self.inspections.persist(outcome.record)
         if saved not in {"CREATED", "RECOVERED"}:
-            return StepResult("STOP", "UNKNOWN", f"inspection record {saved}")
+            return StepResult("STOP", HARD_UNKNOWN, f"inspection record {saved}")
         return StepResult("INSPECT", outcome.verdict, outcome.record["reason"],
                           {"decision": outcome.decision, "head": head})
 
@@ -306,7 +402,13 @@ class ClaudeJulesAutoLoop:
 
     def _after_adoption(self, intent: dict[str, Any], *, now: str) -> StepResult:
         next_round = intent["origin_round"] + 1
-        if next_round > self.policy["max_rounds"]:
+        if next_round > self.campaign_policy["max_rounds"]:
+            try:
+                position = self._roadmap_position()
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+                return StepResult("STOP", HARD_UNKNOWN, f"roadmap position unverifiable: {exc}")
+            if position["state"] == "COMPLETE":
+                return StepResult("COMPLETE", "COMPLETE", "all roadmap tasks are adopted")
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
@@ -320,7 +422,7 @@ class ClaudeJulesAutoLoop:
                  and r["command_id"] == intent["carrier_request"]["command_id"]]
         return self.adoption.verify_adopted(intent=intent, inspection=match[0] if len(match) == 1 else None)
 
-    def next_roadmap_task(self) -> dict[str, Any] | None:
+    def _roadmap_position(self) -> dict[str, Any]:
         adopted_families: set[str] = set()
         inspections = self.inspections.list_all()
         for intent in self._intents():
@@ -329,26 +431,65 @@ class ClaudeJulesAutoLoop:
                 adopted_families.add(_family(intent["task_id"]))
             elif state.status != "MISSING":
                 raise ValueError(f"unverifiable adoption for {intent['carrier_request']['command_id']}: {state.reason}")
+
+        block_records = self.task_blocks.list_all()
+        blocked_families = {record["task_family"] for record in block_records} - adopted_families
+        remaining: list[str] = []
+        dependency_blocked: dict[str, list[str]] = {}
         for entry in self.roadmap["tasks"]:
             spec = entry["task_spec"]
-            if spec["task_id"] in adopted_families:
+            task_id = spec["task_id"]
+            if task_id in adopted_families:
+                continue
+            remaining.append(task_id)
+            if task_id in blocked_families:
+                continue
+            blocked_deps = [dep for dep in entry["depends_on"] if dep in blocked_families]
+            if blocked_deps:
+                dependency_blocked[task_id] = blocked_deps
                 continue
             if all(dep in adopted_families for dep in entry["depends_on"]):
-                return spec
-            return None  # roadmap order is the dependency order; never skip ahead
-        return None
+                return {
+                    "state": "READY", "spec": spec, "adopted": sorted(adopted_families),
+                    "blocked": sorted(blocked_families), "dependency_blocked": dependency_blocked,
+                }
+
+        if not remaining:
+            return {
+                "state": "COMPLETE", "spec": None, "adopted": sorted(adopted_families),
+                "blocked": [], "dependency_blocked": {},
+            }
+        return {
+            "state": "BLOCKED", "spec": None, "adopted": sorted(adopted_families),
+            "blocked": sorted(blocked_families), "remaining": remaining,
+            "dependency_blocked": dependency_blocked,
+        }
+
+    def next_roadmap_task(self) -> dict[str, Any] | None:
+        position = self._roadmap_position()
+        return position["spec"] if position["state"] == "READY" else None
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
-        if round_number > self.policy["max_rounds"]:
+        if round_number > self.campaign_policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
+        budget = self.campaign_policy["dispatch_budget"]
+        if budget is not None and self._dispatches_used() >= budget:
+            return StepResult("STOP", "CAMPAIGN_DISPATCH_BUDGET", "campaign dispatch budget reached")
         if spec is None:
             try:
-                spec = self.next_roadmap_task()
+                position = self._roadmap_position()
             except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
-                return StepResult("STOP", "UNKNOWN", f"roadmap position unverifiable: {exc}")
-            if spec is None:
-                return StepResult("COMPLETE", "COMPLETE", "no remaining roadmap task is eligible")
+                return StepResult("STOP", HARD_UNKNOWN, f"roadmap position unverifiable: {exc}")
+            if position["state"] == "COMPLETE":
+                return StepResult("COMPLETE", "COMPLETE", "all roadmap tasks are adopted")
+            if position["state"] == "BLOCKED":
+                return StepResult(
+                    "STOP", "HUMAN_REQUIRED",
+                    "no independent READY task remains; blocked/dependent work requires a decision",
+                    {k: position[k] for k in ("blocked", "remaining", "dependency_blocked")},
+                )
+            spec = position["spec"]
         generation = self._owner_generation()
         if not isinstance(generation, int):
             return StepResult("STOP", "UNKNOWN", "owner generation unavailable")
@@ -390,10 +531,13 @@ class ClaudeJulesAutoLoop:
             reasons=[f"roadmap/corrective task {spec['task_id']}"],
             evidence_refs=[f"task-spec:{sha256_of(spec)}"],
             next_prompt=render_task_prompt(spec, loop_label=f"Loop {loop_number:03d}"),
+            round_cap=self.campaign_policy["max_rounds"],
         )
-        prepared = prepare_next_action(verdict, expected_repo=self.policy["target_repo"],
-                                       expected_pr=self.policy["expected_pr"], expires_at=expires,
-                                       path_policy=path_policy(spec))
+        prepared = prepare_next_action(
+            verdict, expected_repo=self.policy["target_repo"],
+            expected_pr=self.policy["expected_pr"], expires_at=expires,
+            path_policy=path_policy(spec), round_cap=self.campaign_policy["max_rounds"],
+        )
         if prepared.status != "PREPARED":
             raise ValueError(prepared.reason)
         common = dict(target_branch=self.policy["allowed_target_branches"][0],

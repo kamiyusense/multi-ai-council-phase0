@@ -457,14 +457,21 @@ def _load(path: str) -> dict[str, Any]:
         return json.load(handle)
 
 
+def load_campaign_policy(path: str | None) -> dict[str, Any] | None:
+    """Load an optional campaign policy; absence preserves legacy controller defaults."""
+    return None if not path else _load(path)
+
+
 def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveClient, GitHubRestReader, dict[str, Any]]:
     policy, roadmap = _load(args.policy), _load(args.roadmap)
+    campaign_policy = load_campaign_policy(getattr(args, "campaign_policy", None))
     git = GitLiveClient(args.repo_dir, message_trailer=args.trailer or "")
     rest = GitHubRestReader(policy["target_repo"])
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=args.scratch)
     loop = ClaudeJulesAutoLoop(client=git, refs=git, policy=policy,
                                owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
                                roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id,
+                               campaign_policy=campaign_policy,
                                carrier_guard=CarrierQuietGuard(
                                    git=git, rest=rest, carrier_branch=policy["carrier_branch"],
                                    isolated_targets=tuple(policy["allowed_target_branches"]),
@@ -479,6 +486,7 @@ def main(argv: list[str] | None = None) -> int:
                                             "carrier"])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--roadmap", required=True)
+    parser.add_argument("--campaign-policy", help="optional autonomous campaign policy JSON")
     parser.add_argument("--origin-loop-id", required=True)
     parser.add_argument("--lane-id", required=True)
     parser.add_argument("--repo-dir", default=".")
