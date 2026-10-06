@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "profile": "CLAUDE_AUTO_CAMPAIGN_POLICY_V1",
+  "campaign_id": "claude-auto-loop-example",
+  "max_rounds": 30,
+  "max_corrective_rounds_per_task": 2,
+  "max_transient_retries": 2,
+  "max_consecutive_failures": 3,
+  "max_concurrent_agents": 1,
+  "idle_check_interval_seconds": 300,
+  "task_timeout_seconds": 21600,
+  "campaign_timeout_seconds": 43200,
+  "dispatch_provider_budget": null
+}
