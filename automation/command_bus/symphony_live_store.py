@@ -74,7 +74,7 @@ def _aware_timestamp(value: Any) -> bool:
 def validate_live_command(record: dict[str, Any]) -> None:
     required = {
         "record_type", "protocol_version", "command_id", "logical_id", "correlation_id",
-        "generation", "target_repository", "target_branch", "expected_target_head",
+        "generation", "target_repository", "target_branch", "default_branch", "expected_target_head",
         "expected_target_tree", "expires_at", "allowed_paths", "exact_task", "verification",
         "live_provider_or_model_allowed", "max_concurrent_agents", "max_model_starts",
         "max_turns", "retry", "fallback", "status",
@@ -92,7 +92,7 @@ def validate_live_command(record: dict[str, Any]) -> None:
             or record["fallback"] != "disabled"):
         raise ValueError("unsafe Symphony LIVE execution limits")
     for field in ("command_id", "logical_id", "correlation_id", "target_repository",
-                  "target_branch", "expected_target_head", "exact_task"):
+                  "target_branch", "default_branch", "expected_target_head", "exact_task"):
         if not isinstance(record[field], str) or not record[field]:
             raise ValueError(f"invalid LIVE command {field}")
     if not _ID.fullmatch(record["command_id"]) or not _ID.fullmatch(record["logical_id"]):
@@ -107,7 +107,8 @@ def validate_live_command(record: dict[str, Any]) -> None:
             or any(not isinstance(path, str) or not path or path.startswith("/") or ".." in path.split("/")
                    for path in record["allowed_paths"])):
         raise ValueError("invalid LIVE command allowed paths")
-    if (record["target_branch"] in {"main", "master"}
+    if (record["target_branch"] == record["default_branch"]
+            or record["default_branch"] not in {"main", "master"}
             or not isinstance(record["verification"], dict)
             or record["verification"].get("exact_content") != _PROOF_CONTENT
             or _PROOF_PATH not in record["exact_task"] or _PROOF_CONTENT not in record["exact_task"]):
@@ -211,6 +212,7 @@ class GitHubSymphonyLiveTracker:
         self.target_branch = target_branch
         self.carrier_branch = carrier_branch
         self.write_branch = write_branch
+        self.default_branch = default_branch
 
     def _get(self, kind: str, command_id: str) -> dict[str, Any] | None:
         content = self.client.get(_path(kind, command_id), self.write_branch)
@@ -266,7 +268,8 @@ class GitHubSymphonyLiveTracker:
 
     def create_command(self, record: dict[str, Any]) -> str:
         validate_live_command(record)
-        if record["target_repository"] != self.repository or record["target_branch"] != self.target_branch:
+        if (record["target_repository"] != self.repository or record["target_branch"] != self.target_branch
+                or record["default_branch"] != self.default_branch):
             return "CONFLICT"
         existing = self._list("commands")
         if any(item["command_id"] == record["command_id"]
@@ -296,6 +299,7 @@ class GitHubSymphonyLiveTracker:
                 expected_target_tree=record["expected_target_tree"], status=record["status"],
                 payload={"task": record["exact_task"], "target_repository": record["target_repository"],
                          "target_branch": record["target_branch"],
+                         "default_branch": record["default_branch"],
                          "expected_target_tree": record["expected_target_tree"],
                          "allowed_paths": record["allowed_paths"],
                          "verification": record["verification"], "retry": record["retry"],

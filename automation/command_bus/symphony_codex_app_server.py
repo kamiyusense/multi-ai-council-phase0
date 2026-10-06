@@ -37,6 +37,7 @@ class PreparedCodexCommand:
     prompt: str
     head_before: str
     tree_before: str
+    default_branch_head_before: str
 
 
 @dataclass(frozen=True)
@@ -58,12 +59,12 @@ class AppServer(Protocol):
 
 
 class WorkspaceVerifier(Protocol):
-    def prepare(self, command: Command, cwd: str) -> tuple[str, str]: ...
+    def prepare(self, command: Command, cwd: str) -> tuple[str, str, str]: ...
     def verify(self, prepared: PreparedCodexCommand) -> tuple[dict[str, Any], tuple[str, ...], str]: ...
 
 
 class GitWorkspaceVerifier:
-    """Read-only pre/post checks around the single Codex turn."""
+    """Preflight reads, one ordinary target push, and exact remote post-reads."""
 
     @staticmethod
     def _git(cwd: str, *args: str) -> str:
@@ -74,11 +75,39 @@ class GitWorkspaceVerifier:
         return result.stdout.strip()
 
     @classmethod
-    def prepare(cls, command: Command, cwd: str) -> tuple[str, str]:
+    def _remote_ref(cls, cwd: str, branch: str) -> str:
+        if (not isinstance(branch, str) or not branch or branch.startswith("-")
+                or ".." in branch or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-" for ch in branch)):
+            raise ValueError("unsafe remote branch identity")
+        output = cls._git(cwd, "ls-remote", "--exit-code", "origin", f"refs/heads/{branch}")
+        fields = output.split()
+        if len(fields) != 2 or fields[1] != f"refs/heads/{branch}" or re.fullmatch(r"[0-9a-f]{40}", fields[0]) is None:
+            raise RuntimeError("remote branch readback malformed")
+        return fields[0]
+
+    @staticmethod
+    def _proof_pr_count(repository: str, branch: str) -> int:
+        owner = repository.split("/", 1)[0]
+        result = subprocess.run(
+            ["gh", "pr", "list", "--repo", repository, "--head", f"{owner}:{branch}",
+             "--state", "all", "--json", "number,state,mergedAt"],
+            capture_output=True, text=True, timeout=30, check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("proof branch PR readback failed")
+        value = json.loads(result.stdout)
+        if not isinstance(value, list):
+            raise RuntimeError("proof branch PR readback malformed")
+        return len(value)
+
+    @classmethod
+    def prepare(cls, command: Command, cwd: str) -> tuple[str, str, str]:
         payload = command.payload
         branch_expected = payload.get("target_branch")
         repository_expected = payload.get("target_repository")
-        if not isinstance(branch_expected, str) or not isinstance(repository_expected, str):
+        default_branch = payload.get("default_branch")
+        if (not isinstance(branch_expected, str) or not isinstance(repository_expected, str)
+                or not isinstance(default_branch, str) or branch_expected == default_branch):
             raise ValueError("LIVE command target identity is incomplete")
         head = cls._git(cwd, "rev-parse", "HEAD")
         tree = cls._git(cwd, "rev-parse", "HEAD^{tree}")
@@ -100,7 +129,12 @@ class GitWorkspaceVerifier:
             host = "github.com" if match else None
         if host != "github.com" or remote_repo.removesuffix(".git").lower() != repository_expected.lower():
             raise ValueError("LIVE workspace repository mismatch")
-        return head, tree
+        if cls._remote_ref(cwd, branch_expected) != head:
+            raise ValueError("LIVE target branch remote HEAD mismatch")
+        default_head = cls._remote_ref(cwd, default_branch)
+        if cls._proof_pr_count(repository_expected, branch_expected) != 0:
+            raise ValueError("proof target branch already has a pull request")
+        return head, tree, default_head
 
     @classmethod
     def verify(cls, prepared: PreparedCodexCommand) -> tuple[dict[str, Any], tuple[str, ...], str]:
@@ -115,16 +149,42 @@ class GitWorkspaceVerifier:
         commit_count = cls._git(cwd, "rev-list", "--count", f"{prepared.head_before}..{head_after}")
         path = "evidence/symphony_live_one_round_v1.txt"
         proof = (Path(cwd) / path).read_text(encoding="utf-8")
-        if (branch_after != command.payload.get("target_branch") or dirty
+        target_branch = command.payload.get("target_branch")
+        repository = command.payload.get("target_repository")
+        default_branch = command.payload.get("default_branch")
+        if (branch_after != target_branch or dirty
                 or parents != [head_after, prepared.head_before] or commit_count != "1"
                 or changed != (path,) or proof != "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"):
             raise RuntimeError("Codex output failed exact proof verification")
+        # The controller, not the model task, performs one ordinary fast-forward
+        # push. An uncertain response is never resent; remote refs decide whether
+        # the push landed. The exact single-parent check above makes the update
+        # fast-forward from head_before.
+        push = subprocess.run(
+            ["git", "push", "origin", f"HEAD:refs/heads/{target_branch}"],
+            cwd=cwd, capture_output=True, text=True, timeout=60, check=False,
+        )
+        remote_target_after = cls._remote_ref(cwd, target_branch)
+        remote_default_after = cls._remote_ref(cwd, default_branch)
+        proof_pr_count = cls._proof_pr_count(repository, target_branch)
+        if (remote_target_after != head_after or remote_default_after != prepared.default_branch_head_before
+                or proof_pr_count != 0):
+            raise RuntimeError("remote proof postconditions were not verified")
+        # A non-zero push status is ambiguous. Exact remote readback resolves it
+        # without retrying the push.
+        if push.returncode != 0 and remote_target_after != head_after:
+            raise RuntimeError("proof branch push outcome is unknown")
         evidence = {
-            "status": "LOCAL_PASS", "proof_path": path,
+            "status": "PASS", "proof_path": path,
             "proof_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS",
             "commit_parent": prepared.head_before, "normal_commit": True,
-            "max_turns": 1, "force_push_count": None, "merge_count": None,
-            "default_branch_mutation_count": None, "remote_readback": "PENDING",
+            "max_turns": 1, "force_push_count": 0, "merge_count": 0,
+            "default_branch_mutation_count": 0, "remote_readback": "PASS",
+            "remote_target_head": remote_target_after,
+            "default_branch_head_before": prepared.default_branch_head_before,
+            "default_branch_head_after": remote_default_after,
+            "proof_branch_pull_request_count": proof_pr_count,
+            "controller_push_attempt_count": 1,
         }
         return evidence, changed, head_after
 
@@ -329,8 +389,8 @@ class CodexAppServerAgentRunner:
         if (not isinstance(prompt, str) or not prompt.strip()
                 or PROOF_PATH not in prompt or PROOF_CONTENT not in prompt):
             raise ValueError("command task must bind the exact proof path and content")
-        head_before, tree_before = self._workspace_verifier.prepare(command, self.cwd)
-        return PreparedCodexCommand(command, self.cwd, prompt, head_before, tree_before)
+        head_before, tree_before, default_head_before = self._workspace_verifier.prepare(command, self.cwd)
+        return PreparedCodexCommand(command, self.cwd, prompt, head_before, tree_before, default_head_before)
 
     def dispatch(self, prepared: PreparedCodexCommand) -> CodexDispatchResult:
         if not self.live_enabled:

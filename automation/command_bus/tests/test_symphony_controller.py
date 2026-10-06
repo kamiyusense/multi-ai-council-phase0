@@ -6,6 +6,7 @@ import threading
 import time
 import unittest
 import json
+import tempfile
 import queue
 from pathlib import Path
 from unittest.mock import patch
@@ -161,7 +162,8 @@ def live_command_record():
         "record_type": "SYMPHONY_LIVE_COMMAND_V1", "protocol_version": "SYMPHONY_LIVE_V1",
         "command_id": "live-cmd-1", "logical_id": "live-logical-1", "correlation_id": "live-corr-1",
         "generation": 2, "target_repository": "owner/repo",
-        "target_branch": "proof/symphony-live-one-round-v1", "expected_target_head": "target-head",
+        "target_branch": "proof/symphony-live-one-round-v1", "default_branch": "main",
+        "expected_target_head": "target-head",
         "expected_target_tree": "tree-1", "expires_at": EXPIRY,
         "allowed_paths": ["evidence/symphony_live_one_round_v1.txt"],
         "exact_task": "Create evidence/symphony_live_one_round_v1.txt with exact content "
@@ -187,7 +189,7 @@ def fake_codex_transport(result=None):
                  "proof_content": "SYMPHONY_LIVE_ONE_ROUND_V1_PASS"},
                 ("evidence/symphony_live_one_round_v1.txt",), "a" * 40)
     with patch.object(JsonlCodexAppServer, "execute_one_turn", return_value=answer) as dispatch, \
-         patch.object(GitWorkspaceVerifier, "prepare", return_value=("target-head", "tree-1")), \
+         patch.object(GitWorkspaceVerifier, "prepare", return_value=("target-head", "tree-1", "main-head")), \
          patch.object(GitWorkspaceVerifier, "verify", return_value=evidence):
         yield dispatch
 
@@ -369,6 +371,66 @@ class SymphonyLiveDurableTrackerTests(unittest.TestCase):
         ))
 
 
+class SymphonyRemoteProofVerificationTests(unittest.TestCase):
+    def test_remote_verifier_pushes_once_without_force_and_requires_exact_readbacks(self):
+        from automation.command_bus.symphony_codex_app_server import (
+            GitWorkspaceVerifier, PreparedCodexCommand,
+        )
+
+        branch = "proof/symphony-live-one-round-v1"
+        head_before, head_after, main_head = "1" * 40, "2" * 40, "3" * 40
+        with tempfile.TemporaryDirectory() as directory:
+            proof = Path(directory) / "evidence/symphony_live_one_round_v1.txt"
+            proof.parent.mkdir(parents=True)
+            proof.write_text("SYMPHONY_LIVE_ONE_ROUND_V1_PASS", encoding="utf-8")
+            payload = {
+                "target_branch": branch, "target_repository": "owner/repo", "default_branch": "main",
+            }
+            prepared = PreparedCodexCommand(
+                command(payload=payload), directory, "create exact proof", head_before, "tree-before", main_head,
+            )
+
+            def git_read(_cwd, *args):
+                if args == ("rev-parse", "HEAD"):
+                    return head_after
+                if args == ("branch", "--show-current"):
+                    return branch
+                if args == ("status", "--porcelain", "--untracked-files=all"):
+                    return ""
+                if args[:4] == ("rev-list", "--parents", "-n", "1"):
+                    return f"{head_after} {head_before}"
+                if args[:3] == ("diff", "--name-only", "--no-renames"):
+                    return "evidence/symphony_live_one_round_v1.txt"
+                if args[:2] == ("rev-list", "--count"):
+                    return "1"
+                if args[:2] == ("ls-remote", "--exit-code") and args[-1] == f"refs/heads/{branch}":
+                    return f"{head_after}\trefs/heads/{branch}"
+                if args[:2] == ("ls-remote", "--exit-code") and args[-1] == "refs/heads/main":
+                    return f"{main_head}\trefs/heads/main"
+                raise AssertionError(f"unexpected git read: {args}")
+
+            pushes = []
+
+            def push_once(argv, **kwargs):
+                pushes.append((argv, kwargs))
+                return __import__("subprocess").CompletedProcess(argv, 0, "ok", "")
+
+            with patch.object(GitWorkspaceVerifier, "_git", side_effect=git_read), \
+                 patch.object(GitWorkspaceVerifier, "_proof_pr_count", return_value=0), \
+                 patch("automation.command_bus.symphony_codex_app_server.subprocess.run", side_effect=push_once):
+                evidence, paths, commit_sha = GitWorkspaceVerifier.verify(prepared)
+
+        self.assertEqual(evidence["status"], "PASS")
+        self.assertEqual(evidence["remote_readback"], "PASS")
+        self.assertEqual(evidence["force_push_count"], 0)
+        self.assertEqual(evidence["merge_count"], 0)
+        self.assertEqual(evidence["default_branch_mutation_count"], 0)
+        self.assertEqual(pushes[0][0], ["git", "push", "origin", f"HEAD:refs/heads/{branch}"])
+        self.assertEqual(len(pushes), 1)
+        self.assertEqual(paths, ("evidence/symphony_live_one_round_v1.txt",))
+        self.assertEqual(commit_sha, head_after)
+
+
 class SymphonyInspiredControllerTests(unittest.TestCase):
     def test_defaults_pin_single_turn_and_static_runner(self):
         self.assertEqual(DEFAULT_POLL_INTERVAL_MS, 30_000)
@@ -405,6 +467,7 @@ class SymphonyInspiredControllerTests(unittest.TestCase):
             prepared = live_runner.prepare(command(payload={
                 **proof_scope, "task": valid_task, "retry": 0, "fallback": "disabled",
                 "target_repository": "owner/repo", "target_branch": "proof/symphony-live-one-round-v1",
+                "default_branch": "main",
                 "concurrency": 1, "max_turns": 1, "max_model_starts": 1,
             }))
             result = live_runner.dispatch(prepared)

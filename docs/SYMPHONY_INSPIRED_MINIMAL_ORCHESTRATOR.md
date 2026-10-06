@@ -30,10 +30,13 @@ not follow redirects or retry, and is intended to sit under the existing
 `GitHubExecutorBackend`, which performs PREPARE_ONLY write readback.
 
 `GitWorkspaceVerifier` checks the configured proof worktree before dispatch:
-clean status, exact branch, repository identity, HEAD, and tree. After the single
-turn it verifies one normal commit whose parent is `head_before`, exact changed
-path, exact proof content, and clean final status. It reports local verification
-only. It cannot establish remote force-push, merge, or default-branch counts.
+clean status, exact branch, repository identity, local and remote HEAD/tree,
+default-branch HEAD, and absence of a proof-branch PR. After the single turn it
+verifies one normal commit whose parent is `head_before`, exact changed path,
+exact proof content, and clean final status. The controller then makes one
+ordinary non-force push and performs remote target/default-branch and PR
+readbacks. An uncertain push is never repeated; the exact remote head resolves
+whether it landed.
 
 LIVE records use a distinct `record_type` and path family:
 `symphony_live/commands/<command_id>.json`,
@@ -91,11 +94,10 @@ for evaluation and recommends building a hardened implementation from the spec.
   generic `commands/` records are not silently reinterpreted as runner work.
 - The exact Codex adapter class is admitted, but this does not authorize LIVE
   by itself; its constructor defaults `live_enabled=False`.
-- The local app-server adapter does not itself prove remote branch push,
-  force-push count, merge count, or default-branch immutability. Those must be
-  supplied by fresh GitHub readbacks before any LIVE result can be PASS. The
-  current adapter emits `LOCAL_PASS`; the durable store keeps that result
-  UNKNOWN until complete remote evidence is present.
+- LIVE PASS requires the controller's one ordinary push to land as the exact
+  child commit, the default-branch HEAD to remain unchanged, and the proof branch
+  to have no pull request. If any remote readback is unavailable, the result is
+  UNKNOWN and the push is not retried.
 - Service installation, credential provisioning, a CLI entry point, workspace
   lifecycle, and unattended process supervision remain unimplemented.
 - The in-process loop does not force an immediate repeat after UNKNOWN; the
