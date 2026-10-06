@@ -16,11 +16,10 @@
   "expected_pr": 220,
   "max_rounds": 1,
   "live_dispatch_authorization": {
-    "approved_by": "user (project owner; to be recorded from the user's own typed approval)",
-    "approval_ref": "",
+    "approved_by": "user (project owner), own typed message in the Claude Code session",
+    "approval_ref": "Loop A LIVE 1回実行を承認します(2026-10-06　14:06",
     "scope": "Loop A only: isolated target claude/autoloop-live-target, lane label J-GREEN, exactly one LIVE dispatch (slot 6 of 10), carrier writes only while CarrierQuietGuard reports quiet; no merge, no default-branch write",
     "max_dispatches": 6,
-    "expires_at": "2026-10-06T09:30:00+00:00"
+    "expires_at": "2026-10-06T18:30:00+09:00"
   }
 }
-
