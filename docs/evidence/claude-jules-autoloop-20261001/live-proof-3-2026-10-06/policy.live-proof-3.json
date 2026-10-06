@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "profile": "CLAUDE_AUTO_JULES_POLICY_V1",
+  "controller_id": "claude-auto",
+  "holder_id": "claude-auto-loop-a",
+  "target_repo": "kamiyusense/multi-ai-council-phase0",
+  "default_branch": "main",
+  "carrier_branch": "feature/chat-work-command-bus",
+  "data_branch": "claude/J-GREENloop-data",
+  "allowed_target_branches": [
+    "claude/autoloop-live-target"
+  ],
+  "allowed_lane_ids": [
+    "J-GREEN"
+  ],
+  "expected_pr": 220,
+  "max_rounds": 1,
+  "live_dispatch_authorization": {
+    "approved_by": "user (project owner; to be recorded from the user's own typed approval)",
+    "approval_ref": "",
+    "scope": "Loop A only: isolated target claude/autoloop-live-target, lane label J-GREEN, exactly one LIVE dispatch (slot 6 of 10), carrier writes only while CarrierQuietGuard reports quiet; no merge, no default-branch write",
+    "max_dispatches": 6,
+    "expires_at": "2026-10-06T09:30:00+00:00"
+  }
+}
+
