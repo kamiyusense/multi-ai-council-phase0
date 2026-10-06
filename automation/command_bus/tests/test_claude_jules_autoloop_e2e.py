@@ -17,7 +17,7 @@ from automation.command_bus.jules_carrier_current import jules_api_request as ca
 from automation.command_bus.jules_carrier_current import loop_id_claim as carrier_claim
 from automation.command_bus.loop_owner_backend import LoopOwnerGitHubBackend
 from automation.command_bus.tests.claude_jules_autoloop_fakes import (
-    CARRIER, DATA, LOOP, NOW, REPO, TARGET, VACUOUS_TEST, FakeFacts, FakeGitHub, FakeJules,
+    CARRIER, DATA, HOLDER, LOOP, NOW, REPO, TARGET, VACUOUS_TEST, FakeFacts, FakeGitHub, FakeJules,
     owner_event, policy, roadmap, seed_owner, task_spec,
 )
 
