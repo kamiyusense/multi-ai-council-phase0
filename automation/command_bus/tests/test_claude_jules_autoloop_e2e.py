@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from automation.command_bus.claude_jules_autoloop import ClaudeJulesAutoLoop
 from automation.command_bus.claude_jules_campaign import campaign_policy_from_legacy
@@ -395,6 +395,19 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual(saved[0]["payload"]["selected_safe_default"], "keep-current")
         resumed = w.controller().step(now=NOW)
         self.assertEqual((resumed.action, resumed.status), ("DISPATCH", "DISPATCHED"))
+
+    def test_explicit_campaign_timeout_is_rederived_after_restart(self):
+        campaign = campaign_policy_from_legacy(policy(), LOOP)
+        campaign["task_timeout_seconds"] = 3600
+        campaign["campaign_timeout_seconds"] = 3600
+        w = World(campaign=campaign)
+        first = w.step()
+        self.assertEqual(first.status, "DISPATCHED")
+        late = (datetime.fromisoformat(NOW) + timedelta(seconds=3601)).isoformat()
+        boundary = w.step(now=late)
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "CAMPAIGN_TIMEOUT"))
+        self.assertEqual(len(w.commands()), 1)
+        self.assertIn("deadline", boundary.details)
 
     def test_campaign_provider_budget_is_a_tighter_gate_not_new_authority(self):
         auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
