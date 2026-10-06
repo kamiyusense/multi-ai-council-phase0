@@ -331,3 +331,18 @@ STATIC integration tests cover:
 
 This controller intentionally rejects duck-typed/live runners. It is a
 non-LIVE integration proof, not authorization for a provider/model start.
+
+
+## 18. Track A / Track B reuse boundary is pinned
+
+The current upstream comparison baseline is
+`openai/symphony@be10a1b79df723d6d7612b5651c8522704dafb2e`.
+The machine-readable reference and human matrix explicitly mark workspace,
+multi-turn session continuation, scheduler/reconciliation, backoff and stall
+detection as upstream reuse targets. Track B retains the stronger durable
+checkpoint, duplicate-fence, stale-target and subscription-only boundaries.
+
+The policy layer now exposes continuation retry, failure retry base,
+maximum retry backoff and stall timeout valves. The upstream-reference profile
+matches the pinned 1s continuation retry, 10s failure base, 300s backoff cap and
+300s stall timeout.

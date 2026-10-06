@@ -60,6 +60,10 @@ class AutonomousRuntimePolicy:
     idle_observation_interval_seconds: float
     task_timeout_seconds: float
     campaign_timeout_seconds: float | None
+    continuation_retry_seconds: float = 1.0
+    failure_retry_base_seconds: float = 10.0
+    max_retry_backoff_seconds: float = 300.0
+    stall_timeout_seconds: float = 300.0
     blind_write_retries: int = 0
     subscription_only: bool = True
     allow_metered_api_fallback: bool = False
@@ -81,6 +85,10 @@ class AutonomousRuntimePolicy:
         _positive_number("task_timeout_seconds", self.task_timeout_seconds)
         if self.campaign_timeout_seconds is not None:
             _positive_number("campaign_timeout_seconds", self.campaign_timeout_seconds)
+        _positive_number("continuation_retry_seconds", self.continuation_retry_seconds)
+        _positive_number("failure_retry_base_seconds", self.failure_retry_base_seconds)
+        _positive_number("max_retry_backoff_seconds", self.max_retry_backoff_seconds)
+        _positive_number("stall_timeout_seconds", self.stall_timeout_seconds)
         _non_negative_int("blind_write_retries", self.blind_write_retries)
         if self.blind_write_retries != 0:
             raise ValueError("ambiguous side-effect writes must never be blindly retried")
@@ -183,6 +191,29 @@ def stale_head_action(
         return RecoveryAction.REPLAN
     return (RecoveryAction.ISOLATE_TASK_CONTINUE
             if independent_safe_work else RecoveryAction.STOP_CAMPAIGN)
+
+
+def retry_delay_seconds(
+    attempt: int,
+    *,
+    policy: AutonomousRuntimePolicy,
+    normal_continuation: bool = False,
+) -> float:
+    """Bound retry scheduling without turning side-effect ambiguity into resend."""
+    _positive_int("attempt", attempt)
+    if type(normal_continuation) is not bool:
+        raise ValueError("normal_continuation must be boolean")
+    if normal_continuation:
+        return float(policy.continuation_retry_seconds)
+    delay = min(
+        float(policy.failure_retry_base_seconds),
+        float(policy.max_retry_backoff_seconds),
+    )
+    remaining = attempt - 1
+    while remaining > 0 and delay < policy.max_retry_backoff_seconds:
+        delay = min(delay * 2, float(policy.max_retry_backoff_seconds))
+        remaining -= 1
+    return delay
 
 
 def model_work_allowed(quota_state: QuotaState, policy: AutonomousRuntimePolicy) -> bool:

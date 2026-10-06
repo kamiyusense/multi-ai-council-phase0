@@ -324,3 +324,12 @@ continuation across multiple tasks. Its admitted runner/observer/replanner/quota
 adapters are exact built-in STATIC fixtures, so this integration cannot start a
 model or provider. It is the seam where an explicitly authorized production
 adapter can later be attached without changing campaign semantics.
+
+
+### Pinned upstream reuse baseline
+
+`symphony_upstream_reference.json` and
+`docs/SYMPHONY_UPSTREAM_REUSE_MATRIX.md` pin the inspected upstream Symphony
+baseline and separate what should be reused from what Track B intentionally
+hardens. Retry/backoff/stall valves now mirror the pinned upstream defaults
+without enabling any LIVE transport.

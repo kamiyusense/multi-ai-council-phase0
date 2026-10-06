@@ -206,6 +206,18 @@ separate reviewed adapter that binds real provider dispatch identity/result
 evidence to durable task attempts, then prove restart/reconciliation before any
 new LIVE run.
 
+
+
+### Upstream reuse pin
+
+Reuse decisions are now pinned in `docs/SYMPHONY_UPSTREAM_REUSE_MATRIX.md` and
+`automation/command_bus/symphony_upstream_reference.json` against
+`openai/symphony@be10a1b79df723d6d7612b5651c8522704dafb2e`.
+Do not rebuild its workspace, same-session multi-turn, polling/reconciliation,
+backoff or stall machinery inside the hardened kernel unless an incompatibility
+is demonstrated. Track B should wrap those behaviors with durable GitHub
+identity/evidence instead.
+
 ## Stop / human boundary
 
 Stop for genuinely human-required operations such as merge, default-branch

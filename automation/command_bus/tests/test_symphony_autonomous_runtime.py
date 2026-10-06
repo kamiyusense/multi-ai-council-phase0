@@ -12,6 +12,7 @@ from automation.command_bus.symphony_autonomous_policy import (
     UnknownClass,
     decide_unknown,
     model_work_allowed,
+    retry_delay_seconds,
     stale_head_action,
 )
 from automation.command_bus.symphony_autonomous_runtime import (
@@ -76,6 +77,29 @@ class SymphonyAutonomousPolicyTests(unittest.TestCase):
             ),
             RecoveryAction.STOP_CAMPAIGN,
         )
+
+    def test_retry_schedule_matches_pinned_upstream_reference_defaults(self):
+        self.assertEqual(
+            retry_delay_seconds(1, policy=UPSTREAM_SYMPHONY_REFERENCE_POLICY),
+            10.0,
+        )
+        self.assertEqual(
+            retry_delay_seconds(2, policy=UPSTREAM_SYMPHONY_REFERENCE_POLICY),
+            20.0,
+        )
+        self.assertEqual(
+            retry_delay_seconds(6, policy=UPSTREAM_SYMPHONY_REFERENCE_POLICY),
+            300.0,
+        )
+        self.assertEqual(
+            retry_delay_seconds(
+                999,
+                policy=UPSTREAM_SYMPHONY_REFERENCE_POLICY,
+                normal_continuation=True,
+            ),
+            1.0,
+        )
+        self.assertEqual(UPSTREAM_SYMPHONY_REFERENCE_POLICY.stall_timeout_seconds, 300.0)
 
     def test_stale_head_and_quota_unknown_do_not_become_automatic_stop(self):
         self.assertEqual(
