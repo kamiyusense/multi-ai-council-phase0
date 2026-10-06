@@ -17,12 +17,12 @@ readback is authoritative; do not trust remembered SHA values.
 ## Read first
 
 1. `docs/AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md`
-2. `docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md`
-3. current PR #320 files and exact HEAD
-4. current CI/workflow results on that exact HEAD
+2. `docs/SYMPHONY_AUTONOMOUS_LOOP_DESIGN.md`
+3. `docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md`
+4. current PR #320 files and exact HEAD
+5. current CI/workflow results on that exact HEAD
 
-The North Star supersedes the old interpretation that the product goal is one
-command / one turn / one model start.
+The shared North Star is aligned byte-for-byte with the North Star on Draft PR #325 at this checkpoint. The Symphony-specific design file adds the line-level upstream-first / two-track / open-valve decisions. The North Star supersedes the old interpretation that the product goal is one command / one turn / one model start.
 
 ## User intent that must not be lost
 
