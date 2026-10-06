@@ -1,5 +1,16 @@
 # Chat/Work GitHub command bus
 
+## Static Symphony-inspired controller core
+
+`symphony_controller.py` provides an opt-in single-dispatch polling loop over
+the existing executor request/claim/result/receipt protocol. Only requests
+marked `SYMPHONY_INSPIRED_STATIC_V1` with complete generation and logical
+identity are eligible. The adapter requires a non-default durable write branch,
+uses fresh target and carrier reads, and preserves the command bus's
+PREPARE_ONLY, retry-zero, fallback-disabled and readback rules. The runner gate
+admits only the built-in static fake class; no real runner or process-level
+GitHub client is included. See [the design, official comparison and limitations](../../docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md).
+
 > **MANDATORY BEFORE JULES DISPATCH:** read `docs/JULES_TASK_PROMPT_SPEC.md` before creating any new `automation/command_bus/jules_api_requests/*.json`. The prompt contract requires bounded scope, exact allowed paths, reuse-first, semantic acceptance criteria, negative/tamper tests, no vacuous tests, exact validation commands, and explicit stop conditions. Green Jules tests alone are not acceptance.
 
 ## Jules Loop ID claim — mandatory duplicate guard

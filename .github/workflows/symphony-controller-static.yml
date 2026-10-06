@@ -1,0 +1,82 @@
+name: Symphony-inspired controller static validation
+
+on:
+  pull_request:
+    paths:
+      - automation/command_bus/symphony_controller.py
+      - automation/command_bus/tests/test_symphony_controller.py
+      - automation/command_bus/README.md
+      - docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md
+      - .github/workflows/symphony-controller-static.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: symphony-controller-static-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Focused controller tests
+        run: python -m unittest automation.command_bus.tests.test_symphony_controller -v
+
+      - name: Full command bus regression suite
+        run: python -m unittest discover -s automation/command_bus/tests -t . -v
+
+      - name: Compile command bus
+        run: python -m compileall -q automation/command_bus
+
+      - name: Check exact PR diff
+        run: git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+
+      - name: Record exact head
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          evidence_dir="$RUNNER_TEMP/symphony-static-evidence"
+          mkdir -p "$evidence_dir"
+          cat > "$evidence_dir/evidence.json" <<EOF
+          {
+            "schema_version": 1,
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow_run_id": "${RUN_ID}",
+            "exact_head": "${HEAD_SHA}",
+            "focused_controller_tests": "PASS",
+            "full_command_bus_tests": "PASS",
+            "compileall": "PASS",
+            "diff_check": "PASS",
+            "live_model_count": 0,
+            "live_provider_count": 0
+          }
+          EOF
+          (cd "$evidence_dir" && sha256sum evidence.json > evidence.sha256)
+          {
+            echo "## Symphony-inspired controller static validation"
+            echo "- exact PR head: \`${HEAD_SHA}\`"
+            echo "- focused tests: PASS if this job is green"
+            echo "- command bus regression: PASS if this job is green"
+            echo "- compileall: PASS if this job is green"
+            echo "- diff check: PASS if this job is green"
+            echo "- live model/provider execution: not invoked"
+            echo "- evidence SHA-256: \`$(awk '{print $1}' "$evidence_dir/evidence.sha256")\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload static evidence artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphony-static-evidence-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/symphony-static-evidence/
+          if-no-files-found: error
+          retention-days: 30
