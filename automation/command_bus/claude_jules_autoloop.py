@@ -114,8 +114,6 @@ class ClaudeJulesAutoLoop:
         self.policy = validate_policy(policy)
         self.campaign_policy = (campaign_policy_from_legacy(self.policy, origin_loop_id)
                                 if campaign_policy is None else validate_campaign_policy(campaign_policy))
-        if self.campaign_policy["max_rounds"] > self.policy["max_rounds"]:
-            raise ValueError("campaign max_rounds exceeds dispatch policy max_rounds")
         self.roadmap = validate_roadmap(roadmap)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
         self.data = self.policy["data_branch"]
