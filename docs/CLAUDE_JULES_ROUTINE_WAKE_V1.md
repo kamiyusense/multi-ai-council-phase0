@@ -36,6 +36,8 @@ UNKNOWN until a real Jules PR appears: whether a Jules-created PR fires the Rout
 - Every non-draft PR matching the filter consumes one run; duplicates are harmless because results are keyed
   `jules-result-pr<PR>-<HEAD>` and records are create-only.
 - No Routine idempotency key was confirmed; never re-send a wake whose outcome is unknown.
-- Today the Loop A owner is SEMI_AUTO and the LIVE proof policy is expired, so a production wake would no-op
-  until a new LIVE stream is approved.
+- Owner state (verified 2026-10-06 from the data branch): stream a-001 was handed back to SEMI_AUTO (gen 2);
+  stream a-002 (Loop 137) is AUTO gen 1 with its lease expired 2026-10-05 03:09Z and no handback/terminal
+  event recorded. LIVE budget is 5/10 (slot-01..05). The LIVE proof policy is expired, so a production wake
+  would no-op until a new LIVE stream, owner event and policy are approved.
 - Fallback stays the in-session `poll`.
