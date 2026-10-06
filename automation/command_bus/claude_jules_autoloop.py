@@ -114,6 +114,7 @@ class ClaudeJulesAutoLoop:
                  lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None):
         self.client, self.refs, self.facts = client, refs, facts
         self.policy = validate_policy(policy)
+        self.explicit_campaign_policy = campaign_policy is not None
         self.campaign_policy = (campaign_policy_from_legacy(self.policy, origin_loop_id)
                                 if campaign_policy is None else validate_campaign_policy(campaign_policy))
         self.roadmap = validate_roadmap(roadmap)
@@ -199,6 +200,35 @@ class ClaudeJulesAutoLoop:
             {"generation": appended.event["generation"] if appended.event else None},
         )
 
+    def _campaign_timeout(self, *, now: str) -> StepResult | None:
+        """Enforce wall-clock timeout only for explicit new campaign policies.
+
+        The deadline is re-derived from the earliest durable dispatch intent,
+        so restarts need no session memory. Legacy callers keep their historical
+        behavior because they did not opt into a campaign timeout contract.
+        """
+        if not self.explicit_campaign_policy:
+            return None
+        intents = self._intents()
+        if not intents:
+            return None
+        try:
+            started = min(
+                datetime.fromisoformat(item["prepared_at"].replace("Z", "+00:00"))
+                for item in intents
+            )
+            current = datetime.fromisoformat(now.replace("Z", "+00:00"))
+        except (KeyError, TypeError, ValueError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"campaign timeout evidence unverifiable: {exc}")
+        deadline = started + timedelta(seconds=self.campaign_policy["campaign_timeout_seconds"])
+        if current < deadline:
+            return None
+        return StepResult(
+            "STOP", "CAMPAIGN_TIMEOUT",
+            "explicit campaign wall-clock timeout reached; durable state is preserved for inspection",
+            {"started_at": started.isoformat(), "deadline": deadline.isoformat()},
+        )
+
     def defer_decision(
         self, *, decision_id: str, question: str, options: list[str], reason: str,
         selected_safe_default: str, reversibility: str, affected_scope: str,
@@ -242,6 +272,9 @@ class ClaudeJulesAutoLoop:
             if fence.status != "PASS":
                 return StepResult("STOP", fence.status, f"owner fence after resume: {fence.reason}")
         try:
+            timeout = self._campaign_timeout(now=now)
+            if timeout is not None:
+                return timeout
             intents = self._intents()
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable intent records unverifiable: {exc}")
