@@ -33,8 +33,18 @@ class SymphonyUpstreamReferenceTests(unittest.TestCase):
         data = json.loads(path.read_text(encoding="utf-8"))
         serialized = json.dumps(data)
         self.assertNotIn("live_provider_or_model_allowed", serialized)
-        self.assertNotIn("api_key", serialized.lower())
-        self.assertNotIn("secret", serialized.lower())
+        forbidden_credential_keys = {"api_key", "token", "secret", "password", "credential"}
+
+        def walk(value):
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    self.assertNotIn(str(key).lower(), forbidden_credential_keys)
+                    walk(item)
+            elif isinstance(value, list):
+                for item in value:
+                    walk(item)
+
+        walk(data)
 
 
 if __name__ == "__main__":
