@@ -562,6 +562,40 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual(results[2].status, "ADOPTED")
         self.assertEqual(results[3].status, "DISPATCHED")
 
+    def test_same_head_missing_test_evidence_is_reinspected_append_only_then_adopted(self):
+        w = World()
+        w.step()
+        request = w.command(w.commands()[0])
+        payload = w.jules.run(request["command_id"])
+        head = payload["pull_request"]["head"]["sha"]
+        w.deliver(payload)
+        real_tests = w.facts.run_tests
+        calls = 0
+
+        def transient_tests(candidate):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return None
+            return real_tests(candidate)
+
+        w.facts.run_tests = transient_tests
+        first = w.step()
+        self.assertEqual((first.action, first.status), ("INSPECT", "UNKNOWN"))
+        base = w.controller().inspections.get(request["command_id"], head)
+        self.assertEqual((base["verdict"], base["decision"]), ("UNKNOWN", "INVESTIGATE"))
+
+        second = w.step()
+        self.assertEqual((second.action, second.status), ("INSPECT", "PASS"), second.reason)
+        base_after = w.controller().inspections.get(request["command_id"], head)
+        self.assertEqual(base_after["inspection_sha256"], base["inspection_sha256"])
+        versions = w.controller().reinspections.all_versions(base_after)
+        self.assertEqual([v["verdict"] for v in versions], ["UNKNOWN", "PASS"])
+
+        adopted = w.step()
+        self.assertEqual(adopted.status, "ADOPTED")
+        self.assertEqual(w.github.branches[TARGET], head)
+
     def test_run_until_boundary_replans_stale_target_without_human_stop(self):
         w = World()
         original = w.github.branches[TARGET]
