@@ -346,3 +346,26 @@ The policy layer now exposes continuation retry, failure retry base,
 maximum retry backoff and stall timeout valves. The upstream-reference profile
 matches the pinned 1s continuation retry, 10s failure base, 300s backoff cap and
 300s stall timeout.
+
+
+## 19. Autonomous attempt evidence is separated from PREPARE_ONLY executor records
+
+The existing executor request/claim/result/receipt protocol remains
+PREPARE_ONLY and is not widened to claim LIVE behavior. A separate
+`symphony_attempt_store.py` now defines append-only autonomous attempt
+evidence.
+
+Each logical task attempt gets a deterministic path-safe ID derived from
+campaign, task, generation, attempt number and expected target HEAD. The ledger
+can restore exactly three recovery-relevant states:
+
+- `CLAIMED_UNSTARTED`: durable intent exists, no start observation;
+- `STARTED_UNRESOLVED`: start was observed but no terminal evidence exists;
+- `TERMINAL`: a terminal result is durably linked to its predecessor.
+
+A STARTED_UNRESOLVED attempt is never eligible for blind redispatch. An
+unstarted claim becomes reclaimable only when the old attempt is explicitly
+stopped/fenced. Ambiguous creates use exact readback and are not resent.
+
+The store records evidence only. It does not authorize or perform LIVE
+provider/model execution.

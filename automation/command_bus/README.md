@@ -333,3 +333,16 @@ adapter can later be attached without changing campaign semantics.
 baseline and separate what should be reused from what Track B intentionally
 hardens. Retry/backoff/stall valves now mirror the pinned upstream defaults
 without enabling any LIVE transport.
+
+
+### Autonomous attempt evidence ledger
+
+`symphony_attempt_store.py` is intentionally separate from the existing
+PREPARE_ONLY executor ledger. It records create-only attempt INTENT, observed
+STARTED evidence and TERMINAL evidence, with deterministic path-safe identities
+and predecessor digests. It cannot dispatch a model/provider.
+
+On restart it distinguishes `CLAIMED_UNSTARTED`,
+`STARTED_UNRESOLVED` and `TERMINAL`. A STARTED_UNRESOLVED attempt is never
+blindly redispatched. An unstarted intent can only be reclaimed after explicit
+proof that the old attempt is stopped or fenced.

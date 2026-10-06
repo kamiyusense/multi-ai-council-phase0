@@ -218,6 +218,22 @@ backoff or stall machinery inside the hardened kernel unless an incompatibility
 is demonstrated. Track B should wrap those behaviors with durable GitHub
 identity/evidence instead.
 
+
+
+### Autonomous attempt ledger
+
+A separate `symphony_attempt_store.py` now preserves attempt intent, observed
+start and terminal evidence without changing the Phase-0 PREPARE_ONLY executor
+contract. Restart classification distinguishes unstarted intent,
+started-unresolved and terminal attempts. Started-unresolved work cannot be
+blindly redispatched; unstarted work requires explicit stopped/fenced evidence
+before reclaim.
+
+This is STATIC evidence infrastructure only. The next safe step is to reconcile
+these attempt records with campaign checkpoints so a terminal attempt can repair
+a missing post-result campaign checkpoint, and a started-unresolved task can be
+isolated while independent work continues.
+
 ## Stop / human boundary
 
 Stop for genuinely human-required operations such as merge, default-branch
