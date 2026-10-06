@@ -28,6 +28,7 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
+from .claude_jules_campaign import legacy_campaign_policy, validate_campaign_envelope
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
@@ -102,11 +103,14 @@ def task_spec_path(task_id: str) -> str:
 class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
-                 lane_id: str, carrier_guard: Any = None):
+                 lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None):
         self.client, self.refs, self.facts = client, refs, facts
         self.policy = validate_policy(policy)
-        self.roadmap = validate_roadmap(roadmap)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
+        if campaign_policy is None:
+            campaign_policy = legacy_campaign_policy(self.policy, campaign_id=origin_loop_id)
+        self.campaign_policy = validate_campaign_envelope(campaign_policy, self.policy)
+        self.roadmap = validate_roadmap(roadmap)
         self.data = self.policy["data_branch"]
         self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader,
                                                 carrier_guard=carrier_guard)
@@ -306,7 +310,7 @@ class ClaudeJulesAutoLoop:
 
     def _after_adoption(self, intent: dict[str, Any], *, now: str) -> StepResult:
         next_round = intent["origin_round"] + 1
-        if next_round > self.policy["max_rounds"]:
+        if next_round > self.campaign_policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
@@ -340,7 +344,7 @@ class ClaudeJulesAutoLoop:
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
-        if round_number > self.policy["max_rounds"]:
+        if round_number > self.campaign_policy["max_rounds"]:
             return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
         if spec is None:
             try:
