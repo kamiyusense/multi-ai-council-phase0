@@ -4,11 +4,14 @@ on:
   pull_request:
     paths:
       - automation/command_bus/symphony_controller.py
+      - automation/command_bus/symphony_autonomous_policy.py
+      - automation/command_bus/symphony_autonomous_runtime.py
       - automation/command_bus/symphony_codex_app_server.py
       - automation/command_bus/symphony_github_adapter.py
       - automation/command_bus/symphony_live_store.py
       - automation/command_bus/evidence/**
       - automation/command_bus/tests/test_symphony_controller.py
+      - automation/command_bus/tests/test_symphony_autonomous_runtime.py
       - automation/command_bus/README.md
       - docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md
       - .github/workflows/symphony-controller-static.yml
@@ -33,7 +36,7 @@ jobs:
           persist-credentials: false
 
       - name: Focused controller tests
-        run: python -m unittest automation.command_bus.tests.test_symphony_controller -v
+        run: python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime -v
 
       - name: Full command bus regression suite
         run: python -m unittest discover -s automation/command_bus/tests -t . -v

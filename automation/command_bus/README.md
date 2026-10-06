@@ -292,3 +292,16 @@ BLOCKED instead of appearing IDLE.
 The production transition caller and live observation writer are still not
 connected. Issue #33 therefore remains fail-closed until those layers exist.
 PR activity, Chat silence, and commit timestamps are not ownership signals.
+
+
+## Autonomous Symphony / New Chinponey policy kernel
+
+The strict one-shot Symphony proof remains intact. Autonomous-loop product
+semantics live separately in `symphony_autonomous_policy.py` and `symphony_autonomous_runtime.py`.
+
+These modules are STATIC-only and do not start Codex or perform GitHub writes.
+They provide configurable policy profiles, typed UNKNOWN recovery, stale-target
+replan semantics, subscription-only gating, serializable campaign/task state,
+corrective task identities, blocker isolation, duplicate-result suppression and
+guarded restart reclaim. This lets the long-running controller grow without
+turning proof-only one-turn/retry-zero limits into permanent architecture.

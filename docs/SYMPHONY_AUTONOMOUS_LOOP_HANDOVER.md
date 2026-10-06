@@ -147,6 +147,28 @@ multi-round unattended behavior with success->next-task, failure->recovery or
 corrective work, session resume, duplicate suppression and configured stopping
 conditions.
 
+
+
+## Implemented STATIC checkpoint after the design handover
+
+The branch now includes a pure autonomous policy/runtime layer:
+
+- strict proof policy remains separately represented and pinned to one round /
+  one turn / one model start;
+- hardened and upstream-reference profiles expose openable round/turn/start/
+  corrective/retry/concurrency/time valves;
+- durable campaign state can serialize/restore tasks, rounds, blockers,
+  decisions, processed result IDs and generation;
+- three-round continuation, corrective task creation, typed UNKNOWN recovery,
+  stale replan, blocker isolation, duplicate suppression, guarded restart
+  reclaim and subscription-only quota behavior have STATIC tests;
+- no provider/model LIVE execution is performed by these modules.
+
+This checkpoint is not the finished loop. The next safe work is controller/runner
+integration plus durable GitHub persistence for campaign state, followed by
+restart/fault and exact-head CI evidence. Do not collapse these new semantics
+back into the strict proof profile.
+
 ## Stop / human boundary
 
 Stop for genuinely human-required operations such as merge, default-branch

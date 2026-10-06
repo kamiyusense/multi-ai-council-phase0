@@ -235,3 +235,31 @@ The line is a real autonomous loop when it can, without intermediate human
 
 The intended long-term capability is allowed to approach official Symphony
 rather than remaining a permanently reduced Phase 0 proof executor.
+
+
+## 13. STATIC implementation checkpoint: policy + durable campaign kernel
+
+PR #320 now carries a Track-B pure-state foundation that does not start a model
+or write GitHub by itself:
+
+- `symphony_autonomous_policy.py` separates strict proof limits from
+  configurable hardened/upstream-reference profiles;
+- UNKNOWN is typed as transient, recoverable, task-blocked, or hard and maps to
+  retry/replan/isolate/stop actions by scope;
+- stale HEAD is modeled as replan first when canonical lineage is trustworthy;
+- confirmed subscription exhaustion stops new model work, while unreadable quota
+  remains UNKNOWN and is not treated as exhaustion;
+- `symphony_autonomous_runtime.py` defines serializable campaign/task state,
+  duplicate-result suppression, dependency-aware next-task selection,
+  corrective-task identity, blocker isolation, stale replan, and guarded
+  restart reclaim;
+- static tests prove three consecutive rounds, fail->corrective->continue,
+  transient retry exhaustion with independent-work continuation, restart restore,
+  duplicate NO-OP, stale replan/isolation, scoped HARD_UNKNOWN, and quota gating.
+
+This is deliberately a hardened coordination kernel, not a reimplementation of
+upstream Symphony workspace/app-server orchestration. Track A should still reuse
+upstream polling/workspace/multi-turn/retry behavior where practical. The next
+integration step is to wire this policy/state layer to the existing controller
+and then move the Codex proof runner's one-start counter from runner lifetime to
+task/profile scope without weakening the consumed-command fence.
