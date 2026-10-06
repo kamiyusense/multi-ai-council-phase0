@@ -344,6 +344,53 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertIn("beta-helper", stop.details["remaining_tasks"])
         self.assertEqual(len(w.commands()), 3)
 
+    def test_campaign_can_extend_corrective_budget_without_rewriting_legacy_inspections(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=10, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["max_corrective_rounds_per_task"] = 3
+        w = World(pol=legacy, plan=roadmap(task_spec("alpha-helper")), campaign=campaign)
+
+        dispatched = w.step()
+        for failure_index in range(4):
+            command_id = dispatched.details["command_id"]
+            payload = w.jules.run(command_id)
+            w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [
+                {"category": "semantic_gap", "detail": f"failure {failure_index + 1}"}
+            ]
+            w.deliver(payload)
+            inspected = w.step()
+            self.assertIn(inspected.details["decision"], {
+                "JULES_CORRECTIVE", "JULES_CORRECTIVE_REDUCED", "STOP_HUMAN"
+            })
+            if failure_index < 3:
+                dispatched = w.step()
+                self.assertEqual(dispatched.status, "DISPATCHED", dispatched.reason)
+            else:
+                blocked = w.step()
+                self.assertEqual((blocked.action, blocked.status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertEqual(len(w.commands()), 4)
+        base_inspections = w.controller().inspections.list_all()
+        self.assertEqual(len(base_inspections), 4)
+        self.assertEqual(sum(1 for item in base_inspections if item["decision"] == "STOP_HUMAN"), 2)
+
+    def test_campaign_provider_budget_is_a_tighter_gate_not_new_authority(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=10, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["dispatch_provider_budget"] = 1
+        w = World(pol=legacy, campaign=campaign)
+
+        first = w.step()
+        self.assertEqual(first.status, "DISPATCHED")
+        w.deliver(w.jules.run(first.details["command_id"]))
+        self.assertEqual(w.step().status, "PASS")
+        self.assertEqual(w.step().status, "ADOPTED")
+        boundary = w.step()
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "PREPARED_NOT_AUTHORIZED"))
+        self.assertIn("campaign dispatch/provider budget exhausted", boundary.reason)
+        self.assertEqual(len(w.commands()), 1)
+
     def test_blocked_task_does_not_stop_independent_ready_task(self):
         plan = {
             "schema_version": 1,
