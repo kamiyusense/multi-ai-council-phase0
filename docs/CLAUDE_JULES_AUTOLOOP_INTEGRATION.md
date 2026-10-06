@@ -1,5 +1,7 @@
 # Claude × Jules AUTO loop — integration, LIVE-proven on an isolated target (2026-10-02)
 
+> **North Star note (2026-10-07):** Historical safety invariants and retry=0 statements in this integration record describe specific side-effect / proof boundaries. They are not a global requirement that the campaign stop on every retryable failure or UNKNOWN. Current completion semantics are defined by `AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md` and `CLAUDE_JULES_AUTOLOOP_HANDOVER_CURRENT.md`.
+
 > 日本語要約: ClaudeがControllerとして「次の仕事の決定 → Jules命令の保存 →
 > Jules結果の受信 → 独立検品 → 小修正 or Jules修正依頼 → 安全な反映 → 次の仕事」
 > を回す仕組みを、既存部品の組み合わせで実装した。模擬環境での一周に加え、
