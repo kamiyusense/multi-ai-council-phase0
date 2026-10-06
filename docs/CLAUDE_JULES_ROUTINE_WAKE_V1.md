@@ -1,7 +1,7 @@
 # Jules → Claude wake via Claude Routines (V1 design + test evidence)
 
 Status: DESIGN + TEST EVIDENCE only. Nothing in code or workflows changes. No LIVE run, no Jules call,
-no ledger change (Loop A stays 4/10), no Secret, no API key.
+no ledger change (Loop A ledger is 5/10 per slot-01..05 on the data branch), no Secret, no API key.
 
 ## What was tested (2026-10-06 JST, project owner's Pro plan)
 A test Routine "PR起動テスト" (GitHub trigger `pull_request.opened`, repo
