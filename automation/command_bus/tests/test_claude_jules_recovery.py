@@ -67,6 +67,30 @@ class EvidenceRecoveryStoreTests(unittest.TestCase):
         )
         self.assertEqual(exhausted.status, "EXHAUSTED")
 
+    def test_ambiguous_create_is_resolved_by_readback_without_retry(self):
+        w = World(plan=roadmap(task_spec("alpha-helper")))
+        store = EvidenceRecoveryStore(w.github, data_branch=DATA)
+        head = w.github.branches[w.policy["allowed_target_branches"][0]]
+        real_create = w.github.create
+        fired = [False]
+
+        def ambiguous_create(path, text, message, branch):
+            created = real_create(path, text, message, branch)
+            if "claude-auto-evidence-recovery" in path and not fired[0]:
+                fired[0] = True
+                raise RuntimeError("simulated lost write acknowledgement")
+            return created
+
+        w.github.create = ambiguous_create
+        result = store.record_failure(
+            command_id="relay-dev-loop-779-recovery", candidate_head=head,
+            missing=["test_evidence"], reason="temporary runner failure",
+            observed_at=NOW, max_retries=2,
+        )
+        self.assertEqual(result.status, "CREATED")
+        self.assertTrue(fired[0])
+        self.assertEqual(len(store.list_for("relay-dev-loop-779-recovery", head)), 1)
+
     def test_tampered_recovery_record_is_rejected(self):
         w = World(plan=roadmap(task_spec("alpha-helper")))
         store = EvidenceRecoveryStore(w.github, data_branch=DATA)
