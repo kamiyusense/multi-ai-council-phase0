@@ -51,6 +51,10 @@ class LoopOwnerGitHubBackend:
         except (ValueError, TypeError, KeyError, json.JSONDecodeError, RuntimeError) as exc:
             return OwnerWriteResult("UNKNOWN", str(exc))
 
+    def read_events(self, loop_id: str) -> list[dict[str, Any]]:
+        """Read and validate the complete owner chain for recovery planning."""
+        return self._read_chain(loop_id)
+
     def append(self, event: dict[str, Any]) -> OwnerWriteResult:
         """Append exactly the next generation and verify the resulting chain.
 
