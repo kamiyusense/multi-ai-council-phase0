@@ -31,10 +31,27 @@ Real `poll_results` / `wake_resume` against the e2e fakes:
 - closed PRs and PRs on foreign work branches are ignored;
 - a conflicting record for the same result id is BLOCKED.
 
-## Validation (cloud container, Python 3.11)
+## Typed UNKNOWN coverage (`test_claude_jules_typed_unknown_coverage.py`, 5)
 
-- full suite: 1853 tests, OK, 1 skipped (1827 before + 26 new)
-- compileall and `git diff --check`: pass
+Parses the controller source (no execution) for every boundary `StepResult` and requires each literal reason to
+classify; unproven writes, identity contradictions and "do not resend" boundaries are never retry-safe; retry-safe
+boundaries must describe a read/evidence gap; untrusted exception detail cannot soften a hard boundary.
+
+## Composite recovery (`test_claude_jules_composite_recovery.py`, 1)
+
+One campaign, a fresh controller on every step: timeout with RUNNING provider -> WAIT, no overlap; settlement ->
+alpha isolated, dependent beta skipped, independent gamma dispatched; gamma PASS then canonical forward move ->
+REPLANNED with the old PASS kept; duplicate wake writes nothing; a late duplicate of the stale head is a NO-OP and the
+fresh gamma is adopted on top of the moved canonical; final boundary TASK_BLOCKED; exactly three dispatches.
+
+## Validation
+
+- `b7c7c73562b0acada88312c1b9c28daaa2f944c5` (settlement + wake transport): local 1853 OK, 1 skipped; exact-head
+  Actions [37566305221](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37566305221)
+  (carrier request `8faa12441744b709839709b384cd3f00c61cea79`): success, `Ran 1853 tests`, `OK (skipped=1)`,
+  step summary target `b7c7c73562b0…`; compileall and diff check success.
+- This commit (typed UNKNOWN + composite): local 1859 OK, 1 skipped; compileall and diff check pass. Its exact-head
+  run is recorded in Draft #329 (a commit cannot name its own SHA).
 
 ## Still not done
 
