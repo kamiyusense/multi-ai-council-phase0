@@ -31,6 +31,8 @@ behavior, not evidence of unattended production Claude/Jules execution.
 | `mixed-campaign-trace.json` | Seven mock commands over nine restored wakes; four adoptions; timeout task isolated |
 | `round-ceiling-audit.txt` | Remaining standalone legacy state/proof defaults and tests recorded for audit |
 | `checkpoint.json` | Commit/tree, hashes, exact-head CI and final boundaries |
+| `exact-head-actions-code.log.gz` | Exact target `de1e7d5`: 1827 tests, OK, one skipped; compileall/diff check green |
+| `exact-head-code-readback.json` | Actions run/job/step readback and carrier identity |
 
 Logs are losslessly gzip-compressed, with deterministic gzip metadata.
 Full test stdout includes simulated provider counters from mocked tests;
@@ -78,3 +80,12 @@ lost result events, RUNNING/UNKNOWN timeout observations and corrupt records.
 The checkpoint reports STATIC completion of this batch, not completion of
 the North Star product. Safe future work includes a STATIC settlement-source
 adapter contract and mock event transport; production connection is separate.
+
+Exact code-head validation succeeded in
+[37563334683](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37563334683)
+for `de1e7d5116736b3b01a33f01376d83fac9122380` (tree
+`2592232d892a6c9628cada387e660528a2f57835`). The log confirms the requested
+checkout and 1827 tests with one skip; all workflow steps passed. The final
+checkpoint-only commit receives its own distinct append-only validation
+request. Its final SHA and Actions result are reported in Draft #329 after
+readback, avoiding a self-referential checkpoint commit hash.

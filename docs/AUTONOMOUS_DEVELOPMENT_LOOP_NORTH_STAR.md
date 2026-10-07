@@ -564,4 +564,3 @@ The governing rule is:
 > Safe replan possible -> replan.
 > Independent safe work remains -> continue.
 > Only when safe continuation is exhausted -> stop.
-

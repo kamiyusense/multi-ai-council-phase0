@@ -1,0 +1,113 @@
+{
+  "profile": "EXACT_HEAD_VALIDATION_READBACK_V1",
+  "run_id": 37563334683,
+  "target_sha": "de1e7d5116736b3b01a33f01376d83fac9122380",
+  "target_tree": "2592232d892a6c9628cada387e660528a2f57835",
+  "carrier_commit": "85e71a277f9e5f1dc249fda9628018ab2356e2a4",
+  "request": {
+    "schema_version": 1,
+    "request_id": "autoloop-static-20261007-de1e7d511673",
+    "target_sha": "de1e7d5116736b3b01a33f01376d83fac9122380",
+    "purpose": "STATIC stop-resistant campaign regression; no LIVE provider/model, no Routine, no merge",
+    "expected_test_count": 1827
+  },
+  "conclusion": "success",
+  "full_test_count": 1827,
+  "skipped": 1,
+  "jobs": [
+    {
+      "id": 112605344273,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 37563334683,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout carrier",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Locate one append-only validation request",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Checkout exact control-plane head",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run command-bus unit suite",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Compile command-bus Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Diff check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Record exact validation head",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Post Checkout exact control-plane head",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Post Checkout carrier",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        }
+      ]
+    }
+  ],
+  "start_snapshot": {
+    "main": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+    "work": "4b77407ccee4f80cb3ca31f46b79875b30bccc35",
+    "data": "5227589bbeeb1db5619b6f3ffff3fed8634428cb",
+    "live_target": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+    "budget": "6/10",
+    "owner": {
+      "loop": "claude-auto-loop-a-003",
+      "generation": 2,
+      "role": "SEMI_AUTO"
+    }
+  },
+  "after_code_snapshot": {
+    "main": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+    "data": "5227589bbeeb1db5619b6f3ffff3fed8634428cb",
+    "live_target": "53f2caf67280ca1b4c019f325aea5fb9502f1114"
+  },
+  "no_live_authority_created": true
+}
