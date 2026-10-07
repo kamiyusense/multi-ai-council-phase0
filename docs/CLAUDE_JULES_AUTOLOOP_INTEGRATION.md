@@ -323,3 +323,99 @@ Loop content is ported onto current `main` by the Draft PR from
    decides (evidence stays on `claude/claude-jules-autoloop-data`).
 3. A new LIVE run needs a new approval, a new policy file (the proof policy is expired), and a
    SEMI_AUTO to AUTO takeover. Never copy the proof policy into `config/`.
+
+
+## 11. Stop-resistant campaign continuation layer (2026-10-07, STATIC only)
+
+The North Star continuation work is intentionally layered on top of the
+LIVE-proven engine instead of replacing its safety gates.  This section is
+newer than the historical 2026-10-02 limits above.
+
+New continuation components:
+
+- `claude_jules_campaign.py`: explicit finite campaign policy and typed
+  `TRANSIENT_UNKNOWN / RECOVERABLE_UNKNOWN / TASK_BLOCKED / HARD_UNKNOWN`.
+  The legacy policy remains the default; an explicit campaign policy may
+  choose 3/6/10/20/30 or another bounded value without changing code.
+  `max_concurrent_agents` remains 1 in v1.
+- `claude_jules_campaign_state.py`: content-addressed append-only
+  `TASK_BLOCKED` and `DEFERRED_DECISION` events.  A blocked task no longer
+  implies campaign termination when another dependency-independent task is
+  READY.
+- `claude_jules_reinspection.py`: append-only same-head reinspection history.
+  The original UNKNOWN inspection is never overwritten; a new attempt binds
+  the previous inspection digest and may only continue an
+  `UNKNOWN/INVESTIGATE` chain.  PASS/FAIL are terminal on this path.
+- Owner recovery: an expired AUTO lease may be resumed automatically only by
+  the same AUTO holder, with a valid full owner chain, no half-written
+  dispatch intent and a generation-CAS append.  SEMI_AUTO ownership and another
+  AUTO holder remain hard fences.
+- Stale target HEAD is a replan trigger, not a campaign-wide terminal state.
+  Ambiguous mutating writes remain non-retryable until readback proves the
+  outcome.
+- `claude_jules_live.py wake-resume`: result PR ingestion is followed by
+  durable state restoration and `run_until_boundary`, so an event wake can
+  continue through multiple safe controller steps rather than merely report.
+  Independent semantic review evidence is still required; the entrypoint does
+  not create model authority or bypass review.
+- `config/claude_jules_campaign_policy.example.json`: finite 30-round example
+  only.  It grants no Jules/provider authorization, changes no billing or
+  permissions, and does not alter the fixed LIVE budget ledger.
+
+STATIC/mock coverage includes PASS→next task, corrective→PASS, transient
+evidence recovery, same-head UNKNOWN→PASS while preserving the old UNKNOWN,
+stale HEAD replan in the same batch, controller/session reconstruction from
+durable GitHub records, duplicate suppression, blocked-task isolation with an
+independent task continuing, durable Deferred Decision records, safe expired
+AUTO self-resume, wake→poll→restore→inspect→adopt→complete, and a sequential
+8-round campaign that runs beyond the legacy six-round default.
+
+No new Jules/provider LIVE execution was performed for this continuation
+layer.  Merge, default-branch writes, force push, billing/credit changes,
+credentials and permissions remain outside the automatic envelope.
+
+### Durable continuation hardening (2026-10-07 STATIC batch)
+
+The implementation contracts now share a finite 1000-round hard ceiling.
+The common machine gate keeps the legacy six-round default and accepts a
+larger limit only with a validated explicit campaign policy. Verdict/schema,
+origin binding, executor preparation and carrier request contracts accept
+that round without expanding LIVE authorization. The standalone command-bus
+state validator and the historical lane-proof fixture retain their own
+six-round contract; the campaign path does not consume those state records.
+
+An explicit campaign binds its entire policy and roadmap digest to an
+immutable configuration keyed by origin loop. Restarting with a changed
+campaign id, roadmap or limits fails closed instead of resetting budgets.
+`RECOVERY_ATTEMPT` persists bounded read-only recovery counts;
+`TASK_REPLAN` preserves the old candidate and records verified forward
+canonical movement before a distinct command uses a freshly acquired base.
+Writes keep retry=0 and fallback=disabled. No ambiguous mutating operation is
+replayed. Owner generation creation with a lost response is resolved only by
+exact event and complete-chain readback, with no second create.
+
+Reinspection validates immutable task/intent/head/repair identity and known
+candidate tree throughout the append-only chain. Chain position, rather than
+clock order, selects the effective same-head record. Polling verifies adoption
+receipts before suppressing result acquisition. A failed poll does not prevent
+independent reconstruction of already durable controller records.
+
+Task timeout initiates result/provider reconciliation. A verified `SETTLED`
+observation with no result isolates that task and permits independent READY
+work; `RUNNING` or `UNKNOWN` waits at `AWAITING_TIMEOUT_RECONCILIATION` to keep
+one active provider. The production adapter currently reacquires GitHub PR
+results but has no independent provider-settlement source. It therefore does
+not infer completion from a missing PR. Mock settlement is tested, not claimed
+as a production capability. Missing exact-head Claude semantic review remains
+`AWAITING_CLAUDE_REVIEW`.
+
+Campaign-local provider budget counts consumed slots even when a dispatch
+receipt was lost. It can narrow existing authorization, never enlarge it.
+Deferred decisions preserve the same safe default across duplicate wakes;
+conflicting proposals require a distinct decision identity or fail closed.
+Step-budget exhaustion is resumable and refreshes the clock on production
+wakes; it is not campaign completion.
+
+See `docs/evidence/claude-jules-stop-resistant-20261007/README.md` for the
+mixed seven-round restart trace, regression logs, historical failure links,
+fresh GitHub snapshots and remaining production boundaries.

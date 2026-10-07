@@ -16,6 +16,7 @@ import re
 from typing import Any, Iterable
 
 from .executor import make_executor_request
+from .claude_jules_campaign import LEGACY_MAX_ROUNDS, MAX_CAMPAIGN_ROUNDS, validate_campaign_policy
 from .claude_jules_origin_binding import build_binding_record
 from .jules_carrier_current import jules_api_request as carrier_request_validator
 from .jules_carrier_current import loop_id_claim as carrier_claim_validator
@@ -70,14 +71,24 @@ def validate_machine_gate(
     destructive_delete: bool = False,
     live_model_requested: bool = False,
     external_send_requested: bool = False,
+    campaign_policy: dict[str, Any] | None = None,
 ) -> GateResult:
     """Validate the common gate before any backend-specific preparation."""
     if mode not in {item.value for item in BackendMode}:
         return GateResult("BLOCKED", "unknown backend mode; explicit mode required")
     if not loop_id or not isinstance(round, int) or isinstance(round, bool) or round < 1:
         return GateResult("BLOCKED", "invalid loop identity or round")
-    if not isinstance(max_rounds, int) or isinstance(max_rounds, bool) or not 1 <= max_rounds <= 6:
-        return GateResult("BLOCKED", "max_rounds must be between 1 and 6")
+    ceiling = LEGACY_MAX_ROUNDS
+    if campaign_policy is not None:
+        try:
+            validated = validate_campaign_policy(campaign_policy)
+        except (ValueError, TypeError, KeyError) as exc:
+            return GateResult("BLOCKED", f"invalid explicit campaign policy: {exc}")
+        if max_rounds != validated["max_rounds"]:
+            return GateResult("BLOCKED", "max_rounds differs from explicit campaign policy")
+        ceiling = MAX_CAMPAIGN_ROUNDS
+    if not isinstance(max_rounds, int) or isinstance(max_rounds, bool) or not 1 <= max_rounds <= ceiling:
+        return GateResult("BLOCKED", f"max_rounds must be between 1 and {ceiling}")
     if round > max_rounds:
         return GateResult("BLOCKED", "loop cap reached")
     if not expected_target_head or expected_target_head != observed_target_head:
@@ -516,7 +527,7 @@ def _validate_verdict(verdict: dict[str, Any]) -> None:
     for key in ("expected_target_head", "expected_target_tree"):
         if not re.fullmatch(r"[0-9a-f]{40}", verdict[key]):
             raise ValueError(f"invalid {key}")
-    if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= 6:
+    if isinstance(verdict["round"], bool) or not isinstance(verdict["round"], int) or not 1 <= verdict["round"] <= MAX_CAMPAIGN_ROUNDS:
         raise ValueError("invalid verdict round")
     if isinstance(verdict["generation"], bool) or not isinstance(verdict["generation"], int) or verdict["generation"] < 1:
         raise ValueError("invalid verdict generation")

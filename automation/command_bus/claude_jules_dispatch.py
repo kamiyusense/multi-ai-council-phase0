@@ -23,6 +23,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
+from .claude_jules_campaign import MAX_CAMPAIGN_ROUNDS
 
 from .claude_jules_origin_binding import validate_binding_record
 from .claude_jules_origin_binding_store import ClaudeJulesOriginBindingStore
@@ -104,8 +105,8 @@ def validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
         carrier_claim_validator.lane_display_for(lane)
     if isinstance(policy["expected_pr"], bool) or not isinstance(policy["expected_pr"], int) or policy["expected_pr"] < 1:
         raise ValueError("policy expected_pr must be positive")
-    if isinstance(policy["max_rounds"], bool) or not isinstance(policy["max_rounds"], int) or not 1 <= policy["max_rounds"] <= 6:
-        raise ValueError("policy max_rounds must be 1..6")
+    if isinstance(policy["max_rounds"], bool) or not isinstance(policy["max_rounds"], int) or not 1 <= policy["max_rounds"] <= MAX_CAMPAIGN_ROUNDS:
+        raise ValueError("policy max_rounds must be 1..1000")
     auth = policy["live_dispatch_authorization"]
     if auth is not None:
         if not isinstance(auth, dict) or set(auth) != _AUTH_KEYS:
@@ -148,6 +149,8 @@ def check_dispatch_authority(
             return DispatchResult("UNKNOWN", "durable owner chain unavailable")
         if owner_latest.get("loop_id") != origin_loop_id:
             return DispatchResult("BLOCKED", "owner chain belongs to another loop")
+        if owner_latest.get("expected_repo") != policy["target_repo"]:
+            return DispatchResult("BLOCKED", "owner chain targets another repository")
         if owner_latest.get("owner_role") == "SEMI_AUTO":
             return DispatchResult("BLOCKED", "loop is owned by SEMI_AUTO; do not take over")
         if owner_latest.get("event_type") in {"RELEASE", "TERMINAL"}:
@@ -245,6 +248,8 @@ def validate_dispatch_intent(record: dict[str, Any]) -> dict[str, Any]:
     for key in ("origin_round", "origin_generation", "attempt"):
         if isinstance(record[key], bool) or not isinstance(record[key], int) or record[key] < 1:
             raise ValueError(f"invalid {key}")
+    if record["origin_round"] > MAX_CAMPAIGN_ROUNDS:
+        raise ValueError("dispatch intent round exceeds finite campaign cap")
     if record["intent_id"] != intent_id(record["origin_loop_id"], record["origin_round"],
                                         record["origin_generation"], record["attempt"]):
         raise ValueError("dispatch intent id mismatch")
@@ -366,6 +371,8 @@ class ClaudeJulesDispatcher:
             return DispatchResult("PREPARED_NOT_AUTHORIZED", f"{problem}; nothing written", intent)
         try:
             slots = self.budget.slots()
+        except (OSError, RuntimeError) as exc:
+            return DispatchResult("UNKNOWN", f"live budget read failed: {exc}")
         except Exception as exc:
             return DispatchResult("UNKNOWN", f"live budget ledger unverifiable: {exc}")
         command_id = intent["carrier_request"]["command_id"]

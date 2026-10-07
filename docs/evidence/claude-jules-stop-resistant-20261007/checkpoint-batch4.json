@@ -1,0 +1,90 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-07",
+  "batch": 4,
+  "status": "STATIC_PASS_CODE_HEAD_ACTIONS_VERIFIED",
+  "current_main": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+  "branch": "feature/autonomous-loop-stop-resistant-core-v1",
+  "draft_pr": 329,
+  "branch_head_before_batch": "68e8fc52aaff1ef06c2af917ae4c08ed7b9fb896",
+  "code_commit": "ef68069eb7a89df6e20514240a54ea7508ee94a3",
+  "code_tree": "a7e50ace8d7f5ee18119f728e7851f559b461479",
+  "full_test_count": 1911,
+  "skipped": 1,
+  "new_tests": 11,
+  "exact_head_validation": {
+    "run_id": 37610080307,
+    "job_id": 112754949185,
+    "target_sha": "ef68069eb7a89df6e20514240a54ea7508ee94a3",
+    "carrier_commit": "a21a326d9515d759c3ae2e10cd44179c5538802a",
+    "conclusion": "success",
+    "full_test_count": 1911,
+    "skipped": 1,
+    "compileall": "success",
+    "diff_check": "success"
+  },
+  "earlier_batch_validations": {
+    "batch3_68e8fc5": 37602086356,
+    "batch2_c05c87f": 37566611176
+  },
+  "PASS": [
+    "TEST_ENVIRONMENT recovery wired (opt-in v1)",
+    "PROVIDER_FAILURE recovery wired (opt-in v1)",
+    "settlement record built from GitHub job log and verified (observation_from_readback_run)",
+    "record-settlement refuses records the job log does not confirm",
+    "read-only recovery-history CLI",
+    "full regression",
+    "compileall",
+    "diff-check",
+    "exact-head Actions on code head"
+  ],
+  "FAIL": [],
+  "UNKNOWN": [
+    "real settlement readback (needs approved provider GET)",
+    "Routine firing on a real Jules PR and its concurrency",
+    "GitHub-level race behaviour",
+    "unattended long LIVE campaign",
+    "whether Draft PRs #326/#327/#328 are contained in #329"
+  ],
+  "changed_files": [
+    "automation/command_bus/claude_jules_autoloop.py",
+    "automation/command_bus/claude_jules_live.py",
+    "automation/command_bus/claude_jules_settlement.py",
+    "automation/command_bus/tests/test_claude_jules_recovery_policy.py",
+    "automation/command_bus/tests/test_claude_jules_settlement.py",
+    "docs/evidence/claude-jules-stop-resistant-20261007/batch4-remaining-static-closure.md",
+    "docs/evidence/claude-jules-stop-resistant-20261007/checkpoint-batch4.json",
+    "docs/evidence/claude-jules-stop-resistant-20261007/README.md"
+  ],
+  "retry_recovery": {
+    "policy": "CLAUDE_AUTO_RECOVERY_POLICY_V1 (opt-in)",
+    "development_retries_used_this_batch": 0
+  },
+  "live_usage": {
+    "budget": "6/10",
+    "new_jules_sessions": 0,
+    "jules_status_gets": 0,
+    "provider_model_execution": 0,
+    "owner_changed": false,
+    "routine_created_or_changed": false,
+    "merge": false
+  },
+  "remote_readback_after_ci": {
+    "branch_head": "ef68069eb7a89df6e20514240a54ea7508ee94a3",
+    "main_unchanged": true,
+    "data_branch": "5227589bbeeb1db5619b6f3ffff3fed8634428cb",
+    "live_target": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+    "budget_slots": 6,
+    "owner_events_a003": 2
+  },
+  "deferred_decisions": [
+    "Actions-side settlement producer workflow needs actions:read on the carrier route (permission change)"
+  ],
+  "approval_required_next_step": [
+    "merge #329",
+    "one-GET settlement readback of Loop 139 session",
+    "production Routine connection",
+    "new LIVE budget for a staged long campaign"
+  ],
+  "final_validation_note": "This checkpoint commit is docs-only and follows the validated code commit; the PR #329 body binds the final branch head."
+}

@@ -133,6 +133,8 @@ class ClaudeLoopTests(unittest.TestCase):
         self.assertEqual(schema["properties"]["terminal"]["type"], "boolean")
         self.assertIn("generation", schema["required"])
         self.assertEqual(schema["properties"]["generation"]["minimum"], 1)
+        self.assertEqual(schema["properties"]["round"]["maximum"], 1000)
+        self.assertEqual(self.gate(round=7).status, "BLOCKED")  # legacy machine policy still caps at six
         self.assertEqual(len(schema["allOf"]), 1)
 
     def test_verdict_rejects_live_flags(self):

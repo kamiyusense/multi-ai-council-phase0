@@ -1,0 +1,964 @@
+{
+  "profile": "STATIC_MOCK_CAMPAIGN_TRACE_V1",
+  "test": "automation/command_bus/tests/test_claude_jules_campaign_continuation.py::test_mixed_campaign_continues_seven_rounds_across_restarts",
+  "test_source_sha256": "4a81d3ab6cb65bb097cb5edad93dd58237e419db9f3c3446c385e5537b6dd43c",
+  "providers": "local fakes only",
+  "live_execution": 0,
+  "wakes": [
+    {
+      "now": "2026-10-01T13:00:00+00:00",
+      "steps": [
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-001-pass-first",
+            "intent_id": "claude-auto-loop-001-r1-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-001-pass-first",
+            "next_check_at": "2026-10-01T13:05:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:00+00:00",
+      "steps": [
+        {
+          "action": "INSPECT",
+          "status": "PASS",
+          "reason": "all independent checks passed",
+          "details": {
+            "decision": "ADOPT_CANDIDATE",
+            "head": "7ec6c015059d8ef343a889c95b231a35ebec8e35"
+          }
+        },
+        {
+          "action": "ADOPT",
+          "status": "ADOPTED",
+          "reason": "fast-forward written and read back",
+          "details": {
+            "head_after": "7ec6c015059d8ef343a889c95b231a35ebec8e35"
+          }
+        },
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-002-correct-me",
+            "intent_id": "claude-auto-loop-001-r2-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-002-correct-me",
+            "next_check_at": "2026-10-01T13:05:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:00+00:00",
+      "steps": [
+        {
+          "action": "INSPECT",
+          "status": "FAIL_MAJOR",
+          "reason": "substantial correction needs a new bounded Jules mission",
+          "details": {
+            "decision": "JULES_CORRECTIVE",
+            "head": "43a286e79191ca0a90d3ea02255b07fa3c29dfcb"
+          }
+        },
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-003-correct-me-fix1",
+            "intent_id": "claude-auto-loop-001-r3-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-003-correct-me-fix1",
+            "next_check_at": "2026-10-01T13:05:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:00+00:00",
+      "steps": [
+        {
+          "action": "INSPECT",
+          "status": "PASS",
+          "reason": "all independent checks passed",
+          "details": {
+            "decision": "ADOPT_CANDIDATE",
+            "head": "afcb9e0ff394e9c9de58445c04703d30d3cd08e4"
+          }
+        },
+        {
+          "action": "ADOPT",
+          "status": "ADOPTED",
+          "reason": "fast-forward written and read back",
+          "details": {
+            "head_after": "afcb9e0ff394e9c9de58445c04703d30d3cd08e4"
+          }
+        },
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-004-lost-evidence",
+            "intent_id": "claude-auto-loop-001-r4-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-004-lost-evidence",
+            "next_check_at": "2026-10-01T13:05:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:00+00:00",
+      "steps": [
+        {
+          "action": "INSPECT",
+          "status": "UNKNOWN",
+          "reason": "evidence missing: ['tests']",
+          "details": {
+            "decision": "INVESTIGATE",
+            "head": "0bda60e0ae52484d1c6293179e15e79d4c9cffbe",
+            "boundary_class": "TRANSIENT_UNKNOWN"
+          }
+        },
+        {
+          "action": "INSPECT",
+          "status": "PASS",
+          "reason": "all independent checks passed",
+          "details": {
+            "decision": "ADOPT_CANDIDATE",
+            "head": "0bda60e0ae52484d1c6293179e15e79d4c9cffbe"
+          }
+        },
+        {
+          "action": "REPLAN",
+          "status": "REPLANNED",
+          "reason": "stale candidate preserved; new task snapshot required",
+          "details": {
+            "command_id": "relay-dev-loop-004-lost-evidence",
+            "canonical_head": "75f197924a1703f53c1eaff2c42db5845668216a"
+          }
+        },
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-005-lost-evidence",
+            "intent_id": "claude-auto-loop-001-r5-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-005-lost-evidence",
+            "next_check_at": "2026-10-01T13:05:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:00+00:00",
+      "steps": [
+        {
+          "action": "INSPECT",
+          "status": "PASS",
+          "reason": "all independent checks passed",
+          "details": {
+            "decision": "ADOPT_CANDIDATE",
+            "head": "8a337f68e95ac93c7fad99af61d699d791483792"
+          }
+        },
+        {
+          "action": "ADOPT",
+          "status": "ADOPTED",
+          "reason": "fast-forward written and read back",
+          "details": {
+            "head_after": "8a337f68e95ac93c7fad99af61d699d791483792"
+          }
+        },
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-006-timeout-only",
+            "intent_id": "claude-auto-loop-001-r6-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-006-timeout-only",
+            "next_check_at": "2026-10-01T13:05:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:31+00:00",
+      "steps": [
+        {
+          "action": "BLOCK_TASK",
+          "status": "TASK_BLOCKED",
+          "reason": "no Jules result PR recorded by 2026-10-01T13:00:30+00:00; provider settled (mock-no-running-provider); the dispatch slot stays consumed",
+          "details": {
+            "task_id": "timeout-only",
+            "campaign_event_id": "bd036cb84d644ef666459d6d3cb6080c4152cc8018065f892502ac3814f12f67",
+            "boundary_class": "TASK_BLOCKED"
+          }
+        },
+        {
+          "action": "DISPATCH",
+          "status": "DISPATCHED",
+          "reason": "command appended once; await workflow/Jules session readback",
+          "details": {
+            "command_id": "relay-dev-loop-007-last-independent",
+            "intent_id": "claude-auto-loop-001-r7-g1-a1"
+          }
+        },
+        {
+          "action": "WAIT",
+          "status": "WAITING_FOR_RESULT",
+          "reason": "no Jules result event recorded yet",
+          "details": {
+            "command_id": "relay-dev-loop-007-last-independent",
+            "next_check_at": "2026-10-01T13:05:31+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:31+00:00",
+      "steps": [
+        {
+          "action": "INSPECT",
+          "status": "PASS",
+          "reason": "all independent checks passed",
+          "details": {
+            "decision": "ADOPT_CANDIDATE",
+            "head": "2bbd2a6afd514d4d5c4867dbb44e42acee65ef49"
+          }
+        },
+        {
+          "action": "ADOPT",
+          "status": "ADOPTED",
+          "reason": "fast-forward written and read back",
+          "details": {
+            "head_after": "2bbd2a6afd514d4d5c4867dbb44e42acee65ef49"
+          }
+        },
+        {
+          "action": "STOP",
+          "status": "TASK_BLOCKED",
+          "reason": "remaining roadmap tasks are blocked or depend on blocked/unadopted tasks",
+          "details": {
+            "remaining_tasks": [
+              "timeout-only"
+            ],
+            "boundary_class": "TASK_BLOCKED"
+          }
+        }
+      ]
+    },
+    {
+      "now": "2026-10-01T13:00:31+00:00",
+      "steps": [
+        {
+          "action": "STOP",
+          "status": "TASK_BLOCKED",
+          "reason": "remaining roadmap tasks are blocked or depend on blocked/unadopted tasks",
+          "details": {
+            "remaining_tasks": [
+              "timeout-only"
+            ],
+            "boundary_class": "TASK_BLOCKED"
+          }
+        }
+      ]
+    }
+  ],
+  "dispatches": [
+    {
+      "round": 1,
+      "task_id": "pass-first",
+      "command_id": "relay-dev-loop-001-pass-first",
+      "snapshot_head": "2649eba3d04162f29634b7f72dfea5d8a2231f08"
+    },
+    {
+      "round": 2,
+      "task_id": "correct-me",
+      "command_id": "relay-dev-loop-002-correct-me",
+      "snapshot_head": "7ec6c015059d8ef343a889c95b231a35ebec8e35"
+    },
+    {
+      "round": 3,
+      "task_id": "correct-me-fix1",
+      "command_id": "relay-dev-loop-003-correct-me-fix1",
+      "snapshot_head": "7ec6c015059d8ef343a889c95b231a35ebec8e35"
+    },
+    {
+      "round": 4,
+      "task_id": "lost-evidence",
+      "command_id": "relay-dev-loop-004-lost-evidence",
+      "snapshot_head": "afcb9e0ff394e9c9de58445c04703d30d3cd08e4"
+    },
+    {
+      "round": 5,
+      "task_id": "lost-evidence",
+      "command_id": "relay-dev-loop-005-lost-evidence",
+      "snapshot_head": "75f197924a1703f53c1eaff2c42db5845668216a"
+    },
+    {
+      "round": 6,
+      "task_id": "timeout-only",
+      "command_id": "relay-dev-loop-006-timeout-only",
+      "snapshot_head": "8a337f68e95ac93c7fad99af61d699d791483792"
+    },
+    {
+      "round": 7,
+      "task_id": "last-independent",
+      "command_id": "relay-dev-loop-007-last-independent",
+      "snapshot_head": "8a337f68e95ac93c7fad99af61d699d791483792"
+    }
+  ],
+  "campaign_events": [
+    {
+      "campaign_id": "claude-auto-loop-001",
+      "event_id": "682b00657a437168dd4675faa64d0fdf64e2789dfa065e5c08b307b9ba301f3c",
+      "event_type": "TASK_REPLAN",
+      "payload": {
+        "canonical_head": "75f197924a1703f53c1eaff2c42db5845668216a",
+        "canonical_tree": "a5dca72f3c9d342128e2f90ae00bc5a9b5e6542b",
+        "intent_sha256": "b9eb0c6ce919d1f4936c239ad2012a888f7d6512bdf046a6a7c48835fcec288a",
+        "reason": "STALE_TARGET: canonical moved since the snapshot; do not force an old base",
+        "task_id": "lost-evidence"
+      },
+      "profile": "CLAUDE_AUTO_CAMPAIGN_EVENT_V1",
+      "recorded_at": "2026-10-01T13:00:00+00:00",
+      "schema_version": 1
+    },
+    {
+      "campaign_id": "claude-auto-loop-001",
+      "event_id": "ec93dd92b7661f121353027b12e9be6edb34b2938926517766673f8d079e0b1a",
+      "event_type": "RECOVERY_ATTEMPT",
+      "payload": {
+        "attempt": 1,
+        "boundary_class": "TRANSIENT_UNKNOWN",
+        "reason": "evidence missing: ['tests']",
+        "scope": "b69daf7d7e665af6c87bfea75815c5636683048a8d6de18970bf31c1e2d37d26"
+      },
+      "profile": "CLAUDE_AUTO_CAMPAIGN_EVENT_V1",
+      "recorded_at": "2026-10-01T13:00:00+00:00",
+      "schema_version": 1
+    },
+    {
+      "campaign_id": "claude-auto-loop-001",
+      "event_id": "bd036cb84d644ef666459d6d3cb6080c4152cc8018065f892502ac3814f12f67",
+      "event_type": "TASK_BLOCKED",
+      "payload": {
+        "evidence_ref": "dispatch-intent:ea69c362be6374c2855ad11f754c7dc201dccfc40a38a0399cc46c226b8cf440",
+        "reason": "no Jules result PR recorded by 2026-10-01T13:00:30+00:00; provider settled (mock-no-running-provider); the dispatch slot stays consumed",
+        "task_id": "timeout-only"
+      },
+      "profile": "CLAUDE_AUTO_CAMPAIGN_EVENT_V1",
+      "recorded_at": "2026-10-01T13:00:31+00:00",
+      "schema_version": 1
+    }
+  ],
+  "inspections": [
+    {
+      "candidate_head": "7ec6c015059d8ef343a889c95b231a35ebec8e35",
+      "candidate_tree": "ebaad4596b76a0a34f3d0bb7cb3677efa11b43ba",
+      "changed_paths": [
+        "automation/command_bus/pass_first.py",
+        "automation/command_bus/tests/test_pass_first.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000001 / run run-1",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at 7ec6c015",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at 7ec6c015",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at 7ec6c015",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at 7ec6c015",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "42 tests on 7ec6c015059d8ef343a889c95b231a35ebec8e35",
+          "state": "PASS"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent 0ebba8f60598b7f23bedd5d536005ee2b6147885d0832ed6bc792914e94c8684",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-001-pass-first",
+      "decision": "ADOPT_CANDIDATE",
+      "findings": [],
+      "inspected_at": "2026-10-01T13:00:00+00:00",
+      "inspection_sha256": "ed4869d02fc8eeb8a942489a658984eff9e7854423036c13d75b1b02a89f3e87",
+      "intent_sha256": "0ebba8f60598b7f23bedd5d536005ee2b6147885d0832ed6bc792914e94c8684",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "all independent checks passed",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "pass-first",
+      "verdict": "PASS"
+    },
+    {
+      "candidate_head": "43a286e79191ca0a90d3ea02255b07fa3c29dfcb",
+      "candidate_tree": "2b9731bc6407ce05c075d558c3c7da50da7b892b",
+      "changed_paths": [
+        "automation/command_bus/correct_me.py",
+        "automation/command_bus/tests/test_correct_me.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000002 / run run-2",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at 43a286e7",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at 43a286e7",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at 43a286e7",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at 43a286e7",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "42 tests on 43a286e79191ca0a90d3ea02255b07fa3c29dfcb",
+          "state": "PASS"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent 78a65d64e17e01a8ef4ce2bdedd4391a9500e17cf8e6a36cd2a95a90e3bca4b3",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-002-correct-me",
+      "decision": "JULES_CORRECTIVE",
+      "findings": [
+        {
+          "category": "semantic_gap",
+          "detail": "missing negative case"
+        }
+      ],
+      "inspected_at": "2026-10-01T13:00:00+00:00",
+      "inspection_sha256": "93c9d8f735a808937c399666dc8f114812bc46980c650a01cdb301882499b4b6",
+      "intent_sha256": "78a65d64e17e01a8ef4ce2bdedd4391a9500e17cf8e6a36cd2a95a90e3bca4b3",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "substantial correction needs a new bounded Jules mission",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "correct-me",
+      "verdict": "FAIL_MAJOR"
+    },
+    {
+      "candidate_head": "afcb9e0ff394e9c9de58445c04703d30d3cd08e4",
+      "candidate_tree": "49f05c1df5fb58f6d76b48de4f94f2bfe0f58dde",
+      "changed_paths": [
+        "automation/command_bus/correct_me.py",
+        "automation/command_bus/tests/test_correct_me.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000003 / run run-3",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at afcb9e0f",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at afcb9e0f",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at afcb9e0f",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at afcb9e0f",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "42 tests on afcb9e0ff394e9c9de58445c04703d30d3cd08e4",
+          "state": "PASS"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent 60f49ec03ba9ae32cd9e7c731d08dd32a9d44ebd916565cec3881c02c7fc8652",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-003-correct-me-fix1",
+      "decision": "ADOPT_CANDIDATE",
+      "findings": [],
+      "inspected_at": "2026-10-01T13:00:00+00:00",
+      "inspection_sha256": "c0ca7f8c56f636640d4c0d50573f548f72d8aea6fd89c3fccd589549c3ac4314",
+      "intent_sha256": "60f49ec03ba9ae32cd9e7c731d08dd32a9d44ebd916565cec3881c02c7fc8652",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "all independent checks passed",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "correct-me-fix1",
+      "verdict": "PASS"
+    },
+    {
+      "candidate_head": "0bda60e0ae52484d1c6293179e15e79d4c9cffbe",
+      "candidate_tree": "2ad36e9891392b3487e568afc472c968ad4a761c",
+      "changed_paths": [
+        "automation/command_bus/lost_evidence.py",
+        "automation/command_bus/tests/test_lost_evidence.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000004 / run run-4",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "no test run bound to the exact candidate head/tree",
+          "state": "UNKNOWN"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent b9eb0c6ce919d1f4936c239ad2012a888f7d6512bdf046a6a7c48835fcec288a",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-004-lost-evidence",
+      "decision": "INVESTIGATE",
+      "findings": [],
+      "inspected_at": "2026-10-01T13:00:00+00:00",
+      "inspection_sha256": "38a0f885698211fc9f4de4616d32301d6414e2a293e74969b53a6d7678d99688",
+      "intent_sha256": "b9eb0c6ce919d1f4936c239ad2012a888f7d6512bdf046a6a7c48835fcec288a",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "evidence missing: ['tests']",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "lost-evidence",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "candidate_head": "0bda60e0ae52484d1c6293179e15e79d4c9cffbe",
+      "candidate_tree": "2ad36e9891392b3487e568afc472c968ad4a761c",
+      "changed_paths": [
+        "automation/command_bus/lost_evidence.py",
+        "automation/command_bus/tests/test_lost_evidence.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000004 / run run-4",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at 0bda60e0",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "42 tests on 0bda60e0ae52484d1c6293179e15e79d4c9cffbe",
+          "state": "PASS"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent b9eb0c6ce919d1f4936c239ad2012a888f7d6512bdf046a6a7c48835fcec288a",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-004-lost-evidence",
+      "decision": "ADOPT_CANDIDATE",
+      "findings": [],
+      "inspected_at": "2026-10-01T13:00:00+00:00",
+      "inspection_sha256": "140e96cc744d7dd509691fe82aeeb6a92c491e5e565c2fb6cbe8bff19f21822e",
+      "intent_sha256": "b9eb0c6ce919d1f4936c239ad2012a888f7d6512bdf046a6a7c48835fcec288a",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "all independent checks passed",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "lost-evidence",
+      "verdict": "PASS"
+    },
+    {
+      "candidate_head": "8a337f68e95ac93c7fad99af61d699d791483792",
+      "candidate_tree": "ebda8a0e55086601fc5bfc9c7fe9450f2fb42926",
+      "changed_paths": [
+        "automation/command_bus/lost_evidence.py",
+        "automation/command_bus/tests/test_lost_evidence.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000005 / run run-5",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at 8a337f68",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at 8a337f68",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at 8a337f68",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at 8a337f68",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "42 tests on 8a337f68e95ac93c7fad99af61d699d791483792",
+          "state": "PASS"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent ac5c5b5f6c6f1d227c75869fb1daeafa73b0ff208ddb17976323feccc72567a4",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-005-lost-evidence",
+      "decision": "ADOPT_CANDIDATE",
+      "findings": [],
+      "inspected_at": "2026-10-01T13:00:00+00:00",
+      "inspection_sha256": "30d23263086e0d429de4c236ffab1eab3aff154063732e45f6485b0ad6060d56",
+      "intent_sha256": "ac5c5b5f6c6f1d227c75869fb1daeafa73b0ff208ddb17976323feccc72567a4",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "all independent checks passed",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "lost-evidence",
+      "verdict": "PASS"
+    },
+    {
+      "candidate_head": "2bbd2a6afd514d4d5c4867dbb44e42acee65ef49",
+      "candidate_tree": "d97af2b90d43aa43580407b48000778773213417",
+      "changed_paths": [
+        "automation/command_bus/last_independent.py",
+        "automation/command_bus/tests/test_last_independent.py"
+      ],
+      "checks": [
+        {
+          "check": "session_command",
+          "detail": "session 9000006 / run run-6",
+          "state": "PASS"
+        },
+        {
+          "check": "ancestry",
+          "detail": "1 commit(s) ahead of snapshot",
+          "state": "PASS"
+        },
+        {
+          "check": "allowlist",
+          "detail": "within allowlist",
+          "state": "PASS"
+        },
+        {
+          "check": "delete_rename",
+          "detail": "none",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:helper_exact_value",
+          "detail": "asserted directly at 2bbd2a6a",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:bool_as_int_rejected",
+          "detail": "asserted directly at 2bbd2a6a",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:negative_cases_exercised",
+          "detail": "asserted directly at 2bbd2a6a",
+          "state": "PASS"
+        },
+        {
+          "check": "acceptance:regression_suite_reviewed",
+          "detail": "asserted directly at 2bbd2a6a",
+          "state": "PASS"
+        },
+        {
+          "check": "test_validity",
+          "detail": "0 vacuous finding(s)",
+          "state": "PASS"
+        },
+        {
+          "check": "exact_head_tests",
+          "detail": "42 tests on 2bbd2a6afd514d4d5c4867dbb44e42acee65ef49",
+          "state": "PASS"
+        },
+        {
+          "check": "evidence_binding",
+          "detail": "intent 35278e4ec9241d44848630243f89fa285ec5af82f2e9ef37ee43889bfa47fa27",
+          "state": "PASS"
+        }
+      ],
+      "command_id": "relay-dev-loop-007-last-independent",
+      "decision": "ADOPT_CANDIDATE",
+      "findings": [],
+      "inspected_at": "2026-10-01T13:00:31+00:00",
+      "inspection_sha256": "1a4bff1cf6f12c19a9e116953c0518bb9e6afcd3cfbd6d35678bec3b754b97db",
+      "intent_sha256": "35278e4ec9241d44848630243f89fa285ec5af82f2e9ef37ee43889bfa47fa27",
+      "profile": "CLAUDE_AUTO_JULES_INSPECTION_V1",
+      "reason": "all independent checks passed",
+      "repair_of": null,
+      "schema_version": 1,
+      "self_report_used": false,
+      "task_id": "last-independent",
+      "verdict": "PASS"
+    }
+  ],
+  "blocked_tasks": [
+    "timeout-only"
+  ],
+  "commands": 7,
+  "adoptions": 4,
+  "duplicate_final_wake_writes": 0
+}

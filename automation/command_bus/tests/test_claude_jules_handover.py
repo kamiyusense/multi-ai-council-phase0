@@ -6,8 +6,8 @@ import unittest
 from datetime import datetime, timedelta
 
 from automation.command_bus.claude_jules_handover import (
-    SEMIAUTO_HOLDER, StreamActivity, append_decision, decide_handback, decide_reclaim, decide_takeover,
-    observe_stream,
+    SEMIAUTO_HOLDER, StreamActivity, append_decision, decide_auto_resume, decide_handback,
+    decide_reclaim, decide_takeover, observe_stream,
 )
 from automation.command_bus.loop_owner_backend import LoopOwnerGitHubBackend
 from automation.command_bus.tests.claude_jules_autoloop_fakes import (
@@ -104,6 +104,24 @@ class TakeoverDecisionTests(unittest.TestCase):
                                         target_head="b" * 40, now=at(4)).status, "BLOCKED")  # AUTO lease valid
         reclaim = decide_reclaim(owner_chain=chain, semiauto_holder=SEMIAUTO_HOLDER, target_head="b" * 40, now=at(7))
         self.assertEqual((reclaim.status, reclaim.event["generation"]), ("ELIGIBLE", 3))
+
+    def test_expired_auto_can_resume_only_same_holder_without_half_written_intent(self):
+        auto = self.decide([semiauto_acquire()], StreamActivity(at(0), (), ()), at(3)).event
+        chain = [semiauto_acquire(), auto]
+        self.assertEqual(decide_auto_resume(
+            owner_chain=chain, auto_holder=HOLDER, half_written_intents=0,
+            target_head="b" * 40, now=at(5)).status, "BLOCKED")
+        self.assertEqual(decide_auto_resume(
+            owner_chain=chain, auto_holder="other-auto", half_written_intents=0,
+            target_head="b" * 40, now=at(7)).status, "BLOCKED")
+        self.assertEqual(decide_auto_resume(
+            owner_chain=chain, auto_holder=HOLDER, half_written_intents=1,
+            target_head="b" * 40, now=at(7)).status, "BLOCKED")
+        resumed = decide_auto_resume(
+            owner_chain=chain, auto_holder=HOLDER, half_written_intents=0,
+            target_head="b" * 40, now=at(7))
+        self.assertEqual((resumed.status, resumed.event["event_type"], resumed.event["generation"]),
+                         ("ELIGIBLE", "RENEW", 3))
 
 
 class HandoverEndToEndTests(unittest.TestCase):

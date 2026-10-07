@@ -206,6 +206,39 @@ def decide_renew(*, owner_chain: list[dict[str, Any]], auto_holder: str, outstan
                             event)
 
 
+def decide_auto_resume(*, owner_chain: list[dict[str, Any]], auto_holder: str,
+                       half_written_intents: int, target_head: str, now: str,
+                       lease: timedelta = timedelta(hours=3)) -> HandoverDecision:
+    """Resume an expired AUTO lease for the same logical holder.
+
+    This is intentionally narrower than takeover: it never crosses SEMI_AUTO
+    ownership, never steals from another AUTO holder and never resumes across a
+    half-written dispatch intent.  The backend's generation-CAS append decides
+    any race with a concurrent owner transition.
+    """
+    try:
+        chain = validate_owner_chain(owner_chain)
+    except ValueError as exc:
+        return HandoverDecision("UNKNOWN", f"owner chain invalid: {exc}")
+    latest = chain[-1]
+    if latest["event_type"] in {"RELEASE", "TERMINAL"}:
+        return HandoverDecision("BLOCKED", "owner chain is closed")
+    if latest["owner_role"] != "AUTO" or latest["holder_id"] != auto_holder:
+        return HandoverDecision("BLOCKED", "expired lease is not owned by this AUTO holder")
+    if _time(now) < _time(latest["expires_at"]):
+        return HandoverDecision("BLOCKED", "AUTO lease is still valid; resume is unnecessary")
+    if half_written_intents:
+        return HandoverDecision("BLOCKED", "half-written dispatch intent requires reconciliation before owner resume")
+    event = _base_event(
+        loop_id=latest["loop_id"], event_type="RENEW", role="AUTO", holder=auto_holder,
+        generation=latest["generation"] + 1, now=now, lease=lease,
+        expected_repo=latest["expected_repo"], expected_pr=latest["expected_pr"],
+        target_head=target_head, reason_tag="resume",
+    )
+    validate_owner_chain([*chain, event])
+    return HandoverDecision("ELIGIBLE", "expired AUTO lease safely resumed by the same holder", event)
+
+
 def decide_reclaim(*, owner_chain: list[dict[str, Any]], semiauto_holder: str, target_head: str, now: str,
                    lease: timedelta = timedelta(hours=12)) -> HandoverDecision:
     """SEMI_AUTO takes back a stream whose AUTO lease expired without a handback."""

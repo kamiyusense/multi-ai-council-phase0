@@ -8,16 +8,17 @@ from __future__ import annotations
 
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from automation.command_bus.claude_jules_autoloop import ClaudeJulesAutoLoop
+from automation.command_bus.claude_jules_campaign import campaign_policy_from_legacy
 from automation.command_bus.claude_jules_dispatch import dispatch_receipt_path
 from automation.command_bus.claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
 from automation.command_bus.jules_carrier_current import jules_api_request as carrier_request
 from automation.command_bus.jules_carrier_current import loop_id_claim as carrier_claim
 from automation.command_bus.loop_owner_backend import LoopOwnerGitHubBackend
 from automation.command_bus.tests.claude_jules_autoloop_fakes import (
-    CARRIER, DATA, LOOP, NOW, REPO, TARGET, VACUOUS_TEST, FakeFacts, FakeGitHub, FakeJules,
+    CARRIER, DATA, HOLDER, LOOP, NOW, REPO, TARGET, VACUOUS_TEST, FakeFacts, FakeGitHub, FakeJules,
     owner_event, policy, roadmap, seed_owner, task_spec,
 )
 
@@ -26,12 +27,13 @@ CLAIMS = "automation/command_bus/loop_id_claims/"
 
 
 class World:
-    def __init__(self, *, pol=None, plan=None, owner=None):
+    def __init__(self, *, pol=None, plan=None, owner=None, campaign=None):
         self.github = FakeGitHub()
         self.jules = FakeJules(self.github)
         self.facts = FakeFacts(self.github, self.jules)
         seed_owner(self.github, *(owner or [owner_event()]))
         self.policy = pol or policy()
+        self.campaign = campaign
         self.roadmap = plan or roadmap(task_spec("alpha-helper"),
                                        task_spec("beta-helper", "automation/command_bus/beta.py",
                                                  "automation/command_bus/tests/test_beta.py"))
@@ -42,7 +44,8 @@ class World:
         return ClaudeJulesAutoLoop(
             client=self.github, refs=self.github, policy=self.policy,
             owner_reader=LoopOwnerGitHubBackend(self.github, branch=DATA), roadmap=self.roadmap,
-            facts=self.facts, origin_loop_id=LOOP, lane_id="J-BLUE")
+            facts=self.facts, origin_loop_id=LOOP, lane_id="J-BLUE",
+            campaign_policy=self.campaign)
 
     def step(self, now=NOW):
         return self.controller().step(now=now)
@@ -100,6 +103,55 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual((done.action, done.status), ("COMPLETE", "COMPLETE"))
         self.assertEqual(len(w.commands()), 2)
         self.assertNotIn(("ff", "main", w.github.branches[TARGET]), w.github.writes)
+
+    def test_explicit_campaign_policy_can_run_past_legacy_six_round_cap(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=6, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["max_rounds"] = 8
+        specs = [
+            task_spec(
+                f"task-{index}",
+                f"automation/command_bus/task_{index}.py",
+                f"automation/command_bus/tests/test_task_{index}.py",
+            )
+            for index in range(1, 9)
+        ]
+        w = World(pol=legacy, plan=roadmap(*specs), campaign=campaign)
+        for index in range(1, 9):
+            dispatched = w.step()
+            self.assertEqual(dispatched.status, "DISPATCHED", (index, dispatched.reason))
+            command_id = dispatched.details["command_id"]
+            w.deliver(w.jules.run(command_id))
+            self.assertEqual(w.step().status, "PASS")
+            self.assertEqual(w.step().status, "ADOPTED")
+        boundary = w.step()
+        self.assertEqual((boundary.action, boundary.status), ("COMPLETE", "COMPLETE"))
+        self.assertEqual(len(w.commands()), 8)
+
+    def test_max_round_boundary_only_applies_when_ready_work_remains(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=6, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["max_rounds"] = 1
+        w = World(
+            pol=legacy,
+            campaign=campaign,
+            plan=roadmap(
+                task_spec("task-one"),
+                task_spec(
+                    "task-two", "automation/command_bus/task_two.py",
+                    "automation/command_bus/tests/test_task_two.py",
+                ),
+            ),
+        )
+        first = w.step()
+        w.deliver(w.jules.run(first.details["command_id"]))
+        self.assertEqual(w.step().status, "PASS")
+        self.assertEqual(w.step().status, "ADOPTED")
+        boundary = w.step()
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "MAX_ROUNDS"))
+        self.assertIn("READY work remaining", boundary.reason)
 
     def test_duplicate_and_redelivered_events_are_processed_once(self):
         w = World()
@@ -213,10 +265,14 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertIn("before adoption", result.reason)
         self.assertEqual(w.github.branches[TARGET], before)
 
-    def test_expired_owner_lease_stops(self):
+    def test_expired_same_holder_owner_lease_recovers_and_continues(self):
         w = World(owner=[owner_event(expires_at="2026-10-01T12:30:00+00:00")])
-        self.assertIn("expired", w.step().reason)
-        self.assertEqual(w.github.writes, [])
+        result = w.step()
+        self.assertEqual((result.action, result.status), ("DISPATCH", "DISPATCHED"), result.reason)
+        chain = LoopOwnerGitHubBackend(w.github, branch=DATA).read_events(LOOP)
+        self.assertEqual(len(chain), 2)
+        self.assertEqual((chain[-1]["event_type"], chain[-1]["owner_role"], chain[-1]["holder_id"]),
+                         ("RENEW", "AUTO", HOLDER))
 
     def test_session_loss_mid_dispatch_resumes_without_duplicates(self):
         w = World()
@@ -289,7 +345,7 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         self.assertEqual(fix["expected_target_head"], request["expected_target_head"])
         self.assertEqual(len(w.commands()), 2)
 
-    def test_repeated_failures_stop_for_human(self):
+    def test_repeated_failures_isolate_task_then_stop_only_when_dependencies_exhaust_safe_work(self):
         w = World()
         w.step()
         for _ in range(2):
@@ -305,9 +361,142 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [{"category": "semantic_gap", "detail": "x"}]
         w.deliver(payload)
         self.assertEqual(w.step().details["decision"], "STOP_HUMAN")
+        blocked = w.step()
+        self.assertEqual((blocked.action, blocked.status), ("BLOCK_TASK", "TASK_BLOCKED"))
         stop = w.step()
-        self.assertEqual(stop.action, "STOP")
+        self.assertEqual((stop.action, stop.status), ("STOP", "TASK_BLOCKED"))
+        self.assertIn("beta-helper", stop.details["remaining_tasks"])
         self.assertEqual(len(w.commands()), 3)
+
+    def test_campaign_can_extend_corrective_budget_without_rewriting_legacy_inspections(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=10, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["max_corrective_rounds_per_task"] = 3
+        campaign["max_consecutive_failures"] = 4
+        w = World(pol=legacy, plan=roadmap(task_spec("alpha-helper")), campaign=campaign)
+
+        dispatched = w.step()
+        for failure_index in range(4):
+            command_id = dispatched.details["command_id"]
+            payload = w.jules.run(command_id)
+            w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [
+                {"category": "semantic_gap", "detail": f"failure {failure_index + 1}"}
+            ]
+            w.deliver(payload)
+            inspected = w.step()
+            self.assertIn(inspected.details["decision"], {
+                "JULES_CORRECTIVE", "JULES_CORRECTIVE_REDUCED", "STOP_HUMAN"
+            })
+            if failure_index < 3:
+                dispatched = w.step()
+                self.assertEqual(dispatched.status, "DISPATCHED", dispatched.reason)
+            else:
+                blocked = w.step()
+                self.assertEqual((blocked.action, blocked.status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertEqual(len(w.commands()), 4)
+        base_inspections = w.controller().inspections.list_all()
+        self.assertEqual(len(base_inspections), 4)
+        self.assertEqual(sum(1 for item in base_inspections if item["decision"] == "STOP_HUMAN"), 2)
+
+    def test_deferred_decision_survives_restart_and_does_not_stop_ready_work(self):
+        w = World()
+        controller = w.controller()
+        deferred = controller.defer_decision(
+            decision_id="cache-layout-1",
+            question="Which reversible cache layout should be used?",
+            options=["keep-current", "split-later"],
+            reason="Either shape preserves correctness and authority",
+            selected_safe_default="keep-current",
+            reversibility="fully reversible",
+            affected_scope="local cache only",
+            reconsider_condition="cache becomes a measured bottleneck",
+            now=NOW,
+        )
+        self.assertEqual((deferred.action, deferred.status), ("DEFER_DECISION", "DEFERRED"))
+        saved = w.controller().campaign_state.deferred_decisions()
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0]["payload"]["selected_safe_default"], "keep-current")
+        resumed = w.controller().step(now=NOW)
+        self.assertEqual((resumed.action, resumed.status), ("DISPATCH", "DISPATCHED"))
+
+    def test_explicit_task_timeout_is_rederived_and_blocks_only_that_task(self):
+        campaign = campaign_policy_from_legacy(policy(), LOOP)
+        campaign["task_timeout_seconds"] = 3600
+        campaign["campaign_timeout_seconds"] = 7200
+        w = World(campaign=campaign)
+        first = w.step()
+        self.assertEqual(first.status, "DISPATCHED")
+        late = (datetime.fromisoformat(NOW) + timedelta(seconds=3601)).isoformat()
+        boundary = w.step(now=late)
+        self.assertEqual((boundary.action, boundary.status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertIn("no Jules result PR", boundary.reason)
+        self.assertEqual(len(w.commands()), 1)
+
+    def test_explicit_campaign_timeout_is_rederived_after_restart(self):
+        campaign = campaign_policy_from_legacy(policy(), LOOP)
+        campaign["task_timeout_seconds"] = 3600
+        campaign["campaign_timeout_seconds"] = 3600
+        w = World(campaign=campaign)
+        first = w.step()
+        self.assertEqual(first.status, "DISPATCHED")
+        late = (datetime.fromisoformat(NOW) + timedelta(seconds=3601)).isoformat()
+        boundary = w.step(now=late)
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "CAMPAIGN_TIMEOUT"))
+        self.assertEqual(len(w.commands()), 1)
+        self.assertIn("deadline", boundary.details)
+
+    def test_campaign_provider_budget_is_a_tighter_gate_not_new_authority(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=10, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["dispatch_provider_budget"] = 1
+        w = World(pol=legacy, campaign=campaign)
+
+        first = w.step()
+        self.assertEqual(first.status, "DISPATCHED")
+        w.deliver(w.jules.run(first.details["command_id"]))
+        self.assertEqual(w.step().status, "PASS")
+        self.assertEqual(w.step().status, "ADOPTED")
+        boundary = w.step()
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "PREPARED_NOT_AUTHORIZED"))
+        self.assertIn("campaign dispatch/provider budget exhausted", boundary.reason)
+        self.assertEqual(len(w.commands()), 1)
+
+    def test_blocked_task_does_not_stop_independent_ready_task(self):
+        plan = {
+            "schema_version": 1,
+            "profile": "CLAUDE_AUTO_JULES_ROADMAP_V1",
+            "roadmap_id": "independent",
+            "tasks": [
+                {"task_spec": task_spec("alpha-helper"), "depends_on": []},
+                {"task_spec": task_spec(
+                    "beta-helper", "automation/command_bus/beta.py",
+                    "automation/command_bus/tests/test_beta.py"), "depends_on": []},
+            ],
+        }
+        w = World(plan=plan)
+        w.step()
+        for _ in range(2):
+            request = w.command(sorted(w.commands())[-1])
+            payload = w.jules.run(request["command_id"])
+            w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [
+                {"category": "semantic_gap", "detail": "still wrong"}]
+            w.deliver(payload)
+            w.step()
+            w.step()
+        request = w.command(sorted(w.commands())[-1])
+        payload = w.jules.run(request["command_id"])
+        w.facts.review_failures[payload["pull_request"]["head"]["sha"]] = [
+            {"category": "semantic_gap", "detail": "third failure"}]
+        w.deliver(payload)
+        self.assertEqual(w.step().details["decision"], "STOP_HUMAN")
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual((results[0].action, results[0].status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertIn("DISPATCHED", [r.status for r in results])
+        self.assertEqual(results[-1].status, "WAITING_FOR_RESULT")
+        beta = [w.command(path) for path in w.commands() if "beta-helper" in path]
+        self.assertEqual(len(beta), 1)
 
     def test_not_authorized_policy_writes_nothing(self):
         w = World(pol=policy(live_dispatch_authorization=None))
@@ -353,8 +542,13 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         w.github.branches[TARGET] = w.github.child(w.github.branches[TARGET], {"y": "1"}, "other lane")
         before = w.github.branches[TARGET]
         result = w.step()
-        self.assertEqual((result.action, result.status), ("STOP", "BLOCKED"))
+        self.assertEqual((result.action, result.status), ("REPLAN", "REPLANNED"))
         self.assertEqual(w.github.branches[TARGET], before)
+        replanned = w.step()
+        self.assertEqual(replanned.status, "DISPATCHED", replanned.reason)
+        fresh = w.command(COMMANDS + replanned.details["command_id"] + ".json")
+        self.assertEqual(fresh["expected_target_head"], before)
+        self.assertNotEqual(fresh["command_id"], command_id)
 
     def test_ambiguous_fast_forward_is_resolved_by_readback(self):
         w = World()
@@ -496,6 +690,94 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         results = w.controller().run_until_boundary(now=NOW)
         self.assertEqual([r.action for r in results], ["DISPATCH", "WAIT"])
         self.assertIsNotNone(w.github.get(dispatch_receipt_path(results[0].details["command_id"]), DATA))
+        self.assertEqual(
+            results[-1].details["next_check_at"],
+            (datetime.fromisoformat(NOW) + timedelta(seconds=300)).isoformat(),
+        )
+
+    def test_run_until_boundary_retries_transient_read_failure(self):
+        w = World()
+        w.step()
+        request = w.command(w.commands()[0])
+        w.deliver(w.jules.run(request["command_id"]))
+        real = w.facts.dispatch_observation
+        calls = 0
+
+        def flaky(command_id):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise RuntimeError("temporary network read failed")
+            return real(command_id)
+
+        w.facts.dispatch_observation = flaky
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual(results[0].status, "UNKNOWN")
+        self.assertEqual(results[0].details["boundary_class"], "TRANSIENT_UNKNOWN")
+        self.assertEqual(results[1].status, "PASS")
+        self.assertEqual(results[2].status, "ADOPTED")
+        self.assertEqual(results[3].status, "DISPATCHED")
+
+    def test_same_head_missing_test_evidence_is_reinspected_append_only_then_adopted(self):
+        w = World()
+        w.step()
+        request = w.command(w.commands()[0])
+        payload = w.jules.run(request["command_id"])
+        head = payload["pull_request"]["head"]["sha"]
+        w.deliver(payload)
+        real_tests = w.facts.run_tests
+        calls = 0
+
+        def transient_tests(candidate):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return None
+            return real_tests(candidate)
+
+        w.facts.run_tests = transient_tests
+        first = w.step()
+        self.assertEqual((first.action, first.status), ("INSPECT", "UNKNOWN"))
+        base = w.controller().inspections.get(request["command_id"], head)
+        self.assertEqual((base["verdict"], base["decision"]), ("UNKNOWN", "INVESTIGATE"))
+
+        second = w.step()
+        self.assertEqual((second.action, second.status), ("INSPECT", "PASS"), second.reason)
+        base_after = w.controller().inspections.get(request["command_id"], head)
+        self.assertEqual(base_after["inspection_sha256"], base["inspection_sha256"])
+        versions = w.controller().reinspections.all_versions(base_after)
+        self.assertEqual([v["verdict"] for v in versions], ["UNKNOWN", "PASS"])
+
+        adopted = w.step()
+        self.assertEqual(adopted.status, "ADOPTED")
+        self.assertEqual(w.github.branches[TARGET], head)
+
+    def test_run_until_boundary_replans_stale_target_without_human_stop(self):
+        w = World()
+        original = w.github.branches[TARGET]
+        moved = w.github.child(original, {"x.txt": "moved"}, "concurrent change")
+
+        def move_target(path, branch):
+            if path.startswith(CLAIMS):
+                w.github.branches[TARGET] = moved
+            return None
+
+        w.github.create_hook = move_target
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual(results[0].status, "BLOCKED")
+        self.assertEqual(results[0].details["boundary_class"], "RECOVERABLE_UNKNOWN")
+        self.assertIn("DISPATCHED", [r.status for r in results])
+        self.assertEqual(results[-1].action, "WAIT")
+        self.assertEqual(results[-1].status, "WAITING_FOR_RESULT")
+
+    def test_run_until_boundary_does_not_retry_ambiguous_mutating_write(self):
+        w = World()
+        w.github.create_hook = lambda path, branch: "raise-before-write" if path.startswith(COMMANDS) else None
+        results = w.controller().run_until_boundary(now=NOW, max_steps=4)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].status, "UNKNOWN")
+        self.assertEqual(results[0].details["boundary_class"], "HARD_UNKNOWN")
+        self.assertEqual(w.commands(), [])
 
 
 if __name__ == "__main__":

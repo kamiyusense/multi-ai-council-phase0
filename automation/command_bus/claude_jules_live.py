@@ -21,6 +21,9 @@ simulate:
 CLI (all commands print one JSON object):
   python -m automation.command_bus.claude_jules_live status|step|poll|budget
   python -m automation.command_bus.claude_jules_live record-review --file review.json
+  python -m automation.command_bus.claude_jules_live build-settlement --file {"command_id", "status_request_path"}
+  python -m automation.command_bus.claude_jules_live record-settlement --file settlement.json
+  python -m automation.command_bus.claude_jules_live recovery-history [--recovery-policy v1]
   python -m automation.command_bus.claude_jules_live observe|takeover|renew|handback|reclaim [--write]
   python -m automation.command_bus.claude_jules_live carrier [--file since.txt]
 """
@@ -37,7 +40,8 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from .claude_jules_adoption import adoption_receipt_path
+from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
+from .claude_jules_reinspection import ReinspectionStore
 from .claude_jules_autoloop import ClaudeJulesAutoLoop
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, DispatchResult, canonical_json, command_path, dispatch_receipt_path, sha256_of, validate_dispatch_intent,
@@ -49,6 +53,11 @@ from .claude_jules_handover import (
 from .claude_jules_inspection import InspectionStore
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
+from .claude_jules_recovery_policy import recovery_policy
+from .claude_jules_settlement import (
+    ReadbackMismatch, ReadbackUnavailable, observation_from_readback_run, settlement_path, settlement_status,
+    validate_settlement_observation, verify_readback,
+)
 from .loop_owner_backend import LoopOwnerGitHubBackend
 
 CARRIER_WORKFLOW = "jules-chat-semiauto.yml"
@@ -57,7 +66,7 @@ _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _SESSION_LOG = re.compile(r"Jules session accepted: sessions/([0-9]{1,32})\b")
 _TEST_RAN = re.compile(r"^Ran ([0-9]+) tests? in ", re.M)
 _TEST_FAILED = re.compile(r"^FAILED \(([^)]*)\)", re.M)
-DEFAULT_TEST_COMMAND = ["python3", "-m", "unittest", "discover", "-s", "automation/command_bus/tests", "-t", "."]
+DEFAULT_TEST_COMMAND = [sys.executable or "python3", "-m", "unittest", "discover", "-s", "automation/command_bus/tests", "-t", "."]
 OBSERVATION_PROFILE = "CLAUDE_AUTO_DISPATCH_OBSERVATION_V1"
 _OBSERVATION_KEYS = {"schema_version", "profile", "command_id", "workflow_run_id", "job_id", "session_id",
                      "log_line", "source", "observed_at", "observation_sha256"}
@@ -152,17 +161,22 @@ class LiveResultFacts:
             return None
         run = runs[0]
         sessions: set[str] = set()
+        source = None
         if run.get("conclusion") == "success":
             jobs = self.rest.run_jobs(run["id"])
             try:
                 for job in jobs:
                     sessions.update(_SESSION_LOG.findall(self.rest.job_log(job["id"]) or ""))
+                source = "JOB_LOG"
             except Exception:
                 # Job-log storage can be unreachable from the container; then only a Claude-recorded
                 # observation for exactly this REST-verified run and job may supply the session id.
+                # It stays marked as a transcription: provider settlement never binds to it.
                 sessions = self._recorded_session(command_id, str(run["id"]), {str(j["id"]) for j in jobs})
+                source = "RECORDED_TRANSCRIPTION"
         return {"command_id": command_id, "workflow_run_id": str(run["id"]), "conclusion": run.get("conclusion"),
-                "session_id": sessions.pop() if len(sessions) == 1 else None, "command_commit": commits[0]}
+                "session_id": sessions.pop() if len(sessions) == 1 else None, "command_commit": commits[0],
+                "session_source": source}
 
     def _recorded_session(self, command_id: str, run_id: str, job_ids: set[str]) -> set[str]:
         content = self.git.get(observation_path(command_id), self.policy["data_branch"])
@@ -175,6 +189,52 @@ class LiveResultFacts:
 
     def fresh_pr(self, number: int) -> dict[str, Any] | None:
         return fresh_pr_view(self.rest.pull(number))
+
+    def timeout_reconciliation(self, intent: dict[str, Any]) -> dict[str, Any]:
+        """Reacquire GitHub results without treating absence as provider completion.
+
+        This performs repository-scoped GETs only. There is no new Jules/model
+        authority and no cancellation/dispatch here. A missing result cannot
+        establish that the provider stopped; only recorded, REST-verified
+        readbacks of the accepted session (``claude_jules_settlement``) can say
+        SETTLED or RUNNING. Without them the boundary stays UNKNOWN (WAIT).
+        """
+        request = intent["carrier_request"]
+        events = []
+        for pr in self.rest.pulls_for_base(request["work_branch"]):
+            event = normalize_pull_request_event(
+                event_name="pull_request", delivery_id=f"timeout-{pr['number']}-{pr['head']['sha']}",
+                payload=pull_request_payload(pr), expected_repo=self.policy["target_repo"],
+            )
+            if event.status == "ACCEPTED":
+                events.append(event.record)
+        status, ref = self.provider_settlement(intent)
+        return {"command_id": request["command_id"], "snapshot_head": request["expected_target_head"],
+                "status": status, "evidence_ref": f"github-result-pr-readback; {ref}",
+                "result_events": events}
+
+    def provider_settlement(self, intent: dict[str, Any]) -> tuple[str, str]:
+        command_id = intent["carrier_request"]["command_id"]
+        try:
+            observation = self.dispatch_observation(command_id) or {}
+        except Exception as exc:
+            return "UNKNOWN", f"dispatch observation unavailable: {type(exc).__name__}"
+        if observation.get("session_id") and observation.get("session_source") != "JOB_LOG":
+            # A transcribed session id is a claim, not an independent read; binding a
+            # settlement to it could settle the wrong session while the real one runs.
+            return "UNKNOWN", "accepted session only transcribed; dispatch job log readback unavailable"
+        prefix = settlement_path(command_id, "0").rsplit("/", 1)[0] + "/"
+        try:
+            records = [json.loads(c.text) for c in self.git.list(prefix, self.policy["data_branch"])]
+        except json.JSONDecodeError:
+            return "UNKNOWN", "settlement record invalid: not JSON"
+        except Exception as exc:
+            return "UNKNOWN", f"settlement records unavailable: {type(exc).__name__}"
+        return settlement_status(
+            records, command_id=command_id, accepted_session_id=observation.get("session_id"),
+            dispatched_at=intent["prepared_at"],
+            verify=lambda r: verify_readback(r, git=self.git, rest=self.rest,
+                                             carrier_branch=self.policy["carrier_branch"]))
 
     def compare(self, base: str, head: str) -> dict[str, Any] | None:
         return self.git.compare(base, head)
@@ -217,6 +277,12 @@ class LiveResultFacts:
             result["errors"] = max(result["errors"], 1)  # crashed runner is never a pass
         self._tests[head] = result
         return result
+
+    def environment_digest(self) -> str:
+        """What the candidate test run depends on locally; a re-run after an environment failure needs this to change."""
+        import platform
+        return sha256_of({"test_command": list(self.test_command), "python": sys.version,
+                          "platform": platform.platform()})
 
     def test_sources(self, head: str, paths: list[str]) -> dict[str, str] | None:
         sources = {}
@@ -360,19 +426,41 @@ def outstanding_dispatches(git: GitLiveClient, policy: dict[str, Any], origin_lo
         intent = validate_dispatch_intent(json.loads(content.text))
         if intent["origin_loop_id"] == origin_loop_id:
             mine.append(intent)
-    inspections = InspectionStore(git, data_branch=policy["data_branch"]).list_all()
+    inspections = ReinspectionStore(git, data_branch=policy["data_branch"]).extend_all(
+        InspectionStore(git, data_branch=policy["data_branch"]).list_all())
+    adoption = SafeAdoption(client=git, refs=git, policy=policy)
     found = []
     for intent in mine:
         command_id = intent["carrier_request"]["command_id"]
         receipt = git.get(dispatch_receipt_path(command_id), policy["data_branch"])
         if receipt is None or json.loads(receipt.text).get("state") != "DISPATCHED":
             continue
-        if git.get(adoption_receipt_path(command_id), policy["data_branch"]) is not None:
+        adopted = git.get(adoption_receipt_path(command_id), policy["data_branch"])
+        if adopted is not None:
+            digest = json.loads(adopted.text).get("inspection_sha256")
+            matches = [r for r in inspections if r["command_id"] == command_id and r["inspection_sha256"] == digest]
+            verified = adoption.verify_adopted(intent=intent, inspection=matches[0] if len(matches) == 1 else None)
+            if verified.status != "VERIFIED":
+                raise ValueError(f"unverifiable adoption receipt for {command_id}: {verified.reason}")
             continue
         corrective = any(r["command_id"] == command_id and r["decision"].startswith("JULES_CORRECTIVE")
                          for r in inspections)
-        if corrective and any(o["origin_round"] > intent["origin_round"] for o in mine):
-            continue  # superseded by a later dispatched round
+        if corrective:
+            # A later *intent* may be half-written. Supersession requires a
+            # DISPATCHED receipt for the corrective of this exact task family.
+            family = re.sub(r"-fix[0-9]+$", "", intent["task_id"])
+            settled = False
+            for other in mine:
+                if other["origin_round"] <= intent["origin_round"] or not re.fullmatch(re.escape(family) + r"-fix[0-9]+", other["task_id"]):
+                    continue
+                later = git.get(dispatch_receipt_path(other["carrier_request"]["command_id"]), policy["data_branch"])
+                if later is not None:
+                    record = json.loads(later.text)
+                    if record.get("state") == "DISPATCHED" and record.get("intent_sha256") == other["intent_sha256"]:
+                        settled = True
+                        break
+            if settled:
+                continue
         found.append(intent)
     return found
 
@@ -396,6 +484,41 @@ def poll_results(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str
                 entry["inbox"] = recorded.status
             outcomes.append(entry)
     return outcomes
+
+
+def wake_resume(*, loop: ClaudeJulesAutoLoop, git: GitLiveClient, rest: GitHubRestReader,
+                policy: dict[str, Any], origin_loop_id: str, now: str, max_steps: int = 12,
+                poller: Any = poll_results, clock: Any = None) -> dict[str, Any]:
+    """Ingest result PRs, restore durable controller state and continue to a real boundary.
+
+    The wake itself grants no authority.  The unchanged controller still
+    enforces owner fencing, live authorization, budgets, exact-head checks and
+    append-only duplicate guards on every mutating step.
+    """
+    if isinstance(max_steps, bool) or not isinstance(max_steps, int) or not 1 <= max_steps <= 100:
+        raise ValueError("max_steps must be an integer in 1..100")
+    poll_error = None
+    try:
+        polled = poller(git=git, rest=rest, policy=policy, origin_loop_id=origin_loop_id)
+    except Exception as exc:
+        # Do not resend ingestion writes. Already durable records can still
+        # permit controller progress; it revalidates them independently.
+        polled = []
+        poll_error = f"UNKNOWN: poll outcome unavailable; no resend: {exc}"
+    results = loop.run_until_boundary(now=now, max_steps=max_steps, clock=clock)
+    return {
+        "poll": polled,
+        "poll_error": poll_error,
+        "steps": [
+            {
+                "action": result.action,
+                "status": result.status,
+                "reason": result.reason,
+                "details": {k: v for k, v in result.details.items() if k != "intent"},
+            }
+            for result in results
+        ],
+    }
 
 
 def stream_activity(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str, Any], lane_id: str,
@@ -459,12 +582,16 @@ def _load(path: str) -> dict[str, Any]:
 
 def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveClient, GitHubRestReader, dict[str, Any]]:
     policy, roadmap = _load(args.policy), _load(args.roadmap)
+    campaign_policy = _load(args.campaign_policy) if getattr(args, "campaign_policy", None) else None
     git = GitLiveClient(args.repo_dir, message_trailer=args.trailer or "")
     rest = GitHubRestReader(policy["target_repo"])
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=args.scratch)
     loop = ClaudeJulesAutoLoop(client=git, refs=git, policy=policy,
                                owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
                                roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id,
+                               campaign_policy=campaign_policy,
+                               recovery_policy=(recovery_policy() if getattr(args, "recovery_policy", None) == "v1"
+                                                else None),
                                carrier_guard=CarrierQuietGuard(
                                    git=git, rest=rest, carrier_branch=policy["carrier_branch"],
                                    isolated_targets=tuple(policy["allowed_target_branches"]),
@@ -474,17 +601,22 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="claude_jules_live")
-    parser.add_argument("command", choices=["status", "step", "poll", "budget", "record-review", "record-observation",
+    parser.add_argument("command", choices=["status", "step", "poll", "wake-resume", "budget", "record-review", "record-observation", "record-settlement",
+                                            "build-settlement", "recovery-history",
                                             "observe", "takeover", "renew", "handback", "reclaim",
                                             "carrier"])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--roadmap", required=True)
+    parser.add_argument("--campaign-policy", help="optional CLAUDE_AUTO_CAMPAIGN_POLICY_V1 JSON; legacy policy remains the default")
+    parser.add_argument("--recovery-policy", choices=["v1"],
+                        help="opt in to reasoned bounded recovery v1; omitted keeps the legacy retry behaviour")
     parser.add_argument("--origin-loop-id", required=True)
     parser.add_argument("--lane-id", required=True)
     parser.add_argument("--repo-dir", default=".")
     parser.add_argument("--scratch", default=os.path.join(tempfile.gettempdir(), "claude-jules-live"))
     parser.add_argument("--trailer", default="")
     parser.add_argument("--file")
+    parser.add_argument("--max-steps", type=int, default=12, help="wake-resume controller step budget (1..100)")
     parser.add_argument("--write", action="store_true", help="append the owner event (handover commands only)")
     parser.add_argument("--now")
     args = parser.parse_args(argv)
@@ -495,6 +627,12 @@ def main(argv: list[str] | None = None) -> int:
         out: Any = {"used": len(slots), "cap": 10, "slots": [{k: s[k] for k in ("slot", "command_id", "acquired_at")} for s in slots]}
     elif args.command == "poll":
         out = {"now": now, "results": poll_results(git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id)}
+    elif args.command == "wake-resume":
+        out = {"now": now, **wake_resume(
+            loop=loop, git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id,
+            now=now, max_steps=args.max_steps,
+            clock=(None if args.now else lambda: datetime.now(timezone.utc).replace(microsecond=0).isoformat()),
+        )}
     elif args.command == "record-review":
         record = validate_review(_load(args.file))
         path = review_path(record["command_id"], record["candidate_head"])
@@ -507,6 +645,38 @@ def main(argv: list[str] | None = None) -> int:
         path = observation_path(record["command_id"])
         if git.get(path, policy["data_branch"]) is None:
             git.create(path, canonical_json(record), f"Claude AUTO dispatch observation {record['command_id']}",
+                       policy["data_branch"])
+        stored = git.get(path, policy["data_branch"])
+        out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}
+    elif args.command == "build-settlement":
+        request = _load(args.file)
+        try:
+            out = {"record": observation_from_readback_run(
+                command_id=request["command_id"], status_request_path=request["status_request_path"], git=git,
+                rest=rest, carrier_branch=policy["carrier_branch"], observed_at=now), "written": False}
+        except (ReadbackUnavailable, ReadbackMismatch) as exc:
+            out = {"record": None, "written": False, "status": "UNKNOWN", "reason": f"{type(exc).__name__}: {exc}"}
+    elif args.command == "recovery-history":
+        events = loop.campaign_state.events()
+        out = {"campaign_id": loop.campaign_policy["campaign_id"],
+               "recovery_policy": "v1" if loop.recovery_policy is not None else "legacy",
+               "events": [{"type": e["event_type"], "recorded_at": e["recorded_at"],
+                           **{k: e["payload"].get(k) for k in ("task_id", "cause", "attempt", "decision", "reason",
+                                                               "not_before", "provider_budget_effect")
+                              if k in e["payload"]}}
+                          for e in events if e["event_type"] in {"RECOVERY_ATTEMPT", "RECOVERY_DECISION",
+                                                                "TASK_BLOCKED", "TASK_REPLAN"}]}
+    elif args.command == "record-settlement":
+        record = validate_settlement_observation(_load(args.file))
+        path = settlement_path(record["command_id"], record["workflow_run_id"])
+        try:  # a record is stored only when the job's own log confirms it
+            verify_readback(record, git=git, rest=rest, carrier_branch=policy["carrier_branch"])
+        except (ReadbackUnavailable, ReadbackMismatch) as exc:
+            print(json.dumps({"path": path, "verified": False, "written": False,
+                              "reason": f"{type(exc).__name__}: {exc}"}, indent=2, sort_keys=True))
+            return 2
+        if git.get(path, policy["data_branch"]) is None:
+            git.create(path, canonical_json(record), f"Claude AUTO provider settlement {record['command_id']}",
                        policy["data_branch"])
         stored = git.get(path, policy["data_branch"])
         out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}

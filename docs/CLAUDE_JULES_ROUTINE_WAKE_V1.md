@@ -41,3 +41,60 @@ UNKNOWN until a real Jules PR appears: whether a Jules-created PR fires the Rout
   event recorded. LIVE budget is 5/10 (slot-01..05). The LIVE proof policy is expired, so a production wake
   would no-op until a new LIVE stream, owner event and policy are approved.
 - Fallback stays the in-session `poll`.
+
+
+## Stop-resistant implementation candidate (2026-10-07)
+
+The implementation branch `feature/autonomous-loop-stop-resistant-core-v1`
+adds a STATIC-tested controller entrypoint named `wake-resume`.  This does
+not create or change a Claude Routine.  It is the runtime target a future
+approved event wake can invoke:
+
+```text
+wake
+  -> poll result PRs into the existing create-only inbox
+  -> reconstruct campaign/controller state from GitHub
+  -> validate owner/generation/authorization on each step
+  -> inspect/adopt/replan/recover when evidence permits
+  -> select and dispatch the next READY task when already authorized
+  -> stop at WAIT, COMPLETE or a real hard boundary
+```
+
+The command has a bounded `--max-steps` (1..100; default 12).  It grants no
+provider authority by itself.  If Claude's independent review record for the
+exact candidate head/tree is absent, it stops at
+`AWAITING_CLAUDE_REVIEW`; it never fabricates semantic review evidence.
+
+A local bare-git integration test covers
+`poll -> restore -> PASS inspection -> adoption -> COMPLETE` through this
+single entrypoint.  Production Routine creation/connection and a new
+multi-round LIVE proof remain separate explicit-approval boundaries.
+
+### Restart and timeout semantics (STATIC, 2026-10-07)
+
+Each invocation revalidates the immutable campaign configuration, complete
+owner chain, result/reinspection history and adoption receipt. Read recovery
+counts and stale-candidate replans survive process restart. Duplicate wakes
+at COMPLETE or a settled dependency boundary produce no new durable writes.
+A failed poll is reported separately; already durable evidence can still
+advance the controller after independent validation. Reinspection order is
+the validated chain order, including equal/skewed timestamps. Old UNKNOWN
+records and old failure runs remain evidence.
+
+`--max-steps` exhaustion exposes `continuation_required` rather than declaring
+completion. Without `--now`, the CLI refreshes UTC time at every controller
+step so leases and campaign/task deadlines cannot be frozen by a long wake.
+
+A timed-out provider must be positively settled before unrelated provider
+work starts. GitHub-only readback can recover a lost result PR, but absence of
+a PR is not settlement evidence. The current production adapter therefore
+waits at `AWAITING_TIMEOUT_RECONCILIATION` if no result arrives. The mock E2E
+includes SETTLED/RUNNING/UNKNOWN and malformed observations; provider-terminal
+readback integration remains future work. The Routine itself, event trigger,
+Claude model turn and Jules dispatch were not created or executed in this
+STATIC batch. No Routine idempotency behavior is claimed by the mock test.
+
+Fresh start-of-batch LIVE readback supersedes the historical limits above:
+Loop A slots 01..06 are consumed (6/10), owner a-003 generation 2 is SEMI_AUTO,
+and live target is `53f2caf67280ca1b4c019f325aea5fb9502f1114`. This batch grants
+no authority to resume that owner or consume slot 07.

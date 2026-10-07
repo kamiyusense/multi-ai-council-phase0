@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "AUTONOMOUS_LOOP_NORTH_STAR_CHECKPOINT",
+  "recorded_at": "2026-10-07T07:36:17+09:00",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "base_main": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+  "design_branch": "docs/autonomous-loop-north-star-v2",
+  "draft_pr": 325,
+  "draft_pr_head_before_checkpoint": "dfbce014bdf0220425ae5b2d2c9d4f27085af6f2",
+  "files": {
+    "north_star": "docs/AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md",
+    "handover": "docs/CLAUDE_JULES_AUTOLOOP_HANDOVER_CURRENT.md",
+    "routine_component_doc": "docs/CLAUDE_JULES_ROUTINE_WAKE_V1.md",
+    "integration_history_doc": "docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md"
+  },
+  "current_runtime_snapshot": {
+    "pr_220": {
+      "state": "OPEN_DRAFT_UNMERGED",
+      "head": "044389eb7760b80da23c2e193000bc8e019519d6"
+    },
+    "pr_322": {
+      "state": "OPEN_UNMERGED_UNADOPTED",
+      "head": "adbd5deff91b00e7fd85995c400fa759d6b9594c"
+    },
+    "live_budget_used": 6,
+    "live_budget_cap": 10,
+    "owner_loop": "claude-auto-loop-a-003",
+    "owner_role": "SEMI_AUTO",
+    "owner_holder": "chatgpt-semiauto-controller",
+    "owner_generation": 2,
+    "owner_target_head": "53f2caf67280ca1b4c019f325aea5fb9502f1114"
+  },
+  "governing_completion_principles": [
+    "Phase 0 safety primitives are reused but do not define a global stop-on-UNKNOWN policy for this loop.",
+    "A successful task continues to next-task selection without asking the human.",
+    "UNKNOWN must be typed; transient/recoverable cases attempt bounded recovery.",
+    "Stale HEAD triggers readback/replan before campaign stop.",
+    "A blocked task is isolated while independent safe work continues.",
+    "Reversible choices with a safe default may be recorded as Deferred Decisions and continued.",
+    "Timeout triggers reconciliation/recovery before terminal classification.",
+    "Ambiguous side-effecting writes are never blindly replayed; readback first.",
+    "Corrective work is a new task, not a replay of an ambiguous write.",
+    "Round/retry/corrective/timeout limits are configurable; six rounds is not architectural.",
+    "Wake must restore and resume the authorized campaign, not merely report status.",
+    "Autonomous-loop completion requires multi-round, session-resuming evidence, not a one-shot wake."
+  ],
+  "next_safe_work": [
+    "Introduce a backward-compatible campaign policy/config layer around the existing controller.",
+    "Add typed UNKNOWN/recovery semantics and blocker isolation.",
+    "Add Deferred Decision and next_safe_action durable state without blindly trusting cached state.",
+    "Add bounded read/test/evidence retry and stale-HEAD replan paths.",
+    "Connect Routine/event wake to controller resume under durable campaign authority.",
+    "Design safe automatic expired-owner reclaim for normal session loss.",
+    "Redesign same-HEAD evidence reinspection append-only without weakening legacy validators or bypassing classifiers.",
+    "Build multi-round STATIC/mock E2E including corrective, session restart, duplicate wake, stale HEAD and blocked-task continuation.",
+    "Only after STATIC proof, prepare explicit-authorized LIVE proof of at least three consecutive autonomous rounds."
+  ],
+  "prohibited_without_separate_approval": [
+    "PR merge",
+    "direct default-branch write",
+    "force push or history rewrite",
+    "destructive delete",
+    "billing/credit/overage changes",
+    "credential/permission/secret changes",
+    "unapproved external live model/provider execution"
+  ],
+  "merge_performed": false,
+  "live_execution_performed": false,
+  "jules_dispatches_performed": 0
+}

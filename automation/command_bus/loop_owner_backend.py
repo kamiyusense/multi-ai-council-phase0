@@ -51,6 +51,10 @@ class LoopOwnerGitHubBackend:
         except (ValueError, TypeError, KeyError, json.JSONDecodeError, RuntimeError) as exc:
             return OwnerWriteResult("UNKNOWN", str(exc))
 
+    def read_events(self, loop_id: str) -> list[dict[str, Any]]:
+        """Read and validate the complete owner chain for recovery planning."""
+        return self._read_chain(loop_id)
+
     def append(self, event: dict[str, Any]) -> OwnerWriteResult:
         """Append exactly the next generation and verify the resulting chain.
 
@@ -75,12 +79,17 @@ class LoopOwnerGitHubBackend:
             if self.client.get(path, self.branch) is not None:
                 return OwnerWriteResult("BLOCKED", "owner generation path already exists", chain[-1] if chain else None, len(chain))
 
-            self.client.create(
-                path,
-                _canonical(event),
-                f"append loop owner {loop_id} generation {event['generation']}",
-                self.branch,
-            )
+            try:
+                self.client.create(
+                    path,
+                    _canonical(event),
+                    f"append loop owner {loop_id} generation {event['generation']}",
+                    self.branch,
+                )
+            except Exception:
+                # A lost response may follow a successful immutable create.
+                # Read the exact generation and complete chain; never resend.
+                pass
 
             created = self.client.get(path, self.branch)
             if created is None:

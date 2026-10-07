@@ -1,0 +1,172 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-07",
+  "status": "STATIC_PASS_CODE_HEAD_ACTIONS_VERIFIED",
+  "current_main": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+  "branch": "feature/autonomous-loop-stop-resistant-core-v1",
+  "branch_head_before_batch": "4b77407ccee4f80cb3ca31f46b79875b30bccc35",
+  "tree_before_batch": "a53c222eb9ca7c06fec425c86178ff7d6d730515",
+  "full_test_count": 1827,
+  "skipped": 1,
+  "focused_test_count": 142,
+  "contract_test_count": 84,
+  "PASS": [
+    "finite campaign limits and downstream contracts",
+    "durable config binding and bounded read recovery",
+    "same-head append-only reinspection",
+    "stale canonical forward movement replan",
+    "blocker/dependency isolation",
+    "configurable corrective and consumed provider budgets",
+    "expired same-holder AUTO recovery fences",
+    "lost owner-create response exact chain readback",
+    "restart/duplicate/event inversion/clock skew mocks",
+    "seven-round mixed mock campaign",
+    "compileall",
+    "diff-check",
+    "exact code-head GitHub Actions: checkout, full suite, compileall, diff-check"
+  ],
+  "FAIL": [],
+  "historical_failures": [
+    37548786637,
+    37549079790
+  ],
+  "UNKNOWN": [
+    "production provider settlement adapter not wired",
+    "real unattended multi-round LIVE not proven",
+    "Routine transport/concurrency/idempotency not connected"
+  ],
+  "completed": [
+    "142 focused tests",
+    "84 downstream contract tests",
+    "1827 full regression tests",
+    "lossless logs and actual mixed trace",
+    "North Star and original design handover preserved",
+    "exact-head Actions independent remote validation"
+  ],
+  "remaining": [
+    "STATIC provider-settlement source contract",
+    "STATIC event transport fault adapter",
+    "append-only configuration migration design",
+    "approved production Routine connection and long-running LIVE proof"
+  ],
+  "blocker": [
+    "current LIVE owner is SEMI_AUTO; no authority for takeover",
+    "missing production provider settlement evidence remains WAIT"
+  ],
+  "deferred_decisions": [
+    "keep one concurrent provider in v1",
+    "keep campaign config immutable per origin stream",
+    "do not infer provider completion from missing PR"
+  ],
+  "live_usage": {
+    "start_budget": "6/10",
+    "new_jules_sessions": 0,
+    "provider_model_execution": 0,
+    "budget_consumed_by_this_batch": 0,
+    "owner_changed_by_this_batch": false,
+    "routine_created_or_changed": false
+  },
+  "approval_required_next_step": [
+    "LIVE provider/model execution",
+    "production Routine/event connection",
+    "merge"
+  ],
+  "artifacts": {
+    "README.md": {
+      "bytes": 5571,
+      "sha256": "5cfce8789b6d5e3ea98715a6907f81acd5b183da8c02e2ebfa175041948e2b3e"
+    },
+    "contracts-final.log.gz": {
+      "bytes": 2088,
+      "sha256": "4dfa263182eccdd291046aed396818e46f1d9e63c48dc2700ec18e751ac85f44",
+      "uncompressed_sha256": "032f73e767d872fc6f6182569996ecb568c69190a48113d63cebcd68eb6dd4df"
+    },
+    "exact-head-actions-code.log.gz": {
+      "bytes": 63890,
+      "sha256": "b8f143ba17e6a664ef21a2874cc89ee48e573fde4698dc85493434e566c63686",
+      "uncompressed_sha256": "adecfce2ebf720d2f5d874ed07b0e217eb5bfed0274fe9bcd8f8c21c9d4260a3"
+    },
+    "exact-head-code-readback.json": {
+      "bytes": 3215,
+      "sha256": "53ee9720144640c550c15d76280bce69792d6dae46d3f810843b37160181c0cc"
+    },
+    "focused-final.log.gz": {
+      "bytes": 4101,
+      "sha256": "49dee871282268fa0f35ae29b75cc211c2c230e8e16ba4b5e8c319484f17cc71",
+      "uncompressed_sha256": "fe206894f0a812f7b16d1c225dbbd5ef3cafd2450b79841d95f19b9a5e499d85"
+    },
+    "full-regression-final.log.gz": {
+      "bytes": 46302,
+      "sha256": "8748c7823b6f2d0c8b07731b293c61a23afe55a36c8667a95aaae759269102c9",
+      "uncompressed_sha256": "c587da224ff7f723091715b5c475fff52b1a7f17d630c504a6d744ebea398100"
+    },
+    "full-regression-first-failure.log.gz": {
+      "bytes": 46563,
+      "sha256": "f10d1ca68f1ab49df9a28aa7f4750056661c43e0d32c29375d134d13020d2fe3",
+      "uncompressed_sha256": "b08ad9a0a156608f8f947a7e3a232b801ff924f247ea7d393ced17f2e527365e"
+    },
+    "mixed-campaign-trace.json": {
+      "bytes": 30952,
+      "sha256": "eb40a823475580dfe72839a60add3ace507c845296f87af6013ab2e95a0395d4"
+    },
+    "round-ceiling-audit.txt": {
+      "bytes": 9667,
+      "sha256": "6ab5d42c5d80192d48be673dd4621b2217ee3887c963567456b821053e45f815"
+    }
+  },
+  "changed_files": [
+    "automation/command_bus/claude_jules_autoloop.py",
+    "automation/command_bus/claude_jules_campaign.py",
+    "automation/command_bus/claude_jules_campaign_state.py",
+    "automation/command_bus/claude_jules_dispatch.py",
+    "automation/command_bus/claude_jules_live.py",
+    "automation/command_bus/claude_jules_reinspection.py",
+    "automation/command_bus/claude_loop.py",
+    "automation/command_bus/loop_owner_backend.py",
+    "automation/command_bus/tests/claude_jules_autoloop_fakes.py",
+    "automation/command_bus/tests/test_claude_jules_autoloop_e2e.py",
+    "automation/command_bus/tests/test_claude_jules_campaign_continuation.py",
+    "automation/command_bus/tests/test_claude_jules_dispatch_contract.py",
+    "automation/command_bus/tests/test_claude_jules_live_adapter.py",
+    "automation/command_bus/tests/test_claude_jules_reinspection.py",
+    "automation/command_bus/tests/test_loop_owner_backend.py",
+    "docs/AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md",
+    "docs/CLAUDE_JULES_AUTOLOOP_HANDOVER_CURRENT.md",
+    "docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md",
+    "docs/CLAUDE_JULES_ROUTINE_WAKE_V1.md",
+    "docs/evidence/autonomous-loop-north-star-20261007/checkpoint.json",
+    "docs/evidence/claude-jules-stop-resistant-20261007/README.md",
+    "docs/evidence/claude-jules-stop-resistant-20261007/checkpoint.json",
+    "docs/evidence/claude-jules-stop-resistant-20261007/contracts-final.log.gz",
+    "docs/evidence/claude-jules-stop-resistant-20261007/exact-head-actions-code.log.gz",
+    "docs/evidence/claude-jules-stop-resistant-20261007/exact-head-code-readback.json",
+    "docs/evidence/claude-jules-stop-resistant-20261007/focused-final.log.gz",
+    "docs/evidence/claude-jules-stop-resistant-20261007/full-regression-final.log.gz",
+    "docs/evidence/claude-jules-stop-resistant-20261007/full-regression-first-failure.log.gz",
+    "docs/evidence/claude-jules-stop-resistant-20261007/mixed-campaign-trace.json",
+    "docs/evidence/claude-jules-stop-resistant-20261007/round-ceiling-audit.txt"
+  ],
+  "code_commit": "de1e7d5116736b3b01a33f01376d83fac9122380",
+  "code_tree": "2592232d892a6c9628cada387e660528a2f57835",
+  "branch_head_before_checkpoint": "de1e7d5116736b3b01a33f01376d83fac9122380",
+  "draft_pr": 329,
+  "remote_readback": {
+    "main_unchanged": true,
+    "data_branch_unchanged": true,
+    "live_target_unchanged": true,
+    "owner_generation": 2,
+    "owner_role": "SEMI_AUTO",
+    "budget": "6/10"
+  },
+  "final_validation_note": "Final checkpoint-only HEAD and exact-head Actions are reported in Draft PR #329 after readback. A checkpoint cannot contain its own final Git commit SHA.",
+  "exact_head_validation": {
+    "run_id": 37563334683,
+    "job_id": 112605344273,
+    "target_sha": "de1e7d5116736b3b01a33f01376d83fac9122380",
+    "tree_sha": "2592232d892a6c9628cada387e660528a2f57835",
+    "carrier_commit": "85e71a277f9e5f1dc249fda9628018ab2356e2a4",
+    "conclusion": "success",
+    "full_test_count": 1827,
+    "skipped": 1
+  }
+}

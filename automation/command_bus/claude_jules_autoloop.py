@@ -28,12 +28,27 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
+from .claude_jules_campaign import (
+    RECOVERABLE_UNKNOWN, TRANSIENT_UNKNOWN, campaign_policy_from_legacy,
+    classify_boundary, validate_campaign_policy,
+)
+from .claude_jules_recovery_policy import (
+    ISOLATE_TASK, PROVIDER_FAILURE, RECONCILE_FIRST, REDUCE_SCOPE, RETRY, SEMANTIC_FAILURE, STALE_TARGET,
+    TEST_ENVIRONMENT, TRANSIENT_READ, WAIT_UNTIL, classify_cause, decide,
+    decision_payload, validate_recovery_policy,
+)
+from .claude_jules_campaign_state import (
+    CampaignStateStore, build_deferred_decision_event, build_task_blocked_event,
+    build_recovery_decision_event, build_recovery_event, build_replan_event,
+)
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
     dispatch_receipt_path, next_unused_loop_number, sha256_of, validate_dispatch_intent,
     validate_policy,
 )
+from .claude_jules_handover import append_decision, decide_auto_resume
 from .claude_jules_inspection import InspectionStore, inspect_result, validate_small_repair
+from .claude_jules_reinspection import ReinspectionStore
 from .claude_jules_result_event import ResultEventInbox, verify_result_lineage
 from .claude_jules_task_prompt import (
     corrective_task_spec, path_policy, render_task_prompt, validate_task_spec,
@@ -41,6 +56,7 @@ from .claude_jules_task_prompt import (
 from .claude_loop import (
     BackendMode, make_structured_verdict, numbered_command_id, prepare_jules_semiauto_bundle,
     prepare_jules_semiauto_request, prepare_loop_claim, prepare_next_action,
+    validate_machine_gate,
 )
 
 ROADMAP_PROFILE = "CLAUDE_AUTO_JULES_ROADMAP_V1"
@@ -102,17 +118,33 @@ def task_spec_path(task_id: str) -> str:
 class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
-                 lane_id: str, carrier_guard: Any = None):
+                 lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None,
+                 recovery_policy: dict[str, Any] | None = None):
         self.client, self.refs, self.facts = client, refs, facts
+        # None keeps the legacy immediate bounded retry; an explicit policy enables reasoned recovery v1.
+        self.recovery_policy = None if recovery_policy is None else validate_recovery_policy(recovery_policy)
         self.policy = validate_policy(policy)
+        self.explicit_campaign_policy = campaign_policy is not None
+        self.campaign_policy = (campaign_policy_from_legacy(self.policy, origin_loop_id)
+                                if campaign_policy is None else validate_campaign_policy(campaign_policy))
         self.roadmap = validate_roadmap(roadmap)
         self.owner_reader, self.origin_loop_id, self.lane_id = owner_reader, origin_loop_id, lane_id
         self.data = self.policy["data_branch"]
-        self.dispatcher = ClaudeJulesDispatcher(client=client, refs=refs, policy=policy, owner_reader=owner_reader,
-                                                carrier_guard=carrier_guard)
+        self.campaign_state = CampaignStateStore(
+            client, data_branch=self.data, campaign_id=self.campaign_policy["campaign_id"])
+        dispatch_policy = dict(self.policy, max_rounds=self.campaign_policy["max_rounds"])
+        self.dispatcher = ClaudeJulesDispatcher(
+            client=client, refs=refs, policy=dispatch_policy, owner_reader=owner_reader,
+            carrier_guard=carrier_guard,
+        )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)
+        self.reinspections = ReinspectionStore(client, data_branch=self.data)
         self.adoption = SafeAdoption(client=client, refs=refs, policy=policy)
+
+    def _configuration_args(self) -> dict[str, Any]:
+        return {"origin_loop_id": self.origin_loop_id, "campaign_policy": self.campaign_policy,
+                "roadmap_sha256": sha256_of(self.roadmap)}
 
     # -- durable reads ------------------------------------------------------
     def _read_json(self, path: str, branch: str | None = None) -> dict[str, Any] | None:
@@ -147,13 +179,148 @@ class ClaudeJulesAutoLoop:
             return None
         return read.record.get("generation")
 
+    def _try_owner_resume(self, *, now: str, fence: Any) -> StepResult | None:
+        if fence.status != "BLOCKED" or "owner lease expired" not in fence.reason:
+            return None
+        read_events = getattr(self.owner_reader, "read_events", None)
+        if read_events is None:
+            return StepResult("STOP", "UNKNOWN", "owner backend cannot read full chain for safe resume")
+        try:
+            chain = read_events(self.origin_loop_id)
+            intents = self._intents()
+            half_written = sum(
+                1 for intent in intents
+                if self._read_json(dispatch_receipt_path(intent["carrier_request"]["command_id"])) is None
+            )
+            targets = self.policy["allowed_target_branches"]
+            if len(targets) != 1:
+                return StepResult("STOP", "BLOCKED", "safe owner resume requires exactly one target branch")
+            target_head = self.refs.get_branch_head(targets[0])
+            if target_head is None:
+                return StepResult("STOP", "UNKNOWN", "target head unavailable during owner resume")
+            decision = decide_auto_resume(
+                owner_chain=chain, auto_holder=self.policy["holder_id"],
+                half_written_intents=half_written, target_head=target_head, now=now,
+            )
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError, RuntimeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"owner resume evidence unverifiable: {exc}")
+        if decision.status != "ELIGIBLE":
+            return StepResult("STOP", decision.status, f"owner resume: {decision.reason}")
+        appended = append_decision(self.owner_reader, decision)
+        if appended.status != "APPENDED":
+            return StepResult("STOP", appended.status, f"owner resume append: {appended.reason}")
+        return StepResult(
+            "RECOVER_OWNER", "RECOVERED", appended.reason,
+            {"generation": appended.event["generation"] if appended.event else None},
+        )
+
+    def _campaign_timeout(self, *, now: str) -> StepResult | None:
+        """Enforce wall-clock timeout only for explicit new campaign policies.
+
+        The deadline is re-derived from the earliest durable dispatch intent,
+        so restarts need no session memory. Legacy callers keep their historical
+        behavior because they did not opt into a campaign timeout contract.
+        """
+        if not self.explicit_campaign_policy:
+            return None
+        intents = self._intents()
+        if not intents:
+            return None
+        try:
+            started = min(
+                datetime.fromisoformat(item["prepared_at"].replace("Z", "+00:00"))
+                for item in intents
+            )
+            current = datetime.fromisoformat(now.replace("Z", "+00:00"))
+        except (KeyError, TypeError, ValueError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"campaign timeout evidence unverifiable: {exc}")
+        deadline = started + timedelta(seconds=self.campaign_policy["campaign_timeout_seconds"])
+        if current < deadline:
+            return None
+        return StepResult(
+            "STOP", "CAMPAIGN_TIMEOUT",
+            "explicit campaign wall-clock timeout reached; durable state is preserved for inspection",
+            {"started_at": started.isoformat(), "deadline": deadline.isoformat()},
+        )
+
+    def _wait_details(self, *, now: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
+        current = datetime.fromisoformat(now.replace("Z", "+00:00"))
+        return {
+            **(details or {}),
+            "next_check_at": (
+                current + timedelta(seconds=self.campaign_policy["idle_check_interval_seconds"])
+            ).isoformat(),
+        }
+
+    def defer_decision(
+        self, *, decision_id: str, question: str, options: list[str], reason: str,
+        selected_safe_default: str, reversibility: str, affected_scope: str,
+        reconsider_condition: str, now: str,
+    ) -> StepResult:
+        """Persist a reversible safe default without stopping the campaign."""
+        try:
+            event = build_deferred_decision_event(
+                campaign_id=self.campaign_policy["campaign_id"],
+                decision_id=decision_id,
+                question=question,
+                options=options,
+                reason=reason,
+                selected_safe_default=selected_safe_default,
+                reversibility=reversibility,
+                affected_scope=affected_scope,
+                reconsider_condition=reconsider_condition,
+                recorded_at=now,
+            )
+            for previous in self.campaign_state.deferred_decisions():
+                if previous["payload"]["decision_id"] == decision_id:
+                    if previous["payload"] != event["payload"]:
+                        return StepResult("STOP", "UNKNOWN", "deferred decision identity collision")
+                    event = previous
+                    break
+            saved = self.campaign_state.persist(event)
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"deferred decision unverifiable: {exc}")
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", f"deferred decision record {saved}")
+        return StepResult(
+            "DEFER_DECISION", "DEFERRED", "safe reversible default recorded; campaign may continue",
+            {"decision_id": decision_id, "selected_safe_default": selected_safe_default,
+             "campaign_event_id": event["event_id"]},
+        )
+
     # -- one step -------------------------------------------------------------
     def step(self, *, now: str) -> StepResult:
+        try:
+            return self._step(now=now)
+        except Exception as exc:
+            # An exception outside a specifically read-only acquisition phase
+            # may follow a write. Never turn it into a replayable read failure.
+            return StepResult("STOP", "UNKNOWN", f"controller operation unresolved: {exc}; do not resend")
+
+    def _step(self, *, now: str) -> StepResult:
         fence = self.dispatcher.controller_fence(self.origin_loop_id, now)
         if fence.status != "PASS":
-            return StepResult("STOP", fence.status, f"owner fence: {fence.reason}")
+            recovery = self._try_owner_resume(now=now, fence=fence)
+            if recovery is None:
+                return StepResult("STOP", fence.status, f"owner fence: {fence.reason}")
+            if recovery.status != "RECOVERED":
+                return recovery
+            fence = self.dispatcher.controller_fence(self.origin_loop_id, now)
+            if fence.status != "PASS":
+                return StepResult("STOP", fence.status, f"owner fence after resume: {fence.reason}")
         try:
+            timeout = self._campaign_timeout(now=now)
+            if timeout is not None:
+                return timeout
             intents = self._intents()
+            if self.explicit_campaign_policy:
+                configured = self.campaign_state.check_configuration(**self._configuration_args())
+                if configured == "MISMATCH":
+                    return StepResult("STOP", "UNKNOWN", "durable campaign configuration mismatch; do not reset limits")
+                if configured == "ABSENT" and intents:
+                    bound = self.campaign_state.bind_configuration(**self._configuration_args())
+                    if bound not in {"CREATED", "RECOVERED"}:
+                        return StepResult("STOP", "UNKNOWN", "campaign configuration create not proven; do not resend")
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable intent records unverifiable: {exc}")
         if not intents:
@@ -164,6 +331,22 @@ class ClaudeJulesAutoLoop:
         spec = self._spec(latest["task_id"])
         if spec is None or sha256_of(spec) != latest["task_spec_sha256"]:
             return StepResult("STOP", "UNKNOWN", "task spec for the latest intent is missing or altered")
+        replans = self.campaign_state.replanned_intents()
+        if latest["intent_sha256"] in replans:
+            replan = replans[latest["intent_sha256"]]["payload"]
+            if replan["task_id"] != spec["task_id"]:
+                return StepResult("STOP", "UNKNOWN", "replan/task identity mismatch")
+            # Saved canonical state is advisory: _plan_and_dispatch obtains a
+            # fresh snapshot again. The old PASS and intent stay untouched.
+            return self._plan_and_dispatch(
+                now=now, round_number=latest["origin_round"] + 1, attempt=1, spec=spec)
+        try:
+            blocked_tasks = self.campaign_state.blocked_tasks()
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"campaign state unverifiable: {exc}")
+        if _family(spec["task_id"]) in blocked_tasks:
+            return self._plan_and_dispatch(
+                now=now, round_number=latest["origin_round"] + 1, attempt=1, spec=None)
         receipt = self._read_json(dispatch_receipt_path(command_id))
         if receipt is None:
             return self._dispatch(latest, now=now, resumed=True)
@@ -176,7 +359,7 @@ class ClaudeJulesAutoLoop:
             return StepResult("STOP", "UNKNOWN", f"unexpected dispatch receipt state {receipt.get('state')}")
 
         try:
-            all_inspections = self.inspections.list_all()
+            all_inspections = self._all_inspections()
             adopted = self._adoption_state(latest, all_inspections)
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable inspection/adoption records unverifiable: {exc}")
@@ -200,50 +383,204 @@ class ClaudeJulesAutoLoop:
                 status_action = "ADOPT"
                 if result.status == "ADOPTED":
                     return StepResult(status_action, "ADOPTED", result.reason, {"head_after": result.record["head_after"]})
+                if result.status == "BLOCKED" and result.reason.startswith("STALE_TARGET"):
+                    return self._record_stale_replan(latest, spec, reason=result.reason, now=now)
                 return StepResult("STOP" if result.status in {"BLOCKED", "UNKNOWN"} else status_action,
                                   result.status, result.reason)
             if decision == "CLAUDE_SMALL_REPAIR":
                 return self._small_repair(latest, spec, current, mine, now=now)
             if decision in {"JULES_CORRECTIVE", "JULES_CORRECTIVE_REDUCED"}:
-                attempt = sum(1 for i in intents if _family(i["task_id"]) == _family(spec["task_id"]))
-                corrective = corrective_task_spec(spec, attempt=attempt, findings=current["findings"],
-                                                  reduce_size=decision == "JULES_CORRECTIVE_REDUCED")
-                return self._plan_and_dispatch(now=now, round_number=latest["origin_round"] + 1,
-                                               attempt=1, spec=corrective)
+                return self._corrective_or_block(
+                    latest, spec, current, intents, now=now,
+                    reduce_size=decision == "JULES_CORRECTIVE_REDUCED",
+                )
+            if decision == "STOP_HUMAN":
+                return self._corrective_or_block(
+                    latest, spec, current, intents, now=now, reduce_size=True,
+                )
+            if decision == "INVESTIGATE":
+                boundary = classify_boundary("UNKNOWN", current["reason"])
+                if boundary is not None and boundary.retry_safe:
+                    return self._reinspect_unknown(latest, spec, current, now=now)
             return StepResult("STOP", current["verdict"], f"human/investigation boundary: {current['reason']}")
         return self._inspect_new_result(latest, spec, now=now)
 
-    def run_until_boundary(self, *, now: str, max_steps: int = 12) -> list[StepResult]:
-        """Advance until waiting, stopping, completing or the step budget ends."""
+    def run_until_boundary(self, *, now: str, max_steps: int = 12, clock: Any = None) -> list[StepResult]:
+        """Advance through safe recovery until a real boundary or the step budget ends."""
+        if type(max_steps) is not int or not 1 <= max_steps <= 100:
+            raise ValueError("max_steps must be an integer in 1..100")
         results: list[StepResult] = []
         for _ in range(max_steps):
-            result = self.step(now=now)
+            step_now = clock() if clock is not None else now
+            result = self.step(now=step_now)
+            boundary = classify_boundary(result.status, result.reason)
+            if boundary is not None:
+                result = StepResult(
+                    result.action, result.status, result.reason,
+                    dict(result.details, boundary_class=boundary.kind),
+                )
             results.append(result)
-            if result.action in {"WAIT", "STOP", "COMPLETE"} or result.status in {"PREPARED_NOT_AUTHORIZED", "UNKNOWN"}:
+            if result.action in {"WAIT", "COMPLETE"} or result.status == "PREPARED_NOT_AUTHORIZED":
                 break
+            if boundary is not None and boundary.retry_safe and self.recovery_policy is not None:
+                outcome = self._reasoned_recovery(result, boundary, step_now)
+                if outcome is None:
+                    continue
+                results.append(outcome)
+                break
+            if boundary is not None and boundary.retry_safe:
+                try:
+                    intents = self._intents()
+                    scope = sha256_of({
+                        "origin_loop_id": self.origin_loop_id,
+                        "intent": intents[-1]["intent_sha256"] if intents else "initial-plan",
+                        "phase": result.reason.split(":", 1)[0],
+                        "boundary_class": boundary.kind,
+                    })
+                    attempts = self.campaign_state.recovery_attempts(scope)
+                    if attempts < self.campaign_policy["max_transient_retries"]:
+                        fence = self.dispatcher.controller_fence(self.origin_loop_id, step_now)
+                        if fence.status != "PASS":
+                            break
+                        event = build_recovery_event(
+                            campaign_id=self.campaign_policy["campaign_id"], scope=scope,
+                            attempt=attempts + 1, reason=result.reason,
+                            boundary_class=boundary.kind, recorded_at=step_now,
+                        )
+                        if self.campaign_state.persist(event) not in {"CREATED", "RECOVERED"}:
+                            results.append(StepResult("STOP", "UNKNOWN", "recovery record create not proven; do not resend"))
+                            break
+                        continue
+                    results[-1] = StepResult(result.action, result.status, result.reason,
+                                             dict(result.details, recovery_budget_exhausted=True))
+                except Exception as exc:
+                    results.append(StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend"))
+                break
+            if result.action == "STOP" or result.status == "UNKNOWN":
+                break
+            if boundary is not None and boundary.campaign_terminal:
+                break
+        if len(results) == max_steps and results[-1].action not in {"STOP", "WAIT", "COMPLETE"}:
+            last = results[-1]
+            results[-1] = StepResult(last.action, last.status, last.reason,
+                                    dict(last.details, continuation_required=True, step_budget_exhausted=True))
         return results
 
+    def _reasoned_recovery(self, result: StepResult, boundary: Any, now: str) -> StepResult | None:
+        """Opt-in recovery v1: decide, persist the decision, then act.  None means "retry now"."""
+        try:
+            intents = self._intents()
+            phase = result.reason.split(":", 1)[0]
+            cause = classify_cause(boundary.kind, result.reason)
+            operation = "evidence-read" if cause == TRANSIENT_READ else "replan"
+            scope = sha256_of({
+                "origin_loop_id": self.origin_loop_id,
+                "intent": intents[-1]["intent_sha256"] if intents else "initial-plan",
+                "phase": phase, "boundary_class": boundary.kind, "recovery": "v1",
+            })
+            conditions: dict[str, Any] = {"phase": phase}
+            if cause == STALE_TARGET:
+                targets = self.policy["allowed_target_branches"]
+                conditions["canonical_head"] = self.refs.get_branch_head(targets[0])
+            history = self.campaign_state.recovery_decisions(scope)
+            decision = decide(self.recovery_policy, cause=cause, operation=operation, reason=result.reason,
+                              conditions=conditions, history=history, now=now)
+            if decision.decision == WAIT_UNTIL:
+                return StepResult("WAIT", "RECOVERY_BACKOFF", decision.reason,
+                                  {"next_check_at": decision.not_before, "recovery_cause": cause,
+                                   "recovery_attempt": decision.attempt})
+            if decision.decision == RECONCILE_FIRST:
+                return StepResult("STOP", "UNKNOWN", f"{decision.reason}; do not resend")
+            fence = self.dispatcher.controller_fence(self.origin_loop_id, now)
+            if fence.status != "PASS":
+                return StepResult("STOP", fence.status, f"recovery fence: {fence.reason}")
+            payload = decision_payload(
+                decision, scope=scope, operation=operation, reason=result.reason,
+                evidence_ref=f"step:{result.action}:{result.status}",
+                why_meaningful=("a read of GitHub evidence failed; reading again after backoff can succeed"
+                                if cause == TRANSIENT_READ else "the snapshot moved; a fresh snapshot can be planned"),
+                conditions=conditions, recorded_at=now)
+            saved = self.campaign_state.persist(build_recovery_decision_event(
+                campaign_id=self.campaign_policy["campaign_id"], payload=payload))
+            if saved not in {"CREATED", "RECOVERED"}:
+                return StepResult("STOP", "UNKNOWN", "recovery decision create not proven; do not resend")
+            if decision.decision == RETRY:
+                return None
+            if decision.decision == ISOLATE_TASK and intents:
+                spec = self._spec(intents[-1]["task_id"])
+                if spec is not None:
+                    return self._block_task(intents[-1], spec, decision.reason, now=now)
+            return StepResult(result.action, result.status, result.reason,
+                              dict(result.details, recovery_budget_exhausted=True, recovery_decision=decision.decision))
+        except Exception as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+
     # -- phases ------------------------------------------------------------
+    def _all_inspections(self) -> list[dict[str, Any]]:
+        return self.reinspections.extend_all(self.inspections.list_all())
+
     def _current_inspection(self, records: list[dict[str, Any]]) -> dict[str, Any]:
+        # Version order is the validated append-only chain, not wall-clock
+        # order (fresh sessions may have equal or skewed timestamps).
+        effective = {r["candidate_head"]: r for r in records}
         repaired = {r["repair_of"] for r in records if r.get("repair_of")}
-        open_records = [r for r in records if r["candidate_head"] not in repaired]
+        open_records = [r for head, r in effective.items() if head not in repaired]
         return sorted(open_records, key=lambda r: (r.get("repair_of") is not None, r["inspected_at"]))[-1]
 
     def _inspect_new_result(self, intent: dict[str, Any], spec: dict[str, Any], *, now: str) -> StepResult:
         request = intent["carrier_request"]
         try:
             events = [e for e in self.inbox.list_events() if e["command_id"] == request["command_id"]]
-            prior = self.inspections.list_all()
+            prior = self._all_inspections()
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return StepResult("STOP", "UNKNOWN", f"durable event records unverifiable: {exc}")
         if not events:
-            deadline = datetime.fromisoformat(intent["prepared_at"]) + RESULT_DEADLINE
+            deadline = (datetime.fromisoformat(intent["prepared_at"])
+                        + timedelta(seconds=self.campaign_policy["task_timeout_seconds"]))
             if datetime.fromisoformat(now.replace("Z", "+00:00")) >= deadline:
-                return StepResult("STOP", "NO_RESULT_TIMEOUT",
-                                  f"no Jules result PR recorded by {deadline.isoformat()}; the dispatch slot stays consumed",
-                                  {"command_id": request["command_id"]})
-            return StepResult("WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
-                              {"command_id": request["command_id"]})
+                reconciler = getattr(self.facts, "timeout_reconciliation", None)
+                if reconciler is None:
+                    return StepResult("WAIT", "AWAITING_TIMEOUT_RECONCILIATION",
+                                      "timeout reached; provider settlement evidence is unavailable",
+                                      self._wait_details(now=now, details={"command_id": request["command_id"]}))
+                try:
+                    observed = reconciler(intent)
+                except Exception as exc:
+                    return StepResult("STOP", "UNKNOWN", f"timeout evidence read failed: {exc}")
+                if (not isinstance(observed, dict)
+                        or set(observed) != {"command_id", "snapshot_head", "status", "evidence_ref", "result_events"}
+                        or observed["command_id"] != request["command_id"]
+                        or observed["snapshot_head"] != request["expected_target_head"]
+                        or observed["status"] not in {"SETTLED", "RUNNING", "UNKNOWN"}
+                        or not isinstance(observed["evidence_ref"], str) or not observed["evidence_ref"]
+                        or not isinstance(observed["result_events"], list)):
+                    return StepResult("STOP", "UNKNOWN", "timeout observation identity mismatch or malformed")
+                for event in observed["result_events"]:
+                    if not isinstance(event, dict) or event.get("command_id") != request["command_id"]:
+                        return StepResult("STOP", "UNKNOWN", "timeout result event identity mismatch")
+                    recorded = self.inbox.record(event)
+                    if recorded.status not in {"RECORDED", "DUPLICATE"}:
+                        return StepResult("STOP", "UNKNOWN", "timeout inbox create not proven; do not resend")
+                if observed["result_events"]:
+                    return self._inspect_new_result(intent, spec, now=now)
+                if observed["status"] != "SETTLED":
+                    return StepResult("WAIT", "AWAITING_TIMEOUT_RECONCILIATION",
+                                      "task timeout triggers observation; unfinished/unverified provider is not replaced",
+                                      self._wait_details(now=now, details={"command_id": request["command_id"],
+                                                                        "provider_state": observed["status"]}))
+                if self.recovery_policy is not None and observed["evidence_ref"].rstrip().endswith(": FAILED"):
+                    retried = self._reasoned_provider_failure(intent, spec, observed["evidence_ref"], now=now)
+                    if retried is not None:
+                        return retried
+                return self._block_task(
+                    intent, spec,
+                    f"no Jules result PR recorded by {deadline.isoformat()}; provider settled ({observed['evidence_ref']}); the dispatch slot stays consumed",
+                    now=now,
+                )
+            return StepResult(
+                "WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
+                self._wait_details(now=now, details={"command_id": request["command_id"]}),
+            )
         receipt = self._read_json(dispatch_receipt_path(request["command_id"]))
         try:
             observation = self.facts.dispatch_observation(request["command_id"])
@@ -261,29 +598,96 @@ class ClaudeJulesAutoLoop:
             if verdict.status in {"BLOCKED", "UNKNOWN"}:
                 return StepResult("STOP", verdict.status, f"result lineage: {verdict.reason}")
         if lineage is None:
-            return StepResult("WAIT", "WAITING_FOR_RESULT", "only stale result heads recorded")
+            return StepResult(
+                "WAIT", "WAITING_FOR_RESULT", "only stale result heads recorded",
+                self._wait_details(now=now),
+            )
         ready = getattr(self.facts, "review_ready", None)
         if ready is not None and not ready(intent, spec, lineage["candidate_head"]):
-            return StepResult("WAIT", "AWAITING_CLAUDE_REVIEW",
-                              "result lineage verified; Claude's independent review record is not written yet",
-                              {"command_id": request["command_id"], "head": lineage["candidate_head"]})
+            return StepResult(
+                "WAIT", "AWAITING_CLAUDE_REVIEW",
+                "result lineage verified; Claude's independent review record is not written yet",
+                self._wait_details(
+                    now=now,
+                    details={"command_id": request["command_id"], "head": lineage["candidate_head"]},
+                ),
+            )
         return self._inspect(intent, spec, lineage, lineage["candidate_head"], now=now, repair_of=None)
 
-    def _inspect(self, intent: dict[str, Any], spec: dict[str, Any], lineage: dict[str, Any], head: str,
-                 *, now: str, repair_of: str | None) -> StepResult:
+    def _reinspect_unknown(self, intent: dict[str, Any], spec: dict[str, Any],
+                           current: dict[str, Any], *, now: str) -> StepResult:
+        if current.get("repair_of") is not None:
+            return self._block_task(intent, spec, "repair evidence stayed UNKNOWN after safe investigation", now=now)
+        base = self.inspections.get(current["command_id"], current["candidate_head"])
+        if base is None:
+            return StepResult("STOP", "UNKNOWN", "legacy base inspection missing for reinspection")
+        try:
+            attempts = len(self.reinspections.all_versions(base)) - 1
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"reinspection history unverifiable: {exc}")
+        if attempts >= self.campaign_policy["max_transient_retries"]:
+            return self._block_task(intent, spec, "transient evidence retry budget exhausted", now=now)
+
         request = intent["carrier_request"]
-        compare = self.facts.compare(request["expected_target_head"], head)
-        tree = self.facts.commit_tree(head)
-        changed = [f.get("path") for f in (compare or {}).get("files", []) if isinstance(f, dict)]
-        tests = [p for p in changed if isinstance(p, str) and p.endswith(".py") and "/tests/" in f"/{p}"]
-        observations, findings = self.facts.review(intent, spec, head)
+        try:
+            events = [e for e in self.inbox.list_events() if e["command_id"] == request["command_id"]]
+            receipt = self._read_json(dispatch_receipt_path(request["command_id"]))
+            observation = self.facts.dispatch_observation(request["command_id"])
+            fresh = {e["pr_number"]: self.facts.fresh_pr(e["pr_number"]) for e in events}
+        except Exception as exc:
+            return StepResult("STOP", "UNKNOWN", f"reinspection evidence unavailable: {exc}")
+        lineage = None
+        for event in sorted(events, key=lambda e: e["pr_number"], reverse=True):
+            verdict = verify_result_lineage(
+                event, intent=intent, dispatch_receipt=receipt,
+                dispatch_observation=observation, fresh_pr=fresh[event["pr_number"]],
+            )
+            if verdict.status == "PASS" and verdict.record["candidate_head"] == current["candidate_head"]:
+                lineage = verdict.record
+                break
+        if lineage is None:
+            # A legitimate follow-up commit is a new candidate, not a
+            # rewrite/reinspection of the old UNKNOWN record. Revalidate the
+            # fresh result route; stale deliveries may simply await ingestion.
+            return self._inspect_new_result(intent, spec, now=now)
+        ready = getattr(self.facts, "review_ready", None)
+        if ready is not None and not ready(intent, spec, current["candidate_head"]):
+            return StepResult(
+                "WAIT", "AWAITING_CLAUDE_REVIEW", "reinspection review evidence is not ready",
+                self._wait_details(now=now, details={"head": current["candidate_head"]}),
+            )
+        if self.recovery_policy is not None and current.get("reason") == "evidence missing: ['tests']":
+            refused = self._reasoned_test_rerun(intent, spec, current, now=now)
+            if refused is not None:
+                return refused
+        return self._inspect(
+            intent, spec, lineage, current["candidate_head"], now=now, repair_of=None,
+            reinspection_base=base,
+        )
+
+    def _inspect(self, intent: dict[str, Any], spec: dict[str, Any], lineage: dict[str, Any], head: str,
+                 *, now: str, repair_of: str | None,
+                 reinspection_base: dict[str, Any] | None = None) -> StepResult:
+        request = intent["carrier_request"]
+        try:
+            compare = self.facts.compare(request["expected_target_head"], head)
+            tree = self.facts.commit_tree(head)
+            changed = [f.get("path") for f in (compare or {}).get("files", []) if isinstance(f, dict)]
+            tests = [p for p in changed if isinstance(p, str) and p.endswith(".py") and "/tests/" in f"/{p}"]
+            observations, findings = self.facts.review(intent, spec, head)
+            test_evidence = self.facts.run_tests(head)
+            sources = self.facts.test_sources(head, tests)
+        except Exception as exc:
+            return StepResult("STOP", "UNKNOWN", f"inspection evidence read failed: {exc}",
+                              {"command_id": request["command_id"], "head": head})
         outcome = inspect_result(
             intent=intent, task_spec=spec, lineage=lineage, compare=compare, candidate_tree=tree,
-            test_evidence=self.facts.run_tests(head), changed_test_sources=self.facts.test_sources(head, tests),
+            test_evidence=test_evidence, changed_test_sources=sources,
             acceptance_observations=observations, reviewer_findings=findings,
-            prior_inspections=self.inspections.list_all(), inspected_at=now, repair_of=repair_of,
+            prior_inspections=self._all_inspections(), inspected_at=now, repair_of=repair_of,
         )
-        saved = self.inspections.persist(outcome.record)
+        saved = (self.inspections.persist(outcome.record) if reinspection_base is None
+                 else self.reinspections.persist(base=reinspection_base, inspection=outcome.record))
         if saved not in {"CREATED", "RECOVERED"}:
             return StepResult("STOP", "UNKNOWN", f"inspection record {saved}")
         return StepResult("INSPECT", outcome.verdict, outcome.record["reason"],
@@ -306,8 +710,6 @@ class ClaudeJulesAutoLoop:
 
     def _after_adoption(self, intent: dict[str, Any], *, now: str) -> StepResult:
         next_round = intent["origin_round"] + 1
-        if next_round > self.policy["max_rounds"]:
-            return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
     def _adoption_state(self, intent: dict[str, Any], inspections: list[dict[str, Any]]) -> Any:
@@ -320,35 +722,229 @@ class ClaudeJulesAutoLoop:
                  and r["command_id"] == intent["carrier_request"]["command_id"]]
         return self.adoption.verify_adopted(intent=intent, inspection=match[0] if len(match) == 1 else None)
 
-    def next_roadmap_task(self) -> dict[str, Any] | None:
+    def _roadmap_position(self) -> tuple[dict[str, Any] | None, list[str]]:
         adopted_families: set[str] = set()
-        inspections = self.inspections.list_all()
+        inspections = self._all_inspections()
         for intent in self._intents():
             state = self._adoption_state(intent, inspections)
             if state.status == "VERIFIED":
                 adopted_families.add(_family(intent["task_id"]))
             elif state.status != "MISSING":
                 raise ValueError(f"unverifiable adoption for {intent['carrier_request']['command_id']}: {state.reason}")
+        blocked = self.campaign_state.blocked_tasks()
+        remaining: list[str] = []
+        ready: dict[str, Any] | None = None
         for entry in self.roadmap["tasks"]:
             spec = entry["task_spec"]
-            if spec["task_id"] in adopted_families:
+            task_id = spec["task_id"]
+            if task_id in adopted_families:
                 continue
-            if all(dep in adopted_families for dep in entry["depends_on"]):
-                return spec
-            return None  # roadmap order is the dependency order; never skip ahead
+            remaining.append(task_id)
+            if ready is None and task_id not in blocked and all(dep in adopted_families for dep in entry["depends_on"]):
+                ready = spec
+        return ready, remaining
+
+    def next_roadmap_task(self) -> dict[str, Any] | None:
+        return self._roadmap_position()[0]
+
+    def _corrective_or_block(
+        self, intent: dict[str, Any], spec: dict[str, Any], inspection: dict[str, Any],
+        intents: list[dict[str, Any]], *, now: str, reduce_size: bool,
+    ) -> StepResult:
+        family = _family(spec["task_id"])
+        correctives_used = len({item["task_id"] for item in intents
+                               if _family(item["task_id"]) == family and item["task_id"] != family})
+        family_failures = sum(
+            1 for item in self._all_inspections()
+            if _family(item["task_id"]) == family and item["verdict"] in {"FAIL_MINOR", "FAIL_MAJOR"}
+        )
+        if family_failures >= self.campaign_policy["max_consecutive_failures"]:
+            return self._block_task(
+                intent, spec,
+                f"consecutive failure budget exhausted after {family_failures} failure(s): {inspection['reason']}",
+                now=now,
+            )
+        if correctives_used >= self.campaign_policy["max_corrective_rounds_per_task"]:
+            return self._block_task(
+                intent, spec,
+                f"corrective budget exhausted after {correctives_used} corrective round(s): {inspection['reason']}",
+                now=now,
+            )
+        if self.recovery_policy is not None:
+            reasoned = self._reasoned_corrective(intent, spec, inspection, now=now)
+            if isinstance(reasoned, StepResult):
+                return reasoned
+            reduce_size = reduce_size or reasoned
+        corrective = corrective_task_spec(
+            spec, attempt=correctives_used + 1, findings=inspection["findings"],
+            reduce_size=reduce_size,
+        )
+        return self._plan_and_dispatch(
+            now=now, round_number=intent["origin_round"] + 1, attempt=1, spec=corrective,
+        )
+
+    def _reasoned_corrective(self, intent: dict[str, Any], spec: dict[str, Any], inspection: dict[str, Any],
+                             *, now: str) -> StepResult | bool:
+        """Opt-in v1: a corrective must address a finding that changed; the same finding twice shrinks, then isolates."""
+        family = _family(spec["task_id"])
+        scope = sha256_of({"origin_loop_id": self.origin_loop_id, "family": family, "recovery": "v1-semantic"})
+        conditions = {"findings_fingerprint": sha256_of(inspection["findings"])}
+        # The finding (not the decision wording) is what must change between correctives.
+        finding_text = "; ".join(f"{f.get('category')}: {f.get('detail')}" for f in inspection["findings"]
+                                 if isinstance(f, dict))[:500] or inspection["reason"]
+        try:
+            history = self.campaign_state.recovery_decisions(scope)
+        except (ValueError, KeyError, TypeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+        decision = decide(self.recovery_policy, cause=SEMANTIC_FAILURE, operation="jules-corrective",
+                          reason=finding_text, conditions=conditions, history=history, now=now)
+        payload = decision_payload(
+            decision, scope=scope, operation="jules-corrective", reason=finding_text,
+            evidence_ref=f"inspection:{inspection['command_id']}:{inspection['candidate_head']}",
+            why_meaningful="the corrective prompt carries the inspection findings that the previous attempt missed",
+            conditions=conditions, recorded_at=now)
+        saved = self.campaign_state.persist(build_recovery_decision_event(
+            campaign_id=self.campaign_policy["campaign_id"], payload=payload))
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "recovery decision create not proven; do not resend")
+        if decision.decision == RETRY:
+            return False
+        if decision.decision == REDUCE_SCOPE:
+            return True
+        return self._block_task(intent, spec, decision.reason, now=now)
+
+    def _persist_decision(self, decision: Any, *, scope: str, operation: str, reason: str, evidence_ref: str,
+                          why: str, conditions: dict[str, Any], now: str) -> StepResult | None:
+        payload = decision_payload(decision, scope=scope, operation=operation, reason=reason,
+                                   evidence_ref=evidence_ref, why_meaningful=why, conditions=conditions,
+                                   recorded_at=now)
+        saved = self.campaign_state.persist(build_recovery_decision_event(
+            campaign_id=self.campaign_policy["campaign_id"], payload=payload))
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "recovery decision create not proven; do not resend")
         return None
+
+    def _reasoned_test_rerun(self, intent: dict[str, Any], spec: dict[str, Any], current: dict[str, Any],
+                             *, now: str) -> StepResult | None:
+        """Opt-in v1: re-running Claude's own test run needs a changed environment after the first retry."""
+        digest = getattr(self.facts, "environment_digest", None)
+        conditions = {"environment_digest": digest() if digest is not None else "unreported"}
+        scope = sha256_of({"origin_loop_id": self.origin_loop_id, "head": current["candidate_head"],
+                           "recovery": "v1-test-environment"})
+        try:
+            history = self.campaign_state.recovery_decisions(scope)
+        except (ValueError, KeyError, TypeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+        reason = "test run produced no usable evidence for the exact candidate"
+        decision = decide(self.recovery_policy, cause=TEST_ENVIRONMENT, operation="claude-test-run", reason=reason,
+                          conditions=conditions, history=history, now=now)
+        failed = self._persist_decision(
+            decision, scope=scope, operation="claude-test-run", reason=reason,
+            evidence_ref=f"inspection:{current['command_id']}:{current['candidate_head']}",
+            why="the test runner failed to start or finish; a re-run is meaningful once and then only in a changed environment",
+            conditions=conditions, now=now)
+        if failed is not None:
+            return failed
+        if decision.decision == RETRY:
+            return None
+        return self._block_task(intent, spec, decision.reason, now=now)
+
+    def _reasoned_provider_failure(self, intent: dict[str, Any], spec: dict[str, Any], evidence_ref: str,
+                                   *, now: str) -> StepResult | None:
+        """Opt-in v1: a verified FAILED provider with no result gets one new distinct attempt via a durable replan."""
+        family = _family(spec["task_id"])
+        scope = sha256_of({"origin_loop_id": self.origin_loop_id, "family": family,
+                           "recovery": "v1-provider-failure"})
+        conditions = {"attempt_plan_digest": intent["intent_sha256"]}
+        try:
+            history = self.campaign_state.recovery_decisions(scope)
+        except (ValueError, KeyError, TypeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+        reason = "provider settled FAILED without a result"
+        decision = decide(self.recovery_policy, cause=PROVIDER_FAILURE, operation="jules-new-attempt",
+                          reason=reason, conditions=conditions, history=history, now=now)
+        failed = self._persist_decision(
+            decision, scope=scope, operation="jules-new-attempt", reason=reason, evidence_ref=evidence_ref,
+            why="the provider reported a terminal failure; one fresh attempt from a new snapshot may succeed",
+            conditions=conditions, now=now)
+        if failed is not None:
+            return failed
+        if decision.decision != RETRY:
+            return None  # caller isolates the task with the settlement evidence
+        head = self.refs.get_branch_head(intent["carrier_request"]["target_branch"])
+        tree = self.refs.get_commit_tree(head) if head else None
+        if head is None or tree is None:
+            return StepResult("STOP", "UNKNOWN", "target snapshot unavailable")
+        event = build_replan_event(
+            campaign_id=self.campaign_policy["campaign_id"], task_id=spec["task_id"],
+            intent_sha256=intent["intent_sha256"], canonical_head=head, canonical_tree=tree,
+            reason="provider settled FAILED; one new distinct attempt", recorded_at=now)
+        if self.campaign_state.persist(event) not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "provider-failure replan create not proven; do not resend")
+        return StepResult("REPLAN", "REPLANNED", "provider FAILED; a new distinct attempt will be planned",
+                          {"command_id": intent["carrier_request"]["command_id"], "canonical_head": head})
+
+    def _block_task(self, intent: dict[str, Any], spec: dict[str, Any], reason: str, *, now: str) -> StepResult:
+        task_id = _family(spec["task_id"])
+        event = build_task_blocked_event(
+            campaign_id=self.campaign_policy["campaign_id"],
+            task_id=task_id,
+            reason=reason,
+            evidence_ref=f"dispatch-intent:{intent['intent_sha256']}",
+            recorded_at=now,
+        )
+        saved = self.campaign_state.persist(event)
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", f"campaign blocker record {saved}")
+        return StepResult(
+            "BLOCK_TASK", "TASK_BLOCKED", reason,
+            {"task_id": task_id, "campaign_event_id": event["event_id"]},
+        )
+
+    def _record_stale_replan(self, intent: dict[str, Any], spec: dict[str, Any],
+                             *, reason: str, now: str) -> StepResult:
+        request = intent["carrier_request"]
+        try:
+            head = self.refs.get_branch_head(request["target_branch"])
+            tree = self.refs.get_commit_tree(head) if head else None
+            compare = self.refs.compare(request["expected_target_head"], head) if head else None
+        except Exception as exc:
+            return StepResult("STOP", "UNKNOWN", f"stale replan readback failed: {exc}")
+        # Ordinary forward movement is replannable. A rewritten/unverifiable
+        # canonical history is not a trustworthy new base.
+        if not head or not tree or not isinstance(compare, dict):
+            return StepResult("STOP", "UNKNOWN", "stale replan snapshot unavailable")
+        if compare.get("merge_base") != request["expected_target_head"] or compare.get("behind_by") != 0:
+            return StepResult("STOP", "UNKNOWN", "stale replan canonical lineage contradiction")
+        if head == request["expected_target_head"]:
+            return StepResult("STOP", "UNKNOWN", "stale replan canonical readback inconsistent")
+        event = build_replan_event(
+            campaign_id=self.campaign_policy["campaign_id"], task_id=spec["task_id"],
+            intent_sha256=intent["intent_sha256"], canonical_head=head, canonical_tree=tree,
+            reason=reason, recorded_at=now,
+        )
+        if self.campaign_state.persist(event) not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "stale replan create not proven; do not resend")
+        return StepResult("REPLAN", "REPLANNED", "stale candidate preserved; new task snapshot required",
+                          {"command_id": request["command_id"], "canonical_head": head})
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
-        if round_number > self.policy["max_rounds"]:
-            return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
         if spec is None:
             try:
-                spec = self.next_roadmap_task()
+                spec, remaining = self._roadmap_position()
             except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
                 return StepResult("STOP", "UNKNOWN", f"roadmap position unverifiable: {exc}")
             if spec is None:
+                if remaining:
+                    return StepResult(
+                        "STOP", "TASK_BLOCKED",
+                        "remaining roadmap tasks are blocked or depend on blocked/unadopted tasks",
+                        {"remaining_tasks": remaining},
+                    )
                 return StepResult("COMPLETE", "COMPLETE", "no remaining roadmap task is eligible")
+        if round_number > self.campaign_policy["max_rounds"]:
+            return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached with READY work remaining")
         generation = self._owner_generation()
         if not isinstance(generation, int):
             return StepResult("STOP", "UNKNOWN", "owner generation unavailable")
@@ -364,12 +960,26 @@ class ClaudeJulesAutoLoop:
                                         generation=generation, head=head, tree=tree)
         except (KeyError, TypeError, ValueError) as exc:
             return StepResult("STOP", "BLOCKED", f"cannot prepare dispatch: {exc}")
-        pre = self.dispatcher.preflight(intent, now=now, dispatches_used=self._dispatches_used())
+        dispatches_used = self._dispatches_used()
+        campaign_budget = self.campaign_policy["dispatch_provider_budget"]
+        if campaign_budget is not None and self._campaign_dispatches_used() >= campaign_budget:
+            return StepResult(
+                "STOP", "PREPARED_NOT_AUTHORIZED",
+                "campaign dispatch/provider budget exhausted before carrier write",
+                {"command_id": intent["carrier_request"]["command_id"], "intent": intent},
+            )
+        pre = self.dispatcher.preflight(intent, now=now, dispatches_used=dispatches_used)
         if pre.status == "WAIT":
-            return StepResult("WAIT", "CARRIER_BUSY", pre.reason)  # nothing written; plan again later
+            return StepResult(
+                "WAIT", "CARRIER_BUSY", pre.reason, self._wait_details(now=now)
+            )  # nothing written; plan again later
         if pre.status != "PASS":
             return StepResult("STOP", pre.status, pre.reason,
                               {"command_id": intent["carrier_request"]["command_id"], "intent": intent})
+        if self.explicit_campaign_policy:
+            bound = self.campaign_state.bind_configuration(**self._configuration_args())
+            if bound not in {"CREATED", "RECOVERED"}:
+                return StepResult("STOP", "UNKNOWN", "campaign configuration create not proven; do not resend")
         stored = self._store_spec(spec)
         if stored not in {"CREATED", "RECOVERED"}:
             return StepResult("STOP", "UNKNOWN" if stored == "UNKNOWN" else "BLOCKED", f"task spec record {stored}")
@@ -378,6 +988,15 @@ class ClaudeJulesAutoLoop:
     def _build_intent(self, spec: dict[str, Any], *, now: str, round_number: int, attempt: int,
                       generation: int, head: str, tree: str) -> dict[str, Any]:
         created = datetime.fromisoformat(now.replace("Z", "+00:00"))
+        gate = validate_machine_gate(
+            mode=BackendMode.JULES_BACKEND.value, loop_id=self.origin_loop_id,
+            round=round_number, max_rounds=self.campaign_policy["max_rounds"],
+            expected_target_head=head, observed_target_head=head,
+            expected_target_tree=tree, observed_target_tree=tree,
+            campaign_policy=self.campaign_policy,
+        )
+        if gate.status != "PASS":
+            raise ValueError(gate.reason)
         expires = (created + REQUEST_LIFETIME).isoformat()
         loop_number = next_unused_loop_number(self.client, self.policy["carrier_branch"])
         command_id = numbered_command_id(loop_number, spec["task_id"])
@@ -424,14 +1043,38 @@ class ClaudeJulesAutoLoop:
                 used += 1
         return used
 
+    def _campaign_dispatches_used(self) -> int:
+        # A consumed slot stays consumed even if no DISPATCHED receipt could
+        # be written. Counting only receipts lets a crash evade the local cap.
+        commands = {slot["command_id"] for slot in self.dispatcher.budget.slots()
+                    if slot["origin_loop_id"] == self.origin_loop_id}
+        for intent in self._intents():
+            command = intent["carrier_request"]["command_id"]
+            receipt = self._read_json(dispatch_receipt_path(command))
+            if receipt is not None and receipt.get("state") == "DISPATCHED":
+                commands.add(command)
+        return len(commands)
+
     def _dispatch(self, intent: dict[str, Any], *, now: str, resumed: bool) -> StepResult:
+        budget = self.campaign_policy["dispatch_provider_budget"]
+        if budget is not None:
+            slots = self.dispatcher.budget.slots()
+            reserved_here = any(slot["command_id"] == intent["carrier_request"]["command_id"]
+                                and slot["intent_sha256"] == intent["intent_sha256"]
+                                and slot["origin_loop_id"] == self.origin_loop_id for slot in slots)
+            used = self._campaign_dispatches_used()
+            if used > budget or (used == budget and not reserved_here):
+                return StepResult("STOP", "PREPARED_NOT_AUTHORIZED", "campaign dispatch/provider budget exhausted on resume")
         result = self.dispatcher.dispatch(intent, now=now, dispatches_used=self._dispatches_used())
         action = "RESUME_DISPATCH" if resumed else "DISPATCH"
         details = {"command_id": intent["carrier_request"]["command_id"], "intent_id": intent["intent_id"]}
         if result.status in {"DISPATCHED", "NO-OP"}:
             return StepResult(action, result.status, result.reason, details)
         if result.status == "WAIT":
-            return StepResult("WAIT", "CARRIER_BUSY", result.reason, details)  # resumes from the same intent
+            return StepResult(
+                "WAIT", "CARRIER_BUSY", result.reason,
+                self._wait_details(now=now, details=details),
+            )  # resumes from the same intent
         if result.status == "BLOCKED" and result.record is not None:
             return StepResult(action, "BLOCKED", result.reason, details)  # receipt written; next step re-plans
         return StepResult("STOP", result.status, result.reason, details)
