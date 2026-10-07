@@ -1,6 +1,8 @@
 import unittest
 
-from automation.command_bus.symphony_subscription_boundary import assess_new_worker_route
+from automation.command_bus.symphony_subscription_boundary import (
+    assess_new_worker_route, subscription_worker_environment,
+)
 
 
 class SubscriptionBoundaryTests(unittest.TestCase):
@@ -36,6 +38,16 @@ class SubscriptionBoundaryTests(unittest.TestCase):
                 self.assertFalse(assess_new_worker_route(
                     self.evidence(), worker_environment_keys=(), **{flag: True},
                 ).new_worker_route_compatible)
+
+    def test_worker_environment_removes_api_selectors_without_mutating_parent(self):
+        parent = {"PATH": "/bin", "OPENAI_API_KEY": "fixture-key",
+                  "CODEX_API_KEY": "fixture-key", "OPENAI_BASE_URL": "https://fixture.invalid"}
+        worker = subscription_worker_environment(parent)
+        self.assertEqual(worker, {"PATH": "/bin"})
+        self.assertIn("OPENAI_API_KEY", parent)
+        self.assertTrue(assess_new_worker_route(
+            self.evidence(), worker_environment_keys=tuple(worker),
+        ).new_worker_route_compatible)
 
 
 if __name__ == "__main__":

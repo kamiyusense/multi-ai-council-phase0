@@ -20,6 +20,7 @@ from urllib.parse import urlsplit
 
 from .symphony_autonomous_policy import STRICT_PROOF_POLICY
 from .symphony_controller import Command
+from .symphony_subscription_boundary import subscription_worker_environment
 
 
 # These constants deliberately describe the strict proof profile only. They are
@@ -224,6 +225,7 @@ class JsonlCodexAppServer:
                 [self.executable, "app-server"], cwd=cwd, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
                 encoding="utf-8", bufsize=1,
+                env=subscription_worker_environment(os.environ),
             )
 
             def pump_output() -> None:

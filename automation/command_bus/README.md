@@ -319,6 +319,11 @@ fallback are incompatible with the subscription route. A missing quota number
 alone is allowed. The classifier does not call `account/read`, launch a worker,
 or authorize LIVE. The production worker launcher must still enforce its
 environment and auth route before LIVE use.
+The current strict JSONL app-server launch now removes ambient API-key and
+custom API-endpoint variables from its child environment; the parent process
+is not changed. This is structural paid-route protection for that existing
+launch path, not proof of a future Official Symphony launcher or config-file
+authentication behavior.
 
 The strict one-shot Symphony proof remains intact. Autonomous-loop product
 semantics live separately in `symphony_autonomous_policy.py` and `symphony_autonomous_runtime.py`.

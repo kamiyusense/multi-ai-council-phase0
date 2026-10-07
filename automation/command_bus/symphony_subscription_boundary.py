@@ -17,6 +17,15 @@ _METERED_ENV_KEYS = frozenset({
 })
 
 
+def subscription_worker_environment(source: Mapping[str, str]) -> dict[str, str]:
+    """Make a worker environment without ambient metered API selectors.
+
+    This is a process-launch boundary, not an account or quota probe. The
+    original mapping is never changed, and no credential values are inspected.
+    """
+    return {key: value for key, value in source.items() if key not in _METERED_ENV_KEYS}
+
+
 @dataclass(frozen=True)
 class SubscriptionRouteDecision:
     new_worker_route_compatible: bool

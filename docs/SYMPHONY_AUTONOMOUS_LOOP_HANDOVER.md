@@ -13,6 +13,9 @@ can wake read-only reconciliation without a complete worker identity. The
 subscription classifier is new-worker-only and does not gate Symphony's
 internal turns/retries. Production transport and actual LIVE authentication
 remain unverified; do not treat these STATIC checks as LIVE authorization.
+The strict JSONL Codex adapter additionally strips ambient API-key/custom
+endpoint selectors from its child process environment; Official Symphony's
+future worker launcher still needs this boundary.
 
 Read `SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` before the older historical
 next-step sections below. Attempt-to-campaign reconciliation, durable controller

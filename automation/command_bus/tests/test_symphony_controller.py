@@ -602,12 +602,15 @@ class SymphonyInspiredControllerTests(unittest.TestCase):
 
         process = FakeProcess()
         cwd = Path(__file__).resolve().parents[3]
-        with patch("automation.command_bus.symphony_codex_app_server.subprocess.Popen", return_value=process) as popen:
-            result = JsonlCodexAppServer().execute_one_turn(cwd=str(cwd), prompt="one turn")
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "fixture-key", "CODEX_API_KEY": "fixture-key"}):
+            with patch("automation.command_bus.symphony_codex_app_server.subprocess.Popen", return_value=process) as popen:
+                result = JsonlCodexAppServer().execute_one_turn(cwd=str(cwd), prompt="one turn")
         self.assertEqual(result.status, "DONE")
         self.assertTrue(result.dispatch_attempted and result.model_started)
         self.assertEqual(process.calls.count("turn/start"), 1)
         self.assertEqual(popen.call_args.args[0][-1], "app-server")
+        self.assertNotIn("OPENAI_API_KEY", popen.call_args.kwargs["env"])
+        self.assertNotIn("CODEX_API_KEY", popen.call_args.kwargs["env"])
 
     def test_one_cycle_selects_at_most_one_of_several_candidates(self):
         tracker = FakeTracker([command(command_id="cmd-b", logical_id="logical-b"),

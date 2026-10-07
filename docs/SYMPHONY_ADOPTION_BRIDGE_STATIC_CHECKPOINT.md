@@ -40,14 +40,23 @@ STATIC compatibility decision, never LIVE dispatch authorization. The worker
 launcher still needs to enforce the environment and account route in a real
 runtime; no real account request was made in this batch.
 
+The existing strict Codex JSONL app-server adapter now passes a copied process
+environment with ambient API-key and custom API-endpoint selectors removed.
+The parent environment is unchanged. This closes the concrete inherited
+`OPENAI_API_KEY`/`CODEX_API_KEY` process-launch path in that adapter without
+adding a per-turn quota check. A future Official Symphony worker launcher must
+apply the same structural rule. Codex config-file/auth behavior is not proved
+by this STATIC process fixture.
+
 ## Verification and boundary
 
-- Focused Symphony tests: 133 PASS.
-- Full command-bus regression: PASS (one inherited platform skip).
+- Focused Symphony tests: 134 PASS.
+- Full command-bus regression: 1893 PASS (one inherited platform skip).
 - Command-bus compile: PASS.
 - New cases cover mid-result HEAD advance and restart/replan, destructive
   mutation isolation with an independent task continuing, recovered terminal
-  validity/risk checks, and subscription route classification.
+  validity/risk checks, subscription route classification and the spawned
+  app-server process environment.
 - No model/provider LIVE, merge, default-branch write, billing, Secret or
   permission operation occurred.
 
