@@ -126,8 +126,32 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
             self.assertEqual(w.step().status, "PASS")
             self.assertEqual(w.step().status, "ADOPTED")
         boundary = w.step()
-        self.assertEqual((boundary.action, boundary.status), ("STOP", "MAX_ROUNDS"))
+        self.assertEqual((boundary.action, boundary.status), ("COMPLETE", "COMPLETE"))
         self.assertEqual(len(w.commands()), 8)
+
+    def test_max_round_boundary_only_applies_when_ready_work_remains(self):
+        auth = dict(policy()["live_dispatch_authorization"], max_dispatches=10)
+        legacy = policy(max_rounds=6, live_dispatch_authorization=auth)
+        campaign = campaign_policy_from_legacy(legacy, LOOP)
+        campaign["max_rounds"] = 1
+        w = World(
+            pol=legacy,
+            campaign=campaign,
+            plan=roadmap(
+                task_spec("task-one"),
+                task_spec(
+                    "task-two", "automation/command_bus/task_two.py",
+                    "automation/command_bus/tests/test_task_two.py",
+                ),
+            ),
+        )
+        first = w.step()
+        w.deliver(w.jules.run(first.details["command_id"]))
+        self.assertEqual(w.step().status, "PASS")
+        self.assertEqual(w.step().status, "ADOPTED")
+        boundary = w.step()
+        self.assertEqual((boundary.action, boundary.status), ("STOP", "MAX_ROUNDS"))
+        self.assertIn("READY work remaining", boundary.reason)
 
     def test_duplicate_and_redelivered_events_are_processed_once(self):
         w = World()
