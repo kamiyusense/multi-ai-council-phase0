@@ -62,7 +62,7 @@ _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _SESSION_LOG = re.compile(r"Jules session accepted: sessions/([0-9]{1,32})\b")
 _TEST_RAN = re.compile(r"^Ran ([0-9]+) tests? in ", re.M)
 _TEST_FAILED = re.compile(r"^FAILED \(([^)]*)\)", re.M)
-DEFAULT_TEST_COMMAND = ["python3", "-m", "unittest", "discover", "-s", "automation/command_bus/tests", "-t", "."]
+DEFAULT_TEST_COMMAND = [sys.executable or "python3", "-m", "unittest", "discover", "-s", "automation/command_bus/tests", "-t", "."]
 OBSERVATION_PROFILE = "CLAUDE_AUTO_DISPATCH_OBSERVATION_V1"
 _OBSERVATION_KEYS = {"schema_version", "profile", "command_id", "workflow_run_id", "job_id", "session_id",
                      "log_line", "source", "observed_at", "observation_sha256"}
