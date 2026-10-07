@@ -335,6 +335,14 @@ authentication behavior.
 The strict one-shot Symphony proof remains intact. Autonomous-loop product
 semantics live separately in `symphony_autonomous_policy.py` and `symphony_autonomous_runtime.py`.
 
+The minimal Local LIVE preparation has a [copy-ready Issue](../../docs/SYMPHONY_MINIMAL_LIVE_PROOF_ISSUE.md),
+an [Official Symphony WORKFLOW](../../docs/SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md), and a
+[Japanese runbook](../../docs/SYMPHONY_MINIMAL_LIVE_PROOF_RUNBOOK.md). A dedicated STATIC fixture
+exercises Issue admission, route rejection, INTENT/STARTED/TERMINAL capture,
+fresh-HEAD stale discard, and fresh-controller continuation. It remains
+incapable of model dispatch; production transport and actual subscription
+authentication are still unverified.
+
 These modules are STATIC-only and do not start Codex or perform GitHub writes.
 They provide configurable policy profiles, typed UNKNOWN recovery, stale-target
 replan semantics, subscription-only gating, serializable campaign/task state,

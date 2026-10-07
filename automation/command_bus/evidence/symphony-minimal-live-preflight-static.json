@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "status": "STATIC_PASS_LIVE_NOT_RUN",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pr": 320,
+  "branch": "codex/symphony-inspired-minimal-controller",
+  "starting_remote_head": "31bbf0aa8a867d3b95940a82acd8daca0589765d",
+  "official_symphony_reference": "openai/symphony@be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "fake_protocol_flow": [
+    "GitHub Issue candidate fixture",
+    "new-worker subscription admission",
+    "durable INTENT",
+    "fake upstream STARTED",
+    "fake upstream TERMINAL",
+    "fresh canonical HEAD read",
+    "STALE discard",
+    "fresh controller restore and continuation",
+    "new result adoption"
+  ],
+  "focused_tests": {"status": "PASS", "count": 138},
+  "full_command_bus_tests": {"status": "PASS", "count": 1897, "skipped": 1},
+  "official_workflow_parse": "PASS with static fixture token; no tracker request",
+  "official_workflow_config_validation": "PASS",
+  "official_cli_argument_parse_with_fake_start": "PASS",
+  "issue_template_sha256": "ee0c6e757ee63b6ce30c00b1a47488689cd2282b6ab3972db06f0b67cbbfa74a",
+  "workflow_sha256": "6f176ff838649ad7d1c266c54f3d82a4beabeb2bf08d597d93436296c8ce43c3",
+  "runbook_sha256": "7785e4b88fb62841ee87a9339f422f1a319a823d29869e92be281f27aa1526c6",
+  "live_official_symphony_starts": 0,
+  "live_codex_worker_starts": 0,
+  "tracker_issues_created": 0,
+  "remaining_unknown": [
+    "real ChatGPT subscription route on Local host",
+    "real Official Symphony/Codex worker lifecycle",
+    "production upstream event authentication to durable ledger",
+    "automatic Git ref adoption; deliberately outside minimal proof"
+  ]
+}

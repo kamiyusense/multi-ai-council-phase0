@@ -27,6 +27,7 @@ from .symphony_campaign_store import GitHubCampaignStateStore
 from .symphony_attempt_store import GitHubAutonomousAttemptStore, make_attempt_id
 from .symphony_attempt_reconciler import AttemptFenceProof, reconcile_attempts
 from .symphony_result_adoption import AdoptionAction, decide_result_adoption
+from .symphony_subscription_boundary import assess_new_worker_route
 from .symphony_upstream_event_adapter import UpstreamWorkerEvent, capture_static_attempt_event
 
 
@@ -86,6 +87,21 @@ class StaticQuotaReader:
 
     def read(self) -> QuotaState:
         return self.state
+
+
+class StaticSubscriptionRouteReader:
+    """Fixture account evidence checked once per new worker, never per turn."""
+
+    def __init__(self, account_evidence: dict[str, object], worker_environment_keys: tuple[str, ...]):
+        self.account_evidence = dict(account_evidence)
+        self.worker_environment_keys = worker_environment_keys
+        self.calls = 0
+
+    def read(self):
+        self.calls += 1
+        return assess_new_worker_route(
+            self.account_evidence, worker_environment_keys=self.worker_environment_keys,
+        )
 
 
 class StaticReplanner:
@@ -177,6 +193,7 @@ class StaticAutonomousCampaignController:
         observation_reader: StaticObservationReader | None = None,
         replanner: StaticReplanner | None = None,
         quota_reader: StaticQuotaReader | None = None,
+        subscription_route_reader: StaticSubscriptionRouteReader | None = None,
         policy: AutonomousRuntimePolicy = HARDENED_AUTONOMOUS_POLICY,
         attempt_store: GitHubAutonomousAttemptStore | None = None,
         fence_proofs: tuple[AttemptFenceProof, ...] = (),
@@ -194,6 +211,8 @@ class StaticAutonomousCampaignController:
             raise ValueError("only the built-in STATIC replanner is admitted")
         if quota_reader is not None and type(quota_reader) is not StaticQuotaReader:
             raise ValueError("only the built-in STATIC quota reader is admitted")
+        if subscription_route_reader is not None and type(subscription_route_reader) is not StaticSubscriptionRouteReader:
+            raise ValueError("only the built-in STATIC route reader is admitted")
         if crash_plan is not None and type(crash_plan) is not StaticCrashPlan:
             raise ValueError("only built-in STATIC crash plans are admitted")
         if attempt_store is not None and (
@@ -209,6 +228,7 @@ class StaticAutonomousCampaignController:
         self.observation_reader = observation_reader or StaticObservationReader()
         self.replanner = replanner or StaticReplanner()
         self.quota_reader = quota_reader or StaticQuotaReader()
+        self.subscription_route_reader = subscription_route_reader
         self.policy = policy
         self.attempt_store = attempt_store or GitHubAutonomousAttemptStore(
             store.client, write_branch=store.write_branch, default_branch=store.default_branch,
@@ -267,6 +287,10 @@ class StaticAutonomousCampaignController:
             if action.kind is ActionKind.DISPATCH_TASK:
                 assert action.task_id is not None
                 task = kernel.state.tasks[action.task_id]
+                if self.subscription_route_reader is not None:
+                    route = self.subscription_route_reader.read()
+                    if not route.new_worker_route_compatible:
+                        return BatchResult("NEW_WORKER_ROUTE_BLOCKED", revision, steps, task.task_id, route.reason)
                 self._crash("before_intent")
                 intent = self.attempt_store.append_intent(
                     campaign_id=self.campaign_id, task_id=task.task_id,
