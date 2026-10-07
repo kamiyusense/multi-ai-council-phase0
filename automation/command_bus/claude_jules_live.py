@@ -52,7 +52,7 @@ from .claude_jules_inspection import InspectionStore
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
 from .claude_jules_settlement import (
-    settlement_path, settlement_status, validate_settlement_observation, verify_readback_run,
+    settlement_path, settlement_status, validate_settlement_observation, verify_readback,
 )
 from .loop_owner_backend import LoopOwnerGitHubBackend
 
@@ -157,17 +157,22 @@ class LiveResultFacts:
             return None
         run = runs[0]
         sessions: set[str] = set()
+        source = None
         if run.get("conclusion") == "success":
             jobs = self.rest.run_jobs(run["id"])
             try:
                 for job in jobs:
                     sessions.update(_SESSION_LOG.findall(self.rest.job_log(job["id"]) or ""))
+                source = "JOB_LOG"
             except Exception:
                 # Job-log storage can be unreachable from the container; then only a Claude-recorded
                 # observation for exactly this REST-verified run and job may supply the session id.
+                # It stays marked as a transcription: provider settlement never binds to it.
                 sessions = self._recorded_session(command_id, str(run["id"]), {str(j["id"]) for j in jobs})
+                source = "RECORDED_TRANSCRIPTION"
         return {"command_id": command_id, "workflow_run_id": str(run["id"]), "conclusion": run.get("conclusion"),
-                "session_id": sessions.pop() if len(sessions) == 1 else None, "command_commit": commits[0]}
+                "session_id": sessions.pop() if len(sessions) == 1 else None, "command_commit": commits[0],
+                "session_source": source}
 
     def _recorded_session(self, command_id: str, run_id: str, job_ids: set[str]) -> set[str]:
         content = self.git.get(observation_path(command_id), self.policy["data_branch"])
@@ -206,14 +211,26 @@ class LiveResultFacts:
 
     def provider_settlement(self, intent: dict[str, Any]) -> tuple[str, str]:
         command_id = intent["carrier_request"]["command_id"]
-        observation = self.dispatch_observation(command_id)
+        try:
+            observation = self.dispatch_observation(command_id) or {}
+        except Exception as exc:
+            return "UNKNOWN", f"dispatch observation unavailable: {type(exc).__name__}"
+        if observation.get("session_id") and observation.get("session_source") != "JOB_LOG":
+            # A transcribed session id is a claim, not an independent read; binding a
+            # settlement to it could settle the wrong session while the real one runs.
+            return "UNKNOWN", "accepted session only transcribed; dispatch job log readback unavailable"
         prefix = settlement_path(command_id, "0").rsplit("/", 1)[0] + "/"
-        records = [json.loads(c.text) for c in self.git.list(prefix, self.policy["data_branch"])]
+        try:
+            records = [json.loads(c.text) for c in self.git.list(prefix, self.policy["data_branch"])]
+        except json.JSONDecodeError:
+            return "UNKNOWN", "settlement record invalid: not JSON"
+        except Exception as exc:
+            return "UNKNOWN", f"settlement records unavailable: {type(exc).__name__}"
         return settlement_status(
-            records, command_id=command_id, accepted_session_id=(observation or {}).get("session_id"),
+            records, command_id=command_id, accepted_session_id=observation.get("session_id"),
             dispatched_at=intent["prepared_at"],
-            run_verified=lambda r: verify_readback_run(r, git=self.git, rest=self.rest,
-                                                       carrier_branch=self.policy["carrier_branch"]))
+            verify=lambda r: verify_readback(r, git=self.git, rest=self.rest,
+                                             carrier_branch=self.policy["carrier_branch"]))
 
     def compare(self, base: str, head: str) -> dict[str, Any] | None:
         return self.git.compare(base, head)
