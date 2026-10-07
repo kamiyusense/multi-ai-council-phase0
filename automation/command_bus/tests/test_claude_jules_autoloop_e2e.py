@@ -420,6 +420,19 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         resumed = w.controller().step(now=NOW)
         self.assertEqual((resumed.action, resumed.status), ("DISPATCH", "DISPATCHED"))
 
+    def test_explicit_task_timeout_is_rederived_and_blocks_only_that_task(self):
+        campaign = campaign_policy_from_legacy(policy(), LOOP)
+        campaign["task_timeout_seconds"] = 3600
+        campaign["campaign_timeout_seconds"] = 7200
+        w = World(campaign=campaign)
+        first = w.step()
+        self.assertEqual(first.status, "DISPATCHED")
+        late = (datetime.fromisoformat(NOW) + timedelta(seconds=3601)).isoformat()
+        boundary = w.step(now=late)
+        self.assertEqual((boundary.action, boundary.status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertIn("no Jules result PR", boundary.reason)
+        self.assertEqual(len(w.commands()), 1)
+
     def test_explicit_campaign_timeout_is_rederived_after_restart(self):
         campaign = campaign_policy_from_legacy(policy(), LOOP)
         campaign["task_timeout_seconds"] = 3600
