@@ -303,11 +303,18 @@ Official Symphony issue/worker/retry/stall notifications as **read-only** wake
 hints. It requires only the upstream issue ID; the complete attempt identity is
 needed later for a result or fence. These notifications cannot dispatch a
 worker, retire an attempt, or stop Symphony's same-session turns/backoff.
+The same adapter maps exact fake upstream `STARTED`/`TERMINAL` events into the
+existing create-only attempt ledger. Duplicate matching lifecycle events are
+NO-OP, conflicting or untrusted events do not write, and turn/continuation
+updates stay read-only. The STATIC controller now uses this seam; production
+transport authentication and LIVE dispatch remain separate.
 
 `symphony_result_adoption.py` is called at the result seam, after the STATIC
 runner and again when a durable terminal is restored. It rechecks the current
 canonical HEAD, task validity, and declared mutation operations. A stale result
 becomes `STALE` and can replan; an unsafe/unknown mutation isolates its task.
+The reconciliation caller must supply a task-validity reader; an absent reader
+cannot silently turn into "valid".
 The terminal ledger retains the mutation class so crash recovery applies the
 same guard. A real Git ref write must additionally use an expected-HEAD lease;
 this STATIC guard itself makes no Git write.

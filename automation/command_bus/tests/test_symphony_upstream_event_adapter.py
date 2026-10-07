@@ -2,12 +2,42 @@ from dataclasses import replace
 import unittest
 
 from automation.command_bus.symphony_upstream_event_adapter import (
-    UpstreamWorkerEvent, prepare_upstream_reconciliation_hint, prepare_worker_recovery,
+    UpstreamWorkerEvent, capture_static_attempt_event,
+    prepare_upstream_reconciliation_hint, prepare_worker_recovery,
 )
 from automation.command_bus.tests.test_symphony_attempt_store import store, intent
 
 
 class SymphonyUpstreamEventAdapterTests(unittest.TestCase):
+    def test_fake_upstream_lifecycle_reuses_attempt_ledger_without_turn_gate(self):
+        start = replace(self.event, event_kind="STARTED", evidence_ref="worker-1")
+        writes = self.store.client.create_calls
+        self.assertEqual(capture_static_attempt_event(self.store, start).status, "ACCEPTED")
+        self.assertEqual(capture_static_attempt_event(self.store, start).status, "NOOP_DUPLICATE")
+        self.assertEqual(capture_static_attempt_event(
+            self.store, replace(start, evidence_ref="other-worker"),
+        ).status, "CONFLICT")
+        self.assertEqual(self.store.client.create_calls, writes + 1)
+        self.assertEqual(capture_static_attempt_event(
+            self.store, replace(start, event_kind="TURN_CONTINUED"),
+        ).status, "READ_ONLY")
+        terminal = replace(start, event_kind="TERMINAL", evidence_ref="static:terminal",
+                           result_id="result-1", outcome="DONE")
+        self.assertEqual(capture_static_attempt_event(self.store, terminal).status, "ACCEPTED")
+        self.assertEqual(capture_static_attempt_event(self.store, terminal).status, "NOOP_DUPLICATE")
+        self.assertEqual(capture_static_attempt_event(
+            self.store, replace(terminal, outcome="FAILED"),
+        ).status, "CONFLICT")
+        self.assertEqual(self.store.restore("campaign-1", self.attempt.attempt_id).state, "TERMINAL")
+        self.assertEqual(self.store.client.create_calls, writes + 2)
+
+    def test_untrusted_or_stale_fake_upstream_capture_cannot_write(self):
+        writes = self.store.client.create_calls
+        for event in (replace(self.event, event_kind="STARTED", source_authentication="LIVE_OBSERVATION"),
+                      replace(self.event, event_kind="STARTED", expected_target_head="b" * 40)):
+            self.assertEqual(capture_static_attempt_event(self.store, event).status, "CONFLICT")
+        self.assertEqual(self.store.client.create_calls, writes)
+
     def test_upstream_updates_need_no_full_worker_identity_for_read_only_reconciliation(self):
         for kind in ("WORKER_UPDATE", "STALLED", "RETRY_SCHEDULED", "TERMINAL_AVAILABLE"):
             with self.subTest(kind=kind):

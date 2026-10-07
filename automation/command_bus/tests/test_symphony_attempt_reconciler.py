@@ -42,6 +42,7 @@ class SymphonyAttemptReconcilerTests(unittest.TestCase):
         ).status, "ACCEPTED")
 
     def reconcile(self, **kwargs):
+        kwargs.setdefault("task_validity", lambda task: True)
         return reconcile_attempts(self.kernel, self.store, canonical_head="h1", **kwargs)
 
     def test_terminal_survives_crash_and_selects_next_task_without_dispatch(self):
@@ -64,6 +65,13 @@ class SymphonyAttemptReconcilerTests(unittest.TestCase):
         self.assertEqual(result.isolated, 1)
         self.assertEqual(self.kernel.state.tasks["A"].status, TaskStatus.BLOCKED)
         self.assertEqual(self.kernel.next_action(canonical_head="h1").task_id, "B")
+
+    def test_terminal_cannot_be_adopted_without_task_validity_reader(self):
+        attempt = self.intent()
+        self.started(attempt)
+        self.terminal(attempt)
+        self.assertEqual(self.reconcile(task_validity=None).status, "HARD_UNKNOWN")
+        self.assertEqual(self.kernel.state.rounds_completed, 0)
 
     def test_terminal_recovery_refuses_destructive_mutation_claim(self):
         attempt = self.intent()

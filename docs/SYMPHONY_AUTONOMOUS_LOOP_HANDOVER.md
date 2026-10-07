@@ -16,6 +16,10 @@ remain unverified; do not treat these STATIC checks as LIVE authorization.
 The strict JSONL Codex adapter additionally strips ambient API-key/custom
 endpoint selectors from its child process environment; Official Symphony's
 future worker launcher still needs this boundary.
+The STATIC controller now routes fake upstream STARTED/TERMINAL captures through
+the existing durable attempt store. Duplicate captures are NO-OP and conflicting
+captures are rejected; this adds no scheduler or production LIVE transport.
+Terminal reconciliation requires an explicit task-validity reader.
 
 Read `SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` before the older historical
 next-step sections below. Attempt-to-campaign reconciliation, durable controller

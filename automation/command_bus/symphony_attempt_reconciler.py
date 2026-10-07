@@ -45,9 +45,9 @@ def reconcile_attempts(
     store: GitHubAutonomousAttemptStore,
     *,
     canonical_head: str,
+    task_validity: Callable[[CampaignTask], bool],
     canonical_trustworthy: bool = True,
     fence_proofs: tuple[AttemptFenceProof, ...] = (),
-    task_validity: Callable[[CampaignTask], bool] | None = None,
 ) -> ReconciliationResult:
     """Restore evidence before dispatch; no model work occurs in this function."""
     before = kernel.state.to_dict()
@@ -63,6 +63,8 @@ def reconcile_attempts(
 
     if type(canonical_trustworthy) is not bool or not canonical_trustworthy or not canonical_head:
         return hard("attempt reconciliation canonical lineage unverified")
+    if not callable(task_validity):
+        return hard("task validity evaluator unavailable at result adoption")
     proofs = {}
     for proof in fence_proofs:
         if type(proof) is not AttemptFenceProof or proof.attempt_id in proofs:
@@ -127,7 +129,7 @@ def reconcile_attempts(
                 expected_head=identity.expected_target_head,
                 canonical_head=canonical_head,
                 canonical_trustworthy=canonical_trustworthy,
-                task_still_valid=(task_validity(task) if task_validity is not None else True)
+                task_still_valid=task_validity(task)
                 and identity.expected_target_head == task.expected_target_head,
                 mutation_operations=tuple(terminal.get("mutation_operations", [])),
             )

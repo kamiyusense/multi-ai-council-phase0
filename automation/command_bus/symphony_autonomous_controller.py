@@ -27,6 +27,7 @@ from .symphony_campaign_store import GitHubCampaignStateStore
 from .symphony_attempt_store import GitHubAutonomousAttemptStore, make_attempt_id
 from .symphony_attempt_reconciler import AttemptFenceProof, reconcile_attempts
 from .symphony_result_adoption import AdoptionAction, decide_result_adoption
+from .symphony_upstream_event_adapter import UpstreamWorkerEvent, capture_static_attempt_event
 
 
 @dataclass(frozen=True)
@@ -287,11 +288,13 @@ class StaticAutonomousCampaignController:
                 self._crash("after_running_checkpoint")
                 self.runner.start_attempt(attempt_id)
                 self._crash("before_started")
-                started = self.attempt_store.append_started(
-                    campaign_id=self.campaign_id, attempt_id=attempt_id,
-                    provider_kind="STATIC_FIXTURE", provider_attempt_ref=attempt_id,
-                    observation_source="STATIC_SIMULATION",
-                )
+                started = capture_static_attempt_event(self.attempt_store, UpstreamWorkerEvent(
+                    campaign_id=self.campaign_id, task_id=task.task_id,
+                    generation=kernel.state.generation, attempt_id=attempt_id,
+                    runner_generation=kernel.state.generation, expected_target_head=target.head,
+                    event_kind="STARTED", evidence_ref=attempt_id,
+                    source_authentication="STATIC_SIMULATION",
+                ))
                 if started.status != "ACCEPTED":
                     return self._save_failure(started.status, revision, steps, task.task_id, started.reason)
                 self._crash("after_started")
@@ -331,14 +334,17 @@ class StaticAutonomousCampaignController:
                     elif adoption.action is AdoptionAction.ISOLATE_TASK:
                         result = TaskExecutionResult(result.result_id, TaskOutcome.BLOCKED)
                     self._crash("before_terminal")
-                    terminal = self.attempt_store.append_terminal(
-                        campaign_id=self.campaign_id, attempt_id=attempt_id,
-                        result_id=result.result_id, outcome=result.outcome.value,
-                        model_started=True, unknown_class=result.unknown_class.value if result.unknown_class else None,
+                    terminal = capture_static_attempt_event(self.attempt_store, UpstreamWorkerEvent(
+                        campaign_id=self.campaign_id, task_id=task.task_id,
+                        generation=kernel.state.generation, attempt_id=attempt_id,
+                        runner_generation=kernel.state.generation, expected_target_head=target.head,
+                        event_kind="TERMINAL", evidence_ref=f"static:{attempt_id}",
+                        source_authentication="STATIC_SIMULATION", result_id=result.result_id,
+                        outcome=result.outcome.value,
+                        unknown_class=result.unknown_class.value if result.unknown_class else None,
                         affects_campaign_authority=result.affects_campaign_authority,
-                        evidence_refs=[f"static:{attempt_id}"],
                         mutation_operations=reported_operations,
-                    )
+                    ))
                     if terminal.status != "ACCEPTED":
                         return self._save_failure(terminal.status, revision, steps, task.task_id, terminal.reason)
                     self._crash("after_terminal")
