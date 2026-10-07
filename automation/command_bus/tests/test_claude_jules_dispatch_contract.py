@@ -184,6 +184,7 @@ class PolicyAndFenceTests(unittest.TestCase):
             "expired": owner_event(expires_at="2026-10-01T12:59:59+00:00"),
             "future": dict(ok, claimed_at="2026-10-01T13:30:00+00:00"),
             "another PR": dict(ok, expected_pr=1),
+            "another repository": dict(ok, expected_repo="other/repository"),
             "another loop": dict(ok, loop_id="other-loop"),
         }
         for label, event in cases.items():

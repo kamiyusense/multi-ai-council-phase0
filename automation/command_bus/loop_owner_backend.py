@@ -79,12 +79,17 @@ class LoopOwnerGitHubBackend:
             if self.client.get(path, self.branch) is not None:
                 return OwnerWriteResult("BLOCKED", "owner generation path already exists", chain[-1] if chain else None, len(chain))
 
-            self.client.create(
-                path,
-                _canonical(event),
-                f"append loop owner {loop_id} generation {event['generation']}",
-                self.branch,
-            )
+            try:
+                self.client.create(
+                    path,
+                    _canonical(event),
+                    f"append loop owner {loop_id} generation {event['generation']}",
+                    self.branch,
+                )
+            except Exception:
+                # A lost response may follow a successful immutable create.
+                # Read the exact generation and complete chain; never resend.
+                pass
 
             created = self.client.get(path, self.branch)
             if created is None:

@@ -7,9 +7,12 @@ budgeting and immutable-write rules remain in the existing dispatcher.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 CAMPAIGN_POLICY_PROFILE = "CLAUDE_AUTO_CAMPAIGN_POLICY_V1"
+MAX_CAMPAIGN_ROUNDS = 1000
+LEGACY_MAX_ROUNDS = 6
 
 TRANSIENT_UNKNOWN = "TRANSIENT_UNKNOWN"
 RECOVERABLE_UNKNOWN = "RECOVERABLE_UNKNOWN"
@@ -50,16 +53,16 @@ def validate_campaign_policy(policy: dict[str, Any]) -> dict[str, Any]:
     """Validate campaign continuation limits without granting any live authority."""
     if not isinstance(policy, dict) or set(policy) != _POLICY_KEYS:
         raise ValueError("campaign policy keys mismatch")
-    if policy["schema_version"] != 1 or policy["profile"] != CAMPAIGN_POLICY_PROFILE:
+    if type(policy["schema_version"]) is not int or policy["schema_version"] != 1 or policy["profile"] != CAMPAIGN_POLICY_PROFILE:
         raise ValueError("unsupported campaign policy")
     campaign_id = policy["campaign_id"]
-    if not isinstance(campaign_id, str) or not campaign_id or len(campaign_id) > 128:
+    if not isinstance(campaign_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", campaign_id):
         raise ValueError("campaign_id required")
-    _positive_int(policy["max_rounds"], "max_rounds", maximum=1000)
+    _positive_int(policy["max_rounds"], "max_rounds", maximum=MAX_CAMPAIGN_ROUNDS)
     _positive_int(policy["max_corrective_rounds_per_task"], "max_corrective_rounds_per_task", maximum=50)
     _positive_int(policy["max_transient_retries"], "max_transient_retries", minimum=0, maximum=20)
     _positive_int(policy["max_consecutive_failures"], "max_consecutive_failures", maximum=100)
-    if policy["max_concurrent_agents"] != 1:
+    if type(policy["max_concurrent_agents"]) is not int or policy["max_concurrent_agents"] != 1:
         raise ValueError("max_concurrent_agents must remain 1 in campaign policy v1")
     _positive_int(policy["idle_check_interval_seconds"], "idle_check_interval_seconds", maximum=86400)
     _positive_int(policy["task_timeout_seconds"], "task_timeout_seconds", maximum=7 * 86400)
@@ -114,6 +117,16 @@ _TRANSIENT_MARKERS = (
     "temporar",
     "status unavailable",
     "owner chain unavailable",
+    "snapshot unavailable",
+    "observation unavailable",
+    "readback unavailable",
+)
+_HARD_MARKERS = (
+    "digest mismatch", "chain mismatch", "records unverifiable", "record invalid",
+    "receipt invalid", "ledger unverifiable", "identity mismatch", "malformed",
+    "another dispatch intent", "not granted", "owned by", "not owned",
+    "owner chain invalid", "owner chain is closed", "lineage contradiction",
+    "does not bind", "altered", "unsupported", "non-contiguous",
 )
 _RECOVERABLE_MARKERS = (
     "stale_target",
@@ -131,12 +144,16 @@ def classify_boundary(status: str, reason: str) -> BoundaryClassification | None
     and never auto-retried.  Read/evidence failures may be retried by a caller
     within an explicit bounded retry budget.  Stale snapshots are replannable.
     """
+    if status not in {"UNKNOWN", "BLOCKED", "TASK_BLOCKED", "NO_RESULT_TIMEOUT"}:
+        return None
     text = (reason or "").lower()
-    if any(marker in text for marker in _AMBIGUOUS_WRITE_MARKERS):
-        return BoundaryClassification(HARD_UNKNOWN, reason, retry_safe=False)
-    if status == "NO_RESULT_TIMEOUT":
+    if status == "BLOCKED" and "choose a new loop number" in text:
+        return BoundaryClassification(RECOVERABLE_UNKNOWN, reason, retry_safe=True)
+    if any(marker in text for marker in (*_AMBIGUOUS_WRITE_MARKERS, *_HARD_MARKERS)):
+        return BoundaryClassification(HARD_UNKNOWN, reason, retry_safe=False, campaign_terminal=True)
+    if status in {"NO_RESULT_TIMEOUT", "TASK_BLOCKED"}:
         return BoundaryClassification(TASK_BLOCKED, reason, retry_safe=False)
-    if any(marker in text for marker in _RECOVERABLE_MARKERS):
+    if status in {"BLOCKED", "UNKNOWN"} and any(marker in text for marker in _RECOVERABLE_MARKERS):
         return BoundaryClassification(RECOVERABLE_UNKNOWN, reason, retry_safe=True)
     if status == "BLOCKED":
         return BoundaryClassification(TASK_BLOCKED, reason, retry_safe=False)

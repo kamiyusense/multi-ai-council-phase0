@@ -69,3 +69,32 @@ A local bare-git integration test covers
 `poll -> restore -> PASS inspection -> adoption -> COMPLETE` through this
 single entrypoint.  Production Routine creation/connection and a new
 multi-round LIVE proof remain separate explicit-approval boundaries.
+
+### Restart and timeout semantics (STATIC, 2026-10-07)
+
+Each invocation revalidates the immutable campaign configuration, complete
+owner chain, result/reinspection history and adoption receipt. Read recovery
+counts and stale-candidate replans survive process restart. Duplicate wakes
+at COMPLETE or a settled dependency boundary produce no new durable writes.
+A failed poll is reported separately; already durable evidence can still
+advance the controller after independent validation. Reinspection order is
+the validated chain order, including equal/skewed timestamps. Old UNKNOWN
+records and old failure runs remain evidence.
+
+`--max-steps` exhaustion exposes `continuation_required` rather than declaring
+completion. Without `--now`, the CLI refreshes UTC time at every controller
+step so leases and campaign/task deadlines cannot be frozen by a long wake.
+
+A timed-out provider must be positively settled before unrelated provider
+work starts. GitHub-only readback can recover a lost result PR, but absence of
+a PR is not settlement evidence. The current production adapter therefore
+waits at `AWAITING_TIMEOUT_RECONCILIATION` if no result arrives. The mock E2E
+includes SETTLED/RUNNING/UNKNOWN and malformed observations; provider-terminal
+readback integration remains future work. The Routine itself, event trigger,
+Claude model turn and Jules dispatch were not created or executed in this
+STATIC batch. No Routine idempotency behavior is claimed by the mock test.
+
+Fresh start-of-batch LIVE readback supersedes the historical limits above:
+Loop A slots 01..06 are consumed (6/10), owner a-003 generation 2 is SEMI_AUTO,
+and live target is `53f2caf67280ca1b4c019f325aea5fb9502f1114`. This batch grants
+no authority to resume that owner or consume slot 07.

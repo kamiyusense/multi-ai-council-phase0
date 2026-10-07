@@ -282,6 +282,14 @@ class FakeFacts:
         pr = self.jules.prs.get(number)
         return None if pr is None else {k: pr[k] for k in ("number", "state", "merged", "base_ref", "head_sha", "head_ref", "body")}
 
+    def timeout_reconciliation(self, intent: dict[str, Any]) -> dict[str, Any]:
+        # This harness has no running external provider: FakeJules runs only
+        # when the test explicitly calls run(). Never use this proof in LIVE.
+        request = intent["carrier_request"]
+        return {"command_id": request["command_id"], "snapshot_head": request["expected_target_head"],
+                "status": "SETTLED", "evidence_ref": "mock-no-running-provider",
+                "result_events": []}
+
     def compare(self, base: str, head: str) -> dict[str, Any] | None:
         return self.github.compare(base, head)
 

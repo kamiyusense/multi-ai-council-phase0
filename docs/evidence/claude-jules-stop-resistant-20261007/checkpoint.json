@@ -1,0 +1,120 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-07",
+  "status": "LOCAL_STATIC_PASS_REMOTE_VALIDATION_PENDING",
+  "current_main": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+  "branch": "feature/autonomous-loop-stop-resistant-core-v1",
+  "branch_head_before_batch": "4b77407ccee4f80cb3ca31f46b79875b30bccc35",
+  "tree_before_batch": "a53c222eb9ca7c06fec425c86178ff7d6d730515",
+  "full_test_count": 1827,
+  "skipped": 1,
+  "focused_test_count": 142,
+  "contract_test_count": 84,
+  "PASS": [
+    "finite campaign limits and downstream contracts",
+    "durable config binding and bounded read recovery",
+    "same-head append-only reinspection",
+    "stale canonical forward movement replan",
+    "blocker/dependency isolation",
+    "configurable corrective and consumed provider budgets",
+    "expired same-holder AUTO recovery fences",
+    "lost owner-create response exact chain readback",
+    "restart/duplicate/event inversion/clock skew mocks",
+    "seven-round mixed mock campaign",
+    "compileall",
+    "diff-check"
+  ],
+  "FAIL": [],
+  "historical_failures": [
+    37548786637,
+    37549079790
+  ],
+  "UNKNOWN": [
+    "production provider settlement adapter not wired",
+    "real unattended multi-round LIVE not proven",
+    "Routine transport/concurrency/idempotency not connected"
+  ],
+  "completed": [
+    "142 focused tests",
+    "84 downstream contract tests",
+    "1827 full regression tests",
+    "lossless logs and actual mixed trace",
+    "North Star and original design handover preserved"
+  ],
+  "remaining": [
+    "STATIC provider-settlement source contract",
+    "STATIC event transport fault adapter",
+    "append-only configuration migration design",
+    "approved production Routine connection and long-running LIVE proof"
+  ],
+  "blocker": [
+    "current LIVE owner is SEMI_AUTO; no authority for takeover",
+    "missing production provider settlement evidence remains WAIT"
+  ],
+  "deferred_decisions": [
+    "keep one concurrent provider in v1",
+    "keep campaign config immutable per origin stream",
+    "do not infer provider completion from missing PR"
+  ],
+  "live_usage": {
+    "start_budget": "6/10",
+    "new_jules_sessions": 0,
+    "provider_model_execution": 0,
+    "budget_consumed_by_this_batch": 0,
+    "owner_changed_by_this_batch": false,
+    "routine_created_or_changed": false
+  },
+  "approval_required_next_step": [
+    "LIVE provider/model execution",
+    "production Routine/event connection",
+    "merge"
+  ],
+  "artifacts": {
+    "README.md": {
+      "bytes": 4812,
+      "sha256": "c758ef85f0daeccc6c4518cfd432772dfb29d5e0f7d5c87eabbcee0d08d9575d"
+    },
+    "contracts-final.log.gz": {
+      "bytes": 2088,
+      "sha256": "4dfa263182eccdd291046aed396818e46f1d9e63c48dc2700ec18e751ac85f44"
+    },
+    "focused-final.log.gz": {
+      "bytes": 4101,
+      "sha256": "49dee871282268fa0f35ae29b75cc211c2c230e8e16ba4b5e8c319484f17cc71"
+    },
+    "full-regression-final.log.gz": {
+      "bytes": 46302,
+      "sha256": "8748c7823b6f2d0c8b07731b293c61a23afe55a36c8667a95aaae759269102c9"
+    },
+    "full-regression-first-failure.log.gz": {
+      "bytes": 46563,
+      "sha256": "f10d1ca68f1ab49df9a28aa7f4750056661c43e0d32c29375d134d13020d2fe3"
+    },
+    "mixed-campaign-trace.json": {
+      "bytes": 30952,
+      "sha256": "eb40a823475580dfe72839a60add3ace507c845296f87af6013ab2e95a0395d4"
+    },
+    "round-ceiling-audit.txt": {
+      "bytes": 9667,
+      "sha256": "6ab5d42c5d80192d48be673dd4621b2217ee3887c963567456b821053e45f815"
+    }
+  },
+  "changed_files": [
+    "automation/command_bus/claude_jules_autoloop.py",
+    "automation/command_bus/claude_jules_campaign.py",
+    "automation/command_bus/claude_jules_campaign_state.py",
+    "automation/command_bus/claude_jules_dispatch.py",
+    "automation/command_bus/claude_jules_live.py",
+    "automation/command_bus/claude_jules_reinspection.py",
+    "automation/command_bus/claude_loop.py",
+    "automation/command_bus/loop_owner_backend.py",
+    "automation/command_bus/tests/claude_jules_autoloop_fakes.py",
+    "automation/command_bus/tests/test_claude_jules_autoloop_e2e.py",
+    "automation/command_bus/tests/test_claude_jules_dispatch_contract.py",
+    "automation/command_bus/tests/test_claude_jules_live_adapter.py",
+    "automation/command_bus/tests/test_claude_jules_reinspection.py",
+    "automation/command_bus/tests/test_loop_owner_backend.py",
+    "docs/CLAUDE_JULES_AUTOLOOP_INTEGRATION.md",
+    "docs/CLAUDE_JULES_ROUTINE_WAKE_V1.md"
+  ]
+}

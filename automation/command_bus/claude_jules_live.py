@@ -37,7 +37,8 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from .claude_jules_adoption import adoption_receipt_path
+from .claude_jules_adoption import SafeAdoption, adoption_receipt_path
+from .claude_jules_reinspection import ReinspectionStore
 from .claude_jules_autoloop import ClaudeJulesAutoLoop
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, DispatchResult, canonical_json, command_path, dispatch_receipt_path, sha256_of, validate_dispatch_intent,
@@ -175,6 +176,27 @@ class LiveResultFacts:
 
     def fresh_pr(self, number: int) -> dict[str, Any] | None:
         return fresh_pr_view(self.rest.pull(number))
+
+    def timeout_reconciliation(self, intent: dict[str, Any]) -> dict[str, Any]:
+        """Reacquire GitHub results without treating absence as provider completion.
+
+        This performs repository-scoped GETs only. There is no new Jules/model
+        authority and no cancellation/dispatch here. A missing result cannot
+        establish that the provider stopped; that boundary remains WAIT until
+        an independent settlement source is connected or a result arrives.
+        """
+        request = intent["carrier_request"]
+        events = []
+        for pr in self.rest.pulls_for_base(request["work_branch"]):
+            event = normalize_pull_request_event(
+                event_name="pull_request", delivery_id=f"timeout-{pr['number']}-{pr['head']['sha']}",
+                payload=pull_request_payload(pr), expected_repo=self.policy["target_repo"],
+            )
+            if event.status == "ACCEPTED":
+                events.append(event.record)
+        return {"command_id": request["command_id"], "snapshot_head": request["expected_target_head"],
+                "status": "UNKNOWN", "evidence_ref": "github-result-pr-readback",
+                "result_events": events}
 
     def compare(self, base: str, head: str) -> dict[str, Any] | None:
         return self.git.compare(base, head)
@@ -360,19 +382,41 @@ def outstanding_dispatches(git: GitLiveClient, policy: dict[str, Any], origin_lo
         intent = validate_dispatch_intent(json.loads(content.text))
         if intent["origin_loop_id"] == origin_loop_id:
             mine.append(intent)
-    inspections = InspectionStore(git, data_branch=policy["data_branch"]).list_all()
+    inspections = ReinspectionStore(git, data_branch=policy["data_branch"]).extend_all(
+        InspectionStore(git, data_branch=policy["data_branch"]).list_all())
+    adoption = SafeAdoption(client=git, refs=git, policy=policy)
     found = []
     for intent in mine:
         command_id = intent["carrier_request"]["command_id"]
         receipt = git.get(dispatch_receipt_path(command_id), policy["data_branch"])
         if receipt is None or json.loads(receipt.text).get("state") != "DISPATCHED":
             continue
-        if git.get(adoption_receipt_path(command_id), policy["data_branch"]) is not None:
+        adopted = git.get(adoption_receipt_path(command_id), policy["data_branch"])
+        if adopted is not None:
+            digest = json.loads(adopted.text).get("inspection_sha256")
+            matches = [r for r in inspections if r["command_id"] == command_id and r["inspection_sha256"] == digest]
+            verified = adoption.verify_adopted(intent=intent, inspection=matches[0] if len(matches) == 1 else None)
+            if verified.status != "VERIFIED":
+                raise ValueError(f"unverifiable adoption receipt for {command_id}: {verified.reason}")
             continue
         corrective = any(r["command_id"] == command_id and r["decision"].startswith("JULES_CORRECTIVE")
                          for r in inspections)
-        if corrective and any(o["origin_round"] > intent["origin_round"] for o in mine):
-            continue  # superseded by a later dispatched round
+        if corrective:
+            # A later *intent* may be half-written. Supersession requires a
+            # DISPATCHED receipt for the corrective of this exact task family.
+            family = re.sub(r"-fix[0-9]+$", "", intent["task_id"])
+            settled = False
+            for other in mine:
+                if other["origin_round"] <= intent["origin_round"] or not re.fullmatch(re.escape(family) + r"-fix[0-9]+", other["task_id"]):
+                    continue
+                later = git.get(dispatch_receipt_path(other["carrier_request"]["command_id"]), policy["data_branch"])
+                if later is not None:
+                    record = json.loads(later.text)
+                    if record.get("state") == "DISPATCHED" and record.get("intent_sha256") == other["intent_sha256"]:
+                        settled = True
+                        break
+            if settled:
+                continue
         found.append(intent)
     return found
 
@@ -400,7 +444,7 @@ def poll_results(*, git: GitLiveClient, rest: GitHubRestReader, policy: dict[str
 
 def wake_resume(*, loop: ClaudeJulesAutoLoop, git: GitLiveClient, rest: GitHubRestReader,
                 policy: dict[str, Any], origin_loop_id: str, now: str, max_steps: int = 12,
-                poller: Any = poll_results) -> dict[str, Any]:
+                poller: Any = poll_results, clock: Any = None) -> dict[str, Any]:
     """Ingest result PRs, restore durable controller state and continue to a real boundary.
 
     The wake itself grants no authority.  The unchanged controller still
@@ -409,10 +453,18 @@ def wake_resume(*, loop: ClaudeJulesAutoLoop, git: GitLiveClient, rest: GitHubRe
     """
     if isinstance(max_steps, bool) or not isinstance(max_steps, int) or not 1 <= max_steps <= 100:
         raise ValueError("max_steps must be an integer in 1..100")
-    polled = poller(git=git, rest=rest, policy=policy, origin_loop_id=origin_loop_id)
-    results = loop.run_until_boundary(now=now, max_steps=max_steps)
+    poll_error = None
+    try:
+        polled = poller(git=git, rest=rest, policy=policy, origin_loop_id=origin_loop_id)
+    except Exception as exc:
+        # Do not resend ingestion writes. Already durable records can still
+        # permit controller progress; it revalidates them independently.
+        polled = []
+        poll_error = f"UNKNOWN: poll outcome unavailable; no resend: {exc}"
+    results = loop.run_until_boundary(now=now, max_steps=max_steps, clock=clock)
     return {
         "poll": polled,
+        "poll_error": poll_error,
         "steps": [
             {
                 "action": result.action,
@@ -530,6 +582,7 @@ def main(argv: list[str] | None = None) -> int:
         out = {"now": now, **wake_resume(
             loop=loop, git=git, rest=rest, policy=policy, origin_loop_id=args.origin_loop_id,
             now=now, max_steps=args.max_steps,
+            clock=(None if args.now else lambda: datetime.now(timezone.utc).replace(microsecond=0).isoformat()),
         )}
     elif args.command == "record-review":
         record = validate_review(_load(args.file))

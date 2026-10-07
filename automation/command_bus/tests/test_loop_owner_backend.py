@@ -72,6 +72,23 @@ class LoopOwnerBackendTests(unittest.TestCase):
         self.assertEqual(result.status, "BLOCKED")
         self.assertEqual(self.client.creates, 0)
 
+    def test_lost_create_response_recovers_from_exact_generation_and_chain(self):
+        def lost_response(client, path):
+            raise OSError("response lost after immutable create")
+        self.client.after_create = lost_response
+        result = self.backend.append(event1())
+        self.assertEqual((result.status, result.chain_length), ("ACCEPTED", 1))
+        self.assertEqual(self.client.creates, 1)
+
+    def test_failed_create_without_readback_is_unknown_without_resend(self):
+        def failed_create(*args):
+            self.client.creates += 1
+            raise OSError("request outcome unavailable")
+        self.client.create = failed_create
+        result = self.backend.append(event1())
+        self.assertEqual(result.status, "UNKNOWN")
+        self.assertEqual(self.client.creates, 1)
+
     def test_renew_and_handoff_append_only(self):
         first = event1()
         self.assertEqual(self.backend.append(first).status, "ACCEPTED")

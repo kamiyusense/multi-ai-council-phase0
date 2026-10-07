@@ -426,7 +426,7 @@ class LiveControllerIntegrationTests(unittest.TestCase):
         first = self.loop().step(now=NOW)
         self.assertEqual(first.status, "DISPATCHED")
         late = self.loop().step(now="2026-10-01T19:30:00+00:00")
-        self.assertEqual((late.action, late.status), ("BLOCK_TASK", "TASK_BLOCKED"))
+        self.assertEqual((late.action, late.status), ("WAIT", "AWAITING_TIMEOUT_RECONCILIATION"))
         self.assertIsNotNone(self.c.get(dispatch_receipt_path(first.details["command_id"]), DATA))
 
 

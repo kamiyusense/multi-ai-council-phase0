@@ -1,0 +1,80 @@
+# Stop-resistant STATIC continuation evidence — 2026-10-07
+
+This batch preserves the existing implementation branch and the LIVE-proven
+safety engine. The North Star remains long-running durable autonomous
+development. Local fakes and a local bare-git remote are evidence of STATIC
+behavior, not evidence of unattended production Claude/Jules execution.
+
+## Fresh starting state
+
+- Main: `4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d`
+- Implementation: `4b77407ccee4f80cb3ca31f46b79875b30bccc35`
+- Implementation tree: `a53c222eb9ca7c06fec425c86178ff7d6d730515`
+- 13 commits after Chat handover `3985961242e553e785c06b07624a929491216591`;
+  48 commits ahead of main, zero behind. All 1501 source blobs and the tree
+  were verified while materializing the fresh snapshot. No history rewrite.
+- #325 remains an open Draft documentation PR from
+  `docs/autonomous-loop-north-star-v2`. Its North Star, handover and original
+  design checkpoint were imported here while retaining their history.
+- #322 remains open and UNKNOWN/unadopted; #220 remains open Draft. No merge.
+- Data branch: `5227589bbeeb1db5619b6f3ffff3fed8634428cb`.
+- Live target: `53f2caf67280ca1b4c019f325aea5fb9502f1114`.
+- Loop A budget 6/10; a-003 owner generation 2 SEMI_AUTO.
+
+## Verification artifacts
+
+| Artifact | Observed result |
+| --- | --- |
+| `full-regression-final.log.gz` | 1827 tests, OK, one skipped |
+| `focused-final.log.gz` | 142 tests, OK; controller, contracts, owner and real local bare-git adapters |
+| `contracts-final.log.gz` | 84 tests, OK; common gate, executor, origin binding and request split |
+| `mixed-campaign-trace.json` | Seven mock commands over nine restored wakes; four adoptions; timeout task isolated |
+| `round-ceiling-audit.txt` | Remaining standalone legacy state/proof defaults and tests recorded for audit |
+| `checkpoint.json` | Commit/tree, hashes, exact-head CI and final boundaries |
+
+Logs are losslessly gzip-compressed, with deterministic gzip metadata.
+Full test stdout includes simulated provider counters from mocked tests;
+those are not calls to any LIVE service. No provider/model execution or new
+Jules session occurred in this batch. Python compileall and diff check passed.
+
+The mixed trace is captured by executing
+`test_claude_jules_campaign_continuation.py::test_mixed_campaign_continues_seven_rounds_across_restarts`
+and recording actual `run_until_boundary` results and durable fake records.
+It covers corrective failure, lost test evidence, retained UNKNOWN plus new
+same-head PASS, mid-campaign canonical movement, new dispatch from a fresh
+snapshot, duplicate result delivery, settled task timeout, independent
+continuation past round six and a duplicate final wake with no writes.
+Other regression cases cover config drift, consumed slots without receipts,
+bounded recovery counters across restarts, skewed same-head timestamps,
+lost result events, RUNNING/UNKNOWN timeout observations and corrupt records.
+
+## Historical failures retained
+
+- [37548786637](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37548786637):
+  the eight-round regression exposed the legacy verdict six-round ceiling.
+- [37549079790](https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37549079790):
+  fresh readback confirmed FAILURE on the older handover target: 1791 tests,
+  one failure, one skipped; round seven had an invalid verdict round.
+- The first local full run in this batch exposed an old test expectation
+  that timeout alone may start independent provider work. The production
+  adapter now waits for settlement evidence; the expectation was corrected,
+  and the final complete regression passed. No failure run was removed.
+
+## Remaining production boundaries
+
+- No new Routine, production event trigger, Claude turn or Jules dispatch.
+- No semantic-review authority is synthesized by wake-resume.
+- Production provider-terminal settlement readback is not yet wired. Missing
+  GitHub result PRs cause WAIT until settlement evidence or a result arrives;
+  positive SETTLED continuation is currently proven with mocks only.
+- Routine-level concurrency/idempotency and a real long-running multi-round
+  LIVE proof remain unproven. v1 concurrency remains one.
+- Policy/config cannot silently change mid-stream. A future explicit
+  append-only configuration migration protocol would need its own contract.
+- Existing LIVE approval cap remains ten. A 30-round campaign configuration
+  does not grant 30 LIVE dispatches; it must respect existing authority.
+- Merge and all LIVE operations require separate explicit authorization.
+
+The checkpoint reports STATIC completion of this batch, not completion of
+the North Star product. Safe future work includes a STATIC settlement-source
+adapter contract and mock event transport; production connection is separate.

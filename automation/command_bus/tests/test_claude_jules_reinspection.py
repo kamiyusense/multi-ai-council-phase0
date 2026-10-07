@@ -6,6 +6,9 @@ import unittest
 from automation.command_bus.claude_jules_inspection import INSPECTION_PROFILE
 from automation.command_bus.claude_jules_reinspection import ReinspectionStore
 from automation.command_bus.claude_jules_dispatch import sha256_of
+from automation.command_bus.claude_jules_dispatch import canonical_json
+from automation.command_bus.claude_jules_reinspection import reinspection_path, validate_reinspection_record
+from dataclasses import replace
 from automation.command_bus.tests.claude_jules_autoloop_fakes import DATA, FakeGitHub
 
 
@@ -85,6 +88,45 @@ class ReinspectionStoreTests(unittest.TestCase):
         passed["intent_sha256"] = "2" * 64
         passed["inspection_sha256"] = sha256_of({k: v for k, v in passed.items() if k != "inspection_sha256"})
         self.assertEqual(self.store.persist(base=self.base, inspection=passed), "BLOCKED")
+
+    def test_valid_digest_does_not_allow_changed_task_or_known_tree(self):
+        known = inspection()
+        known["candidate_tree"] = "b" * 40
+        known["inspection_sha256"] = sha256_of({k: v for k, v in known.items() if k != "inspection_sha256"})
+        for key, bad in (("task_id", "other-task"), ("repair_of", "c" * 40), ("candidate_tree", "c" * 40)):
+            passed = inspection(verdict="PASS", decision="ADOPT_CANDIDATE", reason="checked")
+            passed[key] = bad
+            passed["inspection_sha256"] = sha256_of({k: v for k, v in passed.items() if k != "inspection_sha256"})
+            with self.subTest(key=key):
+                self.assertEqual(self.store.persist(base=known, inspection=passed), "BLOCKED")
+
+    def test_rehashed_remote_identity_tampering_is_rejected_on_read(self):
+        passed = inspection(verdict="PASS", decision="ADOPT_CANDIDATE", reason="checked")
+        self.assertEqual(self.store.persist(base=self.base, inspection=passed), "CREATED")
+        path = reinspection_path(self.base["command_id"], self.base["candidate_head"], 1)
+        original = self.github.get(path, DATA)
+        import json
+        wrapper = json.loads(original.text)
+        wrapper["inspection"]["task_id"] = "other-task"
+        wrapper["inspection"]["inspection_sha256"] = sha256_of({k: v for k, v in wrapper["inspection"].items() if k != "inspection_sha256"})
+        wrapper["reinspection_sha256"] = sha256_of({k: v for k, v in wrapper.items() if k != "reinspection_sha256"})
+        validate_reinspection_record(wrapper)  # individual schema/digest alone is insufficient
+        self.github.files[(DATA, path)] = replace(original, text=canonical_json(wrapper))
+        with self.assertRaisesRegex(ValueError, "identity mismatch"):
+            self.store.effective(self.base)
+
+    def test_rehashed_remote_record_cannot_continue_after_pass(self):
+        import json
+        passed = inspection(verdict="PASS", decision="ADOPT_CANDIDATE", reason="checked")
+        self.assertEqual(self.store.persist(base=self.base, inspection=passed), "CREATED")
+        first = json.loads(self.github.get(reinspection_path(self.base["command_id"], self.base["candidate_head"], 1), DATA).text)
+        forged = copy.deepcopy(first)
+        forged["attempt"] = 2
+        forged["previous_inspection_sha256"] = passed["inspection_sha256"]
+        forged["reinspection_sha256"] = sha256_of({k: v for k, v in forged.items() if k != "reinspection_sha256"})
+        self.github.create(reinspection_path(self.base["command_id"], self.base["candidate_head"], 2), canonical_json(forged), "tamper fixture", DATA)
+        with self.assertRaisesRegex(ValueError, "terminal verdict"):
+            self.store.all_versions(self.base)
 
 
 if __name__ == "__main__":

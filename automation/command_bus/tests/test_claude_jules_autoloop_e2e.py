@@ -542,8 +542,13 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         w.github.branches[TARGET] = w.github.child(w.github.branches[TARGET], {"y": "1"}, "other lane")
         before = w.github.branches[TARGET]
         result = w.step()
-        self.assertEqual((result.action, result.status), ("STOP", "BLOCKED"))
+        self.assertEqual((result.action, result.status), ("REPLAN", "REPLANNED"))
         self.assertEqual(w.github.branches[TARGET], before)
+        replanned = w.step()
+        self.assertEqual(replanned.status, "DISPATCHED", replanned.reason)
+        fresh = w.command(COMMANDS + replanned.details["command_id"] + ".json")
+        self.assertEqual(fresh["expected_target_head"], before)
+        self.assertNotEqual(fresh["command_id"], command_id)
 
     def test_ambiguous_fast_forward_is_resolved_by_readback(self):
         w = World()

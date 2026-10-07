@@ -24,6 +24,14 @@ _KEYS = {
 }
 
 
+def _same_candidate(base: dict[str, Any], inspection: dict[str, Any]) -> bool:
+    # A previously unavailable tree may be acquired; a known immutable tree
+    # must never change for the same commit.
+    return all(inspection[key] == base[key] for key in (
+        "command_id", "task_id", "candidate_head", "intent_sha256", "repair_of",
+    )) and (base["candidate_tree"] is None or inspection["candidate_tree"] == base["candidate_tree"])
+
+
 def reinspection_path(command_id: str, candidate_head: str, attempt: int) -> str:
     if not _SAFE_COMMAND.fullmatch(command_id or "") or not _SHA40.fullmatch(candidate_head or ""):
         raise ValueError("unsafe reinspection identity")
@@ -66,13 +74,17 @@ class ReinspectionStore:
                 raise ValueError("reinspection path mismatch")
             wrappers.append(wrapper)
         wrappers.sort(key=lambda r: r["attempt"])
-        previous = base["inspection_sha256"]
+        previous = base
         for expected, wrapper in enumerate(wrappers, 1):
             if wrapper["attempt"] != expected:
                 raise ValueError("reinspection attempts are not contiguous")
-            if wrapper["previous_inspection_sha256"] != previous:
+            if wrapper["previous_inspection_sha256"] != previous["inspection_sha256"]:
                 raise ValueError("reinspection history chain mismatch")
-            previous = wrapper["inspection"]["inspection_sha256"]
+            if previous["verdict"] != "UNKNOWN" or previous["decision"] != "INVESTIGATE":
+                raise ValueError("reinspection history continues a terminal verdict")
+            if not _same_candidate(previous, wrapper["inspection"]) or not _same_candidate(base, wrapper["inspection"]):
+                raise ValueError("reinspection history candidate identity mismatch")
+            previous = wrapper["inspection"]
         return wrappers
 
     def effective(self, base: dict[str, Any]) -> dict[str, Any]:
@@ -89,9 +101,7 @@ class ReinspectionStore:
         previous = history[-1]["inspection"] if history else base
         if previous["verdict"] != "UNKNOWN" or previous["decision"] != "INVESTIGATE":
             return "BLOCKED"
-        if (inspection["command_id"], inspection["candidate_head"], inspection["intent_sha256"]) != (
-            base["command_id"], base["candidate_head"], base["intent_sha256"]
-        ):
+        if not _same_candidate(base, inspection) or not _same_candidate(previous, inspection):
             return "BLOCKED"
         attempt = len(history) + 1
         wrapper = {
