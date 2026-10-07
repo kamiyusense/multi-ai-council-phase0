@@ -73,6 +73,48 @@ def bootstrap(store, state):
 
 
 class SymphonyAutonomousControllerTests(unittest.TestCase):
+    def test_head_advance_after_worker_result_discards_old_done_then_replans(self):
+        _, store = make_store()
+        bootstrap(store, CampaignState("adoption-head", 1, {
+            "A": CampaignTask("A", expected_target_head="h1"),
+        }))
+        first = StaticAutonomousCampaignController(
+            store, campaign_id="adoption-head",
+            target_observer=StaticTargetObserver("h1", read_sequence=("h1", "h1", "h2")),
+            runner=StaticCampaignTaskRunner({"A": [result("old-done")]}),
+        ).run_until_boundary(max_steps=1)
+        self.assertEqual(first.status, "BATCH_LIMIT")
+        checkpoint = store.restore("adoption-head")
+        self.assertEqual(checkpoint.state.tasks["A"].status, TaskStatus.STALE)
+        self.assertEqual(checkpoint.state.rounds_completed, 0)
+        second = StaticAutonomousCampaignController(
+            store, campaign_id="adoption-head", target_observer=StaticTargetObserver("h2"),
+            runner=StaticCampaignTaskRunner({"A": [result("new-done")]}),
+        ).run_until_boundary()
+        self.assertEqual(second.status, "CAMPAIGN_COMPLETE")
+        self.assertEqual(store.restore("adoption-head").state.rounds_completed, 1)
+
+    def test_destructive_result_is_isolated_and_independent_task_continues(self):
+        _, store = make_store()
+        bootstrap(store, CampaignState("adoption-risk", 1, {
+            "A": CampaignTask("A", expected_target_head="h1"),
+            "B": CampaignTask("B", expected_target_head="h1"),
+        }))
+        runner = StaticCampaignTaskRunner({
+            "A": [TaskExecutionResult("unsafe", TaskOutcome.DONE, mutation_operations=("DELETE",))],
+            "B": [result("safe")],
+        })
+        finished = StaticAutonomousCampaignController(
+            store, campaign_id="adoption-risk", target_observer=StaticTargetObserver("h1"),
+            runner=runner,
+        ).run_until_boundary()
+        self.assertEqual(finished.status, "STOP_NO_SAFE_WORK")
+        self.assertEqual(runner.calls, ["A", "B"])
+        state = store.restore("adoption-risk").state
+        self.assertEqual(state.tasks["A"].status, TaskStatus.BLOCKED)
+        self.assertEqual(state.tasks["B"].status, TaskStatus.COMPLETE)
+        self.assertEqual(state.rounds_completed, 1)
+
     def test_three_round_campaign_runs_to_completion_without_human_gate(self):
         _, store = make_store()
         state = CampaignState(

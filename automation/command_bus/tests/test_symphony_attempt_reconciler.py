@@ -55,6 +55,28 @@ class SymphonyAttemptReconcilerTests(unittest.TestCase):
         self.assertEqual(self.kernel.state.tasks["A"].status, TaskStatus.COMPLETE)
         self.assertEqual(self.kernel.next_action(canonical_head="h1").task_id, "B")
 
+    def test_terminal_recovery_rechecks_task_validity_before_done_adoption(self):
+        attempt = self.intent()
+        self.started(attempt)
+        self.terminal(attempt)
+        result = self.reconcile(task_validity=lambda task: task.task_id != "A")
+        self.assertEqual(result.applied, 0)
+        self.assertEqual(result.isolated, 1)
+        self.assertEqual(self.kernel.state.tasks["A"].status, TaskStatus.BLOCKED)
+        self.assertEqual(self.kernel.next_action(canonical_head="h1").task_id, "B")
+
+    def test_terminal_recovery_refuses_destructive_mutation_claim(self):
+        attempt = self.intent()
+        self.started(attempt)
+        self.assertEqual(self.store.append_terminal(
+            campaign_id="recovery", attempt_id=attempt, result_id="unsafe-result",
+            outcome="DONE", model_started=True, mutation_operations=["FORCE_PUSH"],
+        ).status, "ACCEPTED")
+        result = self.reconcile()
+        self.assertEqual(result.applied, 0)
+        self.assertEqual(result.isolated, 1)
+        self.assertEqual(self.kernel.state.tasks["A"].status, TaskStatus.BLOCKED)
+
     def test_started_unresolved_isolated_even_with_fence_and_independent_continues(self):
         attempt = self.intent()
         self.started(attempt)

@@ -5,6 +5,15 @@ readback is authoritative; do not trust remembered SHA values.
 
 ## Latest implemented boundary — 2026-10-07
 
+Read `SYMPHONY_ADOPTION_BRIDGE_STATIC_CHECKPOINT.md` for the newer STATIC
+result-adoption and subscription-route seam. A late canonical HEAD advance now
+discards old DONE results and replans; destructive/unknown mutation classes
+isolate the task. Recovered terminals run the same guard. Upstream issue updates
+can wake read-only reconciliation without a complete worker identity. The
+subscription classifier is new-worker-only and does not gate Symphony's
+internal turns/retries. Production transport and actual LIVE authentication
+remain unverified; do not treat these STATIC checks as LIVE authorization.
+
 Read `SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` before the older historical
 next-step sections below. Attempt-to-campaign reconciliation, durable controller
 integration, unstarted retirement, late-terminal BLOCKED recovery, observation

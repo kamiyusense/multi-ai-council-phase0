@@ -7,10 +7,12 @@ The caller must checkpoint changed campaign state before selecting model work.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from .symphony_attempt_store import AttemptLineageError, GitHubAutonomousAttemptStore
 from .symphony_autonomous_policy import UnknownClass
-from .symphony_autonomous_runtime import AutonomousCampaignKernel, TaskOutcome, TaskStatus
+from .symphony_autonomous_runtime import AutonomousCampaignKernel, CampaignTask, TaskOutcome, TaskStatus
+from .symphony_result_adoption import AdoptionAction, decide_result_adoption
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,7 @@ def reconcile_attempts(
     canonical_head: str,
     canonical_trustworthy: bool = True,
     fence_proofs: tuple[AttemptFenceProof, ...] = (),
+    task_validity: Callable[[CampaignTask], bool] | None = None,
 ) -> ReconciliationResult:
     """Restore evidence before dispatch; no model work occurs in this function."""
     before = kernel.state.to_dict()
@@ -120,8 +123,17 @@ def reconcile_attempts(
                 kernel.isolate_unresolved_attempt(task.task_id, attempt_id, "terminal attempt counter mismatch")
                 isolated += 1
                 continue
-            if (identity.expected_target_head != task.expected_target_head
-                    or identity.expected_target_head != canonical_head):
+            adoption = decide_result_adoption(
+                expected_head=identity.expected_target_head,
+                canonical_head=canonical_head,
+                canonical_trustworthy=canonical_trustworthy,
+                task_still_valid=(task_validity(task) if task_validity is not None else True)
+                and identity.expected_target_head == task.expected_target_head,
+                mutation_operations=tuple(terminal.get("mutation_operations", [])),
+            )
+            if adoption.action is AdoptionAction.HOLD_AUTHORITY:
+                return hard(adoption.reason)
+            if adoption.action is AdoptionAction.STALE_REPLAN:
                 state.processed_result_ids.add(result_id)
                 state.result_attempt_ids[result_id] = attempt_id
                 if task.status not in {TaskStatus.COMPLETE, TaskStatus.SUPERSEDED}:
@@ -130,6 +142,12 @@ def reconcile_attempts(
                         "decision_id": f"stale-terminal:{attempt_id}", "affected_scope": task.task_id,
                         "selected_safe_default": "fresh-head-replan-without-old-result-adoption",
                     })
+                continue
+            if adoption.action is AdoptionAction.ISOLATE_TASK:
+                state.processed_result_ids.add(result_id)
+                state.result_attempt_ids[result_id] = attempt_id
+                kernel.isolate_unresolved_attempt(task.task_id, attempt_id, adoption.reason)
+                isolated += 1
                 continue
             # STALE terminal is a replan signal, not a successful new-HEAD result.
             if terminal["outcome"] == "STALE":

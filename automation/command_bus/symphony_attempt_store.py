@@ -230,6 +230,9 @@ def _validate_record(record: dict[str, Any], *, kind: str) -> AttemptIdentity:
             not isinstance(item, str) or not item for item in record["evidence_refs"]
         ):
             raise ValueError("invalid terminal evidence refs")
+        operations = record.get("mutation_operations", [])
+        if not isinstance(operations, list) or any(type(item) is not str for item in operations):
+            raise ValueError("invalid terminal mutation operations")
     return identity
 
 
@@ -402,6 +405,7 @@ class GitHubAutonomousAttemptStore:
         outcome: str,
         model_started: bool | None,
         evidence_refs: list[str] | tuple[str, ...] = (),
+        mutation_operations: list[str] | tuple[str, ...] = (),
         unknown_class: str | None = None,
         affects_campaign_authority: bool = False,
     ) -> AttemptWriteResult:
@@ -438,6 +442,7 @@ class GitHubAutonomousAttemptStore:
             "outcome": outcome,
             "model_started": model_started,
             "evidence_refs": list(evidence_refs),
+            "mutation_operations": list(mutation_operations),
             "unknown_class": unknown_class,
             "affects_campaign_authority": affects_campaign_authority,
         }
@@ -481,6 +486,7 @@ class GitHubAutonomousAttemptStore:
             "predecessor_digest": _digest(previous), "observation_number": number,
             "result_id": result_id, "outcome": outcome,
             "model_started": previous["model_started"], "evidence_refs": list(evidence_refs),
+            "mutation_operations": list(previous.get("mutation_operations", [])),
             "unknown_class": unknown_class, "affects_campaign_authority": affects_campaign_authority,
         }
         return self._append(record, kind=f"observation-{number:08d}")

@@ -32,6 +32,21 @@ class WorkerRecoveryPreparation:
     production_source_authentication: str = "NOT_WIRED"
 
 
+def prepare_upstream_reconciliation_hint(issue_id: str, event_kind: str) -> WorkerRecoveryPreparation:
+    """Accept upstream scheduler updates as read-only wake hints.
+
+    Official Symphony may emit an issue update without a task/attempt/thread
+    identity. That is enough to refresh durable state, never to adopt a result,
+    fence a worker or admit another dispatch. Its internal turn/retry loop stays
+    under upstream ownership.
+    """
+    if not isinstance(issue_id, str) or not issue_id:
+        return WorkerRecoveryPreparation("REJECT_UNKNOWN_EVENT", "upstream issue id missing")
+    if event_kind not in {"WORKER_UPDATE", "STALLED", "RETRY_SCHEDULED", "TERMINAL_AVAILABLE"}:
+        return WorkerRecoveryPreparation("REJECT_UNKNOWN_EVENT", "unsupported upstream hint")
+    return WorkerRecoveryPreparation("RECONCILE_READ_ONLY", "refresh durable evidence for upstream issue")
+
+
 def prepare_worker_recovery(snapshot: AttemptSnapshot, event: UpstreamWorkerEvent) -> WorkerRecoveryPreparation:
     if type(event) is not UpstreamWorkerEvent:
         raise ValueError("worker event must use the explicit envelope")

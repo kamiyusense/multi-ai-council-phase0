@@ -10,6 +10,8 @@ on:
       - automation/command_bus/symphony_campaign_store.py
       - automation/command_bus/symphony_attempt_store.py
       - automation/command_bus/symphony_attempt_reconciler.py
+      - automation/command_bus/symphony_result_adoption.py
+      - automation/command_bus/symphony_subscription_boundary.py
       - automation/command_bus/symphony_upstream_event_adapter.py
       - automation/command_bus/symphony_upstream_reference.json
       - automation/command_bus/symphony_codex_app_server.py
@@ -22,6 +24,8 @@ on:
       - automation/command_bus/tests/test_symphony_campaign_store.py
       - automation/command_bus/tests/test_symphony_attempt_store.py
       - automation/command_bus/tests/test_symphony_attempt_reconciler.py
+      - automation/command_bus/tests/test_symphony_result_adoption.py
+      - automation/command_bus/tests/test_symphony_subscription_boundary.py
       - automation/command_bus/tests/test_symphony_attempt_faults.py
       - automation/command_bus/tests/test_symphony_upstream_event_adapter.py
       - automation/command_bus/tests/test_symphony_upstream_reference.py
@@ -53,7 +57,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/symphony-static-evidence"
-          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_upstream_reference -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
+          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_upstream_reference -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
 
       - name: Full command bus regression suite
         run: |

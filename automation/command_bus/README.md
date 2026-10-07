@@ -296,6 +296,30 @@ PR activity, Chat silence, and commit timestamps are not ownership signals.
 
 ## Autonomous Symphony / New Chinponey policy kernel
 
+### STATIC upstream/adoption/cost seam (PR #320)
+
+`symphony_upstream_event_adapter.prepare_upstream_reconciliation_hint` accepts
+Official Symphony issue/worker/retry/stall notifications as **read-only** wake
+hints. It requires only the upstream issue ID; the complete attempt identity is
+needed later for a result or fence. These notifications cannot dispatch a
+worker, retire an attempt, or stop Symphony's same-session turns/backoff.
+
+`symphony_result_adoption.py` is called at the result seam, after the STATIC
+runner and again when a durable terminal is restored. It rechecks the current
+canonical HEAD, task validity, and declared mutation operations. A stale result
+becomes `STALE` and can replan; an unsafe/unknown mutation isolates its task.
+The terminal ledger retains the mutation class so crash recovery applies the
+same guard. A real Git ref write must additionally use an expected-HEAD lease;
+this STATIC guard itself makes no Git write.
+
+`symphony_subscription_boundary.py` checks the sanitized account evidence
+shape produced by `src/relay/codex_account_readonly.py` **only at new worker
+admission**. API-key/custom API endpoint environment keys and configured paid
+fallback are incompatible with the subscription route. A missing quota number
+alone is allowed. The classifier does not call `account/read`, launch a worker,
+or authorize LIVE. The production worker launcher must still enforce its
+environment and auth route before LIVE use.
+
 The strict one-shot Symphony proof remains intact. Autonomous-loop product
 semantics live separately in `symphony_autonomous_policy.py` and `symphony_autonomous_runtime.py`.
 

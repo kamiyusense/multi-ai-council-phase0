@@ -1,11 +1,21 @@
 from dataclasses import replace
 import unittest
 
-from automation.command_bus.symphony_upstream_event_adapter import UpstreamWorkerEvent, prepare_worker_recovery
+from automation.command_bus.symphony_upstream_event_adapter import (
+    UpstreamWorkerEvent, prepare_upstream_reconciliation_hint, prepare_worker_recovery,
+)
 from automation.command_bus.tests.test_symphony_attempt_store import store, intent
 
 
 class SymphonyUpstreamEventAdapterTests(unittest.TestCase):
+    def test_upstream_updates_need_no_full_worker_identity_for_read_only_reconciliation(self):
+        for kind in ("WORKER_UPDATE", "STALLED", "RETRY_SCHEDULED", "TERMINAL_AVAILABLE"):
+            with self.subTest(kind=kind):
+                result = prepare_upstream_reconciliation_hint("ISSUE-42", kind)
+                self.assertEqual(result.action, "RECONCILE_READ_ONLY")
+                self.assertFalse(result.dispatch_authorized)
+                self.assertIsNone(result.fence_proof)
+
     def setUp(self):
         _, self.store = store()
         self.attempt = intent(self.store)

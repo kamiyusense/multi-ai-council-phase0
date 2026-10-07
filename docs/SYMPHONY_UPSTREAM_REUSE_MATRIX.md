@@ -37,6 +37,15 @@ contained. Prefer an adapter boundary.
 | Subscription-only cost gate | outside core Symphony spec | no metered/API/provider fallback | Track B |
 | Merge/billing/permission/secret boundary | workflow/environment policy | explicit human boundary | Track B |
 
+Current STATIC adapter seam: an upstream issue update requests read-only
+reconciliation without needing a complete worker identity. New-worker route
+compatibility is classified once using sanitized Codex account evidence and
+structural paid-route configuration. An attempt result is checked against fresh
+canonical HEAD, task validity and mutation class immediately before campaign
+adoption and again on durable terminal restore. None of these checks runs inside
+upstream's same-session turn, continuation or retry loop. See
+`SYMPHONY_ADOPTION_BRIDGE_STATIC_CHECKPOINT.md`.
+
 ## Integration direction
 
 1. Keep the existing strict one-turn Codex adapter as a regression proof.

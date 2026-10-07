@@ -52,6 +52,7 @@ class TaskOutcome(str, Enum):
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
     BLOCKED = "BLOCKED"
+    STALE = "STALE"
 
 
 @dataclass
@@ -348,6 +349,10 @@ class AutonomousCampaignKernel:
         if task.status not in {TaskStatus.RUNNING, TaskStatus.WAITING} and not blocked_recovery:
             raise ValueError("task result does not match an active task")
         self.state.processed_result_ids.add(result_id)
+
+        if outcome is TaskOutcome.STALE:
+            task.status = TaskStatus.STALE
+            return PlannedAction(ActionKind.REPLAN_TASK, task_id, "old result discarded; replan on current HEAD")
 
         if outcome is TaskOutcome.DONE:
             task.status = TaskStatus.COMPLETE

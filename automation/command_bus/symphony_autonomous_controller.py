@@ -26,6 +26,7 @@ from .symphony_autonomous_runtime import (
 from .symphony_campaign_store import GitHubCampaignStateStore
 from .symphony_attempt_store import GitHubAutonomousAttemptStore, make_attempt_id
 from .symphony_attempt_reconciler import AttemptFenceProof, reconcile_attempts
+from .symphony_result_adoption import AdoptionAction, decide_result_adoption
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ class TaskExecutionResult:
     outcome: TaskOutcome
     unknown_class: UnknownClass | None = None
     affects_campaign_authority: bool = False
+    mutation_operations: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.result_id, str) or not self.result_id or not isinstance(self.outcome, TaskOutcome):
@@ -50,6 +52,10 @@ class TaskExecutionResult:
             raise ValueError("unknown class only belongs to UNKNOWN")
         if type(self.affects_campaign_authority) is not bool:
             raise ValueError("result authority scope must be boolean")
+        if not isinstance(self.mutation_operations, tuple) or any(
+            type(item) is not str for item in self.mutation_operations
+        ):
+            raise ValueError("mutation operations must be a tuple of strings")
 
 
 @dataclass(frozen=True)
@@ -62,11 +68,14 @@ class BatchResult:
 
 
 class StaticTargetObserver:
-    def __init__(self, head: str, *, trustworthy: bool = True):
+    def __init__(self, head: str, *, trustworthy: bool = True, read_sequence: tuple[str, ...] = ()):
         self.head = head
         self.trustworthy = trustworthy
+        self.read_sequence = list(read_sequence)
 
     def read(self) -> TargetObservation:
+        if self.read_sequence:
+            self.head = self.read_sequence.pop(0)
         return TargetObservation(self.head, self.trustworthy)
 
 
@@ -230,6 +239,7 @@ class StaticAutonomousCampaignController:
         reconciled = reconcile_attempts(
             kernel, self.attempt_store, canonical_head=target.head,
             canonical_trustworthy=target.trustworthy, fence_proofs=self.fence_proofs,
+            task_validity=lambda task: self.replanner.task_still_valid(task, target),
         )
         if reconciled.changed:
             saved = self.store.save(kernel.state, expected_revision=revision)
@@ -303,6 +313,23 @@ class StaticAutonomousCampaignController:
                     if (result.result_id in kernel.state.processed_result_ids
                             and kernel.state.result_attempt_ids.get(result.result_id) != attempt_id):
                         raise ValueError("result id already belongs to another attempt")
+                    reported_operations = result.mutation_operations
+                    # Upstream owns all turns/retries. Only adoption takes a new
+                    # canonical read and validates this task's result.
+                    adoption_target = self.target_observer.read()
+                    adoption = decide_result_adoption(
+                        expected_head=task.expected_target_head,
+                        canonical_head=adoption_target.head,
+                        canonical_trustworthy=adoption_target.trustworthy,
+                        task_still_valid=self.replanner.task_still_valid(task, adoption_target),
+                        mutation_operations=result.mutation_operations,
+                    )
+                    if adoption.action is AdoptionAction.HOLD_AUTHORITY:
+                        return BatchResult("UNKNOWN_DURABILITY", revision, steps, task.task_id, adoption.reason)
+                    if adoption.action is AdoptionAction.STALE_REPLAN:
+                        result = TaskExecutionResult(result.result_id, TaskOutcome.STALE)
+                    elif adoption.action is AdoptionAction.ISOLATE_TASK:
+                        result = TaskExecutionResult(result.result_id, TaskOutcome.BLOCKED)
                     self._crash("before_terminal")
                     terminal = self.attempt_store.append_terminal(
                         campaign_id=self.campaign_id, attempt_id=attempt_id,
@@ -310,6 +337,7 @@ class StaticAutonomousCampaignController:
                         model_started=True, unknown_class=result.unknown_class.value if result.unknown_class else None,
                         affects_campaign_authority=result.affects_campaign_authority,
                         evidence_refs=[f"static:{attempt_id}"],
+                        mutation_operations=reported_operations,
                     )
                     if terminal.status != "ACCEPTED":
                         return self._save_failure(terminal.status, revision, steps, task.task_id, terminal.reason)
