@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "request_id": "autoloop-static-20261007-de1e7d511673",
+  "target_sha": "de1e7d5116736b3b01a33f01376d83fac9122380",
+  "purpose": "STATIC stop-resistant campaign regression; no LIVE provider/model, no Routine, no merge",
+  "expected_test_count": 1827
+}
