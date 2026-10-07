@@ -648,6 +648,10 @@ class ClaudeJulesAutoLoopE2ETests(unittest.TestCase):
         results = w.controller().run_until_boundary(now=NOW)
         self.assertEqual([r.action for r in results], ["DISPATCH", "WAIT"])
         self.assertIsNotNone(w.github.get(dispatch_receipt_path(results[0].details["command_id"]), DATA))
+        self.assertEqual(
+            results[-1].details["next_check_at"],
+            (datetime.fromisoformat(NOW) + timedelta(seconds=300)).isoformat(),
+        )
 
     def test_run_until_boundary_retries_transient_read_failure(self):
         w = World()
