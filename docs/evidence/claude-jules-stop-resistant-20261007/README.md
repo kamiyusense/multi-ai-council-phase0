@@ -106,3 +106,12 @@ with durable `RECOVERY_DECISION` records, a 20-task / 23-dispatch simulated
 campaign, two-thread race tests, the #324 interpreter fix ported, and
 approval-ready proposals for merge, a one-GET provider trial, the Routine and a
 staged long LIVE proof. Nothing LIVE was run.
+
+## Batch 4 (2026-10-07, STATIC): remaining cloud-doable closure
+
+See [batch4-remaining-static-closure.md](batch4-remaining-static-closure.md) and
+[checkpoint-batch4.json](checkpoint-batch4.json): TEST_ENVIRONMENT and
+PROVIDER_FAILURE recovery wired into the controller (opt-in v1), a settlement
+record producer that reads the job log itself, `record-settlement` refusing
+unconfirmed records, and a read-only `recovery-history` CLI. Code head
+`ef68069` passed exact-head Actions run 37610080307 (1911 tests, skip 1).
