@@ -96,3 +96,13 @@ readback, avoiding a self-referential checkpoint commit hash.
 ## Batch 2 (2026-10-07, STATIC): settlement source and wake transport
 
 See [batch2-settlement-and-wake-transport.md](batch2-settlement-and-wake-transport.md).
+
+## Batch 3 (2026-10-07, STATIC): authentic settlement, reasoned recovery, long campaign
+
+See [batch3-authentic-settlement-recovery-long-campaign.md](batch3-authentic-settlement-recovery-long-campaign.md):
+settlement is now checked against the readback job's own Actions log (the
+batch-2 record could be forged with a valid digest), opt-in recovery policy v1
+with durable `RECOVERY_DECISION` records, a 20-task / 23-dispatch simulated
+campaign, two-thread race tests, the #324 interpreter fix ported, and
+approval-ready proposals for merge, a one-GET provider trial, the Routine and a
+staged long LIVE proof. Nothing LIVE was run.
