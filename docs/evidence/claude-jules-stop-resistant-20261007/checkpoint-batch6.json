@@ -1,0 +1,59 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-08 JST",
+  "batch": 6,
+  "status": "CARRIER_SYNCED_ROUTE_GUARD_STATIC_PASS_SETTLEMENT_DEFERRED",
+  "fresh_start": {
+    "main": "8fbbef941732219e4ad43ce0d32e22922275d040",
+    "pr_330_head": "d7427cb798ea3685e87afa6a10c8f0caffebd2bd",
+    "carrier_before": "d5baadc230ed33819390e910c0f65ccaa4aa193a",
+    "data_branch": "5227589bbeeb1db5619b6f3ffff3fed8634428cb",
+    "live_target": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+    "runs_in_progress_or_queued": 0
+  },
+  "carrier_sync": {
+    "approved_by_user": "carrier workflow sync only",
+    "commit": "38e92c776e7c1bb090444ec8f13c7ce94a9baf06",
+    "parent": "d5baadc230ed33819390e910c0f65ccaa4aa193a",
+    "tree": "7ad5115320b8cbd1731dad5c0ac60863e23db89c",
+    "changed": ["M .github/workflows/jules-session-readback.yml"],
+    "blob_before": "3672250be2b4bcfe94ebb33547ed0ce479cd9f8e",
+    "blob_after": "a4f0189922c7cd27c80ffa541f5d5a534e26562e",
+    "push": "fast-forward d5baadc2..38e92c77, once, no force",
+    "runs_triggered": 0,
+    "probe_after": {"status": "ONE_GET_CONFIRMED", "false": {"session": 1, "activities": 0},
+                    "invalid": {"calls": 0, "returncode": 5}, "session_failure": {"calls": 1, "returncode": 22}}
+  },
+  "pc_verification": {
+    "env": "WSL2 Ubuntu 26.04.1, Python 3.14.4, jq 1.8.1, python-is-python3",
+    "head": "d7427cb798ea3685e87afa6a10c8f0caffebd2bd",
+    "probe": {"main_a4f0189": "ONE_GET_CONFIRMED", "carrier_3672250": "NOT_ONE_GET"},
+    "focused": {"ran": 73, "result": "OK"},
+    "full": {"ran": 1926, "skipped": 1, "result": "OK"},
+    "environment_findings": ["jq missing => exit 127 before any call", "python command missing on stock WSL Ubuntu"]
+  },
+  "loop_139_settlement": {
+    "status_request_path": "automation/command_bus/jules_api_status_requests/settle-dfcd5c4061f53c45-a1.json",
+    "session_id": "12043323850985900453",
+    "provider_get_count": 1,
+    "status": "PREPARED_NOT_SENT_BILLING_ROUTE_DEFERRED",
+    "reason": "readback authenticates with X-Goog-Api-Key; Jules REST billing recorded PROBABLY_SAFE_BUT_NOT_EXPLICITLY_GUARANTEED; batch rules make API-key/unconfirmed billing a hard stop"
+  },
+  "new_code": {
+    "files": ["automation/command_bus/claude_jules_provider_route.py",
+              "automation/command_bus/tests/test_claude_jules_provider_route.py"],
+    "new_tests": 14,
+    "full_regression": {"ran": 1940, "skipped": 1, "result": "OK", "env": "WSL Python 3.14.4"},
+    "wired_into_dispatch": false
+  },
+  "not_done": {
+    "read_only_safe_envelope": "refused by the session auto-mode safety classifier; needs explicit user decision/permission"
+  },
+  "deferred_decisions": [
+    {"id": "D1", "question": "Is the Jules API-key route the subscription route? If yes, record a PROVIDER_ROUTE_DECLARATION_V1 with evidence and expiry.", "safe_default": "provider execution stays stopped"},
+    {"id": "D2", "question": "Allow automatic publication of read-only settlement GETs inside a safe envelope?", "safe_default": "ask per GET"},
+    {"id": "D3", "question": "After D1, publish settle-dfcd5c4061f53c45-a1.json once.", "safe_default": "not sent"}
+  ],
+  "live_usage": {"jules_gets": 0, "new_jules_sessions": 0, "provider_model_execution": 0, "budget": "6/10",
+                 "owner": "claude-auto-loop-a-003 generation 2 SEMI_AUTO (unchanged)", "merges": 0, "force_pushes": 0}
+}
