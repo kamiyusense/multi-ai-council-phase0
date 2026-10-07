@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "request_id": "autoloop-static-20261007-b7c7c73562b0",
+  "target_sha": "b7c7c73562b0acada88312c1b9c28daaa2f944c5",
+  "purpose": "STATIC batch 2 (settlement source + wake transport tests) exact-head regression; no LIVE provider/model, no Routine, no merge",
+  "expected_test_count": 1853,
+  "previous_validation_run": 37563654457
+}
