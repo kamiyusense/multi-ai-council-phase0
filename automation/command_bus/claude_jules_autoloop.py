@@ -526,8 +526,6 @@ class ClaudeJulesAutoLoop:
 
     def _after_adoption(self, intent: dict[str, Any], *, now: str) -> StepResult:
         next_round = intent["origin_round"] + 1
-        if next_round > self.campaign_policy["max_rounds"]:
-            return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached after adoption")
         return self._plan_and_dispatch(now=now, round_number=next_round, attempt=1, spec=None)
 
     def _adoption_state(self, intent: dict[str, Any], inspections: list[dict[str, Any]]) -> Any:
@@ -615,8 +613,6 @@ class ClaudeJulesAutoLoop:
 
     def _plan_and_dispatch(self, *, now: str, round_number: int, attempt: int,
                            spec: dict[str, Any] | None) -> StepResult:
-        if round_number > self.campaign_policy["max_rounds"]:
-            return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached")
         if spec is None:
             try:
                 spec, remaining = self._roadmap_position()
@@ -630,6 +626,8 @@ class ClaudeJulesAutoLoop:
                         {"remaining_tasks": remaining},
                     )
                 return StepResult("COMPLETE", "COMPLETE", "no remaining roadmap task is eligible")
+        if round_number > self.campaign_policy["max_rounds"]:
+            return StepResult("STOP", "MAX_ROUNDS", "max_rounds reached with READY work remaining")
         generation = self._owner_generation()
         if not isinstance(generation, int):
             return StepResult("STOP", "UNKNOWN", "owner generation unavailable")
