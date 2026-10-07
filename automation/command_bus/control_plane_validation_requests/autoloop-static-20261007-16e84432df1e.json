@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "request_id": "autoloop-static-20261007-16e84432df1e",
+  "target_sha": "16e84432df1e6d8b5ea342f150a083768e330199",
+  "purpose": "Final STATIC checkpoint exact-head regression; no LIVE provider/model, no Routine, no merge",
+  "expected_test_count": 1827,
+  "previous_code_validation_run": 37563334683
+}
