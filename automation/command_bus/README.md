@@ -346,3 +346,20 @@ On restart it distinguishes `CLAIMED_UNSTARTED`,
 `STARTED_UNRESOLVED` and `TERMINAL`. A STARTED_UNRESOLVED attempt is never
 blindly redispatched. An unstarted intent can only be reclaimed after explicit
 proof that the old attempt is stopped or fenced.
+
+### Attempt reconciliation / crash-safe STATIC continuation
+
+`symphony_attempt_reconciler.py` restores attempt evidence before the controller
+selects more work. Verified TERMINAL repairs a missing campaign result checkpoint;
+late TERMINAL can recover the matching isolated BLOCKED task. STARTED_UNRESOLVED
+is never redispatched. Unstarted reclaim appends a bound retirement and uses a
+new attempt ID. Read recovery has append-only observation evidence.
+
+The controller now writes INTENT -> RUNNING -> simulated start -> STARTED ->
+fixture -> TERMINAL -> result checkpoint -> next task. Ordinary runner/read
+faults isolate or consume bounded read retries while independent work continues.
+Tests include crash/ambiguity boundaries and thirty rounds across five fresh
+controllers. `symphony_upstream_event_adapter.py` receives stall/status event
+envelopes without implementing a second detector or enabling upstream retry.
+Production event authentication remains NOT_WIRED and LIVE remains disabled.
+See `docs/SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` for the precise boundary.

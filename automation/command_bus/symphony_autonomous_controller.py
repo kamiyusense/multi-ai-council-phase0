@@ -24,6 +24,8 @@ from .symphony_autonomous_runtime import (
     TaskOutcome,
 )
 from .symphony_campaign_store import GitHubCampaignStateStore
+from .symphony_attempt_store import GitHubAutonomousAttemptStore, make_attempt_id
+from .symphony_attempt_reconciler import AttemptFenceProof, reconcile_attempts
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,16 @@ class TaskExecutionResult:
     outcome: TaskOutcome
     unknown_class: UnknownClass | None = None
     affects_campaign_authority: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.result_id, str) or not self.result_id or not isinstance(self.outcome, TaskOutcome):
+            raise ValueError("invalid STATIC result identity/outcome")
+        if self.outcome is TaskOutcome.UNKNOWN and not isinstance(self.unknown_class, UnknownClass):
+            raise ValueError("UNKNOWN requires explicit class")
+        if self.outcome is not TaskOutcome.UNKNOWN and self.unknown_class is not None:
+            raise ValueError("unknown class only belongs to UNKNOWN")
+        if type(self.affects_campaign_authority) is not bool:
+            raise ValueError("result authority scope must be boolean")
 
 
 @dataclass(frozen=True)
@@ -97,6 +109,15 @@ class StaticCampaignTaskRunner(_ResultQueue):
 
     live_enabled = False
 
+    def __init__(self, outcomes=None):
+        super().__init__(outcomes)
+        self.start_calls: list[str] = []
+
+    def start_attempt(self, attempt_id: str) -> None:
+        if attempt_id in self.start_calls:
+            raise RuntimeError("duplicate STATIC attempt start")
+        self.start_calls.append(attempt_id)
+
     def run(self, task: CampaignTask, target: TargetObservation) -> TaskExecutionResult:
         return self._next(task.task_id)
 
@@ -108,6 +129,21 @@ class StaticObservationReader(_ResultQueue):
 
     def observe(self, task: CampaignTask, target: TargetObservation) -> TaskExecutionResult:
         return self._next(task.task_id)
+
+
+class SimulatedProcessCrash(BaseException):
+    """Process death fixture: intentionally bypasses ordinary exception recovery."""
+
+
+class StaticCrashPlan:
+    def __init__(self, boundary: str):
+        self.boundary = boundary
+        self.fired = False
+
+    def check(self, boundary: str) -> None:
+        if boundary == self.boundary and not self.fired:
+            self.fired = True
+            raise SimulatedProcessCrash(boundary)
 
 
 class StaticAutonomousCampaignController:
@@ -132,6 +168,9 @@ class StaticAutonomousCampaignController:
         replanner: StaticReplanner | None = None,
         quota_reader: StaticQuotaReader | None = None,
         policy: AutonomousRuntimePolicy = HARDENED_AUTONOMOUS_POLICY,
+        attempt_store: GitHubAutonomousAttemptStore | None = None,
+        fence_proofs: tuple[AttemptFenceProof, ...] = (),
+        crash_plan: StaticCrashPlan | None = None,
     ):
         # This integration proof must stay incapable of accidentally becoming a
         # LIVE dispatcher merely because a duck-typed object has a run() method.
@@ -145,6 +184,14 @@ class StaticAutonomousCampaignController:
             raise ValueError("only the built-in STATIC replanner is admitted")
         if quota_reader is not None and type(quota_reader) is not StaticQuotaReader:
             raise ValueError("only the built-in STATIC quota reader is admitted")
+        if crash_plan is not None and type(crash_plan) is not StaticCrashPlan:
+            raise ValueError("only built-in STATIC crash plans are admitted")
+        if attempt_store is not None and (
+            type(attempt_store) is not GitHubAutonomousAttemptStore
+            or attempt_store.client is not store.client
+            or attempt_store.write_branch != store.write_branch
+        ):
+            raise ValueError("campaign and attempt stores must share the durable branch/client")
         self.store = store
         self.campaign_id = campaign_id
         self.target_observer = target_observer
@@ -153,6 +200,15 @@ class StaticAutonomousCampaignController:
         self.replanner = replanner or StaticReplanner()
         self.quota_reader = quota_reader or StaticQuotaReader()
         self.policy = policy
+        self.attempt_store = attempt_store or GitHubAutonomousAttemptStore(
+            store.client, write_branch=store.write_branch, default_branch=store.default_branch,
+        )
+        self.fence_proofs = fence_proofs
+        self.crash_plan = crash_plan
+
+    def _crash(self, boundary: str) -> None:
+        if self.crash_plan is not None:
+            self.crash_plan.check(boundary)
 
     @staticmethod
     def _save_failure(status: str, revision: int, steps: int, task_id: str | None, reason: str | None) -> BatchResult:
@@ -170,6 +226,18 @@ class StaticAutonomousCampaignController:
         revision = checkpoint.revision
         kernel = AutonomousCampaignKernel(checkpoint.state, policy=self.policy)
         steps = 0
+        target = self.target_observer.read()
+        reconciled = reconcile_attempts(
+            kernel, self.attempt_store, canonical_head=target.head,
+            canonical_trustworthy=target.trustworthy, fence_proofs=self.fence_proofs,
+        )
+        if reconciled.changed:
+            saved = self.store.save(kernel.state, expected_revision=revision)
+            if saved.status != "ACCEPTED":
+                return self._save_failure(saved.status, revision, steps, None, saved.reason)
+            revision = saved.revision or revision
+        if reconciled.status != "RECONCILED":
+            return BatchResult(reconciled.status, revision, steps, reason=reconciled.reason)
 
         while True:
             if max_steps is not None and steps >= max_steps:
@@ -188,6 +256,17 @@ class StaticAutonomousCampaignController:
             if action.kind is ActionKind.DISPATCH_TASK:
                 assert action.task_id is not None
                 task = kernel.state.tasks[action.task_id]
+                self._crash("before_intent")
+                intent = self.attempt_store.append_intent(
+                    campaign_id=self.campaign_id, task_id=task.task_id,
+                    generation=kernel.state.generation, attempt_number=task.attempts + 1,
+                    expected_target_head=target.head, runner_generation=kernel.state.generation,
+                    scope={"mode": "STATIC", "task": task.to_dict()},
+                )
+                if intent.status != "ACCEPTED":
+                    return self._save_failure(intent.status, revision, steps, task.task_id, intent.reason)
+                attempt_id = intent.attempt_id
+                self._crash("after_intent")
                 kernel.mark_dispatched(task.task_id, canonical_head=target.head)
                 claimed = self.store.save(kernel.state, expected_revision=revision)
                 if claimed.status != "ACCEPTED":
@@ -195,15 +274,46 @@ class StaticAutonomousCampaignController:
                         claimed.status, revision, steps, task.task_id, claimed.reason,
                     )
                 revision = claimed.revision or revision
+                self._crash("after_running_checkpoint")
+                self.runner.start_attempt(attempt_id)
+                self._crash("before_started")
+                started = self.attempt_store.append_started(
+                    campaign_id=self.campaign_id, attempt_id=attempt_id,
+                    provider_kind="STATIC_FIXTURE", provider_attempt_ref=attempt_id,
+                    observation_source="STATIC_SIMULATION",
+                )
+                if started.status != "ACCEPTED":
+                    return self._save_failure(started.status, revision, steps, task.task_id, started.reason)
+                self._crash("after_started")
                 try:
                     result = self.runner.run(task, target)
                 except Exception as exc:
-                    # STATIC-only failure. Leave RUNNING durable state intact;
-                    # restart reclaim needs explicit stopped/fenced evidence.
-                    return BatchResult(
-                        "STATIC_RUNNER_FAULT", revision, steps, task.task_id, type(exc).__name__,
-                    )
+                    # An exception is not proof the worker never started/stopped.
+                    # Preserve STARTED_UNRESOLVED, isolate only this task, and
+                    # continue independent work instead of ending the batch.
+                    kernel.isolate_unresolved_attempt(task.task_id, attempt_id,
+                                                      f"STATIC runner fault: {type(exc).__name__}")
+                    persisted = self.store.save(kernel.state, expected_revision=revision)
+                    if persisted.status != "ACCEPTED":
+                        return self._save_failure(persisted.status, revision, steps, task.task_id, persisted.reason)
+                    revision = persisted.revision or revision
+                    steps += 1
+                    continue
                 try:
+                    if (result.result_id in kernel.state.processed_result_ids
+                            and kernel.state.result_attempt_ids.get(result.result_id) != attempt_id):
+                        raise ValueError("result id already belongs to another attempt")
+                    self._crash("before_terminal")
+                    terminal = self.attempt_store.append_terminal(
+                        campaign_id=self.campaign_id, attempt_id=attempt_id,
+                        result_id=result.result_id, outcome=result.outcome.value,
+                        model_started=True, unknown_class=result.unknown_class.value if result.unknown_class else None,
+                        affects_campaign_authority=result.affects_campaign_authority,
+                        evidence_refs=[f"static:{attempt_id}"],
+                    )
+                    if terminal.status != "ACCEPTED":
+                        return self._save_failure(terminal.status, revision, steps, task.task_id, terminal.reason)
+                    self._crash("after_terminal")
                     kernel.record_result(
                         result_id=result.result_id,
                         task_id=task.task_id,
@@ -211,6 +321,8 @@ class StaticAutonomousCampaignController:
                         unknown_class=result.unknown_class,
                         affects_campaign_authority=result.affects_campaign_authority,
                     )
+                    kernel.state.result_attempt_ids[result.result_id] = attempt_id
+                    self._crash("after_result_apply")
                 except (KeyError, ValueError) as exc:
                     return BatchResult(
                         "INVALID_STATIC_RESULT", revision, steps, task.task_id, str(exc),
@@ -222,6 +334,7 @@ class StaticAutonomousCampaignController:
                         persisted.status, revision, steps, task.task_id, persisted.reason,
                     )
                 revision = persisted.revision or revision
+                self._crash("after_result_checkpoint")
                 continue
 
             if action.kind is ActionKind.RETRY_OBSERVATION:
@@ -230,10 +343,28 @@ class StaticAutonomousCampaignController:
                 try:
                     result = self.observation_reader.observe(task, target)
                 except Exception as exc:
-                    return BatchResult(
-                        "STATIC_OBSERVATION_FAULT", revision, steps, task.task_id, type(exc).__name__,
+                    # Read-only acquisition failure may consume a bounded
+                    # observation retry, never a second model dispatch.
+                    result = TaskExecutionResult(
+                        f"observation-fault:{task.task_id}:{task.attempts}:{task.transient_retries + 1}",
+                        TaskOutcome.UNKNOWN, UnknownClass.TRANSIENT_UNKNOWN,
                     )
                 try:
+                    attempt_id = make_attempt_id(
+                        campaign_id=self.campaign_id, task_id=task.task_id,
+                        generation=kernel.state.generation, attempt_number=task.attempts,
+                        expected_target_head=task.expected_target_head,
+                    )
+                    observed = self.attempt_store.append_observation(
+                        self.campaign_id, attempt_id, result_id=result.result_id,
+                        outcome=result.outcome.value,
+                        unknown_class=result.unknown_class.value if result.unknown_class else None,
+                        affects_campaign_authority=result.affects_campaign_authority,
+                        evidence_refs=[f"static-observation:{attempt_id}"],
+                    )
+                    if observed.status != "ACCEPTED":
+                        return self._save_failure(observed.status, revision, steps, task.task_id, observed.reason)
+                    self._crash("after_observation_evidence")
                     kernel.record_result(
                         result_id=result.result_id,
                         task_id=task.task_id,
@@ -241,6 +372,7 @@ class StaticAutonomousCampaignController:
                         unknown_class=result.unknown_class,
                         affects_campaign_authority=result.affects_campaign_authority,
                     )
+                    kernel.state.result_attempt_ids[result.result_id] = attempt_id
                 except (KeyError, ValueError) as exc:
                     return BatchResult(
                         "INVALID_STATIC_RESULT", revision, steps, task.task_id, str(exc),

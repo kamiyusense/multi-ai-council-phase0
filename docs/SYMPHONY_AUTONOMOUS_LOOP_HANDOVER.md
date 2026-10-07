@@ -3,6 +3,17 @@
 Status: current design handover for the autonomous-loop line. Fresh GitHub
 readback is authoritative; do not trust remembered SHA values.
 
+## Latest implemented boundary — 2026-10-07
+
+Read `SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` before the older historical
+next-step sections below. Attempt-to-campaign reconciliation, durable controller
+integration, unstarted retirement, late-terminal BLOCKED recovery, observation
+evidence, crash injection and the 30-round/five-session STATIC soak are now
+implemented. Authenticated production upstream events and subscription-only
+runtime admission remain NOT_WIRED/NOT_READY. Do not enable upstream automatic
+stall retry blindly. Preserve the consumed-command fence and the full unattended
+multi-task/multi-round North Star.
+
 ## Repository / active line
 
 - repository: `kamiyusense/multi-ai-council-phase0`

@@ -67,6 +67,86 @@ def intent(s, *, task_id="task::one", attempt_number=1, head="a" * 40):
 
 
 class SymphonyAttemptStoreTests(unittest.TestCase):
+    def test_unknown_requires_class_and_preserves_scope(self):
+        for kind in ("TRANSIENT_UNKNOWN", "RECOVERABLE_UNKNOWN", "TASK_BLOCKED", "HARD_UNKNOWN"):
+            with self.subTest(kind=kind):
+                _, s = store()
+                created = intent(s)
+                self.assertEqual(s.append_terminal(
+                    campaign_id="campaign-1", attempt_id=created.attempt_id,
+                    result_id="unknown", outcome="UNKNOWN", model_started=None,
+                    unknown_class=kind, affects_campaign_authority=True,
+                ).status, "ACCEPTED")
+                value = s.restore("campaign-1", created.attempt_id).terminal
+                self.assertEqual(value["unknown_class"], kind)
+                self.assertTrue(value["affects_campaign_authority"])
+
+    def test_malformed_unknown_and_boolean_certainty_are_rejected_without_create(self):
+        for changes in ({"unknown_class": None}, {"unknown_class": "UNCLASSIFIED"},
+                        {"outcome": "DONE", "unknown_class": "TASK_BLOCKED"},
+                        {"model_started": 0}, {"affects_campaign_authority": 1}):
+            with self.subTest(changes=changes):
+                client, s = store()
+                created = intent(s)
+                args = dict(campaign_id="campaign-1", attempt_id=created.attempt_id,
+                            result_id="unknown", outcome="UNKNOWN", model_started=None,
+                            unknown_class="HARD_UNKNOWN", affects_campaign_authority=False)
+                args.update(changes)
+                calls = client.create_calls
+                with self.assertRaises(ValueError):
+                    s.append_terminal(**args)
+                self.assertEqual(client.create_calls, calls)
+
+    def test_retired_intent_cannot_start_or_become_terminal(self):
+        _, s = store()
+        created = intent(s)
+        proof = dict(attempt_id=created.attempt_id, runner_generation=2,
+                     state="FENCED", evidence_ref="static:fence")
+        self.assertEqual(s.retire_unstarted("campaign-1", created.attempt_id, fence_proof=proof).status, "ACCEPTED")
+        self.assertEqual(s.append_started(
+            campaign_id="campaign-1", attempt_id=created.attempt_id, provider_kind="STATIC",
+            provider_attempt_ref="fake", observation_source="STATIC_SIMULATION",
+        ).status, "CONFLICT")
+        self.assertEqual(s.append_terminal(
+            campaign_id="campaign-1", attempt_id=created.attempt_id, result_id="late",
+            outcome="DONE", model_started=False,
+        ).status, "CONFLICT")
+
+    def test_started_attempt_cannot_be_retired_and_start_cannot_be_denied(self):
+        _, s = store()
+        created = intent(s)
+        s.append_started(campaign_id="campaign-1", attempt_id=created.attempt_id,
+                         provider_kind="STATIC", provider_attempt_ref="fake",
+                         observation_source="STATIC_SIMULATION")
+        proof = dict(attempt_id=created.attempt_id, runner_generation=2,
+                     state="STOPPED", evidence_ref="static:stopped")
+        self.assertEqual(s.retire_unstarted("campaign-1", created.attempt_id, fence_proof=proof).status, "CONFLICT")
+        with self.assertRaisesRegex(ValueError, "contradicts"):
+            s.append_terminal(campaign_id="campaign-1", attempt_id=created.attempt_id,
+                              result_id="late", outcome="DONE", model_started=False)
+
+    def test_observation_chain_is_append_only_and_rejects_gap_or_predecessor_tamper(self):
+        client, s = store()
+        created = intent(s)
+        s.append_terminal(campaign_id="campaign-1", attempt_id=created.attempt_id,
+                          result_id="uncertain", outcome="UNKNOWN", model_started=None,
+                          unknown_class="TRANSIENT_UNKNOWN")
+        self.assertEqual(s.append_observation("campaign-1", created.attempt_id,
+                                             result_id="observed", outcome="DONE").status, "ACCEPTED")
+        self.assertEqual(s.restore("campaign-1", created.attempt_id).terminal["result_id"], "observed")
+        path = f"symphony_attempts/campaign-1/{created.attempt_id}/observation-00000001.json"
+        content = client.files[path]
+        record = json.loads(content.text)
+        record["predecessor_digest"] = "0" * 64
+        client.files[path] = ExecutorContent(path, json.dumps(record), content.sha)
+        with self.assertRaisesRegex(RuntimeError, "lineage"):
+            s.restore("campaign-1", created.attempt_id)
+        client.files.pop(path)
+        new_path = path.replace("00000001", "00000002")
+        client.files[new_path] = ExecutorContent(new_path, content.text, content.sha)
+        with self.assertRaisesRegex(RuntimeError, "path mismatch"):
+            s.restore("campaign-1", created.attempt_id)
+
     def test_deterministic_path_safe_attempt_identity_handles_corrective_task_ids(self):
         value = make_attempt_id(
             campaign_id="campaign-1",

@@ -369,3 +369,15 @@ stopped/fenced. Ambiguous creates use exact readback and are not resent.
 
 The store records evidence only. It does not authorize or perform LIVE
 provider/model execution.
+
+## 20. Attempt reconciliation and crash-safe STATIC continuation
+
+`symphony_attempt_reconciler.py` is now connected to the STATIC controller.
+Durable TERMINAL repairs a missing campaign checkpoint without redispatch;
+STARTED_UNRESOLVED is isolated; unstarted reclaim appends retirement before using
+a new identity. Observation recovery has append-only evidence too. Tests cover
+the requested recovery cases, dispatch/checkpoint crashes, ambiguous retirement,
+runner/read faults with independent continuation, and thirty rounds across five
+fresh controllers. The strict Codex proof remains unchanged. See
+`SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` for order, evidence, the upstream
+stall-retry seam and production limitations.

@@ -111,6 +111,8 @@ class CampaignState:
     blockers: list[dict[str, str]] = field(default_factory=list)
     deferred_decisions: list[dict[str, str]] = field(default_factory=list)
     terminal_reason: str | None = None
+    result_attempt_ids: dict[str, str] = field(default_factory=dict)
+    retired_attempt_ids: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         if not isinstance(self.campaign_id, str) or not self.campaign_id:
@@ -147,6 +149,8 @@ class CampaignState:
             "blockers": list(self.blockers),
             "deferred_decisions": list(self.deferred_decisions),
             "terminal_reason": self.terminal_reason,
+            "result_attempt_ids": dict(self.result_attempt_ids),
+            "retired_attempt_ids": sorted(self.retired_attempt_ids),
         }
 
     @classmethod
@@ -163,6 +167,8 @@ class CampaignState:
             blockers=list(record.get("blockers", [])),
             deferred_decisions=list(record.get("deferred_decisions", [])),
             terminal_reason=record.get("terminal_reason"),
+            result_attempt_ids=dict(record.get("result_attempt_ids", {})),
+            retired_attempt_ids=set(record.get("retired_attempt_ids", [])),
         )
 
 
@@ -219,15 +225,15 @@ class AutonomousCampaignKernel:
         if type(canonical_trustworthy) is not bool or not canonical_trustworthy:
             self.state.terminal_reason = "canonical target lineage is not trustworthy"
             return PlannedAction(ActionKind.STOP_HARD_UNKNOWN, reason=self.state.terminal_reason)
-        if self.policy.max_rounds is not None and self.state.rounds_completed >= self.policy.max_rounds:
-            return PlannedAction(ActionKind.STOP_CONFIG_LIMIT, reason="max_rounds reached")
-        if self.state.consecutive_failures >= self.policy.max_consecutive_failures:
-            return PlannedAction(ActionKind.STOP_CONFIG_LIMIT, reason="max_consecutive_failures reached")
         if all(
             task.status in {TaskStatus.COMPLETE, TaskStatus.SUPERSEDED}
             for task in self.state.tasks.values()
         ):
             return PlannedAction(ActionKind.CAMPAIGN_COMPLETE)
+        if self.policy.max_rounds is not None and self.state.rounds_completed >= self.policy.max_rounds:
+            return PlannedAction(ActionKind.STOP_CONFIG_LIMIT, reason="max_rounds reached")
+        if self.state.consecutive_failures >= self.policy.max_consecutive_failures:
+            return PlannedAction(ActionKind.STOP_CONFIG_LIMIT, reason="max_consecutive_failures reached")
         waiting = sorted(
             (
                 task for task in self.state.tasks.values()
@@ -317,13 +323,29 @@ class AutonomousCampaignKernel:
         outcome: TaskOutcome,
         unknown_class: UnknownClass | None = None,
         affects_campaign_authority: bool = False,
+        allow_blocked_recovery: bool = False,
+        recovery_attempt_id: str | None = None,
     ) -> PlannedAction:
         if not isinstance(result_id, str) or not result_id:
             raise ValueError("result_id must be non-empty")
+        if not isinstance(outcome, TaskOutcome):
+            raise ValueError("invalid task outcome")
+        if outcome is TaskOutcome.UNKNOWN and not isinstance(unknown_class, UnknownClass):
+            raise ValueError("UNKNOWN result requires explicit unknown_class")
+        if outcome is not TaskOutcome.UNKNOWN and unknown_class is not None:
+            raise ValueError("unknown_class is only valid for UNKNOWN")
+        if type(affects_campaign_authority) is not bool or type(allow_blocked_recovery) is not bool:
+            raise ValueError("result scope/recovery must be boolean")
         if result_id in self.state.processed_result_ids:
             return PlannedAction(ActionKind.NOOP_DUPLICATE, task_id, "duplicate result event")
         task = self.state.tasks[task_id]
-        if task.status not in {TaskStatus.RUNNING, TaskStatus.WAITING}:
+        blocked_recovery = (
+            allow_blocked_recovery and task.status is TaskStatus.BLOCKED
+            and recovery_attempt_id is not None
+            and any(b.get("task_id") == task_id and b.get("attempt_id") == recovery_attempt_id
+                    for b in self.state.blockers)
+        )
+        if task.status not in {TaskStatus.RUNNING, TaskStatus.WAITING} and not blocked_recovery:
             raise ValueError("task result does not match an active task")
         self.state.processed_result_ids.add(result_id)
 
@@ -399,6 +421,31 @@ class AutonomousCampaignKernel:
             else f"{unknown_class.value} with no independent safe work"
         )
         return PlannedAction(ActionKind.STOP_HARD_UNKNOWN, task_id, self.state.terminal_reason)
+
+    def isolate_unresolved_attempt(self, task_id: str, attempt_id: str, reason: str) -> None:
+        """Isolate uncertain dispatch scope without terminating unrelated work."""
+        task = self.state.tasks[task_id]
+        if task.status in {TaskStatus.COMPLETE, TaskStatus.SUPERSEDED}:
+            return
+        task.status = TaskStatus.BLOCKED
+        record = {"task_id": task_id, "attempt_id": attempt_id, "reason": reason}
+        if record not in self.state.blockers:
+            self.state.blockers.append(record)
+
+    def reclaim_unstarted_attempt(self, task_id: str, attempt_id: str, attempt_number: int) -> None:
+        """Called only after append-only retirement with bound stop/fence evidence."""
+        task = self.state.tasks[task_id]
+        if task.status in {TaskStatus.COMPLETE, TaskStatus.SUPERSEDED}:
+            return
+        task.attempts = max(task.attempts, attempt_number)
+        task.status = TaskStatus.READY
+        self.state.retired_attempt_ids.add(attempt_id)
+        record = {
+            "decision_id": f"retired:{attempt_id}", "affected_scope": task_id,
+            "selected_safe_default": "new-attempt-identity-only",
+        }
+        if record not in self.state.deferred_decisions:
+            self.state.deferred_decisions.append(record)
 
     def mark_observation_recovered(self, task_id: str) -> None:
         """Return a WAITING task to READY only after safe read/evidence recovery."""

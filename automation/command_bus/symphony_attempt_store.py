@@ -18,10 +18,16 @@ from typing import Any
 from .executor_backend import ExecutorContentsClient
 
 
+class AttemptLineageError(RuntimeError):
+    """Invalid durable evidence, distinct from a transient transport read failure."""
+
+
 PROTOCOL_VERSION = "SYMPHONY_AUTONOMOUS_ATTEMPT_V1"
 INTENT_TYPE = "SYMPHONY_AUTONOMOUS_ATTEMPT_INTENT_V1"
 STARTED_TYPE = "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1"
 TERMINAL_TYPE = "SYMPHONY_AUTONOMOUS_ATTEMPT_TERMINAL_V1"
+RETIRED_TYPE = "SYMPHONY_AUTONOMOUS_ATTEMPT_RETIRED_V1"
+OBSERVATION_TYPE = "SYMPHONY_AUTONOMOUS_ATTEMPT_OBSERVATION_V1"
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$")
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -74,7 +80,7 @@ def make_attempt_id(
 def _path(campaign_id: str, attempt_id: str, kind: str) -> str:
     _safe_id(campaign_id, "campaign identity")
     _safe_id(attempt_id, "attempt identity")
-    if kind not in {"intent", "started", "terminal"}:
+    if kind not in {"intent", "started", "terminal", "retired"} and re.fullmatch(r"observation-[0-9]{8}", kind) is None:
         raise ValueError("invalid attempt record kind")
     return f"symphony_attempts/{campaign_id}/{attempt_id}/{kind}.json"
 
@@ -98,6 +104,7 @@ class AttemptSnapshot:
     intent: dict[str, Any]
     started: dict[str, Any] | None = None
     terminal: dict[str, Any] | None = None
+    retired: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -147,23 +154,42 @@ def _validate_identity(record: dict[str, Any]) -> AttemptIdentity:
 def _validate_record(record: dict[str, Any], *, kind: str) -> AttemptIdentity:
     if not isinstance(record, dict):
         raise ValueError("attempt record must be an object")
+    validation_kind = "observation" if kind.startswith("observation-") else kind
     expected_type = {
         "intent": INTENT_TYPE,
         "started": STARTED_TYPE,
         "terminal": TERMINAL_TYPE,
-    }[kind]
+        "retired": RETIRED_TYPE,
+        "observation": OBSERVATION_TYPE,
+    }[validation_kind]
     if (
         record.get("protocol_version") != PROTOCOL_VERSION
         or record.get("record_type") != expected_type
     ):
         raise ValueError("wrong autonomous attempt protocol")
     identity = _validate_identity(record)
+    if validation_kind == "observation":
+        number = record.get("observation_number")
+        if type(number) is not int or number < 1 or kind != f"observation-{number:08d}":
+            raise ValueError("invalid observation sequence")
     if kind == "intent":
         scope_digest = record.get("scope_digest")
         if not isinstance(scope_digest, str) or _DIGEST.fullmatch(scope_digest) is None:
             raise ValueError("invalid attempt scope digest")
         if record.get("dispatch_authorized") is not False:
             raise ValueError("durable intent must not authorize LIVE dispatch")
+        if not isinstance(record.get("scope"), dict) or _digest(record["scope"]) != scope_digest:
+            raise ValueError("attempt scope digest mismatch")
+    elif kind == "retired":
+        if not isinstance(record.get("intent_digest"), str) or _DIGEST.fullmatch(record["intent_digest"]) is None:
+            raise ValueError("invalid retirement predecessor")
+        proof = record.get("fence_proof")
+        if (not isinstance(proof, dict) or proof.get("attempt_id") != identity.attempt_id
+                or proof.get("runner_generation") != identity.runner_generation
+                or type(proof.get("runner_generation")) is not int
+                or proof.get("state") not in {"STOPPED", "FENCED"}
+                or not isinstance(proof.get("evidence_ref"), str) or not proof["evidence_ref"]):
+            raise ValueError("invalid bound stop/fence proof")
     elif kind == "started":
         predecessor = record.get("intent_digest")
         if not isinstance(predecessor, str) or _DIGEST.fullmatch(predecessor) is None:
@@ -186,11 +212,19 @@ def _validate_record(record: dict[str, Any], *, kind: str) -> AttemptIdentity:
         outcome = record.get("outcome")
         if outcome not in _TERMINAL_OUTCOMES:
             raise ValueError("invalid attempt terminal outcome")
+        unknown_class = record.get("unknown_class")
+        if outcome == "UNKNOWN":
+            if unknown_class not in {"TRANSIENT_UNKNOWN", "RECOVERABLE_UNKNOWN", "TASK_BLOCKED", "HARD_UNKNOWN"}:
+                raise ValueError("UNKNOWN terminal requires unknown_class")
+        elif unknown_class is not None:
+            raise ValueError("unknown_class requires UNKNOWN outcome")
+        if type(record.get("affects_campaign_authority", False)) is not bool:
+            raise ValueError("invalid terminal authority scope")
         result_id = record.get("result_id")
         if not isinstance(result_id, str) or not result_id:
             raise ValueError("invalid attempt terminal result id")
         model_started = record.get("model_started")
-        if model_started not in {True, False, None}:
+        if model_started is not None and type(model_started) is not bool:
             raise ValueError("invalid model_started certainty")
         if not isinstance(record.get("evidence_refs"), list) or any(
             not isinstance(item, str) or not item for item in record["evidence_refs"]
@@ -203,13 +237,13 @@ def _decode(path: str, text: str, *, kind: str) -> tuple[dict[str, Any], Attempt
     try:
         record = json.loads(text)
     except (TypeError, json.JSONDecodeError) as exc:
-        raise RuntimeError("malformed autonomous attempt record") from exc
+        raise AttemptLineageError("malformed autonomous attempt record") from exc
     try:
         identity = _validate_record(record, kind=kind)
     except ValueError as exc:
-        raise RuntimeError(str(exc)) from exc
+        raise AttemptLineageError(str(exc)) from exc
     if path != _path(identity.campaign_id, identity.attempt_id, kind):
-        raise RuntimeError("autonomous attempt path mismatch")
+        raise AttemptLineageError("autonomous attempt path mismatch")
     return record, identity
 
 
@@ -332,6 +366,8 @@ class GitHubAutonomousAttemptStore:
             return AttemptWriteResult("CONFLICT", attempt_id, "started", "attempt intent missing")
         if self._get(campaign_id, attempt_id, "terminal") is not None:
             return AttemptWriteResult("CONFLICT", attempt_id, "started", "attempt already terminal")
+        if self._get(campaign_id, attempt_id, "retired") is not None:
+            return AttemptWriteResult("CONFLICT", attempt_id, "started", "attempt retired")
         intent, identity = intent_pair
         record = {
             "record_type": STARTED_TYPE,
@@ -366,12 +402,18 @@ class GitHubAutonomousAttemptStore:
         outcome: str,
         model_started: bool | None,
         evidence_refs: list[str] | tuple[str, ...] = (),
+        unknown_class: str | None = None,
+        affects_campaign_authority: bool = False,
     ) -> AttemptWriteResult:
         intent_pair = self._get(campaign_id, attempt_id, "intent")
         if intent_pair is None:
             return AttemptWriteResult("CONFLICT", attempt_id, "terminal", "attempt intent missing")
         intent, identity = intent_pair
+        if self._get(campaign_id, attempt_id, "retired") is not None:
+            return AttemptWriteResult("CONFLICT", attempt_id, "terminal", "attempt retired")
         started_pair = self._get(campaign_id, attempt_id, "started")
+        if started_pair is not None and model_started is False:
+            raise ValueError("terminal contradicts observed start")
         if model_started is True and started_pair is None:
             return AttemptWriteResult(
                 "CONFLICT", attempt_id, "terminal",
@@ -396,8 +438,52 @@ class GitHubAutonomousAttemptStore:
             "outcome": outcome,
             "model_started": model_started,
             "evidence_refs": list(evidence_refs),
+            "unknown_class": unknown_class,
+            "affects_campaign_authority": affects_campaign_authority,
         }
         return self._append(record, kind="terminal")
+
+    def retire_unstarted(self, campaign_id: str, attempt_id: str, *, fence_proof: dict[str, Any]) -> AttemptWriteResult:
+        snapshot = self.restore(campaign_id, attempt_id)
+        if snapshot is None or snapshot.state != "CLAIMED_UNSTARTED" or snapshot.retired is not None:
+            return AttemptWriteResult("CONFLICT", attempt_id, "retired", "attempt is not unstarted")
+        record = {
+            **{k: snapshot.intent[k] for k in (
+                "campaign_id", "task_id", "attempt_id", "generation", "attempt_number",
+                "expected_target_head", "expected_target_tree", "runner_generation",
+            )},
+            "record_type": RETIRED_TYPE, "protocol_version": PROTOCOL_VERSION,
+            "intent_digest": _digest(snapshot.intent), "fence_proof": dict(fence_proof),
+        }
+        return self._append(record, kind="retired")
+
+    def append_observation(
+        self, campaign_id: str, attempt_id: str, *, result_id: str, outcome: str,
+        unknown_class: str | None = None, affects_campaign_authority: bool = False,
+        evidence_refs: list[str] | tuple[str, ...] = (),
+    ) -> AttemptWriteResult:
+        """Append read-only recovery evidence; never overwrite a terminal record."""
+        snapshot = self.restore(campaign_id, attempt_id)
+        if (snapshot is None or snapshot.terminal is None
+                or snapshot.terminal["outcome"] != "UNKNOWN"
+                or snapshot.terminal.get("unknown_class") != "TRANSIENT_UNKNOWN"):
+            return AttemptWriteResult("CONFLICT", attempt_id, "observation", "attempt not awaiting observation")
+        previous = snapshot.terminal
+        if result_id == previous["result_id"]:
+            return AttemptWriteResult("CONFLICT", attempt_id, "observation", "duplicate observation result id")
+        number = previous.get("observation_number", 0) + 1
+        record = {
+            **{k: snapshot.intent[k] for k in (
+                "campaign_id", "task_id", "attempt_id", "generation", "attempt_number",
+                "expected_target_head", "expected_target_tree", "runner_generation",
+            )},
+            "record_type": OBSERVATION_TYPE, "protocol_version": PROTOCOL_VERSION,
+            "predecessor_digest": _digest(previous), "observation_number": number,
+            "result_id": result_id, "outcome": outcome,
+            "model_started": previous["model_started"], "evidence_refs": list(evidence_refs),
+            "unknown_class": unknown_class, "affects_campaign_authority": affects_campaign_authority,
+        }
+        return self._append(record, kind=f"observation-{number:08d}")
 
     def restore(self, campaign_id: str, attempt_id: str) -> AttemptSnapshot | None:
         intent_pair = self._get(campaign_id, attempt_id, "intent")
@@ -406,25 +492,51 @@ class GitHubAutonomousAttemptStore:
         intent, identity = intent_pair
         started_pair = self._get(campaign_id, attempt_id, "started")
         terminal_pair = self._get(campaign_id, attempt_id, "terminal")
+        retired_pair = self._get(campaign_id, attempt_id, "retired")
         started = None
         terminal = None
+        prefix = f"symphony_attempts/{campaign_id}/{attempt_id}/"
+        observations = sorted(
+            (c for c in self.client.list(prefix, self.write_branch)
+             if c.path.rsplit("/", 1)[-1].startswith("observation-")),
+            key=lambda c: c.path,
+        )
+        if observations and terminal_pair is None:
+            raise AttemptLineageError("observation evidence has no terminal predecessor")
+        if retired_pair is not None:
+            retired, retired_identity = retired_pair
+            if (retired_identity != identity or retired["intent_digest"] != _digest(intent)
+                    or started_pair is not None or terminal_pair is not None or observations):
+                raise AttemptLineageError("invalid retirement lineage")
+            return AttemptSnapshot("CLAIMED_UNSTARTED", identity, intent, retired=retired)
 
         if started_pair is not None:
             started, started_identity = started_pair
             if not _same_identity(identity, started_identity):
-                raise RuntimeError("attempt STARTED identity mismatch")
+                raise AttemptLineageError("attempt STARTED identity mismatch")
             if started["intent_digest"] != _digest(intent):
-                raise RuntimeError("attempt STARTED predecessor mismatch")
+                raise AttemptLineageError("attempt STARTED predecessor mismatch")
 
         if terminal_pair is not None:
             terminal, terminal_identity = terminal_pair
             if not _same_identity(identity, terminal_identity):
-                raise RuntimeError("attempt terminal identity mismatch")
+                raise AttemptLineageError("attempt terminal identity mismatch")
             predecessor = started if started is not None else intent
             if terminal["predecessor_digest"] != _digest(predecessor):
-                raise RuntimeError("attempt terminal predecessor mismatch")
+                raise AttemptLineageError("attempt terminal predecessor mismatch")
             if terminal["model_started"] is True and started is None:
-                raise RuntimeError("attempt terminal claims unproven model start")
+                raise AttemptLineageError("attempt terminal claims unproven model start")
+            if started is not None and terminal["model_started"] is False:
+                raise AttemptLineageError("terminal contradicts observed start")
+            for number, content in enumerate(observations, 1):
+                kind = f"observation-{number:08d}"
+                observed, observed_identity = _decode(content.path, content.text, kind=kind)
+                if (observed_identity != identity or observed["predecessor_digest"] != _digest(terminal)
+                        or terminal["outcome"] != "UNKNOWN"
+                        or terminal.get("unknown_class") != "TRANSIENT_UNKNOWN"
+                        or observed["model_started"] != terminal["model_started"]):
+                    raise AttemptLineageError("invalid observation evidence lineage")
+                terminal = observed
             return AttemptSnapshot("TERMINAL", identity, intent, started, terminal)
 
         if started is not None:
@@ -437,14 +549,16 @@ class GitHubAutonomousAttemptStore:
         attempts: set[str] = set()
         for content in self.client.list(prefix, self.write_branch):
             parts = content.path.split("/")
-            if len(parts) != 4 or parts[0] != "symphony_attempts" or parts[1] != campaign_id:
-                raise RuntimeError("autonomous attempt listing path mismatch")
+            if (len(parts) != 4 or parts[0] != "symphony_attempts" or parts[1] != campaign_id
+                    or (parts[3] not in {"intent.json", "started.json", "terminal.json", "retired.json"}
+                        and re.fullmatch(r"observation-[0-9]{8}\.json", parts[3]) is None)):
+                raise AttemptLineageError("autonomous attempt listing path mismatch")
             attempts.add(_safe_id(parts[2], "attempt identity"))
         output = []
         for attempt_id in sorted(attempts):
             restored = self.restore(campaign_id, attempt_id)
             if restored is None:
-                raise RuntimeError("attempt record set has no intent")
+                raise AttemptLineageError("attempt record set has no intent")
             output.append(restored)
         return output
 
