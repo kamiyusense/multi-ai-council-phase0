@@ -339,6 +339,80 @@ class PrepareStatusRequestTests(unittest.TestCase):
                                      not_before="2026-10-07T08:00:00+00:00", now=self.NOW)
 
 
+class ProducerTests(unittest.TestCase):
+    def test_record_is_built_from_the_job_log_and_verified(self):
+        git, rest = verified_world(provider_state="IN_PROGRESS")
+        r = s.observation_from_readback_run(command_id=CMD, status_request_path=REQ_PATH, git=git, rest=rest,
+                                            carrier_branch="carrier", observed_at="2026-10-07T07:00:00+00:00")
+        self.assertEqual((r["provider_state"], r["workflow_run_id"], r["job_id"]), ("IN_PROGRESS", "100", "200"))
+        self.assertEqual(r["status_request_commit"], REQ_COMMIT)
+        self.assertEqual(s.validate_settlement_observation(r), r)
+
+    def test_producer_never_trusts_a_spoof_or_a_missing_log(self):
+        spoof = 'Jules latest agent message JSON: "Jules session readback: name=sessions/%s state=COMPLETED pr_url=NONE"' % SESSION
+        for log, error in ((job_log(spoof), s.ReadbackMismatch), (OSError("403"), s.ReadbackUnavailable),
+                           (job_log(line("COMPLETED"), line("IN_PROGRESS")), s.ReadbackMismatch)):
+            git, rest = verified_world(log=log)
+            with self.assertRaises(error):
+                s.observation_from_readback_run(command_id=CMD, status_request_path=REQ_PATH, git=git, rest=rest,
+                                                carrier_branch="carrier", observed_at="2026-10-07T07:00:00+00:00")
+        git, rest = verified_world()
+        git.added[("carrier", REQ_PATH)] = [REQ_COMMIT, "b" * 40]
+        with self.assertRaises(s.ReadbackMismatch):
+            s.observation_from_readback_run(command_id=CMD, status_request_path=REQ_PATH, git=git, rest=rest,
+                                            carrier_branch="carrier", observed_at="2026-10-07T07:00:00+00:00")
+
+
+class CliTests(unittest.TestCase):
+    ARGS = ["--policy", "p", "--roadmap", "r", "--origin-loop-id", "claude-auto-loop-a-003", "--lane-id", "J-GREEN",
+            "--now", "2026-10-07T08:00:00+00:00"]
+
+    def run_cli(self, command, git, rest, payload=None):
+        import contextlib, io, os, tempfile
+        from unittest import mock
+        from automation.command_bus import claude_jules_live
+        git.pushes, git.created = [], {}
+        git.get = lambda path, branch: (SimpleNamespace(text=git.created[path]) if path in git.created else None)
+        git.create = lambda path, text, message, branch: git.created.__setitem__(path, text)
+        policy = {"data_branch": "data", "carrier_branch": "carrier", "target_repo": "o/r"}
+        args = list(self.ARGS)
+        if payload is not None:
+            handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+            json.dump(payload, handle)
+            handle.close()
+            self.addCleanup(os.unlink, handle.name)
+            args += ["--file", handle.name]
+        out = io.StringIO()
+        with mock.patch.object(claude_jules_live, "build_live", return_value=(None, git, rest, policy)), \
+                contextlib.redirect_stdout(out):
+            code = claude_jules_live.main([command, *args])
+        return code, json.loads(out.getvalue())
+
+    def test_record_settlement_refuses_a_record_the_log_contradicts(self):
+        git, rest = verified_world(provider_state="IN_PROGRESS")
+        code, out = self.run_cli("record-settlement", git, rest, payload=record("COMPLETED"))
+        self.assertEqual((code, out["written"]), (2, False))
+        self.assertIn("ReadbackMismatch", out["reason"])
+        self.assertEqual(git.created, {})
+
+    def test_record_settlement_writes_only_a_verified_record(self):
+        git, rest = verified_world()
+        code, out = self.run_cli("record-settlement", git, rest, payload=record("COMPLETED"))
+        self.assertEqual((code, out["verified"]), (0, True))
+        self.assertEqual(list(git.created), [s.settlement_path(CMD, "100")])
+
+    def test_build_settlement_prints_and_writes_nothing(self):
+        git, rest = verified_world()
+        code, out = self.run_cli("build-settlement", git, rest,
+                                 payload={"command_id": CMD, "status_request_path": REQ_PATH})
+        self.assertEqual((code, out["written"], out["record"]["provider_state"]), (0, False, "COMPLETED"))
+        self.assertEqual(git.created, {})
+        git, rest = verified_world(log=OSError("403"))
+        code, out = self.run_cli("build-settlement", git, rest,
+                                 payload={"command_id": CMD, "status_request_path": REQ_PATH})
+        self.assertEqual((out["status"], out["record"]), ("UNKNOWN", None))
+
+
 class LiveFactsWiringTests(unittest.TestCase):
     def facts(self, files, session=SESSION, source="JOB_LOG", **world):
         git, rest = verified_world(**world)

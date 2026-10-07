@@ -21,7 +21,9 @@ simulate:
 CLI (all commands print one JSON object):
   python -m automation.command_bus.claude_jules_live status|step|poll|budget
   python -m automation.command_bus.claude_jules_live record-review --file review.json
+  python -m automation.command_bus.claude_jules_live build-settlement --file {"command_id", "status_request_path"}
   python -m automation.command_bus.claude_jules_live record-settlement --file settlement.json
+  python -m automation.command_bus.claude_jules_live recovery-history [--recovery-policy v1]
   python -m automation.command_bus.claude_jules_live observe|takeover|renew|handback|reclaim [--write]
   python -m automation.command_bus.claude_jules_live carrier [--file since.txt]
 """
@@ -51,8 +53,10 @@ from .claude_jules_handover import (
 from .claude_jules_inspection import InspectionStore
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
+from .claude_jules_recovery_policy import recovery_policy
 from .claude_jules_settlement import (
-    settlement_path, settlement_status, validate_settlement_observation, verify_readback,
+    ReadbackMismatch, ReadbackUnavailable, observation_from_readback_run, settlement_path, settlement_status,
+    validate_settlement_observation, verify_readback,
 )
 from .loop_owner_backend import LoopOwnerGitHubBackend
 
@@ -273,6 +277,12 @@ class LiveResultFacts:
             result["errors"] = max(result["errors"], 1)  # crashed runner is never a pass
         self._tests[head] = result
         return result
+
+    def environment_digest(self) -> str:
+        """What the candidate test run depends on locally; a re-run after an environment failure needs this to change."""
+        import platform
+        return sha256_of({"test_command": list(self.test_command), "python": sys.version,
+                          "platform": platform.platform()})
 
     def test_sources(self, head: str, paths: list[str]) -> dict[str, str] | None:
         sources = {}
@@ -580,6 +590,8 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
                                owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
                                roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id,
                                campaign_policy=campaign_policy,
+                               recovery_policy=(recovery_policy() if getattr(args, "recovery_policy", None) == "v1"
+                                                else None),
                                carrier_guard=CarrierQuietGuard(
                                    git=git, rest=rest, carrier_branch=policy["carrier_branch"],
                                    isolated_targets=tuple(policy["allowed_target_branches"]),
@@ -590,11 +602,14 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="claude_jules_live")
     parser.add_argument("command", choices=["status", "step", "poll", "wake-resume", "budget", "record-review", "record-observation", "record-settlement",
+                                            "build-settlement", "recovery-history",
                                             "observe", "takeover", "renew", "handback", "reclaim",
                                             "carrier"])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--roadmap", required=True)
     parser.add_argument("--campaign-policy", help="optional CLAUDE_AUTO_CAMPAIGN_POLICY_V1 JSON; legacy policy remains the default")
+    parser.add_argument("--recovery-policy", choices=["v1"],
+                        help="opt in to reasoned bounded recovery v1; omitted keeps the legacy retry behaviour")
     parser.add_argument("--origin-loop-id", required=True)
     parser.add_argument("--lane-id", required=True)
     parser.add_argument("--repo-dir", default=".")
@@ -633,9 +648,33 @@ def main(argv: list[str] | None = None) -> int:
                        policy["data_branch"])
         stored = git.get(path, policy["data_branch"])
         out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}
+    elif args.command == "build-settlement":
+        request = _load(args.file)
+        try:
+            out = {"record": observation_from_readback_run(
+                command_id=request["command_id"], status_request_path=request["status_request_path"], git=git,
+                rest=rest, carrier_branch=policy["carrier_branch"], observed_at=now), "written": False}
+        except (ReadbackUnavailable, ReadbackMismatch) as exc:
+            out = {"record": None, "written": False, "status": "UNKNOWN", "reason": f"{type(exc).__name__}: {exc}"}
+    elif args.command == "recovery-history":
+        events = loop.campaign_state.events()
+        out = {"campaign_id": loop.campaign_policy["campaign_id"],
+               "recovery_policy": "v1" if loop.recovery_policy is not None else "legacy",
+               "events": [{"type": e["event_type"], "recorded_at": e["recorded_at"],
+                           **{k: e["payload"].get(k) for k in ("task_id", "cause", "attempt", "decision", "reason",
+                                                               "not_before", "provider_budget_effect")
+                              if k in e["payload"]}}
+                          for e in events if e["event_type"] in {"RECOVERY_ATTEMPT", "RECOVERY_DECISION",
+                                                                "TASK_BLOCKED", "TASK_REPLAN"}]}
     elif args.command == "record-settlement":
         record = validate_settlement_observation(_load(args.file))
         path = settlement_path(record["command_id"], record["workflow_run_id"])
+        try:  # a record is stored only when the job's own log confirms it
+            verify_readback(record, git=git, rest=rest, carrier_branch=policy["carrier_branch"])
+        except (ReadbackUnavailable, ReadbackMismatch) as exc:
+            print(json.dumps({"path": path, "verified": False, "written": False,
+                              "reason": f"{type(exc).__name__}: {exc}"}, indent=2, sort_keys=True))
+            return 2
         if git.get(path, policy["data_branch"]) is None:
             git.create(path, canonical_json(record), f"Claude AUTO provider settlement {record['command_id']}",
                        policy["data_branch"])

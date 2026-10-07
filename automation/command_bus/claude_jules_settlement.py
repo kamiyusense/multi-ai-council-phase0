@@ -272,6 +272,41 @@ def verify_readback(record: dict[str, Any], *, git: Any, rest: Any, carrier_bran
             "job_id": record["job_id"], "job_started_at": job["started_at"], "job_completed_at": job["completed_at"]}
 
 
+def observation_from_readback_run(*, command_id: str, status_request_path: str, git: Any, rest: Any,
+                                  carrier_branch: str, observed_at: str) -> dict[str, Any]:
+    """Build a settlement record FROM GitHub (request commit, run, job, job log) and verify it before returning.
+
+    Read-only: nothing is written and no provider is called.  The log line is
+    extracted here, never supplied by the caller, so the record cannot carry a
+    transcribed state.  Raises ``ReadbackUnavailable`` / ``ReadbackMismatch``.
+    """
+    try:
+        commits = git.added_by(carrier_branch, status_request_path)
+        runs = None
+        if len(commits) == 1:
+            runs = [r for r in rest.workflow_runs_for_commit(READBACK_WORKFLOW, commits[0]) if r.get("event") == "push"]
+            jobs = rest.run_jobs(runs[0]["id"]) if len(runs) == 1 else []
+    except Exception as exc:
+        raise ReadbackUnavailable(f"request/run read failed: {type(exc).__name__}") from exc
+    if len(commits) != 1:
+        raise ReadbackMismatch("status request is not added exactly once")
+    if runs is None or len(runs) != 1 or len(jobs) != 1:
+        raise ReadbackMismatch("no single readback run/job for the request commit")
+    try:
+        log_text = rest.job_log(jobs[0]["id"])
+    except Exception as exc:
+        raise ReadbackUnavailable(f"job log read failed: {type(exc).__name__}") from exc
+    lines = readback_lines(log_text or "")
+    if len(lines) != 1:
+        raise ReadbackMismatch(f"job log holds {len(lines)} readback lines, expected exactly one")
+    record = build_settlement_observation(
+        command_id=command_id, status_request_path=status_request_path, status_request_commit=commits[0],
+        workflow_run_id=str(runs[0]["id"]), job_id=str(jobs[0]["id"]), log_line=lines[0], observed_at=observed_at,
+        source="github-rest actions/jobs/logs (read-only, extracted by observation_from_readback_run)")
+    verify_readback(record, git=git, rest=rest, carrier_branch=carrier_branch)
+    return record
+
+
 def status_request_path(name: str) -> str:
     if not _SAFE_ID.fullmatch(name or "") or len(name) > 59:
         raise ValueError("unsafe status request name")

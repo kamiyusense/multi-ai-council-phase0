@@ -279,5 +279,108 @@ class ControllerIntegrationTests(unittest.TestCase):
         self.assertTrue(all(p["provider_budget_effect"] == 1 for p in recorded))
 
 
+class WiredCauseTests(unittest.TestCase):
+    """TEST_ENVIRONMENT and PROVIDER_FAILURE are reached through the controller, not only through ``decide``."""
+
+    def test_test_rerun_needs_a_changed_environment_then_isolates(self):
+        w = RecoveryWorld(plan=roadmap(task_spec()))
+        w.deliver(w.jules.run(w.step().details["command_id"]))
+        env = {"digest": "env-1"}
+        w.facts.environment_digest = lambda: env["digest"]
+        w.facts.run_tests = lambda head: None  # runner cannot start
+        self.assertEqual(w.step().status, "UNKNOWN")
+        self.assertEqual(w.step().status, "UNKNOWN")  # first re-run is allowed (recorded), still no evidence
+        blocked = w.step()
+        self.assertEqual(blocked.status, "TASK_BLOCKED")
+        self.assertIn("no progress", blocked.reason)
+        recorded = sorted((d["payload"] for d in decisions(w)), key=lambda p: p["attempt"])
+        self.assertEqual([(p["cause"], p["decision"]) for p in recorded],
+                         [(rp.TEST_ENVIRONMENT, rp.RETRY), (rp.TEST_ENVIRONMENT, rp.ISOLATE_TASK)])
+        self.assertEqual(len(w.commands()), 1)
+
+    def test_changed_environment_allows_the_rerun_that_then_passes(self):
+        w = RecoveryWorld(plan=roadmap(task_spec()))
+        w.deliver(w.jules.run(w.step().details["command_id"]))
+        env = {"digest": "env-1"}
+        real = w.facts.run_tests
+        w.facts.environment_digest = lambda: env["digest"]
+        w.facts.run_tests = lambda head: None
+        self.assertEqual(w.step().status, "UNKNOWN")
+        w.facts.run_tests = real
+        env["digest"] = "env-2"  # e.g. the interpreter was fixed
+        self.assertEqual(w.step().status, "PASS")
+        self.assertEqual(w.step().status, "ADOPTED")
+
+    def test_provider_failed_gets_one_new_distinct_attempt_then_isolates(self):
+        from automation.command_bus.claude_jules_campaign import campaign_policy_from_legacy
+        from automation.command_bus.tests.claude_jules_autoloop_fakes import policy
+        campaign = campaign_policy_from_legacy(policy(), LOOP)
+        campaign["task_timeout_seconds"] = 30
+        w = RecoveryWorld(plan=roadmap(task_spec()), campaign=campaign)
+        real = w.facts.timeout_reconciliation
+        w.facts.timeout_reconciliation = lambda intent: dict(
+            real(intent), evidence_ref="github-result-pr-readback; jules-session-readback.yml run 1 job 2: FAILED")
+        first = w.step().details["command_id"]
+        out = w.controller().run_until_boundary(now=at(31))
+        self.assertEqual([r.status for r in out], ["REPLANNED", "DISPATCHED", "WAITING_FOR_RESULT"])
+        second = out[1].details["command_id"]
+        self.assertNotEqual(first, second)
+        final = w.controller().run_until_boundary(now=at(70))
+        self.assertEqual(final[0].status, "TASK_BLOCKED")
+        self.assertEqual(len(w.commands()), 2)
+        recorded = sorted((d["payload"] for d in decisions(w)), key=lambda p: p["attempt"])
+        self.assertEqual([(p["cause"], p["decision"], p["provider_budget_effect"]) for p in recorded],
+                         [(rp.PROVIDER_FAILURE, rp.RETRY, 1), (rp.PROVIDER_FAILURE, rp.ISOLATE_TASK, 0)])
+
+    def test_completed_without_result_is_still_isolated_at_once(self):
+        from automation.command_bus.claude_jules_campaign import campaign_policy_from_legacy
+        from automation.command_bus.tests.claude_jules_autoloop_fakes import policy
+        campaign = campaign_policy_from_legacy(policy(), LOOP)
+        campaign["task_timeout_seconds"] = 30
+        w = RecoveryWorld(plan=roadmap(task_spec()), campaign=campaign)
+        real = w.facts.timeout_reconciliation
+        w.facts.timeout_reconciliation = lambda intent: dict(real(intent), evidence_ref="readback: COMPLETED")
+        w.step()
+        self.assertEqual(w.controller().step(now=at(31)).status, "TASK_BLOCKED")
+        self.assertEqual(decisions(w), [])
+        self.assertEqual(len(w.commands()), 1)
+
+
+class RecoveryHistoryCliTests(unittest.TestCase):
+    def test_recovery_history_is_read_only_and_lists_decisions(self):
+        import contextlib, io, json
+        from unittest import mock
+        from automation.command_bus import claude_jules_live
+        w = RecoveryWorld(plan=roadmap(task_spec()))
+        w.deliver(w.jules.run(w.step().details["command_id"]))
+
+        def down(command_id):
+            raise OSError("temporary network read failed")
+
+        w.facts.dispatch_observation = down
+        w.controller().run_until_boundary(now=NOW)
+        w.github.pushes = []
+        writes = list(w.github.writes)
+        out = io.StringIO()
+        with mock.patch.object(claude_jules_live, "build_live",
+                               return_value=(w.controller(), w.github, None, w.policy)), contextlib.redirect_stdout(out):
+            code = claude_jules_live.main(["recovery-history", "--policy", "p", "--roadmap", "r", "--origin-loop-id",
+                                           LOOP, "--lane-id", "J-BLUE", "--now", NOW])
+        printed = json.loads(out.getvalue())
+        self.assertEqual((code, printed["recovery_policy"]), (0, "v1"))
+        self.assertEqual([(e["type"], e["cause"], e["decision"]) for e in printed["events"]],
+                         [("RECOVERY_DECISION", rp.TRANSIENT_READ, rp.RETRY)])
+        self.assertEqual(w.github.writes, writes)
+
+    def test_live_environment_digest_is_stable_and_names_the_interpreter(self):
+        from automation.command_bus.claude_jules_live import DEFAULT_TEST_COMMAND, LiveResultFacts
+        facts = LiveResultFacts.__new__(LiveResultFacts)
+        facts.test_command = list(DEFAULT_TEST_COMMAND)
+        first = facts.environment_digest()
+        self.assertEqual(first, facts.environment_digest())
+        facts.test_command = ["/other/python", *DEFAULT_TEST_COMMAND[1:]]
+        self.assertNotEqual(first, facts.environment_digest())
+
+
 if __name__ == "__main__":
     unittest.main()

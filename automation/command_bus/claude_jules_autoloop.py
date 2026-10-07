@@ -33,7 +33,8 @@ from .claude_jules_campaign import (
     classify_boundary, validate_campaign_policy,
 )
 from .claude_jules_recovery_policy import (
-    ISOLATE_TASK, RECONCILE_FIRST, REDUCE_SCOPE, RETRY, SEMANTIC_FAILURE, STALE_TARGET, TRANSIENT_READ, WAIT_UNTIL, classify_cause, decide,
+    ISOLATE_TASK, PROVIDER_FAILURE, RECONCILE_FIRST, REDUCE_SCOPE, RETRY, SEMANTIC_FAILURE, STALE_TARGET,
+    TEST_ENVIRONMENT, TRANSIENT_READ, WAIT_UNTIL, classify_cause, decide,
     decision_payload, validate_recovery_policy,
 )
 from .claude_jules_campaign_state import (
@@ -567,6 +568,10 @@ class ClaudeJulesAutoLoop:
                                       "task timeout triggers observation; unfinished/unverified provider is not replaced",
                                       self._wait_details(now=now, details={"command_id": request["command_id"],
                                                                         "provider_state": observed["status"]}))
+                if self.recovery_policy is not None and observed["evidence_ref"].rstrip().endswith(": FAILED"):
+                    retried = self._reasoned_provider_failure(intent, spec, observed["evidence_ref"], now=now)
+                    if retried is not None:
+                        return retried
                 return self._block_task(
                     intent, spec,
                     f"no Jules result PR recorded by {deadline.isoformat()}; provider settled ({observed['evidence_ref']}); the dispatch slot stays consumed",
@@ -651,6 +656,10 @@ class ClaudeJulesAutoLoop:
                 "WAIT", "AWAITING_CLAUDE_REVIEW", "reinspection review evidence is not ready",
                 self._wait_details(now=now, details={"head": current["candidate_head"]}),
             )
+        if self.recovery_policy is not None and current.get("reason") == "evidence missing: ['tests']":
+            refused = self._reasoned_test_rerun(intent, spec, current, now=now)
+            if refused is not None:
+                return refused
         return self._inspect(
             intent, spec, lineage, current["candidate_head"], now=now, repair_of=None,
             reinspection_base=base,
@@ -803,6 +812,77 @@ class ClaudeJulesAutoLoop:
         if decision.decision == REDUCE_SCOPE:
             return True
         return self._block_task(intent, spec, decision.reason, now=now)
+
+    def _persist_decision(self, decision: Any, *, scope: str, operation: str, reason: str, evidence_ref: str,
+                          why: str, conditions: dict[str, Any], now: str) -> StepResult | None:
+        payload = decision_payload(decision, scope=scope, operation=operation, reason=reason,
+                                   evidence_ref=evidence_ref, why_meaningful=why, conditions=conditions,
+                                   recorded_at=now)
+        saved = self.campaign_state.persist(build_recovery_decision_event(
+            campaign_id=self.campaign_policy["campaign_id"], payload=payload))
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "recovery decision create not proven; do not resend")
+        return None
+
+    def _reasoned_test_rerun(self, intent: dict[str, Any], spec: dict[str, Any], current: dict[str, Any],
+                             *, now: str) -> StepResult | None:
+        """Opt-in v1: re-running Claude's own test run needs a changed environment after the first retry."""
+        digest = getattr(self.facts, "environment_digest", None)
+        conditions = {"environment_digest": digest() if digest is not None else "unreported"}
+        scope = sha256_of({"origin_loop_id": self.origin_loop_id, "head": current["candidate_head"],
+                           "recovery": "v1-test-environment"})
+        try:
+            history = self.campaign_state.recovery_decisions(scope)
+        except (ValueError, KeyError, TypeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+        reason = "test run produced no usable evidence for the exact candidate"
+        decision = decide(self.recovery_policy, cause=TEST_ENVIRONMENT, operation="claude-test-run", reason=reason,
+                          conditions=conditions, history=history, now=now)
+        failed = self._persist_decision(
+            decision, scope=scope, operation="claude-test-run", reason=reason,
+            evidence_ref=f"inspection:{current['command_id']}:{current['candidate_head']}",
+            why="the test runner failed to start or finish; a re-run is meaningful once and then only in a changed environment",
+            conditions=conditions, now=now)
+        if failed is not None:
+            return failed
+        if decision.decision == RETRY:
+            return None
+        return self._block_task(intent, spec, decision.reason, now=now)
+
+    def _reasoned_provider_failure(self, intent: dict[str, Any], spec: dict[str, Any], evidence_ref: str,
+                                   *, now: str) -> StepResult | None:
+        """Opt-in v1: a verified FAILED provider with no result gets one new distinct attempt via a durable replan."""
+        family = _family(spec["task_id"])
+        scope = sha256_of({"origin_loop_id": self.origin_loop_id, "family": family,
+                           "recovery": "v1-provider-failure"})
+        conditions = {"attempt_plan_digest": intent["intent_sha256"]}
+        try:
+            history = self.campaign_state.recovery_decisions(scope)
+        except (ValueError, KeyError, TypeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+        reason = "provider settled FAILED without a result"
+        decision = decide(self.recovery_policy, cause=PROVIDER_FAILURE, operation="jules-new-attempt",
+                          reason=reason, conditions=conditions, history=history, now=now)
+        failed = self._persist_decision(
+            decision, scope=scope, operation="jules-new-attempt", reason=reason, evidence_ref=evidence_ref,
+            why="the provider reported a terminal failure; one fresh attempt from a new snapshot may succeed",
+            conditions=conditions, now=now)
+        if failed is not None:
+            return failed
+        if decision.decision != RETRY:
+            return None  # caller isolates the task with the settlement evidence
+        head = self.refs.get_branch_head(intent["carrier_request"]["target_branch"])
+        tree = self.refs.get_commit_tree(head) if head else None
+        if head is None or tree is None:
+            return StepResult("STOP", "UNKNOWN", "target snapshot unavailable")
+        event = build_replan_event(
+            campaign_id=self.campaign_policy["campaign_id"], task_id=spec["task_id"],
+            intent_sha256=intent["intent_sha256"], canonical_head=head, canonical_tree=tree,
+            reason="provider settled FAILED; one new distinct attempt", recorded_at=now)
+        if self.campaign_state.persist(event) not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "provider-failure replan create not proven; do not resend")
+        return StepResult("REPLAN", "REPLANNED", "provider FAILED; a new distinct attempt will be planned",
+                          {"command_id": intent["carrier_request"]["command_id"], "canonical_head": head})
 
     def _block_task(self, intent: dict[str, Any], spec: dict[str, Any], reason: str, *, now: str) -> StepResult:
         task_id = _family(spec["task_id"])
