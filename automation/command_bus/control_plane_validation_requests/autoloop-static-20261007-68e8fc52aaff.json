@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "request_id": "autoloop-static-20261007-68e8fc52aaff",
+  "target_sha": "68e8fc52aaff1ef06c2af917ae4c08ed7b9fb896",
+  "purpose": "STATIC batch 3 final (authentic settlement, recovery policy v1, long campaign, two-thread races) exact-head regression; no LIVE provider/model, no Routine, no merge",
+  "expected_test_count": 1900,
+  "previous_validation_run": 37566611176
+}
