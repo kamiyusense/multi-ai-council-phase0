@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "request_id": "autoloop-static-20261007-ef68069eb7a8",
+  "target_sha": "ef68069eb7a89df6e20514240a54ea7508ee94a3",
+  "purpose": "STATIC batch 4 code head (test-environment/provider-failure recovery wiring, verified settlement producer, recovery-history CLI) exact-head regression; no LIVE provider/model, no Jules GET, no Routine, no merge",
+  "expected_test_count": 1911,
+  "previous_validation_run": 37602086356
+}
