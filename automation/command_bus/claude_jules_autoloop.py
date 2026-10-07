@@ -229,6 +229,15 @@ class ClaudeJulesAutoLoop:
             {"started_at": started.isoformat(), "deadline": deadline.isoformat()},
         )
 
+    def _wait_details(self, *, now: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
+        current = datetime.fromisoformat(now.replace("Z", "+00:00"))
+        return {
+            **(details or {}),
+            "next_check_at": (
+                current + timedelta(seconds=self.campaign_policy["idle_check_interval_seconds"])
+            ).isoformat(),
+        }
+
     def defer_decision(
         self, *, decision_id: str, question: str, options: list[str], reason: str,
         selected_safe_default: str, reversibility: str, affected_scope: str,
@@ -397,8 +406,10 @@ class ClaudeJulesAutoLoop:
                     f"no Jules result PR recorded by {deadline.isoformat()}; the dispatch slot stays consumed",
                     now=now,
                 )
-            return StepResult("WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
-                              {"command_id": request["command_id"]})
+            return StepResult(
+                "WAIT", "WAITING_FOR_RESULT", "no Jules result event recorded yet",
+                self._wait_details(now=now, details={"command_id": request["command_id"]}),
+            )
         receipt = self._read_json(dispatch_receipt_path(request["command_id"]))
         try:
             observation = self.facts.dispatch_observation(request["command_id"])
@@ -416,12 +427,20 @@ class ClaudeJulesAutoLoop:
             if verdict.status in {"BLOCKED", "UNKNOWN"}:
                 return StepResult("STOP", verdict.status, f"result lineage: {verdict.reason}")
         if lineage is None:
-            return StepResult("WAIT", "WAITING_FOR_RESULT", "only stale result heads recorded")
+            return StepResult(
+                "WAIT", "WAITING_FOR_RESULT", "only stale result heads recorded",
+                self._wait_details(now=now),
+            )
         ready = getattr(self.facts, "review_ready", None)
         if ready is not None and not ready(intent, spec, lineage["candidate_head"]):
-            return StepResult("WAIT", "AWAITING_CLAUDE_REVIEW",
-                              "result lineage verified; Claude's independent review record is not written yet",
-                              {"command_id": request["command_id"], "head": lineage["candidate_head"]})
+            return StepResult(
+                "WAIT", "AWAITING_CLAUDE_REVIEW",
+                "result lineage verified; Claude's independent review record is not written yet",
+                self._wait_details(
+                    now=now,
+                    details={"command_id": request["command_id"], "head": lineage["candidate_head"]},
+                ),
+            )
         return self._inspect(intent, spec, lineage, lineage["candidate_head"], now=now, repair_of=None)
 
     def _reinspect_unknown(self, intent: dict[str, Any], spec: dict[str, Any],
@@ -459,7 +478,10 @@ class ClaudeJulesAutoLoop:
             return StepResult("STOP", "UNKNOWN", "same-head lineage unavailable for reinspection")
         ready = getattr(self.facts, "review_ready", None)
         if ready is not None and not ready(intent, spec, current["candidate_head"]):
-            return StepResult("WAIT", "AWAITING_CLAUDE_REVIEW", "reinspection review evidence is not ready")
+            return StepResult(
+                "WAIT", "AWAITING_CLAUDE_REVIEW", "reinspection review evidence is not ready",
+                self._wait_details(now=now, details={"head": current["candidate_head"]}),
+            )
         return self._inspect(
             intent, spec, lineage, current["candidate_head"], now=now, repair_of=None,
             reinspection_base=base,
@@ -633,7 +655,9 @@ class ClaudeJulesAutoLoop:
             )
         pre = self.dispatcher.preflight(intent, now=now, dispatches_used=dispatches_used)
         if pre.status == "WAIT":
-            return StepResult("WAIT", "CARRIER_BUSY", pre.reason)  # nothing written; plan again later
+            return StepResult(
+                "WAIT", "CARRIER_BUSY", pre.reason, self._wait_details(now=now)
+            )  # nothing written; plan again later
         if pre.status != "PASS":
             return StepResult("STOP", pre.status, pre.reason,
                               {"command_id": intent["carrier_request"]["command_id"], "intent": intent})
@@ -698,7 +722,10 @@ class ClaudeJulesAutoLoop:
         if result.status in {"DISPATCHED", "NO-OP"}:
             return StepResult(action, result.status, result.reason, details)
         if result.status == "WAIT":
-            return StepResult("WAIT", "CARRIER_BUSY", result.reason, details)  # resumes from the same intent
+            return StepResult(
+                "WAIT", "CARRIER_BUSY", result.reason,
+                self._wait_details(now=now, details=details),
+            )  # resumes from the same intent
         if result.status == "BLOCKED" and result.record is not None:
             return StepResult(action, "BLOCKED", result.reason, details)  # receipt written; next step re-plans
         return StepResult("STOP", result.status, result.reason, details)
