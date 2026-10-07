@@ -1,0 +1,116 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-08 JST",
+  "batch": 5,
+  "status": "MERGED_329_AND_ONE_GET_PREFLIGHT_STATIC_PASS",
+  "merge_329": {
+    "approved_by_user": "PR #329 only",
+    "expected_head": "47e2af3ba6c3fe55ff1d3438b4f7c8f20fefd5d9",
+    "merge_method": "merge",
+    "merged_at": "2026-10-07T16:01:42Z",
+    "merge_commit": "8fbbef941732219e4ad43ce0d32e22922275d040",
+    "main_tree_equals_validated_head_tree": "cff593fb6aa5a7445785049eef7fd0a865e3a053",
+    "source_branch_deleted": false
+  },
+  "current_main": "8fbbef941732219e4ad43ce0d32e22922275d040",
+  "branch": "claude/project-thread-9ygz7v",
+  "draft_pr": 330,
+  "code_commit": "77ad178b9e696e97f58039327bfa6f394e7592e2",
+  "code_tree": "f66ece2b8c43168870cd193f49681bbcc45c7603",
+  "full_test_count": 1926,
+  "skipped": 1,
+  "new_tests": 15,
+  "exact_head_validation": {
+    "run_id": 37649836308,
+    "job_id": 112889967306,
+    "target_sha": "77ad178b9e696e97f58039327bfa6f394e7592e2",
+    "carrier_commit": "d5baadc230ed33819390e910c0f65ccaa4aa193a",
+    "request_id": "autoloop-static-20261008-77ad178b9e69",
+    "conclusion": "success",
+    "full_test_count": 1926,
+    "skipped": 1,
+    "compileall": "success",
+    "diff_check": "success"
+  },
+  "readback_workflow_get_counts": {
+    "method": "real 'Read Jules session once' step run with a recording curl stub (jules_readback_workflow_probe)",
+    "main_blob_a4f0189922c7cd27c80ffa541f5d5a534e26562e": {
+      "verdict": "ONE_GET_CONFIRMED",
+      "false": {"session": 1, "activities": 0},
+      "omitted": {"session": 1, "activities": 1},
+      "true": {"session": 1, "activities": 1},
+      "non_boolean": {"calls": 0, "step": "fails"},
+      "session_500": {"calls": 1, "retry": 0}
+    },
+    "carrier_blob_3672250be2b4bcfe94ebb33547ed0ce479cd9f8e": {
+      "verdict": "NOT_ONE_GET",
+      "false": {"session": 1, "activities": 1},
+      "non_boolean": {"calls": 2, "step": "succeeds"}
+    }
+  },
+  "PASS": [
+    "#329 merged at validated head, main tree equals tested tree",
+    "main readback workflow: include_activities=false is one session GET, zero activities GETs",
+    "non-boolean include_activities refused before any provider call (main)",
+    "failing GET is one call, no retry, no fallback (main)",
+    "readback line stays the one settlement accepts; agent message cannot forge it",
+    "cloud session can read completed job logs (GitHub MCP job-log tool)",
+    "full regression",
+    "compileall",
+    "diff-check",
+    "exact-head Actions on code head"
+  ],
+  "FAIL": [
+    "carrier readback workflow ignores include_activities (always two GETs)"
+  ],
+  "UNKNOWN": [
+    "real one-GET settlement readback (needs carrier sync and an approved provider GET)",
+    "whether Draft PRs #326/#327/#328 are fully contained in main",
+    "Routine firing on a real Jules PR and its concurrency",
+    "unattended long LIVE campaign"
+  ],
+  "carrier_sync_remaining": {
+    "change": "replace .github/workflows/jules-session-readback.yml on feature/chat-work-command-bus with main blob a4f0189922c7cd27c80ffa541f5d5a534e26562e",
+    "dependency_already_equal": "automation/command_bus/jules_session_acceptance.py blob c9f5f2c9bab235483cfcc5c5b7a67d3f3ac605b0",
+    "triggers_provider_workflow": false,
+    "must_precede_status_request": true,
+    "preflight": "python -m automation.command_bus.jules_readback_workflow_probe --ref origin/feature/chat-work-command-bus == ONE_GET_CONFIRMED",
+    "status": "NOT_DONE_NEEDS_APPROVAL"
+  },
+  "prepared_trial_loop_139": {
+    "command_id": "relay-dev-loop-139-live-proof-3-note",
+    "session_id": "12043323850985900453",
+    "dispatch_evidence": "data branch receipt DISPATCHED; observation run 37417380878 / job 112118884171, log line read back in cloud",
+    "status_request_path": "automation/command_bus/jules_api_status_requests/settle-dfcd5c4061f53c45-a1.json",
+    "content": {"command_id": "relay-dev-loop-139-live-proof-3-note", "include_activities": false, "purpose": "settlement-readback-relay-dev-loop-139-live-proof-3-note-a1", "session_id": "12043323850985900453"},
+    "provider_get_count": 1,
+    "requires_preflight": "ONE_GET_CONFIRMED",
+    "status": "PREPARED_NOT_AUTHORIZED",
+    "written_to_carrier": false
+  },
+  "deferred_decisions": [
+    "carrier workflow sync (carrier production change)",
+    "one provider GET for Loop 139 settlement",
+    "actions: read for an Actions-side settlement producer (permission change)"
+  ],
+  "stop_resume": {
+    "stop_sent": "2026-10-07T16:02:33Z",
+    "stop_received": "2026-10-07T16:11Z",
+    "writes_between": ["push claude/project-thread-9ygz7v 77ad178", "Draft PR #330", "carrier validation request d5baadc"],
+    "resumed_on_rewritten_instruction": "2026-10-07T16:14:08Z"
+  },
+  "live_usage": {
+    "budget": "6/10",
+    "jules_status_gets": 0,
+    "new_jules_sessions": 0,
+    "provider_model_execution": 0,
+    "owner": "claude-auto-loop-a-003 generation 2 (2 events)",
+    "owner_changed": false,
+    "routine_created_or_changed": false,
+    "permissions_or_secrets_changed": false,
+    "carrier_workflow_changed": false,
+    "other_prs_merged_or_closed": 0
+  },
+  "data_branch": "5227589bbeeb1db5619b6f3ffff3fed8634428cb",
+  "live_target": "53f2caf67280ca1b4c019f325aea5fb9502f1114"
+}

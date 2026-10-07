@@ -115,3 +115,13 @@ PROVIDER_FAILURE recovery wired into the controller (opt-in v1), a settlement
 record producer that reads the job log itself, `record-settlement` refusing
 unconfirmed records, and a read-only `recovery-history` CLI. Code head
 `ef68069` passed exact-head Actions run 37610080307 (1911 tests, skip 1).
+
+## Batch 5 (2026-10-08 JST): #329 merged, one-GET readback measured
+
+See [batch5-merge-and-one-get-readback.md](batch5-merge-and-one-get-readback.md)
+and [checkpoint-batch5.json](checkpoint-batch5.json). #329 was merged at its
+validated head (merge commit `8fbbef9`, main tree equals the tested tree). The
+real readback step was run with a recording stub: main's copy makes one GET for
+`include_activities: false`, but the carrier's copy (which is the one that runs)
+always makes two. A preflight probe and 15 tests were added; the carrier sync
+and the Loop 139 one-GET trial are prepared, not executed.
