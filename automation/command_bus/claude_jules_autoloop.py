@@ -32,9 +32,13 @@ from .claude_jules_campaign import (
     RECOVERABLE_UNKNOWN, TRANSIENT_UNKNOWN, campaign_policy_from_legacy,
     classify_boundary, validate_campaign_policy,
 )
+from .claude_jules_recovery_policy import (
+    ISOLATE_TASK, RECONCILE_FIRST, REDUCE_SCOPE, RETRY, SEMANTIC_FAILURE, STALE_TARGET, TRANSIENT_READ, WAIT_UNTIL, classify_cause, decide,
+    decision_payload, validate_recovery_policy,
+)
 from .claude_jules_campaign_state import (
     CampaignStateStore, build_deferred_decision_event, build_task_blocked_event,
-    build_recovery_event, build_replan_event,
+    build_recovery_decision_event, build_recovery_event, build_replan_event,
 )
 from .claude_jules_dispatch import (
     EVIDENCE_ROOT, ClaudeJulesDispatcher, build_dispatch_intent, canonical_json,
@@ -113,8 +117,11 @@ def task_spec_path(task_id: str) -> str:
 class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
-                 lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None):
+                 lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None,
+                 recovery_policy: dict[str, Any] | None = None):
         self.client, self.refs, self.facts = client, refs, facts
+        # None keeps the legacy immediate bounded retry; an explicit policy enables reasoned recovery v1.
+        self.recovery_policy = None if recovery_policy is None else validate_recovery_policy(recovery_policy)
         self.policy = validate_policy(policy)
         self.explicit_campaign_policy = campaign_policy is not None
         self.campaign_policy = (campaign_policy_from_legacy(self.policy, origin_loop_id)
@@ -414,6 +421,12 @@ class ClaudeJulesAutoLoop:
             results.append(result)
             if result.action in {"WAIT", "COMPLETE"} or result.status == "PREPARED_NOT_AUTHORIZED":
                 break
+            if boundary is not None and boundary.retry_safe and self.recovery_policy is not None:
+                outcome = self._reasoned_recovery(result, boundary, step_now)
+                if outcome is None:
+                    continue
+                results.append(outcome)
+                break
             if boundary is not None and boundary.retry_safe:
                 try:
                     intents = self._intents()
@@ -451,6 +464,55 @@ class ClaudeJulesAutoLoop:
             results[-1] = StepResult(last.action, last.status, last.reason,
                                     dict(last.details, continuation_required=True, step_budget_exhausted=True))
         return results
+
+    def _reasoned_recovery(self, result: StepResult, boundary: Any, now: str) -> StepResult | None:
+        """Opt-in recovery v1: decide, persist the decision, then act.  None means "retry now"."""
+        try:
+            intents = self._intents()
+            phase = result.reason.split(":", 1)[0]
+            cause = classify_cause(boundary.kind, result.reason)
+            operation = "evidence-read" if cause == TRANSIENT_READ else "replan"
+            scope = sha256_of({
+                "origin_loop_id": self.origin_loop_id,
+                "intent": intents[-1]["intent_sha256"] if intents else "initial-plan",
+                "phase": phase, "boundary_class": boundary.kind, "recovery": "v1",
+            })
+            conditions: dict[str, Any] = {"phase": phase}
+            if cause == STALE_TARGET:
+                targets = self.policy["allowed_target_branches"]
+                conditions["canonical_head"] = self.refs.get_branch_head(targets[0])
+            history = self.campaign_state.recovery_decisions(scope)
+            decision = decide(self.recovery_policy, cause=cause, operation=operation, reason=result.reason,
+                              conditions=conditions, history=history, now=now)
+            if decision.decision == WAIT_UNTIL:
+                return StepResult("WAIT", "RECOVERY_BACKOFF", decision.reason,
+                                  {"next_check_at": decision.not_before, "recovery_cause": cause,
+                                   "recovery_attempt": decision.attempt})
+            if decision.decision == RECONCILE_FIRST:
+                return StepResult("STOP", "UNKNOWN", f"{decision.reason}; do not resend")
+            fence = self.dispatcher.controller_fence(self.origin_loop_id, now)
+            if fence.status != "PASS":
+                return StepResult("STOP", fence.status, f"recovery fence: {fence.reason}")
+            payload = decision_payload(
+                decision, scope=scope, operation=operation, reason=result.reason,
+                evidence_ref=f"step:{result.action}:{result.status}",
+                why_meaningful=("a read of GitHub evidence failed; reading again after backoff can succeed"
+                                if cause == TRANSIENT_READ else "the snapshot moved; a fresh snapshot can be planned"),
+                conditions=conditions, recorded_at=now)
+            saved = self.campaign_state.persist(build_recovery_decision_event(
+                campaign_id=self.campaign_policy["campaign_id"], payload=payload))
+            if saved not in {"CREATED", "RECOVERED"}:
+                return StepResult("STOP", "UNKNOWN", "recovery decision create not proven; do not resend")
+            if decision.decision == RETRY:
+                return None
+            if decision.decision == ISOLATE_TASK and intents:
+                spec = self._spec(intents[-1]["task_id"])
+                if spec is not None:
+                    return self._block_task(intents[-1], spec, decision.reason, now=now)
+            return StepResult(result.action, result.status, result.reason,
+                              dict(result.details, recovery_budget_exhausted=True, recovery_decision=decision.decision))
+        except Exception as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
 
     # -- phases ------------------------------------------------------------
     def _all_inspections(self) -> list[dict[str, Any]]:
@@ -699,6 +761,11 @@ class ClaudeJulesAutoLoop:
                 f"corrective budget exhausted after {correctives_used} corrective round(s): {inspection['reason']}",
                 now=now,
             )
+        if self.recovery_policy is not None:
+            reasoned = self._reasoned_corrective(intent, spec, inspection, now=now)
+            if isinstance(reasoned, StepResult):
+                return reasoned
+            reduce_size = reduce_size or reasoned
         corrective = corrective_task_spec(
             spec, attempt=correctives_used + 1, findings=inspection["findings"],
             reduce_size=reduce_size,
@@ -706,6 +773,36 @@ class ClaudeJulesAutoLoop:
         return self._plan_and_dispatch(
             now=now, round_number=intent["origin_round"] + 1, attempt=1, spec=corrective,
         )
+
+    def _reasoned_corrective(self, intent: dict[str, Any], spec: dict[str, Any], inspection: dict[str, Any],
+                             *, now: str) -> StepResult | bool:
+        """Opt-in v1: a corrective must address a finding that changed; the same finding twice shrinks, then isolates."""
+        family = _family(spec["task_id"])
+        scope = sha256_of({"origin_loop_id": self.origin_loop_id, "family": family, "recovery": "v1-semantic"})
+        conditions = {"findings_fingerprint": sha256_of(inspection["findings"])}
+        # The finding (not the decision wording) is what must change between correctives.
+        finding_text = "; ".join(f"{f.get('category')}: {f.get('detail')}" for f in inspection["findings"]
+                                 if isinstance(f, dict))[:500] or inspection["reason"]
+        try:
+            history = self.campaign_state.recovery_decisions(scope)
+        except (ValueError, KeyError, TypeError) as exc:
+            return StepResult("STOP", "UNKNOWN", f"recovery history unresolved: {exc}; do not resend")
+        decision = decide(self.recovery_policy, cause=SEMANTIC_FAILURE, operation="jules-corrective",
+                          reason=finding_text, conditions=conditions, history=history, now=now)
+        payload = decision_payload(
+            decision, scope=scope, operation="jules-corrective", reason=finding_text,
+            evidence_ref=f"inspection:{inspection['command_id']}:{inspection['candidate_head']}",
+            why_meaningful="the corrective prompt carries the inspection findings that the previous attempt missed",
+            conditions=conditions, recorded_at=now)
+        saved = self.campaign_state.persist(build_recovery_decision_event(
+            campaign_id=self.campaign_policy["campaign_id"], payload=payload))
+        if saved not in {"CREATED", "RECOVERED"}:
+            return StepResult("STOP", "UNKNOWN", "recovery decision create not proven; do not resend")
+        if decision.decision == RETRY:
+            return False
+        if decision.decision == REDUCE_SCOPE:
+            return True
+        return self._block_task(intent, spec, decision.reason, now=now)
 
     def _block_task(self, intent: dict[str, Any], spec: dict[str, Any], reason: str, *, now: str) -> StepResult:
         task_id = _family(spec["task_id"])

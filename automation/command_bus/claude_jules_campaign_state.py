@@ -15,7 +15,10 @@ from .claude_jules_campaign import validate_campaign_policy
 
 PROFILE = "CLAUDE_AUTO_CAMPAIGN_EVENT_V1"
 EVIDENCE_ROOT = "automation/command_bus/evidence/claude-auto-campaign-events"
-_EVENT_TYPES = {"TASK_BLOCKED", "DEFERRED_DECISION", "RECOVERY_ATTEMPT", "TASK_REPLAN"}
+_EVENT_TYPES = {"TASK_BLOCKED", "DEFERRED_DECISION", "RECOVERY_ATTEMPT", "TASK_REPLAN", "RECOVERY_DECISION"}
+_DECISION_KEYS = {"scope", "attempt", "cause", "operation", "reason", "evidence_ref", "why_meaningful", "conditions",
+                  "condition_digest", "failure_fingerprint", "decision", "not_before", "deadline",
+                  "provider_budget_effect", "reduced_scope", "recorded_at", "policy_profile"}
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _TASK_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -86,6 +89,11 @@ def build_recovery_event(*, campaign_id: str, scope: str, attempt: int, reason: 
     }, recorded_at)
 
 
+def build_recovery_decision_event(*, campaign_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Reasoned recovery decision (opt-in recovery policy v1); written before the retry it allows."""
+    return _build(campaign_id, "RECOVERY_DECISION", dict(payload), payload["recorded_at"])
+
+
 def build_replan_event(*, campaign_id: str, task_id: str, intent_sha256: str,
                        canonical_head: str, canonical_tree: str, reason: str,
                        recorded_at: str) -> dict[str, Any]:
@@ -131,6 +139,30 @@ def validate_campaign_event(record: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("unsafe recovery boundary class")
         if not isinstance(payload["reason"], str) or not payload["reason"]:
             raise ValueError("recovery reason required")
+    elif record["event_type"] == "RECOVERY_DECISION":
+        if set(payload) != _DECISION_KEYS:
+            raise ValueError("recovery decision payload keys mismatch")
+        if not isinstance(payload["scope"], str) or not _SHA256.fullmatch(payload["scope"]):
+            raise ValueError("unsafe recovery scope")
+        if type(payload["attempt"]) is not int or not 1 <= payload["attempt"] <= 20:
+            raise ValueError("recovery attempt must be 1..20")
+        for key in ("condition_digest", "failure_fingerprint"):
+            if not isinstance(payload[key], str) or not _SHA256.fullmatch(payload[key]):
+                raise ValueError(f"unsafe recovery {key}")
+        for key in ("cause", "operation", "reason", "evidence_ref", "why_meaningful", "decision", "policy_profile"):
+            if not isinstance(payload[key], str) or not payload[key]:
+                raise ValueError(f"recovery decision {key} required")
+        if not isinstance(payload["conditions"], dict):
+            raise ValueError("recovery decision conditions must be an object")
+        if payload["recorded_at"] != record["recorded_at"]:
+            raise ValueError("recovery decision time mismatch")
+        if type(payload["provider_budget_effect"]) is not int or payload["provider_budget_effect"] not in {0, 1}:
+            raise ValueError("recovery provider budget effect must be 0 or 1")
+        if type(payload["reduced_scope"]) is not bool:
+            raise ValueError("recovery reduced_scope must be boolean")
+        for key in ("not_before", "deadline"):
+            if payload[key] is not None:
+                _aware_time(payload[key], key)
     elif record["event_type"] == "TASK_REPLAN":
         if set(payload) != {"task_id", "intent_sha256", "canonical_head", "canonical_tree", "reason"}:
             raise ValueError("replan payload keys mismatch")
@@ -277,6 +309,20 @@ class CampaignStateStore:
         if attempts != list(range(1, len(attempts) + 1)):
             raise ValueError("recovery history is conflicting or non-contiguous")
         return len(attempts)
+
+    def recovery_decisions(self, scope: str) -> list[dict[str, Any]]:
+        """Persisted decisions of one scope, contiguous from attempt 1 (restart-safe history)."""
+        found: dict[int, dict[str, Any]] = {}
+        for event in self.events():
+            if event["event_type"] != "RECOVERY_DECISION" or event["payload"]["scope"] != scope:
+                continue
+            attempt = event["payload"]["attempt"]
+            if attempt in found and found[attempt] != event["payload"]:
+                raise ValueError("conflicting recovery decision history")
+            found[attempt] = event["payload"]
+        if sorted(found) != list(range(1, len(found) + 1)):
+            raise ValueError("recovery decision history is non-contiguous")
+        return [found[a] for a in sorted(found)]
 
     def replanned_intents(self) -> dict[str, dict[str, Any]]:
         found = {}
