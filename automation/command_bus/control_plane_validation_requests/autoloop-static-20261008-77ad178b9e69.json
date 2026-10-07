@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "request_id": "autoloop-static-20261008-77ad178b9e69",
+  "target_sha": "77ad178b9e696e97f58039327bfa6f394e7592e2",
+  "purpose": "STATIC one-GET readback preflight (jules_readback_workflow_probe on the real readback step; carrier gap fixture) exact-head regression on post-#329 main; no LIVE provider/model, no Jules GET, no Routine, no merge",
+  "expected_test_count": 1926,
+  "previous_validation_run": 37610080307
+}
