@@ -21,6 +21,7 @@ simulate:
 CLI (all commands print one JSON object):
   python -m automation.command_bus.claude_jules_live status|step|poll|budget
   python -m automation.command_bus.claude_jules_live record-review --file review.json
+  python -m automation.command_bus.claude_jules_live record-settlement --file settlement.json
   python -m automation.command_bus.claude_jules_live observe|takeover|renew|handback|reclaim [--write]
   python -m automation.command_bus.claude_jules_live carrier [--file since.txt]
 """
@@ -50,6 +51,9 @@ from .claude_jules_handover import (
 from .claude_jules_inspection import InspectionStore
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
+from .claude_jules_settlement import (
+    settlement_path, settlement_status, validate_settlement_observation, verify_readback_run,
+)
 from .loop_owner_backend import LoopOwnerGitHubBackend
 
 CARRIER_WORKFLOW = "jules-chat-semiauto.yml"
@@ -182,8 +186,9 @@ class LiveResultFacts:
 
         This performs repository-scoped GETs only. There is no new Jules/model
         authority and no cancellation/dispatch here. A missing result cannot
-        establish that the provider stopped; that boundary remains WAIT until
-        an independent settlement source is connected or a result arrives.
+        establish that the provider stopped; only recorded, REST-verified
+        readbacks of the accepted session (``claude_jules_settlement``) can say
+        SETTLED or RUNNING. Without them the boundary stays UNKNOWN (WAIT).
         """
         request = intent["carrier_request"]
         events = []
@@ -194,9 +199,21 @@ class LiveResultFacts:
             )
             if event.status == "ACCEPTED":
                 events.append(event.record)
+        status, ref = self.provider_settlement(intent)
         return {"command_id": request["command_id"], "snapshot_head": request["expected_target_head"],
-                "status": "UNKNOWN", "evidence_ref": "github-result-pr-readback",
+                "status": status, "evidence_ref": f"github-result-pr-readback; {ref}",
                 "result_events": events}
+
+    def provider_settlement(self, intent: dict[str, Any]) -> tuple[str, str]:
+        command_id = intent["carrier_request"]["command_id"]
+        observation = self.dispatch_observation(command_id)
+        prefix = settlement_path(command_id, "0").rsplit("/", 1)[0] + "/"
+        records = [json.loads(c.text) for c in self.git.list(prefix, self.policy["data_branch"])]
+        return settlement_status(
+            records, command_id=command_id, accepted_session_id=(observation or {}).get("session_id"),
+            dispatched_at=intent["prepared_at"],
+            run_verified=lambda r: verify_readback_run(r, git=self.git, rest=self.rest,
+                                                       carrier_branch=self.policy["carrier_branch"]))
 
     def compare(self, base: str, head: str) -> dict[str, Any] | None:
         return self.git.compare(base, head)
@@ -555,7 +572,7 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="claude_jules_live")
-    parser.add_argument("command", choices=["status", "step", "poll", "wake-resume", "budget", "record-review", "record-observation",
+    parser.add_argument("command", choices=["status", "step", "poll", "wake-resume", "budget", "record-review", "record-observation", "record-settlement",
                                             "observe", "takeover", "renew", "handback", "reclaim",
                                             "carrier"])
     parser.add_argument("--policy", required=True)
@@ -596,6 +613,14 @@ def main(argv: list[str] | None = None) -> int:
         path = observation_path(record["command_id"])
         if git.get(path, policy["data_branch"]) is None:
             git.create(path, canonical_json(record), f"Claude AUTO dispatch observation {record['command_id']}",
+                       policy["data_branch"])
+        stored = git.get(path, policy["data_branch"])
+        out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}
+    elif args.command == "record-settlement":
+        record = validate_settlement_observation(_load(args.file))
+        path = settlement_path(record["command_id"], record["workflow_run_id"])
+        if git.get(path, policy["data_branch"]) is None:
+            git.create(path, canonical_json(record), f"Claude AUTO provider settlement {record['command_id']}",
                        policy["data_branch"])
         stored = git.get(path, policy["data_branch"])
         out = {"path": path, "verified": stored is not None and json.loads(stored.text) == record}

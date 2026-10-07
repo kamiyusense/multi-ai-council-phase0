@@ -66,9 +66,12 @@ lost result events, RUNNING/UNKNOWN timeout observations and corrupt records.
 
 - No new Routine, production event trigger, Claude turn or Jules dispatch.
 - No semantic-review authority is synthesized by wake-resume.
-- Production provider-terminal settlement readback is not yet wired. Missing
-  GitHub result PRs cause WAIT until settlement evidence or a result arrives;
-  positive SETTLED continuation is currently proven with mocks only.
+- Provider-terminal settlement now has a STATIC contract and a read-only
+  adapter (`claude_jules_settlement.py`, batch 2 below): only recorded,
+  REST-verified readbacks of the accepted Jules session can say SETTLED or
+  RUNNING. Producing such a readback is a provider GET and stays a separately
+  approved action; without records the production answer is still UNKNOWN
+  (WAIT). Positive SETTLED continuation is still proven with mocks only.
 - Routine-level concurrency/idempotency and a real long-running multi-round
   LIVE proof remain unproven. v1 concurrency remains one.
 - Policy/config cannot silently change mid-stream. A future explicit
@@ -89,3 +92,7 @@ checkout and 1827 tests with one skip; all workflow steps passed. The final
 checkpoint-only commit receives its own distinct append-only validation
 request. Its final SHA and Actions result are reported in Draft #329 after
 readback, avoiding a self-referential checkpoint commit hash.
+
+## Batch 2 (2026-10-07, STATIC): settlement source and wake transport
+
+See [batch2-settlement-and-wake-transport.md](batch2-settlement-and-wake-transport.md).
