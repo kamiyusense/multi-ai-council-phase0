@@ -1,0 +1,6 @@
+{
+ "number": 332,
+ "head": "705e2d80bad81786daa1036c22569eabd232eaa3",
+ "base": "main",
+ "body": "Added docs/closed-loop-proof/CLP-001.md with exact content required for CLP-001 proof. No other files modified.\n\nFixes #331\n\n---\n*PR created automatically by Jules for task [5876000902096140896](https://jules.google.com/task/5876000902096140896) started by @kamiyusense*"
+}
