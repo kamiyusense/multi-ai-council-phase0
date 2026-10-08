@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime
@@ -31,7 +32,7 @@ from automation.command_bus.tests.claude_jules_autoloop_fakes import (
 )
 
 GOOD = "import unittest\nfrom automation.command_bus.alpha import helper\n\n\nclass T(unittest.TestCase):\n    def test_x(self):\n        self.assertEqual(helper(1), 2)\n"
-FAKE_TESTS = ["python3", "-c", "import sys; sys.stderr.write('...\\nRan 7 tests in 0.01s\\n\\nOK\\n')"]
+FAKE_TESTS = [sys.executable, "-c", "import sys; sys.stderr.write('...\\nRan 7 tests in 0.01s\\n\\nOK\\n')"]
 
 
 def git(cwd, *args, env=None):
@@ -412,12 +413,15 @@ class LiveControllerIntegrationTests(unittest.TestCase):
         self.c.create(observation_path(command_id), canonical_json(good), "obs", DATA)
         self.assertEqual(self.facts.dispatch_observation(command_id)["session_id"], "777001")
 
+    def test_fake_tests_command_uses_sys_executable(self):
+        self.assertEqual(FAKE_TESTS[0], sys.executable)
+
     def test_tests_run_on_exact_head_in_isolated_worktree(self):
         head = self.remote.head(TARGET)
         evidence = self.facts.run_tests(head)
         self.assertEqual((evidence["head_sha"], evidence["tests_run"], evidence["exit_code"]), (head, 7, 0))
         crash = LiveResultFacts(git=self.c, rest=self.rest, policy=self.policy, scratch_dir=self.scratch,
-                                test_command=["python3", "-c", "raise SystemExit(3)"]).run_tests(head)
+                                test_command=[sys.executable, "-c", "raise SystemExit(3)"]).run_tests(head)
         self.assertEqual((crash["exit_code"], crash["errors"]), (3, 1))
         self.assertIsNone(self.facts.run_tests("0" * 40))
         self.assertEqual(git(self.remote.clone, "worktree", "list").count("\n"), 0)
