@@ -1,0 +1,22 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-09 JST",
+  "batch": 13,
+  "status": "GRD_001_LIVE_PASS_TWO_LAYER_REVIEW",
+  "slot": 9,
+  "ledger": {"slot_09_commit": "7e778853f8d7eebb3fc355d3d3d1fa5cd3b67a9c", "used": "9/10"},
+  "task": {"issue": 335, "task_id": "grd-001", "correlation_id": "grd-001-8fbbef9", "kind": "code_change",
+           "task_sha256": "eb95218916e359682fc36a3b0de4e2a6d8d2279ece185a6061b19ba6a1720c31"},
+  "jules": {"task": "5755515948434524038", "pr": 337, "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+            "tree": "01fb0ddf8c237d2978c169fce5abd1d59905f4f4", "change": "modified test_claude_jules_live_adapter.py +6/-2"},
+  "routine": {"version": "v1.5", "wakes": 1, "run": "cse_01Rj1nvYRvLSPdHHLZWK6zom", "event": "pull_request.opened",
+              "receipt": {"profile": "CLAUDE_CLOSED_LOOP_REVIEW_V2", "verdict": "PASS", "round": 1, "criteria_met": 4,
+                          "findings": 0, "tests": "module 18 OK; full 1912 OK (skipped=1)", "strict_parse": "OK"},
+              "corrective": false, "next_issue": 338},
+  "independent": {"wsl_pr_head": {"module": "18 OK", "full": "1912 OK (skipped=1)"},
+                  "windows_main": "17 run, 3 failures", "windows_pr_337": "18 run, OK", "post_pass_extra_commits": 0},
+  "not_exercised_live": ["corrective in a code task", "unauthorized file rejection", "tests green but criterion unmet",
+                         "previous fail reason still present"],
+  "tests": {"focused": {"ran": 47, "result": "OK"}, "full": {"ran": 2022, "skipped": 1, "result": "OK"}},
+  "live_usage": {"api_keys": 0, "merges": 0, "force_pushes": 0, "slot_10": "reserved"}
+}

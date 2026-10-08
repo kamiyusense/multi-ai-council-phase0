@@ -213,6 +213,43 @@ class GraduationTaskTests(unittest.TestCase):
         self.assertIn("python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter", text)
 
 
+class LiveGraduationTests(unittest.TestCase):
+    """The real GRD-001 run: Issue #335, PR #337 head 2ce8caa, one v1.5 wake, PASS in round 1."""
+
+    def setUp(self):
+        from pathlib import Path
+        fix = Path(__file__).parent / "fixtures" / "closed_loop"
+        load = lambda n: json.loads((fix / n).read_text(encoding="utf-8"))
+        self.pr, self.issue, self.files = load("pr-337.json"), load("issue-335.json"), load("pr-337-files.json")
+        self.comments = [c["body"] for c in load("issue-335-comments.json")]
+        self.receipt_comment = next(c for c in self.comments if "claude-closed-loop-receipt v1" in c)
+
+    def test_live_v2_receipt_parses_strictly_and_binds_the_head(self):
+        r = parse_receipt(self.receipt_comment)
+        self.assertEqual((r["verdict"], r["round"], r["phase"], r["pr"], r["live_slot"]), (PASS, 1, "FINAL", 337, 9))
+        self.assertEqual((r["pr_head_sha"], r["pr_head_tree"]), (self.pr["head"], self.pr["tree"]))
+        self.assertEqual(r["tests"]["result"], "PASS")
+        self.assertTrue(all(c["met"] for c in r["criteria"]))
+        self.assertEqual(r["findings"], [])
+
+    def test_first_wake_state_proceeds_with_a_clean_guard(self):
+        pre = precheck(pr=self.pr, issue_body=self.issue["body"], issue_comments=[], pr_comments=[],
+                       files=self.files, head_tree=self.pr["tree"])
+        self.assertEqual((pre.status, pre.round, pre.guard_findings), (PROCEED, 1, ()))
+        # the live semantic judgement, replayed through combine, gives the same PASS
+        r = parse_receipt(self.receipt_comment)
+        review = {"profile": "CLAUDE_SEMANTIC_REVIEW_V1", "verdict": PASS, "summary": "live", "criteria": r["criteria"],
+                  "findings": r["findings"], "previous_findings_resolved": [], "tests": r["tests"], "blocked_reason": None}
+        d = combine(pre, validate_semantic_review(review, task=pre.task, previous=()))
+        self.assertEqual((d.verdict, d.decision), (PASS, "ADOPT_RECORDED"))
+
+    def test_replay_after_pass_is_no_op(self):
+        for head in (self.pr["head"], "f" * 40):
+            pre = precheck(pr=dict(self.pr, head=head), issue_body=self.issue["body"], issue_comments=self.comments,
+                           pr_comments=[], files=self.files, head_tree=self.pr["tree"])
+            self.assertEqual(pre.status, NO_OP)
+
+
 class RecordTests(unittest.TestCase):
     def test_semantic_review_must_judge_every_criterion_and_previous_finding(self):
         with self.assertRaises(ValueError):

@@ -1,0 +1,7 @@
+{
+ "number": 337,
+ "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+ "tree": "01fb0ddf8c237d2978c169fce5abd1d59905f4f4",
+ "base": "main",
+ "body": "Fixes issue where test_claude_jules_live_adapter starts subprocesses using a hard-coded 'python3' command instead of sys.executable.\nAlso adds a regression test ensuring FAKE_TESTS uses sys.executable.\n\nFixes #335\n\n---\n*PR created automatically by Jules for task [5755515948434524038](https://jules.google.com/task/5755515948434524038) started by @kamiyusense*"
+}
