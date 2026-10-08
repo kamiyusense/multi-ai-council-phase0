@@ -4,6 +4,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+
 from automation.command_bus.symphony_autonomous_controller import (
     StaticAutonomousCampaignController, StaticCampaignTaskRunner,
     StaticSubscriptionRouteReader, StaticTargetObserver, TaskExecutionResult,
@@ -18,6 +19,15 @@ from automation.command_bus.tests.test_symphony_autonomous_controller import Fak
 
 
 class MinimalLivePreflightTests(unittest.TestCase):
+    def test_codex_response_timeout_allows_slow_subscription_startup(self):
+        workflow = Path(__file__).resolve().parents[3] / "docs/SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md"
+        front_matter = workflow.read_text(encoding="utf-8").split("---", 2)[1]
+        codex_block = front_matter.split("\ncodex:\n", 1)[1]
+        agent_block = front_matter.split("\nagent:\n", 1)[1].split("\ncodex:\n", 1)[0]
+        self.assertIn("\n  read_timeout_ms: 60000\n", codex_block)
+        self.assertIn("  max_concurrent_agents: 1\n", agent_block)
+        self.assertIn("  max_turns: 20", agent_block)
+
     def test_pinned_official_workflow_prompt_is_ascii(self):
         # Pinned Symphony Workflow.split_front_matter uses byte-mode ~r/\R/.
         # A UTF-8 continuation byte 0x85 in Japanese text is split as a newline,

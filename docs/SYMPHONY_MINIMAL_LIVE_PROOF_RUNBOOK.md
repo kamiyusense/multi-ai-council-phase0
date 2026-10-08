@@ -2,6 +2,12 @@
 
 この文書は **Local での LIVE 実行が明示承認された後** に使います。Cloud では Issue 作成、Official Symphony 起動、Codex worker/model 起動をしません。準備済みの [Issue 文面](SYMPHONY_MINIMAL_LIVE_PROOF_ISSUE.md) と [WORKFLOW.md](SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md) を使います。検証対象の Official Symphony は `openai/symphony@be10a1b79df723d6d7612b5651c8522704dafb2e` です。起動するのは素の upstream Elixir 実装で、New Chinponey の STATIC controller はこの実験の scheduler になりません。
 
+## 2026-10-09 generation 3 の観測と次の検証
+
+[generation 3 の結果](SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336_G3.md)は独立した **FAIL**。実 Issue #336 の選択、隔離 workspace、Codex App Server child とその禁止環境変数名の不在まで観測したが、App Server 起動中の応答待ちが既定の5秒で2回失敗した。session ID、モデル turn、成果ファイルは未確認。正確に `initialize` と `thread/start` のどちらの応答が遅れたかは UNKNOWN。LIVE中に `reject` と UTF-8 encoding のエラーは再発しなかったが、`turn/start` へは到達していないため ASCII 修正の実機成功とは呼ばない。
+
+停止後、upstream の LIVE E2E 設定と同じ `codex.read_timeout_ms: 60000` を proof workflow に追加し、STATIC 検証した。これは「60秒で必ず成功する」という証拠ではない。次の corrective LIVE は独立した Generation 4 として、新しい workspace root、fresh GitHub/auth/readback、current schema/config/prompt validation、前回 process 停止確認を終えてから行う。過去 workspace と証拠を削除・上書きしない。この runbook 自体は LIVE 承認ではない。
+
 ## 2026-10-09 実機観測後の停止境界
 
 [Issue #336 の Local 結果](SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336.md)を先に読む。最初の LIVE campaign は一度起動・停止済みである。Codex CLI `0.162.0-alpha.2` は upstream の既定 `approval_policy` に含まれる `reject` を受理せず、モデル turn は始まらなかった。今回の workflow は現行 App Server schema に合わせて `granular` の全承認カテゴリを `false` に明示した。これは STATIC 修正であり、再 LIVE の成功証拠ではない。**この runbook や STATIC 修正を、2回目の LIVE 起動の承認と解釈しない。**

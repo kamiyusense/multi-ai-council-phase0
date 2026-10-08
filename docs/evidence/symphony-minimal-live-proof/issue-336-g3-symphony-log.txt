@@ -1,0 +1,86 @@
+2026-10-09T03:23:32.984495+09:00 info: Running SymphonyElixirWeb.Endpoint with Bandit 1.10.3 at 127.0.0.1:4000 (http)
+2026-10-09T03:23:32.984709+09:00 info: Access SymphonyElixirWeb.Endpoint at http://127.0.0.1:4000
+2026-10-09T03:23:33.154323+09:00 info: GET /api/v1/state
+2026-10-09T03:23:33.165766+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:34.335184+09:00 info: GET /api/v1/state
+2026-10-09T03:23:34.335364+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:35.066111+09:00 info: Dispatching issue to agent: issue_id=336 issue_identifier=GH-336 pid=#PID<0.551.0> attempt=nil worker_host=local
+2026-10-09T03:23:35.066288+09:00 info: Starting agent run for issue_id=336 issue_identifier=GH-336 worker_host=local
+2026-10-09T03:23:35.066353+09:00 info: Starting worker attempt for issue_id=336 issue_identifier=GH-336 worker_host=local
+2026-10-09T03:23:35.068779+09:00 info: Running workspace hook hook=after_create issue_id=336 issue_identifier=GH-336 workspace=/home/yuuki/symphony-proof-workspaces-g3/GH-336 worker_host=local
+2026-10-09T03:23:35.070598+09:00 info: Sent 200 in 1916ms
+2026-10-09T03:23:35.070638+09:00 info: Sent 200 in 735ms
+2026-10-09T03:23:35.272730+09:00 info: GET /api/v1/state
+2026-10-09T03:23:35.272884+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:35.273244+09:00 info: Sent 200 in 519µs
+2026-10-09T03:23:35.475131+09:00 info: GET /api/v1/state
+2026-10-09T03:23:35.475315+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:35.475613+09:00 info: Sent 200 in 491µs
+2026-10-09T03:23:35.678077+09:00 info: GET /api/v1/state
+2026-10-09T03:23:35.678337+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:35.678667+09:00 info: Sent 200 in 600µs
+2026-10-09T03:23:35.880919+09:00 info: GET /api/v1/state
+2026-10-09T03:23:35.881054+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:35.881346+09:00 info: Sent 200 in 431µs
+2026-10-09T03:23:36.083395+09:00 info: GET /api/v1/state
+2026-10-09T03:23:36.083528+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:36.083930+09:00 info: Sent 200 in 540µs
+2026-10-09T03:23:36.286062+09:00 info: GET /api/v1/state
+2026-10-09T03:23:36.286255+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:36.286629+09:00 info: Sent 200 in 577µs
+2026-10-09T03:23:36.488504+09:00 info: GET /api/v1/state
+2026-10-09T03:23:36.488646+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:36.489012+09:00 info: Sent 200 in 513µs
+2026-10-09T03:23:36.691043+09:00 info: GET /api/v1/state
+2026-10-09T03:23:36.691205+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:36.691527+09:00 info: Sent 200 in 494µs
+2026-10-09T03:23:36.893493+09:00 info: GET /api/v1/state
+2026-10-09T03:23:36.893657+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:36.893916+09:00 info: Sent 200 in 430µs
+2026-10-09T03:23:37.095739+09:00 info: GET /api/v1/state
+2026-10-09T03:23:37.095853+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:37.096096+09:00 info: Sent 200 in 364µs
+2026-10-09T03:23:37.298132+09:00 info: GET /api/v1/state
+2026-10-09T03:23:37.298367+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:37.298731+09:00 info: Sent 200 in 615µs
+2026-10-09T03:23:37.500923+09:00 info: GET /api/v1/state
+2026-10-09T03:23:37.501189+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:37.501472+09:00 info: Sent 200 in 561µs
+2026-10-09T03:23:37.703664+09:00 info: GET /api/v1/state
+2026-10-09T03:23:37.703804+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:37.704154+09:00 info: Sent 200 in 501µs
+2026-10-09T03:23:37.906061+09:00 info: GET /api/v1/state
+2026-10-09T03:23:37.906230+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:37.906636+09:00 info: Sent 200 in 584µs
+2026-10-09T03:23:38.344896+09:00 debug: Ignoring message while waiting for response: %{"emittedAtMs" => 1791483818340, "method" => "remoteControl/status/changed", "params" => %{"environmentId" => nil, "installationId" => "[REDACTED]", "serverName" => "yuki", "status" => "disabled"}}
+2026-10-09T03:23:39.005414+09:00 debug: Ignoring message while waiting for response: %{"emittedAtMs" => 1791483819005, "method" => "account/updated", "params" => %{"authMode" => "chatgpt", "planType" => "plus"}}
+2026-10-09T03:23:43.704904+09:00 info: GET /api/v1/state
+2026-10-09T03:23:43.705117+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:43.705538+09:00 info: Sent 200 in 641µs
+2026-10-09T03:23:44.006558+09:00 error: Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout
+2026-10-09T03:23:44.008502+09:00 error: Task #PID<0.551.0> started from SymphonyElixir.Orchestrator terminating, ** (RuntimeError) Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout, (symphony_elixir 0.0.3) lib/symphony_elixir/agent_runner.ex:34: SymphonyElixir.AgentRunner.run/3, (elixir 1.19.5) lib/task/supervised.ex:105: Task.Supervised.invoke_mfa/2, Function: #Function<29.34712223/0 in SymphonyElixir.Orchestrator.spawn_issue_on_worker_host/5>, Args: []
+2026-10-09T03:23:44.017211+09:00 warning: Agent task exited for issue_id=336 session_id=n/a reason={%RuntimeError{message: "Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout"}, [{SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 34]}, {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 105]}]}; scheduling retry
+2026-10-09T03:23:44.017484+09:00 warning: Retrying issue_id=336 issue_identifier=GH-336 in 10000ms (attempt 1) error=agent exited: {%RuntimeError{message: "Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout"}, [{SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 34]}, {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 105]}]}
+2026-10-09T03:23:44.017589+09:00 info: Agent task finished for issue_id=336 session_id=n/a reason={%RuntimeError{message: "Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout"}, [{SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 34]}, {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 105]}]}
+2026-10-09T03:23:47.389237+09:00 info: GET /api/v1/state
+2026-10-09T03:23:47.389446+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:47.391294+09:00 info: Sent 200 in 2ms
+2026-10-09T03:23:51.313525+09:00 info: GET /api/v1/state
+2026-10-09T03:23:51.313778+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:51.314075+09:00 info: Sent 200 in 558µs
+2026-10-09T03:23:54.606469+09:00 info: Starting agent run for issue_id=336 issue_identifier=GH-336 worker_host=local
+2026-10-09T03:23:54.606420+09:00 info: Dispatching issue to agent: issue_id=336 issue_identifier=GH-336 pid=#PID<0.570.0> attempt=1 worker_host=local
+2026-10-09T03:23:54.606575+09:00 info: Starting worker attempt for issue_id=336 issue_identifier=GH-336 worker_host=local
+2026-10-09T03:23:54.982991+09:00 debug: Ignoring message while waiting for response: %{"emittedAtMs" => 1791483834982, "method" => "remoteControl/status/changed", "params" => %{"environmentId" => nil, "installationId" => "[REDACTED]", "serverName" => "yuki", "status" => "disabled"}}
+2026-10-09T03:23:55.246822+09:00 debug: Ignoring message while waiting for response: %{"emittedAtMs" => 1791483835246, "method" => "account/updated", "params" => %{"authMode" => "chatgpt", "planType" => "plus"}}
+2026-10-09T03:23:55.560899+09:00 info: GET /api/v1/state
+2026-10-09T03:23:55.561181+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:23:55.561709+09:00 info: Sent 200 in 816µs
+2026-10-09T03:24:00.247580+09:00 error: Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout
+2026-10-09T03:24:00.247860+09:00 error: Task #PID<0.570.0> started from SymphonyElixir.Orchestrator terminating, ** (RuntimeError) Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout, (symphony_elixir 0.0.3) lib/symphony_elixir/agent_runner.ex:34: SymphonyElixir.AgentRunner.run/3, (elixir 1.19.5) lib/task/supervised.ex:105: Task.Supervised.invoke_mfa/2, Function: #Function<29.34712223/0 in SymphonyElixir.Orchestrator.spawn_issue_on_worker_host/5>, Args: []
+2026-10-09T03:24:00.248498+09:00 warning: Agent task exited for issue_id=336 session_id=n/a reason={%RuntimeError{message: "Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout"}, [{SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 34]}, {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 105]}]}; scheduling retry
+2026-10-09T03:24:00.248817+09:00 warning: Retrying issue_id=336 issue_identifier=GH-336 in 20000ms (attempt 2) error=agent exited: {%RuntimeError{message: "Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout"}, [{SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 34]}, {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 105]}]}
+2026-10-09T03:24:00.248869+09:00 info: Agent task finished for issue_id=336 session_id=n/a reason={%RuntimeError{message: "Agent run failed for issue_id=336 issue_identifier=GH-336: :response_timeout"}, [{SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 34]}, {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 105]}]}
+2026-10-09T03:24:00.624876+09:00 info: GET /api/v1/state
+2026-10-09T03:24:00.625030+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T03:24:00.625288+09:00 info: Sent 200 in 417µs

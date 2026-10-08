@@ -23,6 +23,7 @@ agent:
   max_turns: 20
 codex:
   command: env -u OPENAI_API_KEY -u CODEX_API_KEY -u AZURE_OPENAI_API_KEY -u OPENAI_BASE_URL -u OPENAI_API_BASE codex app-server
+  read_timeout_ms: 60000
   approval_policy:
     granular:
       sandbox_approval: false
