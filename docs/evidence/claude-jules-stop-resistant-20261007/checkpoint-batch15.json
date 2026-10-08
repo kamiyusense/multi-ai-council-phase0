@@ -1,0 +1,15 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-09 JST",
+  "batch": 15,
+  "status": "MERGED_330_AND_337_ROUTINE_ON_MAIN",
+  "merges": {"330": {"merge_commit": "1cb6003c5f468fbd7e462c2e7f37c36ae577ebfd", "head": "0fdd8b42b0415ccb238c7ee56f5277b859ce0cde", "tree": "4cfcdc64157467aeaa0f042085c24ccd81ebbf63"},
+             "337": {"merge_commit": "ca83d0e4f4e960632e963252f1354fd6257ee8bd", "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab", "tree": "a8fc0297176f2d90e3e40adb7621f40855e84e66"}},
+  "final_main": "ca83d0e4f4e960632e963252f1354fd6257ee8bd",
+  "route_separation": {"semiauto_workflow_blob": "177c614b050bc9ae3cc4b1169be55919c50591de", "github_changes_from_330": 0},
+  "tests": {"main_after_330": {"route_separation": 11, "full": 2033, "skipped": 1}, "main_after_337_tree": {"module": 18, "full": 2034, "skipped": 1},
+            "windows_main_after_337": {"module": 18, "result": "OK"}},
+  "routine": {"version": "v1.5.1", "enabled": true},
+  "closed_prs": [332, 334],
+  "live_usage": {"ledger": "9/10", "slot_10": "unused", "api_keys": 0, "force_pushes": 0, "branch_deletes": 0}
+}
