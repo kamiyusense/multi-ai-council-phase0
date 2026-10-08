@@ -23,6 +23,13 @@ agent:
   max_turns: 20
 codex:
   command: env -u OPENAI_API_KEY -u CODEX_API_KEY -u AZURE_OPENAI_API_KEY -u OPENAI_BASE_URL -u OPENAI_API_BASE codex app-server
+  approval_policy:
+    granular:
+      sandbox_approval: false
+      rules: false
+      mcp_elicitations: false
+      request_permissions: false
+      skill_approval: false
   thread_sandbox: workspace-write
 ---
 
