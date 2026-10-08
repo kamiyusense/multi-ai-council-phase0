@@ -1,0 +1,6 @@
+           ID                                    Description                                    Repo                Last active                Status
+ 12043323850985900453    Multi-AI Council Phase 0 — bounded Chat->Jules API task.Com…  kamiyusense/multi-ai-…  2 days ago              Completed
+ 6252520329104434669     Multi-AI Council Phase 0 — bounded Chat->Jules API task.Com…  kamiyusense/multi-ai-…  3 days ago              Completed
+ 16889081422233772529    Multi-AI Council Phase 0 — bounded Chat->Jules API task.Com…  kamiyusense/multi-ai-…  7 days ago              Awaiting User F
+ 6434310586203890908     Multi-AI Council Phase 0 — bounded Chat->Jules API task.Com…  kamiyusense/multi-ai-…  7 days ago              Failed
+ 3439047194842417107     Multi-AI Council Phase 0 — bounded Chat->Jules API task.Com…  kamiyusense/multi-ai-…  7 days ago              In Progress
