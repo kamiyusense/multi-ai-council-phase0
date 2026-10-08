@@ -1,0 +1,20 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-09 JST",
+  "batch": 14,
+  "status": "PR_330_PRE_MERGE_READY_ROUTES_SEPARATED",
+  "main": "8fbbef941732219e4ad43ce0d32e22922275d040",
+  "route_separation": {
+    "legacy_semiauto_workflow_blob": {"main": "177c614b050bc9ae3cc4b1169be55919c50591de", "pr_330": "177c614b050bc9ae3cc4b1169be55919c50591de", "carrier": "177c614b050bc9ae3cc4b1169be55919c50591de"},
+    "pr_330_changes_under_.github": 0,
+    "legacy_modules_changed": [],
+    "guard_users": ["claude_jules_dispatch", "claude_jules_live", "claude_jules_lane_proof_launcher"],
+    "gated_transport": "carrier-rest-api-key",
+    "closed_loop_uses_api_key": false
+  },
+  "slot_9_readback": {"receipts": 1, "strict_v2": "OK", "verdict": "PASS", "routine_wakes": 1, "pr_337_commits": 1, "issue_338_labels": []},
+  "prs": {"332": "proof artifact", "334": "proof artifact", "337": "recommend merge as bug fix (verified, no overlap with #330)"},
+  "tests": {"route_separation": 11, "focused": {"ran": 134, "result": "OK"}, "full": {"ran": 2033, "skipped": 1, "result": "OK"},
+            "compileall": "OK", "json_files_valid": 23, "diff_check": "OK"},
+  "live_usage": {"ledger": "9/10", "slot_10": "reserved", "api_keys": 0, "merges": 0, "closes": 0}
+}
