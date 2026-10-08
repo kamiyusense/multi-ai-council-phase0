@@ -26,9 +26,13 @@ new authority:
 * ``settlement_status`` turns the verified records of one command into
   ``SETTLED`` / ``RUNNING`` / ``UNKNOWN``.  Absence of a PR is never evidence.
 
-HTTP cost: the workflow makes one session GET, plus one activities GET unless
-the request sets ``"include_activities": false``.  ``prepare_status_request``
-always sets it to false so one request is exactly one provider GET.
+HTTP cost: the workflow on main makes one session GET, plus one activities GET
+unless the request sets ``"include_activities": false``.  ``prepare_status_request``
+always sets it to false.  The workflow that actually runs is the one on the
+carrier branch, and on 2026-10-07 that copy (blob 3672250) ignored the field and
+always made both GETs.  A prepared request is therefore only one GET when
+``jules_readback_workflow_probe`` reports ``ONE_GET_CONFIRMED`` for the carrier
+workflow at send time; the request says so in ``requires_preflight``.
 
 State mapping is deliberately conservative: only ``COMPLETED`` and ``FAILED``
 are settled; every state that can still progress (including awaiting/paused)
@@ -319,7 +323,8 @@ def prepare_status_request(*, command_id: str, session_id: str, attempt: int, ex
 
     Adding the file triggers one provider GET, which is a separately approved
     LIVE action.  The request carries ``include_activities: false`` so one
-    request is exactly one ``GET /v1alpha/sessions/<id>``.  ``attempt`` is
+    request is exactly one ``GET /v1alpha/sessions/<id>``, provided the carrier
+    workflow passes the one-GET preflight (``requires_preflight``).  ``attempt`` is
     1-based and capped at ``MAX_STATUS_REQUESTS_PER_COMMAND``; the name is
     derived from (command, session, attempt) so re-preparing is idempotent and a
     second attempt can never reuse the first one's path.  ``not_before`` is the
@@ -342,5 +347,6 @@ def prepare_status_request(*, command_id: str, session_id: str, attempt: int, ex
     body = {"session_id": str(session_id), "command_id": command_id, "include_activities": False,
             "purpose": f"settlement-readback-{command_id}-a{attempt}"[:120]}
     return {"path": path, "content": json.dumps(body, indent=2, sort_keys=True) + "\n", "provider_get_count": 1,
+            "requires_preflight": "ONE_GET_CONFIRMED",
             "endpoint": f"GET https://jules.googleapis.com/v1alpha/sessions/{session_id}",
             "status": "PREPARED_NOT_AUTHORIZED"}

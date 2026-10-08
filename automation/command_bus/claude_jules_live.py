@@ -54,6 +54,7 @@ from .claude_jules_inspection import InspectionStore
 from .claude_jules_live_budget import LiveBudgetLedger
 from .claude_jules_result_event import ResultEventInbox, normalize_pull_request_event
 from .claude_jules_recovery_policy import recovery_policy
+from .claude_jules_provider_route import route_resolver
 from .claude_jules_settlement import (
     ReadbackMismatch, ReadbackUnavailable, observation_from_readback_run, settlement_path, settlement_status,
     validate_settlement_observation, verify_readback,
@@ -580,9 +581,16 @@ def _load(path: str) -> dict[str, Any]:
         return json.load(handle)
 
 
+# New Jules work is dispatched by the carrier workflow ``jules-chat-semiauto.yml`` over the REST API
+# with ``X-Goog-Api-Key``; the route declaration must name exactly this transport.
+LIVE_DISPATCH_TRANSPORT = "carrier-rest-api-key"
+
+
 def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveClient, GitHubRestReader, dict[str, Any]]:
     policy, roadmap = _load(args.policy), _load(args.roadmap)
     campaign_policy = _load(args.campaign_policy) if getattr(args, "campaign_policy", None) else None
+    # Always gated: without a current route declaration the route is UNKNOWN_ROUTE and no new model work is sent.
+    route_declaration = _load(args.provider_route) if getattr(args, "provider_route", None) else None
     git = GitLiveClient(args.repo_dir, message_trailer=args.trailer or "")
     rest = GitHubRestReader(policy["target_repo"])
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=args.scratch)
@@ -590,6 +598,8 @@ def build_live(args: argparse.Namespace) -> tuple[ClaudeJulesAutoLoop, GitLiveCl
                                owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
                                roadmap=roadmap, facts=facts, origin_loop_id=args.origin_loop_id, lane_id=args.lane_id,
                                campaign_policy=campaign_policy,
+                               provider_route=route_resolver(route_declaration, provider="jules",
+                                                             transport=LIVE_DISPATCH_TRANSPORT),
                                recovery_policy=(recovery_policy() if getattr(args, "recovery_policy", None) == "v1"
                                                 else None),
                                carrier_guard=CarrierQuietGuard(
@@ -607,6 +617,8 @@ def main(argv: list[str] | None = None) -> int:
                                             "carrier"])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--roadmap", required=True)
+    parser.add_argument("--provider-route", help="PROVIDER_ROUTE_DECLARATION_V1 JSON for the dispatch transport; "
+                        "absent means UNKNOWN_ROUTE, which stops new model work")
     parser.add_argument("--campaign-policy", help="optional CLAUDE_AUTO_CAMPAIGN_POLICY_V1 JSON; legacy policy remains the default")
     parser.add_argument("--recovery-policy", choices=["v1"],
                         help="opt in to reasoned bounded recovery v1; omitted keeps the legacy retry behaviour")

@@ -1,0 +1,20 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-09 JST",
+  "batch": 12,
+  "status": "TWO_LAYER_REVIEWER_STATIC_PASS_GRADUATION_PREPARED",
+  "fresh_start": {"main": "8fbbef941732219e4ad43ce0d32e22922275d040", "pr_330": "7aa43b3b41be8dc6d565c9f1b087fc1cb72bb2c9",
+                  "ledger_slots": 8, "routine": "v1.4 enabled", "terminal_pass": ["#331/#332", "#333/#334"]},
+  "routine": {"trigger_id": "trig_01U2DaBYLqaF5uLgovs1WY2Y", "prompt_version": "v1.5", "events": ["pull_request.opened", "pull_request.synchronize"],
+              "live_exercised": false},
+  "code": {"new": ["automation/command_bus/claude_closed_loop_review.py", "automation/command_bus/tests/test_claude_closed_loop_review.py"],
+           "layers": {"precheck": "deterministic", "semantic_review": "Claude (CLAUDE_SEMANTIC_REVIEW_V1 record)", "combine": "deterministic precedence"},
+           "receipt": "CLAUDE_CLOSED_LOOP_REVIEW_V2 (strict, rendered by code)"},
+  "tests": {"focused": {"ran": 44, "result": "OK"}, "full": {"ran": 2019, "skipped": 1, "result": "OK"},
+            "compileall": "OK", "diff_check": "OK"},
+  "graduation_proof": {"task_id": "grd-001", "kind": "code_change", "status": "PREPARED_NOT_STARTED",
+                       "needs": "slot 9 LIVE approval", "allowed_path": "automation/command_bus/tests/test_claude_jules_live_adapter.py",
+                       "task_sha256": "eb95218916e359682fc36a3b0de4e2a6d8d2279ece185a6061b19ba6a1720c31",
+                       "issue_body": "docs/evidence/claude-jules-stop-resistant-20261007/graduation-grd-001-issue-body.md"},
+  "live_usage": {"jules_tasks_started": 0, "ledger": "8/10", "api_keys": 0, "merges": 0, "force_pushes": 0}
+}

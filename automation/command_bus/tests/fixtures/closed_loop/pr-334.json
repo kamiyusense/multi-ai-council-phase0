@@ -1,0 +1,7 @@
+{
+ "number": 334,
+ "first_head": "f7444eee658c65f01703759fb24478c720fd8e91",
+ "head": "e1bf6537d2d78852db9dbacd3381c0aa8a2a6059",
+ "base": "main",
+ "body": "Add docs/closed-loop-proof/CLP-002.md with review_phase: NEEDS_CORRECTION for Phase 1 of the two-phase corrective-loop proof.\n\nFixes #333\n\nFixes #333\n\n---\n*PR created automatically by Jules for task [6664721827868615181](https://jules.google.com/task/6664721827868615181) started by @kamiyusense*"
+}
