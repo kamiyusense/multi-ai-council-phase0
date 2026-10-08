@@ -63,6 +63,59 @@ class LiveRecordTests(unittest.TestCase):
                 self.assertEqual((decision.outcome, decision.writes), (NO_OP, ()))
 
 
+class LiveCorrectiveRoundTests(unittest.TestCase):
+    """The real CLP-002 round trip: Issue #333, PR #334 (f7444ee -> e1bf653)."""
+
+    def setUp(self):
+        load = lambda name: json.loads((FIX / name).read_text(encoding="utf-8"))
+        self.pr, self.issue = load("pr-334.json"), load("issue-333.json")
+        self.issue_comments = [c["body"] for c in load("issue-333-comments.json")]
+        self.pr_comments = [c["body"] for c in load("pr-334-comments.json")]
+        self.files = load("pr-334-files.json")
+        self.path = "docs/closed-loop-proof/CLP-002.md"
+        self.first = {self.path: (FIX / "CLP-002-first.md").read_text(encoding="utf-8")}
+        self.fixed = {self.path: (FIX / "CLP-002-corrected.md").read_text(encoding="utf-8")}
+        receipts = [c for c in self.issue_comments if "claude-closed-loop-receipt v1" in c]
+        self.r1, self.r2 = receipts
+
+    def test_live_round_one_receipt_with_trailing_debris_is_still_read_exactly(self):
+        [r1] = _block(self.r1, "<!-- claude-closed-loop-receipt v1")
+        self.assertEqual((r1["verdict"], r1["phase"], r1["round"]), ("FAIL", "NEEDS_CORRECTION", 1))
+        with self.assertRaises(ValueError):
+            _block("<!-- claude-closed-loop-receipt v1\n``{\"a\":1}\n-->", "<!-- claude-closed-loop-receipt v1")
+
+    def test_opened_state_decides_needs_correction_and_one_corrective(self):
+        pr = dict(self.pr, head=self.pr["first_head"])
+        d = decide(pr=pr, issue_body=self.issue["body"], issue_comments=[], pr_comments=[], files=self.files,
+                   contents=self.first)
+        self.assertEqual((d.outcome, d.phase, d.round, d.writes),
+                         (CORRECTIVE, "NEEDS_CORRECTION", 1, ("corrective", "receipt")))
+        [r1] = _block(self.r1, "<!-- claude-closed-loop-receipt v1")
+        self.assertEqual(verify_live_receipt(r1, d, pr=pr), [])
+
+    def test_synchronize_state_decides_pass_in_round_two(self):
+        d = decide(pr=self.pr, issue_body=self.issue["body"], issue_comments=[self.r1],
+                   pr_comments=self.pr_comments, files=self.files, contents=self.fixed)
+        self.assertEqual((d.outcome, d.phase, d.round), (PASS, "FINAL", 2))
+        [r2] = _block(self.r2, "<!-- claude-closed-loop-receipt v1")
+        self.assertEqual(verify_live_receipt(r2, d, pr=self.pr), [])
+
+    def test_replaying_either_event_on_the_final_state_is_no_op(self):
+        for head, contents in ((self.pr["first_head"], self.first), (self.pr["head"], self.fixed)):
+            with self.subTest(head=head[:7]):
+                d = decide(pr=dict(self.pr, head=head), issue_body=self.issue["body"],
+                           issue_comments=self.issue_comments, pr_comments=self.pr_comments, files=self.files,
+                           contents=contents)
+                self.assertEqual((d.outcome, d.writes), (NO_OP, ()))
+
+    def test_lost_receipt_after_posted_corrective_does_not_post_a_second_corrective(self):
+        # Restart between the corrective and the receipt: the corrective marker on the PR is found.
+        pr = dict(self.pr, head=self.pr["first_head"])
+        d = decide(pr=pr, issue_body=self.issue["body"], issue_comments=[], pr_comments=self.pr_comments,
+                   files=self.files, contents=self.first)
+        self.assertEqual((d.outcome, d.writes), (CORRECTIVE_EXISTS, ("receipt",)))
+
+
 class UnrelatedAndMalformedTests(unittest.TestCase):
     def test_unrelated_pr_writes_nothing(self):
         for body in ("Docs only. No issue link.", "Fixes #330 and Fixes #331", ""):

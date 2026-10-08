@@ -69,10 +69,12 @@ def _block(text: str, marker: str) -> list[Any]:
         if end == -1:
             raise ValueError("unterminated marker block")
         inner = text[i + len(marker):end].strip()
-        if inner.startswith("{") is False:
-            # a corrective block may carry the JSON on the same line after the marker
-            inner = inner[inner.find("{"):] if "{" in inner else inner
-        found.append(json.loads(inner))
+        if not inner.startswith("{"):
+            raise ValueError("marker block does not start with a JSON object")
+        # One JSON object, decoded exactly; formatting debris after its closing brace (seen live: a
+        # stray "``" in the CLP-002 round-1 receipt) is ignored, anything malformed inside still raises.
+        obj, _ = json.JSONDecoder().raw_decode(inner)
+        found.append(obj)
         start = end + 3
     return found
 
