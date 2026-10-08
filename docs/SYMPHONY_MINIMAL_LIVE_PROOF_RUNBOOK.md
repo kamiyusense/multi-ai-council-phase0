@@ -5,7 +5,7 @@
 ## 0. 先に知っておくこと
 
 - 使う場所は Windows の **WSL Linux ターミナル** です。GitHub 画面で PR #320 は Draft のままにします。
-- `gh`、`git`、`codex`、`mise` が WSL にあることを確認します。なければそこで停止します。Codex には ChatGPT subscription のログインが必要です。API key 経路で進めません。
+- `gh`、`git`、`codex`、`mise`、`rg`、`curl`、`python3`、`sha256sum` が WSL にあることを確認します。なければそこで停止します。Codex には ChatGPT subscription のログインが必要です。API key 経路で進めません。
 - GitHub tracker には既存の認証を使用します。新しい token、API key、Secret、権限、Billing 設定は作成・変更しません。秘密値を画面や記録へ貼りません。
 - `symphony-minimal-live-proof` ラベルを付けた **open Issue はこの proof Issue 一件だけ** にします。PR は GitHub tracker の dispatch 対象ではありません。
 - `main`、PR #320 branch、既存データへ worker が write しないことが条件です。証拠ファイルは専用 proof branch の隔離 workspace にだけ置き、commit/push はしません。
@@ -17,7 +17,7 @@ Windows Terminal で Ubuntu/WSL を開き、以下を順番に実行します。
 
 ```bash
 pwd
-command -v git && command -v gh && command -v codex && command -v mise
+for tool in git gh codex mise rg curl python3 sha256sum; do command -v "$tool" || { echo "$tool が見つからないため停止"; return 1 2>/dev/null || exit 1; }; done
 SYMPHONY_REPO="$HOME/multi-ai-council-phase0"
 cd "$SYMPHONY_REPO"
 git remote -v
@@ -61,7 +61,11 @@ if test -f "$HOME/.codex/config.toml" && rg -q 'base_url|model_provider|api_key|
 
 ## 4. proof Issue を作る（ここから承認後の Local 操作）
 
-GitHub のこの repository の Issues 画面で、[準備済み Issue 文面](SYMPHONY_MINIMAL_LIVE_PROOF_ISSUE.md) の Title と Body を貼り付けます。**`symphony-minimal-live-proof` ラベル**を一緒に付けます。ラベルがまだなければ同名で一度だけ作ります。Issue を閉じず、番号を控えます。作成応答が曖昧な場合は Issue 一覧を読み直し、同じ Issue を盲目的に再作成しません。
+GitHub のこの repository の Issues 画面で、[準備済み Issue 文面](SYMPHONY_MINIMAL_LIVE_PROOF_ISSUE.md) の Title と Body を貼り付けます。**`symphony-minimal-live-proof` ラベル**を一緒に付けます。ラベルがまだなければ Issues → Labels → New label で同名のラベルを一度だけ作ります。**ラベル作成の直前と Issue 作成の直前にそれぞれ**次の PR HEAD readback を実行します。Issue を閉じず、番号を控えます。作成応答が曖昧な場合は Issue 一覧を読み直し、同じ Issue を盲目的に再作成しません。
+
+```bash
+gh pr view 320 --repo kamiyusense/multi-ai-council-phase0 --json headRefOid,isDraft,state --jq '{headRefOid,isDraft,state}'
+```
 
 ```bash
 read -rp '作成した proof Issue 番号: ' SYMPHONY_PROOF_ISSUE
@@ -147,7 +151,25 @@ env -u OPENAI_API_KEY -u CODEX_API_KEY -u AZURE_OPENAI_API_KEY -u OPENAI_BASE_UR
 
 ログの `Continuing agent run ... turn=` は同じ agent 内の継続です。`Retrying issue_id=... in ...ms` は upstream の retry/backoff、`Stalled` 関連ログは stall の観測材料です。**発生しなかった項目は「未観測」**です。New Chinponey が毎 turn を gate する必要はありません。
 
-別の WSL ターミナルで、専用 workspace だけを確認します。
+**別の WSL ターミナル**を開き、ダッシュボードまたは状態 API で `codex_app_server_pid` を読みます。次は **環境変数名だけ** を調べ、値を表示しません。PID が取れない、process が既に終了した、`/proc` を読めない場合は「実 child 環境 UNKNOWN」と記録します。禁止名が一つでもあれば起動したターミナルで Ctrl+C を押します。
+
+```bash
+curl -fsS http://127.0.0.1:4000/api/v1/state | python3 -m json.tool | rg 'codex_app_server_pid|workspace_path'
+read -rp '画面に表示された Codex app-server PID: ' SYMPHONY_CODEX_PID
+[[ "$SYMPHONY_CODEX_PID" =~ ^[1-9][0-9]*$ ]] || { echo 'PID が不明。UNKNOWN として停止'; return 1 2>/dev/null || exit 1; }
+test -r "/proc/$SYMPHONY_CODEX_PID/environ" || { echo 'child 環境を読めない。UNKNOWN として停止'; return 1 2>/dev/null || exit 1; }
+python3 - "$SYMPHONY_CODEX_PID" <<'PY'
+from pathlib import Path
+import sys
+names = {part.split(b"=", 1)[0] for part in Path(f"/proc/{sys.argv[1]}/environ").read_bytes().split(b"\0") if part}
+forbidden = {b"OPENAI_API_KEY", b"CODEX_API_KEY", b"AZURE_OPENAI_API_KEY", b"OPENAI_BASE_URL", b"OPENAI_API_BASE"}
+if names & forbidden:
+    raise SystemExit("禁止環境変数を検出。Ctrl+C で停止")
+print("Codex child の禁止環境変数名なし")
+PY
+```
+
+同じ WSL ターミナルで、専用 workspace だけを確認します。
 
 ```bash
 SYMPHONY_PROOF_WORKSPACES="$HOME/symphony-proof-workspaces"

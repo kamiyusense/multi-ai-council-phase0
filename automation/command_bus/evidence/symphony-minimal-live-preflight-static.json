@@ -24,7 +24,7 @@
   "official_cli_argument_parse_with_fake_start": "PASS",
   "issue_template_sha256": "ee0c6e757ee63b6ce30c00b1a47488689cd2282b6ab3972db06f0b67cbbfa74a",
   "workflow_sha256": "6f176ff838649ad7d1c266c54f3d82a4beabeb2bf08d597d93436296c8ce43c3",
-  "runbook_sha256": "7785e4b88fb62841ee87a9339f422f1a319a823d29869e92be281f27aa1526c6",
+  "runbook_sha256": "252609887742a2eb3470b203cdf357962b3752d03a91b478217d1f48b439b337",
   "live_official_symphony_starts": 0,
   "live_codex_worker_starts": 0,
   "tracker_issues_created": 0,
