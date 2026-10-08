@@ -1,0 +1,21 @@
+Task for Jules: Claude closed-loop graduation proof GRD-001 (a real, small bug fix with a regression test).
+
+**Bug.** `automation/command_bus/tests/test_claude_jules_live_adapter.py` starts subprocesses with a hard-coded `"python3"` (the `FAKE_TESTS` command near the top, and the crash command in `test_tests_run_on_exact_head_in_isolated_worktree`). On machines where `python3` is not the interpreter running the tests (for example Windows, where `python3` can be a Store stub that exits 9009), these tests fail for a reason unrelated to the code under test.
+
+**Fix.** Use `sys.executable` for those commands, keep every existing assertion exactly as strict as it is, and add one regression test that asserts the fake test commands use `sys.executable`.
+
+Acceptance criteria:
+- Every subprocess command in the test file starts the interpreter that runs the tests (sys.executable); no literal "python3" interpreter remains in the file
+- The existing assertions keep their meaning: the fake run still reports 7 tests with exit 0, the crash run still reports exit 3 and errors 1; no test is removed, skipped or weakened
+- A new regression test asserts that the fake test commands use sys.executable, so a hard-coded interpreter cannot come back unnoticed
+- No production code and no other file changes
+
+Run before opening the pull request:
+- `python -m unittest automation.command_bus.tests.test_claude_jules_live_adapter`
+- `python -m unittest discover -s automation/command_bus/tests -t .`
+
+Rules: change only `automation/command_bus/tests/test_claude_jules_live_adapter.py`; do not modify production code, workflows or other tests. Open a pull request against `main` whose description contains `Fixes #<this issue number>`. A Claude reviewer reviews the pull request automatically and may reply with `@jules` and exact instructions.
+
+<!-- claude-closed-loop-task v1
+{"acceptance_criteria":["Every subprocess command in the test file starts the interpreter that runs the tests (sys.executable); no literal \"python3\" interpreter remains in the file","The existing assertions keep their meaning: the fake run still reports 7 tests with exit 0, the crash run still reports exit 3 and errors 1; no test is removed, skipped or weakened","A new regression test asserts that the fake test commands use sys.executable, so a hard-coded interpreter cannot come back unnoticed","No production code and no other file changes"],"allowed_paths":[{"op":"MODIFY","path":"automation/command_bus/tests/test_claude_jules_live_adapter.py"}],"budget_command_id":"github-native-grd-001","correlation_id":"grd-001-8fbbef9","expected_target_branch":"main","expected_target_head":"8fbbef941732219e4ad43ce0d32e22922275d040","generation":1,"kind":"code_change","live_slot":9,"loop_id":"claude-jules-github-native-001","max_corrective_rounds":2,"next_task":{"body":"Prepared after GRD-001 passed. Not labeled: starting it needs a new LIVE approval (slot 10).","title":"[Claude closed loop GRD-002] prepared next task (not started)"},"profile":"CLAUDE_CLOSED_LOOP_TASK_V1","round":1,"route":"jules-github-app-issue-label","task_id":"grd-001","test_commands":["python -m unittest automation.command_bus.tests.test_claude_jules_live_adapter","python -m unittest discover -s automation/command_bus/tests -t ."]}
+-->
