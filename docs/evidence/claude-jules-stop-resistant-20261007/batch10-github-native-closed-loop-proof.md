@@ -94,6 +94,25 @@ inferred, not tested: no FAIL occurred.
 | Duplicate event NO-OP | guard in the prompt; a later event on #330 is a live no-op check (section 6) |
 | Merge | none (human decision) |
 
+## 5a. Live finding: Jules reacts to every owner comment; the duplicate guard held
+
+* At 11:53:22 Jules pushed `2550e2ba426710ea5da89cf4a1c9ff2b2ad2a19b` to PR #332.
+  It is an **empty** commit (0 files, 0 additions, 0 deletions; same file
+  blob `cb60d747`).
+* Jules had put 👀 on the Routine's PASS comment. The Routine posts as the
+  owner, and Jules' Reactive Mode is off, so Jules treats every owner comment
+  on its PR as feedback.
+* The push fired `pull_request.synchronize`, and the Routine woke again (run
+  `cse_01QsmMM6X4kX5EepB2BpNJAT`, 11:53:27). It answered **`NO-OP: already
+  PASS`** and wrote nothing. This is a live duplicate-event NO-OP.
+* Fix applied (Routine prompt v1.2, 11:57:35Z):
+  * no PR comment on PASS; the only PR comment allowed is the `@jules`
+    corrective;
+  * empty commits are a NO-OP;
+  * the receipt carries `next_issue` and `corrective_comment`.
+* A human alternative: switch Jules to Reactive Mode in the Jules UI
+  settings. That is an account setting and was not changed.
+
 ## 6. Next safe steps
 
 * Watch the Routine's reaction to this commit's push on PR #330
