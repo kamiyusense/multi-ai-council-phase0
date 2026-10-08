@@ -33,11 +33,11 @@ codex:
   thread_sandbox: workspace-write
 ---
 
-Official Symphony の GitHub Issue `{{ issue.identifier }}` を扱います。
-タイトル: {{ issue.title }}
-本文:
+Handle GitHub Issue `{{ issue.identifier }}` with Official Symphony.
+Title: {{ issue.title }}
+Body:
 {{ issue.description }}
 
-この実験では Issue 本文に明記された一つの小さな成果物だけを、提供された隔離 workspace と non-default proof branch で作成してください。`main` と PR #320 の branch は変更しません。push、Merge、force push、reset、clean、ファイル削除、Billing/Secret/API-key 操作はしません。
+Create only the one small artifact specified in the Issue body, inside the provided isolated workspace and non-default proof branch. Do not change `main` or the PR #320 branch. Do not push, merge, force push, reset, clean, delete files, or change Billing, Secrets, or API keys.
 
-最初に branch、HEAD、作業ツリーを読み、対象 Issue と許可パスを確認してください。作業後は `git status --short`、`git diff --check`、対象ファイルの内容を確認し、観測できた turn/continuation/retry/workspace の事実だけを報告してください。複数 turn、通常の continuation、retry、backoff、stall recovery は Official Symphony に任せます。Issue を自動で閉じたり、成果を別 branch に採用したりしません。詰まった場合は事実を報告し、危険な副作用を再送しません。
+First read the branch, HEAD, and working tree, then verify the Issue and allowed path. After working, inspect `git status --short`, `git diff --check`, and the target file content. Report only observed turn, continuation, retry, and workspace facts. Leave multiple turns, normal continuation, retry, backoff, and stall recovery to Official Symphony. Do not close the Issue or adopt the artifact into another branch. If blocked, report facts and do not repeat an ambiguous side effect.

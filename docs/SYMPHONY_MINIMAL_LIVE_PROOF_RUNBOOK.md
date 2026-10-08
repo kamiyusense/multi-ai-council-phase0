@@ -8,6 +8,12 @@
 
 次の LIVE を別途承認された場合は、起動前にその時点の Codex App Server schema と workflow の `approval_policy` を照合する。`never` は使わない。固定版 Symphony では `never` が内部承認要求の自動承認も有効にするため、元の fail-closed 意図を保てない。
 
+## 2026-10-09 generation 2 の観測と次の停止境界
+
+別途承認された generation 2 (`symphony-minimal-live-issue-336-g2`) は新しい workspace root で一度起動し、停止済み。[generation 2 の結果](SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336_G2.md)を参照。`granular` policy は初回の `reject` protocol error を越え、実 Codex App Server の `thread/start` まで進んだ。子プロセスの禁止 API selector と GitHub tracker secret の変数名は `/proc` で未検出だった。一方、`turn/start` の JSON encoding 前に `Jason.EncodeError` が発生し、モデル turn と成果ファイルは未作成。generation 2 の結果は **FAIL** として別記録する。3回目の LIVE はこの runbook によって承認されない。
+
+固定版 upstream `Workflow.split_front_matter/1` は Unicode mode なしの `~r/\R/` で原文を行分割する。日本語の UTF-8 継続バイト `0x85` を改行と誤認し、prompt template が invalid UTF-8 になることを STATIC 再現した。上流ソースを変更せず、この proof workflow の template 本文だけを ASCII にした。Issue 本文の日本語はテンプレートへ後から挿入される。次に別途 LIVE 承認がある場合は、policy schema に加えて、固定版 upstream で **Issue を含む実 rendered prompt の UTF-8 妥当性**を起動前に確認する。今回の ASCII 修正は STATIC であり、3回目の LIVE 成功証拠ではない。
+
 ## 0. 先に知っておくこと
 
 - 使う場所は Windows の **WSL Linux ターミナル** です。GitHub 画面で PR #320 は Draft のままにします。

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from automation.command_bus.symphony_autonomous_controller import (
     StaticAutonomousCampaignController, StaticCampaignTaskRunner,
@@ -17,6 +18,17 @@ from automation.command_bus.tests.test_symphony_autonomous_controller import Fak
 
 
 class MinimalLivePreflightTests(unittest.TestCase):
+    def test_pinned_official_workflow_prompt_is_ascii(self):
+        # Pinned Symphony Workflow.split_front_matter uses byte-mode ~r/\R/.
+        # A UTF-8 continuation byte 0x85 in Japanese text is split as a newline,
+        # producing invalid UTF-8 before Codex turn/start JSON encoding.
+        workflow = Path(__file__).resolve().parents[3] / "docs/SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md"
+        content = workflow.read_bytes()
+        self.assertEqual(content.count(b"\n---\n"), 1)
+        prompt = content.split(b"\n---\n", 1)[1]
+        self.assertTrue(prompt.isascii())
+        self.assertIn(b"{{ issue.description }}", prompt)
+
     def test_issue_route_attempt_stale_discard_and_restart(self):
         # Upstream GitHub's candidate is an Issue, not PR #320. The unique
         # label is configured in the workflow; upstream owns polling/filtering.
