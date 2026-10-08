@@ -14,7 +14,7 @@
             "compileall": "OK", "diff_check": "OK"},
   "graduation_proof": {"task_id": "grd-001", "kind": "code_change", "status": "PREPARED_NOT_STARTED",
                        "needs": "slot 9 LIVE approval", "allowed_path": "automation/command_bus/tests/test_claude_jules_live_adapter.py",
-                       "task_sha256": "dd35da883bd2e02c7d91c379181d97072a5c7ddd565af46636e8e1735b958ae4",
+                       "task_sha256": "eb95218916e359682fc36a3b0de4e2a6d8d2279ece185a6061b19ba6a1720c31",
                        "issue_body": "docs/evidence/claude-jules-stop-resistant-20261007/graduation-grd-001-issue-body.md"},
   "live_usage": {"jules_tasks_started": 0, "ledger": "8/10", "api_keys": 0, "merges": 0, "force_pushes": 0}
 }

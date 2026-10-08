@@ -120,7 +120,7 @@ The full suite result is in `checkpoint-batch12.json`.
   regression test, change no other file. Test commands: the module and the
   full suite. Corrective budget 2, slot 9.
   * Issue body: `graduation-grd-001-issue-body.md`.
-  * Task JSON SHA-256: `dd35da883bd2e02c7d91c379181d97072a5c7ddd565af46636e8e1735b958ae4`.
+  * Task JSON SHA-256: `eb95218916e359682fc36a3b0de4e2a6d8d2279ece185a6061b19ba6a1720c31`.
 * **What it proves beyond CLP-001/002:**
   * the Routine runs real tests on the PR head;
   * semantic review of a real diff: root cause, no weakened assertions,

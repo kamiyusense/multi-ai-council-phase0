@@ -210,7 +210,7 @@ class GraduationTaskTests(unittest.TestCase):
         self.assertEqual(d.verdict, NEEDS_CORRECTION)
         text = build_corrective(d, task=self.task, pr_head_sha=HEAD1)
         self.assertIn("claude_jules_live.py is changed but is not an allowed path", text)
-        self.assertIn("python -m unittest automation.command_bus.tests.test_claude_jules_live_adapter", text)
+        self.assertIn("python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter", text)
 
 
 class RecordTests(unittest.TestCase):
