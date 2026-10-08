@@ -1,73 +1,89 @@
 """Provider / billing route guard for long Claude AUTO campaigns (STATIC, no provider call).
 
 The campaign may keep working for hours, retry reads and run correctives.  What
-it must never do is keep running after the provider route stopped being the
-subscription-only route the user approved: an API-key / metered / overage /
-unknown billing route is a HARD STOP for every provider execution, and nothing
-here infers SAFE from silence.
+it must never do is run provider work on a route the user has not accepted:
+an API-key REST route, a metered / overage route, or a route nobody can name.
+Authentication and billing are separate facts and are judged separately:
 
-Two things are separated on purpose:
+* ``auth_class``    how the call authenticates: ``ACCOUNT_OAUTH`` (Google
+  account login, e.g. Jules Tools CLI), ``REST_API_KEY`` (``X-Goog-Api-Key``),
+  or ``UNKNOWN``.  An API key is not proof of metered billing, and an account
+  login is not proof of subscription-only billing.
+* ``billing_class`` what the evidence says about cost: ``SUBSCRIPTION_CONFIRMED``,
+  ``METERED_CONFIRMED``, ``OVERAGE_CONFIRMED`` or ``BILLING_UNKNOWN``.
 
-* ``classify_route`` turns a durable ``PROVIDER_ROUTE_DECLARATION_V1`` record
-  (who declared which provider, auth method and billing route, with evidence
-  and an expiry) into one route verdict.  A missing, malformed, expired or
-  self-contradictory declaration is ``UNKNOWN_BILLING_ROUTE``.
-* ``gate`` decides one operation kind against that verdict.  Local / static /
-  GitHub-safe work never depends on the provider route, so a broken or unsafe
-  route stops provider execution only; the rest of the campaign keeps going.
+``classify_route`` reads a digest-bound ``PROVIDER_ROUTE_DECLARATION_V1``
+record into one ``RouteVerdict`` with both classes and a summary ``verdict``:
+``ACCOUNT_OAUTH_CONFIRMED`` / ``REST_API_KEY`` / ``METERED_CONFIRMED`` /
+``OVERAGE_CONFIRMED`` / ``AUTH_BROKEN`` / ``UNKNOWN_ROUTE``.  A missing,
+tampered, malformed, expired, not-yet-valid or foreign record is
+``UNKNOWN_ROUTE``; nothing is inferred from silence.
 
-Operation kinds:
+``gate`` decides one operation kind.  Only provider execution is ever stopped:
+``LOCAL_STATIC`` work (tests, fixtures, docs, GitHub readback, non-default
+branch writes, analysis) is always allowed, so a blocked route never stops the
+campaign's independent safe work.
 
-``LOCAL_STATIC``             local tests, fixtures, docs, GitHub readback and
-                             non-default-branch writes: never a provider call.
-``READ_ONLY_LIVE``           read of an existing provider object (e.g. one
-                             Jules session GET); no new model turn.
-``SUBSCRIPTION_MODEL_WORK``  new worker/model work inside the subscription.
-``PAID_OR_UNKNOWN_PROVIDER`` API key / metered / external paid execution.
+=========================  ==================================================
+route                      provider operations
+=========================  ==================================================
+ACCOUNT_OAUTH_CONFIRMED    READ_ONLY_LIVE allowed (user decision D2, 2026-10-08:
+                           existing-session reads without an API key);
+                           SUBSCRIPTION_MODEL_WORK only with
+                           ``billing_class == SUBSCRIPTION_CONFIRMED``
+REST_API_KEY               HARD_STOP (user decision D1, 2026-10-08)
+METERED / OVERAGE          HARD_STOP
+AUTH_BROKEN                STOP_PROVIDER (re-login is a human action)
+UNKNOWN_ROUTE              STOP_PROVIDER, human must declare the route
+=========================  ==================================================
 
-This module grants no authority; the dispatcher's authorization, owner fence
-and budget still apply on top of an ``ALLOW``.
+``PAID_OR_UNKNOWN_PROVIDER`` is never automatic.  This module grants no
+authority: dispatch authorization, owner fence and budget still apply.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from .claude_jules_dispatch import sha256_of
 
 ROUTE_PROFILE = "PROVIDER_ROUTE_DECLARATION_V1"
 
-SUBSCRIPTION_CONFIRMED = "SUBSCRIPTION_CONFIRMED"
-API_KEY_CONFIRMED = "API_KEY_CONFIRMED"
+# summary verdicts
+ACCOUNT_OAUTH_CONFIRMED = "ACCOUNT_OAUTH_CONFIRMED"
+REST_API_KEY = "REST_API_KEY"
 METERED_CONFIRMED = "METERED_CONFIRMED"
 OVERAGE_CONFIRMED = "OVERAGE_CONFIRMED"
-UNKNOWN_BILLING_ROUTE = "UNKNOWN_BILLING_ROUTE"
 AUTH_BROKEN = "AUTH_BROKEN"
-ROUTE_VERDICTS = (SUBSCRIPTION_CONFIRMED, API_KEY_CONFIRMED, METERED_CONFIRMED, OVERAGE_CONFIRMED,
-                  UNKNOWN_BILLING_ROUTE, AUTH_BROKEN)
+UNKNOWN_ROUTE = "UNKNOWN_ROUTE"
+ROUTE_VERDICTS = (ACCOUNT_OAUTH_CONFIRMED, REST_API_KEY, METERED_CONFIRMED, OVERAGE_CONFIRMED, AUTH_BROKEN,
+                  UNKNOWN_ROUTE)
 
+# auth / billing classes
+ACCOUNT_OAUTH = "ACCOUNT_OAUTH"
+UNKNOWN_AUTH = "UNKNOWN"
+SUBSCRIPTION_CONFIRMED = "SUBSCRIPTION_CONFIRMED"
+BILLING_UNKNOWN = "BILLING_UNKNOWN"
+
+# operation kinds
 LOCAL_STATIC = "LOCAL_STATIC"
 READ_ONLY_LIVE = "READ_ONLY_LIVE"
 SUBSCRIPTION_MODEL_WORK = "SUBSCRIPTION_MODEL_WORK"
 PAID_OR_UNKNOWN_PROVIDER = "PAID_OR_UNKNOWN_PROVIDER"
 OPERATION_KINDS = (LOCAL_STATIC, READ_ONLY_LIVE, SUBSCRIPTION_MODEL_WORK, PAID_OR_UNKNOWN_PROVIDER)
 
+# decisions
 ALLOW = "ALLOW"
-STOP_PROVIDER = "STOP_PROVIDER"      # provider execution stops; independent safe work continues
-HARD_STOP = "HARD_STOP"              # billing boundary: provider execution stops and a human must decide
+STOP_PROVIDER = "STOP_PROVIDER"      # provider execution paused; independent safe work continues
+HARD_STOP = "HARD_STOP"              # billing boundary: provider execution stops until a human decides
 
-# billing routes a declaration may name, mapped to the verdict they produce
-_BILLING = {
-    "subscription": SUBSCRIPTION_CONFIRMED,
-    "api_key": API_KEY_CONFIRMED,
-    "metered": METERED_CONFIRMED,
-    "overage": OVERAGE_CONFIRMED,
-    "unknown": UNKNOWN_BILLING_ROUTE,
-}
+_AUTH_METHODS = {"account_oauth": ACCOUNT_OAUTH, "api_key": REST_API_KEY, "unknown": UNKNOWN_AUTH}
+_BILLING = {"subscription": SUBSCRIPTION_CONFIRMED, "metered": METERED_CONFIRMED, "overage": OVERAGE_CONFIRMED,
+            "unknown": BILLING_UNKNOWN}
 _AUTH_STATES = {"ok", "broken"}
-_KEYS = {"schema_version", "profile", "provider", "auth_method", "billing_route", "auth_state",
+_KEYS = {"schema_version", "profile", "provider", "transport", "auth_method", "billing_route", "auth_state",
          "declared_by", "evidence_refs", "declared_at", "expires_at", "declaration_sha256"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
@@ -77,6 +93,9 @@ class RouteVerdict:
     verdict: str
     reason: str
     provider: str | None = None
+    transport: str | None = None
+    auth_class: str = UNKNOWN_AUTH
+    billing_class: str = BILLING_UNKNOWN
 
 
 @dataclass(frozen=True)
@@ -97,20 +116,21 @@ def _time(value: Any) -> datetime:
     return parsed
 
 
-def build_route_declaration(*, provider: str, auth_method: str, billing_route: str, auth_state: str,
-                            declared_by: str, evidence_refs: list[str], declared_at: str,
+def build_route_declaration(*, provider: str, transport: str, auth_method: str, billing_route: str,
+                            auth_state: str, declared_by: str, evidence_refs: list[str], declared_at: str,
                             expires_at: str) -> dict[str, Any]:
-    record = {"schema_version": 1, "profile": ROUTE_PROFILE, "provider": provider, "auth_method": auth_method,
-              "billing_route": billing_route, "auth_state": auth_state, "declared_by": declared_by,
-              "evidence_refs": list(evidence_refs), "declared_at": declared_at, "expires_at": expires_at}
+    record = {"schema_version": 1, "profile": ROUTE_PROFILE, "provider": provider, "transport": transport,
+              "auth_method": auth_method, "billing_route": billing_route, "auth_state": auth_state,
+              "declared_by": declared_by, "evidence_refs": list(evidence_refs), "declared_at": declared_at,
+              "expires_at": expires_at}
     record["declaration_sha256"] = sha256_of(record)
     return record
 
 
-def classify_route(declaration: Any, *, provider: str, now: str) -> RouteVerdict:
-    """One verdict for ``provider`` at ``now``; anything not positively proven is UNKNOWN_BILLING_ROUTE."""
+def classify_route(declaration: Any, *, provider: str, transport: str, now: str) -> RouteVerdict:
+    """One verdict for ``provider`` over ``transport`` at ``now``; unproven is UNKNOWN_ROUTE."""
     if declaration is None:
-        return RouteVerdict(UNKNOWN_BILLING_ROUTE, "no provider route declaration")
+        return RouteVerdict(UNKNOWN_ROUTE, "no provider route declaration", provider, transport)
     try:
         if not isinstance(declaration, dict) or set(declaration) != _KEYS:
             raise ValueError("declaration keys mismatch")
@@ -119,49 +139,73 @@ def classify_route(declaration: Any, *, provider: str, now: str) -> RouteVerdict
         if declaration["declaration_sha256"] != sha256_of(
                 {k: v for k, v in declaration.items() if k != "declaration_sha256"}):
             raise ValueError("declaration digest mismatch")
-        for key in ("provider", "auth_method", "declared_by"):
+        for key in ("provider", "transport", "declared_by"):
             if not isinstance(declaration[key], str) or not _ID.fullmatch(declaration[key]):
                 raise ValueError(f"{key} invalid")
-        if declaration["billing_route"] not in _BILLING or declaration["auth_state"] not in _AUTH_STATES:
-            raise ValueError("billing_route or auth_state not recognised")
+        if declaration["auth_method"] not in _AUTH_METHODS or declaration["billing_route"] not in _BILLING \
+                or declaration["auth_state"] not in _AUTH_STATES:
+            raise ValueError("auth_method, billing_route or auth_state not recognised")
         refs = declaration["evidence_refs"]
         if not isinstance(refs, list) or not refs or not all(isinstance(r, str) and r.strip() for r in refs):
             raise ValueError("evidence_refs required")
         declared, expires, at = _time(declaration["declared_at"]), _time(declaration["expires_at"]), _time(now)
     except (KeyError, TypeError, ValueError) as exc:
-        return RouteVerdict(UNKNOWN_BILLING_ROUTE, f"route declaration invalid: {exc}")
-    if declaration["provider"] != provider:
-        return RouteVerdict(UNKNOWN_BILLING_ROUTE, "route declaration names another provider")
+        return RouteVerdict(UNKNOWN_ROUTE, f"route declaration invalid: {exc}", provider, transport)
+    if declaration["provider"] != provider or declaration["transport"] != transport:
+        return RouteVerdict(UNKNOWN_ROUTE, "route declaration names another provider or transport", provider,
+                            transport)
     if not declared <= at < expires:
-        return RouteVerdict(UNKNOWN_BILLING_ROUTE, "route declaration is not current", provider)
-    verdict = _BILLING[declaration["billing_route"]]
-    if verdict == SUBSCRIPTION_CONFIRMED and declaration["auth_method"] in {"api_key", "service_account_key"}:
-        # An API key is the classic path to usage billing: never subscription unless declared otherwise.
-        return RouteVerdict(API_KEY_CONFIRMED, "subscription declared but authentication is an API key", provider)
+        return RouteVerdict(UNKNOWN_ROUTE, "route declaration is not current", provider, transport)
+    auth, billing = _AUTH_METHODS[declaration["auth_method"]], _BILLING[declaration["billing_route"]]
+    common = dict(provider=provider, transport=transport, auth_class=auth, billing_class=billing)
+    if billing in {METERED_CONFIRMED, OVERAGE_CONFIRMED}:
+        return RouteVerdict(billing, f"{declaration['billing_route']} billing declared", **common)
+    if auth == REST_API_KEY:
+        return RouteVerdict(REST_API_KEY, "REST API-key authentication", **common)
     if declaration["auth_state"] == "broken":
-        if verdict == SUBSCRIPTION_CONFIRMED:
-            return RouteVerdict(AUTH_BROKEN, "subscription route but authentication is broken", provider)
-        return RouteVerdict(verdict, f"{declaration['billing_route']} route (authentication also broken)", provider)
-    return RouteVerdict(verdict, f"declared {declaration['billing_route']} via {declaration['auth_method']}", provider)
+        return RouteVerdict(AUTH_BROKEN, "authentication broken", **common)
+    if auth == ACCOUNT_OAUTH:
+        return RouteVerdict(ACCOUNT_OAUTH_CONFIRMED, f"account login; billing {billing}", **common)
+    return RouteVerdict(UNKNOWN_ROUTE, "authentication method unknown", **common)
 
 
 def detect_route_drift(previous: RouteVerdict, current: RouteVerdict) -> bool:
-    """True when the route changed in a way that must not be absorbed silently."""
-    return previous.verdict != current.verdict or previous.provider != current.provider
+    """True when anything about the route changed; a change is never absorbed silently."""
+    return (previous.verdict, previous.provider, previous.transport, previous.auth_class, previous.billing_class) \
+        != (current.verdict, current.provider, current.transport, current.auth_class, current.billing_class)
 
 
 def gate(operation: str, route: RouteVerdict) -> GateDecision:
+    def stop(decision: str, reason: str, human: bool) -> GateDecision:
+        return GateDecision(decision, reason, False, True, human)
+
     if operation not in OPERATION_KINDS:
-        return GateDecision(HARD_STOP, f"unknown operation kind {operation!r}", False, True, True)
+        return stop(HARD_STOP, f"unknown operation kind {operation!r}", True)
     if operation == LOCAL_STATIC:
-        return GateDecision(ALLOW, "local/static/GitHub-safe work never depends on the provider route", False, True, False)
-    if operation == PAID_OR_UNKNOWN_PROVIDER:
-        return GateDecision(HARD_STOP, "paid or unknown provider execution is never automatic", False, True, True)
-    if route.verdict == SUBSCRIPTION_CONFIRMED:
-        return GateDecision(ALLOW, f"{operation} on a confirmed subscription route", True, True, False)
-    if route.verdict == AUTH_BROKEN:
-        return GateDecision(STOP_PROVIDER, "authentication broken: provider execution paused, safe work continues",
+        return GateDecision(ALLOW, "local/static/GitHub-safe work never depends on the provider route",
                             False, True, False)
-    if route.verdict in {API_KEY_CONFIRMED, METERED_CONFIRMED, OVERAGE_CONFIRMED, UNKNOWN_BILLING_ROUTE}:
-        return GateDecision(HARD_STOP, f"billing boundary: {route.verdict} ({route.reason})", False, True, True)
-    return GateDecision(HARD_STOP, f"unrecognised route verdict {route.verdict!r}", False, True, True)
+    if operation == PAID_OR_UNKNOWN_PROVIDER:
+        return stop(HARD_STOP, "paid or unknown provider execution is never automatic", True)
+    verdict = route.verdict
+    if verdict in {METERED_CONFIRMED, OVERAGE_CONFIRMED}:
+        return stop(HARD_STOP, f"billing boundary: {verdict}", True)
+    if verdict == REST_API_KEY:
+        return stop(HARD_STOP, "REST API-key route is not approved for provider execution (D1)", True)
+    if verdict == AUTH_BROKEN:
+        return stop(STOP_PROVIDER, "authentication broken: provider paused, re-login needed; safe work continues",
+                    True)
+    if verdict == UNKNOWN_ROUTE:
+        return stop(STOP_PROVIDER, f"provider route unknown ({route.reason}); safe work continues", True)
+    if verdict == ACCOUNT_OAUTH_CONFIRMED:
+        if operation == READ_ONLY_LIVE:
+            return GateDecision(ALLOW, "existing-session read over an account login (D2)", True, True, False)
+        if route.billing_class == SUBSCRIPTION_CONFIRMED:
+            return GateDecision(ALLOW, "model work on an account route with subscription billing evidence",
+                                True, True, False)
+        return stop(STOP_PROVIDER, "account login without subscription billing evidence: no new model work", True)
+    return stop(HARD_STOP, f"unrecognised route verdict {verdict!r}", True)
+
+
+def route_resolver(declaration: Any, *, provider: str, transport: str) -> Callable[[str], RouteVerdict]:
+    """A ``now -> RouteVerdict`` callable for the dispatcher; re-classified at every check."""
+    return lambda now: classify_route(declaration, provider=provider, transport=transport, now=now)

@@ -119,7 +119,7 @@ class ClaudeJulesAutoLoop:
     def __init__(self, *, client: Any, refs: Any, policy: dict[str, Any], owner_reader: Any,
                  roadmap: dict[str, Any], facts: ResultFactsCollector, origin_loop_id: str,
                  lane_id: str, carrier_guard: Any = None, campaign_policy: dict[str, Any] | None = None,
-                 recovery_policy: dict[str, Any] | None = None):
+                 recovery_policy: dict[str, Any] | None = None, provider_route: Any = None):
         self.client, self.refs, self.facts = client, refs, facts
         # None keeps the legacy immediate bounded retry; an explicit policy enables reasoned recovery v1.
         self.recovery_policy = None if recovery_policy is None else validate_recovery_policy(recovery_policy)
@@ -135,7 +135,7 @@ class ClaudeJulesAutoLoop:
         dispatch_policy = dict(self.policy, max_rounds=self.campaign_policy["max_rounds"])
         self.dispatcher = ClaudeJulesDispatcher(
             client=client, refs=refs, policy=dispatch_policy, owner_reader=owner_reader,
-            carrier_guard=carrier_guard,
+            carrier_guard=carrier_guard, provider_route=provider_route,
         )
         self.inbox = ResultEventInbox(client, data_branch=self.data)
         self.inspections = InspectionStore(client, data_branch=self.data)

@@ -1,0 +1,42 @@
+{
+  "profile": "STOP_RESISTANT_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-08 JST",
+  "batch": 7,
+  "status": "ROUTE_GUARD_WIRED_CLI_TRANSPORT_STATIC_PASS_LOOP139_BLOCKED_ON_CLI_LOGIN",
+  "user_decisions": {
+    "D1": "JULES_API_KEY REST route not subscription-confirmed; provider execution HARD STOP",
+    "D2": "existing-session read-only readback without API key approved for automatic execution, bounded retry allowed",
+    "D3": "settle-dfcd5c4061f53c45-a1.json over REST not approved; investigate Jules Tools CLI"
+  },
+  "base_commit": "f4ee3df0de51c78d4465d9a118e2385e2d1e3f11",
+  "jules_cli": {
+    "installed": false,
+    "install": "npm install -g @google/jules (human-approved download)",
+    "login": "jules login (browser, human)",
+    "read_commands": ["jules version", "jules remote list --session", "jules remote list --repo"],
+    "write_or_create_commands": ["jules remote new", "jules (TUI)", "jules remote pull"],
+    "machine_readable_output": "UNKNOWN (not documented)",
+    "billing": "UNKNOWN"
+  },
+  "route_guard": {
+    "verdicts": ["ACCOUNT_OAUTH_CONFIRMED", "REST_API_KEY", "METERED_CONFIRMED", "OVERAGE_CONFIRMED", "AUTH_BROKEN", "UNKNOWN_ROUTE"],
+    "auth_and_billing_separate": true,
+    "wired": ["ClaudeJulesDispatcher.preflight", "ClaudeJulesDispatcher.dispatch (before budget slot and command)",
+              "ClaudeJulesAutoLoop", "claude_jules_live.build_live (--provider-route)",
+              "claude_jules_lane_proof_launcher.build_live_proof_ports"],
+    "live_transport": "carrier-rest-api-key",
+    "live_effect_now": "every new model dispatch through live entry points is PREPARED_NOT_AUTHORIZED before any write"
+  },
+  "cli_transport": {
+    "module": "automation/command_bus/claude_jules_cli_transport.py",
+    "allowlist": ["version", "remote list --session", "remote list --repo"],
+    "env_sanitized": true,
+    "read_retry": {"max_attempts": 4, "backoff_seconds": [0, 15, 60, 180]},
+    "state_parse": "UNKNOWN until a recorded output sample"
+  },
+  "tests": {"focused": {"ran": 35, "result": "OK"}, "full": {"ran": 1961, "skipped": 1, "result": "OK"},
+            "compileall": "OK", "diff_check": "OK"},
+  "loop_139": {"settled": false, "reason": "CLI not installed/logged in; REST route not approved", "requests_sent": 0},
+  "live_usage": {"jules_calls": 0, "provider_posts": 0, "new_sessions": 0, "model_execution": 0, "budget": "6/10",
+                 "merges": 0, "force_pushes": 0, "retries": "none needed (no transient failure occurred)"}
+}

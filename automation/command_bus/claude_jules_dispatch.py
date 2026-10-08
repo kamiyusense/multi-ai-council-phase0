@@ -296,10 +296,13 @@ class ClaudeJulesDispatcher:
     """Execute one dispatch intent through the existing carrier contract."""
 
     def __init__(self, *, client: GitHubContentsClient, refs: GitRefClient, policy: dict[str, Any],
-                 owner_reader: Any, carrier_guard: Any = None):
+                 owner_reader: Any, carrier_guard: Any = None, provider_route: Any = None):
         self.client, self.refs = client, refs
         # Optional no-write check that the shared carrier is quiet (see CarrierQuietGuard).
         self.carrier_guard = carrier_guard
+        # Optional ``now -> RouteVerdict`` (claude_jules_provider_route.route_resolver).  Live entry points
+        # always pass one, so an unknown / API-key / metered route stops the dispatch before any write.
+        self.provider_route = provider_route
         self.policy = validate_policy(policy)
         self.owner_reader = owner_reader
         self.binding_store = ClaudeJulesOriginBindingStore(client, self.policy["data_branch"])
@@ -348,6 +351,8 @@ class ClaudeJulesDispatcher:
             return self._receipt(intent, "BLOCKED", stale) if stale.startswith("STALE") else DispatchResult("UNKNOWN", stale)
         if (quiet := self._carrier_quiet(command_path(request["command_id"]), request["command_id"])).status != "PASS":
             return quiet
+        if (route := self._provider_route_problem(now)) is not None:
+            return route  # route changed between preflight and the trigger: nothing irreversible written
         # Consume one slot of the fixed total LIVE budget before the irreversible write.
         slot = self.budget.acquire(command_id=request["command_id"], intent_sha256=intent["intent_sha256"],
                                    origin_loop_id=intent["origin_loop_id"], acquired_at=now)
@@ -369,6 +374,8 @@ class ClaudeJulesDispatcher:
             return DispatchResult("BLOCKED", problem)
         if (problem := live_authorization_problem(self.policy, now=now, dispatches_used=dispatches_used)):
             return DispatchResult("PREPARED_NOT_AUTHORIZED", f"{problem}; nothing written", intent)
+        if (route := self._provider_route_problem(now, intent)) is not None:
+            return route
         try:
             slots = self.budget.slots()
         except (OSError, RuntimeError) as exc:
@@ -386,6 +393,21 @@ class ClaudeJulesDispatcher:
         if (quiet := self._carrier_quiet(None, intent["carrier_request"]["command_id"])).status != "PASS":
             return quiet
         return DispatchResult("PASS", "no-write preflight passed")
+
+    def _provider_route_problem(self, now: str, intent: dict[str, Any] | None = None) -> DispatchResult | None:
+        """Billing/auth route gate for new model work; only provider execution is stopped."""
+        if self.provider_route is None:
+            return None
+        from .claude_jules_provider_route import ALLOW, SUBSCRIPTION_MODEL_WORK, gate  # local: avoids an import cycle
+        try:
+            decision = gate(SUBSCRIPTION_MODEL_WORK, self.provider_route(now))
+        except Exception as exc:  # an unreadable route is never a pass
+            return DispatchResult("PREPARED_NOT_AUTHORIZED", f"provider route unverifiable: {exc}; nothing written",
+                                  intent)
+        if decision.decision != ALLOW:
+            return DispatchResult("PREPARED_NOT_AUTHORIZED",
+                                  f"provider route {decision.decision}: {decision.reason}; nothing written", intent)
+        return None
 
     def _carrier_quiet(self, path: str | None, command_id: str) -> DispatchResult:
         """PASS when no guard is set, the record already exists (resume), or the carrier is quiet."""

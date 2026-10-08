@@ -14,9 +14,10 @@ from typing import Any
 
 from .claude_jules_dispatch import ClaudeJulesDispatcher, validate_dispatch_intent
 from .claude_jules_lane_proof import LiveProofPorts, ProofError
-from .claude_jules_live import CarrierQuietGuard, LiveResultFacts
+from .claude_jules_live import LIVE_DISPATCH_TRANSPORT, CarrierQuietGuard, LiveResultFacts
 from .claude_jules_live_adapter import GitHubRestReader, GitLiveClient
 from .control_tower_durable_collector import ControlTowerDurableCollector
+from .claude_jules_provider_route import route_resolver
 from .loop_owner_backend import LoopOwnerGitHubBackend
 from .signal_step7_live_proof_cli import JulesActiveSessionGetReader, SystemClock
 
@@ -111,6 +112,7 @@ def build_live_proof_ports(
     scratch_dir: str,
     clock: Any | None = None,
     carrier_wait_seconds: int = 0,
+    provider_route_declaration: dict[str, Any] | None = None,
 ) -> LiveProofPorts:
     """Construct the existing production adapters without performing any effect.
 
@@ -155,6 +157,9 @@ def build_live_proof_ports(
         policy=policy,
         owner_reader=owner_reader,
         carrier_guard=carrier_guard,
+        # Always gated; with no declaration the route is UNKNOWN_ROUTE and the dispatch writes nothing.
+        provider_route=route_resolver(provider_route_declaration, provider="jules",
+                                      transport=LIVE_DISPATCH_TRANSPORT),
     )
     facts = LiveResultFacts(git=git, rest=rest, policy=policy, scratch_dir=scratch_dir)
     session_source = CarrierSessionIdSource(facts, wait_seconds=carrier_wait_seconds)
