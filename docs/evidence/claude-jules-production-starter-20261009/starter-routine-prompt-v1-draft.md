@@ -1,4 +1,9 @@
-# Production Starter Routine prompt v1 (DRAFT, not created)
+# Production Starter Routine prompt v1 (DRAFT, not created) — SUPERSEDED in batch 17
+
+> **Superseded.** This draft woke on `issues.opened` / `issue_comment.created`. The official Routine
+> documentation lists only Pull request and Release events for GitHub triggers, so those wakes do not exist.
+> The Starter now runs as LAYER 4 of the reviewer Routine; see `routine-prompt-v1.6-draft.md`. This file is kept
+> unchanged below as history.
 
 Status: **prepared, not created**. No Routine and no webhook trigger exist for the Starter. Creating them is part
 of the LIVE activation and needs a human decision.

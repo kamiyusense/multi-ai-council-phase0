@@ -1,37 +1,86 @@
-# Reviewer Routine prompt v1.6 (DRAFT, not applied)
+# Reviewer + Loop Routine prompt v1.6 (DRAFT, not applied)
 
-Status: **prepared, not applied**. The live Routine `trig_01U2DaBYLqaF5uLgovs1WY2Y` stays on v1.5.1
-(`../claude-jules-stop-resistant-20261007/routine-prompt-v1.5.1.md`). Apply v1.6 only when campaigns with more
-than one task are started. The first production proof (PRD-C1, one task) does not need it.
+Status: **prepared, not applied**. The live Routine `trig_01U2DaBYLqaF5uLgovs1WY2Y` stays on v1.5.1, and no
+trigger was changed. This draft replaces the batch 16 v1.6 draft. That draft only added `body_ref`.
 
-## Why a change is needed
+## What the official documentation says, and why the design changed (checked 2026-10-09)
 
-A campaign task's `next_task` cannot hold the next task's full issue body. Each body holds a task block, and
-that block holds its own `next_task`, so the JSON escaping would nest once per round. The manifest therefore
-pins the next task by reference (`body_ref`), and the reviewer creates the issue from the manifest instead of
-inlining it. The reviewer still never adds a label. Starting the next task is the Production Starter's job.
+Source: <https://code.claude.com/docs/en/routines>
 
-## Exact changes against v1.5.1
+* **GitHub triggers:** a routine can subscribe to **Pull request** events (opened, closed, assigned, labeled,
+  synchronized, or otherwise updated) and **Release** events, and nothing else. There is **no `issues` and no
+  `issue_comment` trigger**. The batch 16 Starter Routine draft relied on those events, so it is superseded.
+* **Filters:** pull request events can be filtered by author, title, body, base or head branch, labels, is
+  draft, and is merged.
+* **Caps:** GitHub events have per-routine and per-account hourly caps. Events beyond the cap are **dropped**,
+  not queued. A lost wake is therefore a normal case, and the recovery wake below covers it.
+* **Schedules:** the minimum interval is **one hour**. A routine can combine schedule, API and GitHub triggers.
+* **Billing:** routine runs draw down subscription usage.
+  > "When a routine hits your subscription usage limit, organizations with usage credits turned on can keep
+  > running routines on metered overage."
+
+  A human must confirm that usage credits are **off**. Otherwise an unattended loop could run on metered overage.
+  This is a Billing setting, and automation never changes it.
+
+## Design: one Routine, the PR event is the heartbeat
+
+The Starter and Loop no longer need a Routine of their own. The same reviewer run that judged a PR continues
+with a loop tick:
+
+```
+pull_request.opened / synchronize      -> Layers 1-3 (unchanged) -> receipt -> LAYER 4 loop tick
+pull_request.closed (is merged = true) -> LAYER 4 loop tick (merge-dependent work resumes)
+schedule, hourly (recovery)            -> review any open task PR head with no receipt, then LAYER 4 loop tick
+```
+
+The responsibilities stay separate. Layers 1-3 judge the PR. Layer 4 runs the deterministic loop code. Only that
+code decides what may start, and Claude performs exactly the writes it names.
+
+## Trigger changes this needs (human approval; not made)
+
+1. Add `pull_request.closed` with the filter "is merged = true" to the existing webhook trigger, or as a second
+   one. Without it, merge-dependent work resumes only on the next other PR event or recovery wake.
+2. Add an hourly schedule trigger (for example at minute 7) for recovery. Without it, a run that dies between the
+   receipt and the next start waits until a human presses "Run now". `test_without_a_recovery_wake_a_dead_run_waits_for_a_human`
+   shows this. The recovery tick is cheap when nothing changed: no write, because the checkpoint is written only
+   on change or on a heartbeat.
+
+## Exact prompt changes against v1.5.1
 
 1. The version string becomes `CLAUDE_CLOSED_LOOP_REVIEWER_V1.6`.
-2. In LAYER 3, this line:
+2. **Hard rules.** "Never add the `jules` label to any issue. Never create a Jules task by any other means." is
+   replaced by:
 
-   > - PASS: no PR comment; create the next_task issue (no labels) unless an open issue with that title exists; decision ADOPT_RECORDED.
+   > Never add the `jules` label and never create an issue except as LAYER 4 instructs, and only the exact write
+   > the loop code printed in this run. Never create a Jules task by any other means.
 
-   is replaced by:
+3. **Layer 3, PASS.** The `next_task` handling is the `body_ref` text of the batch 16 draft: `render-next`, create
+   the issue verbatim, no label.
+4. **New LAYER 4** (after the receipt; or first, when the wake is `pull_request.closed` or the schedule):
 
-   > - PASS: no PR comment; decision ADOPT_RECORDED. Next issue (no labels), unless an open issue with the next_task title exists:
-   >   - if next_task has "body", create the issue with next_task title and body;
-   >   - if next_task has "body_ref" {campaign_id, seq, task_sha256, path, ref}: run `git fetch origin <ref>` and `git show FETCH_HEAD:<path> > /tmp/campaign.json`, then `python3 -m automation.command_bus.claude_jules_production_starter render-next --campaign /tmp/campaign.json --seq <seq> --task-sha256 <task_sha256>`. If it prints JSON {title, body}, create the issue with exactly that title and body (paste the body verbatim, do not edit it). If it fails, create no issue, set next_issue null and say why in the receipt summary.
-   >   - Never add a label to it. The Production Starter alone decides whether it starts.
+   > LAYER 4 - loop tick (deterministic; no judgement beyond writing a proposal):
+   > - Run `python3 -m automation.command_bus.claude_jules_loop tick --campaign <campaign file> --controller <run id>`.
+   >   It prints exactly one next write (`create_issue`, `comment`, or `add_label jules`) or a final outcome.
+   > - Perform that one write. Then run it again with `--session-nonce` for every intent you wrote, and
+   >   `--label-written-nonce` after you added the label. At most 8 writes per wake.
+   > - If it asks for a proposal for a signal, write a `CLAUDE_TASK_PROPOSAL_V1` JSON for that signal. It must stay
+   >   inside the objective's scope and approved operations, and name concrete acceptance criteria and test
+   >   commands. The code validates it, and a rejected proposal is skipped.
+   > - Never repeat a write whose result you did not see; run the tick again instead.
+   > - The final outcome (CONTINUE, MERGE_WAIT, NO_SAFE_TASK, GOAL_COMPLETE, DEFER, HARD_STOP_PROVIDER) and its
+   >   human actions go into the push notification.
 
-Nothing else changes: the hard rules, Layers 1 and 2, the receipt keys and the corrective format all stay the same.
+5. **Scheduled wakes.** "If the wake is the schedule: for every open pull request whose body links a closed-loop
+   task issue and whose head has no receipt, run Layers 1-3 for it. Then run LAYER 4."
 
-## Why this is safe
+## UNKNOWN before this can go live
 
-* `render-next` refuses a body whose `task_sha256` differs from the pinned one, so the reviewer can only create
-  the task that the human-approved manifest prepared.
-* If the pasted body changes, the Starter blocks it anyway: it compares the issue's task block against the
-  manifest's `task_sha256` ("edited after preparation").
-* The reviewer still creates the issue before the receipt, as in v1.5.1. The Starter waits (DEFER) until the
-  PASS receipt naming that issue exists.
+* Whether `gh` is authenticated inside a Routine run. The v1.5 runs used the GitHub MCP tools. The loop's
+  label-history read needs the issue events API.
+  * If `gh` works, a `gh`-backed port runs the tick directly.
+  * If it does not, the MCP tools must supply label history. Otherwise the Starter returns `DEFER READ_UNKNOWN`
+    and never starts: safe, but nothing starts.
+* A CLI entry point `claude_jules_loop tick` that drives a real port. It is designed above. This batch implements
+  the loop over an abstract port and tests it fully in the mock. The real-port CLI and its send path belong to
+  the LIVE activation step, and no send path exists today.
+* Whether usage credits are off (Billing, human).

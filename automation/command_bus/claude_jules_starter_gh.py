@@ -132,11 +132,132 @@ def main(argv: list[str] | None = None) -> int:
     step = st.next_step(snap, campaign=campaign, controller=args.controller)
     report = {"step": step.as_dict(), "prepared_write": prepare(step, campaign["repository"]), "sent": False}
     if args.out:
-        with open(args.out, "w", encoding="utf-8") as fh:
+        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
             json.dump({"snapshot": snap, **report}, fh, indent=2, ensure_ascii=False)
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0
 
 
+
+
+# ---------------------------------------------------------------- loop tick over real GitHub reads (prepare-only)
+class GhLoopPort:
+    """The loop's port over ``gh`` GETs.  Every write raises ``PreparedOnly`` after recording what it would send."""
+
+    def __init__(self, get: Getter, *, repo: str, campaign: dict[str, Any], route_declaration: dict[str, Any],
+                 signals: list[dict[str, Any]] | None):
+        self.get, self.repo, self.campaign = get, repo, campaign
+        self.route_declaration, self.signal_list = route_declaration, signals
+        self.prepared: list[dict[str, Any]] = []
+        self._issues: dict[int, dict[str, Any]] = {}
+
+    def _search(self, query: str) -> list[dict[str, Any]]:
+        res = self.get(f"search/issues?q={query}&per_page=100")
+        items = res.get("items", []) if isinstance(res, dict) else [x for p in res for x in p.get("items", [])]
+        return items
+
+    def list_campaign_issues(self):
+        cid = self.campaign["campaign_id"]
+        found = {i["number"] for i in self._search(f"repo:{self.repo}+is:issue+%22{cid}%22+in:body")}
+        return [self.read_issue(n) for n in sorted(found)]
+
+    def read_control_issue(self):
+        n = self.campaign.get("control_issue")
+        return self.read_issue(n) if n else None
+
+    def base_head(self):
+        return self.get(f"repos/{self.repo}/git/ref/heads/{self.campaign['policy']['base_branch']}")["object"]["sha"]
+
+    def read_issue(self, n):
+        if n not in self._issues:
+            issue = read_issue(self.get, self.repo, n)
+            if issue.get("state") != "MISSING":
+                issue["author"] = (self.get(f"repos/{self.repo}/issues/{n}").get("user") or {}).get("login")
+            self._issues[n] = issue
+        return dict(self._issues[n])
+
+    def find_issue_by_correlation(self, corr):
+        if not corr:
+            return None
+        items = self._search(f"repo:{self.repo}+is:issue+%22{corr}%22+in:body")
+        return items[0]["number"] if items else None
+
+    def _linked_pr(self, n):
+        items = self._search(f"repo:{self.repo}+is:pr+%22Fixes+%23{n}%22+in:body")
+        return items[0]["number"] if items else None
+
+    def pr_head(self, n):
+        pr = self._linked_pr(n)
+        return self.get(f"repos/{self.repo}/pulls/{pr}")["head"]["sha"] if pr else None
+
+    def pr_merged(self, n):
+        pr = self._linked_pr(n)
+        return bool(pr and self.get(f"repos/{self.repo}/pulls/{pr}").get("merged"))
+
+    def base_changed_paths(self, expected, base):
+        if not expected or expected == base:
+            return []
+        cmp = self.get(f"repos/{self.repo}/compare/{expected}...{base}")
+        return None if cmp.get("status") not in {"ahead", "identical"} else [f["filename"] for f in cmp["files"]]
+
+    def quota(self):
+        return {"state": st.QUOTA_UNKNOWN, "evidence": "Jules subscription usage is not readable"}
+
+    def route(self):
+        return dict(self.route_declaration)
+
+    def signals(self):
+        return self.signal_list
+
+    def _prepare(self, kind: str, **data: Any):
+        self.prepared.append({"write": kind, **data})
+        raise st.PreparedOnly(kind)
+
+    def create_issue(self, title, body):
+        self._prepare("create_issue", title=title, body=body)
+
+    def add_comment(self, n, body):
+        self._prepare("comment", issue=n, body=body)
+
+    def add_label(self, n, label):
+        self._prepare("add_label", issue=n, label=label)
+
+
+def main_tick(argv: list[str]) -> int:
+    from . import claude_jules_loop as loop
+    ap = argparse.ArgumentParser(prog="claude_jules_starter_gh tick",
+                                 description="one loop tick over real GitHub reads; writes are prepared, never sent")
+    ap.add_argument("--campaign", required=True)
+    ap.add_argument("--route-declaration", required=True)
+    ap.add_argument("--signals")
+    ap.add_argument("--controller", required=True)
+    ap.add_argument("--out")
+    args = ap.parse_args(argv)
+    with open(args.campaign, encoding="utf-8") as fh:
+        campaign = json.load(fh)
+    with open(args.route_declaration, encoding="utf-8") as fh:
+        route = json.load(fh)
+    signals = []
+    if args.signals:
+        with open(args.signals, encoding="utf-8") as fh:
+            signals = json.load(fh)
+    port = GhLoopPort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
+                      signals=signals)
+    try:
+        res = loop.run_tick(port, campaign=campaign, controller=args.controller,
+                            now=lambda: st._fmt(datetime.now(timezone.utc)))
+        report = {"outcome": res.outcome, "reason": res.reason, "started": res.started, "created": res.created,
+                  "defers": res.defers, "isolated": res.isolated, "human_actions": res.human_actions,
+                  "next_wake": res.next_wake}
+    except st.PreparedOnly:
+        report = {"outcome": "PREPARED", "reason": "the tick reached a write"}
+    report.update({"prepared_writes": port.prepared, "sent": False})
+    if args.out:
+        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
+            json.dump(report, fh, indent=2, ensure_ascii=False)
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main_tick(sys.argv[2:]) if sys.argv[1:2] == ["tick"] else main())

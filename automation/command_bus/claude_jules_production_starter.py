@@ -71,10 +71,28 @@ INTENT_PROFILE = "CLAUDE_JULES_STARTER_INTENT_V1"
 START_RECEIPT_PROFILE = "CLAUDE_JULES_STARTER_RECEIPT_V1"
 STARTER_META_PROFILE = "CLAUDE_JULES_STARTER_META_V1"
 
-# step actions
+PLAN_MARKER = "<!-- claude-jules-plan v1"
+PLAN_PROFILE = "CLAUDE_JULES_PLAN_V1"
+
+# step actions.  Stop classes: CONTINUE (a write step), DEFER (temporary, re-checked), ISOLATE (this task only),
+# HARD_STOP (a provider-execution boundary: no new Jules starts; other safe work may continue).
 WRITE_INTENT, WRITE_LABEL, WRITE_START_RECEIPT = "WRITE_INTENT", "WRITE_LABEL", "WRITE_START_RECEIPT"
-NO_OP, IGNORE, DEFER, BLOCKED, HARD_STOP = "NO_OP", "IGNORE", "DEFER", "BLOCKED", "HARD_STOP"
+NO_OP, IGNORE, DEFER, ISOLATE, HARD_STOP = "NO_OP", "IGNORE", "DEFER", "ISOLATE", "HARD_STOP"
+BLOCKED = ISOLATE                      # earlier name of ISOLATE
 WRITES = {WRITE_INTENT, WRITE_LABEL, WRITE_START_RECEIPT}
+
+# Typed operations.  A task declares what it does; the starter decides on the declared operations and the risk
+# class of each path, never on a word appearing in the text.
+SAFE_OPERATIONS = frozenset({"code_edit", "bug_fix", "refactor", "test_add", "test_fix", "fixture_add", "mock_add",
+                             "docs_update", "evidence_update", "safety_test_add", "safety_static_fix"})
+HUMAN_OPERATIONS = frozenset({
+    "merge", "auto_merge_enable", "default_branch_write", "force_push", "branch_delete", "history_rewrite",
+    "destructive_delete", "billing_change", "credits_change", "overages_change", "api_key_create",
+    "api_key_change", "api_key_display", "secret_expose", "settings_change", "permission_change",
+    "dispatch_scope_expand", "safety_guard_disable", "external_model_execution", "paid_provider_execution"})
+# what a task may do to a safety-boundary file: fix, test, document, strengthen; never widen or disable
+SAFETY_BOUNDARY_OPERATIONS = frozenset({"bug_fix", "refactor", "test_add", "test_fix", "fixture_add", "mock_add",
+                                        "docs_update", "safety_test_add", "safety_static_fix"})
 # quota states
 QUOTA_OK, QUOTA_UNKNOWN, QUOTA_EXHAUSTED = "OK", "UNKNOWN", "CONFIRMED_EXHAUSTED"
 
@@ -92,27 +110,33 @@ DEFAULT_POLICY: dict[str, Any] = {
     "max_campaign_rounds": None,          # no fixed total; a campaign may set its own
     "max_corrective_rounds": 2,
     "intent_lease_minutes": 15,
-    "max_label_attempts": 2,
+    "max_label_attempts": 5,             # each attempt only after the lease and a label-never-present readback
     "jules_ack_timeout_minutes": 30,
     "read_retry": {"attempts": 3, "backoff_seconds": [0, 5, 30]},
     "allowed_task_kinds": ["proof", "code_change"],
     "on_quota_unknown": "proceed",        # "proceed" or "defer"; unknown alone never ends a campaign
     "base_policy": "descendant_untouched",  # or "exact"
     # The control plane itself (workflows, the Claude x Jules modules, the reviewer) is never a Jules task.
-    "forbidden_path_prefixes": [
-        ".github/",
-        "automation/command_bus/claude_jules_",
-        "automation/command_bus/claude_closed_loop_",
-    ],
+    # Risk classes by path.  execution_config: what runs automation or holds permissions -> a human decides.
+    # safety_boundary: the guards themselves -> allowed only to fix / test / strengthen, with the full suite.
+    # Everything else is ordinary development.
+    "path_classes": {
+        "execution_config": [".github/", ".claude/", ".mcp.json"],
+        "safety_boundary": [
+            "automation/command_bus/claude_jules_provider_route.py",
+            "automation/command_bus/claude_jules_production_starter.py",
+            "automation/command_bus/claude_jules_task_planner.py",
+            "automation/command_bus/claude_jules_loop.py",
+            "automation/command_bus/claude_closed_loop_review.py",
+            "automation/command_bus/claude_closed_loop_protocol.py",
+            "automation/command_bus/jules_carrier_current/",
+            "automation/command_bus/tests/test_jules_route_separation.py",
+        ],
+    },
+    "defer_escalate_minutes": 240,        # a DEFER older than this, with no independent work left, is escalated
+    "heartbeat_minutes": 360,             # loop checkpoint at least this often while anything is pending
 }
 
-# Requests that need a human whatever the task says (scanned in every task string).
-_HUMAN_BOUNDARY = re.compile(
-    r"\bmerge\s+(?:this|the|a|that)\s+(?:pr|pull\s+request)\b|\bforce[\s-]?push|\bdelete\s+(?:the\s+)?branch"
-    r"|\bpush\s+(?:directly\s+)?to\s+(?:main|the\s+default\s+branch)|\brewrite\s+(?:the\s+)?history"
-    r"|\bgit\s+(?:reset\s+--hard|clean\s+-[a-z]*f)|\brm\s+-rf\b|\bapi[\s_-]?key\b|\bbilling\b|\bcredits\b"
-    r"|\boverages?\b|\bchange\s+(?:repository\s+)?(?:settings|permissions)\b",
-    re.I)
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _PAID_WORDS = {"api_key", "rest_api_key", "metered", "overage", "paid", "pay_as_you_go"}
 
@@ -151,15 +175,19 @@ class Step:
     action: str
     reason: str
     issue: int | None = None
-    scope: str = "task"                  # task / campaign / global
+    scope: str = "task"                  # task / campaign / global / provider_execution
     body: str | None = None              # comment body for WRITE_INTENT / WRITE_START_RECEIPT
     nonce: str | None = None
     retry_after: str | None = None
     checks: tuple[str, ...] = ()
+    code: str = ""                       # machine reason (DEFER / ISOLATE ledger key)
+    human_required: bool = False         # only a human can clear it (merge, human-boundary operation, ...)
+    dependency: tuple[str, ...] = ()     # task ids this task waits for
 
     def as_dict(self) -> dict[str, Any]:
         return {"action": self.action, "reason": self.reason, "issue": self.issue, "scope": self.scope,
-                "body": self.body, "nonce": self.nonce, "retry_after": self.retry_after, "checks": list(self.checks)}
+                "body": self.body, "nonce": self.nonce, "retry_after": self.retry_after, "checks": list(self.checks),
+                "code": self.code, "human_required": self.human_required, "dependency": list(self.dependency)}
 
 
 # ---------------------------------------------------------------- policy
@@ -190,8 +218,16 @@ def validate_policy(policy: Any) -> list[str]:
         problems.append("policy trusted_writers missing")
     if not isinstance(policy.get("allowed_task_kinds"), list) or not policy["allowed_task_kinds"]:
         problems.append("policy allowed_task_kinds missing")
-    if not isinstance(policy.get("forbidden_path_prefixes"), list):
-        problems.append("policy forbidden_path_prefixes missing")
+    classes = policy.get("path_classes")
+    if not isinstance(classes, dict) or set(classes) != {"execution_config", "safety_boundary"} or any(
+            not isinstance(v, list) or not all(isinstance(x, str) and x for x in v) for v in classes.values()):
+        problems.append("policy path_classes invalid")
+    elif ".github/" not in classes["execution_config"]:
+        problems.append("policy path_classes must keep .github/ as execution_config")
+    for key in ("defer_escalate_minutes", "heartbeat_minutes"):
+        value = policy.get(key)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            problems.append(f"policy {key} invalid")
     for key in ("repository", "base_branch"):
         if not isinstance(policy.get(key), str) or not policy[key]:
             problems.append(f"policy {key} missing")
@@ -224,7 +260,8 @@ def render_task_issue(task: dict[str, Any], intro: str) -> str:
 
 
 def build_campaign(*, campaign_id: str, loop_id: str, tasks: list[dict[str, Any]], policy: dict[str, Any],
-                   external_predecessor: dict[str, Any] | None, manifest_ref: dict[str, str]) -> dict[str, Any]:
+                   external_predecessor: dict[str, Any] | None, manifest_ref: dict[str, str],
+                   objectives: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """A campaign manifest from task specs (in order).
 
     Each spec is ``{"title", "intro", "task": {...task block without campaign/next_task...}}``.  Task ``k`` gets
@@ -257,6 +294,8 @@ def build_campaign(*, campaign_id: str, loop_id: str, tasks: list[dict[str, Any]
         following = entry
     manifest = {"profile": CAMPAIGN_PROFILE, "campaign_id": campaign_id, "loop_id": loop_id,
                 "repository": policy["repository"], "policy": policy, "tasks": entries}
+    if objectives:
+        manifest["objectives"] = objectives
     validate_campaign(manifest)
     return manifest
 
@@ -283,8 +322,22 @@ def validate_campaign(manifest: Any) -> dict[int, dict[str, Any]]:
         if (problem := validate_task_v2(task, pr_base=manifest["policy"]["base_branch"])) is not None:
             raise ValueError(f"campaign task {n}: {problem}")
         entries[n] = {**entry, "task": task}
-    if not entries:
-        raise ValueError("campaign has no tasks")
+    for o in manifest.get("objectives") or []:
+        if not isinstance(o, dict) or not isinstance(o.get("objective_id"), str) or not o["objective_id"]:
+            raise ValueError("objective needs objective_id")
+        prefixes = o.get("scope_prefixes")
+        if not isinstance(prefixes, list) or not prefixes or not all(isinstance(x, str) and x for x in prefixes):
+            raise ValueError(f"objective {o['objective_id']} needs scope_prefixes")
+        if any(path_class(x, manifest["policy"]) == "execution_config" for x in prefixes):
+            raise ValueError(f"objective {o['objective_id']} scope includes execution configuration")
+        ops = o.get("allowed_operations")
+        if not isinstance(ops, list) or not ops or not set(ops) <= SAFE_OPERATIONS:
+            raise ValueError(f"objective {o['objective_id']} allowed_operations must be safe operations")
+        if not isinstance(o.get("approved_by"), str) or not o["approved_by"] or not isinstance(
+                o.get("approved_at"), str):
+            raise ValueError(f"objective {o['objective_id']} is not approved")
+    if not entries and not manifest.get("objectives"):
+        raise ValueError("campaign has no tasks and no objectives")
     return entries
 
 
@@ -356,6 +409,141 @@ def current_intent(intents: list[dict[str, Any]], lease: timedelta) -> dict[str,
         cur = nxt[0]
 
 
+# ---------------------------------------------------------------- operation and path classification
+_IMPERATIVE = (
+    ("merge", r"\bmerge\s+(?:this|the|that|a|these|all)\s+(?:prs?|pull\s+requests?)\b"),
+    ("auto_merge_enable", r"\b(?:enable|turn\s+on)\s+auto[\s-]?merge\b"),
+    ("default_branch_write", r"\b(?:push|commit)\s+(?:directly\s+)?(?:to|into)\s+(?:main|master|the\s+default\s+branch)\b"),
+    ("force_push", r"\bforce[\s-]?push\b|\bpush\s+--force\b"),
+    ("branch_delete", r"\bdelete\s+(?:the\s+|a\s+|this\s+)?(?:remote\s+)?branch(?:es)?\b"),
+    ("history_rewrite", r"\brewrite\s+(?:the\s+)?(?:git\s+)?history\b"),
+    ("destructive_delete", r"\brm\s+-rf\b|\bgit\s+reset\s+--hard\b|\bgit\s+clean\s+-[a-z]*f"),
+    ("billing_change", r"\b(?:change|increase|raise|enable|disable|turn\s+(?:on|off))\s+(?:the\s+)?(?:billing|credits|"
+                       r"usage\s+credits|overages?|spending\s+limits?)\b"),
+    ("api_key_change", r"\b(?:create|generate|rotate|change|regenerate|display|print|show|reveal|expose)\s+"
+                       r"(?:the\s+|an?\s+|our\s+)?(?:[a-z_]+\s+)?api[\s_-]?keys?\b"),
+    ("settings_change", r"\bchange\s+(?:the\s+)?(?:repository|repo|account|github)\s+(?:settings|permissions)\b"),
+    ("safety_guard_disable", r"\b(?:disable|remove|bypass|turn\s+off)\s+(?:the\s+)?(?:[a-z-]+\s+){0,3}(?:guard|safety\s+"
+                             r"check|hard\s+stop)s?\b"),
+)
+_NEGATED = re.compile(r"(?:\bnot|\bnever|\bno|n't|\bwithout|\brefuses?\s+to|\bprevents?|\bforbids?|\bblocks?|"
+                      r"\brejects?|\bcannot|\bmust\s+not)\b[^.;:\n]{0,40}$", re.I)
+
+
+def requested_human_operations(task: dict[str, Any]) -> set[str]:
+    """Human-boundary operations the task text *asks to perform* (imperative, not negated).
+
+    This only cross-checks the declared ``operations``.  A word such as "billing" or "API key" in a description
+    of a safety test is not a request.  "Merge the pull request" is, but "the guard refuses to merge the PR" is not.
+    """
+    found: set[str] = set()
+    for text in _strings({k: v for k, v in task.items() if k not in {"next_task", "campaign"}}):
+        for op, pattern in _IMPERATIVE:
+            for m in re.finditer(pattern, text, re.I):
+                if not _NEGATED.search(text[:m.start()]):
+                    found.add(op)
+    return found
+
+
+def path_class(path: str, policy: dict[str, Any]) -> str:
+    for cls in ("execution_config", "safety_boundary"):
+        if any(path == pre or path.startswith(pre) for pre in policy["path_classes"][cls]):
+            return cls
+    return "ordinary"
+
+
+def declared_operations(task: dict[str, Any]) -> Any:
+    ops = task.get("operations")
+    if ops is None:
+        return ["code_edit"] if task.get("kind") == "code_change" else ["docs_update"]
+    return ops
+
+
+def classify_task(task: dict[str, Any], policy: dict[str, Any]) -> tuple[str, str, bool] | None:
+    """None when the task's operations and paths may start without a human; else (code, reason, human_required)."""
+    ops = declared_operations(task)
+    if not isinstance(ops, list) or not ops or not all(isinstance(o, str) for o in ops):
+        return "METADATA", "task operations malformed", False
+    unknown = set(ops) - SAFE_OPERATIONS - HUMAN_OPERATIONS
+    if unknown:
+        return "UNKNOWN_OPERATION", f"unknown operations {sorted(unknown)}: the planner must classify them", False
+    if human := set(ops) & HUMAN_OPERATIONS:
+        return "HUMAN_OPERATION", f"task performs human-boundary operations {sorted(human)}", True
+    if implied := requested_human_operations(task):
+        return ("CLASSIFICATION_MISMATCH", f"task text asks for {sorted(implied)} but declares {sorted(ops)}: "
+                "a human must confirm", True)
+    full_suite = any("discover" in c for c in task.get("test_commands") or [])
+    for p in task.get("allowed_paths") or []:
+        cls = path_class(str(p.get("path", "")), policy)
+        if cls == "execution_config":
+            return "PROTECTED_PATH", f"{p['path']} configures automation or permissions: a human decides", True
+        if cls == "safety_boundary":
+            if not set(ops) <= SAFETY_BOUNDARY_OPERATIONS or task.get("safety_intent") not in {"preserve",
+                                                                                              "strengthen"} \
+                    or not full_suite:
+                return ("SAFETY_BOUNDARY_TERMS", f"{p['path']} is a safety boundary: allowed only to fix / test / "
+                        "strengthen (safety_intent preserve|strengthen) with the full test suite", False)
+    return None
+
+
+# ---------------------------------------------------------------- planner-created issues
+def task_fingerprint(objective_id: str, signal_id: str, paths: Iterable[str]) -> str:
+    """Identity of the *problem* a task solves: the same problem is never planned twice."""
+    return hashlib.sha256(canonical({"objective": objective_id, "signal": signal_id,
+                                     "paths": sorted(paths)}).encode()).hexdigest()[:16]
+
+
+_PLAN_KEYS = {"profile", "campaign_id", "objective_id", "signal_id", "task_id", "task_sha256", "fingerprint",
+              "evidence_refs", "depends_on", "created_at"}
+
+
+def render_planned_issue(task: dict[str, Any], intro: str, plan: dict[str, Any]) -> str:
+    """One issue body holding the task block and its plan record, so creation is a single atomic write."""
+    if set(plan) != _PLAN_KEYS or plan["profile"] != PLAN_PROFILE or plan["task_sha256"] != task_sha256(task):
+        raise ValueError("plan record malformed")
+    return f"{render_task_issue(task, intro)}\n{PLAN_MARKER}\n{canonical(plan)}\n-->\n"
+
+
+def plan_record_of(body: str) -> dict[str, Any] | None:
+    try:
+        plans = _block(body or "", PLAN_MARKER)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if len(plans) != 1 or not isinstance(plans[0], dict) or set(plans[0]) != _PLAN_KEYS \
+            or plans[0].get("profile") != PLAN_PROFILE:
+        return None
+    return plans[0]
+
+
+def verify_planned_issue(cand: dict[str, Any], task: dict[str, Any],
+                         campaign: dict[str, Any]) -> tuple[str, str] | None:
+    policy = campaign["policy"]
+    if cand.get("author") not in set(policy["trusted_writers"]):
+        return "UNTRUSTED_AUTHOR", "planner issue was not created by a trusted writer"
+    plan = plan_record_of(cand.get("body") or "")
+    if plan is None:
+        return "METADATA", "planner issue must hold exactly one readable plan record"
+    meta = task["campaign"]
+    if plan["task_sha256"] != task_sha256(task):
+        return "EDITED", "task differs from its plan record (edited after planning)"
+    objective = {o["objective_id"]: o for o in campaign.get("objectives") or []}.get(meta.get("objective_id"))
+    if objective is None or plan["objective_id"] != objective["objective_id"]:
+        return "OUT_OF_SCOPE", "task is not under an approved objective"
+    paths = [p["path"] for p in task.get("allowed_paths") or []]
+    if not paths or any(not any(x.startswith(pre) for pre in objective["scope_prefixes"]) for x in paths):
+        return "OUT_OF_SCOPE", "task paths are outside the objective's approved scope"
+    if not set(declared_operations(task)) <= set(objective["allowed_operations"]):
+        return "OUT_OF_SCOPE", "task operations are not approved for this objective"
+    fp = task_fingerprint(objective["objective_id"], meta.get("signal_id") or "", paths)
+    if meta.get("fingerprint") != fp or plan["fingerprint"] != fp:
+        return "METADATA", "task fingerprint does not match its problem identity"
+    if not plan["evidence_refs"]:
+        return "METADATA", "planned task has no evidence"
+    if list(task.get("depends_on") or []) != list(plan["depends_on"]):
+        return "EDITED", "dependencies differ from the plan record"
+    return None
+
+
 # ---------------------------------------------------------------- the decision
 def _trusted_pass_receipts(pred: dict[str, Any], correlation: str, trusted: set[str]) -> list[dict[str, Any]]:
     out = []
@@ -389,69 +577,88 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     """One deterministic step from a fresh GitHub snapshot.  Same snapshot, same step."""
     policy = campaign.get("policy") if isinstance(campaign, dict) else None
     if problems := validate_policy(policy):
-        return Step(HARD_STOP, "policy invalid: " + "; ".join(problems), scope="global")
+        return Step(HARD_STOP, "policy invalid: " + "; ".join(problems), scope="provider_execution",
+                    code="POLICY_INVALID", human_required=True)
     try:
         entries = validate_campaign(campaign)
     except (ValueError, json.JSONDecodeError) as exc:
-        return Step(HARD_STOP, f"campaign manifest invalid: {exc}", scope="campaign")
+        return Step(HARD_STOP, f"campaign manifest invalid: {exc}", scope="campaign", code="MANIFEST_INVALID",
+                    human_required=True)
     if (rp := route_problem(snapshot.get("route_observation"))) is not None:
-        return Step(rp[0], rp[1], scope="global")
+        if rp[0] == HARD_STOP:
+            return Step(HARD_STOP, rp[1], scope="provider_execution", code="PAID_ROUTE", human_required=True)
+        return Step(DEFER, rp[1], scope="provider_execution", code="ROUTE_UNKNOWN")
     trusted = set(policy["trusted_writers"])
     now = _ts(snapshot["now"])
     cand = snapshot.get("candidate") or {}
     number = cand.get("number")
     checks: list[str] = ["policy", "manifest", "route"]
 
+    def iso(code: str, reason: str, human: bool = False) -> Step:
+        return Step(ISOLATE, reason, number, code=code, human_required=human)
+
+    def defer(code: str, reason: str, **kw: Any) -> Step:
+        return Step(DEFER, reason, number, code=code, **kw)
+
     if not cand or cand.get("state") == "MISSING":
-        return Step(BLOCKED, "issue missing or deleted", number)
-    if not isinstance(cand.get("comments"), list) or not isinstance(cand.get("label_events"), list)             or not isinstance(cand.get("labels"), list):
-        return Step(DEFER, "issue comments / labels / label history not read (UNKNOWN): nothing starts", number)
+        return iso("ISSUE_MISSING", "issue missing or deleted")
+    if not isinstance(cand.get("comments"), list) or not isinstance(cand.get("label_events"), list) \
+            or not isinstance(cand.get("labels"), list):
+        return defer("READ_UNKNOWN", "issue comments / labels / label history not read (UNKNOWN): nothing starts")
     task, problem = _task_of(cand.get("body") or "")
     if task is None:
-        return Step(IGNORE if problem == "not a closed-loop task issue" else BLOCKED, problem, number)
+        if problem == "not a closed-loop task issue":
+            return Step(IGNORE, problem, number)
+        return iso("METADATA", problem)
     meta = task.get("campaign")
     if not isinstance(meta, dict) or meta.get("profile") != STARTER_META_PROFILE:
-        return Step(BLOCKED, "task has no starter metadata: a human must decide how to start it", number)
+        return iso("NO_STARTER_METADATA", "task has no starter metadata: a human must decide how to start it", True)
     if meta.get("campaign_id") != campaign["campaign_id"]:
         return Step(IGNORE, "issue belongs to another campaign", number)
-    entry = entries.get(meta.get("seq"))
-    if entry is None:
-        return Step(BLOCKED, f"seq {meta.get('seq')!r} is not in the campaign manifest", number)
-    if task_sha256(task) != entry["task_sha256"]:
-        return Step(BLOCKED, "task differs from the prepared task (edited after preparation)", number)
-    if cand.get("title") != entry["title"]:
-        return Step(BLOCKED, "issue title differs from the prepared task", number)
+    source = meta.get("source", "manifest")
+    if source == "manifest":
+        entry = entries.get(meta.get("seq"))
+        if entry is None:
+            return iso("METADATA", f"seq {meta.get('seq')!r} is not in the campaign manifest")
+        if task_sha256(task) != entry["task_sha256"]:
+            return iso("EDITED", "task differs from the prepared task (edited after preparation)")
+        if cand.get("title") != entry["title"]:
+            return iso("EDITED", "issue title differs from the prepared task")
+        identity_sha = entry["task_sha256"]
+    elif source == "planner":
+        if (problem := verify_planned_issue(cand, task, campaign)) is not None:
+            return iso(problem[0], problem[1])
+        identity_sha = task_sha256(task)
+    else:
+        return iso("METADATA", f"unknown task source {source!r}")
     checks.append("task_identity")
     if snapshot.get("repository") != policy["repository"] or campaign.get("repository") != policy["repository"]:
-        return Step(BLOCKED, "wrong repository", number)
+        return iso("WRONG_REPOSITORY", "wrong repository")
     if task.get("route") not in (None, ROUTE):
-        return Step(BLOCKED, f"task asks for route {task.get('route')!r}; only {ROUTE} may start", number)
+        return iso("ROUTE", f"task asks for route {task.get('route')!r}; only {ROUTE} may start")
     if task.get("kind", "proof") not in policy["allowed_task_kinds"]:
-        return Step(BLOCKED, f"task kind {task.get('kind')!r} is not allowed by policy", number)
+        return iso("TASK_KIND", f"task kind {task.get('kind')!r} is not allowed by policy")
     if task.get("expected_target_branch") != policy["base_branch"]:
-        return Step(BLOCKED, "task targets a branch other than the policy base branch", number)
-    for p in task.get("allowed_paths") or []:
-        if any(str(p.get("path", "")).startswith(pre) for pre in policy["forbidden_path_prefixes"]):
-            return Step(BLOCKED, f"task touches a protected path {p.get('path')!r}", number)
-    if task.get("human_boundary") is True or any(_HUMAN_BOUNDARY.search(s) for s in _strings(
-            {k: v for k, v in task.items() if k not in {"next_task", "campaign"}})):
-        return Step(BLOCKED, "task asks for a human-boundary operation (merge / default write / destructive / "
-                             "billing / key): a human must handle it", number)
+        return iso("TARGET_BRANCH", "task targets a branch other than the policy base branch")
+    if (problem := classify_task(task, policy)) is not None:
+        return iso(*problem)
     if task.get("max_corrective_rounds", 0) > policy["max_corrective_rounds"]:
-        return Step(BLOCKED, "task corrective budget exceeds policy", number)
+        return iso("CORRECTIVE_BUDGET", "task corrective budget exceeds policy")
     event_gen = (snapshot.get("event") or {}).get("generation")
     if event_gen is not None and event_gen != task["generation"]:
-        return Step(NO_OP, f"wake for generation {event_gen}, task is generation {task['generation']}", number)
+        return Step(NO_OP, f"wake for generation {event_gen}, task is generation {task['generation']}", number,
+                    code="OLD_GENERATION")
     checks.append("task_policy")
 
     try:
         intents, receipts = starter_records(cand.get("comments") or [], trusted)
     except (ValueError, json.JSONDecodeError) as exc:
-        return Step(NO_OP, f"starter record unreadable ({exc}); nothing is written over it", number)
+        return Step(NO_OP, f"starter record unreadable ({exc}); nothing is written over it", number,
+                    code="RECORD_UNREADABLE")
     intents = [i for i in intents if i["correlation_id"] == task["correlation_id"]]
     receipts = [r for r in receipts if r["correlation_id"] == task["correlation_id"]]
     if receipts:
-        return Step(NO_OP, "already started (terminal start receipt exists)", number)
+        return Step(NO_OP, "already started (terminal start receipt exists)", number, code="STARTED")
     lease = timedelta(minutes=policy["intent_lease_minutes"])
     cur = current_intent(intents, lease)
     labels = set(cand.get("labels") or [])
@@ -459,109 +666,155 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     if LABEL in labels or ever_labeled:
         if cur is not None and LABEL in labels:
             body = render_start_receipt({
-                "profile": START_RECEIPT_PROFILE, "campaign_id": campaign["campaign_id"], "seq": meta["seq"],
+                "profile": START_RECEIPT_PROFILE, "campaign_id": campaign["campaign_id"], "seq": meta.get("seq"),
                 "task_id": task["task_id"], "correlation_id": task["correlation_id"],
-                "generation": task["generation"], "issue": number, "task_sha256": entry["task_sha256"],
+                "generation": task["generation"], "issue": number, "task_sha256": identity_sha,
                 "attempt": cur["attempt"], "intent_comment": cur["_comment"], "controller": controller,
                 "label": LABEL, "outcome": "STARTED", "created_at": _fmt(now)})
             return Step(WRITE_START_RECEIPT, "label observed after the intent: record the start", number,
                         body=body, checks=tuple(checks + ["label_observed"]))
         if cur is not None:
-            return Step(BLOCKED, "label was added and later removed: never re-added (a second Jules task)", number)
-        return Step(BLOCKED, "issue was labeled outside the starter; not started again", number)
+            return iso("LABEL_REMOVED", "label was added and later removed: never re-added (a second Jules task)",
+                       True)
+        return iso("LABELED_OUTSIDE", "issue was labeled outside the starter; not started again", True)
     if cand.get("state") != "OPEN":
-        return Step(BLOCKED, "issue is closed", number)
+        return iso("ISSUE_CLOSED", "issue is closed")
     checks.append("not_started")
 
-    pred_meta = meta.get("predecessor")
-    pred = snapshot.get("predecessor")
-    if not isinstance(pred_meta, dict) or not pred_meta.get("correlation_id"):
-        return Step(BLOCKED, "task names no predecessor", number)
-    if not pred:
-        return Step(DEFER, "predecessor issue not read yet", number)
-    if pred_meta.get("issue") is not None and pred.get("number") != pred_meta["issue"]:
-        return Step(BLOCKED, "predecessor issue number differs from the task metadata", number)
-    pred_task, problem = _task_of(pred.get("body") or "")
-    if pred_task is None or pred_task.get("correlation_id") != pred_meta["correlation_id"] \
-            or pred_task.get("task_id") != pred_meta.get("task_id"):
-        return Step(BLOCKED, "predecessor issue does not hold the expected predecessor task", number)
-    try:
-        pred_receipts = _trusted_pass_receipts(pred, pred_meta["correlation_id"], trusted)
-    except (ValueError, json.JSONDecodeError, KeyError) as exc:
-        return Step(NO_OP, f"predecessor receipt unreadable ({exc}); UNKNOWN, nothing starts", number)
-    passes = [r for r in pred_receipts if r["verdict"] == PASS]
-    if len(passes) > 1:
-        return Step(BLOCKED, "more than one PASS receipt for the predecessor (UNKNOWN)", number)
-    if not passes:
-        if any(r["verdict"] == "BLOCKED" or r["decision"] == "TASK_BLOCKED" for r in pred_receipts):
-            return Step(BLOCKED, "predecessor is blocked; its successor does not start", number)
-        return Step(DEFER, "predecessor has no PASS receipt yet", number)
-    receipt = passes[0]
-    if receipt["decision"] != "ADOPT_RECORDED" or receipt["next_issue"] != number:
-        return Step(BLOCKED, "the predecessor PASS receipt does not name this issue as its next issue", number)
-    if receipt["task_id"] != pred_meta.get("task_id") or receipt["generation"] != pred_task.get("generation"):
-        return Step(BLOCKED, "predecessor receipt identity mismatch", number)
-    if pred.get("pr_head") is not None and pred["pr_head"] != receipt["pr_head_sha"]:
-        return Step(BLOCKED, "predecessor PR head changed after PASS", number)
-    checks.append("predecessor_pass")
+    states = snapshot.get("task_states")
+    deps = tuple(task.get("depends_on") or ())
+    if deps:
+        if not isinstance(states, dict):
+            return defer("DEPENDENCY_UNKNOWN", "dependency states not read (UNKNOWN)", dependency=deps)
+        for dep in deps:
+            state = states.get(dep)
+            if state == "MERGED":
+                continue
+            if state == "PASS_UNMERGED":
+                return defer("MERGE_WAIT", f"needs {dep} merged into {policy['base_branch']} (PASS, waiting for a "
+                             "human Merge)", dependency=deps, human_required=True)
+            if state == "ISOLATED":
+                return iso("DEPENDENCY_ISOLATED", f"dependency {dep} is isolated")
+            return defer("DEPENDENCY_PENDING", f"dependency {dep} is {state or 'unknown'}", dependency=deps)
+    allowed = {p["path"] for p in task["allowed_paths"]}
+    for pending in snapshot.get("pending_merge") or []:
+        overlap = allowed & set(pending.get("paths") or [])
+        if pending.get("task_id") != task["task_id"] and overlap:
+            return defer("PATH_CONFLICT_PENDING_MERGE", f"{sorted(overlap)} are changed by {pending['task_id']}, "
+                         "which waits for a Merge", dependency=(pending["task_id"],), human_required=True)
+    checks.append("dependencies")
+
+    pred_correlation = pred_head = None
+    if source == "manifest":
+        pred_meta = meta.get("predecessor")
+        pred = snapshot.get("predecessor")
+        if not isinstance(pred_meta, dict) or not pred_meta.get("correlation_id"):
+            return iso("METADATA", "task names no predecessor")
+        if not pred:
+            return defer("PREDECESSOR_PENDING", "predecessor issue not read yet")
+        if pred_meta.get("issue") is not None and pred.get("number") != pred_meta["issue"]:
+            return iso("PREDECESSOR_MISMATCH", "predecessor issue number differs from the task metadata")
+        pred_task, problem = _task_of(pred.get("body") or "")
+        if pred_task is None or pred_task.get("correlation_id") != pred_meta["correlation_id"] \
+                or pred_task.get("task_id") != pred_meta.get("task_id"):
+            return iso("PREDECESSOR_MISMATCH", "predecessor issue does not hold the expected predecessor task")
+        try:
+            pred_receipts = _trusted_pass_receipts(pred, pred_meta["correlation_id"], trusted)
+        except (ValueError, json.JSONDecodeError, KeyError) as exc:
+            return Step(NO_OP, f"predecessor receipt unreadable ({exc}); UNKNOWN, nothing starts", number,
+                        code="RECORD_UNREADABLE")
+        passes = [r for r in pred_receipts if r["verdict"] == PASS]
+        if len(passes) > 1:
+            return iso("DUPLICATE_RECEIPT", "more than one PASS receipt for the predecessor (UNKNOWN)", True)
+        if not passes:
+            if any(r["verdict"] == "BLOCKED" or r["decision"] == "TASK_BLOCKED" for r in pred_receipts):
+                return iso("PREDECESSOR_ISOLATED", "predecessor is isolated; its successor does not start")
+            return defer("PREDECESSOR_PENDING", "predecessor has no PASS receipt yet")
+        receipt = passes[0]
+        if receipt["decision"] != "ADOPT_RECORDED" or receipt["next_issue"] != number:
+            return iso("PREDECESSOR_MISMATCH",
+                       "the predecessor PASS receipt does not name this issue as its next issue")
+        if receipt["task_id"] != pred_meta.get("task_id") or receipt["generation"] != pred_task.get("generation"):
+            return iso("PREDECESSOR_MISMATCH", "predecessor receipt identity mismatch")
+        if pred.get("pr_head") is not None and pred["pr_head"] != receipt["pr_head_sha"]:
+            return iso("PREDECESSOR_MISMATCH", "predecessor PR head changed after PASS")
+        pred_correlation, pred_head = pred_meta["correlation_id"], receipt["pr_head_sha"]
+        checks.append("predecessor_pass")
+    else:
+        dup = [k for k in snapshot.get("known_tasks") or [] if k.get("fingerprint") == meta.get("fingerprint")
+               and isinstance(k.get("issue"), int) and isinstance(number, int) and k["issue"] < number
+               and k.get("state") not in {"ISOLATED", "CLOSED"}]
+        if dup:
+            return iso("DUPLICATE", f"the same problem is already task #{dup[0]['issue']}")
+        checks.append("objective")
+
 
     base_head = snapshot.get("base_head")
     if not _SHA40.fullmatch(str(base_head or "")):
-        return Step(DEFER, "base branch head not read (UNKNOWN)", number)
+        return defer("BASE_UNKNOWN", "base branch head not read (UNKNOWN)")
     if base_head != task["expected_target_head"]:
         changed = snapshot.get("base_changed_paths")
-        allowed = {p["path"] for p in task["allowed_paths"]}
         if policy["base_policy"] == "exact":
-            return Step(BLOCKED, "stale task: base branch moved (exact base policy)", number)
+            return iso("STALE_BASE", "stale task: base branch moved (exact base policy)")
         if changed is None:
-            return Step(DEFER, "base branch moved and the changed paths are not known (UNKNOWN)", number)
+            return defer("BASE_UNKNOWN", "base branch moved and the changed paths are not known (UNKNOWN)")
         if set(changed) & allowed:
-            return Step(BLOCKED, "stale task: base branch changed an allowed path; re-prepare the task", number)
+            return iso("STALE_BASE", "stale task: base branch changed an allowed path; re-prepare the task")
     checks.append("base")
 
     rounds = campaign.get("max_rounds", policy.get("max_campaign_rounds"))
-    if rounds is not None and meta["seq"] > rounds:
-        return Step(DEFER, "campaign round limit reached; a human may extend it", number, scope="campaign")
+    if rounds is not None and isinstance(meta.get("seq"), int) and meta["seq"] > rounds:
+        return Step(DEFER, "campaign round limit reached; a human may extend it", number, scope="campaign",
+                    code="ROUND_LIMIT", human_required=True)
     active = [a for a in snapshot.get("active_tasks") or [] if a.get("correlation_id") != task["correlation_id"]]
     if len(active) >= policy["max_concurrent_tasks"]:
         return Step(DEFER, f"{len(active)} Jules task(s) still running (limit {policy['max_concurrent_tasks']})",
-                    number, scope="global")
+                    number, scope="global", code="CONCURRENCY")
     quota = snapshot.get("quota") or {"state": QUOTA_UNKNOWN}
     if quota.get("state") == QUOTA_EXHAUSTED:
         reset = quota.get("reset_at")
         if not reset or now < _ts(reset):
             return Step(DEFER, "Jules quota confirmed exhausted: new starts wait for the reset", number,
-                        scope="global", retry_after=reset)
+                        scope="provider_execution", retry_after=reset, code="QUOTA_EXHAUSTED")
     elif quota.get("state") != QUOTA_OK and policy["on_quota_unknown"] == "defer":
-        return Step(DEFER, "quota UNKNOWN and policy defers on unknown", number, scope="global")
+        return Step(DEFER, "quota UNKNOWN and policy defers on unknown", number, scope="provider_execution",
+                    code="QUOTA_UNKNOWN")
     checks.append("capacity")
 
     def intent_body(attempt: int, supersedes: int | None) -> tuple[str, str]:
         nonce = uuid.uuid4().hex
         return render_intent({
-            "profile": INTENT_PROFILE, "campaign_id": campaign["campaign_id"], "seq": meta["seq"],
+            "profile": INTENT_PROFILE, "campaign_id": campaign["campaign_id"], "seq": meta.get("seq"),
             "task_id": task["task_id"], "correlation_id": task["correlation_id"], "generation": task["generation"],
-            "issue": number, "task_sha256": entry["task_sha256"],
-            "predecessor_correlation_id": pred_meta["correlation_id"], "predecessor_pr_head": receipt["pr_head_sha"],
-            "attempt": attempt, "supersedes": supersedes, "controller": controller, "nonce": nonce,
-            "policy_version": policy["policy_version"], "route": ROUTE, "created_at": _fmt(now)}), nonce
+            "issue": number, "task_sha256": identity_sha, "predecessor_correlation_id": pred_correlation,
+            "predecessor_pr_head": pred_head, "attempt": attempt, "supersedes": supersedes,
+            "controller": controller, "nonce": nonce, "policy_version": policy["policy_version"], "route": ROUTE,
+            "created_at": _fmt(now)}), nonce
 
     if cur is None:
         if intents:
-            return Step(NO_OP, "intent records exist but none is a valid first attempt (UNKNOWN)", number)
+            return Step(NO_OP, "intent records exist but none is a valid first attempt (UNKNOWN)", number,
+                        code="RECORD_UNREADABLE")
         body, nonce = intent_body(1, None)
         return Step(WRITE_INTENT, "all start conditions hold: record the intent", number, body=body, nonce=nonce,
                     checks=tuple(checks))
     if cur["nonce"] in session_nonces:
         if cur["nonce"] in label_written:
-            return Step(DEFER, "label write outcome unknown and not visible: never re-sent in this run", number)
+            return defer("WRITE_UNCONFIRMED", "label write outcome unknown and not visible: never re-sent in this run")
         return Step(WRITE_LABEL, "this controller owns the current intent: add the label once", number,
                     nonce=cur["nonce"], checks=tuple(checks + ["intent_owned"]))
     if now < _ts(cur["_at"]) + lease:
-        return Step(DEFER, f"intent attempt {cur['attempt']} by {cur['controller']} is within its lease", number,
-                    retry_after=_fmt(_ts(cur["_at"]) + lease))
+        return defer("LEASE_HELD", f"intent attempt {cur['attempt']} by {cur['controller']} is within its lease",
+                     retry_after=_fmt(_ts(cur["_at"]) + lease))
     if cur["attempt"] >= policy["max_label_attempts"]:
-        return Step(BLOCKED, "label attempts exhausted without a visible label; a human must look", number)
+        # Repeated invisible label writes point at the write path (GitHub, permissions), not at this task, so the
+        # task is not thrown away: it keeps waiting with an exponential backoff, visibly escalated to a human.
+        # Retrying stays duplicate-safe: every attempt first proves the label was never present.
+        backoff = min(lease * 2 ** (cur["attempt"] - policy["max_label_attempts"] + 1), timedelta(hours=24))
+        if now < _ts(cur["_at"]) + backoff:
+            return defer("WRITE_PATH_UNHEALTHY", f"{cur['attempt']} label attempts without a visible label: "
+                         "retrying with backoff; a human should check the GitHub write path",
+                         retry_after=_fmt(_ts(cur["_at"]) + backoff), human_required=True)
     body, nonce = intent_body(cur["attempt"] + 1, cur["_comment"])
     return Step(WRITE_INTENT, f"intent attempt {cur['attempt']} expired without a label: take over", number,
                 body=body, nonce=nonce, checks=tuple(checks + ["takeover"]))

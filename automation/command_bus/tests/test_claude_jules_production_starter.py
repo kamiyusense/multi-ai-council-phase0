@@ -54,7 +54,7 @@ class StartSequenceTests(Base):
         s = self.step()
         self.assertEqual(s.action, st.WRITE_INTENT)
         self.assertEqual(s.checks, ("policy", "manifest", "route", "task_identity", "task_policy", "not_started",
-                                    "predecessor_pass", "base", "capacity"))
+                                    "dependencies", "predecessor_pass", "base", "capacity"))
 
     def test_replay_after_start_is_noop_and_never_relabels(self):
         self.make()
@@ -178,8 +178,9 @@ class NegativeTests(Base):
 
     def _boundary(self, text):
         self.make(extras={1: {"acceptance_criteria": [text, "a regression test is added"]}})
-        self.assert_not_started(action=st.BLOCKED)
-        self.assertIn("human-boundary", self.step().reason)
+        self.assert_not_started(action=st.ISOLATE)
+        s = self.step()
+        self.assertEqual((s.code, s.human_required), ("CLASSIFICATION_MISMATCH", True))
 
     def test_destructive_request(self):
         self._boundary("Run rm -rf on the build directory and delete the branch afterwards")
@@ -205,7 +206,7 @@ class NegativeTests(Base):
         self.make()
         s = self.step(route_observation={"transport": "carrier-rest-api-key", "auth_method": "api_key",
                                          "billing_route": "unknown"})
-        self.assertEqual((s.action, s.scope), (st.HARD_STOP, "global"))
+        self.assertEqual((s.action, s.scope, s.code), (st.HARD_STOP, "provider_execution", "PAID_ROUTE"))
 
     def test_metered_route_observed_is_hard_stop(self):
         self.make()
@@ -400,15 +401,21 @@ class RecoveryTests(Base):
         self.assertEqual(res.steps[0].action, st.WRITE_START_RECEIPT)
         self.check_once()
 
-    def test_label_attempts_are_bounded(self):
-        self.make()
-        for _ in range(2):
+    def test_repeated_invisible_labels_back_off_and_escalate_but_never_drop_the_task(self):
+        self.make(policy=st.make_policy(max_label_attempts=2))
+        for _ in range(3):
             self.w.gh.inject("label", "timeout_unapplied", issue=self.first)
-        for k in range(8):
+        seen = []
+        for k in range(30):
             self.w.run_controller(self.first, controller=f"r{k}")
-            self.w.tick(20)
-        self.assertEqual(self.step().action, st.BLOCKED)
-        self.assertEqual(labeled_events(self.w, self.first), 0)
+            seen.append(self.step())
+            self.w.tick(10)
+        unhealthy = [s for s in seen if s.code == "WRITE_PATH_UNHEALTHY"]
+        self.assertTrue(unhealthy and all(s.action == st.DEFER and s.human_required for s in unhealthy))
+        self.assertEqual(labeled_events(self.w, self.first), 1)            # started once the path recovered
+        intents, receipts = st.starter_records(self.w.gh.issues[self.first]["comments"], {sw.OWNER})
+        self.assertEqual([i["attempt"] for i in intents], [1, 2, 3, 4])    # backoff: no intent spam
+        self.assertEqual(len(receipts), 1)
 
     def test_two_controllers_racing_one_wins(self):
         self.make()

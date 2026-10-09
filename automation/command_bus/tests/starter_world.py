@@ -402,3 +402,173 @@ def seed_predecessor(world: World, c: dict) -> tuple[int, int]:
               "reviewed_at": st._fmt(world.now)}
     world.gh.comment(seed_issue, review.render_receipt(summary="seed PASS", record=record))
     return seed_issue, nxt
+
+
+# ---------------------------------------------------------------- autonomous loop world (planner + PR-event wakes)
+class LoopWorld(World):
+    """The loop as production wires it: the only wakes are pull_request events (reviewer Routine, then a loop
+    tick), pull_request.closed(merged) events, an optional recovery schedule, and the human's first start.
+    Issue events wake nothing (Routine GitHub triggers support pull_request and release only)."""
+
+    def __init__(self, campaign_: dict, signals: list[dict], *, review_script=None, duplicate_every: int = 0,
+                 recovery_wake: bool = True, proposer=None):
+        super().__init__([campaign_], review_script=review_script, duplicate_every=duplicate_every)
+        from automation.command_bus import claude_jules_loop as loop
+        self.loop = loop
+        self.campaign = campaign_
+        self.backlog = signals
+        self.recovery_wake = recovery_wake
+        self.proposer = proposer
+        self.signal_failures = 0
+        self.read_failures = 0
+        self.main_history: list[tuple[str, list[str]]] = [(MAIN, [])]
+        self.ticks: list[Any] = []
+        self.loop_crashes = 0
+        self._quota = self.__dict__.pop("quota")          # the port exposes quota() / route() as methods
+        self._route = self.__dict__.pop("route")
+        self.control = self.gh.create_issue("Claude x Jules loop control", "Loop checkpoints are recorded here.")
+        campaign_["control_issue"] = self.control
+        self.gh.events.clear()
+
+    # -- port (what a Routine reads and writes on GitHub)
+    def list_campaign_issues(self):
+        if self.read_failures:
+            self.read_failures -= 1
+            raise self.loop.TransientRead("GitHub 502")
+        return [self.gh.read_issue(n) for n in sorted(self.gh.issues) if n != self.control]
+
+    def read_control_issue(self):
+        return self.gh.read_issue(self.control)
+
+    def base_head(self):
+        return self.main_head
+
+    def read_issue(self, n):
+        return self.gh.read_issue(n)
+
+    def find_issue_by_correlation(self, corr):
+        return self.issue_by_correlation(corr) if corr else None
+
+    def pr_head(self, n):
+        pr = self.jules_pr.get(n)
+        return self.gh.prs[pr]["head"] if pr else None
+
+    def pr_merged(self, n):
+        pr = self.jules_pr.get(n)
+        return bool(pr and self.gh.prs[pr].get("merged"))
+
+    def base_changed_paths(self, expected, base):
+        if expected == base:
+            return []
+        heads = [h for h, _ in self.main_history]
+        if expected not in heads:
+            return None
+        return sorted({p for _, paths in self.main_history[heads.index(expected) + 1:] for p in paths})
+
+    def quota(self):
+        return dict(self._quota)
+
+    def route(self):
+        return dict(self._route)
+
+    def signals(self):
+        if self.signal_failures:
+            self.signal_failures -= 1
+            raise self.loop.TransientRead("signal source unavailable")
+        return [dict(s) for s in self.backlog]
+
+    def create_issue(self, title, body):
+        out = {}
+        self.gh._apply_with_fault("create", 0, lambda: out.setdefault("n", self.gh.create_issue(title, body)), body)
+        return out["n"]
+
+    def add_comment(self, n, body):
+        self.gh.starter_comment(n, body)
+
+    def add_label(self, n, label):
+        self.gh.starter_label(n, label)
+
+    # -- wakes
+    def tick_loop(self, wake: str) -> None:
+        self.controllers += 1
+        try:
+            res = self.loop.run_tick(self, campaign=self.campaign, controller=f"routine-{self.controllers}",
+                                     now=lambda: st._fmt(self.now), proposer=self.proposer)
+        except Crash as exc:
+            self.loop_crashes += 1
+            self.log.append(f"loop tick ({wake}) crashed: {exc}")
+            return
+        self.ticks.append(res)
+        self.log.append(f"tick {wake}: {res.outcome} started={res.started} created={res.created} {res.reason}")
+
+    def human_merge(self, issue: int) -> None:
+        pr = self.jules_pr[issue]
+        p = self.gh.prs[pr]
+        p["merged"] = True
+        self.main_head = sha(f"main-after-{pr}")
+        self.main_history.append((self.main_head, [f["filename"] for f in p["files"]]))
+        self.gh.events.append({"name": "pull_request.closed", "pr": pr, "merged": True})
+
+    def deliver(self, event):
+        name = event["name"]
+        if name in {"pull_request.opened", "pull_request.synchronize"}:
+            self.reviewer(event["pr"])
+            self.tick_loop(name)                 # same Routine run: receipt, then a loop tick
+        elif name == "pull_request.closed":
+            self.tick_loop(name)
+        elif name == "pr_comment":
+            if event["author"] == OWNER and event["body"].startswith("@jules"):
+                self.jules_on_corrective(event["issue"])
+        elif name == "issues.labeled":
+            if event["label"] == st.LABEL:
+                self.jules_on_label(event["issue"])
+        elif name in {"schedule", "start"}:
+            if name == "start" or self.recovery_wake:
+                if name == "schedule":       # recovery: review any PR head that has no receipt (lost PR event)
+                    for pr in sorted(self.gh.prs):
+                        if not self.gh.prs[pr].get("merged") and self.gh.prs[pr]["issue"] in self.gh.issues:
+                            self.reviewer(pr)
+                self.tick_loop(name)
+        # issues.opened / issue_comment.created wake nothing
+
+    def run_until_quiet(self, *, max_wakes: int = 400, merge_policy=None, schedule_minutes: int = 60) -> None:
+        """Deliver events; when the queue is empty, let the human merge (merge_policy) or the schedule wake."""
+        for _ in range(max_wakes):
+            self.run()
+            if merge_policy is not None:
+                to_merge = merge_policy(self)
+                for n in to_merge:
+                    self.human_merge(n)
+                if to_merge:
+                    continue
+            last = self.ticks[-1].outcome if self.ticks else None
+            if last in {"GOAL_COMPLETE", "NO_SAFE_TASK", "MERGE_WAIT"} and not self.gh.events:
+                if merge_policy is None or not merge_policy(self):
+                    return
+            self.tick(schedule_minutes)
+            self.deliver({"name": "schedule"})
+        raise AssertionError("loop did not settle")
+
+
+def objective(oid: str, prefixes: list[str], *, ops=None, priority: int = 10) -> dict:
+    return {"objective_id": oid, "title": f"objective {oid}", "scope_prefixes": prefixes,
+            "allowed_operations": ops or ["bug_fix", "test_add", "test_fix", "code_edit", "docs_update",
+                                          "safety_test_add", "safety_static_fix", "fixture_add", "mock_add"],
+            "priority": priority, "approved_by": "user", "approved_at": "2026-10-09T00:00:00Z"}
+
+
+def planner_campaign(cid: str, objectives: list[dict], *, policy: dict | None = None) -> dict:
+    pol = policy or st.make_policy()
+    manifest = {"profile": st.CAMPAIGN_PROFILE, "campaign_id": cid, "loop_id": f"loop-{cid}",
+                "repository": pol["repository"], "policy": pol, "tasks": [], "objectives": objectives}
+    st.validate_campaign(manifest)
+    return manifest
+
+
+def signal(sid: str, oid: str, path: str, *, kind: str = "failing_test", depends_on=None, **extra) -> dict:
+    sig = {"signal_id": sid, "objective_id": oid, "kind": kind, "summary": f"fix {sid}", "paths": [path],
+           "evidence": [f"log:{sid}"]}
+    if depends_on:
+        sig["depends_on_signals"] = depends_on
+    sig.update(extra)
+    return sig
