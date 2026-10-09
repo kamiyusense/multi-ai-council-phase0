@@ -1,0 +1,3 @@
+Compiling 52 files (.ex)
+Generated symphony_elixir app
+Generated escript bin/symphony with MIX_ENV=dev

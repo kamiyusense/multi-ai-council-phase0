@@ -1,0 +1,35 @@
+{
+  "protocol": "SYMPHONY_G51_OFFLINE_VALIDATION_V1",
+  "upstream_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "outcome": "PASS",
+  "checks": [
+    {
+      "check": "elixir-format",
+      "exit_code": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "elixir-compile",
+      "exit_code": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "elixir-specs",
+      "exit_code": 0,
+      "sha256": "e1f1ed15933185226053f7f7d3b929461a1cc3bc4b0931b7a69a552d0b0c1969"
+    },
+    {
+      "check": "elixir-fixtures",
+      "exit_code": 0,
+      "sha256": "58e571e866f9e4d3db1f998dff42b30b5fc66cf869d662c83c3514b0fcf448a1"
+    }
+  ],
+  "clean_pin_patch_check": "PASS",
+  "applied_patch_reverse_check": "PASS",
+  "patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+  "application_started": false,
+  "live_launch_count": 0,
+  "model_dispatch_count": 0,
+  "upstream_behavior_changes": false,
+  "signed_fixture_sha256": "453355cd03dcd5a1db0ece81f2e288e4343ac26755bc1c73459f519853843da4"
+}

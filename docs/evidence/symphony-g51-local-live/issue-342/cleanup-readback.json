@@ -1,0 +1,42 @@
+{
+  "recorded_at": "2026-10-09T23:08:18.418960+00:00",
+  "official_symphony_stopped": true,
+  "proof_appserver_stopped": true,
+  "observer_stopped": true,
+  "restarted_observer_stopped": true,
+  "port_4000_closed": true,
+  "temporary_process_stops": [
+    {
+      "pid": 751517,
+      "signal": "SIGTERM",
+      "scope": "sole G5.1 Official Symphony parent after terminal/replay"
+    }
+  ],
+  "preexisting_desktop_appserver_preserved": true,
+  "proof_issue_state": "closed",
+  "proof_issue_state_reason": "completed",
+  "proof_issue_closed_at": "2026-10-09T23:00:42Z",
+  "ending_refs_before_result_commit": {
+    "pr": "d567ea71c89ce44f6db442fa37f4f4ce3a9cc32c",
+    "main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "proof": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "ledger": "1e7333caf91c556a48f423a802c48678962e1cbc"
+  },
+  "historical_issues": {
+    "336": "open",
+    "341": "closed"
+  },
+  "historical_ledger_blob_count": 1583,
+  "historical_ledger_blobs_unchanged": true,
+  "new_ledger_blobs": {
+    "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/intent.json": "c7b7012f35f4dc63a418d56c63144903a8d35112",
+    "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/started.json": "fc2a1be646934d6d8f5002895a10aba30c95b5ca",
+    "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/terminal.json": "43c2957939bf6f79ad61aca36739ebbaca02d113"
+  },
+  "workspace_exists_after_tracker_close": false,
+  "workspace_removal_source": "Official Symphony normal terminal-state reconciliation; operator did not delete workspace",
+  "operator_workspace_deletion_count": 0,
+  "worker_unauthorized_mutation_count_at_verified_close": 0,
+  "main_mutation_count": 0,
+  "automatic_git_adoption_count": 0
+}

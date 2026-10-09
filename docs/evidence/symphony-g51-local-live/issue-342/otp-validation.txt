@@ -1,0 +1,4 @@
+elixir-format: PASS
+elixir-compile: PASS
+elixir-specs: PASS
+elixir-fixtures: PASS

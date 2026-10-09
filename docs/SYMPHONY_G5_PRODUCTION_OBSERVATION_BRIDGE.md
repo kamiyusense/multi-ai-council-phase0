@@ -1,6 +1,8 @@
 # G5 — Official Symphony production observation bridge
 
-Status: **G5.1 worker-lifecycle STATIC fix present; Local G5 #341 remains FAIL / STARTED_UNRESOLVED**.
+Status: **G5.1 Local LIVE #342 PASS; historical G5 #341 remains FAIL / STARTED_UNRESOLVED**.
+See [G5.1 Issue #342 result](SYMPHONY_G51_LOCAL_LIVE_RESULT_ISSUE_342.md): real tracker-close
+WORKER_STOPPED, durable TERMINAL and observer-only duplicate replay verified; G6 remains unexecuted.
 See [Issue #341 Local result](SYMPHONY_G5_LOCAL_LIVE_RESULT_ISSUE_341.md). Official Symphony pin:
 `be10a1b79df723d6d7612b5651c8522704dafb2e`.
 
