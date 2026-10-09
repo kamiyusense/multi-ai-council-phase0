@@ -41,4 +41,6 @@ Body:
 
 Create only the one small artifact specified in the Issue body, inside the provided isolated workspace and non-default proof branch. Do not change `main` or the PR #320 branch. Do not push, merge, force push, reset, clean, delete files, or change Billing, Secrets, or API keys.
 
+The proof branch is intentionally pinned to its original starting commit while PR #320 advances with operator evidence. Record the current PR HEAD separately. A mismatch between the proof branch HEAD and current PR HEAD is expected and is not by itself a blocker for creating this proof artifact. Keep result adoption on hold; only the Local operator may inspect it after fresh readback.
+
 First read the branch, HEAD, and working tree, then verify the Issue and allowed path. After working, inspect `git status --short`, `git diff --check`, and the target file content. Report only observed turn, continuation, retry, and workspace facts. Leave multiple turns, normal continuation, retry, backoff, and stall recovery to Official Symphony. Do not close the Issue or adopt the artifact into another branch. If blocked, report facts and do not repeat an ambiguous side effect.

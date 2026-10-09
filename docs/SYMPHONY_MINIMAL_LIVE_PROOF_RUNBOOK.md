@@ -2,6 +2,16 @@
 
 この文書は **Local での LIVE 実行が明示承認された後** に使います。Cloud では Issue 作成、Official Symphony 起動、Codex worker/model 起動をしません。準備済みの [Issue 文面](SYMPHONY_MINIMAL_LIVE_PROOF_ISSUE.md) と [WORKFLOW.md](SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md) を使います。検証対象の Official Symphony は `openai/symphony@be10a1b79df723d6d7612b5651c8522704dafb2e` です。起動するのは素の upstream Elixir 実装で、New Chinponey の STATIC controller はこの実験の scheduler になりません。
 
+## 2026-10-09 generation 4 — 最小実機 proof の達成範囲
+
+[generation 4 の結果](SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336_G4.md)は、今回定義した worker lifecycle / 隔離1ファイル proof の **PASS**。固定版 Official Symphony が Issue #336 を選択し、実 Codex App Server、モデル turn 1件の完了、同じ thread の自然な continuation、指定ファイル1件の生成まで観測した。2 turn目は観測後の Ctrl+C で中断し、完了として数えない。generation 4 内の retry/backoff、stall recovery は NOT_OBSERVED。過去3 generation の FAIL はそのまま保存する。
+
+子プロセスの API selector と tracker token の変数名は未検出。既存ファイル変更・削除・worker commit/push は0、LIVE停止直後の main / PR / proof refs は開始時と一致した。成果は proof workspace に残し、他branchへ採用していない。`git diff --check` は untracked の内容を対象にしないため、新規成果の直接readbackと `git diff --no-index --check /dev/null <artifact>` も確認する（差分がある場合のexit 1と空白エラーを区別する）。
+
+既存 Issue #336 と proof branch は再作成・更新しない。proof branch は初回の開始commitを保持し、PR #320はoperator証拠のcommitで進む。この2つのHEAD不一致だけを小さいproof taskの停止理由にしない。採用時のcurrent canonical HEAD / task validity / diff確認は引き続き別境界。workflowへこの区別をSTATIC追記したが、その追記自体は再LIVE未検証。
+
+以後のcorrective LIVEは、現在の明示承認がそのgenerationを含む場合だけ行う。各generationでfresh readback、auth/schema/config/rendered prompt検証、過去process停止、新しい空workspace rootを確認する。既存upstreamはclean / detached / exact pinを検査して再利用し、初回用のIssue作成・branch作成・clone手順を繰り返さない。WSLの実機launcherでは、PATH上のWindows shimとの衝突を避けるため、検証済み `/home/yuuki/.local/bin/mise` を使った。LIVE successだけではNew Chinponeyのproduction transportやdurable restart/recoveryの完成証拠にはならない。
+
 ## 2026-10-09 generation 3 の観測と次の検証
 
 [generation 3 の結果](SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336_G3.md)は独立した **FAIL**。実 Issue #336 の選択、隔離 workspace、Codex App Server child とその禁止環境変数名の不在まで観測したが、App Server 起動中の応答待ちが既定の5秒で2回失敗した。session ID、モデル turn、成果ファイルは未確認。正確に `initialize` と `thread/start` のどちらの応答が遅れたかは UNKNOWN。LIVE中に `reject` と UTF-8 encoding のエラーは再発しなかったが、`turn/start` へは到達していないため ASCII 修正の実機成功とは呼ばない。

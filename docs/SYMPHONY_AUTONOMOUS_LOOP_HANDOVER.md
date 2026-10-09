@@ -3,6 +3,28 @@
 Status: current design handover for the autonomous-loop line. Fresh GitHub
 readback is authoritative; do not trust remembered SHA values.
 
+## Latest Local upstream boundary — 2026-10-09
+
+Generation 4 achieved the explicitly bounded Local worker/workspace proof;
+read `SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336_G4.md`. One real model
+turn completed, the only allowed new evidence file was produced, and normal
+same-thread continuation started. The operator stopped the second turn after
+sufficient proof, confirmed process/port shutdown, and read back unchanged
+main/PR/proof refs during the LIVE interval. Generations 1–3 remain FAIL.
+
+Current workflow compatibility uses granular approval channels all false,
+ASCII prompt template, and `read_timeout_ms: 60000`. A later STATIC prompt
+clarification distinguishes the fixed original proof HEAD from the advancing
+PR evidence HEAD. It is not a new LIVE result. Keep each historical root/log
+immutable and use a new root for any separately authorized corrective generation.
+
+Production upstream-event-to-ledger transport, authenticated durable recovery,
+automatic Git adoption, completed continuation, natural stall recovery and
+quota-reset recovery still require their own evidence. Existing STATIC durable
+attempt and adoption guards remain the integration seams. Do not infer those
+capabilities from the one-file proof or replace original Symphony continuation
+with a one-turn scheduler.
+
 ## Latest implemented boundary — 2026-10-07
 
 Read `SYMPHONY_ADOPTION_BRIDGE_STATIC_CHECKPOINT.md` for the newer STATIC

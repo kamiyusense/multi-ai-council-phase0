@@ -3,6 +3,30 @@
 Status: line-specific architecture for the Symphony-derived autonomous loop.
 Read together with `AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md`.
 
+## Local upstream evidence — 2026-10-09
+
+Read `SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336_G4.md` for the
+bounded Local proof. Unmodified Official Symphony at the recorded pin selected
+Issue #336, created an isolated proof checkout, completed one real Codex model
+turn, created the one allowed evidence artifact, and naturally continued on the
+same thread. A second turn was started and interrupted by the operator after
+the proof was sufficient. Retry/backoff and stall recovery were not observed in
+that generation; prior failed generations observed retry/backoff independently.
+
+Compatibility is measured against the installed App Server: explicit granular
+approval channels, an ASCII workflow template for the pinned byte-mode parser,
+and a 60-second response wait were required by the observed path. These settings
+do not replace upstream scheduling or add a per-turn New Chinponey gate.
+
+The proof source checkout and current PR evidence HEAD are separate identities.
+Their expected difference must not be confused with permission to adopt stale
+work. Worker artifact creation, human/operator verification, durable terminal
+capture, and canonical Git adoption remain distinct boundaries. The Local
+process/log/workspace evidence has not yet been wired to the production durable
+attempt ledger. Stop/start with generation isolation was observed; authenticated
+durable recovery, automatic adoption, quota-reset recovery, and supervisor or
+other-provider LIVE integration remain unproven.
+
 ## 1. Product goal
 
 This line is not trying to make the safest possible one-shot executor.
