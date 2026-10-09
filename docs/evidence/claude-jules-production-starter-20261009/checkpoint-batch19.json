@@ -1,0 +1,69 @@
+{
+ "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+ "batch": 19,
+ "date_jst": "2026-10-09",
+ "main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+ "pr_340": {
+  "branch": "claude/production-starter-20261009",
+  "parent_head": "f500f71b27216ee031c2ece2e821f24db486da5f",
+  "state": "Draft OPEN"
+ },
+ "cloud_routine_probe": {
+  "runs": 0,
+  "max_runs": 1,
+  "status": "UNKNOWN",
+  "reason": "usage credits OFF not confirmed by the human",
+  "trigger_created": false
+ },
+ "cloud_session_preprobe": {
+  "session": "session_012adjVyeVuHrDhJRSE2i1XX",
+  "is_routine_run": false,
+  "gh_auth_status_exit": 1,
+  "gh_api_get": 200,
+  "repo_private": true,
+  "issue_335": {
+   "complete": true,
+   "events": 5,
+   "labeled_jules": [
+    "kamiyusense",
+    "2026-10-08T17:53:06Z"
+   ]
+  },
+  "issue_338": {
+   "complete": true,
+   "events": 3,
+   "label_events": 0,
+   "current_labels": []
+  },
+  "paginate_flag_past_page_1": "HTTP 403 (numeric repositories/{id} URL refused by proxy)",
+  "own_page_loop_per_page_2": "complete"
+ },
+ "routine": {
+  "trigger": "trig_01U2DaBYLqaF5uLgovs1WY2Y",
+  "version": "v1.5.1",
+  "updated_at": "2026-10-08T20:34:32Z",
+  "changed_in_batch": false
+ },
+ "issue_338": {
+  "labels": [],
+  "updated_at": "2026-10-08T18:04:22Z",
+  "body_sha256": "677d3ad4faafc338ac9f52ae2107887d5bb97785ea7f9e6786c109d654894888"
+ },
+ "ledger": {
+  "slot_10": "unused"
+ },
+ "live": {
+  "jules_tasks_started": 0,
+  "labels_written": 0,
+  "issues_written": 0,
+  "github_writes_by_probe": 0
+ },
+ "unknown": [
+  "gh/proxy behaviour inside a Routine run (probe not run)",
+  "usage credits setting (human)"
+ ],
+ "required_fixes_before_live": [
+  "v1.6 LAYER 4: replace gh auth status gate with a real GET",
+  "starter_gh.gh_get: replace --paginate with repos/{owner}/{repo} page loop"
+ ]
+}
