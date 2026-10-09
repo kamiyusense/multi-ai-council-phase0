@@ -1,49 +1,60 @@
-# Reviewer + Loop Routine prompt v1.6 (DRAFT, not applied)
+# Reviewer + Loop Routine prompt v1.6: final apply candidate (NOT applied)
 
-Status: **prepared, not applied**. The live Routine `trig_01U2DaBYLqaF5uLgovs1WY2Y` stays on v1.5.1, and no
-trigger was changed. This draft replaces the batch 16 v1.6 draft. That draft only added `body_ref`.
+Status: **prepared, not applied** (batch 18). The live Routine `trig_01U2DaBYLqaF5uLgovs1WY2Y` stays on v1.5.1, and
+no trigger or schedule was changed. This file replaces the batch 16 and batch 17 drafts; git keeps their history.
 
-## What the official documentation says, and why the design changed (checked 2026-10-09)
+## Facts this is built on
 
-Source: <https://code.claude.com/docs/en/routines>
+**Official documentation** (<https://code.claude.com/docs/en/routines>, read 2026-10-09):
 
-* **GitHub triggers:** a routine can subscribe to **Pull request** events (opened, closed, assigned, labeled,
-  synchronized, or otherwise updated) and **Release** events, and nothing else. There is **no `issues` and no
-  `issue_comment` trigger**. The batch 16 Starter Routine draft relied on those events, so it is superseded.
-* **Filters:** pull request events can be filtered by author, title, body, base or head branch, labels, is
-  draft, and is merged.
-* **Caps:** GitHub events have per-routine and per-account hourly caps. Events beyond the cap are **dropped**,
-  not queued. A lost wake is therefore a normal case, and the recovery wake below covers it.
-* **Schedules:** the minimum interval is **one hour**. A routine can combine schedule, API and GitHub triggers.
-* **Billing:** routine runs draw down subscription usage.
-  > "When a routine hits your subscription usage limit, organizations with usage credits turned on can keep
-  > running routines on metered overage."
+* **GitHub triggers:** Pull request and Release events only. There is no `issues` or `issue_comment` trigger.
+  Pull request filters include "is merged".
+* **Caps:** events over the per-routine and per-account hourly caps are **dropped**, not queued.
+* **Schedules:** at least **1 hour** apart. A routine may combine schedule, API and GitHub triggers.
+* **What a run is:** a full Claude Code cloud session. It runs shell commands in the cloned repository (default
+  branch) and uses the connectors you include.
+* **Usage:** runs draw down subscription usage.
+  * Without usage credits, runs are rejected until the usage window resets.
+  * **With usage credits on, routines can keep running on metered overage.**
+* **Usage credits:** turned on or off at Settings → Usage, billed at API rates
+  (<https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans>).
 
-  A human must confirm that usage credits are **off**. Otherwise an unattended loop could run on metered overage.
-  This is a Billing setting, and automation never changes it.
+**Observed in the 5 earlier runs** (read-only from their logs):
 
-## Design: one Routine, the PR event is the heartbeat
+* the Routine ran `python3`, `git` and `date` in Bash;
+* it read and wrote GitHub through the GitHub MCP tools: `pull_request_read`, `issue_read` (`get`,
+  `get_comments`), `issue_write`, `add_issue_comment`, `get_file_contents`, `list_commits`, `get_commit`,
+  `search_issues`;
+* the trigger context tells the session to use `gh api --hostname github.com …`, but no run has used `gh`, so
+  **`gh` authentication inside a run is UNKNOWN**;
+* none of the MCP calls seen reads issue **events**. The label history needs
+  `GET /repos/{o}/{r}/issues/{n}/events` with every page. Locally that works with `gh`, and #335's
+  `labeled jules` event was read back.
+* The repository is **private**: an unauthenticated GET returns 404, so a token-less fallback does not exist.
 
-The Starter and Loop no longer need a Routine of their own. The same reviewer run that judged a PR continues
-with a loop tick:
+## Design
 
 ```
-pull_request.opened / synchronize      -> Layers 1-3 (unchanged) -> receipt -> LAYER 4 loop tick
-pull_request.closed (is merged = true) -> LAYER 4 loop tick (merge-dependent work resumes)
-schedule, hourly (recovery)            -> review any open task PR head with no receipt, then LAYER 4 loop tick
+pull_request.opened / synchronize   -> Layers 1-3 (unchanged) -> receipt -> LAYER 4
+pull_request.closed, is merged      -> LAYER 4
+schedule, hourly (recovery)         -> Layers 1-3 for every open task PR head without a receipt, then LAYER 4
 ```
 
-The responsibilities stay separate. Layers 1-3 judge the PR. Layer 4 runs the deterministic loop code. Only that
-code decides what may start, and Claude performs exactly the writes it names.
+LAYER 4 is one deterministic command. The code chooses the writes, and Claude does not choose any write in
+Layer 4:
 
-## Trigger changes this needs (human approval; not made)
+```
+python3 -m automation.command_bus.claude_jules_starter_gh tick \
+    --campaign <manifest on main> \
+    --route-declaration docs/evidence/claude-jules-production-starter-20261009/route-declaration.json \
+    --controller "routine-$(date -u +%Y%m%dT%H%M%S)" \
+    --live-authorization <authorization file on main>
+```
 
-1. Add `pull_request.closed` with the filter "is merged = true" to the existing webhook trigger, or as a second
-   one. Without it, merge-dependent work resumes only on the next other PR event or recovery wake.
-2. Add an hourly schedule trigger (for example at minute 7) for recovery. Without it, a run that dies between the
-   receipt and the next start waits until a human presses "Run now". `test_without_a_recovery_wake_a_dead_run_waits_for_a_human`
-   shows this. The recovery tick is cheap when nothing changed: no write, because the checkpoint is written only
-   on change or on a heartbeat.
+* Inside one run it reads GitHub back after every write. Only that run's intent may lead to the label.
+* It never re-sends a write whose outcome is unknown.
+* It writes only loop records, the `jules` label on an authorized campaign issue, and campaign task issues.
+* Without a valid authorization it sends nothing. It prints what it would have done.
 
 ## Exact prompt changes against v1.5.1
 
@@ -51,36 +62,47 @@ code decides what may start, and Claude performs exactly the writes it names.
 2. **Hard rules.** "Never add the `jules` label to any issue. Never create a Jules task by any other means." is
    replaced by:
 
-   > Never add the `jules` label and never create an issue except as LAYER 4 instructs, and only the exact write
-   > the loop code printed in this run. Never create a Jules task by any other means.
+   > Never add a label and never create an issue yourself. The only exception is that LAYER 4 runs one command,
+   > which may do so under the human-approved LIVE authorization file. Never create a Jules task by any other means.
 
-3. **Layer 3, PASS.** The `next_task` handling is the `body_ref` text of the batch 16 draft: `render-next`, create
-   the issue verbatim, no label.
-4. **New LAYER 4** (after the receipt; or first, when the wake is `pull_request.closed` or the schedule):
+3. **Layer 3, PASS.** Add the `next_task.body_ref` rule:
 
-   > LAYER 4 - loop tick (deterministic; no judgement beyond writing a proposal):
-   > - Run `python3 -m automation.command_bus.claude_jules_loop tick --campaign <campaign file> --controller <run id>`.
-   >   It prints exactly one next write (`create_issue`, `comment`, or `add_label jules`) or a final outcome.
-   > - Perform that one write. Then run it again with `--session-nonce` for every intent you wrote, and
-   >   `--label-written-nonce` after you added the label. At most 8 writes per wake.
-   > - If it asks for a proposal for a signal, write a `CLAUDE_TASK_PROPOSAL_V1` JSON for that signal. It must stay
-   >   inside the objective's scope and approved operations, and name concrete acceptance criteria and test
-   >   commands. The code validates it, and a rejected proposal is skipped.
-   > - Never repeat a write whose result you did not see; run the tick again instead.
-   > - The final outcome (CONTINUE, MERGE_WAIT, NO_SAFE_TASK, GOAL_COMPLETE, DEFER, HARD_STOP_PROVIDER) and its
-   >   human actions go into the push notification.
+   > If next_task has "body_ref" {campaign_id, seq, task_sha256, path, ref}, run `git fetch origin <ref>`, then
+   > `git show FETCH_HEAD:<path> > /tmp/campaign.json`, then
+   > `python3 -m automation.command_bus.claude_jules_production_starter render-next --campaign /tmp/campaign.json --seq <seq> --task-sha256 <task_sha256>`.
+   > Create the issue with exactly the printed title and body, with no labels. If the command fails, create no
+   > issue and set next_issue null.
 
-5. **Scheduled wakes.** "If the wake is the schedule: for every open pull request whose body links a closed-loop
-   task issue and whose head has no receipt, run Layers 1-3 for it. Then run LAYER 4."
+4. **New LAYER 4**, after the receipt, or directly for a `closed` or schedule wake:
 
-## UNKNOWN before this can go live
+   > LAYER 4 - loop tick. First run `gh auth status`. If it fails, report "LAYER 4 skipped: gh not authenticated"
+   > and stop. The loop never starts without the label history.
+   > Then run the tick command above exactly once and include its JSON output in the notification.
+   > Do not perform any write the command did not perform.
 
-* Whether `gh` is authenticated inside a Routine run. The v1.5 runs used the GitHub MCP tools. The loop's
-  label-history read needs the issue events API.
-  * If `gh` works, a `gh`-backed port runs the tick directly.
-  * If it does not, the MCP tools must supply label history. Otherwise the Starter returns `DEFER READ_UNKNOWN`
-    and never starts: safe, but nothing starts.
-* A CLI entry point `claude_jules_loop tick` that drives a real port. It is designed above. This batch implements
-  the loop over an abstract port and tests it fully in the mock. The real-port CLI and its send path belong to
-  the LIVE activation step, and no send path exists today.
-* Whether usage credits are off (Billing, human).
+5. **Schedule wakes.**
+
+   > If the wake is the schedule, first list the open pull requests whose body links a closed-loop task issue.
+   > Run Layers 1-3 for each head that has no receipt. Then run LAYER 4.
+   > If nothing is pending (the tick prints DEFER or MERGE_WAIT with no change), end the run.
+
+## Why the hourly recovery wake is needed
+
+The mock proves this (`test_no_new_pr_event_after_a_crash_needs_the_recovery_wake`). After a run dies between
+the PASS receipt and the next start, **no PR event will ever come**, because the next Jules task never started.
+Without a schedule the loop waits for a human "Run now". The same holds when:
+
+* the quota resets;
+* a GitHub outage ends;
+* a lease expires;
+* an event was dropped over the cap.
+
+**Cost:** at most 24 runs a day. A quiet run is one tick that reads GitHub and writes nothing: the checkpoint is
+written only on change or on a heartbeat. Pausing the routine stops it, and resuming continues from GitHub state.
+
+**Quota:**
+
+* With usage credits **off**, runs over the limit are rejected until the window resets. The next schedule then
+  resumes.
+* With usage credits **on**, the documentation says routines can continue on metered overage. That is why the
+  LIVE authorization requires `usage_credits_confirmed_off: true` from the human.

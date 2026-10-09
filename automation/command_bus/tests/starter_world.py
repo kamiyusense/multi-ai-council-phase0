@@ -44,6 +44,7 @@ class FakeGitHub:
         self.next_comment = 9000
         self.events: deque = deque()
         self.faults: list[dict[str, Any]] = []
+        self.write_outage = False                               # every starter / loop write times out
         self.write_log: list[tuple[str, int]] = []
 
     # -- fault injection
@@ -58,6 +59,8 @@ class FakeGitHub:
         return None
 
     def _apply_with_fault(self, op: str, issue: int, apply, body: str = ""):
+        if self.write_outage:
+            raise st.WriteOutcomeUnknown(f"{op} #{issue}: GitHub write outage (not applied)")
         mode = self._fault(op, issue, body)
         if mode == "crash_before":
             raise Crash(f"crash before {op} #{issue}")
@@ -112,7 +115,9 @@ class FakeGitHub:
     def read_issue(self, n: int) -> dict[str, Any]:
         if n not in self.issues:
             return {"number": n, "state": "MISSING"}
-        return copy.deepcopy(self.issues[n])
+        issue = copy.deepcopy(self.issues[n])
+        issue["label_events_complete"] = not getattr(self, "label_history_unavailable", False)
+        return issue
 
     def open_titles(self) -> dict[str, int]:
         return {i["title"]: n for n, i in self.issues.items() if i["state"] == "OPEN"}
@@ -137,6 +142,7 @@ class World:
         self.duplicate_every = duplicate_every
         self.delivered = 0
         self.reviewer_crash_after_next_issue: set[str] = set()
+        self.reviewer_crashes: set[tuple[str, str]] = set()     # (task_id, "start" | "after_receipt")
         self.log: list[str] = []
         self.starter_results: list[st.RunResult] = []
 
@@ -257,6 +263,9 @@ class World:
             self.log.append(f"reviewer PR {pr_n}: {pre.status} {pre.reason}")
             return
         task = pre.task
+        if (task["task_id"], "start") in self.reviewer_crashes or self.gh.write_outage:
+            self.reviewer_crashes.discard((task["task_id"], "start"))
+            raise Crash(f"reviewer died before reviewing {task['task_id']}")
         verdict = self.review_script.get((task["task_id"], pre.round), review.PASS)
         crit = task["acceptance_criteria"]
         findings = []
@@ -298,6 +307,9 @@ class World:
                   "next_issue": next_issue if d.verdict == review.PASS else None,
                   "wake_event": "pull_request", "reviewed_at": st._fmt(self.now)}
         self.gh.comment(p["issue"], review.render_receipt(summary=f"review {d.verdict}", record=record))
+        if (task["task_id"], "after_receipt") in self.reviewer_crashes:
+            self.reviewer_crashes.discard((task["task_id"], "after_receipt"))
+            raise Crash(f"reviewer died right after the {d.verdict} receipt of {task['task_id']}")
 
     # -- event loop
     def deliver(self, event: dict[str, Any]) -> None:
@@ -512,7 +524,12 @@ class LoopWorld(World):
     def deliver(self, event):
         name = event["name"]
         if name in {"pull_request.opened", "pull_request.synchronize"}:
-            self.reviewer(event["pr"])
+            try:
+                self.reviewer(event["pr"])
+            except Crash as exc:                 # the Routine run died: no tick in this run
+                self.loop_crashes += 1
+                self.log.append(f"reviewer crashed: {exc}")
+                return
             self.tick_loop(name)                 # same Routine run: receipt, then a loop tick
         elif name == "pull_request.closed":
             self.tick_loop(name)
@@ -527,7 +544,12 @@ class LoopWorld(World):
                 if name == "schedule":       # recovery: review any PR head that has no receipt (lost PR event)
                     for pr in sorted(self.gh.prs):
                         if not self.gh.prs[pr].get("merged") and self.gh.prs[pr]["issue"] in self.gh.issues:
-                            self.reviewer(pr)
+                            try:
+                                self.reviewer(pr)
+                            except Crash as exc:
+                                self.loop_crashes += 1
+                                self.log.append(f"reviewer crashed in recovery: {exc}")
+                                return
                 self.tick_loop(name)
         # issues.opened / issue_comment.created wake nothing
 

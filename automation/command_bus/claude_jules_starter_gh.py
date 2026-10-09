@@ -19,32 +19,60 @@ from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
 from .claude_closed_loop_protocol import RECEIPT_MARKER
+from .claude_jules_loop import TransientRead
 
 Getter = Callable[[str], Any]
 
 
+class NotFound(Exception):
+    """GitHub answered 404 for the path."""
+
+
+class ReadFailed(TransientRead):
+    """A GET that failed for any other reason (auth, permission, 5xx, timeout): never read as "absent"."""
+
+
 def gh_get(path: str) -> Any:
-    """One paginated GET through ``gh api`` (read-only)."""
-    out = subprocess.run(["gh", "api", "--method", "GET", "--paginate", "--slurp", path], check=True,
-                         capture_output=True, text=True, encoding="utf-8", timeout=120).stdout
-    pages = json.loads(out)
+    """One GET through ``gh api``, following every page (``--paginate``), read-only.
+
+    A 404 raises ``NotFound``; every other failure raises ``ReadFailed``, so a permission or network problem can
+    never look like "no label history" or "issue missing".
+    """
+    try:
+        proc = subprocess.run(["gh", "api", "--method", "GET", "--paginate", "--slurp", path],
+                              capture_output=True, text=True, encoding="utf-8", timeout=120)
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        raise ReadFailed(f"GET {path}: {exc}") from exc
+    if proc.returncode != 0:
+        if "HTTP 404" in (proc.stderr or ""):
+            raise NotFound(path)
+        raise ReadFailed(f"GET {path}: exit {proc.returncode}: {(proc.stderr or '').strip()[:200]}")
+    try:
+        pages = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise ReadFailed(f"GET {path}: unreadable JSON") from exc
     if pages and all(isinstance(p, list) for p in pages):
         return [x for p in pages for x in p]
     return pages[0] if len(pages) == 1 else pages
 
 
 def read_issue(get: Getter, repo: str, number: int) -> dict[str, Any]:
+    """Issue, every comment and the complete label history (all pages).  Only a 404 means MISSING."""
     try:
         issue = get(f"repos/{repo}/issues/{number}")
-    except subprocess.CalledProcessError:
+    except NotFound:
         return {"number": number, "state": "MISSING"}
     comments = get(f"repos/{repo}/issues/{number}/comments?per_page=100")
     events = get(f"repos/{repo}/issues/{number}/events?per_page=100")
+    if not isinstance(comments, list) or not isinstance(events, list):
+        raise ReadFailed(f"issue #{number}: comments or events are not lists")
     return {"number": number, "state": "OPEN" if issue["state"] == "open" else "CLOSED", "title": issue["title"],
             "body": issue.get("body") or "", "labels": [l["name"] for l in issue.get("labels") or []],
+            "author": (issue.get("user") or {}).get("login"),
             "label_events": [{"event": e["event"], "label": (e.get("label") or {}).get("name"),
                               "actor": (e.get("actor") or {}).get("login"), "created_at": e.get("created_at")}
                              for e in events if e.get("event") in {"labeled", "unlabeled"}],
+            "label_events_complete": True,       # every page of the issue events API was read
             "comments": [{"id": c["id"], "author": (c.get("user") or {}).get("login"), "body": c.get("body") or "",
                           "created_at": c["created_at"]} for c in comments]}
 
@@ -170,10 +198,7 @@ class GhLoopPort:
 
     def read_issue(self, n):
         if n not in self._issues:
-            issue = read_issue(self.get, self.repo, n)
-            if issue.get("state") != "MISSING":
-                issue["author"] = (self.get(f"repos/{self.repo}/issues/{n}").get("user") or {}).get("login")
-            self._issues[n] = issue
+            self._issues[n] = read_issue(self.get, self.repo, n)
         return dict(self._issues[n])
 
     def find_issue_by_correlation(self, corr):
@@ -231,18 +256,28 @@ def main_tick(argv: list[str]) -> int:
     ap.add_argument("--route-declaration", required=True)
     ap.add_argument("--signals")
     ap.add_argument("--controller", required=True)
+    ap.add_argument("--live-authorization", help="CLAUDE_JULES_LIVE_AUTHORIZATION_V1 file; without it nothing is sent")
     ap.add_argument("--out")
     args = ap.parse_args(argv)
     with open(args.campaign, encoding="utf-8") as fh:
         campaign = json.load(fh)
     with open(args.route_declaration, encoding="utf-8") as fh:
         route = json.load(fh)
+    authorization = None
+    if args.live_authorization:
+        with open(args.live_authorization, encoding="utf-8") as fh:
+            authorization = json.load(fh)
     signals = []
     if args.signals:
         with open(args.signals, encoding="utf-8") as fh:
             signals = json.load(fh)
-    port = GhLoopPort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
-                      signals=signals)
+    if authorization is None:
+        port = GhLoopPort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
+                          signals=signals)
+    else:
+        from .claude_jules_starter_live import GhLiveWritePort
+        port = GhLiveWritePort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
+                               signals=signals, authorization=authorization)
     try:
         res = loop.run_tick(port, campaign=campaign, controller=args.controller,
                             now=lambda: st._fmt(datetime.now(timezone.utc)))
@@ -251,7 +286,9 @@ def main_tick(argv: list[str]) -> int:
                   "next_wake": res.next_wake}
     except st.PreparedOnly:
         report = {"outcome": "PREPARED", "reason": "the tick reached a write"}
-    report.update({"prepared_writes": port.prepared, "sent": False})
+    report.update({"prepared_writes": port.prepared, "sent": list(getattr(port, "sent", [])),
+                   "live": bool(getattr(port, "live", False)),
+                   "authorization_problems": list(getattr(port, "problems", []))})
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
             json.dump(report, fh, indent=2, ensure_ascii=False)

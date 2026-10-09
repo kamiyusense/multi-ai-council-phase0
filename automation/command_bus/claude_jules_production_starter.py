@@ -605,6 +605,10 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     if not isinstance(cand.get("comments"), list) or not isinstance(cand.get("label_events"), list) \
             or not isinstance(cand.get("labels"), list):
         return defer("READ_UNKNOWN", "issue comments / labels / label history not read (UNKNOWN): nothing starts")
+    if cand.get("label_events_complete") is not True:
+        # without the complete label history "never labeled" cannot be proven; no other record can stand in for it
+        return defer("LABEL_HISTORY_UNKNOWN", "label history not proven complete (every page of the issue events "
+                     "API): this issue waits, other work continues")
     task, problem = _task_of(cand.get("body") or "")
     if task is None:
         if problem == "not a closed-loop task issue":

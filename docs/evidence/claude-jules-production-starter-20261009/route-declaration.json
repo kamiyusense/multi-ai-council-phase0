@@ -1,0 +1,6 @@
+{
+  "transport": "jules-github-app-issue-label",
+  "auth_method": "account_oauth",
+  "billing_route": "subscription",
+  "declared_by": "user decision D6 (GitHub-native Jules route on the account plan, no API key)"
+}

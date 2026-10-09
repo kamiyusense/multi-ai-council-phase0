@@ -46,6 +46,10 @@ CONTINUE, MERGE_WAIT, NO_SAFE_TASK, GOAL_COMPLETE, DEFER, HARD_STOP_PROVIDER = (
 
 RECOVERY = {
     "READ_UNKNOWN": "re-read on the next wake",
+    "JULES_PENDING": "Jules' PR or next commit (a pull_request event) wakes the loop",
+    "REVIEW_PENDING": "the recovery wake reviews any PR head without a receipt",
+    "RECORD_UNREADABLE": "a human repairs the unreadable record; nothing is written over it",
+    "LABEL_HISTORY_UNKNOWN": "re-read the complete issue events history; never start without it",
     "ROUTE_UNKNOWN": "re-check the route declaration on the next wake",
     "PREDECESSOR_PENDING": "the predecessor's receipt (its PR event) wakes the loop",
     "LEASE_HELD": "take over after the intent lease",
@@ -220,6 +224,24 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
                                   "reason": last.reason, "dependency": list(last.dependency),
                                   "retry_after": last.retry_after, "human_required": last.human_required})
     running = [k for k in known if k["state"] == planner.RUNNING]
+    for k in running:                     # in-flight work is tracked too, so a stalled task never waits silently
+        if k["issue"] in result.started:
+            continue
+        head = port.pr_head(k["issue"])
+        issue = by_number.get(k["issue"]) or port.read_issue(k["issue"])
+        mine = [r for r in _receipts(issue, trusted) if r.get("_unreadable") or
+                r.get("correlation_id") == k["correlation_id"]]
+        if any(r.get("_unreadable") for r in mine):
+            code, reason, human = "RECORD_UNREADABLE", "a receipt on the task issue is unreadable; the reviewer " \
+                                                       "will not write over it", True
+        elif head is None:
+            code, reason, human = "JULES_PENDING", "started; Jules has not opened a PR yet", False
+        elif any(r.get("pr_head_sha") == head for r in mine):
+            code, reason, human = "JULES_PENDING", "corrective requested; waiting for Jules' next commit", False
+        else:
+            code, reason, human = "REVIEW_PENDING", f"PR head {head[:7]} has no review receipt yet", False
+        result.defers.append({"task_id": k["task_id"], "issue": k["issue"], "code": code, "reason": reason,
+                              "dependency": [], "retry_after": None, "human_required": human, "in_flight": True})
     if hard_stop is not None:
         result.outcome, result.reason = HARD_STOP_PROVIDER, hard_stop.reason
         result.human_actions.append({"action": "resolve provider / policy boundary", "reason": hard_stop.reason})
@@ -264,6 +286,10 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
             decision = planner.PlanDecision(planner.WAIT_RUNNING if running else planner.SIGNALS_UNKNOWN,
                                             f"manifest task(s) {[e['task']['task_id'] for e in manifest_open]} "
                                             "not created or not finished yet")
+        elif decision.outcome == planner.GOAL_COMPLETE and any(done.get(e["task"]["task_id"]) == planner.ISOLATED
+                                                               for e in entries.values()):
+            decision = planner.PlanDecision(planner.NO_SAFE_TASK, "a prepared manifest task is isolated; a human "
+                                            "must look at it")
         elif decision.outcome == planner.GOAL_COMPLETE and any(done.get(e["task"]["task_id"]) == planner.PASS_UNMERGED
                                                                for e in entries.values()):
             decision = planner.PlanDecision(planner.MERGE_WAIT, "manifest tasks are PASS; they land when a human "
@@ -290,10 +316,9 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         result.next_wake = RECOVERY.get(result.defers[0]["code"], "next wake")
     elif result.outcome == DEFER:
         result.next_wake = "the next pull_request event, the recovery schedule, or a human Run now"
-    for i in result.isolated:
-        if i["human_required"]:
-            result.human_actions.append({"action": "review isolated task", "task_id": i["task_id"],
-                                         "code": i["code"]})
+    for i in result.isolated:              # every isolated task is reported; human_required says who must act
+        result.human_actions.append({"action": "review isolated task", "task_id": i["task_id"], "code": i["code"],
+                                     "human_required": i["human_required"]})
     if result.outcome == NO_SAFE_TASK:
         result.human_actions.append({"action": "review open signals that cannot be planned", "reason": result.reason})
 
@@ -312,13 +337,17 @@ def _checkpoint(port: Any, result: TickResult, *, campaign: dict[str, Any], cont
         old = prev_defers.get((d["task_id"], d["code"]))
         first = old["first_seen_at"] if old else now
         age = st._ts(now) - st._ts(first)
-        escalated = age >= timedelta(minutes=policy["defer_escalate_minutes"]) and not independent
+        if d.get("in_flight"):            # a running task that does not move: escalate even while other work runs
+            escalated = age >= timedelta(minutes=policy.get("stall_escalate_minutes", 720))
+        else:
+            escalated = age >= timedelta(minutes=policy["defer_escalate_minutes"]) and not independent
         defers.append({"task_id": d["task_id"], "issue": d["issue"], "code": d["code"], "reason": d["reason"],
                        "state": "DEFERRED", "first_seen_at": first, "last_checked_at": now,
                        "next_check": d.get("retry_after") or RECOVERY.get(d["code"], "next wake"),
                        "recovery_action": RECOVERY.get(d["code"], "re-check on the next wake"),
                        "dependency": d["dependency"], "independent_work_remaining": independent,
-                       "human_required": bool(d["human_required"] or escalated), "escalated": escalated})
+                       "human_required": bool(d["human_required"] or escalated), "escalated": escalated,
+                       "in_flight": bool(d.get("in_flight"))})
         if escalated:
             result.human_actions.append({"action": "look at a long DEFER", "task_id": d["task_id"],
                                          "code": d["code"], "since": first})

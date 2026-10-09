@@ -1,0 +1,38 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 18,
+  "date_jst": "2026-10-09",
+  "main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "pr_340": {"branch": "claude/production-starter-20261009", "parent_head": "ecac6d99f2887e1b1a68992ec21d3a04278f48f2", "state": "Draft OPEN"},
+  "semiauto_workflow_blob": "177c614b050bc9ae3cc4b1169be55919c50591de",
+  "repository_visibility": "PRIVATE",
+  "files": {
+    "automation/command_bus/claude_jules_production_starter.py": {"git_blob": "330b0af6095bb4c657c12f6e080054cfb841f548", "sha256": "9c21c89e5078a9fd8276a7c4e31e39ef2374688cd7a6cc1d7a34235978327f49"},
+    "automation/command_bus/claude_jules_task_planner.py": {"git_blob": "56bf4846960a684a258c2fc27fa7bc4afa24b524", "sha256": "cc38bc215cf529b53d58d0dfbc403588834964d286db381ad49f303f20491ec7"},
+    "automation/command_bus/claude_jules_loop.py": {"git_blob": "936ce3a0d75e69735366d544acfc729bbb3fa5e4", "sha256": "2a7f946e1bde021b17d5745d2818bd1d45748c49b1599bb6705dab0a350c8661"},
+    "automation/command_bus/claude_jules_starter_gh.py": {"git_blob": "28a0cf9d39c0d7bda9d1c085093d02844077463a", "sha256": "6aa58d6d7da8d0cc5134fc65ea05889aed9edf1c7c406ae200a03d90f385f9fb"},
+    "automation/command_bus/claude_jules_starter_live.py": {"git_blob": "f903c0ec71fa6b9ca97228fae66c14f75c98ec05", "sha256": "bbd18c40cd6815323581bbe44b2d3b8b1502fcff6716f74ced18518d29bc8505"},
+    "docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c2.json": {"git_blob": "092658768b3ad8b01d7119ef7e97fd325a223ddb", "sha256": "107d47fa2db9595e2f008baa92f8440bedd3cf19348b0c364b7e9bdb61a50450", "note": "unchanged since batch 17"},
+    "docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c1.json": {"git_blob": "ab8870efc2506d3e304e3344a8612bc63d8c0326", "sha256": "e6b180fc234a4d41bb08fef9d6dcd17147af36dc08a20991d4572f25c81f6ae5", "note": "unchanged since batch 16"}
+  },
+  "label_history_readback": {"issue_335_events": [["labeled", "jules", "kamiyusense", "2026-10-08T17:53:06Z"]], "issue_335_timeline": [["labeled", "jules", "2026-10-08T17:53:06Z"]], "issue_338_event_count": 2, "unauthenticated_get": 404, "via": "gh api --paginate (local, authenticated)"},
+  "tests": {
+    "wsl_full": {"ran": 2164, "result": "OK (skipped=1)"},
+    "wsl_focused": {"test_claude_jules_prd_c2_faults": 19, "test_claude_jules_starter_live": 9, "test_claude_jules_loop": 31,
+                    "test_claude_jules_production_starter": 61, "test_claude_jules_starter_e2e": 5, "test_claude_jules_starter_gh": 3,
+                    "test_jules_route_separation": 13, "test_claude_closed_loop_review": 25, "test_claude_closed_loop_protocol": 22,
+                    "test_claude_jules_provider_route": 23},
+    "windows_focused": {"ran": 188, "result": "OK"},
+    "compileall": "ok", "json": "ok", "diff_check": "ok"
+  },
+  "endurance": "e2e-loop-stats.json (40 / 100 / 300 rounds re-run in batch 18, all invariants PASS)",
+  "routine": {"trigger": "trig_01U2DaBYLqaF5uLgovs1WY2Y", "version": "v1.5.1", "changed_in_batch": false},
+  "ledger": {"slots_used": 9, "slot_10": "unused"},
+  "live": {"jules_tasks_started": 0, "labels_written": 0, "issues_written": 0, "model_runs": 0, "live_authorization_exists": false},
+  "unknown": [
+    "gh authentication inside a Routine run (probe run needed; checklist step 3)",
+    "issue events (label history) through the GitHub MCP tools",
+    "usage credits setting (Billing; human)",
+    "recovery schedule and pull_request.closed trigger not configured (human)"
+  ]
+}
