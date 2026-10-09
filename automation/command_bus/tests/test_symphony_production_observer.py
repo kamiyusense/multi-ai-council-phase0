@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 from automation.command_bus.symphony_attempt_store import GitHubAutonomousAttemptStore
 from automation.command_bus.symphony_g5_observer_cli import observe_file
@@ -113,6 +114,25 @@ class SymphonyProductionObserverTests(unittest.TestCase):
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(observe_file(self.observer, str(path), follow=False), ["ACCEPTED"])
                 self.assertEqual(observe_file(self.fresh(), str(path), follow=False), ["NOOP_DUPLICATE"])
+
+    def test_follow_waits_for_producer_to_create_event_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "events.jsonl"
+            calls = 0
+
+            def wake(_seconds):
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    path.write_text(self.event("STARTED"), encoding="utf-8")
+                else:
+                    raise KeyboardInterrupt
+
+            with patch("automation.command_bus.symphony_g5_observer_cli.time.sleep", side_effect=wake):
+                with redirect_stdout(io.StringIO()), self.assertRaises(KeyboardInterrupt):
+                    observe_file(self.observer, str(path), follow=True, poll_seconds=0)
+            self.assertEqual(len(self.store.list_campaign("g5-proof")), 1)
+            self.assertEqual(self.store.list_campaign("g5-proof")[0].state, "STARTED_UNRESOLVED")
 
     def test_stale_head_remains_result_adoption_boundary(self):
         self.assertEqual(self.observer.capture_line(self.event("STARTED")).status, "ACCEPTED")

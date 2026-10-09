@@ -44,7 +44,14 @@ def observe_file(observer: SymphonyProductionObserver, path: str, *, follow: boo
     statuses = []
     offset = 0
     while True:
-        with open(path, "r", encoding="utf-8") as source:
+        try:
+            source = open(path, "rb")
+        except FileNotFoundError:
+            if not follow:
+                raise
+            time.sleep(poll_seconds)
+            continue
+        with source:
             source.seek(0, os.SEEK_END)
             if source.tell() < offset:
                 raise RuntimeError("G5 event file was truncated; readback required")
@@ -52,10 +59,10 @@ def observe_file(observer: SymphonyProductionObserver, path: str, *, follow: boo
             while True:
                 start = source.tell()
                 line = source.readline()
-                if not line or not line.endswith("\n"):
+                if not line or not line.endswith(b"\n"):
                     source.seek(start)
                     break
-                result = observer.capture_line(line)
+                result = observer.capture_line(line.decode("utf-8"))
                 statuses.append(result.status)
                 print(f"{result.status} {result.kind} {result.attempt_id}", flush=True)
                 offset = source.tell()

@@ -7,8 +7,8 @@
   "starting_main_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
   "upstream_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
   "validation": {
-    "focused_symphony_tests": {"status": "PASS", "run": 148, "failures": 0, "errors": 0},
-    "full_command_bus_tests": {"status": "PASS", "run": 1907, "failures": 0, "errors": 0, "skipped": 1},
+    "focused_symphony_tests": {"status": "PASS", "run": 149, "failures": 0, "errors": 0},
+    "full_command_bus_tests": {"status": "PASS", "run": 1908, "failures": 0, "errors": 0, "skipped": 1},
     "pinned_upstream_git_apply_check": "PASS",
     "g5_workflow_yaml_parse": "PASS",
     "static_ci_workflow_yaml_parse": "PASS"
@@ -16,7 +16,8 @@
   "sha256": {
     "upstream_observer_patch": "4739670e6afea6dab98f8711369e3533b848655b1437408418738ad228b23e19",
     "production_observer": "e435f7be9245ecd38dbb0367853613f7f7b5f97b5e821a040527c1ba47b22a60",
-    "observer_cli": "cced7626f7743fae7323bc96a0e097eb500793555349210b992c3655d3805d55",
+    "observer_cli": "b956d1f2f2f10cc9a2f258ff58192d9487c6880a3f346f9e1132ab99ad658e40",
+    "production_observer_tests": "ccdd323e42efa117b627a965975ef7a5dc1b62f8f4c5a00dbf83e8620a371d16",
     "g5_live_workflow": "c30fde2e6387122b209ec67e9da1550aa5d42ef75cc50138958d67e64b2c24f1",
     "g5_bridge_design": "52abe59cd5020b5e08544bff242846007a438afb80e3506dd21d2091e3735be2",
     "g5_issue_template": "68ed0e471206b80a3630613b8a8cb40ecc79a65ddb162d9ab115dcd4d82d23a3"
