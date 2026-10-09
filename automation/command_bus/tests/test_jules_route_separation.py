@@ -22,7 +22,7 @@ SEMIAUTO = ROOT / ".github" / "workflows" / "jules-chat-semiauto.yml"
 ROUTINE_PROMPT = ROOT / "docs/evidence/claude-jules-stop-resistant-20261007/routine-prompt-v1.5.md"
 GUARD = "claude_jules_provider_route"
 LEGACY_MODULES = ("jules_api_request", "loop_id_claim", "jules_session_acceptance")
-CLOSED_LOOP_MODULES = ("claude_closed_loop_protocol", "claude_closed_loop_review")
+CLOSED_LOOP_MODULES = ("claude_closed_loop_protocol", "claude_closed_loop_review", "claude_jules_production_starter")
 # The only places that may construct or apply the provider-route guard: Claude AUTO dispatch paths.
 GUARD_USERS = {"claude_jules_dispatch", "claude_jules_live", "claude_jules_lane_proof_launcher"}
 
@@ -95,6 +95,24 @@ class GuardScopeTests(unittest.TestCase):
                                  now="2026-10-09T00:00:00Z")
         self.assertEqual(verdict.verdict, UNKNOWN_ROUTE)  # route drift never silently changes transport
         self.assertNotEqual(gate(SUBSCRIPTION_MODEL_WORK, verdict).decision, ALLOW)
+
+
+class ProductionStarterRouteTests(unittest.TestCase):
+    def test_starter_only_starts_through_the_github_label(self):
+        import automation.command_bus.claude_jules_production_starter as starter
+        self.assertEqual((starter.ROUTE, starter.LABEL), ("jules-github-app-issue-label", "jules"))
+        imports = imports_of(BUS / "claude_jules_production_starter.py")
+        self.assertFalse({GUARD, "claude_jules_dispatch", "claude_jules_live", "urllib", "requests", "http",
+                          "subprocess", "socket"} & imports, imports)
+        policy = starter.make_policy()
+        self.assertEqual(starter.validate_policy(policy), [])
+        for bad in ({"allow_api_fallback": True}, {"allow_metered_fallback": True}, {"billing": "metered"},
+                    {"route": "carrier-rest-api-key"}):
+            self.assertTrue(starter.validate_policy({**policy, **bad}), bad)
+        self.assertIn(".github/", policy["forbidden_path_prefixes"])
+
+    def test_semiauto_workflow_does_not_know_the_starter(self):
+        self.assertNotIn("production_starter", SEMIAUTO.read_text(encoding="utf-8"))
 
 
 class ClosedLoopRouteTests(unittest.TestCase):

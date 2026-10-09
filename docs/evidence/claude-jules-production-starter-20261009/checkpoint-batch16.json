@@ -1,0 +1,60 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 16,
+  "date_jst": "2026-10-09",
+  "main_before": "ca83d0e4f4e960632e963252f1354fd6257ee8bd",
+  "pr_339": {
+    "head": "20ecbb6e70cb150365e2e2dff70da7c4e0abcc65",
+    "merge_commit": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "merge_tree": "601f890f46fbd868b8036a2a124d0277159ec095",
+    "head_tree": "601f890f46fbd868b8036a2a124d0277159ec095",
+    "merged_at": "2026-10-08T23:41:13Z",
+    "changed_files": 3
+  },
+  "semiauto_workflow_blob": "177c614b050bc9ae3cc4b1169be55919c50591de",
+  "starter_branch": "claude/production-starter-20261009",
+  "files": {
+    "automation/command_bus/claude_jules_production_starter.py": {"git_blob": "b11eaf3c35ac56d4658d7325223c91ed11aa38d4", "sha256": "62d87f6db511f718833ba83264f4d5c726d89ea8b2c5e40dc859d6f4086ce195"},
+    "automation/command_bus/claude_jules_starter_gh.py": {"sha256": "0ef8d6ac320e92b4566aa45743f888948237bce8d32c7bf182dff9672d0432dd"},
+    "docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c1.json": {"sha256": "e6b180fc234a4d41bb08fef9d6dcd17147af36dc08a20991d4572f25c81f6ae5"}
+  },
+  "tests": {
+    "wsl_full": {"ran": 2105, "result": "OK (skipped=1)"},
+    "wsl_focused": {
+      "test_claude_jules_production_starter": 61,
+      "test_claude_jules_starter_e2e": 5,
+      "test_claude_jules_starter_gh": 3,
+      "test_jules_route_separation": 13,
+      "test_claude_closed_loop_review": 25,
+      "test_claude_closed_loop_protocol": 22,
+      "test_claude_jules_provider_route": 23,
+      "test_claude_jules_cli_transport": 26
+    },
+    "windows_starter_focused": {"ran": 82, "result": "OK"},
+    "windows_full_main_702497c": {"ran": 2034, "result": "FAILED (failures=12, errors=27, skipped=1)", "note": "pre-existing Windows-only environment failures; PRD-001 fixes one of them"},
+    "compileall": "ok",
+    "json": "ok",
+    "diff_check": "ok"
+  },
+  "mock_e2e": "e2e-stats.json",
+  "prd_001": {
+    "campaign_id": "prd-c1",
+    "task_id": "prd-001",
+    "correlation_id": "prd-001-702497c",
+    "task_sha256": "f36a5d2b832583ae054c5983b5ad02405a52ec9f9f975b02021e7c6f728239d8",
+    "issue": 338,
+    "predecessor": {"issue": 335, "correlation_id": "grd-001-8fbbef9", "pr_head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab"},
+    "expected_base": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "issue_338_written": false,
+    "label_written": false
+  },
+  "routine": {"trigger": "trig_01U2DaBYLqaF5uLgovs1WY2Y", "version": "v1.5.1", "enabled": true, "changed_in_batch": false},
+  "ledger": {"slots_used": 9, "slot_10": "unused"},
+  "live": {"jules_tasks_started": 0, "labels_written": 0, "model_runs": 0},
+  "unknown": [
+    "Routine webhook trigger support for issues / issue_comment events",
+    "GitHub MCP access to issue label history from a Routine",
+    "whether owner-authored starter record comments on a labeled issue are read by Jules as instructions (reviewer receipts on task issues were not, 5 times)",
+    "Jules quota / usage signal format"
+  ]
+}
