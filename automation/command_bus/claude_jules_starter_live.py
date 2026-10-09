@@ -123,6 +123,7 @@ class GhLiveWritePort(GhLoopPort):
         except subprocess.TimeoutExpired as exc:
             raise st.WriteOutcomeUnknown(f"{kind} #{issue}: timeout") from exc
         finally:
+            self._issue_list = self._pull_list = None   # a created issue shows up in the next listing
             if issue is not None:
                 self._issues.pop(issue, None)           # the next read is fresh (readback)
         self.sent.append({"write": kind, "issue": issue, "path": path})

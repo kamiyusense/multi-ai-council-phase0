@@ -75,8 +75,10 @@ python3 -m automation.command_bus.claude_jules_starter_gh tick \
 
 4. **New LAYER 4**, after the receipt, or directly for a `closed` or schedule wake:
 
-   > LAYER 4 - loop tick. First run `gh auth status`. If it fails, report "LAYER 4 skipped: gh not authenticated"
-   > and stop. The loop never starts without the label history.
+   > LAYER 4 - loop tick. First run `gh api repos/kamiyusense/multi-ai-council-phase0 --jq .private`. If it does
+   > not print `true`, report "LAYER 4 skipped: GitHub read failed" and stop. The loop never starts without the
+   > label history. (Do not use `gh auth status` as the gate: in a cloud run it fails while authenticated GETs
+   > through the proxy succeed; see `batch19-cloud-readonly-probe.md`.)
    > Then run the tick command above exactly once and include its JSON output in the notification.
    > Do not perform any write the command did not perform.
 

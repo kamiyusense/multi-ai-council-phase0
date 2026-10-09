@@ -9,11 +9,32 @@
   "state": "Draft OPEN"
  },
  "cloud_routine_probe": {
-  "runs": 0,
+  "runs": 1,
   "max_runs": 1,
-  "status": "UNKNOWN",
-  "reason": "usage credits OFF not confirmed by the human",
-  "trigger_created": false
+  "status": "BLOCKED",
+  "trigger": "trig_016h3HMyCGUG1Ae8B3etN2HK",
+  "session": "session_01DT8QKr34g8v32fsWyFqgrr",
+  "fired_at": "2026-10-09T11:57:44Z",
+  "finished_at": "2026-10-09T11:58:11Z",
+  "trigger_state_after": {
+   "enabled": false,
+   "ended_reason": "run_once_fired"
+  },
+  "usage_credits_confirmed_off_by_human": true,
+  "is_using_overage": false,
+  "list_cost_usd": 0.107798,
+  "cause": "the trigger was created through create_trigger without a repository source (session tag config:no-git-repo); the proxy answered every GitHub GET with HTTP 403 'GitHub access to this repository is not enabled for this session'",
+  "results": {
+   "gh_present": true,
+   "python3_present": true,
+   "gh_auth_status_exit": 1,
+   "repo_get": "403 (not enabled for session)",
+   "issue_335": "UNKNOWN",
+   "issue_338": "UNKNOWN",
+   "paginate": "403 (same cause)",
+   "writes": 0,
+   "add_repo_called": false
+  }
  },
  "cloud_session_preprobe": {
   "session": "session_012adjVyeVuHrDhJRSE2i1XX",
@@ -59,11 +80,29 @@
   "github_writes_by_probe": 0
  },
  "unknown": [
-  "gh/proxy behaviour inside a Routine run (probe not run)",
-  "usage credits setting (human)"
+  "gh api GET inside the production reviewer Routine run (not proven; the probe had no repository attached)",
+  "usage credits: human confirmed OFF 2026-10-09"
  ],
  "required_fixes_before_live": [
-  "v1.6 LAYER 4: replace gh auth status gate with a real GET",
-  "starter_gh.gh_get: replace --paginate with repos/{owner}/{repo} page loop"
- ]
+  "a probe Routine created with the repository attached (claude.ai Routines UI) or the v1.6 run itself proving LAYER 4's GET"
+ ],
+ "reviewer_routine_session_context": {
+  "session": "session_01Rj1nvYRvLSPdHHLZWK6zom",
+  "sources": [
+   "kamiyusense/multi-ai-council-phase0 refs/pull/337/head"
+  ],
+  "environment": "env_01XortAeK7V5KNAT8xKqou38",
+  "is_using_overage": false,
+  "note": "the production reviewer run has the repository attached; whether gh api GET works there is inferred from this cloud session, not proven"
+ },
+ "side_effects": {
+  "referenced_events": "commit ec52074 mentioned issue numbers in its message, so GitHub added a 'referenced' event to issues 335 and 338 (no label, no body change). Later commit messages avoid issue numbers."
+ },
+ "fixes_in_batch": {
+  "claude_jules_starter_gh.gh_get": "own page loop on repos/{owner}/{repo} paths instead of --paginate; fails closed on a non-advancing Link or more than 50 pages",
+  "claude_jules_starter_gh.GhLoopPort": "repository-scoped issue and pull listings instead of search/issues (the cloud proxy answers HTTP 403 for search)",
+  "routine-prompt-v1.6-draft.md": "LAYER 4 gate is a real GET (gh api repos/... --jq .private), not gh auth status",
+  "tests": "unittest discover test_claude_jules*: 528 OK; test_jules_route_separation OK",
+  "cloud_readonly_tick": "live-readonly-tick-prd-c2-b19-cloud.json: DEFER, sent [], live false (no authorization file passed)"
+ }
 }

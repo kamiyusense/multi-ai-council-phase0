@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -32,28 +33,56 @@ class ReadFailed(TransientRead):
     """A GET that failed for any other reason (auth, permission, 5xx, timeout): never read as "absent"."""
 
 
-def gh_get(path: str) -> Any:
-    """One GET through ``gh api``, following every page (``--paginate``), read-only.
+MAX_PAGES = 50
+_STATUS = re.compile(r"HTTP/\S+\s+(\d{3})")
+_NEXT_PAGE = re.compile(r'<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="next"')
 
+
+def _with_page(path: str, page: int) -> str:
+    base, _, query = path.partition("?")
+    params = [q for q in query.split("&") if q and not q.startswith("page=")]
+    return f"{base}?{'&'.join(params + [f'page={page}'])}"
+
+
+def gh_get(path: str) -> Any:
+    """One GET through ``gh api``, following every page, read-only.
+
+    Pages are followed by the page number in GitHub's ``Link`` header, but every request keeps the caller's
+    ``repos/{owner}/{repo}/...`` path: the ``Link`` URLs use ``repositories/{id}/...``, which the cloud proxy refuses
+    (HTTP 403), so ``gh api --paginate`` fails after page 1 in a cloud run.
     A 404 raises ``NotFound``; every other failure raises ``ReadFailed``, so a permission or network problem can
     never look like "no label history" or "issue missing".
     """
-    try:
-        proc = subprocess.run(["gh", "api", "--method", "GET", "--paginate", "--slurp", path],
-                              capture_output=True, text=True, encoding="utf-8", timeout=120)
-    except (subprocess.TimeoutExpired, OSError) as exc:
-        raise ReadFailed(f"GET {path}: {exc}") from exc
-    if proc.returncode != 0:
-        if "HTTP 404" in (proc.stderr or ""):
-            raise NotFound(path)
-        raise ReadFailed(f"GET {path}: exit {proc.returncode}: {(proc.stderr or '').strip()[:200]}")
-    try:
-        pages = json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise ReadFailed(f"GET {path}: unreadable JSON") from exc
-    if pages and all(isinstance(p, list) for p in pages):
-        return [x for p in pages for x in p]
-    return pages[0] if len(pages) == 1 else pages
+    pages: list[Any] = []
+    page = 1
+    for _ in range(MAX_PAGES):
+        url = _with_page(path, page) if page > 1 else path
+        try:
+            proc = subprocess.run(["gh", "api", "--method", "GET", "--include", url],
+                                  capture_output=True, text=True, encoding="utf-8", timeout=120)
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            raise ReadFailed(f"GET {url}: {exc}") from exc
+        if proc.returncode != 0:
+            if "HTTP 404" in (proc.stderr or ""):
+                raise NotFound(path)
+            raise ReadFailed(f"GET {url}: exit {proc.returncode}: {(proc.stderr or '').strip()[:200]}")
+        head, _, body = (proc.stdout or "").replace("\r\n", "\n").partition("\n\n")
+        status = _STATUS.match(head)
+        if not status or status.group(1) != "200":
+            raise ReadFailed(f"GET {url}: status {status.group(1) if status else 'unreadable'}")
+        try:
+            pages.append(json.loads(body))
+        except json.JSONDecodeError as exc:
+            raise ReadFailed(f"GET {url}: unreadable JSON") from exc
+        nxt = _NEXT_PAGE.search(head)
+        if not nxt:
+            if all(isinstance(p, list) for p in pages):
+                return [x for p in pages for x in p]
+            return pages[0] if len(pages) == 1 else pages
+        if int(nxt.group(1)) <= page:
+            raise ReadFailed(f"GET {path}: next page {nxt.group(1)} does not advance past {page}")
+        page = int(nxt.group(1))
+    raise ReadFailed(f"GET {path}: more than {MAX_PAGES} pages")
 
 
 def read_issue(get: Getter, repo: str, number: int) -> dict[str, Any]:
@@ -178,16 +207,27 @@ class GhLoopPort:
         self.route_declaration, self.signal_list = route_declaration, signals
         self.prepared: list[dict[str, Any]] = []
         self._issues: dict[int, dict[str, Any]] = {}
+        self._issue_list: list[dict[str, Any]] | None = None
+        self._pull_list: list[dict[str, Any]] | None = None
 
-    def _search(self, query: str) -> list[dict[str, Any]]:
-        res = self.get(f"search/issues?q={query}&per_page=100")
-        items = res.get("items", []) if isinstance(res, dict) else [x for p in res for x in p.get("items", [])]
-        return items
+    # Repository-scoped listings, not ``search/issues``: a cloud session's proxy only serves
+    # ``repos/{owner}/{repo}/...`` paths and answers HTTP 403 for search.  Each listing is read once per tick.
+    def _all_issues(self) -> list[dict[str, Any]]:
+        if self._issue_list is None:
+            items = self.get(f"repos/{self.repo}/issues?state=all&per_page=100")
+            self._issue_list = [i for i in items if "pull_request" not in i]
+        return self._issue_list
+
+    def _all_pulls(self) -> list[dict[str, Any]]:
+        if self._pull_list is None:
+            self._pull_list = self.get(f"repos/{self.repo}/pulls?state=all&per_page=100")
+        return self._pull_list
+
+    def _issues_with(self, needle: str) -> list[int]:
+        return sorted(i["number"] for i in self._all_issues() if needle in (i.get("body") or ""))
 
     def list_campaign_issues(self):
-        cid = self.campaign["campaign_id"]
-        found = {i["number"] for i in self._search(f"repo:{self.repo}+is:issue+%22{cid}%22+in:body")}
-        return [self.read_issue(n) for n in sorted(found)]
+        return [self.read_issue(n) for n in self._issues_with(self.campaign["campaign_id"])]
 
     def read_control_issue(self):
         n = self.campaign.get("control_issue")
@@ -204,12 +244,14 @@ class GhLoopPort:
     def find_issue_by_correlation(self, corr):
         if not corr:
             return None
-        items = self._search(f"repo:{self.repo}+is:issue+%22{corr}%22+in:body")
-        return items[0]["number"] if items else None
+        found = self._issues_with(corr)
+        return found[0] if found else None
 
     def _linked_pr(self, n):
-        items = self._search(f"repo:{self.repo}+is:pr+%22Fixes+%23{n}%22+in:body")
-        return items[0]["number"] if items else None
+        """The newest PR whose body says Fixes/Closes/Resolves #n (the reviewer's LAYER 1 rule)."""
+        link = re.compile(rf"\b(?:fixes|closes|resolves)\s+#{n}\b", re.IGNORECASE)
+        found = [p["number"] for p in self._all_pulls() if link.search(p.get("body") or "")]
+        return max(found) if found else None
 
     def pr_head(self, n):
         pr = self._linked_pr(n)

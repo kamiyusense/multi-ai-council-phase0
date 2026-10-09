@@ -57,3 +57,32 @@ Note: batch 18 recorded 2 events on #338; there are now 3, all `referenced` (no 
 | `gh auth status` in cloud | FAIL (but not needed for GET) |
 | `--paginate` multi-page in cloud | FAIL (403); workaround verified |
 | Usage credits | UNKNOWN (human) |
+
+## Update: the one-off Routine probe ran once (human confirmed usage credits OFF)
+
+* Trigger `trig_016h3HMyCGUG1Ae8B3etN2HK` "Claude Jules GitHub Read Only Probe 01": one-off, fired once at
+  2026-10-09T11:57:44Z, session `session_01DT8QKr34g8v32fsWyFqgrr`, finished 11:58:11Z. The trigger is now disabled
+  (`run_once_fired`) and cannot fire again. `isUsingOverage: false`. List cost of the run: about $0.11.
+* **Result: BLOCKED.** `gh` 2.89.0 and `python3` exist; `gh auth status` exit 1; every GitHub GET answered HTTP 403
+  "GitHub access to this repository is not enabled for this session". The run made no writes and did not call
+  `add_repo` (correct: that would change access).
+* **Cause: the probe's own configuration.** `create_trigger` from a session cannot attach a repository source; the
+  session was tagged `config:no-git-repo`. The proxy only serves repositories attached to the session.
+* The production reviewer run (`session_01Rj1nvYRvLSPdHHLZWK6zom`) has the repository attached
+  (`refs/pull/337/head`), like this session where GETs work. That makes the GET path likely in the reviewer Routine,
+  but it is **not proven** by a Routine run.
+* Side effect noted: commit `ec52074` mentioned issue numbers in its message, so GitHub added a `referenced` event to
+  #335 and #338 (no label, no body change). Later commit messages avoid issue numbers.
+
+## Fixes made after the probe (STATIC, tested)
+
+* `claude_jules_starter_gh.gh_get`: its own page loop on `repos/{owner}/{repo}` paths instead of `--paginate`.
+  It fails closed on a `Link` that does not advance or on more than 50 pages.
+* `GhLoopPort`: repository-scoped issue and pull listings instead of `search/issues`, which the cloud proxy refuses
+  with HTTP 403. A third cloud finding.
+  * Linked PR = the newest PR whose body says Fixes/Closes/Resolves #n, with a word boundary.
+  * Listings are cached per tick and dropped after any write.
+* `routine-prompt-v1.6-draft.md` LAYER 4: the gate is a real GET, not `gh auth status`.
+* Tests: `test_claude_jules*` 528 OK, `test_jules_route_separation` OK.
+* Cloud read-only tick with the new code: `live-readonly-tick-prd-c2-b19-cloud.json`.
+  * Result: `DEFER`, nothing sent. It was run without an authorization file.

@@ -69,6 +69,26 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(ghs.prepare(step, REPO)["command"][-1], "labels[]=jules")
         self.assertIsNone(ghs.prepare(st.Step(st.DEFER, "x", 338), REPO))
 
+    def test_lookups_use_repository_scoped_listings_not_search(self):
+        calls = []
+        pulls = [{"number": 400, "body": "Fixes #33"}, {"number": 401, "body": "closes #338."},
+                 {"number": 402, "body": "Resolves #3380"}]
+        issues = [{"number": 338, "body": "x corr-338 y"}, {"number": 339, "body": "corr-338-b"},
+                  {"number": 401, "body": "corr-338", "pull_request": {}}]
+
+        def get(path):
+            calls.append(path)
+            return pulls if "/pulls?" in path else issues
+        port = ghs.GhLoopPort(get, repo=REPO, campaign={"campaign_id": "corr-338"}, route_declaration=ROUTE,
+                              signals=None)
+        self.assertEqual(port._linked_pr(338), 401)          # word boundary: not #33, not #3380
+        self.assertIsNone(port._linked_pr(5))
+        self.assertEqual(port.find_issue_by_correlation("corr-338"), 338)   # pull requests are not issues
+        self.assertEqual(port._issues_with("corr-338"), [338, 339])
+        self.assertEqual(calls, [f"repos/{REPO}/pulls?state=all&per_page=100",
+                                 f"repos/{REPO}/issues?state=all&per_page=100"])   # one listing each, cached
+        self.assertNotIn("search/", Path(ghs.__file__).read_text(encoding="utf-8").replace("``search/issues``", ""))
+
     def test_module_only_runs_get_requests(self):
         tree = ast.parse(Path(ghs.__file__).read_text(encoding="utf-8"))
         runs = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "run"]

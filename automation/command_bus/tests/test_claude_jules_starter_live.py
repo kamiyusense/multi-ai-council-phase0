@@ -36,15 +36,13 @@ class Api:
     def __call__(self, path):
         self.calls.append(path)
         w = self.w
-        if path.startswith("search/issues?q="):
-            q = path.split("q=", 1)[1].split("&")[0].replace("%22", '"').replace("%23", "#").replace("+", " ")
-            needle = q.split('"')[1]
-            is_pr = "is:pr" in q
-            if is_pr:
-                n = int(needle.split("#")[1])
-                return {"items": [{"number": p} for p, pr in w.gh.prs.items() if pr["issue"] == n]}
-            return {"items": [{"number": n} for n, i in w.gh.issues.items() if needle in i["body"]]}
+        assert not path.startswith("search/"), "the cloud proxy refuses search (HTTP 403)"
         tail = path.split(f"repos/{REPO}/", 1)[1]
+        if tail == "issues?state=all&per_page=100":
+            prs = [{"number": p, "body": f"Fixes #{pr['issue']}", "pull_request": {}} for p, pr in w.gh.prs.items()]
+            return [self.issue(n) for n in w.gh.issues] + prs
+        if tail == "pulls?state=all&per_page=100":
+            return [{"number": p, "body": f"Fixes #{pr['issue']}"} for p, pr in w.gh.prs.items()]
         if tail.startswith("issues/"):
             parts = tail.split("?")[0].split("/")
             n = int(parts[1])
@@ -235,9 +233,28 @@ class ReadFailureTests(unittest.TestCase):
         with m.patch.object(ghs.subprocess, "run", return_value=deny):
             with self.assertRaises(ghs.ReadFailed):
                 ghs.gh_get("repos/x/y/issues/1/events")
-        ok = SimpleNamespace(returncode=0, stdout=json.dumps([[{"a": 1}], [{"a": 2}]]), stderr="")
-        with m.patch.object(ghs.subprocess, "run", return_value=ok):
-            self.assertEqual(ghs.gh_get("repos/x/y/issues/1/events"), [{"a": 1}, {"a": 2}])   # every page
+        link = 'Link: <https://api.github.com/repositories/9/issues/1/events?per_page=1&page=2>; rel="next"'
+        p1 = SimpleNamespace(returncode=0, stdout=f"HTTP/2.0 200 OK\r\n{link}\r\n\r\n" + json.dumps([{"a": 1}]),
+                             stderr="")
+        p2 = SimpleNamespace(returncode=0, stdout="HTTP/2.0 200 OK\r\n\r\n" + json.dumps([{"a": 2}]), stderr="")
+        with m.patch.object(ghs.subprocess, "run", side_effect=[p1, p2]) as run:
+            self.assertEqual(ghs.gh_get("repos/x/y/issues/1/events?per_page=1"), [{"a": 1}, {"a": 2}])  # every page
+        urls = [c.args[0][-1] for c in run.call_args_list]
+        # page 2 keeps repos/{owner}/{repo}: the cloud proxy refuses the numeric repositories/{id} URL of the Link
+        self.assertEqual(urls, ["repos/x/y/issues/1/events?per_page=1", "repos/x/y/issues/1/events?per_page=1&page=2"])
+        self.assertTrue(all("--paginate" not in c.args[0] for c in run.call_args_list))
+        obj = SimpleNamespace(returncode=0, stdout="HTTP/2.0 200 OK\r\n\r\n" + json.dumps({"n": 1}), stderr="")
+        with m.patch.object(ghs.subprocess, "run", return_value=obj):
+            self.assertEqual(ghs.gh_get("repos/x/y/issues/1"), {"n": 1})
+        stuck = SimpleNamespace(returncode=0, stdout=p1.stdout.replace("page=2", "page=1"), stderr="")
+        with m.patch.object(ghs.subprocess, "run", return_value=stuck):
+            with self.assertRaises(ghs.ReadFailed):                 # a Link that does not advance never loops
+                ghs.gh_get("repos/x/y/issues/1/events?per_page=1")
+        endless = [SimpleNamespace(returncode=0, stdout=p1.stdout.replace("page=2", f"page={n + 2}"), stderr="")
+                   for n in range(ghs.MAX_PAGES)]
+        with m.patch.object(ghs.subprocess, "run", side_effect=endless):
+            with self.assertRaises(ghs.ReadFailed):                 # too many pages fail closed, never "complete"
+                ghs.gh_get("repos/x/y/issues/1/events?per_page=1")
 
 
 if __name__ == "__main__":
