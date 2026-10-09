@@ -1,0 +1,2 @@
+G5_OBSERVER_READY campaign_attempts=0
+ACCEPTED started attempt-1fdd3890e399898ee905068f55b87e72

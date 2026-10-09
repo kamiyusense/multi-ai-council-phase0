@@ -20,12 +20,12 @@
     "sha256": "38b3b23a02f9a8ce8aaf4fa470a8fdd9ea0e9f92bb3e6b55f71891d8956b0728"
   },
   {
-    "path": "docs/evidence/symphony-g5-local-live/issue-341/focused-tests.log",
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/focused-tests.txt",
     "bytes": 32851,
     "sha256": "a4b263740d609d2c4c128cbea41543dd7ce361950e2e1c6357c17027f8683771"
   },
   {
-    "path": "docs/evidence/symphony-g5-local-live/issue-341/full-tests.log",
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/full-tests.txt",
     "bytes": 394320,
     "sha256": "008cf495733f0e7746400ae5d4b9a87807744776fe391079aaf29bf0ce4e889b"
   },
@@ -45,12 +45,12 @@
     "sha256": "c88b65f5f2d6ef614434ffabf3994ef7b619ebfc00c106b41315548e26d5f10c"
   },
   {
-    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer-restart.log",
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer-restart.txt",
     "bytes": 64,
     "sha256": "bdae898f15ee9514abd82f295b274dc64e1aa080117d520a3de9979acfddd958"
   },
   {
-    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer.log",
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer.txt",
     "bytes": 96,
     "sha256": "52c3494fc2b282ab85ec50c09f0ddaf948833dfa404908544714c67f9886352d"
   },
@@ -70,7 +70,7 @@
     "sha256": "5be20c73b07be8f8fe3b305794e934cad27dcfff239b542d9c4e6ff09ba60d36"
   },
   {
-    "path": "docs/evidence/symphony-g5-local-live/issue-341/symphony.log",
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/symphony.txt",
     "bytes": 116350,
     "sha256": "9491a47e03629092bf56a5b1dbe2e0bd73b89429c4cefb28dd54795784a32dd8"
   },
