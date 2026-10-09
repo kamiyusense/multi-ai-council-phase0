@@ -18,7 +18,8 @@
     "production_observer": "e435f7be9245ecd38dbb0367853613f7f7b5f97b5e821a040527c1ba47b22a60",
     "observer_cli": "cced7626f7743fae7323bc96a0e097eb500793555349210b992c3655d3805d55",
     "g5_live_workflow": "c30fde2e6387122b209ec67e9da1550aa5d42ef75cc50138958d67e64b2c24f1",
-    "g5_bridge_design": "4fc13e7ceb061881bcc1b05a0e2ba3430e473819429c5f26caef1ba7a949eaab"
+    "g5_bridge_design": "52abe59cd5020b5e08544bff242846007a438afb80e3506dd21d2091e3735be2",
+    "g5_issue_template": "68ed0e471206b80a3630613b8a8cb40ecc79a65ddb162d9ab115dcd4d82d23a3"
   },
   "g5_live_model_starts": 0,
   "g5_live_provider_starts": 0,

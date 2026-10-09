@@ -43,6 +43,7 @@ on:
       - docs/SYMPHONY_MINIMAL_LIVE_PROOF_STATIC_CHECKPOINT.md
       - docs/SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md
       - docs/SYMPHONY_G5_LIVE_PROOF_WORKFLOW.md
+      - docs/SYMPHONY_G5_LIVE_PROOF_ISSUE.md
       - .github/workflows/symphony-controller-static.yml
 
 permissions:

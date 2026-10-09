@@ -60,7 +60,8 @@ retains all internal retry and same-session authority.
 ## Next single G5 LIVE candidate — prepare only
 
 Purpose: observe one naturally finishing, small Official Symphony worker on a
-new isolated proof Issue/branch/workspace. Prefer a task that needs more than
+new isolated proof Issue/branch/workspace. Use the prepared Issue in
+`docs/SYMPHONY_G5_LIVE_PROOF_ISSUE.md`. Prefer a task that needs more than
 one turn, but do not force artificial retry or stall. Do not reuse G4's
 consumed work item as a new LIVE authorization.
 
@@ -99,12 +100,22 @@ The observer configuration format is:
 Only after LIVE approval, run the sidecar as
 `python -m automation.command_bus.symphony_g5_observer_cli --config <local-config> --events <local-jsonl> --follow`,
 then start the patched pinned Symphony with its normal CLI and the G5 proof
-workflow at `docs/SYMPHONY_G5_LIVE_PROOF_WORKFLOW.md`. The sidecar has no provider dispatch capability. Stop both with
-Ctrl+C after the authorized proof; read back the exact ledger paths, proof
+workflow at `docs/SYMPHONY_G5_LIVE_PROOF_WORKFLOW.md`. The sidecar has no
+provider dispatch capability. After TERMINAL is observed and read back, stop
+both processes with Ctrl+C; read back the exact ledger paths, proof
 workspace diff, Issue state, PR/main refs and child environment selector names.
 If a write response is ambiguous, read back the exact ledger path before any
 new action. Do not recreate the Issue, retry a push blindly, or auto-adopt the
 artifact.
+
+The proof Issue stays open while Codex works. For a **normal worker terminal**,
+the Local operator may close that Issue after the allowed artifact is observed
+and checked, under the separate LIVE approval. Official Symphony then sees the
+tracker terminal state at its next continuation check and lets its own worker
+return; the observation hook can emit TERMINAL. If the worker instead crashes
+or is stopped with Ctrl+C first, preserve STARTED_UNRESOLVED and report that
+TERMINAL was not captured. Do not manufacture a terminal from a stopped
+process or treat the G5 proof as PASS.
 
 Success evidence: real worker and signed STARTED captured durably; real
 terminal observation captured; reader restart replay produces only duplicate
