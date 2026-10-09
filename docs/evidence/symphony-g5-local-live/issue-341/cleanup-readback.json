@@ -1,0 +1,26 @@
+{
+  "process_cleanup": {
+    "symphony_stopped": true,
+    "appserver_pids": [
+      565693
+    ],
+    "appserver_stopped": true,
+    "observer_stopped": true,
+    "port_4000_closed": true
+  },
+  "ending_refs_before_result_commit": {
+    "pr": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+    "main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "proof": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "ledger": "dcbd16be97e9279911ff37611608f509fef852b6"
+  },
+  "proof_issue_state": "closed",
+  "workspace_exists_after_tracker_close": false,
+  "workspace_removal_source": "Official Symphony terminal-state reconciliation invokes Workspace.remove at orchestrator.ex:565; operator did not reset/clean/delete the workspace",
+  "terminal_record_path": "symphony_attempts/symphony-g5-local-20261009T024653Z-d646fcdc/attempt-1fdd3890e399898ee905068f55b87e72/terminal.json",
+  "terminal_record_http_status": 404,
+  "operator_git_adoption_count": 0,
+  "worker_git_adoption_count": 0,
+  "main_mutation_count": 0,
+  "worker_unauthorized_mutation_count_at_verified_close": 0
+}

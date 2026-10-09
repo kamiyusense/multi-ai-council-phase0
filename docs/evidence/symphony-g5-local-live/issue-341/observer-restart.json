@@ -1,0 +1,17 @@
+{
+  "restarted_component": "observer sidecar only",
+  "symphony_not_running": true,
+  "live_launch_count": 1,
+  "exit_code": 0,
+  "output": "NOOP_DUPLICATE started attempt-1fdd3890e399898ee905068f55b87e72\n",
+  "ledger_head_before": "dcbd16be97e9279911ff37611608f509fef852b6",
+  "ledger_head_after": "dcbd16be97e9279911ff37611608f509fef852b6",
+  "ledger_unchanged": true,
+  "event_sha256_before": "99b528c4d986df64957f319cd2475e595550e987bebbe72fcc5d39f80bff82ed",
+  "event_sha256_after": "99b528c4d986df64957f319cd2475e595550e987bebbe72fcc5d39f80bff82ed",
+  "duplicate_started_noop": true,
+  "duplicate_terminal_noop": "NOT_TESTED; no real TERMINAL event exists",
+  "new_worker_dispatches": 0,
+  "new_model_dispatches": 0,
+  "full_durable_restart_proof": "FAIL; STARTED-only replay is partial evidence"
+}

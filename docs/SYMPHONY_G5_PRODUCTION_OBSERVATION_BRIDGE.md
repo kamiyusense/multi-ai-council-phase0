@@ -1,6 +1,7 @@
-# G5 — Official Symphony production observation bridge (STATIC)
+# G5 — Official Symphony production observation bridge
 
-Status: **STATIC integration prepared; no G5 LIVE run**. Official Symphony pin:
+Status: **STATIC integration present; first Local G5 LIVE FAIL / STARTED_UNRESOLVED**.
+See [Issue #341 Local result](SYMPHONY_G5_LOCAL_LIVE_RESULT_ISSUE_341.md). Official Symphony pin:
 `be10a1b79df723d6d7612b5651c8522704dafb2e`.
 
 ## Boundary
@@ -110,9 +111,13 @@ artifact.
 
 The proof Issue stays open while Codex works. For a **normal worker terminal**,
 the Local operator may close that Issue after the allowed artifact is observed
-and checked, under the separate LIVE approval. Official Symphony then sees the
-tracker terminal state at its next continuation check and lets its own worker
-return; the observation hook can emit TERMINAL. If the worker instead crashes
+and checked, under the separate LIVE approval. Official Symphony may see the
+tracker terminal state at its next continuation check and let its worker
+return, allowing TERMINAL. This is not guaranteed: its independent periodic
+reconciliation can terminate an active task and remove its workspace before
+that worker return hook runs. Local Issue #341 demonstrated this path.
+Preserve the verified artifact/readback before closing; a closed Issue, stopped
+child, or deleted workspace must never be substituted for a signed TERMINAL. If the worker instead crashes
 or is stopped with Ctrl+C first, preserve STARTED_UNRESOLVED and report that
 TERMINAL was not captured. Do not manufacture a terminal from a stopped
 process or treat the G5 proof as PASS.
@@ -137,3 +142,32 @@ same-user process that can read the parent environment. Local LIVE must still
 verify process/workspace isolation. No real G5 producer, ledger write, reader
 restart, subscription route, or terminal capture has run in this Cloud batch.
 G6 automatic Git result adoption remains disconnected.
+
+## 2026-10-09 Local G5 — real unresolved start, not a completed proof
+
+One explicitly authorized Official Symphony launch selected new Issue #341.
+The signed STARTED was authenticated and persisted as create-only INTENT and
+STARTED on the separate ledger branch. One real ChatGPT-authenticated Codex
+session started three turns, completed two and naturally continued twice.
+Only the approved artifact changed; its verified content was preserved before
+the operator closed the Issue under the authorization.
+
+At `2026-10-09T02:53:18.569607Z`, upstream periodic reconciliation reported
+`Issue moved to terminal state ... stopping active agent`. It interrupted turn
+3 and invoked normal upstream workspace removal. The `run_on_worker_host`
+return hook did not execute: one real STARTED exists and no real TERMINAL.
+The local observation must remain STARTED_UNRESOLVED. Do not synthesize a
+terminal or call this G5 PASS. This is a lifecycle observation gap, not proof
+that the MAC or create-only store rejected a real terminal event.
+
+After Symphony/App Server/observer stopped and port 4000 closed, the observer
+alone restarted once. Replaying that actual STARTED returned NOOP_DUPLICATE;
+ledger HEAD and event digest were unchanged and new worker/model dispatches
+were zero. TERMINAL duplicate replay could not be tested. This is partial
+restart evidence, not the full durable restart proof.
+
+No scheduler/continuation/retry/backoff/stall code was changed. No second G5
+LIVE, G4/provider LIVE, automatic Git adoption, main mutation or G6 LIVE was
+performed. A future observation-only correction must address the real
+upstream termination boundary without changing lifecycle authority, and needs
+separate LIVE authorization. Static fixtures do not complete this failed run.

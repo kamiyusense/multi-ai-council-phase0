@@ -1,0 +1,24 @@
+{
+  "recorded_at": "2026-10-09T03:01:50.070591+00:00",
+  "focused_symphony": {
+    "tests": 149,
+    "outcome": "PASS",
+    "summary": "----------------------------------------------------------------------\nRan 149 tests in 0.576s\n\nOK\n"
+  },
+  "full_command_bus": {
+    "tests": 1908,
+    "inherited_skip": 1,
+    "outcome": "PASS",
+    "summary": "Ran 1908 tests in 95.288s\n\nOK (skipped=1)"
+  },
+  "compileall": "PASS",
+  "pinned_upstream_patch_check": "PASS",
+  "upstream_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "patch_sha256": "4739670e6afea6dab98f8711369e3533b848655b1437408418738ad228b23e19",
+  "diff_check": "PASS",
+  "secret_scan": "PASS",
+  "additional_live_launches": 0,
+  "producer_scheduler_code_changes_after_live": 0,
+  "live_outcome": "FAIL / STARTED_UNRESOLVED",
+  "ci": "Final exact-head CI recorded in final PR checkpoint; existing starting-head CI is not final-head validation."
+}
