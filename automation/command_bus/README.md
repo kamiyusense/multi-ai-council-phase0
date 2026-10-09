@@ -1,5 +1,15 @@
 # Chat/Work GitHub command bus
 
+## G5 Official Symphony worker observation (STATIC preparation)
+
+`symphony_production_observer.py` accepts signed worker STARTED/TERMINAL
+events from the pinned upstream `symphony_g5_observer.patch` and writes only
+create-only attempt evidence to a separate non-default ledger branch. The
+optional `symphony_g5_observer_cli.py` reads local JSONL; it never starts a
+worker, controls Symphony retries, or adopts Git results. See
+[G5 observation bridge](../../docs/SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md).
+No G5 LIVE process or provider/model run is part of this STATIC integration.
+
 ## Static Symphony-inspired controller core
 
 `symphony_controller.py` provides an opt-in single-dispatch polling loop over

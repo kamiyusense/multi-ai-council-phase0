@@ -13,6 +13,9 @@ on:
       - automation/command_bus/symphony_result_adoption.py
       - automation/command_bus/symphony_subscription_boundary.py
       - automation/command_bus/symphony_upstream_event_adapter.py
+      - automation/command_bus/symphony_production_observer.py
+      - automation/command_bus/symphony_g5_observer_cli.py
+      - automation/command_bus/symphony_g5_observer.patch
       - automation/command_bus/symphony_upstream_reference.json
       - automation/command_bus/symphony_codex_app_server.py
       - automation/command_bus/symphony_github_adapter.py
@@ -28,6 +31,7 @@ on:
       - automation/command_bus/tests/test_symphony_subscription_boundary.py
       - automation/command_bus/tests/test_symphony_attempt_faults.py
       - automation/command_bus/tests/test_symphony_upstream_event_adapter.py
+      - automation/command_bus/tests/test_symphony_production_observer.py
       - automation/command_bus/tests/test_symphony_upstream_reference.py
       - automation/command_bus/tests/test_symphony_minimal_live_preflight.py
       - automation/command_bus/README.md
@@ -37,6 +41,8 @@ on:
       - docs/SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md
       - docs/SYMPHONY_MINIMAL_LIVE_PROOF_RUNBOOK.md
       - docs/SYMPHONY_MINIMAL_LIVE_PROOF_STATIC_CHECKPOINT.md
+      - docs/SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md
+      - docs/SYMPHONY_G5_LIVE_PROOF_WORKFLOW.md
       - .github/workflows/symphony-controller-static.yml
 
 permissions:
@@ -62,7 +68,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/symphony-static-evidence"
-          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_upstream_reference automation.command_bus.tests.test_symphony_minimal_live_preflight -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
+          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_upstream_reference automation.command_bus.tests.test_symphony_minimal_live_preflight -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
 
       - name: Full command bus regression suite
         run: |

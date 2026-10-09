@@ -1,0 +1,83 @@
+diff --git a/elixir/lib/symphony_elixir/agent_runner.ex b/elixir/lib/symphony_elixir/agent_runner.ex
+--- a/elixir/lib/symphony_elixir/agent_runner.ex
++++ b/elixir/lib/symphony_elixir/agent_runner.ex
+@@ -23,6 +23,7 @@ defmodule SymphonyElixir.AgentRunner do
+     # The orchestrator owns host retries so one worker lifetime never hops machines.
+     worker_host = selected_worker_host(Keyword.get(opts, :worker_host), Config.settings!().worker.ssh_hosts)
+-
++
++    opts = Keyword.put(opts, :g5_worker_run_id, Base.encode16(:crypto.strong_rand_bytes(16), case: :lower))
+     Logger.info("Starting agent run for #{issue_context(issue)} worker_host=#{worker_host_for_log(worker_host)}")
+-
++
+     case run_on_worker_host(issue, codex_update_recipient, opts, worker_host) do
+@@ -40,15 +41,20 @@ defmodule SymphonyElixir.AgentRunner do
+-
++
+     case Workspace.create_for_issue(issue, worker_host) do
+       {:ok, workspace} ->
+         send_worker_runtime_info(codex_update_recipient, issue, worker_host, workspace)
+-
++
+-        try do
+-          with :ok <- Workspace.run_before_run_hook(workspace, issue, worker_host) do
+-            run_codex_turns(workspace, issue, codex_update_recipient, opts, worker_host)
+-          end
+-        after
+-          Workspace.run_after_run_hook(workspace, issue, worker_host)
+-        end
++        g5_observe(issue, opts, workspace, "STARTED", "RUNNING")
++        result =
++          try do
++            with :ok <- Workspace.run_before_run_hook(workspace, issue, worker_host) do
++              run_codex_turns(workspace, issue, codex_update_recipient, opts, worker_host)
++            end
++          after
++            Workspace.run_after_run_hook(workspace, issue, worker_host)
++          end
++
++        g5_observe(issue, opts, workspace, "TERMINAL", if(result == :ok, do: "WORKER_COMPLETED", else: "WORKER_FAILED"))
++        result
+-
++
+       {:error, reason} ->
+         {:error, reason}
+@@ -55,4 +61,37 @@ defmodule SymphonyElixir.AgentRunner do
+     end
+   end
+-
++
++  # Optional observation only. Failure never changes upstream scheduling or worker results.
++  defp g5_observe(issue, opts, workspace, kind, status) do
++    path = System.get_env("SYMPHONY_G5_OBSERVER_EVENTS")
++    key_hex = System.get_env("SYMPHONY_G5_OBSERVER_KEY_HEX")
++
++    if is_binary(path) and path != "" and is_binary(key_hex) do
++      try do
++        {:ok, key} = Base.decode16(key_hex, case: :mixed)
++        true = byte_size(key) >= 32
++        worker_run_id = Keyword.fetch!(opts, :g5_worker_run_id)
++        {prefix, ""} = worker_run_id |> String.slice(0, 15) |> Integer.parse(16)
++        attempt_number = prefix + 1
++        payload = %{
++          protocol: "SYMPHONY_G5_WORKER_OBSERVATION_V1",
++          issue_id: issue.id,
++          attempt_number: attempt_number,
++          worker_run_id: worker_run_id,
++          kind: kind,
++          workspace: workspace,
++          status: status
++        }
++        payload_json = Jason.encode!(payload)
++        mac = :crypto.mac(:hmac, :sha256, key, payload_json) |> Base.encode16(case: :lower)
++        line = Jason.encode!(%{payload_json: payload_json, mac: mac}) <> "\n"
++        File.write!(path, line, [:append])
++      rescue
++        error -> Logger.warning("G5 observation unavailable: #{Exception.message(error)}")
++      end
++    end
++
++    :ok
++  end
++
+   defp codex_message_handler(recipient, issue) do

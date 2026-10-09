@@ -3,6 +3,19 @@
 Status: current design handover for the autonomous-loop line. Fresh GitHub
 readback is authoritative; do not trust remembered SHA values.
 
+## G5 Cloud STATIC observation bridge — 2026-10-09
+
+Read `SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md`. A minimal patch for pinned
+Official Symphony emits signed local worker STARTED/TERMINAL observations
+without changing its scheduling, turns, retry or stall logic. An opt-in Python
+sidecar verifies the signed Issue/worker envelope and uses the existing
+create-only attempt ledger. Reader restart replays complete lines with duplicate
+NO-OP; a conflicting terminal cannot overwrite evidence. The hook, sidecar and
+workflow are STATIC preparations: **no G5 LIVE was run**. G4 remains the only
+real Symphony/Codex proof. G5 does not feed worker-end UNKNOWN into campaign
+result adoption and does not write Git results. Separate LIVE approval and G6
+adoption proof are still required.
+
 ## Latest Local upstream boundary — 2026-10-09
 
 Generation 4 achieved the explicitly bounded Local worker/workspace proof;
