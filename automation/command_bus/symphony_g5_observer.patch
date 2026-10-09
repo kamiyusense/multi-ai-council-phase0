@@ -1,83 +1,244 @@
 diff --git a/elixir/lib/symphony_elixir/agent_runner.ex b/elixir/lib/symphony_elixir/agent_runner.ex
+index f99a2d9..6160a79 100644
 --- a/elixir/lib/symphony_elixir/agent_runner.ex
 +++ b/elixir/lib/symphony_elixir/agent_runner.ex
-@@ -23,6 +23,7 @@ defmodule SymphonyElixir.AgentRunner do
-     # The orchestrator owns host retries so one worker lifetime never hops machines.
-     worker_host = selected_worker_host(Keyword.get(opts, :worker_host), Config.settings!().worker.ssh_hosts)
--
-+
-+    opts = Keyword.put(opts, :g5_worker_run_id, Base.encode16(:crypto.strong_rand_bytes(16), case: :lower))
-     Logger.info("Starting agent run for #{issue_context(issue)} worker_host=#{worker_host_for_log(worker_host)}")
--
-+
-     case run_on_worker_host(issue, codex_update_recipient, opts, worker_host) do
-@@ -40,15 +41,20 @@ defmodule SymphonyElixir.AgentRunner do
--
-+
+@@ -40,7 +40,7 @@ defmodule SymphonyElixir.AgentRunner do
+
      case Workspace.create_for_issue(issue, worker_host) do
        {:ok, workspace} ->
-         send_worker_runtime_info(codex_update_recipient, issue, worker_host, workspace)
--
-+
--        try do
--          with :ok <- Workspace.run_before_run_hook(workspace, issue, worker_host) do
--            run_codex_turns(workspace, issue, codex_update_recipient, opts, worker_host)
--          end
--        after
--          Workspace.run_after_run_hook(workspace, issue, worker_host)
--        end
-+        g5_observe(issue, opts, workspace, "STARTED", "RUNNING")
-+        result =
-+          try do
-+            with :ok <- Workspace.run_before_run_hook(workspace, issue, worker_host) do
-+              run_codex_turns(workspace, issue, codex_update_recipient, opts, worker_host)
-+            end
-+          after
-+            Workspace.run_after_run_hook(workspace, issue, worker_host)
-+          end
-+
-+        g5_observe(issue, opts, workspace, "TERMINAL", if(result == :ok, do: "WORKER_COMPLETED", else: "WORKER_FAILED"))
-+        result
--
-+
-       {:error, reason} ->
-         {:error, reason}
-@@ -55,4 +61,37 @@ defmodule SymphonyElixir.AgentRunner do
-     end
+-        send_worker_runtime_info(codex_update_recipient, issue, worker_host, workspace)
++        send_worker_runtime_info(codex_update_recipient, issue, worker_host, workspace, Keyword.get(opts, :g5_worker_run_id))
+
+         try do
+           with :ok <- Workspace.run_before_run_hook(workspace, issue, worker_host) do
+@@ -69,21 +69,22 @@ defmodule SymphonyElixir.AgentRunner do
+
+   defp send_codex_update(_recipient, _issue, _message), do: :ok
+
+-  defp send_worker_runtime_info(recipient, %Issue{id: issue_id}, worker_host, workspace)
++  defp send_worker_runtime_info(recipient, %Issue{id: issue_id}, worker_host, workspace, g5_worker_run_id)
+        when is_binary(issue_id) and is_pid(recipient) and is_binary(workspace) do
+     send(
+       recipient,
+       {:worker_runtime_info, issue_id,
+        %{
+          worker_host: worker_host,
+-         workspace_path: workspace
++         workspace_path: workspace,
++         g5_worker_run_id: g5_worker_run_id
+        }}
+     )
+
+     :ok
    end
--
+
+-  defp send_worker_runtime_info(_recipient, _issue, _worker_host, _workspace), do: :ok
++  defp send_worker_runtime_info(_recipient, _issue, _worker_host, _workspace, _g5_worker_run_id), do: :ok
+
+   defp run_codex_turns(workspace, issue, codex_update_recipient, opts, worker_host) do
+     max_turns = Keyword.get(opts, :max_turns, Config.settings!().agent.max_turns)
+diff --git a/elixir/lib/symphony_elixir/orchestrator.ex b/elixir/lib/symphony_elixir/orchestrator.ex
+index b52e991..8e1ae3a 100644
+--- a/elixir/lib/symphony_elixir/orchestrator.ex
++++ b/elixir/lib/symphony_elixir/orchestrator.ex
+@@ -7,7 +7,7 @@ defmodule SymphonyElixir.Orchestrator do
+   require Logger
+   import Bitwise, only: [<<<: 2]
+
+-  alias SymphonyElixir.{AgentRunner, Config, StatusDashboard, Tracker, Workspace}
++  alias SymphonyElixir.{AgentRunner, Config, G5Observer, StatusDashboard, Tracker, Workspace}
+   alias SymphonyElixir.Tracker.Issue
+
+   @continuation_retry_delay_ms 1_000
+@@ -135,6 +135,7 @@ defmodule SymphonyElixir.Orchestrator do
+
+       issue_id ->
+         {running_entry, state} = pop_running_entry(state, issue_id)
++        G5Observer.terminal(running_entry, if(reason == :normal, do: "WORKER_COMPLETED", else: "WORKER_FAILED"))
+         state = record_session_completion_totals(state, running_entry)
+         session_id = running_entry_session_id(running_entry)
+
+@@ -158,6 +159,7 @@ defmodule SymphonyElixir.Orchestrator do
+           running_entry
+           |> maybe_put_runtime_value(:worker_host, runtime_info[:worker_host])
+           |> maybe_put_runtime_value(:workspace_path, runtime_info[:workspace_path])
++          |> G5Observer.started(issue_id, runtime_info)
+
+         notify_dashboard()
+         {:noreply, %{state | running: Map.put(running, issue_id, updated_running_entry)}}
+@@ -560,6 +562,7 @@ defmodule SymphonyElixir.Orchestrator do
+         state = record_session_completion_totals(state, running_entry)
+
+         stop_running_task(pid, ref, state.task_supervisor)
++        G5Observer.terminal(running_entry, "WORKER_STOPPED")
+
+         if cleanup_workspace do
+           cleanup_issue_workspace(Map.get(running_entry, :issue, identifier), running_entry)
+@@ -751,6 +754,7 @@ defmodule SymphonyElixir.Orchestrator do
+       state.task_supervisor
+     )
+
++    G5Observer.terminal(running_entry, "WORKER_STOPPED")
+     block_issue_from_entry(state, issue_id, running_entry, error)
+   end
+
+@@ -951,8 +955,14 @@ defmodule SymphonyElixir.Orchestrator do
+   end
+
+   defp spawn_issue_on_worker_host(%State{} = state, issue, attempt, recipient, worker_host) do
++    g5_observer = G5Observer.start()
 +
-+  # Optional observation only. Failure never changes upstream scheduling or worker results.
-+  defp g5_observe(issue, opts, workspace, kind, status) do
-+    path = System.get_env("SYMPHONY_G5_OBSERVER_EVENTS")
-+    key_hex = System.get_env("SYMPHONY_G5_OBSERVER_KEY_HEX")
+     case Task.Supervisor.start_child(state.task_supervisor, fn ->
+-           AgentRunner.run(issue, recipient, attempt: attempt, worker_host: worker_host)
++           AgentRunner.run(issue, recipient,
++             attempt: attempt,
++             worker_host: worker_host,
++             g5_worker_run_id: g5_observer && g5_observer.worker_run_id
++           )
+          end) do
+       {:ok, pid} ->
+         ref = Process.monitor(pid)
+@@ -967,6 +977,7 @@ defmodule SymphonyElixir.Orchestrator do
+             issue: issue,
+             worker_host: worker_host,
+             workspace_path: nil,
++            g5_observer: g5_observer,
+             session_id: nil,
+             last_codex_message: nil,
+             last_codex_timestamp: nil,
+@@ -991,6 +1002,7 @@ defmodule SymphonyElixir.Orchestrator do
+         }
+
+       {:error, reason} ->
++        G5Observer.discard(g5_observer)
+         Logger.error("Unable to spawn agent for #{issue_context(issue)}: #{inspect(reason)}")
+         next_attempt = if is_integer(attempt), do: attempt + 1, else: nil
+
+diff --git a/elixir/lib/symphony_elixir/g5_observer.ex b/elixir/lib/symphony_elixir/g5_observer.ex
+new file mode 100644
+index 0000000..ad95984
+--- /dev/null
++++ b/elixir/lib/symphony_elixir/g5_observer.ex
+@@ -0,0 +1,122 @@
++defmodule SymphonyElixir.G5Observer do
++  @moduledoc """
++  Best-effort signed observations of one worker lifetime. The orchestrator owns
++  all terminal decisions. An unlinked writer keeps file I/O off the scheduler;
++  it never dispatches, retries, adopts results or holds up worker termination.
++  """
 +
-+    if is_binary(path) and path != "" and is_binary(key_hex) do
-+      try do
-+        {:ok, key} = Base.decode16(key_hex, case: :mixed)
-+        true = byte_size(key) >= 32
-+        worker_run_id = Keyword.fetch!(opts, :g5_worker_run_id)
-+        {prefix, ""} = worker_run_id |> String.slice(0, 15) |> Integer.parse(16)
-+        attempt_number = prefix + 1
-+        payload = %{
-+          protocol: "SYMPHONY_G5_WORKER_OBSERVATION_V1",
-+          issue_id: issue.id,
-+          attempt_number: attempt_number,
-+          worker_run_id: worker_run_id,
-+          kind: kind,
-+          workspace: workspace,
-+          status: status
-+        }
-+        payload_json = Jason.encode!(payload)
-+        mac = :crypto.mac(:hmac, :sha256, key, payload_json) |> Base.encode16(case: :lower)
-+        line = Jason.encode!(%{payload_json: payload_json, mac: mac}) <> "\n"
-+        File.write!(path, line, [:append])
-+      rescue
-+        error -> Logger.warning("G5 observation unavailable: #{Exception.message(error)}")
-+      end
++  require Logger
++
++  @spec start() :: map() | nil
++  def start do
++    with path when is_binary(path) and path != "" <- System.get_env("SYMPHONY_G5_OBSERVER_EVENTS"),
++         key_hex when is_binary(key_hex) <- System.get_env("SYMPHONY_G5_OBSERVER_KEY_HEX"),
++         {:ok, key} when byte_size(key) >= 32 <- Base.decode16(key_hex, case: :mixed) do
++      owner = self()
++      run_id = Base.encode16(:crypto.strong_rand_bytes(16), case: :lower)
++      writer = spawn(fn -> write_lifetime(Process.monitor(owner), path, key, run_id, nil) end)
++      %{worker_run_id: run_id, writer: writer, workspace: nil}
++    else
++      _ -> nil
++    end
++  rescue
++    _ -> nil
++  catch
++    _, _ -> nil
++  end
++
++  @spec started(map(), String.t(), map()) :: map()
++  def started(entry, issue_id, runtime_info) do
++    case Map.get(entry, :g5_observer) do
++      %{worker_run_id: run_id, writer: writer, workspace: nil} = observation
++      when is_pid(writer) ->
++        workspace = runtime_info[:workspace_path]
++
++        if runtime_info[:g5_worker_run_id] == run_id and is_binary(workspace) and
++             String.starts_with?(workspace, "/") do
++          send(writer, {:started, issue_id, workspace})
++          Map.put(entry, :g5_observer, %{observation | workspace: workspace})
++        else
++          entry
++        end
++
++      _ ->
++        entry
++    end
++  rescue
++    _ -> entry
++  catch
++    _, _ -> entry
++  end
++
++  @spec terminal(map(), String.t()) :: :ok
++  def terminal(entry, status) do
++    case Map.get(entry, :g5_observer) do
++      %{writer: writer} when is_pid(writer) -> send(writer, {:terminal, status})
++      _ -> :ok
 +    end
 +
 +    :ok
++  rescue
++    _ -> :ok
++  catch
++    _, _ -> :ok
 +  end
 +
-   defp codex_message_handler(recipient, issue) do
++  @spec discard(map() | nil) :: :ok
++  def discard(observation) do
++    if is_map(observation) and is_pid(observation[:writer]), do: send(observation.writer, :discard)
++    :ok
++  end
++
++  defp write_lifetime(owner_ref, path, key, run_id, identity) do
++    receive do
++      {:started, issue_id, workspace} when is_nil(identity) ->
++        append(path, key, run_id, issue_id, workspace, "STARTED", "RUNNING")
++        write_lifetime(owner_ref, path, key, run_id, {issue_id, workspace})
++
++      {:terminal, status} when status in ["WORKER_COMPLETED", "WORKER_FAILED", "WORKER_STOPPED"] ->
++        if identity do
++          {issue_id, workspace} = identity
++          append(path, key, run_id, issue_id, workspace, "TERMINAL", status)
++        else
++          Logger.warning("G5 terminal observation unavailable: worker workspace identity missing")
++        end
++
++      :discard ->
++        :ok
++
++      {:DOWN, ^owner_ref, :process, _pid, _reason} ->
++        :ok
++
++      _ ->
++        write_lifetime(owner_ref, path, key, run_id, identity)
++    end
++  end
++
++  defp append(path, key, run_id, issue_id, workspace, kind, status) do
++    # Operator pre-creates a private regular JSONL file outside model workspaces.
++    # Reject a missing/non-regular target in the writer, never in the scheduler.
++    with {:ok, %{type: :regular}} <- File.lstat(path) do
++      payload = %{
++        protocol: "SYMPHONY_G5_WORKER_OBSERVATION_V1",
++        issue_id: issue_id,
++        attempt_number: String.to_integer(String.slice(run_id, 0, 15), 16) + 1,
++        worker_run_id: run_id,
++        kind: kind,
++        workspace: workspace,
++        status: status
++      }
++
++      payload_json = Jason.encode!(payload)
++      mac = Base.encode16(:crypto.mac(:hmac, :sha256, key, payload_json), case: :lower)
++      File.write!(path, Jason.encode!(%{payload_json: payload_json, mac: mac}) <> "\n", [:append])
++    else
++      _ -> Logger.warning("G5 observation append unavailable: target is not a regular file")
++    end
++  rescue
++    _ -> Logger.warning("G5 observation append failed; upstream lifecycle unchanged")
++  catch
++    _, _ -> Logger.warning("G5 observation append failed; upstream lifecycle unchanged")
++  end
++end

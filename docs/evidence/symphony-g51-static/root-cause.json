@@ -1,0 +1,56 @@
+{
+  "upstream_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "source_readback": [
+    {
+      "path": "elixir/lib/symphony_elixir/orchestrator.ex",
+      "sha256": "ffa6fd2ca66f775b93ca561adb60a61a416f8fb604ff247128d3638169fdab22",
+      "termination_path_lines": [
+        {
+          "line": 421,
+          "text": "  defp reconcile_issue_state(%Issue{} = issue, state, active_states, terminal_states) do"
+        },
+        {
+          "line": 443,
+          "text": "  defp reconcile_issue_state(_issue, state, _active_states, _terminal_states), do: state"
+        },
+        {
+          "line": 554,
+          "text": "  defp terminate_running_issue(%State{} = state, issue_id, cleanup_workspace) do"
+        },
+        {
+          "line": 723,
+          "text": "  defp terminate_task(pid, task_supervisor) when is_pid(pid) do"
+        },
+        {
+          "line": 724,
+          "text": "    case Task.Supervisor.terminate_child(task_supervisor, pid) do"
+        },
+        {
+          "line": 733,
+          "text": "  defp terminate_task(_pid, _task_supervisor), do: :ok"
+        },
+        {
+          "line": 735,
+          "text": "  defp stop_running_task(pid, ref, task_supervisor) do"
+        },
+        {
+          "line": 741,
+          "text": "      Process.demonitor(ref, [:flush])"
+        }
+      ]
+    },
+    {
+      "path": "elixir/lib/symphony_elixir/agent_runner.ex",
+      "sha256": "4b4ab877427c76e5778034c7c89a41e9ec884fb1b142f3c6754550f3ba25be39",
+      "termination_path_lines": [
+        {
+          "line": 38,
+          "text": "  defp run_on_worker_host(issue, codex_update_recipient, opts, worker_host) do"
+        }
+      ]
+    }
+  ],
+  "real_failure_issue": 341,
+  "real_failure_unchanged": "FAIL / STARTED_UNRESOLVED",
+  "new_live_count": 0
+}

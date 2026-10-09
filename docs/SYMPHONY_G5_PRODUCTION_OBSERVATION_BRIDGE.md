@@ -1,19 +1,49 @@
 # G5 — Official Symphony production observation bridge
 
-Status: **STATIC integration present; first Local G5 LIVE FAIL / STARTED_UNRESOLVED**.
+Status: **G5.1 worker-lifecycle STATIC fix present; Local G5 #341 remains FAIL / STARTED_UNRESOLVED**.
 See [Issue #341 Local result](SYMPHONY_G5_LOCAL_LIVE_RESULT_ISSUE_341.md). Official Symphony pin:
 `be10a1b79df723d6d7612b5651c8522704dafb2e`.
 
 ## Boundary
 
-The small `automation/command_bus/symphony_g5_observer.patch` applies to the
-pinned upstream `elixir/lib/symphony_elixir/agent_runner.ex`. It adds two
-best-effort emissions at the existing worker lifetime boundary: `STARTED`
-after workspace creation, and `TERMINAL` after the worker returns normally or
-with an error result. It changes no polling, dispatch selection, workspace,
-Codex turn, same-thread continuation, retry, backoff, stall, or concurrency
-logic. A process exception before the terminal hook can leave STARTED
-unresolved; the ledger must not invent a terminal event.
+The `automation/command_bus/symphony_g5_observer.patch` applies to the clean
+pin's `agent_runner.ex`, `orchestrator.ex`, and new `g5_observer.ex` only.
+The Orchestrator generates the optional lifetime ID and passes just that ID to
+AgentRunner. AgentRunner adds the ID to its existing workspace runtime message;
+it performs no observation file I/O and no terminal emission. The Orchestrator
+binds STARTED to the matching first runtime workspace, then observes TERMINAL
+at `:DOWN`, `terminate_running_issue` after `stop_running_task`, or the existing
+`stop_and_block_issue` stop boundary. `Process.demonitor(ref, [:flush])` remains
+unchanged. Removing the running entry and the writer's one-shot terminal
+handling prevent a later DOWN/duplicate end from emitting a second terminal.
+
+Statuses distinguish `WORKER_COMPLETED` (natural normal process exit),
+`WORKER_FAILED` (abnormal DOWN) and `WORKER_STOPPED` (explicit upstream stop,
+including tracker terminal/stall/operator-input block). They describe a worker
+lifetime only. A tracker-close stop must never be called WORKER_COMPLETED.
+Concurrent natural return versus an already chosen explicit stop can
+conservatively record STOPPED; there is one Orchestrator observation authority.
+The receiver preserves exact same-event NOOP_DUPLICATE and rejects a conflicting
+status, full worker ID or workspace without overwriting the canonical record.
+
+One opt-in unlinked local writer per observed lifetime appends signed JSONL.
+Orchestrator calls send messages without file I/O or acknowledgements; no
+observer failure gates worker work, cleanup, continuation or retry. The writer
+snapshots the parent-only MAC key and event path, preserves STARTED-before-TERMINAL
+order from the same sender, emits at most one terminal and exits. An owner
+monitor discards it when its Orchestrator disappears. Invalid/missing config
+disables the observation only; missing/nonregular paths are rejected in the
+writer. There are no producer write retries or new scheduler/store semantics.
+Pre-create the private regular event file before starting Symphony. There is
+no flush guarantee if the parent is killed before queued observations finish.
+A stop before a matching workspace runtime message or owner death can still
+leave no signed STARTED/TERMINAL; do not manufacture missing evidence. Drain
+and read back the actual terminal before operator process cleanup.
+
+Polling, issue selection, Codex turns, continuation, retry/backoff, stall,
+concurrency, Task.Supervisor termination and workspace cleanup are unchanged.
+The STATIC result and seven requested regression cases are documented in
+[the G5.1 checkpoint](SYMPHONY_G51_STATIC_CHECKPOINT.md).
 
 `symphony_g5_observer_cli.py` is a separate, opt-in, local file observer. It
 verifies each JSONL record with an HMAC shared by the local upstream hook and
@@ -26,7 +56,7 @@ ambiguous write is not blindly resent. Complete lines are replayable after a
 reader restart. A partial final line waits for completion. Conflict remains
 local to that attempt and does not control Symphony's scheduler.
 
-The producer generates a random 128-bit worker run ID. The ledger's positive
+The Orchestrator observation helper generates a random 128-bit worker run ID. The ledger's positive
 `attempt_number` is deterministically derived from its first 60 bits; it is an
 opaque identity, **not a chronological retry counter**. This avoids collisions
 when upstream's retry counter returns to 1 for normal active-Issue
@@ -73,7 +103,8 @@ confirmed; no API-key/custom-endpoint/paid fallback; separate non-default
 ledger branch; observer config bound to exactly one Issue and expected proof
 HEAD; 32-byte random MAC key generated locally and never logged; JSONL path
 outside the model workspace with restrictive file permissions. The Codex child
-command must remove `SYMPHONY_G5_OBSERVER_KEY_HEX`, `GITHUB_TOKEN`,
+command must remove `SYMPHONY_G5_OBSERVER_KEY_HEX`, `SYMPHONY_G5_OBSERVER_EVENTS`,
+`GITHUB_TOKEN`, `GH_TOKEN`,
 `OPENAI_API_KEY`, `CODEX_API_KEY`, `AZURE_OPENAI_API_KEY`, `OPENAI_BASE_URL`,
 and `OPENAI_API_BASE` from its environment. The producer and observer share
 the key only in their parent processes. Check child selector **names**, never
@@ -109,18 +140,18 @@ If a write response is ambiguous, read back the exact ledger path before any
 new action. Do not recreate the Issue, retry a push blindly, or auto-adopt the
 artifact.
 
-The proof Issue stays open while Codex works. For a **normal worker terminal**,
-the Local operator may close that Issue after the allowed artifact is observed
-and checked, under the separate LIVE approval. Official Symphony may see the
-tracker terminal state at its next continuation check and let its worker
-return, allowing TERMINAL. This is not guaranteed: its independent periodic
-reconciliation can terminate an active task and remove its workspace before
-that worker return hook runs. Local Issue #341 demonstrated this path.
-Preserve the verified artifact/readback before closing; a closed Issue, stopped
-child, or deleted workspace must never be substituted for a signed TERMINAL. If the worker instead crashes
-or is stopped with Ctrl+C first, preserve STARTED_UNRESOLVED and report that
-TERMINAL was not captured. Do not manufacture a terminal from a stopped
-process or treat the G5 proof as PASS.
+The proof Issue stays open while Codex works. The Local operator may close it
+only after preserving and verifying the single allowed artifact under a new
+single-LIVE approval. In G5.1, a continuation check may return naturally
+(WORKER_COMPLETED), or periodic tracker reconciliation may stop the active
+worker (WORKER_STOPPED). Both are real Orchestrator lifecycle observation paths.
+Read back the signed event and durable terminal; a closed Issue, stopped child
+or deleted workspace alone is not signed terminal evidence. If the parent is
+killed first, the observation is unavailable, or workspace identity was not
+bound, preserve STARTED_UNRESOLVED/UNKNOWN. Never invent a terminal or launch a
+second LIVE to repair it. The historical #341 result remains unchanged.
+See [the fresh G5.1 Local LIVE plan](SYMPHONY_G51_LOCAL_LIVE_PLAN.md); this batch
+creates no Issue/campaign/proof workspace and starts no LIVE.
 
 Success evidence: real worker and signed STARTED captured durably; real
 terminal observation captured; reader restart replay produces only duplicate

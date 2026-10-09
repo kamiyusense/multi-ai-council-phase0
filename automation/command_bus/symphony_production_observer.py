@@ -1,7 +1,7 @@
 """Authenticated, observation-only ingress for a pinned Symphony worker hook.
 
-The hook owns worker lifecycle. This module neither starts workers nor adopts
-their Git changes. A MAC authenticates the local event producer; durable writes
+Official Symphony owns worker lifecycle. This module neither starts workers
+nor adopts their Git changes. A MAC authenticates the local event producer; durable writes
 still use the existing create-only attempt store and its exact readback.
 """
 from __future__ import annotations
@@ -80,7 +80,7 @@ class SymphonyProductionObserver:
                     or attempt_number != int(worker_run_id[:15], 16) + 1
                     or type(workspace) is not str or not workspace.startswith("/")
                     or kind not in {"STARTED", "TERMINAL", "WORKER_UPDATE", "RETRY_SCHEDULED", "STALLED", "STATUS_AVAILABLE"}
-                    or status not in {"RUNNING", "WORKER_COMPLETED", "WORKER_FAILED"}):
+                    or status not in {"RUNNING", "WORKER_COMPLETED", "WORKER_FAILED", "WORKER_STOPPED"}):
                 raise ValueError("invalid worker observation fields")
             if (kind == "STARTED" and status != "RUNNING") or (kind == "TERMINAL" and status == "RUNNING"):
                 raise ValueError("inconsistent worker observation")
