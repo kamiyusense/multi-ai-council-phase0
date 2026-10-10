@@ -25,8 +25,8 @@
     "v1.6 candidate rebuilt with --budget-declaration"
   ],
   "not_done": [
-    "exact-head CI for this branch (see PR/branch checks)",
-    "Draft PR (held: Routine pull_request.opened wake UNKNOWN)"
+    "exact-head CI: workflow runs only on pull_request; PR held (Routine pull_request.opened trigger, draft behaviour UNKNOWN)",
+    "Draft PR: description prepared in pr-description-draft.md"
   ],
   "tests": {
     "durable_budget_new": "33 PASS",
@@ -65,5 +65,6 @@
     "independent review of batch 26",
     "sandbox-only proof of create-only slot push (needs approval)",
     "Draft PR once Routine trigger scope is confirmed"
-  ]
+  ],
+  "first_pushed_head": "59fbc68cd222b5e3f5bf17e2040b2efc79ac8dff"
 }
