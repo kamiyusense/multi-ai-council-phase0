@@ -1,0 +1,30 @@
+{
+  "status": "PASS_BYTE_EXACT_BACKUP_READBACK",
+  "backup_path": "/mnt/c/Users/yuuki/Documents/Codex/2026-10-09/ai/work/recovery-backups/20261010T120655Z-5c1a6569d9",
+  "base_head": "a00dbceb6c2b84747c551f9c66eb83c50f9d2a6f",
+  "archive_sha256": "57083b6da83e7c83ae7bacaac6ac7423457d6c0c959721e57d984350374fcd92",
+  "manifest_sha256": "bebd3b3df2cbc1bc4e55c436c4d7bf6b942c793264869bf6b5cc3f6a50e3f7e5",
+  "source_files": {
+    "automation/command_bus/symphony_operator_readiness.py": {
+      "bytes": 7031,
+      "sha256": "3522c1f05cc8130fee8fc025d966609b0807c1602e680d6ac825bc1a67dd3bf4"
+    },
+    "automation/command_bus/symphony_verifier_provenance.py": {
+      "bytes": 2622,
+      "sha256": "5a777d26f4bd10050d5a35a0d4f3dea704c11d6ce4777260aa6db3c827a83214"
+    },
+    "automation/command_bus/tests/test_symphony_operator_readiness.py": {
+      "bytes": 9093,
+      "sha256": "55deb45620cac2aa624ccf9f3cbd790d855cbbbae467fd0410c22db6c83253e3"
+    },
+    "docs/SYMPHONY_DOCKER_PRODUCTION_WIRING_READINESS.md": {
+      "bytes": 12328,
+      "sha256": "2310af0e702fc15658fc9d510d486ed1aea4c1505bd9fcefc0d651f85b0dad0b"
+    }
+  },
+  "all_file_count": 20,
+  "git_apply_check_cached": "PASS_CHECK_ONLY",
+  "original_session_restarted": false,
+  "archive_contains_evidence": true,
+  "related_evidence_missing": []
+}

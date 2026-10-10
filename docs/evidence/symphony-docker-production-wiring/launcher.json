@@ -1,0 +1,17 @@
+{
+  "default_path": "FAILED_TO_CREATE_PROCESS",
+  "exact_error": "Failed to create unified exec process: No such file or directory (os error 2)",
+  "affected_command": "git status --porcelain=v1",
+  "shell": "/bin/bash",
+  "cwd": "/tmp/symphony-g73-static-kgcvgwvd/controller",
+  "approved_path": "PASS_READ_AND_BACKUP_WRITE",
+  "approval_reviewer": "NORMAL_SYSTEM_REVIEW",
+  "previous_review_limit": "PREVIOUS_SAVE_NOT_EXECUTED",
+  "current_review_capacity": "AVAILABLE_OBSERVED_FOR_APPROVED_COMMANDS",
+  "root_cause": "UNKNOWN_EXECUTOR_CONTEXT_FAILURE",
+  "docker_failure": false,
+  "bypass": false,
+  "executor_identity_changed": false,
+  "session_restart": false,
+  "permissions_settings_changed": false
+}

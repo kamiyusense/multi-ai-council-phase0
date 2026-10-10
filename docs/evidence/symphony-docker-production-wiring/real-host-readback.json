@@ -1,0 +1,81 @@
+{
+  "result": "PASS_REAL_LEDGER_TO_ORIGINAL_HOST_READ_ONLY",
+  "ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+  "views": [
+    {
+      "mode": "READ_ONLY",
+      "ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+      "view": {
+        "status": "HOLD_CHECKPOINT_MISSING",
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "attempts": [
+        {
+          "attempt_id": "attempt-1fdd3890e399898ee905068f55b87e72",
+          "state": "STARTED_UNRESOLVED",
+          "worker_run_id": "3a2b4fc6e701a86ca26df0b415e13b86",
+          "outcome": null
+        }
+      ],
+      "checkpoint_applied": false,
+      "model_dispatch": 0,
+      "real_publication": 0
+    },
+    {
+      "mode": "READ_ONLY",
+      "ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+      "view": {
+        "status": "HOLD_CHECKPOINT_MISSING",
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "attempts": [
+        {
+          "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+          "state": "TERMINAL",
+          "worker_run_id": "b8f1a7db6c6358a76555365062d8a776",
+          "outcome": "UNKNOWN"
+        }
+      ],
+      "checkpoint_applied": false,
+      "model_dispatch": 0,
+      "real_publication": 0
+    }
+  ],
+  "records": [
+    {
+      "path": "symphony_attempts/symphony-g5-local-20261009T024653Z-d646fcdc/attempt-1fdd3890e399898ee905068f55b87e72/intent.json",
+      "git_blob_oid": "3cb25ebf87dc9b7a10b4b8439812d81db7fb99e5",
+      "sha256": "d856331b615ecf64dfd67fc1088e96f06551a0bd563402b3b1b41368ee4a41a9"
+    },
+    {
+      "path": "symphony_attempts/symphony-g5-local-20261009T024653Z-d646fcdc/attempt-1fdd3890e399898ee905068f55b87e72/started.json",
+      "git_blob_oid": "bf8704da463efe89d2bfa521c6afea49f0fa602d",
+      "sha256": "9d91ae6655ddb83890e31b0609c6c9f0692ed6448c0cf0b8348b2bd2f14b5885"
+    },
+    {
+      "path": "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/intent.json",
+      "git_blob_oid": "c7b7012f35f4dc63a418d56c63144903a8d35112",
+      "sha256": "68dc273f7724982f0644aa9682491bcc10aceb5cce485cdf6647c1a17847bcfd"
+    },
+    {
+      "path": "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/started.json",
+      "git_blob_oid": "fc2a1be646934d6d8f5002895a10aba30c95b5ca",
+      "sha256": "aa65d774590bf231d12e9a1f597ff869743e6ce7aed928bc76ce81cd99c0de9b"
+    },
+    {
+      "path": "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/terminal.json",
+      "git_blob_oid": "43c2957939bf6f79ad61aca36739ebbaca02d113",
+      "sha256": "1d90d9b20cd92c81d249291646c774c9d9d36ecc74fa146455de8dd6d9f57827"
+    }
+  ],
+  "authenticated_GET_requests": 38,
+  "writes": 0,
+  "model_launches": 0,
+  "adoption": 0,
+  "old_mac_keys_accessed": false,
+  "missing_checkpoint_not_synthesized": true
+}

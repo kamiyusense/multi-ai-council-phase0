@@ -1,0 +1,32 @@
+{
+  "wsl": "6.18.33.2-microsoft-standard-WSL2",
+  "distribution": "Ubuntu",
+  "api_route_selectors_present": {
+    "OPENAI_API_KEY": false,
+    "CODEX_API_KEY": false,
+    "AZURE_OPENAI_API_KEY": false,
+    "OPENAI_BASE_URL": false,
+    "OPENAI_API_BASE": false
+  },
+  "model_launches": 0,
+  "docker": {
+    "exit": 1,
+    "result": "NOT_RUN",
+    "diagnostic": "\nThe command 'docker' could not be found in this WSL 2 distro.\nWe recommend to activate the WSL integration in Docker Desktop settings.\n\nFor details about using Docker Desktop with WSL 2, visit:\n\nhttps://docs.docker.com/go/wsl2/\n\n"
+  },
+  "subscription": {
+    "chatgpt_login_observed": true,
+    "exit": 0,
+    "raw_output_saved": false
+  },
+  "config": {
+    "builtin_openai_selected": true,
+    "route_selector_names_present": [],
+    "values_saved": false
+  },
+  "official_symphony_processes": 0,
+  "codex_development_app_servers": 1,
+  "process_argv_saved": false,
+  "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "official_clean": true
+}
