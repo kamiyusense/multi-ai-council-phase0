@@ -1,0 +1,29 @@
+{
+  "new": {
+    "exit": 0,
+    "summaries": [
+      "Ran 14 tests in 0.625s",
+      "OK"
+    ],
+    "raw_sha256": "223bcc241af68aad8d2a88d50f68efb5993a8eca7ed61d43de581bfb13cf77a1",
+    "redaction_count": 0
+  },
+  "focused": {
+    "exit": 0,
+    "summaries": [
+      "Ran 390 tests in 5.204s",
+      "OK"
+    ],
+    "raw_sha256": "1aae2b66c4dbd470d925b242d2368bf87223b03227eef801e14d8e8224636a18",
+    "redaction_count": 0
+  },
+  "full": {
+    "exit": 0,
+    "summaries": [
+      "Ran 2149 tests in 71.509s",
+      "OK (skipped=1)"
+    ],
+    "raw_sha256": "c035417fb231291fdb0df80450ccab5513c98ded65752405a3898fd66ebea463",
+    "redaction_count": 0
+  }
+}

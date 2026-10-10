@@ -1,0 +1,12 @@
+{
+  "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "official_status": "CLEAN",
+  "patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+  "patch_check": "PASS",
+  "local_snapshot": "PASS_REAL_LOCAL_FILESYSTEM",
+  "local_docker": "NOT_RUN",
+  "docker_reason": "Active WSL distro has no working directly accessible Docker runtime; no settings changed",
+  "rules_protection": "UNKNOWN_HOLD_HISTORICAL_403",
+  "new_rules_probes": 0,
+  "live_launch": 0
+}

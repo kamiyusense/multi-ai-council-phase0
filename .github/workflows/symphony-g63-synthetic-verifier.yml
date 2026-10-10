@@ -3,6 +3,12 @@ name: Symphony G6.3 synthetic independent verifier
 on:
   pull_request:
     paths:
+      - automation/command_bus/symphony_g73*.py
+      - automation/command_bus/tests/test_symphony_g73*.py
+      - automation/command_bus/scripts/symphony_g73*.py
+      - automation/command_bus/scripts/validate_symphony_g73.py
+      - docs/SYMPHONY_G73*.md
+      - docs/evidence/symphony-g73-static/**
       - automation/command_bus/symphony_g72*.py
       - automation/command_bus/tests/test_symphony_g72*.py
       - automation/command_bus/scripts/symphony_g72*.py
@@ -64,8 +70,26 @@ jobs:
             --mount type=bind,src="$RUNNER_TEMP/g72-candidate",dst=/candidate,readonly \
             --mount type=bind,src="$RUNNER_TEMP/g72-candidate-inputs.json",dst=/candidate-inputs.json,readonly --workdir /source \
             -e PYTHONDONTWRITEBYTECODE=1 -e SYMPHONY_G63_ISOLATED=1 "$PYTHON_IMAGE" \
-            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier isolation && python -m unittest automation.command_bus.tests.test_symphony_g63_connection automation.command_bus.tests.test_symphony_g7_static automation.command_bus.tests.test_symphony_g71_campaign automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_g72_candidate -v && python -m automation.command_bus.scripts.symphony_g72_independent_test' \
+            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier isolation && python -m unittest automation.command_bus.tests.test_symphony_g63_connection automation.command_bus.tests.test_symphony_g7_static automation.command_bus.tests.test_symphony_g71_campaign automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_g72_candidate automation.command_bus.tests.test_symphony_g73_host -v && python -m automation.command_bus.scripts.symphony_g72_independent_test' \
             2>&1 | tee "$RUNNER_TEMP/g63-synthetic/tests.txt"
+
+      - name: G7.3 host durable process proof
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 256m --cpus 2 --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly --workdir /source \
+            -e PYTHONDONTWRITEBYTECODE=1 "$PYTHON_IMAGE" \
+            python -m automation.command_bus.scripts.symphony_g73_host_fixture run /tmp/g73-host-proof \
+            > "$RUNNER_TEMP/g63-synthetic/g73-host.json"
+          python - <<'PYCODE'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'g63-synthetic'/'g73-host.json'
+          d=json.loads(p.read_text())
+          assert d['result']=='PASS' and d['host_bound'] and d['disk_durable']
+          assert d['process_restart']['status']=='PASS' and d['process_restart']['extra_mock_ref_calls']==0
+          assert not any(d['counts'].values())
+          PYCODE
 
       - name: Independent secret scan
         run: |
