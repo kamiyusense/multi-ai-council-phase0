@@ -30,3 +30,19 @@ That could conceal a historical `jules` label, affecting duplicate start safety.
 Existing v1.5.1 Routine saved configuration is not readable through GitHub, so UI readback remains UNKNOWN.
 PR Merge, applying v1.6, triggers, schedules, a live authorization record,
 slot 10/Jules start, permissions and billing require separate explicit human approval.
+
+## Separate LIVE budget safety finding
+
+`GhLiveWritePort.__init__` resets `labels_sent = 0` and `sent = []` on
+EACH Routine wake. Thus `max_labels` / `max_writes` in a LIVE authorization
+are not durable global totals. With the existing 9/10 ledger, authorizing
+`max_labels: 2` and broad `issues: "campaign"` could permit additional
+Jules activations beyond the one remaining approved slot across wakes.
+
+The activation checklist was repaired in commit
+`f13882d36bf3aa47a84cfedf4571926a1785cf34` to demand the safe
+single-issue pilot defaults `issues: [338]` and `max_labels: 1`.
+This narrows scope but DOES NOT implement durable budget enforcement.
+Autonomous unlimited/two-task LIVE remains BLOCKED pending separately
+reviewed global ledger counting and explicit human LIVE authorization.
+Merge alone does not authorize a LIVE file, trigger, schedule or Jules start.
