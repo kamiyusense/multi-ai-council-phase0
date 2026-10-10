@@ -137,7 +137,7 @@ def gh_get(path: str) -> Any:
                 raise ReadFailed(f"GET {path}: last page moved {last_announced} -> {links['last']} while paging")
             last_announced = links["last"]
         if "next" not in links:
-            if last_announced is not None and page != last_announced and page > 1:
+            if last_announced is not None and page != last_announced:
                 raise ReadFailed(f"GET {path}: stopped at page {page} but page {last_announced} was announced last")
             if all(isinstance(p, list) for p in pages):
                 return [x for p in pages for x in p]
