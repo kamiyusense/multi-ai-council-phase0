@@ -21,7 +21,7 @@ WAKE ROUTING (draft behavior; keep existing reviewer rules):
   after a duplicate event NO-OP. Never post another receipt for that same head/tree.
 - For a separately approved pull_request.closed event with merged=true:
   run only Layer 4; never review a closed unrelated PR or interpret close as merge.
-- For a separately approved scheduled recovery wake: find open closed-loop task PR
+- For a separately approved scheduled recovery wake: only one next-task Issue total per wake; find open closed-loop task PR
   heads without receipts, process Layers 1-3 for each under the same original
   safety caps, then run Layer 4 once. Do not add or enable a schedule yourself.
 - For a manual wake without a trusted specific read-only instruction or valid PR
@@ -67,10 +67,7 @@ LAYER 4 - deterministic autonomous loop tick (PREPARED DESIGN ONLY):
   A missing page, unreadable record, failed GET or unclear label history is
   LABEL_HISTORY_UNKNOWN, never evidence that the jules label never existed.
 - Run a SINGLE deterministic tick after valid preflight:
-  python3 -m automation.command_bus.claude_jules_starter_gh tick
-    --campaign docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c2.json
-    --route-declaration docs/evidence/claude-jules-production-starter-20261009/route-declaration.json
-    --controller <unique-run-identifier>
+  python3 -m automation.command_bus.claude_jules_starter_gh tick --campaign docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c2.json --route-declaration docs/evidence/claude-jules-production-starter-20261009/route-declaration.json --controller "routine-$(date -u +%Y%m%dT%H%M%S)"
   The command WITHOUT --live-authorization is PREPARE-ONLY, writes nothing.
 - The --live-authorization option MUST remain omitted until human-approved
   activation has been separately recorded, merged into main, and the exact
