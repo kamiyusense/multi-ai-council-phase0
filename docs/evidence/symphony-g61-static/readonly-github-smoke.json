@@ -1,0 +1,50 @@
+{
+  "commit_reconstruction": {
+    "commit": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+    "matches_local_cat_file": true,
+    "message_echo_has_trailing_newline": false,
+    "status": 200
+  },
+  "default_branch_target_refused": true,
+  "graphql_mutations": 0,
+  "http_requests": 143,
+  "issue_validity_query": {
+    "expected": "untrusted: historical Issue has no symphony-task block",
+    "graphql_query_accepted": true,
+    "issue": 342,
+    "trustworthy": false,
+    "valid": null
+  },
+  "large_branch_limited_read": {
+    "branch": "codex/symphony-inspired-minimal-controller",
+    "complete": false,
+    "files_returned": 0,
+    "head": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "local_head": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "tree_hashes_verified": true
+  },
+  "model_provider_live": 0,
+  "origin_main_local": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "protocol": "SYMPHONY_G61_READONLY_SMOKE_V1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "repository_identity": {
+    "archived": false,
+    "default_branch": "main",
+    "repository_id": "R_kgDOUi8NPg",
+    "viewer_permission": "ADMIN"
+  },
+  "small_branch_full_read": {
+    "branch": "jules-work/relay-dev-loop-061-model-verification-proof-contract",
+    "complete": true,
+    "file_count": 134,
+    "head": "1b7e044c166df27f33919ab98db5dc4859c262bf",
+    "inventory_sha256": "950e5cd1e109ebd2d3c146c550bc07ba7fc849cae99e97239b9d4c00ea483125",
+    "local_head": "1b7e044c166df27f33919ab98db5dc4859c262bf",
+    "matches_local_git_bytes": true,
+    "trustworthy": true
+  },
+  "write_refusal": {
+    "all_refused_offline": true
+  },
+  "writes": 0
+}

@@ -1,0 +1,80 @@
+{
+  "K01": [
+    "ADOPTED",
+    "NOOP_DUPLICATE",
+    1,
+    1
+  ],
+  "K02": [
+    "SIMULATED_CRASH_AFTER_INTENT",
+    "ADOPTED",
+    1,
+    1
+  ],
+  "K03": [
+    "SIMULATED_CRASH_AFTER_OBJECTS",
+    "ADOPTED",
+    1,
+    1
+  ],
+  "K04": [
+    "SIMULATED_CRASH_AFTER_REF_INTENT",
+    "UNKNOWN",
+    0,
+    0
+  ],
+  "K05": [
+    "SIMULATED_CRASH_AFTER_REF",
+    "ADOPTED",
+    1,
+    1
+  ],
+  "K06": [
+    "ADOPTED",
+    "NOOP_DUPLICATE",
+    1,
+    1
+  ],
+  "K07": [
+    "UNKNOWN",
+    "UNKNOWN",
+    1,
+    0
+  ],
+  "K08": [
+    "UNKNOWN",
+    "UNKNOWN",
+    1,
+    0
+  ],
+  "K09": [
+    "STALE_REPLAN",
+    "STALE_REPLAN",
+    0,
+    0
+  ],
+  "K10": [
+    "ISOLATE_TASK",
+    "ISOLATE_TASK",
+    0,
+    0
+  ],
+  "K11": [
+    "CONFLICT",
+    "CONFLICT",
+    0,
+    0
+  ],
+  "K12": [
+    "HOLD_AUTHORITY",
+    "HOLD_AUTHORITY",
+    0,
+    0
+  ],
+  "K13": [
+    "UNKNOWN",
+    "UNKNOWN",
+    0,
+    0
+  ]
+}

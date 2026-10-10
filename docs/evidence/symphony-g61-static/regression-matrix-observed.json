@@ -1,0 +1,162 @@
+{
+  "note": "Executed through real G6.1 adapter code against credential-free SimulatedGitHub; workspace deleted before every restart.",
+  "outcomes": [
+    {
+      "after_cleanup_restart": "NOOP_DUPLICATE",
+      "case": "K01",
+      "default_branch_unchanged": true,
+      "first": "ADOPTED",
+      "label": "adopt, workspace cleanup, replay",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 1,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "ADOPTED",
+      "case": "K02",
+      "default_branch_unchanged": true,
+      "first": "SIMULATED_CRASH_AFTER_INTENT",
+      "label": "crash after intent",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 1,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "ADOPTED",
+      "case": "K03",
+      "default_branch_unchanged": true,
+      "first": "SIMULATED_CRASH_AFTER_OBJECTS",
+      "label": "crash after objects",
+      "model_provider_LIVE": 0,
+      "object_posts": 14,
+      "our_ref_mutations": 1,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "UNKNOWN",
+      "case": "K04",
+      "default_branch_unchanged": true,
+      "first": "SIMULATED_CRASH_AFTER_REF_INTENT",
+      "label": "crash after pre-ref fence",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 0
+    },
+    {
+      "after_cleanup_restart": "ADOPTED",
+      "case": "K05",
+      "default_branch_unchanged": true,
+      "first": "SIMULATED_CRASH_AFTER_REF",
+      "label": "crash after applied ref",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 1,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "NOOP_DUPLICATE",
+      "case": "K06",
+      "default_branch_unchanged": true,
+      "first": "ADOPTED",
+      "label": "updateRefs reply lost after apply",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 1,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "UNKNOWN",
+      "case": "K07",
+      "default_branch_unchanged": true,
+      "first": "UNKNOWN",
+      "label": "updateRefs request lost before apply",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "UNKNOWN",
+      "case": "K08",
+      "default_branch_unchanged": true,
+      "first": "UNKNOWN",
+      "label": "CAS race: other writer at write time",
+      "model_provider_LIVE": 0,
+      "object_posts": 7,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 1
+    },
+    {
+      "after_cleanup_restart": "STALE_REPLAN",
+      "case": "K09",
+      "default_branch_unchanged": true,
+      "first": "STALE_REPLAN",
+      "label": "stale HEAD before inspection",
+      "model_provider_LIVE": 0,
+      "object_posts": 0,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 0
+    },
+    {
+      "after_cleanup_restart": "ISOLATE_TASK",
+      "case": "K10",
+      "default_branch_unchanged": true,
+      "first": "ISOLATE_TASK",
+      "label": "scope-outside file",
+      "model_provider_LIVE": 0,
+      "object_posts": 0,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 0
+    },
+    {
+      "after_cleanup_restart": "CONFLICT",
+      "case": "K11",
+      "default_branch_unchanged": true,
+      "first": "CONFLICT",
+      "label": "result manifest tampered",
+      "model_provider_LIVE": 0,
+      "object_posts": 0,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 0
+    },
+    {
+      "after_cleanup_restart": "HOLD_AUTHORITY",
+      "case": "K12",
+      "default_branch_unchanged": true,
+      "first": "HOLD_AUTHORITY",
+      "label": "snapshot bytes tampered",
+      "model_provider_LIVE": 0,
+      "object_posts": 0,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 0
+    },
+    {
+      "after_cleanup_restart": "UNKNOWN",
+      "case": "K13",
+      "default_branch_unchanged": true,
+      "first": "UNKNOWN",
+      "label": "GitHub returns foreign object sha",
+      "model_provider_LIVE": 0,
+      "object_posts": 2,
+      "our_ref_mutations": 0,
+      "real_github_writes": 0,
+      "update_refs_requests": 0
+    }
+  ],
+  "protocol": "SYMPHONY_G61_REGRESSION_MATRIX_V1"
+}
