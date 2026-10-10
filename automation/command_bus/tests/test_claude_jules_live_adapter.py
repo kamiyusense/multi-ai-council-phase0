@@ -152,6 +152,19 @@ class GitLiveClientTests(unittest.TestCase):
             self.c._push(sibling, TARGET)  # even a raw push is rejected by git (non-fast-forward)
         self.assertEqual(self.remote.head(TARGET), moved)
 
+    def test_cannot_lock_ref_push_is_reported_as_push_rejected(self):
+        class MockProc:
+            returncode = 1
+            stdout = "!\trefs/heads/main\trefs/heads/main\t[remote rejected] (failed to update ref)"
+            stderr = "remote: error: cannot lock ref 'refs/heads/main': is at 1234567890123456789012345678901234567890 but expected 0987654321098765432109876543210987654321"
+
+        def mock_git(*args, **kwargs):
+            return MockProc()
+
+        self.c._git = mock_git
+        with self.assertRaises(PushRejected):
+            self.c._push("1234567890123456789012345678901234567890", "main")
+
     def test_refs_compare_and_branch_creation(self):
         base = self.remote.head(TARGET)
         self.assertEqual(self.c.get_branch_head(TARGET), base)
