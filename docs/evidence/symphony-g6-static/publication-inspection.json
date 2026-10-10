@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "scope": "all changed/new files",
+  "file_count": 23,
+  "actual_GitHub_token_matches": 0,
+  "known_credential_pattern_matches": 0,
+  "old_observer_MAC_key_read_count": 0,
+  "diff_check": "PASS",
+  "upstream_patch_unchanged": true,
+  "upstream_pin_apply_check": "PASS",
+  "official_behavior_changes": false
+}

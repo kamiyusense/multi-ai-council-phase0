@@ -1,0 +1,176 @@
+{
+  "scope": "synthetic source bytes and in-memory Git only",
+  "manifest": {
+    "protocol": "SYMPHONY_G6_RESULT_V1",
+    "schema_version": 1,
+    "repository": "fixture/council",
+    "target_branch": "proof/g6-static",
+    "campaign_id": "g6-static",
+    "attempt_id": "attempt-cde7bba841b18c82c2bc86a72d58e2d2",
+    "generation": 1,
+    "attempt_number": 1,
+    "runner_generation": 1,
+    "task_id": "A",
+    "issue_id": "STATIC-A",
+    "worker_run_id": "11111111111111111111111111111111",
+    "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "workspace_fingerprint": "2222222222222222222222222222222222222222222222222222222222222222",
+    "scope_digest": "f0141c4ad38e8a6505985196a5f9f89e028365038584996f52a43f30e13de563",
+    "request_digest": "787105ba1957d8c7590afc74bfe8074cb6db03e5ab6e690e5bd7ec7ba9f41987",
+    "source_digest": "e47f64dbeda130e36341ffb165df05028f8d22ee7ba445e43ff646e9fe1e9e51",
+    "mutations": [
+      {
+        "path": "proof/answer.md",
+        "source_path": null,
+        "operation": "ADD",
+        "content_sha256": "1f84d9f92501b1168193a62ab2baf2153a40ce368488bb600814ea589ac8ab64",
+        "before_sha256": null,
+        "mode": "100644",
+        "type": "blob"
+      },
+      {
+        "path": "src/value.py",
+        "source_path": null,
+        "operation": "MODIFY",
+        "content_sha256": "69ef4f409b530264b0da21ad4054978ada08895c93631a0da1957e2a10b592b5",
+        "before_sha256": "585c93666fcb046b7b264d3fa73202aa2a38254ae82a4b3ba19e873c2d5a9886",
+        "mode": "100644",
+        "type": "blob"
+      }
+    ],
+    "evidence_refs": [
+      "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    ],
+    "result_digest": "08bdfc648e5324317acab45472b8e6a20134e58915475c5cadbd3301b5153624"
+  },
+  "inspection": {
+    "action": "ADOPT",
+    "attempt_id": "attempt-cde7bba841b18c82c2bc86a72d58e2d2",
+    "canonical_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changed_paths": [
+      "proof/answer.md",
+      "src/value.py"
+    ],
+    "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "inspection_digest": "91d9df14a5878e70f9706cfd8bed3a13851defc7eff297b664d92b49dc50572b",
+    "lifecycle_status": "sym-g5-status:WORKER_STOPPED",
+    "policy": {
+      "modes": [
+        "100644"
+      ],
+      "operations": [
+        "ADD",
+        "MODIFY"
+      ],
+      "protected_paths": [
+        "AGENTS.md",
+        ".env",
+        ".github",
+        "secrets"
+      ],
+      "required_verifications": [
+        "secret_scan"
+      ]
+    },
+    "protocol": "SYMPHONY_G6_INSPECTION_V1",
+    "reason": "actual result inspected against fresh valid non-default target",
+    "result_digest": "08bdfc648e5324317acab45472b8e6a20134e58915475c5cadbd3301b5153624",
+    "scope_digest": "f0141c4ad38e8a6505985196a5f9f89e028365038584996f52a43f30e13de563",
+    "source_digest": "e47f64dbeda130e36341ffb165df05028f8d22ee7ba445e43ff646e9fe1e9e51",
+    "target_inventory_digest": "a2c2d50b4cab29d3b376c73510d86e8461c6b56269d36a52213e91446a146e3c",
+    "verification_refs": [
+      "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    ]
+  },
+  "intent": {
+    "adoption_id": "adopt-02595f70df991adf569c12a681cca6ae",
+    "attempt_id": "attempt-cde7bba841b18c82c2bc86a72d58e2d2",
+    "attempt_number": 1,
+    "campaign_id": "g6-static",
+    "candidate_commit": "3a5643674171d0348f85a717b7c991d608437150",
+    "candidate_tree": "47208127a5b3bf787405b7939d9d572ef36c06c7",
+    "created_at": "2026-10-10T00:00:00Z",
+    "decision_digest": "25fb43ae90dd9c1ad156387cb62daeb3e3eaf5e7ce02bc7c86c99f84ec353756",
+    "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "generation": 1,
+    "manifest_digest": "bdcc5a5439610ffc461a4a3dae04979f8e1e24cc7ceab113a40214dab9f66559",
+    "protocol": "SYMPHONY_G6_ADOPTION_V1",
+    "repository": "fixture/council",
+    "result_digest": "08bdfc648e5324317acab45472b8e6a20134e58915475c5cadbd3301b5153624",
+    "runner_generation": 1,
+    "source_digest": "e47f64dbeda130e36341ffb165df05028f8d22ee7ba445e43ff646e9fe1e9e51",
+    "status": "INTENT",
+    "target_branch": "proof/g6-static",
+    "task_id": "A",
+    "worker_run_id": "11111111111111111111111111111111"
+  },
+  "objects": {
+    "candidate_commit": "3a5643674171d0348f85a717b7c991d608437150",
+    "intent_digest": "f373343dac7b2d83d1b9ae6f4b0ea1d0352cf2a68bd1ec4ac5479a89890415cb",
+    "tree": "47208127a5b3bf787405b7939d9d572ef36c06c7"
+  },
+  "ref_intent": {
+    "candidate_commit": "3a5643674171d0348f85a717b7c991d608437150",
+    "intent_digest": "f373343dac7b2d83d1b9ae6f4b0ea1d0352cf2a68bd1ec4ac5479a89890415cb"
+  },
+  "receipt": {
+    "adoption_id": "adopt-02595f70df991adf569c12a681cca6ae",
+    "attempt_id": "attempt-cde7bba841b18c82c2bc86a72d58e2d2",
+    "attempt_number": 1,
+    "campaign_id": "g6-static",
+    "generation": 1,
+    "head_after": "3a5643674171d0348f85a717b7c991d608437150",
+    "head_before": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "intent_digest": "f373343dac7b2d83d1b9ae6f4b0ea1d0352cf2a68bd1ec4ac5479a89890415cb",
+    "observed_at": "2026-10-10T00:00:00Z",
+    "protocol": "SYMPHONY_G6_ADOPTION_V1",
+    "ref_intent_digest": "3b153a48d538034c30fbf048a605a3d21b434d315c362db13155e627b32d29d5",
+    "ref_write_retry_count": 0,
+    "remote_tree_blob_ref_verified": true,
+    "repository": "fixture/council",
+    "result_digest": "08bdfc648e5324317acab45472b8e6a20134e58915475c5cadbd3301b5153624",
+    "runner_generation": 1,
+    "source_digest": "e47f64dbeda130e36341ffb165df05028f8d22ee7ba445e43ff646e9fe1e9e51",
+    "status": "ADOPTED",
+    "target_branch": "proof/g6-static",
+    "task_id": "A",
+    "tree_after": "47208127a5b3bf787405b7939d9d572ef36c06c7"
+  },
+  "replay": {
+    "protocol": "SYMPHONY_G6_ADOPTION_V1",
+    "status": "NOOP_DUPLICATE",
+    "reason": "verified terminal receipt already exists; Git writes 0",
+    "adoption_id": "adopt-02595f70df991adf569c12a681cca6ae",
+    "receipt": {
+      "adoption_id": "adopt-02595f70df991adf569c12a681cca6ae",
+      "attempt_id": "attempt-cde7bba841b18c82c2bc86a72d58e2d2",
+      "attempt_number": 1,
+      "campaign_id": "g6-static",
+      "generation": 1,
+      "head_after": "3a5643674171d0348f85a717b7c991d608437150",
+      "head_before": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "intent_digest": "f373343dac7b2d83d1b9ae6f4b0ea1d0352cf2a68bd1ec4ac5479a89890415cb",
+      "observed_at": "2026-10-10T00:00:00Z",
+      "protocol": "SYMPHONY_G6_ADOPTION_V1",
+      "ref_intent_digest": "3b153a48d538034c30fbf048a605a3d21b434d315c362db13155e627b32d29d5",
+      "ref_write_retry_count": 0,
+      "remote_tree_blob_ref_verified": true,
+      "repository": "fixture/council",
+      "result_digest": "08bdfc648e5324317acab45472b8e6a20134e58915475c5cadbd3301b5153624",
+      "runner_generation": 1,
+      "source_digest": "e47f64dbeda130e36341ffb165df05028f8d22ee7ba445e43ff646e9fe1e9e51",
+      "status": "ADOPTED",
+      "target_branch": "proof/g6-static",
+      "task_id": "A",
+      "tree_after": "47208127a5b3bf787405b7939d9d572ef36c06c7"
+    },
+    "unknown_class": null,
+    "decision_evidence": null
+  },
+  "counters": {
+    "ref_calls": 1,
+    "ref_mutations": 1,
+    "real_git_adoption_count": 0,
+    "model_provider_LIVE_count": 0
+  }
+}

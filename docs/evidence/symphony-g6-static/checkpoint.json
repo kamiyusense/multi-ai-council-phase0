@@ -1,0 +1,132 @@
+{
+  "protocol": "SYMPHONY_G6_STATIC_CHECKPOINT_V1",
+  "recorded_at": "2026-10-10T00:08:19.586361+00:00",
+  "phase": "prepared commit; final HEAD/CI/artifact identities are completed in the exact-head final PR checkpoint, avoiding self-referential commit hashes",
+  "outcome": "STATIC_LOCAL_PASS",
+  "starting_pr_head": "493663acaab069304574e3313f20bddc61a90ee2",
+  "starting_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "official_symphony_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "official_observation_patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+  "official_symphony_control_changes": false,
+  "starting_ci": [
+    {
+      "id": 38003204178,
+      "name": "Symphony-inspired controller static validation",
+      "head_sha": "493663acaab069304574e3313f20bddc61a90ee2",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/38003204178"
+    },
+    {
+      "id": 38003204084,
+      "name": "Blue Work reconciliation offline validation",
+      "head_sha": "493663acaab069304574e3313f20bddc61a90ee2",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/38003204084"
+    }
+  ],
+  "historical_issue_342": "CLOSED / reference only; actual artifact adoption 0",
+  "historical_ledger_branch": "codex/symphony-g5-proof-ledger",
+  "historical_ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+  "worker_terminal_semantics": "UNKNOWN / RECOVERABLE_UNKNOWN, unchanged; not task DONE",
+  "manifest_protocol": "SYMPHONY_G6_RESULT_V1",
+  "decision_actions": [
+    "ADOPT",
+    "STALE_REPLAN",
+    "ISOLATE_TASK",
+    "HOLD_AUTHORITY",
+    "CONFLICT"
+  ],
+  "mutation_classes": [
+    "ADD",
+    "MODIFY",
+    "DELETE",
+    "RENAME",
+    "COPY",
+    "MODE_CHANGE",
+    "SYMLINK",
+    "SUBMODULE",
+    "BINARY",
+    "UNCLASSIFIED"
+  ],
+  "proof_policy": {
+    "operations": [
+      "ADD",
+      "MODIFY"
+    ],
+    "modes": [
+      "100644"
+    ],
+    "changed_paths": "exact paths or component-boundary prefixes; protected paths/structural aliases held",
+    "verification": "independently supplied complete inventories and digest-bound syntax/tests/secret_scan contract"
+  },
+  "durability": "create-only result/inspection/intent/objects/ref_intent/receipt plus expected-HEAD target lock; existing attempt/campaign stores reused",
+  "uncertain_ref_recovery": "GET only; verified candidate HEAD creates receipt; old/unknown ref after fence remains UNKNOWN and never resends CAS",
+  "campaign_transition": "only verified receipt permits DONE; stale is task-local replan; unresolved result isolates one attempt and independent tasks remain selectable; caller saves existing campaign checkpoint",
+  "crash_matrix_results": {
+    "A": "ADOPTED",
+    "B": "ADOPTED",
+    "C": "ADOPTED",
+    "D": "NOOP_DUPLICATE",
+    "E": "STALE_REPLAN",
+    "F": "ISOLATE_TASK",
+    "G": "ISOLATE_TASK",
+    "H": "ISOLATE_TASK",
+    "I": "CONFLICT",
+    "J": "CONFLICT"
+  },
+  "ref_resends_after_successful_C_or_receipt_D": 0,
+  "new_model_dispatch_during_restart": 0,
+  "default_branch_adoption": 0,
+  "real_git_adoption_count": 0,
+  "model_provider_LIVE_count": 0,
+  "G51_reLIVE_count": 0,
+  "G6_LIVE_count": 0,
+  "other_provider_LIVE_count": 0,
+  "paid_API_fallback_count": 0,
+  "main_write_count": 0,
+  "subscription_billing_secret_permission_changes": 0,
+  "tests": {
+    "recorded_at": "2026-10-10T00:05:39.881627+00:00",
+    "checks": [
+      {
+        "name": "g6-tests",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": [
+          "Ran 46 tests in 0.076s",
+          "OK"
+        ]
+      },
+      {
+        "name": "focused-tests",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": [
+          "Ran 200 tests in 0.399s",
+          "OK"
+        ]
+      },
+      {
+        "name": "full-tests",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": [
+          "Ran 1959 tests in 65.817s",
+          "OK (skipped=1)"
+        ]
+      },
+      {
+        "name": "compileall",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": []
+      }
+    ],
+    "real_git_adoption_count": 0,
+    "model_provider_LIVE_count": 0
+  },
+  "git_live_transport": "NOT_WIRED: STATIC fake atomic expected-head only; GitHub PATCH refs force=false is not an expected-old-head CAS",
+  "next_local_live_readiness": "prepare-only plan ready after exact-head CI; authenticated inventory/validity/verifier readers and reviewed atomic ref transport integration plus separate one-run LIVE authorization remain prerequisites"
+}

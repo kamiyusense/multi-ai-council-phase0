@@ -1,5 +1,10 @@
 # Symphony adoption bridge — STATIC checkpoint
 
+Historical checkpoint below. Current G6 actual-result inspection/adoption STATIC
+implementation: [G6 checkpoint](SYMPHONY_G6_STATIC_CHECKPOINT.md).
+The older declaration-only guard is retained for synthetic campaign compatibility
+and is not authority for a real Git write.
+
 Date: 2026-10-07. Workbench: Draft PR #320 on
 `codex/symphony-inspired-minimal-controller`.
 Starting remote HEAD: `483178a418e2832bba054fec8edeecba208f2330`.

@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-10T00:05:39.881627+00:00",
+  "checks": [
+    {
+      "name": "g6-tests",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": [
+        "Ran 46 tests in 0.076s",
+        "OK"
+      ]
+    },
+    {
+      "name": "focused-tests",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": [
+        "Ran 200 tests in 0.399s",
+        "OK"
+      ]
+    },
+    {
+      "name": "full-tests",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": [
+        "Ran 1959 tests in 65.817s",
+        "OK (skipped=1)"
+      ]
+    },
+    {
+      "name": "compileall",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": []
+    }
+  ],
+  "real_git_adoption_count": 0,
+  "model_provider_LIVE_count": 0
+}

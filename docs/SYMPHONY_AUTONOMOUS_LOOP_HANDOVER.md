@@ -3,6 +3,19 @@
 Status: current design handover for the autonomous-loop line. Fresh GitHub
 readback is authoritative; do not trust remembered SHA values.
 
+## Current G6 STATIC boundary — 2026-10-10
+
+Read [G6 checkpoint](SYMPHONY_G6_STATIC_CHECKPOINT.md) and its prepare-only Local
+LIVE plan. Actual byte/path/identity inspection, fresh target/task validity,
+create-only intents/receipts, fake atomic Git CAS and crash/restart recovery now
+pass STATIC fixtures. Safe results flow automatically through this seam. G5.1
+Local LIVE #342 already passed the real worker lifecycle/restart proof; read
+`SYMPHONY_G51_LOCAL_LIVE_RESULT_ISSUE_342.md`. Its terminal remains UNKNOWN and
+its artifact is not adopted. Historical entries below describe earlier stages.
+Current batch real result adoption/model/provider LIVE 0. Production atomic ref
+transport and trustworthy result readers are NOT_WIRED; separate G6 LIVE
+approval is still required. Official Symphony control paths are unchanged.
+
 ## G5 Cloud STATIC observation bridge — 2026-10-09
 
 Read `SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md`. A minimal patch for pinned

@@ -15,6 +15,7 @@ class AdoptionAction(str, Enum):
     STALE_REPLAN = "STALE_REPLAN"
     ISOLATE_TASK = "ISOLATE_TASK"
     HOLD_AUTHORITY = "HOLD_AUTHORITY"
+    CONFLICT = "CONFLICT"
 
 
 @dataclass(frozen=True)
@@ -52,3 +53,11 @@ def decide_result_adoption(
     if type(task_still_valid) is not bool or not task_still_valid:
         return AdoptionDecision(AdoptionAction.ISOLATE_TASK, "task is no longer valid on canonical target")
     return AdoptionDecision(AdoptionAction.ADOPT, "result may be applied to current task")
+
+
+def decide_verified_result_adoption(**inputs):
+    """G6 byte/scope/identity guard; the legacy declaration-only guard above
+    remains for STATIC campaign simulation and cannot authorize a Git write.
+    """
+    from .symphony_result_manifest import inspect_result
+    return inspect_result(**inputs)
