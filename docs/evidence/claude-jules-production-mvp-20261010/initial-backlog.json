@@ -7,71 +7,28 @@
   },
   "signals": [
     {
-      "signal_id": "win-utf8-review-delivery",
-      "objective_id": "o1-windows-portability",
+      "signal_id": "cj-live-adapter-lock-rejection",
+      "objective_id": "o1-claude-jules-lane",
       "kind": "known_bug",
-      "summary": "test_blue_review_delivery_prepare.py: read_text() without encoding fails on Windows (cp932)",
-      "detail": "`automation/command_bus/tests/test_blue_review_delivery_prepare.py` line 277 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.",
+      "summary": "claude_jules_live_adapter: git 'cannot lock ref' push rejection is misreported as an ambiguous outcome",
+      "detail": "`GitLiveClient._push` (automation/command_bus/claude_jules_live_adapter.py line 141) treats a push as a definite rejection only when the output matches `non-fast-forward|fetch first|stale info|already exists`. When two controllers push to the same branch at the same moment, git rejects the loser with `! <sha>:refs/heads/<branch> [remote rejected] (failed to update ref)` and `remote: error: cannot lock ref 'refs/heads/<branch>': is at <X> but expected <Y>`. That output does not match, so `_push` raises `RuntimeError(... outcome ambiguous ...)` instead of `PushRejected`, and `create()` cannot rebuild on the moved tip although git wrote nothing. Observed in the batch 27 two-clone race test; reproduced deterministically by feeding that exact output to `_push`.",
       "paths": [
-        "automation/command_bus/tests/test_blue_review_delivery_prepare.py"
+        "automation/command_bus/claude_jules_live_adapter.py",
+        "automation/command_bus/tests/test_claude_jules_live_adapter.py"
       ],
       "evidence": [
-        "automation/command_bus/tests/test_blue_review_delivery_prepare.py:277 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)",
-        "PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932"
+        "automation/command_bus/claude_jules_live_adapter.py:141 rejection regex misses 'failed to update ref' / 'cannot lock ref ... but expected'",
+        "docs/evidence/claude-jules-production-mvp-20261010/batch27-production-mvp.md: observed '[remote rejected] (failed to update ref)' + 'cannot lock ref ... is at X but expected Y' in the local bare-git race",
+        "deterministic repro on main 4bb5cd7: _push with that porcelain output raises RuntimeError 'outcome ambiguous', not PushRejected"
       ],
       "acceptance_criteria": [
-        "Every Path.read_text() and open() for reading text in test_blue_review_delivery_prepare.py passes encoding='utf-8'",
-        "A regression test in test_blue_review_delivery_prepare.py fails if a read_text() or open() without an encoding comes back",
+        "GitLiveClient._push raises PushRejected (definitely nothing written) when git reports '[remote rejected] (failed to update ref)' together with 'cannot lock ref ... is at <X> but expected <Y>'",
+        "Output that is really unknown (no rejection flag, or an unrecognised error) still raises the ambiguous RuntimeError; a successful push is unchanged",
+        "A regression test in test_claude_jules_live_adapter.py feeds the exact observed porcelain output and asserts PushRejected, and create() then rebuilds on the moved tip without losing the other controller's commit",
         "No other file changes; no existing test is removed, skipped or weakened"
       ],
       "test_commands": [
-        "python3 -m unittest automation.command_bus.tests.test_blue_review_delivery_prepare",
-        "python3 -m unittest discover -s automation/command_bus/tests -t ."
-      ]
-    },
-    {
-      "signal_id": "win-utf8-wake-proof",
-      "objective_id": "o1-windows-portability",
-      "kind": "known_bug",
-      "summary": "test_blue_work_wake_proof.py: read_text() without encoding fails on Windows (cp932)",
-      "detail": "`automation/command_bus/tests/test_blue_work_wake_proof.py` line 258 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.",
-      "paths": [
-        "automation/command_bus/tests/test_blue_work_wake_proof.py"
-      ],
-      "evidence": [
-        "automation/command_bus/tests/test_blue_work_wake_proof.py:258 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)",
-        "PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932"
-      ],
-      "acceptance_criteria": [
-        "Every Path.read_text() and open() for reading text in test_blue_work_wake_proof.py passes encoding='utf-8'",
-        "A regression test in test_blue_work_wake_proof.py fails if a read_text() or open() without an encoding comes back",
-        "No other file changes; no existing test is removed, skipped or weakened"
-      ],
-      "test_commands": [
-        "python3 -m unittest automation.command_bus.tests.test_blue_work_wake_proof",
-        "python3 -m unittest discover -s automation/command_bus/tests -t ."
-      ]
-    },
-    {
-      "signal_id": "win-utf8-work-event-cli",
-      "objective_id": "o1-windows-portability",
-      "kind": "known_bug",
-      "summary": "test_work_event_prepare_cli.py: read_text() without encoding fails on Windows (cp932)",
-      "detail": "`automation/command_bus/tests/test_work_event_prepare_cli.py` line 78 reads the CLI's JSON output file with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.",
-      "paths": [
-        "automation/command_bus/tests/test_work_event_prepare_cli.py"
-      ],
-      "evidence": [
-        "automation/command_bus/tests/test_work_event_prepare_cli.py:78 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)",
-        "PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932"
-      ],
-      "acceptance_criteria": [
-        "Every Path.read_text() and open() for reading text in test_work_event_prepare_cli.py passes encoding='utf-8'",
-        "A regression test in test_work_event_prepare_cli.py fails if a read_text() or open() without an encoding comes back",
-        "No other file changes; no existing test is removed, skipped or weakened"
-      ],
-      "test_commands": [
-        "python3 -m unittest automation.command_bus.tests.test_work_event_prepare_cli",
+        "python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter",
         "python3 -m unittest discover -s automation/command_bus/tests -t ."
       ]
     }
@@ -79,9 +36,16 @@
   "created_on_github": {
     "control_issue": 346,
     "signal_issues": {
+      "cj-live-adapter-lock-rejection": 350
+    }
+  },
+  "excluded": {
+    "issues": {
       "win-utf8-review-delivery": 347,
       "win-utf8-wake-proof": 348,
       "win-utf8-work-event-cli": 349
-    }
-  }
+    },
+    "reason": "out of lane: #347-#349 target Blue/Work bridge test files; the Claude x Jules campaign must stay in its own lane (independent review, PR #345 comment 6094535676). Left open and unchanged; their objective o1-windows-portability is not approved in prod-c1, so the planner skips them visibly."
+  },
+  "note": "One genuine, evidence-backed in-lane task; in-lane discovery adds more later. No finding was invented to reach a count."
 }

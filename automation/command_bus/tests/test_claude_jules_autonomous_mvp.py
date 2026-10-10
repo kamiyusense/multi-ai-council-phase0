@@ -292,8 +292,12 @@ class ProductionTemplateTests(unittest.TestCase):
         self.assertFalse(camp["policy"]["allow_api_fallback"] or camp["policy"]["allow_metered_fallback"])
 
 
+LANE_PREFIXES = ("automation/command_bus/claude_jules_", "automation/command_bus/tests/test_claude_jules_")
+
+
 class InitialBacklogTests(unittest.TestCase):
-    """P0-2: the production campaign starts with at least three real, valid pieces of work on GitHub."""
+    """P0-2 (corrected after review): the campaign starts with genuine, evidence-backed work inside the Claude x Jules
+    lane only.  Out-of-lane signals (#347-#349, Blue/Work files) are never planned."""
 
     def load(self):
         from pathlib import Path
@@ -305,50 +309,91 @@ class InitialBacklogTests(unittest.TestCase):
         st.validate_campaign(camp)
         return backlog, camp
 
-    def test_three_valid_independent_tasks_from_the_backlog(self):
-        from pathlib import Path
+    def test_scope_and_backlog_stay_in_the_lane(self):
+        backlog, camp = self.load()
+        for prefix in camp["objectives"][0]["scope_prefixes"]:
+            self.assertTrue(prefix.startswith(LANE_PREFIXES), prefix)
+        self.assertGreaterEqual(len(backlog["signals"]), 1)
+        for sig in backlog["signals"]:
+            for path in sig["paths"]:
+                self.assertTrue(path.startswith(LANE_PREFIXES), path)
+                self.assertNotRegex(path, r"blue|work_event|work_bridge")
+        self.assertEqual(sorted(backlog["excluded"]["issues"].values()), [347, 348, 349])
+
+    def test_every_backlog_task_is_valid_and_planned_once(self):
         from automation.command_bus import claude_jules_task_planner as planner
         backlog, camp = self.load()
-        root = Path(__file__).resolve().parents[3]
         sigs = backlog["signals"]
-        self.assertGreaterEqual(len(sigs), 3)
-        self.assertEqual(len({s["paths"][0] for s in sigs}), len(sigs))          # independent files
         known = []
-        for _ in sigs:                          # the planner proposes each one in turn, never the same twice
+        for _ in sigs:
             d = planner.plan_next(campaign=camp, signals=sigs, known=known)
             self.assertEqual(d.outcome, planner.PROPOSE, d.reason)
             self.assertIsNone(planner.validate_proposal(d.proposal, campaign=camp, known=known))
-            title, body, task = planner.build_task(d.proposal, campaign=camp, base_head="4" * 40,
-                                                   now="2026-10-11T00:00:00Z")
-            known.append({"issue": len(known) + 1, "task_id": task["task_id"],
-                          "correlation_id": task["correlation_id"], "fingerprint": task["campaign"]["fingerprint"],
-                          "signal_id": d.proposal["signal_id"], "state": planner.RUNNING,
-                          "paths": [p["path"] for p in task["allowed_paths"]], "source": "planner"})
+            _, _, task = planner.build_task(d.proposal, campaign=camp, base_head="4" * 40, now="2026-10-11T00:00:00Z")
+            known.append({"issue": len(known) + 1, "task_id": task["task_id"], "correlation_id": task["correlation_id"],
+                          "fingerprint": task["campaign"]["fingerprint"], "signal_id": d.proposal["signal_id"],
+                          "state": planner.RUNNING, "paths": [p["path"] for p in task["allowed_paths"]],
+                          "source": "planner"})
         self.assertEqual({k["signal_id"] for k in known}, {s["signal_id"] for s in sigs})
-        for s in sigs:                          # the evidence is real: the file and the line exist on this tree
-            path, line = s["evidence"][0].split(" ", 1)[0].rsplit(":", 1)
-            text = (root / path).read_text(encoding="utf-8").splitlines()[int(line) - 1]
-            self.assertIn("read_text()", text)
+
+    def test_the_cited_bug_is_real(self):
+        """The evidence reproduces: git's lock rejection is not classified as a definite rejection."""
+        from types import SimpleNamespace
+        from automation.command_bus import claude_jules_live_adapter as la
+        out = ("To /tmp/r/remote.git\n!\t" + "9" * 40 + ":refs/heads/claude/claude-jules-autoloop-data\t"
+               "[remote rejected] (failed to update ref)\nDone\n")
+        err = ("remote: error: cannot lock ref 'refs/heads/claude/claude-jules-autoloop-data': is at " + "6" * 40 +
+               " but expected " + "f" * 40 + "\n")
+        c = la.GitLiveClient.__new__(la.GitLiveClient)
+        c.remote, c.pushes, c._tips = "origin", [], {}
+        c._git = lambda *a, **k: SimpleNamespace(returncode=1, stdout=out, stderr=err)
+        try:
+            c._push("9" * 40, "claude/claude-jules-autoloop-data")
+            outcome = "written"
+        except la.PushRejected:
+            outcome = "rejected"
+        except RuntimeError as exc:
+            outcome = "ambiguous" if "ambiguous" in str(exc) else "other"
+        # the signal stays valid while this is "ambiguous"; once Jules fixes it this becomes "rejected" and the
+        # signal issue is closed (resolved) -- this assertion is updated by that task's PR
+        self.assertIn(outcome, {"ambiguous", "rejected"})
+        backlog, _ = self.load()
+        if outcome == "ambiguous":
+            self.assertIn("cj-live-adapter-lock-rejection", {s["signal_id"] for s in backlog["signals"]})
+
+    def test_out_of_lane_signal_issues_are_never_planned(self):
+        from pathlib import Path
+        from automation.command_bus import claude_jules_task_planner as planner
+        backlog, camp = self.load()
+        rb = json.loads((Path(__file__).resolve().parents[3] / "docs/evidence/claude-jules-production-mvp-20261010/"
+                         "backlog-readback.json").read_text(encoding="utf-8"))
+        old = [{"number": n, "state": "open", "user": {"login": "kamiyusense"}, "body": body}
+               for n, body in rb["out_of_lane_bodies"].items()]
+        sigs = ghs.signals_from_issues(old, {"kamiyusense"})
+        self.assertEqual(len(sigs), 3)
+        d = planner.plan_next(campaign=camp, signals=sigs, known=[])
+        self.assertNotEqual(d.outcome, planner.PROPOSE)
+        self.assertTrue(all("outside the approved objectives" in s["reason"] for s in d.skipped))
 
     def test_signal_issues_round_trip_through_github(self):
         backlog, _ = self.load()
         issues = []
         for n, sig in enumerate(backlog["signals"], start=10):
             title, body = ghs.render_signal_issue(sig)
-            self.assertNotIn(st.TASK_MARKER if hasattr(st, "TASK_MARKER") else "claude-closed-loop-task", body)
+            self.assertNotIn("claude-closed-loop-task", body)
             issues.append({"number": n, "state": "open", "title": title, "body": body,
                            "user": {"login": "kamiyusense"}})
         got = ghs.signals_from_issues(issues, {"kamiyusense"})
         self.assertEqual([{k: v for k, v in g.items() if k != "source_issue"} for g in got], backlog["signals"])
         self.assertEqual(ghs.signals_from_issues(issues, {"someone-else"}), [])
 
-    def test_the_backlog_runs_three_tasks_without_a_human_step(self):
+    def test_the_backlog_runs_to_pass_without_a_human_step(self):
         backlog, camp = self.load()
         h = Harness(backlog["signals"], campaign=camp)
         h.w.deliver({"name": "start"})
         h.w.run_until_quiet()
         done = [n for n in h.task_issues() if passed(h.w, n)]
-        self.assertEqual(len(done), 3)
+        self.assertEqual(len(done), len(backlog["signals"]))
         h.assert_invariants(self)
 
 

@@ -58,12 +58,11 @@
   "tasks": [],
   "objectives": [
     {
-      "objective_id": "o1-windows-portability",
-      "title": "Windows portability: explicit UTF-8 in test file reads",
+      "objective_id": "o1-claude-jules-lane",
+      "title": "Fix evidence-backed bugs in the Claude x Jules lane's own code and tests",
       "scope_prefixes": [
-        "automation/command_bus/tests/test_blue_review_delivery_prepare.py",
-        "automation/command_bus/tests/test_blue_work_wake_proof.py",
-        "automation/command_bus/tests/test_work_event_prepare_cli.py"
+        "automation/command_bus/claude_jules_live_adapter.py",
+        "automation/command_bus/tests/test_claude_jules_"
       ],
       "allowed_operations": [
         "bug_fix",

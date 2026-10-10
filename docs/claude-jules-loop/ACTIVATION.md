@@ -21,10 +21,12 @@ the budget, the expiry, the human stop switch or the objectives end it. Only the
 
 ## First work is already on GitHub
 
-`initial-backlog.json`: control issue #346 and three signal issues #347-#349 (real Windows-only `read_text()`
-encoding bugs in three independent test files), created by `kamiyusense` without labels. A read-only tick against
-live GitHub with the template filled in locally planned the first task from them and sent nothing
-(`readonly-tick-rehearsal.json`).
+`initial-backlog.json`: control issue #346 and one in-lane signal issue #350 (a real, reproduced bug in
+`claude_jules_live_adapter.py`: git's `cannot lock ref` push rejection is reported as "ambiguous"). The campaign's
+objective covers only Claude × Jules lane files; more in-lane work is added as it is found, never invented.
+Signal issues #347-#349 (Blue/Work test files) are out of this lane and are never planned by this campaign.
+A read-only tick against live GitHub (template approved only in a local temp copy) planned the #350 task and sent
+nothing (`readonly-tick-rehearsal.json`).
 
 ## While it runs
 
