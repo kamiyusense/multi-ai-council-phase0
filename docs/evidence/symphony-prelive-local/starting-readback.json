@@ -1,0 +1,55 @@
+{
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "repository_node_id": "R_kgDOUi8NPg",
+  "private": true,
+  "default_branch": "main",
+  "pr343": {
+    "head": "ebe6604f7681dd090c1a5ba43cd64f066338c14a",
+    "state": "open",
+    "draft": true
+  },
+  "refs": {
+    "claude/symphony-g61-production-wiring-static": {
+      "head": "ebe6604f7681dd090c1a5ba43cd64f066338c14a",
+      "protected": false
+    },
+    "codex/reviewer-jules-launch-evidence-335-338": {
+      "head": "81bbf1ba42077d36f4942f229ac327a7d30c9892",
+      "protected": false
+    },
+    "codex/symphony-g5-proof-ledger": {
+      "head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+      "protected": false
+    },
+    "codex/symphony-inspired-minimal-controller": {
+      "head": "8c53c505a21318c6133da0bef85af18ae3711103",
+      "protected": false
+    },
+    "main": {
+      "head": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+      "protected": false
+    }
+  },
+  "protected_list": [],
+  "administrative_details": "DETAILS_UNKNOWN_403_HISTORICAL_NOT_REPROBED",
+  "branch_flags": "CURRENT_UNPROTECTED_OBSERVED",
+  "future_proof_ref": "UNCREATED",
+  "real_ref_write": "NOT_QUALIFIED",
+  "current_ci": [
+    {
+      "id": 38039573226,
+      "head": "ebe6604f7681dd090c1a5ba43cd64f066338c14a",
+      "conclusion": "success"
+    },
+    {
+      "id": 38039573268,
+      "head": "ebe6604f7681dd090c1a5ba43cd64f066338c14a",
+      "conclusion": "success"
+    },
+    {
+      "id": 38039573211,
+      "head": "ebe6604f7681dd090c1a5ba43cd64f066338c14a",
+      "conclusion": "success"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "new": {
+    "exit": 0,
+    "sha256": "33870e2a28a4986c52fa7b220ecfbf57508b5dff45c23a0ef136be386ee8eb22",
+    "summary": "der.LedgerReadTests.test_terminal_lineage_uses_original_store_validator) ... ok\ntest_unsafe_scope_wrong_ref_default_rejected (automation.command_bus.tests.test_symphony_ledger_reader.LedgerReadTests.test_unsafe_scope_wrong_ref_default_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.003s\n\nOK\n"
+  },
+  "focused": {
+    "exit": 0,
+    "sha256": "2c2ea140fc58dad37ea74f31e30034c28bb50b496660911f9ce59695b427b636",
+    "summary": "efaults_match_policy_valves) ... ok\ntest_reference_is_metadata_only_not_an_execution_switch (automation.command_bus.tests.test_symphony_upstream_reference.SymphonyUpstreamReferenceTests.test_reference_is_metadata_only_not_an_execution_switch) ... ok\n\n----------------------------------------------------------------------\nRan 399 tests in 5.137s\n\nOK\n"
+  },
+  "full": {
+    "exit": 0,
+    "sha256": "9c061be49ddfe933041e4ad063b23d6c5a6b9716196da53086bdb16016580de4",
+    "summary": "tyTests.test_target_tree_move_after_attestation_blocks_precommit) ... ok\ntest_unexpected_untracked_path_blocks (automation.command_bus.tests.test_workspace_integrity.WorkspaceIntegrityTests.test_unexpected_untracked_path_blocks) ... ok\n\n----------------------------------------------------------------------\nRan 2158 tests in 71.977s\n\nOK (skipped=1)\n"
+  },
+  "compile": {
+    "exit": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "summary": ""
+  },
+  "historical": {
+    "exit": 0,
+    "sha256": "637035763f354260abaf332c8d12e48aff9076bdbbab577c1830efee93ea9bcb",
+    "summary": "{\"result\": \"PASS\", \"verified_files\": 51, \"historical_source_reads\": 2, \"historical_commit\": \"db578364c3bb22d5ed1af382085645cfb952f36e\", \"live_count\": 0}\n{\"result\": \"PASS\", \"verified_files\": 101, \"historical_g72_head\": \"d9255aeb966a16f484ae0b4044e3e43c38f4c103\", \"live_count\": 0}\n"
+  },
+  "patch": {
+    "exit": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "summary": ""
+  },
+  "diff": {
+    "exit": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "summary": ""
+  }
+}

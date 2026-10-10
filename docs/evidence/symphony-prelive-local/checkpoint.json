@@ -1,0 +1,36 @@
+{
+  "status": "STATIC_READ_ONLY_PASS_LIVE_NO_GO",
+  "starting_pr_head": "ebe6604f7681dd090c1a5ba43cd64f066338c14a",
+  "starting_main": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+  "work_order_comment": 6096094597,
+  "material_change": "PINNED_GET_ONLY_LEDGER_RESTORE",
+  "actual_historical_records_restored": 5,
+  "mac_reverification": false,
+  "tests": {
+    "new": 9,
+    "focused": 399,
+    "full": 2158,
+    "inherited_skips": 1
+  },
+  "counts": {
+    "live": 0,
+    "provider_launch": 0,
+    "model_launch": 0,
+    "adoption": 0,
+    "runtime_git_database_write": 0,
+    "runtime_ref_write": 0,
+    "runtime_ledger_write": 0,
+    "merge": 0,
+    "billing_change": 0,
+    "permissions_change": 0,
+    "settings_change": 0
+  },
+  "docker": "NOT_RUN",
+  "subscription_login": "CHATGPT_OBSERVED",
+  "child_preflight": "REQUIRED_BEFORE_NEW_CHILD",
+  "publication_capability": "NOT_WIRED",
+  "real_candidate": "NOT_QUALIFIED",
+  "operator_approval": "NONE",
+  "safe_work_boundary": "STOP_NO_MORE_MEANINGFUL_STATIC",
+  "final_head_ci": "ONE_FINAL_PR_COMMENT_AFTER_PUSH"
+}
