@@ -132,8 +132,9 @@ class CandidateTests(unittest.TestCase):
 
     def test_the_authorization_path_matches_the_template(self):
         self.assertTrue((EV / "live-authorization-prd-c2.TEMPLATE.json").is_file())
-        for active in (self.builder.CAMPAIGN, self.builder.AUTH, self.builder.DECL):
-            self.assertFalse((ROOT / active).exists(), active)      # not activated: LAYER 4 = NOT_INSTALLED
+        # the three active files are added together by one activation PR, or none exists (LAYER 4 = NOT_INSTALLED)
+        present = [(ROOT / active).exists() for active in (self.builder.CAMPAIGN, self.builder.AUTH, self.builder.DECL)]
+        self.assertIn(present, ([True] * 3, [False] * 3))
         self.assertIn(self.builder.AUTH, self.text)
 
     def test_superseded_candidate_cannot_be_pasted_as_a_prompt(self):

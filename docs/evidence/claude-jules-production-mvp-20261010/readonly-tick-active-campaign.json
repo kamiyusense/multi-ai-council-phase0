@@ -1,0 +1,22 @@
+{
+  "outcome": "PREPARED",
+  "reason": "the tick reached a write",
+  "preflight": {
+    "ok": true,
+    "code": "OK",
+    "status": 200,
+    "private": true
+  },
+  "budget_reservations": [],
+  "prepared_writes": [
+    {
+      "write": "create_issue",
+      "title": "[o1-claude-jules-lane] claude_jules_live_adapter: git 'cannot lock ref' push rejection is misreported as an ambiguous outcome",
+      "body": "`GitLiveClient._push` (automation/command_bus/claude_jules_live_adapter.py line 141) treats a push as a definite rejection only when the output matches `non-fast-forward|fetch first|stale info|already exists`. When two controllers push to the same branch at the same moment, git rejects the loser with `! <sha>:refs/heads/<branch> [remote rejected] (failed to update ref)` and `remote: error: cannot lock ref 'refs/heads/<branch>': is at <X> but expected <Y>`. That output does not match, so `_push` raises `RuntimeError(... outcome ambiguous ...)` instead of `PushRejected`, and `create()` cannot rebuild on the moved tip although git wrote nothing. Observed in the batch 27 two-clone race test; reproduced deterministically by feeding that exact output to `_push`.\n\nChange only: automation/command_bus/claude_jules_live_adapter.py, automation/command_bus/tests/test_claude_jules_live_adapter.py. Do not weaken, skip or delete any existing test. Run the test commands before opening the pull request, and put `Fixes #<this issue>` in the pull request body.\n\n<!-- claude-closed-loop-task v1\n{\"acceptance_criteria\":[\"GitLiveClient._push raises PushRejected (definitely nothing written) when git reports '[remote rejected] (failed to update ref)' together with 'cannot lock ref ... is at <X> but expected <Y>'\",\"Output that is really unknown (no rejection flag, or an unrecognised error) still raises the ambiguous RuntimeError; a successful push is unchanged\",\"A regression test in test_claude_jules_live_adapter.py feeds the exact observed porcelain output and asserts PushRejected, and create() then rebuilds on the moved tip without losing the other controller's commit\",\"No other file changes; no existing test is removed, skipped or weakened\"],\"allowed_paths\":[{\"op\":\"MODIFY\",\"path\":\"automation/command_bus/claude_jules_live_adapter.py\"},{\"op\":\"MODIFY\",\"path\":\"automation/command_bus/tests/test_claude_jules_live_adapter.py\"}],\"campaign\":{\"campaign_id\":\"prod-c1\",\"fingerprint\":\"6c755da2db44cd94\",\"objective_id\":\"o1-claude-jules-lane\",\"profile\":\"CLAUDE_JULES_STARTER_META_V1\",\"signal_id\":\"cj-live-adapter-lock-rejection\",\"source\":\"planner\"},\"correlation_id\":\"prod-c1-6c755da2db-c114bf7\",\"depends_on\":[],\"expected_target_branch\":\"main\",\"expected_target_head\":\"c114bf74437eb6c43c8c8d23dec56397eee83df4\",\"generation\":1,\"kind\":\"code_change\",\"live_slot\":0,\"loop_id\":\"claude-jules-prod-c1\",\"max_corrective_rounds\":3,\"operations\":[\"bug_fix\",\"test_add\"],\"profile\":\"CLAUDE_CLOSED_LOOP_TASK_V1\",\"round\":1,\"route\":\"jules-github-app-issue-label\",\"task_id\":\"prod-c1-6c755da2db\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n\n<!-- claude-jules-plan v1\n{\"campaign_id\":\"prod-c1\",\"created_at\":\"2026-10-10T07:33:04Z\",\"depends_on\":[],\"evidence_refs\":[\"automation/command_bus/claude_jules_live_adapter.py:141 rejection regex misses 'failed to update ref' / 'cannot lock ref ... but expected'\",\"docs/evidence/claude-jules-production-mvp-20261010/batch27-production-mvp.md: observed '[remote rejected] (failed to update ref)' + 'cannot lock ref ... is at X but expected Y' in the local bare-git race\",\"deterministic repro on main 4bb5cd7: _push with that porcelain output raises RuntimeError 'outcome ambiguous', not PushRejected\"],\"fingerprint\":\"6c755da2db44cd94\",\"objective_id\":\"o1-claude-jules-lane\",\"profile\":\"CLAUDE_JULES_PLAN_V1\",\"signal_id\":\"cj-live-adapter-lock-rejection\",\"task_id\":\"prod-c1-6c755da2db\",\"task_sha256\":\"d778fa7d151d4ed7f3a216c5fe3dc5674fce79575864e8652ba4936af1e122ad\"}\n-->\n",
+      "duplicate_of": null
+    }
+  ],
+  "sent": [],
+  "live": false,
+  "authorization_problems": []
+}
