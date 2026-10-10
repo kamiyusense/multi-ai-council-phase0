@@ -1,0 +1,130 @@
+{
+  "protocol": "SYMPHONY_G63_SHA256_MANIFEST_V1",
+  "files": [
+    {
+      "path": ".github/workflows/symphony-controller-static.yml",
+      "bytes": 9209,
+      "sha256": "546f9de8004d9eab78934a237cdd039f695ba398df23e1a939d8a7a40e1d4ddc"
+    },
+    {
+      "path": ".github/workflows/symphony-g63-synthetic-verifier.yml",
+      "bytes": 5545,
+      "sha256": "0043dc7e6e59e461c535de5c19dd4f82cfafa4da70213cf275ac36730aa2533f"
+    },
+    {
+      "path": "automation/command_bus/scripts/symphony_g63_synthetic_verifier.py",
+      "bytes": 2073,
+      "sha256": "476a4f4de91c8edc9963dd8170b1f56659a65762bce27936d2f8a70677d149ed"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g63.py",
+      "bytes": 2748,
+      "sha256": "86024660bbcdde621a4debf09a9d3aa1f3449db42a0940d834f4b502f06d5347"
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_archive.py",
+      "bytes": 8335,
+      "sha256": "c1c90038610c056ea57c91879ad6a9a3ec08083f185ae177341b0e4b86695960"
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_sender.py",
+      "bytes": 8116,
+      "sha256": "08d78495578db9f4734c0020b139ba8eb8ffa44e277ba51cb8cf019e46ad1fac"
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_snapshot.py",
+      "bytes": 1100,
+      "sha256": "518a577d00357bd726b1dc9651bf6062c52e218decbd8bdb2b2b7c2746abc0dc"
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_verifier.py",
+      "bytes": 4187,
+      "sha256": "90e05b16e4453b9b29024da5dbbec7f9409a321ffc4179fe65f5b05f63486a11"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_g63_connection.py",
+      "bytes": 24833,
+      "sha256": "ed4d7d8a057f63d9aff97fdbe492be1520da515ecc94839c08598519ba35e237"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_g7_static.py",
+      "bytes": 4958,
+      "sha256": "0b8b7bc5662ec735aa8220c23483547025a2ac6229dbdf81c60b12c50c5be3ed"
+    },
+    {
+      "path": "docs/SYMPHONY_G63_LOCAL_LIVE_READINESS.md",
+      "bytes": 3276,
+      "sha256": "10bcdfe5a4bfb2d072005466ab380d6231a8be314ef5b5ddd38543e2eb1a484a"
+    },
+    {
+      "path": "docs/SYMPHONY_G63_PRODUCTION_CONNECTION_STATIC_CHECKPOINT.md",
+      "bytes": 7475,
+      "sha256": "5ad17aa65f1e075044b9acf638af7783d375bd17886094037fde0114321b86f7"
+    },
+    {
+      "path": "docs/SYMPHONY_G7_STATIC_CHECKPOINT.md",
+      "bytes": 1366,
+      "sha256": "081ac1ebee5bb78cffd135727af5c7020a362104866c5c0f43e0ebcfc430aeb3"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/archive-qualification.json",
+      "bytes": 1069,
+      "sha256": "33749755ad3892ecbabf6d9183680e78ae059d5a45deb21d1a9377e736aa99bf"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/checkpoint.json",
+      "bytes": 1847,
+      "sha256": "eed4aa5f11d63dac9217bd1ef36f8cfe16a2de3d03644944f1f1915158415102"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/compileall.txt.gz",
+      "bytes": 20,
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/constraints-readback.json",
+      "bytes": 951,
+      "sha256": "531b6884c1c0735d4158a4856298333bef48256cd52b08a0d00223f6cca1fbe9"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/environment.json",
+      "bytes": 292,
+      "sha256": "78b2742a8be72eb4d2a8c18cce933e5c5e4169d0601a6911337886eaff333290"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/focused.txt.gz",
+      "bytes": 8856,
+      "sha256": "2d5d9131be14d08e2fd994454aceb98417a83b66d7bcc7e27ea4d7fe1b9c2314"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/full.txt.gz",
+      "bytes": 52663,
+      "sha256": "7531c8d3c51db99f798c39b31b4cf280f20e0c8a0f7595822b64f4134687ae04"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/g7-soak.json",
+      "bytes": 1757,
+      "sha256": "236d64ce75acb35bf0438caa8eaceaa9b88f8a51b769f12347d381ab63cb9e5f"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/historical-integrity.json",
+      "bytes": 130,
+      "sha256": "4ea4959872918bf0f94299fef14a62745de92dcce2979a4f914c73efc519e19a"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/readonly-ref-schema.json",
+      "bytes": 915,
+      "sha256": "00ef5c22e8ebbe66fe9468ef7aff10778e5d4635fe724b87521562143e87dcd9"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/regression-matrix-observed.json",
+      "bytes": 18488,
+      "sha256": "5c9f34e3dcaba0a9ab25aac3c6042e8662b197400c8f6c7bfbbc488e7eacbcf1"
+    },
+    {
+      "path": "docs/evidence/symphony-g63-static/secret-scan.json",
+      "bytes": 247,
+      "sha256": "36764f9943951ae9a22aeb2ee8654c251aee75d525d4d2f48801bc9cae0bfedc"
+    }
+  ]
+}

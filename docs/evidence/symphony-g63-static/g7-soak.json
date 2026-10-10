@@ -1,0 +1,103 @@
+{
+  "protocol": "SYMPHONY_G7_STATIC_SOAK_V1",
+  "result": "PASS",
+  "rounds_completed": 37,
+  "mock_worker_starts": 38,
+  "unique_mock_starts": 38,
+  "sessions": [
+    {
+      "session": 0,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "A-blocked",
+        "B-corrective",
+        "B-corrective::corrective::1",
+        "T00",
+        "T01"
+      ]
+    },
+    {
+      "session": 1,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06"
+      ]
+    },
+    {
+      "session": 2,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11"
+      ]
+    },
+    {
+      "session": 3,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16"
+      ]
+    },
+    {
+      "session": 4,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "T17",
+        "T18",
+        "T19",
+        "T20",
+        "T21"
+      ]
+    },
+    {
+      "session": 5,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "T22",
+        "T23",
+        "T24",
+        "T25",
+        "T26"
+      ]
+    },
+    {
+      "session": 6,
+      "status": "BATCH_LIMIT",
+      "calls": [
+        "T27",
+        "T28",
+        "T29",
+        "T30",
+        "T31"
+      ]
+    },
+    {
+      "session": 7,
+      "status": "STOP_NO_SAFE_WORK",
+      "calls": [
+        "T32",
+        "T33",
+        "T34"
+      ]
+    }
+  ],
+  "blocked_task_isolated": true,
+  "corrective_task_completed": true,
+  "quota_telemetry_UNKNOWN_continued": true,
+  "final_status": "STOP_NO_SAFE_WORK",
+  "restart_additional_dispatch": 0,
+  "real_model_starts": 0,
+  "real_github_writes": 0,
+  "new_scheduler": false
+}
