@@ -1,0 +1,26 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 20,
+  "date_jst": "2026-10-10",
+  "parent_head": "bf1315c22a3666dbaf4f17d37e9da5b7d92ddffa",
+  "route_a": "PRESERVE_EXISTING_REVIEWER; gh event read UNKNOWN",
+  "route_b": "STATIC_PREPARED_NOT_CONNECTED",
+  "tests": {
+    "local_mock": "17 PASS",
+    "new_head_full_ci": "UNKNOWN until readback"
+  },
+  "live": {
+    "new_cloud_probes": 0,
+    "jules_starts": 0,
+    "labels_written": 0,
+    "routine_changed": false,
+    "actions_workflow_added": false,
+    "slot_10": "UNUSED at readback"
+  },
+  "pending": [
+    "existing Reviewer read-only evidence",
+    "PR Merge approval",
+    "v1.6 Routine change approval",
+    "LIVE activation approval"
+  ]
+}
