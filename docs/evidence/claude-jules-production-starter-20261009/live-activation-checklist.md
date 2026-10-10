@@ -15,10 +15,10 @@ nothing else on this list has been done (batch 24 re-check).
 | 8 | 🔴 Commit the **LIVE authorization** to `main` as `docs/evidence/claude-jules-production-starter-20261009/live-authorization-prd-c2.json` (the exact path v1.6 LAYER 4 looks for) from the template, with `approved_by`, `approval_ref`, a short `expires_at`, `issues: [338]`, `max_labels: 1`, `usage_credits_confirmed_off: true` | human approval (Merge) | without it the adapter sends nothing | `validate_authorization` returns no problems |
 | 9 | 🔴 **First start**: one "Run now" (or this session, with approval) | human | the single LIVE operation: intent → `jules` on #338 → start receipt | exactly one `labeled jules` event on #338 |
 
-After step 9 no human step is planned, until `MERGE_WAIT`:
+After step 9, the **single remaining authorized LIVE slot** is spent on Issue #338:
 
-* A: Jules opens a PR, then the Routine reviews it (corrective if needed), then PASS.
-* B: the Routine creates B's issue, LAYER 4 starts it, Jules opens a PR, then the Routine reviews it, then PASS.
+* A: Jules may open a PR; the existing Reviewer can review it (corrective if needed) and record PASS.
+* B: The Reviewer may prepare the next Issue **without** a `jules` label. Layer 4 MUST NOT start B under an Issue-#338-only authorization, even if the previous task PASSed. This intentionally stops the unattended LIVE sequence pending a separate approved global budget/ledger design and fresh authorization. Do not claim a completed two-task LIVE loop.
 
 ## Stop conditions while LIVE
 
