@@ -1,0 +1,86 @@
+{
+  "protocol": "SYMPHONY_G71_STATIC_CHAIN_V1",
+  "result": "PASS",
+  "synthetic": true,
+  "tasks": [
+    {
+      "task": "A",
+      "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+      "worker_run_id": "c5a46af6f12a75aca70cda2bb03c3d42",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 2,
+        "checkpoint_digest": "e6c18a0825339e4975f87802e123e06d2dd94fcdb2333c1b254e5cd52bd9a0ab",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "B",
+      "attempt_id": "attempt-6f08bb55d325d74a64ecbe65b5ec6855",
+      "worker_run_id": "e3b6fe6cf879c17eadf7ca89e249fa40",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "STALE_REPLAN",
+        "adoption_status": "STALE_REPLAN",
+        "revision": 4,
+        "checkpoint_digest": "5172a97cc7673e3180d61982052953b78f1958ee4663f9f03bf978af618037b9",
+        "continuation_ready": true
+      },
+      "task_state": "STALE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "C",
+      "attempt_id": "attempt-03d294b81a256573664f75515bd1b39c",
+      "worker_run_id": "bbe4a8212cfd8da7591ad71651f783f0",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "UNKNOWN",
+        "adoption_status": "UNKNOWN",
+        "revision": 7,
+        "checkpoint_digest": "193c6ae3c368edc63ba4a6791863083d78fdeb691d69f8a6190d197d3765d1af",
+        "continuation_ready": true
+      },
+      "task_state": "BLOCKED",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "D",
+      "attempt_id": "attempt-94bf2a720a72117942b5bd97f9ea09bb",
+      "worker_run_id": "49bcbe79735e08ff462827c0eaa6d096",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 9,
+        "checkpoint_digest": "a6368957d4df5ee71a1cee87f4a42048810ad6ce46cef8a5883acd4fa3fdc9e5",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    }
+  ],
+  "rounds": 4,
+  "sessions": 5,
+  "mock_completed": 2,
+  "mock_ref_requests": 3,
+  "receipt_replay": "NOOP_DUPLICATE",
+  "restart_additional_dispatch": 0,
+  "restart_additional_git_writes": 0,
+  "existing_kernel_selected_all_tasks": true,
+  "distinct_attempts": 4,
+  "distinct_fixture_workers": 4,
+  "real_model_starts": 0,
+  "real_result_adoption": 0,
+  "real_github_runtime_writes": 0,
+  "new_scheduler": false,
+  "existing_kernel_next_action": "STOP_NO_SAFE_WORK"
+}

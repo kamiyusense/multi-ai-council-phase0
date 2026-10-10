@@ -1,0 +1,50 @@
+{
+  "protocol": "SYMPHONY_G71_STATIC_CHECKPOINT_V1",
+  "workorder_comment_id": 6094216888,
+  "starting_pr_head": "7da022aa24e82df6b23ccea8fc6d8da3c451a57a",
+  "result": "LOCAL_STATIC_PASS_REMOTE_CI_PENDING",
+  "final_head": "FINAL_PR_COMMENT",
+  "tests": {
+    "new": 28,
+    "focused": 338,
+    "full": 2097,
+    "skip": 1,
+    "existing_fault_cases": 28
+  },
+  "chain": {
+    "distinct_tasks": 4,
+    "completed": 2,
+    "stale_invalidated": 1,
+    "isolated_unknown": 1
+  },
+  "soak": {
+    "tasks": 42,
+    "mock_completed": 40,
+    "unique_mock_workers": 42,
+    "sessions": 43,
+    "additional_dispatch_after_restart": 0
+  },
+  "counts": {
+    "new_model_provider_live": 0,
+    "official_worker_launch": 0,
+    "real_result_adoption": 0,
+    "real_updateRefs_mutation": 0,
+    "real_git_database_trial_write": 0,
+    "paid_api_fallback": 0,
+    "default_branch_write": 0,
+    "merge": 0
+  },
+  "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "official_patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+  "official_behavior_changes": false,
+  "historical_evidence_unchanged_files": 107,
+  "remaining_gates": [
+    "real_sender_NOT_WIRED",
+    "real_worker_candidate_attestation_NOT_QUALIFIED",
+    "rules_permissions_403_UNKNOWN",
+    "real_git_objects_CAS_NOT_QUALIFIED",
+    "production_dispatch_receipt_seam_NOT_WIRED",
+    "local_Docker_NOT_RUN"
+  ],
+  "readiness": "STOP_BEFORE_LIVE_NOT_AUTHORIZED"
+}
