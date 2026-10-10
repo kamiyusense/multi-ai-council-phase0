@@ -1,0 +1,51 @@
+{
+  "profile": "CLAUDE_JULES_INITIAL_BACKLOG_V1",
+  "campaign_id": "prod-c1",
+  "control_issue": {
+    "title": "[Claude x Jules loop prod-c1] control: checkpoints and stop switch",
+    "body": "Control issue of the Claude x Jules campaign prod-c1.\n\n* Loop checkpoints are recorded here (no action needed).\n* **Stop switch:** close this issue or add the label `loop-stop`. New Jules starts stop; running work continues. Reopen / remove the label to resume.\n* Usage limits: a `claude-jules-quota v1` record here makes the loop wait for the reset.\n\nThis issue is not a task. Do not add the `jules` label to it.\n"
+  },
+  "signals": [
+    {
+      "signal_id": "cj-live-adapter-lock-rejection",
+      "objective_id": "o1-claude-jules-lane",
+      "kind": "known_bug",
+      "summary": "claude_jules_live_adapter: git 'cannot lock ref' push rejection is misreported as an ambiguous outcome",
+      "detail": "`GitLiveClient._push` (automation/command_bus/claude_jules_live_adapter.py line 141) treats a push as a definite rejection only when the output matches `non-fast-forward|fetch first|stale info|already exists`. When two controllers push to the same branch at the same moment, git rejects the loser with `! <sha>:refs/heads/<branch> [remote rejected] (failed to update ref)` and `remote: error: cannot lock ref 'refs/heads/<branch>': is at <X> but expected <Y>`. That output does not match, so `_push` raises `RuntimeError(... outcome ambiguous ...)` instead of `PushRejected`, and `create()` cannot rebuild on the moved tip although git wrote nothing. Observed in the batch 27 two-clone race test; reproduced deterministically by feeding that exact output to `_push`.",
+      "paths": [
+        "automation/command_bus/claude_jules_live_adapter.py",
+        "automation/command_bus/tests/test_claude_jules_live_adapter.py"
+      ],
+      "evidence": [
+        "automation/command_bus/claude_jules_live_adapter.py:141 rejection regex misses 'failed to update ref' / 'cannot lock ref ... but expected'",
+        "docs/evidence/claude-jules-production-mvp-20261010/batch27-production-mvp.md: observed '[remote rejected] (failed to update ref)' + 'cannot lock ref ... is at X but expected Y' in the local bare-git race",
+        "deterministic repro on main 4bb5cd7: _push with that porcelain output raises RuntimeError 'outcome ambiguous', not PushRejected"
+      ],
+      "acceptance_criteria": [
+        "GitLiveClient._push raises PushRejected (definitely nothing written) when git reports '[remote rejected] (failed to update ref)' together with 'cannot lock ref ... is at <X> but expected <Y>'",
+        "Output that is really unknown (no rejection flag, or an unrecognised error) still raises the ambiguous RuntimeError; a successful push is unchanged",
+        "A regression test in test_claude_jules_live_adapter.py feeds the exact observed porcelain output and asserts PushRejected, and create() then rebuilds on the moved tip without losing the other controller's commit",
+        "No other file changes; no existing test is removed, skipped or weakened"
+      ],
+      "test_commands": [
+        "python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter",
+        "python3 -m unittest discover -s automation/command_bus/tests -t ."
+      ]
+    }
+  ],
+  "created_on_github": {
+    "control_issue": 346,
+    "signal_issues": {
+      "cj-live-adapter-lock-rejection": 350
+    }
+  },
+  "excluded": {
+    "issues": {
+      "win-utf8-review-delivery": 347,
+      "win-utf8-wake-proof": 348,
+      "win-utf8-work-event-cli": 349
+    },
+    "reason": "out of lane: #347-#349 target Blue/Work bridge test files; the Claude x Jules campaign must stay in its own lane (independent review, PR #345 comment 6094535676). Left open and unchanged; their objective o1-windows-portability is not approved in prod-c1, so the planner skips them visibly."
+  },
+  "note": "One genuine, evidence-backed in-lane task; in-lane discovery adds more later. No finding was invented to reach a count."
+}

@@ -325,6 +325,62 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # ---------------------------------------------------------------- loop tick over real GitHub reads (prepare-only)
+SIGNAL_MARKER = "<!-- claude-jules-signal v1"
+
+
+def signals_from_issues(issues: list[dict[str, Any]], trusted: set[str]) -> list[dict[str, Any]]:
+    """Planner signals kept on GitHub: an issue by a trusted writer holding one ``claude-jules-signal v1`` block
+    (signal_id, objective_id, kind, summary, paths, evidence, ...).  A closed signal issue is resolved.  The
+    planner validates each one against the approved objectives; anything malformed is skipped there, visibly."""
+    out = []
+    for i in issues:
+        body = i.get("body") or ""
+        if "pull_request" in i or SIGNAL_MARKER not in body or (i.get("user") or {}).get("login") not in trusted:
+            continue
+        try:
+            blocks = st._block(body, SIGNAL_MARKER)
+        except (ValueError, TypeError):
+            out.append({"signal_id": f"issue-{i.get('number')}-unreadable"})     # skipped by the planner
+            continue
+        for sig in blocks:
+            if isinstance(sig, dict):
+                sig = dict(sig, source_issue=i.get("number"))
+                if i.get("state") == "closed":
+                    sig["resolved"] = True
+                out.append(sig)
+    return out
+
+
+def render_signal_issue(sig: dict[str, Any]) -> tuple[str, str]:
+    """(title, body) of a signal issue that ``signals_from_issues`` reads back exactly.  Not a task: no task
+    block, no ``jules`` label, so neither the Reviewer nor Jules acts on it; the planner turns it into a task."""
+    body = (f"Planner signal for the Claude x Jules loop (objective `{sig['objective_id']}`). Not a task by itself: "
+            "the loop plans a task issue from it. Close this issue when the problem is fixed on main.\n\n"
+            f"{sig.get('detail') or sig['summary']}\n\n{SIGNAL_MARKER}\n{st.canonical(sig)}\n-->\n")
+    return f"[loop signal] {sig['summary']}", body
+
+
+QUOTA_MARKER = "<!-- claude-jules-quota v1"
+QUOTA_PROFILE = "CLAUDE_JULES_QUOTA_V1"
+
+
+def quota_from_records(comments: list[dict[str, Any]], trusted: set[str]) -> dict[str, Any] | None:
+    """The latest trusted quota record, if it still applies.  An unreadable record is ignored (UNKNOWN)."""
+    for c in sorted(comments, key=lambda c: c.get("id") or 0, reverse=True):
+        body = c.get("body") or ""
+        if c.get("author") not in trusted or QUOTA_MARKER not in body:
+            continue
+        try:
+            rec = st._block(body, QUOTA_MARKER)[0]
+            if rec.get("profile") != QUOTA_PROFILE or rec.get("state") != st.QUOTA_EXHAUSTED:
+                return None
+            st._ts(rec["reset_at"])
+        except (ValueError, KeyError, TypeError, IndexError):
+            return None
+        return {"state": st.QUOTA_EXHAUSTED, "reset_at": rec["reset_at"], "evidence": rec.get("evidence", "")}
+    return None
+
+
 class GhLoopPort:
     """The loop's port over ``gh`` GETs.  Every write raises ``PreparedOnly`` after recording what it would send."""
 
@@ -395,13 +451,26 @@ class GhLoopPort:
         return None if cmp.get("status") not in {"ahead", "identical"} else [f["filename"] for f in cmp["files"]]
 
     def quota(self):
-        return {"state": st.QUOTA_UNKNOWN, "evidence": "Jules subscription usage is not readable"}
+        """Jules subscription usage is not readable, so it is never invented.  A trusted ``claude-jules-quota v1``
+        record on the control issue (written when the provider itself reported its limit) makes it
+        CONFIRMED_EXHAUSTED until ``reset_at``; the starter then WAITs (DEFER QUOTA_EXHAUSTED) and resumes after
+        the reset.  Never a fallback to an API key or metered route."""
+        unknown = {"state": st.QUOTA_UNKNOWN, "evidence": "Jules subscription usage is not readable"}
+        try:
+            control = self.read_control_issue()
+        except TransientRead:
+            return unknown
+        return quota_from_records((control or {}).get("comments") or [],
+                                  set(self.campaign["policy"]["trusted_writers"])) or unknown
 
     def route(self):
         return dict(self.route_declaration)
 
     def signals(self):
-        return self.signal_list
+        """The given signal list, or (None) the signal issues on GitHub: the backlog never lives in a session."""
+        if self.signal_list is not None:
+            return self.signal_list
+        return signals_from_issues(self._all_issues(), set(self.campaign["policy"]["trusted_writers"]))
 
     def _prepare(self, kind: str, **data: Any):
         self.prepared.append({"write": kind, **data})
@@ -426,7 +495,9 @@ def main_tick(argv: list[str]) -> int:
     ap.add_argument("--route-declaration", required=True)
     ap.add_argument("--signals")
     ap.add_argument("--controller", required=True)
-    ap.add_argument("--live-authorization", help="CLAUDE_JULES_LIVE_AUTHORIZATION_V1 file; without it nothing is sent")
+    ap.add_argument("--live-authorization", help="CLAUDE_JULES_LIVE_AUTHORIZATION_V1/V2 file; without it nothing is sent")
+    ap.add_argument("--budget-declaration", help="CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1 file (human-merged); "
+                                                 "without it no label is ever sent")
     ap.add_argument("--out")
     args = ap.parse_args(argv)
     with open(args.campaign, encoding="utf-8") as fh:
@@ -437,7 +508,7 @@ def main_tick(argv: list[str]) -> int:
     if args.live_authorization:
         with open(args.live_authorization, encoding="utf-8") as fh:
             authorization = json.load(fh)
-    signals = []
+    signals = None                # default: the signal issues on GitHub
     if args.signals:
         with open(args.signals, encoding="utf-8") as fh:
             signals = json.load(fh)
@@ -452,8 +523,19 @@ def main_tick(argv: list[str]) -> int:
                           signals=signals)
     else:
         from .claude_jules_starter_live import GhLiveWritePort
+        budget = None
+        if args.budget_declaration:
+            from .claude_jules_durable_budget import DurableBudget
+            from .claude_jules_live_adapter import GitLiveClient
+            with open(args.budget_declaration, encoding="utf-8") as fh:
+                declaration = json.load(fh)
+            try:      # the ledger is read (and, once enabled, written create-only) through git on the data branch
+                budget = DurableBudget(GitLiveClient("."), declaration, repository=campaign["repository"])
+            except ValueError as exc:
+                budget = None
+                print(json.dumps({"budget_declaration_problems": str(exc)}), file=sys.stderr)
         port = GhLiveWritePort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
-                               signals=signals, authorization=authorization)
+                               signals=signals, authorization=authorization, budget=budget)
     try:
         res = loop.run_tick(port, campaign=campaign, controller=args.controller,
                             now=lambda: st._fmt(datetime.now(timezone.utc)))
@@ -465,6 +547,7 @@ def main_tick(argv: list[str]) -> int:
     except TransientRead as exc:   # a read that failed outside a task's own snapshot: DEFER, never a start
         report = {"outcome": "DEFER", "reason": f"READ_UNKNOWN: {exc}"}
     report["preflight"] = access
+    report["budget_reservations"] = list(getattr(port, "reservations", []))
     report.update({"prepared_writes": port.prepared, "sent": list(getattr(port, "sent", [])),
                    "live": bool(getattr(port, "live", False)),
                    "authorization_problems": list(getattr(port, "problems", []))})

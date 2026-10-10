@@ -15,6 +15,7 @@ from automation.command_bus import claude_jules_loop as loop
 from automation.command_bus import claude_jules_production_starter as st
 from automation.command_bus import claude_jules_starter_gh as ghs
 from automation.command_bus import claude_jules_starter_live as live
+from automation.command_bus.tests import budget_fixtures as bf
 from automation.command_bus.tests import starter_world as sw
 
 REPO = "kamiyusense/multi-ai-council-phase0"
@@ -91,7 +92,9 @@ class Runner:
 
 
 def authorization(campaign, **over):
-    auth = {"profile": live.AUTH_PROFILE, "campaign_id": campaign["campaign_id"], "repository": REPO,
+    """A V2 authorization (V1 + durable budget binding): a label needs it since the durable budget guard."""
+    auth = {"profile": live.AUTH_PROFILE_V2, "budget_id": "jules-live-loop-a", "max_activations": 1,
+            "campaign_id": campaign["campaign_id"], "repository": REPO,
             "issues": "campaign", "writes": ["comment", "add_label", "create_issue"], "max_labels": 1,
             "max_writes": 8, "expires_at": "2026-10-10T06:00:00Z", "approved_by": "kamiyusense",
             "approval_ref": "chat approval 2026-10-10", "route": st.ROUTE, "billing": "subscription",
@@ -113,10 +116,13 @@ class Base(unittest.TestCase):
         self.seed, self.first = sw.seed_predecessor(self.w, self.c2)
         self.w.gh.events.clear()
 
-    def port(self, auth, runner=None):
+    def port(self, auth, runner=None, budget=None):
         self.runner = runner or Runner(self.w)
+        if not hasattr(self, "ledger"):
+            self.ledger = bf.LedgerStore()             # the real 9/10 ledger, shared by every wake of a test
         return live.GhLiveWritePort(Api(self.w), repo=REPO, campaign=self.c2, route_declaration=ROUTE, signals=[],
-                                    authorization=auth, runner=self.runner, now=lambda: st._fmt(self.w.now))
+                                    authorization=auth, runner=self.runner, now=lambda: st._fmt(self.w.now),
+                                    budget=budget or bf.budget(self.ledger))
 
     def task_writes(self):
         """POSTs on task issues (the loop checkpoint on the control issue is reported separately)."""

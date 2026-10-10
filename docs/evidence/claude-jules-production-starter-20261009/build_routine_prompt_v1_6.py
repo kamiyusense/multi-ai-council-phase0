@@ -21,9 +21,13 @@ CANDIDATE = HERE / "routine-prompt-v1.6.CANDIDATE.txt"
 DIFF = HERE / "routine-prompt-v1.5.1-to-v1.6.diff"
 MANIFEST = HERE / "routine-prompt-v1.6.manifest.json"
 
-CAMPAIGN = "docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c2.json"
+# The ACTIVE campaign lives in one fixed directory, so starting the next campaign never needs a prompt edit:
+# a human puts the approved campaign, authorization and budget declaration there (one Merge) and the loop runs.
+ACTIVE = "docs/claude-jules-loop/active/"
+CAMPAIGN = ACTIVE + "campaign.json"
 ROUTE = "docs/evidence/claude-jules-production-starter-20261009/route-declaration.json"
-AUTH = "docs/evidence/claude-jules-production-starter-20261009/live-authorization-prd-c2.json"
+AUTH = ACTIVE + "authorization.json"
+DECL = ACTIVE + "budget-declaration.json"
 TICK = ("python3 -m automation.command_bus.claude_jules_starter_gh tick"
         f" --campaign {CAMPAIGN} --route-declaration {ROUTE}"
         ' --controller "routine-$(date -u +%Y%m%dT%H%M%SZ)" --out /tmp/layer4-tick.json')
@@ -77,10 +81,11 @@ INSERT = [
          "2. Run exactly this, once per wake (prepare-only):",
          TICK,
          "   Then read the whole report with: cat /tmp/layer4-tick.json   (never cut it with head or tail)",
-         "3. Only if " + AUTH + " exists on the default branch (a human merged it), add "
-         "--live-authorization " + AUTH + " to that one command instead. The command itself checks the approver, "
-         "the expiry, the route, usage credits off and the write limits, and refuses anything else. Never create, "
-         "edit, copy or extend an authorization file.",
+         "3. Only if " + AUTH + " and " + DECL + " both exist on the default branch (a human merged them), add "
+         "--live-authorization " + AUTH + " --budget-declaration " + DECL + " to that one command instead. The "
+         "command itself checks the approver, the expiry, the route, usage credits off, the write limits and the "
+         "durable cross-wake LIVE budget ledger, and refuses anything else. Never create, edit, copy or extend an "
+         "authorization, budget declaration or budget slot file.",
          "4. The command does its own authenticated GET of the repository (private=true required; `gh auth status` "
          "is irrelevant). Exit code 3 or outcome REPO_ACCESS_BLOCKED: LAYER 4 is skipped; LAYERS 1-3 results stand.",
          "5. Never re-run it in the same wake, never retry after an error or timeout, and never perform a prepared "

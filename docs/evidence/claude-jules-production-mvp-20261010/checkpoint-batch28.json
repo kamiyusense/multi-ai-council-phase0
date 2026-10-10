@@ -1,0 +1,43 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 28,
+  "date_jst": "2026-10-10",
+  "goal": "PR #345 independent-review P0-1 (control issue required) and P0-2 (initial backlog)",
+  "branch": "feature/claude-jules-durable-budget-guard",
+  "start_head": "8fcff3268edf4b7ce71d92f75e51547bf4e6da02",
+  "main_head": "4bb5cd72ee0d9912376b0bb3b989cbb028806392",
+  "github_writes_this_batch": {
+    "issues_created": [
+      346,
+      347,
+      348,
+      349
+    ],
+    "labels": 0,
+    "jules_starts": 0
+  },
+  "tests": {
+    "full_local": "2287 OK (skipped=1)",
+    "compileall": "OK",
+    "control_issue": "4 PASS",
+    "backlog": "3 PASS"
+  },
+  "live": {
+    "proof_ledger": "9/10 unchanged",
+    "issue_338_labels": [],
+    "routine_changed": false,
+    "active_campaign_files": false
+  },
+  "artifacts_sha256": {
+    "automation/command_bus/claude_jules_starter_gh.py": "514375f027126b6baa7ecab8602681195b7932269f801224e5a60d36cbcacd0a",
+    "automation/command_bus/claude_jules_starter_live.py": "61c9ad8538713e2536eeb688463898f5cc6f6383ebf18f2af97dc9d3d4e48078",
+    "automation/command_bus/tests/test_claude_jules_autonomous_mvp.py": "b596baed788864077b8391c2ba05e1672cc1f82f858e0d0d0eb2da611c505201",
+    "docs/claude-jules-loop/ACTIVATION.md": "a8b599baf5051607cb7013d8ab25c35a76791ee35f3fd6fc79fd59c0d05289f1",
+    "docs/evidence/claude-jules-production-mvp-20261010/backlog-readback.json": "34d24dc85370f9e803529ea050f8a728ab262e28852ec8eb53db7b8511739f0e",
+    "docs/evidence/claude-jules-production-mvp-20261010/batch28-review-p0-fixes.md": "ff9c71f02c20cf7edeaed53aa1ce7894a81a1a80fcffe12e9f6fcf1dbd5ff511",
+    "docs/evidence/claude-jules-production-mvp-20261010/initial-backlog.json": "c7ed7167ca69e5788225e1be4f3a61180d4bacc4f745dec70c2299b671fdcb6c",
+    "docs/evidence/claude-jules-production-mvp-20261010/prod-campaign.TEMPLATE.json": "a38b905448ba80b48970f2e5d9fdcfceaba4dcdded8cc246b30447a3c725d18a",
+    "docs/evidence/claude-jules-production-mvp-20261010/readonly-tick-rehearsal.json": "5185e87af11c237c01c72889ec136f1ff12f5d35babb293c7434a30928788843"
+  },
+  "deferred_p1": "everything else (parallelism, multi-provider, UI, quota text detection, CI-failure signals)"
+}

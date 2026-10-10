@@ -9,11 +9,11 @@
   },
   "candidate": {
     "path": "docs/evidence/claude-jules-production-starter-20261009/routine-prompt-v1.6.CANDIDATE.txt",
-    "sha256": "c0f47b55b9eba645a941a26bf5ff3c9eb15c87dbb42d3f05033db9bc54f994be",
+    "sha256": "00445019c5971f61a539a04f269f68beaf83ee7758b59c3144455621cc766b94",
     "lines": 61,
-    "bytes": 10732
+    "bytes": 10811
   },
-  "diff_sha256": "2644ffb85ab8c80856440831c585b7fa9b1d327c215b093d0b6a555e5da23b85",
+  "diff_sha256": "f65c1fd6d6d313ef8d60a366f558d1f6519450f0e9b189b3b65bf3f7e5d07678",
   "changes": [
     {
       "kind": "replace",

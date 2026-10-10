@@ -1,0 +1,67 @@
+{
+  "profile": "CLAUDE_JULES_BACKLOG_READBACK_V1",
+  "read_with": "claude_jules_starter_gh.gh_get (GET only)",
+  "control_issue": 346,
+  "signal_issues": [
+    350
+  ],
+  "signals_equal_fixture": true,
+  "control_body_equal_fixture": true,
+  "excluded_out_of_lane": [
+    347,
+    348,
+    349
+  ],
+  "out_of_lane_bodies": {
+    "347": "Planner signal for the Claude x Jules loop (objective `o1-windows-portability`). Not a task by itself: the loop plans a task issue from it. Close this issue when the problem is fixed on main.\n\n`automation/command_bus/tests/test_blue_review_delivery_prepare.py` line 277 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.\n\n<!-- claude-jules-signal v1\n{\"acceptance_criteria\":[\"Every Path.read_text() and open() for reading text in test_blue_review_delivery_prepare.py passes encoding='utf-8'\",\"A regression test in test_blue_review_delivery_prepare.py fails if a read_text() or open() without an encoding comes back\",\"No other file changes; no existing test is removed, skipped or weakened\"],\"detail\":\"`automation/command_bus/tests/test_blue_review_delivery_prepare.py` line 277 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.\",\"evidence\":[\"automation/command_bus/tests/test_blue_review_delivery_prepare.py:277 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)\",\"PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932\"],\"kind\":\"known_bug\",\"objective_id\":\"o1-windows-portability\",\"paths\":[\"automation/command_bus/tests/test_blue_review_delivery_prepare.py\"],\"signal_id\":\"win-utf8-review-delivery\",\"summary\":\"test_blue_review_delivery_prepare.py: read_text() without encoding fails on Windows (cp932)\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_blue_review_delivery_prepare\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n",
+    "348": "Planner signal for the Claude x Jules loop (objective `o1-windows-portability`). Not a task by itself: the loop plans a task issue from it. Close this issue when the problem is fixed on main.\n\n`automation/command_bus/tests/test_blue_work_wake_proof.py` line 258 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.\n\n<!-- claude-jules-signal v1\n{\"acceptance_criteria\":[\"Every Path.read_text() and open() for reading text in test_blue_work_wake_proof.py passes encoding='utf-8'\",\"A regression test in test_blue_work_wake_proof.py fails if a read_text() or open() without an encoding comes back\",\"No other file changes; no existing test is removed, skipped or weakened\"],\"detail\":\"`automation/command_bus/tests/test_blue_work_wake_proof.py` line 258 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.\",\"evidence\":[\"automation/command_bus/tests/test_blue_work_wake_proof.py:258 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)\",\"PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932\"],\"kind\":\"known_bug\",\"objective_id\":\"o1-windows-portability\",\"paths\":[\"automation/command_bus/tests/test_blue_work_wake_proof.py\"],\"signal_id\":\"win-utf8-wake-proof\",\"summary\":\"test_blue_work_wake_proof.py: read_text() without encoding fails on Windows (cp932)\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_blue_work_wake_proof\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n",
+    "349": "Planner signal for the Claude x Jules loop (objective `o1-windows-portability`). Not a task by itself: the loop plans a task issue from it. Close this issue when the problem is fixed on main.\n\n`automation/command_bus/tests/test_work_event_prepare_cli.py` line 78 reads the CLI's JSON output file with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.\n\n<!-- claude-jules-signal v1\n{\"acceptance_criteria\":[\"Every Path.read_text() and open() for reading text in test_work_event_prepare_cli.py passes encoding='utf-8'\",\"A regression test in test_work_event_prepare_cli.py fails if a read_text() or open() without an encoding comes back\",\"No other file changes; no existing test is removed, skipped or weakened\"],\"detail\":\"`automation/command_bus/tests/test_work_event_prepare_cli.py` line 78 reads the CLI's JSON output file with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.\",\"evidence\":[\"automation/command_bus/tests/test_work_event_prepare_cli.py:78 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)\",\"PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932\"],\"kind\":\"known_bug\",\"objective_id\":\"o1-windows-portability\",\"paths\":[\"automation/command_bus/tests/test_work_event_prepare_cli.py\"],\"signal_id\":\"win-utf8-work-event-cli\",\"summary\":\"test_work_event_prepare_cli.py: read_text() without encoding fails on Windows (cp932)\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_work_event_prepare_cli\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n"
+  },
+  "issues": [
+    {
+      "number": 346,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "b35f6d1e38010c27d50a4d063b19e49857da6935ed8c81bcc932378e971f4605",
+      "title": "[Claude x Jules loop prod-c1] control: checkpoints and stop switch"
+    },
+    {
+      "number": 350,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "1e01c7906ab33700a3ff195a252da7374a2d9dab38aa5a9adbd80b1000f15f7b",
+      "title": "[loop signal] claude_jules_live_adapter: git 'cannot lock ref' push rejection is misreported as an ambiguous outcome"
+    },
+    {
+      "number": 347,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "2b091fc354f243a45dd250736fdf69c298a82e6530d6a62365f6b3caef32e9a8",
+      "title": "[loop signal] test_blue_review_delivery_prepare.py: read_text() without encoding fails on Windows (cp932)"
+    },
+    {
+      "number": 348,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "199f35769e62c873ff1957090c9034b199a80419048831a5960ce67e70d29b8d",
+      "title": "[loop signal] test_blue_work_wake_proof.py: read_text() without encoding fails on Windows (cp932)"
+    },
+    {
+      "number": 349,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "0072b00a1152dcbe37e7ca3d99c7203c5a9e28d65a6fc976728788322e09933f",
+      "title": "[loop signal] test_work_event_prepare_cli.py: read_text() without encoding fails on Windows (cp932)"
+    }
+  ]
+}

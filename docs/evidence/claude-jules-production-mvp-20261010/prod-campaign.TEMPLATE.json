@@ -1,0 +1,78 @@
+{
+  "profile": "CLAUDE_JULES_CAMPAIGN_V1",
+  "campaign_id": "prod-c1",
+  "loop_id": "claude-jules-prod-c1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "policy": {
+    "profile": "CLAUDE_JULES_STARTER_POLICY_V1",
+    "policy_version": 1,
+    "repository": "kamiyusense/multi-ai-council-phase0",
+    "base_branch": "main",
+    "route": "jules-github-app-issue-label",
+    "billing": "subscription",
+    "allow_api_fallback": false,
+    "allow_metered_fallback": false,
+    "trusted_writers": [
+      "kamiyusense"
+    ],
+    "max_concurrent_tasks": 1,
+    "max_campaign_rounds": null,
+    "max_corrective_rounds": 3,
+    "intent_lease_minutes": 15,
+    "max_label_attempts": 5,
+    "jules_ack_timeout_minutes": 60,
+    "read_retry": {
+      "attempts": 3,
+      "backoff_seconds": [
+        0,
+        5,
+        30
+      ]
+    },
+    "allowed_task_kinds": [
+      "proof",
+      "code_change"
+    ],
+    "on_quota_unknown": "proceed",
+    "base_policy": "descendant_untouched",
+    "path_classes": {
+      "execution_config": [
+        ".github/",
+        ".claude/",
+        ".mcp.json"
+      ],
+      "safety_boundary": [
+        "automation/command_bus/claude_jules_provider_route.py",
+        "automation/command_bus/claude_jules_production_starter.py",
+        "automation/command_bus/claude_jules_task_planner.py",
+        "automation/command_bus/claude_jules_loop.py",
+        "automation/command_bus/claude_closed_loop_review.py",
+        "automation/command_bus/claude_closed_loop_protocol.py",
+        "automation/command_bus/jules_carrier_current/",
+        "automation/command_bus/tests/test_jules_route_separation.py"
+      ]
+    },
+    "defer_escalate_minutes": 240,
+    "heartbeat_minutes": 360
+  },
+  "tasks": [],
+  "objectives": [
+    {
+      "objective_id": "o1-claude-jules-lane",
+      "title": "Fix evidence-backed bugs in the Claude x Jules lane's own code and tests",
+      "scope_prefixes": [
+        "automation/command_bus/claude_jules_live_adapter.py",
+        "automation/command_bus/tests/test_claude_jules_"
+      ],
+      "allowed_operations": [
+        "bug_fix",
+        "test_add",
+        "test_fix"
+      ],
+      "priority": 10,
+      "approved_by": "",
+      "approved_at": ""
+    }
+  ],
+  "control_issue": 346
+}

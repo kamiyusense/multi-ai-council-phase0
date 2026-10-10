@@ -1,0 +1,1 @@
+OLD main 4bb5cd7: per-wake max_labels=1, two wakes -> 1 label POSTs in wake 2 alone; issues labeled: [337, 338] -> 2 starts while the ledger had 1 slot left (hazard reproduced)

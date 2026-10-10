@@ -102,7 +102,7 @@ def read_all_events(repo, issue, per_page=100):
                 return fail(f"page {page}: last page moved {last} -> {links['last']}")
             last = links["last"]
         if "next" not in links:
-            if last is not None and page > 1 and page != last:
+            if last is not None and page != last:      # page 1 announcing more pages counts too
                 return fail(f"stopped at page {page}, last announced {last}")
             return {"complete": True, "pages": pages, "events": events, "error": None}
         if links["next"] != page + 1:

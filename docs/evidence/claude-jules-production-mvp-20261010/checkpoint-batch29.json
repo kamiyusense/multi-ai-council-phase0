@@ -1,0 +1,37 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 29,
+  "date_jst": "2026-10-10",
+  "goal": "lane-scope correction of the prod-c1 initial backlog (review comment 6094535676)",
+  "branch": "feature/claude-jules-durable-budget-guard",
+  "start_head": "35ffa115ea2b4affd7977d1b64f656090ea9e22a",
+  "main_head": "4bb5cd72ee0d9912376b0bb3b989cbb028806392",
+  "github_writes_this_batch": {
+    "issues_created": [
+      350
+    ],
+    "labels": 0,
+    "jules_starts": 0,
+    "issues_modified": []
+  },
+  "tests": {
+    "full_local": "2290 OK (skipped=1)",
+    "compileall": "OK",
+    "initial_backlog": "6 PASS"
+  },
+  "live": {
+    "proof_ledger": "9/10 unchanged",
+    "issue_338_labels": [],
+    "routine_changed": false,
+    "active_campaign_files": false
+  },
+  "artifacts_sha256": {
+    "automation/command_bus/tests/test_claude_jules_autonomous_mvp.py": "8a51940796e7deadc2cbed2ea6b3d2d49efd65d16795727311f3a0b7b445be3c",
+    "docs/claude-jules-loop/ACTIVATION.md": "65641f9c5cc6d7ed0e097639e6a7a7aebb9e8d792d4ba5f274d75b9fda439578",
+    "docs/evidence/claude-jules-production-mvp-20261010/backlog-readback.json": "d84332f75a9ebd2dc63044d3079b599c1cf858eb897d5ef262d1a94263a8fb72",
+    "docs/evidence/claude-jules-production-mvp-20261010/batch29-lane-scope-correction.md": "49dfa775f395b3a670f8b44b8240080a62663aeeacabf92e49090bb0475d2145",
+    "docs/evidence/claude-jules-production-mvp-20261010/initial-backlog.json": "da34c4f5d00348a5bacbb426602ad8b101c01ba0e7a5c6ba584c74d7308f8d6b",
+    "docs/evidence/claude-jules-production-mvp-20261010/prod-campaign.TEMPLATE.json": "bf749eb2543b0389d2c74a4699b788ee73822faa25b113f7109acd5c79f9294a",
+    "docs/evidence/claude-jules-production-mvp-20261010/readonly-tick-rehearsal.json": "d02d55f04088e18f2485386bbe7d73076aa3c6227ad81e79a6f980067f436905"
+  }
+}

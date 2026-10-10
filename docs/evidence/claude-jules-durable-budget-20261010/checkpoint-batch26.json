@@ -1,0 +1,70 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 26,
+  "date_jst": "2026-10-10",
+  "goal": "PR #340 merge + post-merge readback + cross-wake durable LIVE budget guard (STATIC)",
+  "branch": "feature/claude-jules-durable-budget-guard",
+  "base_main_head": "4bb5cd72ee0d9912376b0bb3b989cbb028806392",
+  "pr_340": {
+    "merged": true,
+    "merge_commit": "4bb5cd72ee0d9912376b0bb3b989cbb028806392",
+    "reviewed_head": "7bd799f9adf0ff567d769fb46d214e503c614df5",
+    "head_ci_run": 38022808120,
+    "main_tree": "d323ecaf81ade5af16e66d08742511181e7cde79",
+    "tree_equals_pr_head": true
+  },
+  "done": [
+    "fresh readback",
+    "#340 ready+merge (expectedHeadSha)",
+    "post-merge tree readback",
+    "durable budget module",
+    "adapter + loop integration",
+    "fault-injection tests A-J",
+    "old-main hazard reproduction",
+    "probe first-page fix",
+    "v1.6 candidate rebuilt with --budget-declaration"
+  ],
+  "not_done": [
+    "exact-head CI: workflow runs only on pull_request; PR held (Routine pull_request.opened trigger, draft behaviour UNKNOWN)",
+    "Draft PR: description prepared in pr-description-draft.md"
+  ],
+  "tests": {
+    "durable_budget_new": "33 PASS",
+    "full_local": "2262 OK (skipped=1)",
+    "compileall": "OK",
+    "post_merge_main_full": "2228 + 1 skip expected; tree identical to the CI-green PR head 7bd799f"
+  },
+  "artifacts_sha256": {
+    "automation/command_bus/claude_jules_durable_budget.py": "506ad9993b198f1da450dd88df019693358a66e46510c6af0bfd4595bc012f86",
+    "automation/command_bus/claude_jules_starter_live.py": "c680268487458e01988c66de71c36bcb4030c0cca14173421cd17fe0f0b1bfd3",
+    "automation/command_bus/claude_jules_starter_gh.py": "bf7798514d9eadee908cf4a8f94b35cd46dfe3589c7f3b705d7f84d0820cea3a",
+    "automation/command_bus/claude_jules_loop.py": "a9615f50296d6076969f59ca3f393697f44ae6d9444c0d1de995db84181ac812",
+    "automation/command_bus/tests/test_claude_jules_durable_budget.py": "247bb94fba38858c105a36d85a38bfbbf679e13fafae52c3f9b5a20c378d19d4",
+    "automation/command_bus/tests/budget_fixtures.py": "7d16a055f81f5d92172a82958dfabe5096385a32ce296b9561c2a48e718c2bc9",
+    "docs/evidence/claude-jules-production-starter-20261009/readonly_label_history_probe.py": "55ec91540d2af315159c1f8ea5d9476c6de91e9ecd03373719eee8e5cc4970e7",
+    "docs/evidence/claude-jules-production-starter-20261009/routine-prompt-v1.6.CANDIDATE.txt": "ae49edfaa2037f3f16f21a0e9760da26d93987dee204178a703f10bc72195415",
+    "docs/evidence/claude-jules-durable-budget-20261010/live-budget-declaration.TEMPLATE.json": "1708774c24b5a259a5efd765c006b9efe55aae99b59f20f29264b7b9e4f40bf5",
+    "docs/evidence/claude-jules-durable-budget-20261010/live-authorization-prd-c2-v2.TEMPLATE.json": "81d4e33d12568f969a6f3150a9f20d6eecb39f10ee9b5ecd48101f47f1807644"
+  },
+  "live": {
+    "jules_starts": 0,
+    "labels_written": 0,
+    "ledger": "9/10 (slot 10 unused)",
+    "issue_338_labels": [],
+    "routine_changed": false,
+    "triggers_changed": false,
+    "authorization_files_added": false,
+    "slot_create_enabled": false
+  },
+  "unknown": [
+    "Jules double start on concurrent duplicate label add",
+    "GitHub concurrency of create-only slot push",
+    "Routine saved config / run history"
+  ],
+  "next_safe_work": [
+    "independent review of batch 26",
+    "sandbox-only proof of create-only slot push (needs approval)",
+    "Draft PR once Routine trigger scope is confirmed"
+  ],
+  "first_pushed_head": "59fbc68cd222b5e3f5bf17e2040b2efc79ac8dff"
+}

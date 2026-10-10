@@ -1,0 +1,21 @@
+{
+  "profile": "CLAUDE_JULES_LIVE_AUTHORIZATION_V2",
+  "campaign_id": "prod-c1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "budget_id": "jules-prod-c1",
+  "issues": "campaign",
+  "writes": [
+    "comment",
+    "add_label",
+    "create_issue"
+  ],
+  "max_labels": 1,
+  "max_activations": 50,
+  "max_writes": 12,
+  "expires_at": "2026-10-24T00:00:00Z",
+  "approved_by": "",
+  "approval_ref": "",
+  "route": "jules-github-app-issue-label",
+  "billing": "subscription",
+  "usage_credits_confirmed_off": false
+}
