@@ -1,0 +1,30 @@
+{
+  "protocol": "SYMPHONY_PRELIVE_OPERATOR_STATIC_CHECKPOINT_V1",
+  "mode": "OFF",
+  "starting_head": "07735ea07af0b6e0ce01917032ac60f48e2b65d3",
+  "work_order": 6098391733,
+  "result": "STATIC_INTERFACE_PASS_LIVE_NO_GO",
+  "new_integration_tests": 16,
+  "focused_tests": 418,
+  "full_tests": 2186,
+  "skip": 1,
+  "source_of_counts": "ACTUAL_LOCAL_TEST_LOGS",
+  "real_candidate": "NOT_QUALIFIED",
+  "real_sender": "NOT_WIRED",
+  "human_approval": "NONE",
+  "signer_or_key_generation": false,
+  "real_candidate_execution": 0,
+  "official_symphony_behavior_changes": false,
+  "forbidden_counts": {
+    "model_provider_worker_LIVE": 0,
+    "actual_adoption": 0,
+    "real_updateRefs": 0,
+    "real_Git_Database_POST": 0,
+    "new_proof_issue_ref": 0,
+    "main_write": 0,
+    "merge": 0,
+    "paid_API_fallback": 0,
+    "billing_permissions_settings_changes": 0
+  },
+  "final_remote_CI_binding": "FINAL_APPEND_ONLY_PR_RECEIPT_AFTER_FF_PUSH"
+}

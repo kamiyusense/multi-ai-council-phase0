@@ -1,0 +1,12 @@
+{
+  "case": "focused",
+  "exit": 0,
+  "seconds": 5.944,
+  "summary": [
+    "Ran 418 tests in 5.803s",
+    "OK"
+  ],
+  "raw_sha256": "edd6fdbe82a52a43df5caf77166b31ab9769a794852716f1877e550ff8833d5e",
+  "sanitized_sha256": "edd6fdbe82a52a43df5caf77166b31ab9769a794852716f1877e550ff8833d5e",
+  "archive_sha256": "db44b6b864a45751443f64b93d4e82452f52d4520abdccc2f733f0c21303a8f0"
+}

@@ -1,0 +1,112 @@
+{
+  "protocol": "SYMPHONY_PRELIVE_OPERATOR_STATIC_MANIFEST_V1",
+  "starting_head": "07735ea07af0b6e0ce01917032ac60f48e2b65d3",
+  "files": [
+    {
+      "path": ".github/workflows/symphony-controller-static.yml",
+      "bytes": 10880,
+      "sha256": "1d109a7f5d95f6c00c1e11a23564fe775d997044993d653a238351b229c584af"
+    },
+    {
+      "path": ".github/workflows/symphony-g63-synthetic-verifier.yml",
+      "bytes": 9978,
+      "sha256": "c01c78237d4a20fc3bdfd1a476867d3fb58b1def60b8d9e23cbab5d456d4f64b"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g73.py",
+      "bytes": 2295,
+      "sha256": "aa0520e4db3f33cc17be3878e7c76dce99a77c85272551470db9fe7e42f058ff"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 1589,
+      "sha256": "e4d49eb8f37487b942a12dce2d949b7fdce69bfe4434536d1986c9b9718fcb94"
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_candidate.py",
+      "bytes": 17843,
+      "sha256": "5362a69e632ce79894d6c6f5dbd36cb776d5a186f55f03630f43c65b65c89d9a"
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_sender.py",
+      "bytes": 12314,
+      "sha256": "bf360394adb2b52703fbe1e5e11e13dc14d7a2186374b8d453480d734c72ae73"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_operator_integration.py",
+      "bytes": 24536,
+      "sha256": "01f344a9ea75d5a01c34fb725cffd2bd7653ad502625c6cf075f2bd7c1826b9e"
+    },
+    {
+      "path": "docs/SYMPHONY_DOCKER_PRODUCTION_WIRING_READINESS.md",
+      "bytes": 14174,
+      "sha256": "8fcb50baf727970806a520ab4e3d4c54b1ee25270b11c5063dd0ccbe6e6e978e"
+    },
+    {
+      "path": "docs/SYMPHONY_PRELIVE_OPERATOR_INTEGRATION.md",
+      "bytes": 8497,
+      "sha256": "888bbd2b2131a5086a775a6f4972c4c1cb386d180dc1f8dbd4f6595889fa05b4"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/checkpoint.json",
+      "bytes": 940,
+      "sha256": "6953be657178adf5c1f4d86b9388bed433a61997b5a1fa72ce9894b263897f62"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/focused-tests.json",
+      "bytes": 379,
+      "sha256": "1ae70cbbaad8ca69940029f69173324136453b652ad6a8aed4012d0a43a87922"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/focused-tests.txt.gz",
+      "bytes": 11842,
+      "sha256": "db44b6b864a45751443f64b93d4e82452f52d4520abdccc2f733f0c21303a8f0"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/full-tests.json",
+      "bytes": 391,
+      "sha256": "e45ba4689e341e274ab17714751e3050fc9bbe23c928bc93c5c277f786d6d8a2"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/full-tests.txt.gz",
+      "bytes": 55924,
+      "sha256": "c7b86caa4901714876fcbd3d035bbf91cb40527b306d9e55ab8ab3f02cb7f088"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/gates.json",
+      "bytes": 790,
+      "sha256": "ffa6fed67b46a6cfc5ce0bd8eb88732802bfc13a230d774d770178241c99ac28"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/interface-observations.json",
+      "bytes": 1062,
+      "sha256": "9eb86fad8a7bfa311b14ac55d2aca55ebe1b80973584b39ff019b770cf345531"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/secret-scan.json",
+      "bytes": 936,
+      "sha256": "d03824067f497118dd3911d4afaa01866fb530a72c0640042e73fb0e288c2552"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/secret-scan.txt.gz",
+      "bytes": 112,
+      "sha256": "7e7c6d8bf0c5e4f27583c6b51fda3fc7ff6e7109d18affb7383cb17578415726"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/starting-readback.json",
+      "bytes": 862,
+      "sha256": "a6487d064c5551c5238dbea099ef26ab9756131e6758719a203254224507b914"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/static-checks.json",
+      "bytes": 415,
+      "sha256": "80a4a790f772bb9f8505e7f4314322176cbba9a191fccf0d0b9cab508cb515e6"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-static/work-order.md",
+      "bytes": 9680,
+      "sha256": "f1289fc387c73b98d92ce381d1fe76e00cbee3b53259e5a3ce4e0cad200e2101"
+    }
+  ],
+  "self_excluded": true
+}

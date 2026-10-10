@@ -1,0 +1,27 @@
+{
+  "protocol": "SYMPHONY_PRELIVE_RECORDED_MOCK_INTERFACE_OBSERVATION_V1",
+  "environment": "CREDENTIAL_FREE_RECORDED_MOCK_ONLY",
+  "actual_candidate_attestation": false,
+  "real_candidate_qualification": "NOT_QUALIFIED",
+  "real_sender": "NOT_WIRED",
+  "reader_checks_pass": true,
+  "reader_archive_sha256": "cc70fe834546c63990d44d7c8c5b1b0b336500d5be50e28005dd22bd1bb53dfd",
+  "reader_strict_attestation_digest": "95c916ca9a708c94b272b0610f71da95151887e54ffb8794afdaa393533b1eef",
+  "externally_fake_signature_verifier_calls": 6,
+  "real_factory_preparation": {
+    "status": "INTERFACES_VERIFIED_OFF_REAL_CAPABILITY_MISSING",
+    "real_candidate_qualification": "NOT_QUALIFIED",
+    "real_sender": "NOT_WIRED",
+    "authorized_to_send": false,
+    "live_approval": "NONE"
+  },
+  "first_mock_receipt": "ADOPTED",
+  "replay_mock_receipt": "NOOP_DUPLICATE",
+  "mock_ref_requests": 1,
+  "extra_mock_ref_on_replay": 0,
+  "mock_object_posts": 10,
+  "extra_mock_object_posts_on_replay": 0,
+  "model_starts": 0,
+  "actual_adoption": 0,
+  "real_remote_MUTATIONS": 0
+}

@@ -8,6 +8,10 @@ from .validate_symphony_g63 import validate as historical
 from ..symphony_result_manifest import safe_path
 ROOT = Path(__file__).resolve().parents[3]
 G72_HEAD = 'd9255aeb966a16f484ae0b4044e3e43c38f4c103'
+# Last immutable source before the operator-interface CI extension. Old G7.3
+# workflows/validator are checked at their real Git bytes; evidence is not resealed.
+G73_HEAD = '07735ea07af0b6e0ce01917032ac60f48e2b65d3'
+G73_SUPERSEDED = WORKFLOWS | {'automation/command_bus/scripts/validate_symphony_g73.py'}
 
 
 def validate(root=ROOT):
@@ -22,7 +26,8 @@ def validate(root=ROOT):
             seen.add(p)
             ref = (G63_HEAD if name == 'symphony-g63-static' and p in WORKFLOWS else
                    G71_HEAD if name == 'symphony-g71-static' and p in G71_SUPERSEDED else
-                   G72_HEAD if name == 'symphony-g72-static' and p in WORKFLOWS else None)
+                   G72_HEAD if name == 'symphony-g72-static' and p in WORKFLOWS else
+                   G73_HEAD if name == 'symphony-g73-static' and p in G73_SUPERSEDED else None)
             raw = subprocess.check_output(['git','show',ref+':'+p],cwd=root) if ref else (root/p).read_bytes()
             if len(raw) != entry['bytes'] or hashlib.sha256(raw).hexdigest() != entry['sha256']:
                 raise ValueError('immutable evidence mismatch: '+p)
