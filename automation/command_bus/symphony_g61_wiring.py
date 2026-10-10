@@ -102,6 +102,13 @@ def wire_adoption(*, http: GitHubHttp, repository: str, repository_id: str, targ
     def verification_reader():
         return assemble_verification(manifest_ref(), verification_records(), trusted_verifiers=trusted_verifiers,
                                      worker_run_id=worker_run_id, required=required).evidence
+    def source_reader():
+        attempt = attempt_reader()
+        if attempt is None or attempt.started is None:
+            raise ValueError("durable source identity unavailable")
+        return snapshots.load(snapshot_id, expected_worker_run_id=worker_run_id,
+            expected_campaign_id=attempt.identity.campaign_id, expected_attempt_id=attempt.identity.attempt_id,
+            expected_workspace_fingerprint=attempt.started["workspace_fingerprint"])
     return WiredAdoption(bridge, transport, attempt_reader,
-                         snapshots.source_reader(snapshot_id, expected_worker_run_id=worker_run_id),
+                         source_reader,
                          validity, verification_reader)

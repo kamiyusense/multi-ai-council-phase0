@@ -132,7 +132,11 @@ class VerificationBundle:
 def assemble_verification(manifest: dict, records: Iterable[dict], *, trusted_verifiers: Mapping[str, str],
                           worker_run_id: str, required: Iterable[str] = DEFAULT_REQUIRED) -> VerificationBundle:
     """``trusted_verifiers`` maps verifier_id -> verifier_kind (configured, not
-    taken from the record). Returns trustworthy=False whenever any doubt exists."""
+    taken from the record). Returns trustworthy=False whenever any doubt exists.
+    This is a shape/binding validator, not authentication of external records.
+    Production callers must obtain records through an independent provenance
+    reader (G6.2 CIArtifactVerificationReader); a self-seal is never identity.
+    """
     required = tuple(required)
     records = list(records)
     reasons: list[str] = []

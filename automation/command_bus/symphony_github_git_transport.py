@@ -21,7 +21,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
-from .symphony_git_adoption import GitCandidate, _git_oid
+from .symphony_git_adoption import GitCandidate, _git_oid, construct_candidate
 from .symphony_result_manifest import FileEntry, SHA, digest, safe_branch
 
 ZERO_OID = "0" * 40
@@ -161,6 +161,53 @@ def commit_raw_from_api(body: dict, commit: str) -> bytes:
     raise TransportIntegrityError("commit bytes do not hash to OID (signed/foreign commit?)")
 
 
+def prepare_candidate_requests(candidate: GitCandidate) -> list[dict]:
+    """Pure, deterministic Git Database requests. All objects verified before send."""
+    if type(candidate) is not GitCandidate:
+        raise TransportIntegrityError("candidate type")
+    for oid, (kind, raw) in candidate.objects.items():
+        if kind not in {"blob", "tree", "commit"} or _git_oid(kind, raw) != oid:
+            raise TransportIntegrityError("candidate object SHA mismatch")
+    if (candidate.objects.get(candidate.commit) != ("commit", candidate.commit_bytes)
+            or _git_oid("commit", candidate.commit_bytes) != candidate.commit):
+        raise TransportIntegrityError("candidate commit bytes mismatch")
+    rebuilt = construct_candidate(parent=candidate.parent, files=candidate.files,
+                                  created_at="2026-10-10T00:00:00Z", adoption_id="prepare-validation")
+    if rebuilt.tree != candidate.tree:
+        raise TransportIntegrityError("candidate file inventory/tree mismatch")
+    requests: list[dict] = []
+    def created(kind, raw, body):
+        oid = _git_oid(kind, raw)
+        requests.append({"method": "POST", "path": f"git/{kind}s", "body": body, "expected_oid": oid})
+    blobs = {o: raw for o, (k, raw) in candidate.objects.items() if k == "blob"}
+    trees = {o: raw for o, (k, raw) in candidate.objects.items() if k == "tree"}
+    for oid, raw in sorted(blobs.items()):
+        created("blob", raw, {"content": base64.b64encode(raw).decode("ascii"), "encoding": "base64"})
+    done: set[str] = set()
+    def make_tree(oid):
+        if oid in done:
+            return
+        entries = parse_tree_raw(trees[oid])
+        for mode, _, child in entries:
+            if mode == "40000":
+                make_tree(child)
+        body = {"tree": [{"path": n, "mode": "040000" if m == "40000" else m,
+                          "type": "tree" if m == "40000" else ("commit" if m == "160000" else "blob"),
+                          "sha": o} for m, n, o in entries]}
+        created("tree", trees[oid], body); done.add(oid)
+    make_tree(candidate.tree)
+    c = parse_commit_raw(candidate.commit_bytes)
+    if c["tree"] != candidate.tree or c["parents"] != [candidate.parent]:
+        raise TransportIntegrityError("candidate commit header mismatch")
+    ident = lambda who: {"name": c[who]["name"], "email": c[who]["email"], "date": _iso(c[who]["ts"])}
+    if c["author"]["tz"] != "+0000" or c["committer"]["tz"] != "+0000":
+        raise TransportIntegrityError("candidate identity must be UTC")
+    created("commit", candidate.commit_bytes, {"message": c["message"], "tree": c["tree"],
+            "parents": c["parents"], "author": ident("author"), "committer": ident("committer")})
+
+    return requests
+
+
 class GitHubGitTransport:
     """Implements the G6 ``StaticGitTransport`` contract over GitHub's Git DB API.
 
@@ -197,39 +244,11 @@ class GitHubGitTransport:
     def read_target(self):
         return self.target_reader.read()
 
-    # Objects are content addressed: creating them again is harmless, and the
-    # returned sha must match the locally computed one or the ref is never moved.
     def put_candidate(self, candidate: GitCandidate) -> None:
-        def created(kind, raw, body):
-            oid = _git_oid(kind, raw)
-            reply = self._rest("POST", f"git/{kind}s", body, ok=(201,))
-            if not isinstance(reply, dict) or reply.get("sha") != oid:
-                raise TransportIntegrityError(f"{kind} identity differs from local Git object")
-        blobs = {o: raw for o, (k, raw) in candidate.objects.items() if k == "blob"}
-        trees = {o: raw for o, (k, raw) in candidate.objects.items() if k == "tree"}
-        for oid, raw in sorted(blobs.items()):
-            created("blob", raw, {"content": base64.b64encode(raw).decode("ascii"), "encoding": "base64"})
-        done: set[str] = set()
-        def make_tree(oid):
-            if oid in done:
-                return
-            entries = parse_tree_raw(trees[oid])
-            for mode, _, child in entries:
-                if mode == "40000":
-                    make_tree(child)
-            body = {"tree": [{"path": n, "mode": "040000" if m == "40000" else m,
-                              "type": "tree" if m == "40000" else ("commit" if m == "160000" else "blob"),
-                              "sha": o} for m, n, o in entries]}
-            created("tree", trees[oid], body); done.add(oid)
-        make_tree(candidate.tree)
-        c = parse_commit_raw(candidate.commit_bytes)
-        if c["tree"] != candidate.tree or c["parents"] != [candidate.parent]:
-            raise TransportIntegrityError("candidate commit header mismatch")
-        ident = lambda who: {"name": c[who]["name"], "email": c[who]["email"], "date": _iso(c[who]["ts"])}
-        if c["author"]["tz"] != "+0000" or c["committer"]["tz"] != "+0000":
-            raise TransportIntegrityError("candidate identity must be UTC")
-        created("commit", candidate.commit_bytes, {"message": c["message"], "tree": c["tree"],
-                "parents": c["parents"], "author": ident("author"), "committer": ident("committer")})
+        for request in prepare_candidate_requests(candidate):
+            reply = self._rest(request["method"], request["path"], request["body"], ok=(201,))
+            if not isinstance(reply, dict) or reply.get("sha") != request["expected_oid"]:
+                raise TransportIntegrityError("object identity differs from local Git object")
 
     def read_candidate(self, commit: str) -> GitCandidate | None:
         """GET-only reconstruction; every object is re-hashed before return.
@@ -291,6 +310,12 @@ class GitHubGitTransport:
         """
         if branch != self.target_branch:
             raise ValueError("CAS branch differs from configured target")
+        status, repository = self.http.request("GET", f"repos/{self.repository}")
+        if (status != 200 or not isinstance(repository, dict)
+                or repository.get("full_name") != self.repository
+                or repository.get("default_branch") != self.default_branch
+                or not safe_branch(branch, repository.get("default_branch"))):
+            raise ValueError("fresh non-default repository binding unavailable before CAS")
         request = prepare_update_refs(repository_id=self.repository_id, branch=branch,
             default_branch=self.default_branch, before_oid=expected_head, after_oid=candidate_head,
             client_mutation_id="sym-g61-" + candidate_head[:16])

@@ -1,0 +1,54 @@
+{
+  "protocol": "SYMPHONY_G62_STATIC_CHECKPOINT_V1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "branch": "claude/symphony-g61-production-wiring-static",
+  "starting_head": "36ba85e4a9fc7f7ac280c33548b96a74cc451e37",
+  "ci_recovery_head": "c0c88b05bc21652fb7b9a76355b91ed0ffebbb3f",
+  "starting_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "starting_pr320": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "protected_pr344": "81bbf1ba42077d36f4942f229ac327a7d30c9892",
+  "real_observer_ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+  "result": "STATIC_VALIDATED_PENDING_FINAL_EXACT_HEAD_CI",
+  "g61_ci_recovery": "PASS",
+  "g61_independent_audit": "PASS_AFTER_REPAIRS",
+  "g62_static": "PASS_LOCAL",
+  "counts": {
+    "new_live_workers": 0,
+    "model_provider_live": 0,
+    "real_result_adoption": 0,
+    "real_graphql_mutations": 0,
+    "paid_fallback": 0
+  },
+  "tests": {
+    "g62": 30,
+    "g61": 44,
+    "g6": 46,
+    "focused": 274,
+    "full": 2033,
+    "full_skipped": 1,
+    "focused_result": "PASS",
+    "full_result": "PASS",
+    "compileall": "PASS",
+    "patch_check": "PASS",
+    "diff_check": "PASS",
+    "secret_scan": "PASS"
+  },
+  "fault_matrix_cases": 18,
+  "official_symphony_behavior_changes": false,
+  "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "publication_mode": "OFF_NO_SENDER",
+  "ci_recovery": {
+    "failed_run": 38014884249,
+    "success_run": 38022596258,
+    "artifact_id": 11657969624,
+    "artifact_archive_sha256": "d52bd99854d5d0835407351c4a3c7244760d2beca3305e21ac1a31151f133717"
+  },
+  "final_head_and_ci": "Filled by exact read-back final PR checkpoint; not known before this commit",
+  "live_boundary": [
+    "separate fresh one-run authorization",
+    "restricted write sender qualification",
+    "actual independent candidate verifier and safe archive GET integration",
+    "fresh rulesets/default/identities/subscription route preflight"
+  ],
+  "pr320_integration": "DEFERRED; isolated PR343 sufficient for STATIC validation"
+}

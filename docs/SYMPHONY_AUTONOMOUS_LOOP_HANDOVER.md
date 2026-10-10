@@ -3,6 +3,22 @@
 Status: current design handover for the autonomous-loop line. Fresh GitHub
 readback is authoritative; do not trust remembered SHA values.
 
+## Current G6.2 STATIC readiness — 2026-10-10
+
+Work is preserved on Draft PR #343, stacked over #320. Read
+[CI recovery / G6.2 checkpoint](SYMPHONY_G62_STATIC_READINESS_CHECKPOINT.md)
+and [prepare-only Local preflight](SYMPHONY_G62_LOCAL_LIVE_PREFLIGHT.md).
+G6.1's whitespace CI failure is preserved and repaired with verified green CI.
+The new seam prepares verified deterministic Git requests in OFF mode and
+checks independent CI provenance; snapshots now bind campaign/attempt/worker,
+reject hidden exclusions/link races and remain usable after cleanup. Mock
+fault/restart/isolation fixtures exercise the unchanged G6 ledger and bridge.
+Official Symphony control paths and historical LIVE evidence are unchanged.
+Current batch LIVE 0 / real adoption 0 / real updateRefs 0. A restricted sender
+and actual candidate verifier still need qualification and separate LIVE
+approval; no flag can enable the prepare-only adapter. Exact final HEAD/CI
+belongs to the fresh PR checkpoint, never a remembered SHA.
+
 ## Current G6 STATIC boundary — 2026-10-10
 
 Read [G6 checkpoint](SYMPHONY_G6_STATIC_CHECKPOINT.md) and its prepare-only Local

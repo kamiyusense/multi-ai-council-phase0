@@ -20,6 +20,14 @@ on:
       - automation/command_bus/symphony_github_readers.py
       - automation/command_bus/symphony_workspace_snapshot.py
       - automation/command_bus/symphony_result_verification.py
+      - automation/command_bus/symphony_g62_prepare.py
+      - automation/command_bus/symphony_g62_attestation.py
+      - automation/command_bus/tests/test_symphony_g62_readiness.py
+      - automation/command_bus/tests/fixtures/symphony_g62/**
+      - automation/command_bus/scripts/validate_symphony_g62.py
+      - docs/SYMPHONY_G62_STATIC_READINESS_CHECKPOINT.md
+      - docs/SYMPHONY_G62_LOCAL_LIVE_PREFLIGHT.md
+      - docs/evidence/symphony-g62-static/**
       - automation/command_bus/symphony_g61_wiring.py
       - automation/command_bus/scripts/symphony_g61_readonly_smoke.py
       - automation/command_bus/tests/test_symphony_g61_production_wiring.py
@@ -91,12 +99,15 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/symphony-static-evidence"
-          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_g6_adoption automation.command_bus.tests.test_symphony_g61_production_wiring automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_g51_worker_lifecycle automation.command_bus.tests.test_symphony_upstream_reference automation.command_bus.tests.test_symphony_minimal_live_preflight -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
+          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_g6_adoption automation.command_bus.tests.test_symphony_g61_production_wiring automation.command_bus.tests.test_symphony_g62_readiness automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_g51_worker_lifecycle automation.command_bus.tests.test_symphony_upstream_reference automation.command_bus.tests.test_symphony_minimal_live_preflight -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
 
       - name: Full command bus regression suite
         run: |
           set -o pipefail
           python -m unittest discover -s automation/command_bus/tests -t . -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/full-tests.txt"
+
+      - name: Validate G6.2 sealed evidence and boundaries
+        run: python -m automation.command_bus.scripts.validate_symphony_g62
 
       - name: Compile command bus
         run: python -m compileall -q automation/command_bus

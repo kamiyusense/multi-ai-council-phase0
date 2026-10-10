@@ -191,10 +191,16 @@ class GitHubTargetReader:
                 files[path] = FileEntry(e["sha"].encode(), "160000", "gitlink"); continue
             if kind != "blob" or mode not in {"100644", "100755", "120000"}:
                 raise TransportIntegrityError("unsupported target tree entry")
-            total += int(e.get("size") or 0)
-            if total > self.max_bytes:
+            size = e.get("size")
+            if type(size) is not int or size < 0:
+                raise TransportIntegrityError("target blob size unavailable")
+            if total + size > self.max_bytes:
                 return incomplete()
-            files[path] = FileEntry(self._blob(e["sha"]), mode, "symlink" if mode == "120000" else "blob")
+            data = self._blob(e["sha"])
+            if len(data) != size:
+                raise TransportIntegrityError("target blob size differs from inventory")
+            total += len(data)
+            files[path] = FileEntry(data, mode, "symlink" if mode == "120000" else "blob")
         return CanonicalTarget(self.repository, self.branch, self.default_branch, head, files, True, True)
 
 

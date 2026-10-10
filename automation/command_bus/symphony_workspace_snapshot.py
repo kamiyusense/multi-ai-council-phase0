@@ -23,11 +23,12 @@ import hashlib
 import json
 import os
 import stat
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from .symphony_result_manifest import FileEntry, ID, SourceResult, canonical, digest, inventory_digest, safe_path
+from .symphony_result_manifest import DIGEST, FileEntry, ID, SourceResult, canonical, digest, inventory_digest, safe_path
 
 PROTOCOL = "SYMPHONY_G61_WORKSPACE_SNAPSHOT_V1"
 MANIFEST_KEYS = {"protocol", "snapshot_id", "campaign_id", "attempt_id", "worker_run_id", "workspace_path",
@@ -52,7 +53,7 @@ class SnapshotResult:
 
     @property
     def close_gate_open(self) -> bool:
-        return self.status in {"VERIFIED", "NOOP_DUPLICATE"}
+        return self.status in {"VERIFIED", "NOOP_DUPLICATE"} and not self.anomalies
 
     def to_dict(self) -> dict:
         return {"protocol": PROTOCOL, "status": self.status, "reason": self.reason, "snapshot_id": self.snapshot_id,
@@ -76,44 +77,77 @@ def _inside(child: Path, parent: Path) -> bool:
 
 def scan_workspace(workspace: str, *, exclude_top: Iterable[str] = (".git",)) -> tuple[dict[str, FileEntry], list[str], list[str]]:
     """Return (files, excluded, anomalies). Reads bytes; never follows links."""
-    root = Path(workspace)
-    if not root.is_dir() or root.is_symlink():
-        raise SnapshotIntegrityError("workspace directory unavailable")
-    excluded_names = set(exclude_top)
+    if tuple(exclude_top) != (".git",):
+        raise ValueError("only top-level .git may be excluded; full inventory required")
+    # Anchor every traversal to a directory descriptor. A pathname check followed
+    # by read_bytes would follow a concurrently swapped parent/link.
+    if os.open not in os.supports_dir_fd or not hasattr(os, "O_NOFOLLOW"):
+        raise SnapshotIntegrityError("secure no-follow snapshot unsupported on this platform")
     files: dict[str, FileEntry] = {}; excluded: list[str] = []; anomalies: list[str] = []
-    def walk(directory: Path, prefix: str):
-        with os.scandir(directory) as it:
-            items = sorted(it, key=lambda e: e.name)
-        for entry in items:
-            rel = prefix + entry.name
-            if not prefix and entry.name in excluded_names:
+    def signature(info):
+        return (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    def walk(fd, prefix):
+        for name in sorted(os.listdir(fd)):
+            rel = prefix + name
+            if not prefix and name == ".git":
                 excluded.append(rel); continue
-            if prefix and entry.name.casefold() == ".git":
+            if prefix and name.casefold() == ".git":
                 anomalies.append("nested_git:" + rel); continue
             if not safe_path(rel):
                 anomalies.append("unsafe_name:" + digest(rel)[:16]); continue
-            info = entry.stat(follow_symlinks=False)
-            if entry.is_symlink():
-                target = os.readlink(entry.path)
-                files[rel] = FileEntry(os.fsencode(target), "120000", "symlink")
-            elif getattr(entry, "is_junction", lambda: False)():
-                anomalies.append("junction:" + rel)
-            elif stat.S_ISDIR(info.st_mode):
-                walk(Path(entry.path), rel + "/")
-            elif stat.S_ISREG(info.st_mode):
-                data = Path(entry.path).read_bytes()
-                executable = os.name != "nt" and bool(info.st_mode & stat.S_IXUSR)
-                files[rel] = FileEntry(data, "100755" if executable else "100644", "blob")
+            before = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if getattr(before, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0):
+                anomalies.append("junction:" + rel); continue
+            if stat.S_ISLNK(before.st_mode):
+                files[rel] = FileEntry(os.fsencode(os.readlink(name, dir_fd=fd)), "120000", "symlink")
+            elif stat.S_ISDIR(before.st_mode):
+                child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                try:
+                    if signature(os.fstat(child)) != signature(before):
+                        raise SnapshotIntegrityError("directory replaced during capture")
+                    walk(child, rel + "/")
+                finally:
+                    os.close(child)
+            elif stat.S_ISREG(before.st_mode):
+                child = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+                with os.fdopen(child, "rb") as handle:
+                    if signature(os.fstat(handle.fileno())) != signature(before):
+                        raise SnapshotIntegrityError("file replaced during capture")
+                    data = handle.read()
+                    if signature(os.fstat(handle.fileno())) != signature(before):
+                        raise SnapshotIntegrityError("file changed during capture")
+                files[rel] = FileEntry(data, "100755" if before.st_mode & stat.S_IXUSR else "100644", "blob")
             else:
                 anomalies.append("special_file:" + rel)
-    walk(root, "")
+            if signature(os.stat(name, dir_fd=fd, follow_symlinks=False)) != signature(before):
+                raise SnapshotIntegrityError("entry changed during capture")
+    try:
+        fd = os.open(workspace, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            root_info = os.fstat(fd)
+            walk(fd, "")
+            if signature(os.stat(workspace, follow_symlinks=False)) != signature(root_info):
+                raise SnapshotIntegrityError("workspace root changed during capture")
+        finally:
+            os.close(fd)
+    except OSError as exc:
+        raise SnapshotIntegrityError("workspace capture unavailable or changed") from exc
     return files, excluded, sorted(anomalies)
+
+
+def _sync_directory(path: Path):
+    """Persist create-only directory entries before releasing the close gate."""
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 class WorkspaceSnapshotStore:
     def __init__(self, root: str):
         self.root = Path(root)
-        self.root.mkdir(parents=True, exist_ok=True)
+        self.root.mkdir(parents=True, mode=0o700, exist_ok=True)
 
     def _object_path(self, sha: str) -> Path:
         return self.root / "objects" / "sha256" / sha[:2] / sha
@@ -127,14 +161,22 @@ class WorkspaceSnapshotStore:
         sha = hashlib.sha256(data).hexdigest()
         path = self._object_path(sha)
         path.parent.mkdir(parents=True, exist_ok=True)
+        # Publish fully written bytes atomically, never expose a partial object.
+        temp = path.with_name("." + sha + "." + uuid.uuid4().hex + ".tmp")
+        with open(temp, "xb") as handle:
+            os.chmod(temp, 0o600)
+            handle.write(data); handle.flush(); os.fsync(handle.fileno())
         try:
-            with open(path, "xb") as handle:
-                handle.write(data)
-            os.chmod(path, stat.S_IREAD)
+            os.chmod(temp, stat.S_IREAD)
+            os.link(temp, path)
         except FileExistsError:
             pass
+        finally:
+            temp.unlink(missing_ok=True)
         if hashlib.sha256(path.read_bytes()).hexdigest() != sha:
             raise SnapshotIntegrityError("existing snapshot object differs from its address")
+        for directory in (path.parent, path.parent.parent, path.parent.parent.parent, self.root):
+            _sync_directory(directory)
         return sha
 
     def capture(self, *, workspace: str, snapshot_id: str, campaign_id: str, attempt_id: str,
@@ -142,6 +184,8 @@ class WorkspaceSnapshotStore:
         for value in (campaign_id, attempt_id, snapshot_id):
             if not ID.fullmatch(value or ""):
                 raise ValueError("invalid snapshot identity")
+        if tuple(exclude_top) != (".git",):
+            raise ValueError("only top-level .git may be excluded")
         real_ws, real_root = Path(os.path.realpath(workspace)), Path(os.path.realpath(self.root))
         if _inside(real_root, real_ws) or _inside(real_ws, real_root):
             raise ValueError("snapshot store must be outside the workspace (and vice versa)")
@@ -154,7 +198,9 @@ class WorkspaceSnapshotStore:
                 self.load(snapshot_id)  # a duplicate is only NOOP if every stored byte still verifies
             except SnapshotIntegrityError:
                 return SnapshotResult("CONFLICT", "existing snapshot unreadable or altered; never overwritten", snapshot_id)
-            same = (existing["inventory_digest"] == current and existing["worker_run_id"] == worker_run_id
+            same = (existing["campaign_id"] == campaign_id and existing["attempt_id"] == attempt_id
+                    and existing["excluded"] == excluded and existing["anomalies"] == anomalies
+                    and existing["inventory_digest"] == current and existing["worker_run_id"] == worker_run_id
                     and existing["workspace_fingerprint"] == workspace_fingerprint(workspace))
             return self._result("NOOP_DUPLICATE" if same else "CONFLICT",
                                 "snapshot already captured" if same else "snapshot id reused for different bytes", snapshot_id)
@@ -163,8 +209,8 @@ class WorkspaceSnapshotStore:
                 self._put_object(entry.data)
         except SnapshotIntegrityError as exc:
             return SnapshotResult("CONFLICT", str(exc), snapshot_id)
-        second, _, second_anomalies = scan_workspace(workspace, exclude_top=exclude_top)
-        if inventory_digest(second) != current or second_anomalies != anomalies:
+        second, second_excluded, second_anomalies = scan_workspace(workspace, exclude_top=exclude_top)
+        if inventory_digest(second) != current or second_anomalies != anomalies or second_excluded != excluded:
             return SnapshotResult("UNSTABLE", "workspace changed during capture; close gate stays shut", snapshot_id)
         body = {"protocol": PROTOCOL, "snapshot_id": snapshot_id, "campaign_id": campaign_id, "attempt_id": attempt_id,
                 "worker_run_id": worker_run_id, "workspace_path": workspace,
@@ -173,8 +219,10 @@ class WorkspaceSnapshotStore:
                 "excluded": excluded, "anomalies": anomalies, "inventory_digest": current, "captured_at": captured_at}
         text = canonical({**body, "manifest_digest": digest(body)})
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        temp = manifest_path.with_name(f".{snapshot_id}.{os.getpid()}.tmp")
-        temp.write_text(text, encoding="utf-8")
+        temp = manifest_path.with_name(f".{snapshot_id}.{uuid.uuid4().hex}.tmp")
+        with open(temp, "x", encoding="utf-8") as handle:
+            os.chmod(temp, 0o600)
+            handle.write(text); handle.flush(); os.fsync(handle.fileno())
         try:
             os.link(temp, manifest_path)  # create-only publish; fails if it exists
         except FileExistsError:
@@ -182,6 +230,8 @@ class WorkspaceSnapshotStore:
         finally:
             temp.unlink(missing_ok=True)
         os.chmod(manifest_path, stat.S_IREAD)
+        _sync_directory(manifest_path.parent)
+        _sync_directory(self.root)
         source = self.load(snapshot_id)  # full readback of every object
         if inventory_digest(source.files) != current:
             return SnapshotResult("CONFLICT", "snapshot readback differs from capture", snapshot_id)
@@ -207,14 +257,26 @@ class WorkspaceSnapshotStore:
             raise SnapshotIntegrityError("snapshot manifest digest/schema mismatch")
         return manifest
 
-    def load(self, snapshot_id: str, *, expected_worker_run_id: str | None = None) -> SourceResult:
+    def load(self, snapshot_id: str, *, expected_worker_run_id: str | None = None,
+             expected_campaign_id: str | None = None, expected_attempt_id: str | None = None,
+             expected_workspace_fingerprint: str | None = None) -> SourceResult:
         """Verified SourceResult. Any missing/altered object raises; never partial."""
         manifest = self._read_manifest(snapshot_id)
         if expected_worker_run_id is not None and manifest["worker_run_id"] != expected_worker_run_id:
             raise SnapshotIntegrityError("snapshot belongs to another worker")
+        for key, expected in (("campaign_id", expected_campaign_id), ("attempt_id", expected_attempt_id),
+                              ("workspace_fingerprint", expected_workspace_fingerprint)):
+            if expected is not None and manifest[key] != expected:
+                raise SnapshotIntegrityError("snapshot identity mismatch: " + key)
+        if manifest["excluded"] not in ([], [".git"]):
+            raise SnapshotIntegrityError("unexpected snapshot exclusion")
+        if workspace_fingerprint(manifest["workspace_path"]) != manifest["workspace_fingerprint"]:
+            raise SnapshotIntegrityError("snapshot workspace fingerprint mismatch")
         files = {}
         for path, meta in manifest["entries"].items():
-            if not safe_path(path):
+            if (not safe_path(path) or not isinstance(meta, dict)
+                    or not DIGEST.fullmatch(meta.get("sha256", ""))
+                    or type(meta.get("size")) is not int or meta["size"] < 0):
                 raise SnapshotIntegrityError("unsafe path in snapshot manifest")
             try:
                 data = self._object_path(meta["sha256"]).read_bytes()

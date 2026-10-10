@@ -1,0 +1,33 @@
+{
+  "pulls/343": {
+    "state": "open",
+    "draft": true,
+    "head": "c0c88b05bc21652fb7b9a76355b91ed0ffebbb3f",
+    "base": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "head_ref": "claude/symphony-g61-production-wiring-static"
+  },
+  "pulls/320": {
+    "state": "open",
+    "draft": true,
+    "head": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "base": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+    "head_ref": "codex/symphony-inspired-minimal-controller"
+  },
+  "pulls/344": {
+    "state": "open",
+    "draft": true,
+    "head": "81bbf1ba42077d36f4942f229ac327a7d30c9892",
+    "base": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "head_ref": "codex/reviewer-jules-launch-evidence-335-338"
+  },
+  "git/ref/heads/main": {
+    "head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0"
+  },
+  "git/ref/heads/codex/symphony-g5-proof-ledger": {
+    "head": "1e7333caf91c556a48f423a802c48678962e1cbc"
+  },
+  "pulls/320/files?per_page=100": {
+    "file_count_page1": 100,
+    "paths_sha256": "1856ca53184dc73eeb138614c58937c2a37355e175a67d8f8064b9fd71153e30"
+  }
+}

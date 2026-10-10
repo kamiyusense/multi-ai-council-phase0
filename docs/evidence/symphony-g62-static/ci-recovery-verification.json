@@ -1,0 +1,142 @@
+{
+  "exact_head": "c0c88b05bc21652fb7b9a76355b91ed0ffebbb3f",
+  "result": "PASS",
+  "runs": [
+    {
+      "id": 38022596258,
+      "name": "Symphony-inspired controller static validation",
+      "head_sha": "c0c88b05bc21652fb7b9a76355b91ed0ffebbb3f",
+      "conclusion": "success",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/38022596258",
+      "jobs": [
+        {
+          "id": 114126588662,
+          "name": "static-validation",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-10-10T04:01:23Z",
+              "completed_at": "2026-10-10T04:01:24Z"
+            },
+            {
+              "name": "Checkout exact PR head",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-10-10T04:01:24Z",
+              "completed_at": "2026-10-10T04:01:27Z"
+            },
+            {
+              "name": "Focused controller tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3,
+              "started_at": "2026-10-10T04:01:27Z",
+              "completed_at": "2026-10-10T04:01:28Z"
+            },
+            {
+              "name": "Full command bus regression suite",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4,
+              "started_at": "2026-10-10T04:01:28Z",
+              "completed_at": "2026-10-10T04:02:50Z"
+            },
+            {
+              "name": "Compile command bus",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-10-10T04:02:50Z",
+              "completed_at": "2026-10-10T04:02:50Z"
+            },
+            {
+              "name": "Check exact PR diff",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-10-10T04:02:50Z",
+              "completed_at": "2026-10-10T04:02:50Z"
+            },
+            {
+              "name": "Record exact head",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-10-10T04:02:50Z",
+              "completed_at": "2026-10-10T04:02:50Z"
+            },
+            {
+              "name": "Upload static evidence artifact",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-10-10T04:02:50Z",
+              "completed_at": "2026-10-10T04:02:51Z"
+            },
+            {
+              "name": "Post Checkout exact PR head",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16,
+              "started_at": "2026-10-10T04:02:51Z",
+              "completed_at": "2026-10-10T04:02:52Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17,
+              "started_at": "2026-10-10T04:02:52Z",
+              "completed_at": "2026-10-10T04:02:52Z"
+            }
+          ],
+          "all_steps_inspected": true,
+          "test_summaries": [
+            "OK",
+            "Ran 244 tests in 1.262s",
+            "OK",
+            "Ran 2003 tests in 80.574s",
+            "OK (skipped=1)"
+          ],
+          "raw_log_sha256": "ae29ea2761f29e13e564cc8497774e0afd843f660d93529e575eeffe4c478264",
+          "sanitized_archive_sha256": "f90d09d46ee4d85009d620a8913692dbceadd41c6dbdaf4863b0944ef483cc27"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 11657969624,
+          "name": "symphony-static-evidence-c0c88b05bc21652fb7b9a76355b91ed0ffebbb3f",
+          "sha256": "d52bd99854d5d0835407351c4a3c7244760d2beca3305e21ac1a31151f133717",
+          "github_digest": "sha256:d52bd99854d5d0835407351c4a3c7244760d2beca3305e21ac1a31151f133717",
+          "files": [
+            {
+              "path": "evidence.json",
+              "bytes": 352,
+              "sha256": "ee2dc4407b34a1383f531a179dec41b7746fb7d671115c1d49bb7a63c058799b"
+            },
+            {
+              "path": "evidence.sha256",
+              "bytes": 80,
+              "sha256": "b4baa3bbdc96562f22e7bb220d6240c9896027a30d9e306425565b58622ae4a8"
+            },
+            {
+              "path": "focused-tests.txt",
+              "bytes": 52516,
+              "sha256": "008f9e858c40eed778c36b0273ab1ea86f36743c7f89e1cd3bd5f60ad7532958"
+            },
+            {
+              "path": "full-tests.txt",
+              "bytes": 412524,
+              "sha256": "1e97e09496867bae7e3282408c392322e6a2a0452612c5f252cc59875a8ec6a4"
+            }
+          ],
+          "download_verified": true
+        }
+      ]
+    }
+  ]
+}

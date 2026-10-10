@@ -4,8 +4,8 @@
   "files": [
     {
       "path": ".github/workflows/symphony-controller-static.yml",
-      "bytes": 7924,
-      "sha256": "e154cd367bade377594607791791c23a1c02dcc00873afa8f0cef64cb6dceb2e"
+      "bytes": 8577,
+      "sha256": "e4d32a8f8919fe2c06183d3457fa4cbbf1008a95646b3a062bf490e1d5860adf"
     },
     {
       "path": "automation/command_bus/scripts/symphony_g61_readonly_smoke.py",
@@ -14,28 +14,28 @@
     },
     {
       "path": "automation/command_bus/symphony_g61_wiring.py",
-      "bytes": 7093,
-      "sha256": "7ff1983aff35d8b394dc86345afead070182f234c130ccd435da8fc9ffd0c1f4"
+      "bytes": 7493,
+      "sha256": "dcd1593259065cc197d8b427847c47e4c8a3da1e2095939ea3ad40e8f1e00568"
     },
     {
       "path": "automation/command_bus/symphony_github_git_transport.py",
-      "bytes": 15336,
-      "sha256": "a618af18f2c2021f7b7500551e4484aaaae3f4de5889001732bbc66faf99883a"
+      "bytes": 16817,
+      "sha256": "53a3466e79e21a1d42f6ab446bbbd108a8d03a44092d36df2ac85deb581323b6"
     },
     {
       "path": "automation/command_bus/symphony_github_readers.py",
-      "bytes": 15437,
-      "sha256": "0b20538ccbb3c45e88aaa805b74d6601cc55409108b7b753f94b47ce39c9336d"
+      "bytes": 15738,
+      "sha256": "6e1465fa21ab9fb5c0510e17754756e26eea7ffa0bb8302252e647de4d7ae567"
     },
     {
       "path": "automation/command_bus/symphony_result_verification.py",
-      "bytes": 8980,
-      "sha256": "f07bd571cdfe00c7d557485d110a375f68117152e2810e4e480fa062a77e42ee"
+      "bytes": 9220,
+      "sha256": "cffa4b6095f550d13891be597ac17fb91926f28cd403aac08602fbd7d1fbf4a5"
     },
     {
       "path": "automation/command_bus/symphony_workspace_snapshot.py",
-      "bytes": 12108,
-      "sha256": "c4670a9b58ae761ac486d69c45816f523f0ea7978c00ec2948c5767fdbd2156c"
+      "bytes": 16140,
+      "sha256": "98cf3f73df2d72a2e06c24daae4d4112de9ba4254a7779d587fe5d237249c93d"
     },
     {
       "path": "automation/command_bus/tests/fixtures/symphony_g61/graphql-updaterefs-schema.json",
