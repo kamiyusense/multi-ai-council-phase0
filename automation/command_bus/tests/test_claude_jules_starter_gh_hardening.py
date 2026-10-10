@@ -125,6 +125,14 @@ class PaginationTests(unittest.TestCase):
         with self.assertRaisesRegex(ghs.ReadFailed, "announced last"):
             self.run_get([response([{"id": 1}], links={"next": 2, "last": 3}), response([{"id": 2}])])
 
+    def test_first_page_advertises_more_pages_but_has_no_next_is_unknown(self):
+        # A malformed/truncated Link header must not turn 1 of 2 pages into
+        # 'complete label history', even if this is the first page.
+        first = response([{"id": 1}], links={"last": 2})
+        with self.assertRaisesRegex(ghs.ReadFailed, "announced last"):
+            self.run_get([first])
+        self.assertEqual(len(self.calls), 1)
+
     def test_an_item_seen_twice_means_the_list_moved(self):
         with self.assertRaisesRegex(ghs.ReadFailed, "seen twice"):
             self.run_get([response([{"id": 1}, {"id": 2}], links={"next": 2}), response([{"id": 2}, {"id": 3}])])
