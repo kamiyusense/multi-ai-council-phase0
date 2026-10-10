@@ -1,0 +1,24 @@
+{
+  "head": "e43636c07f2e51245fdb28a360ed4d7c6847b249",
+  "pr_state": "OPEN_DRAFT",
+  "branch": "claude/symphony-g61-production-wiring-static",
+  "parent_pr320": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "sibling_pr344": "81bbf1ba42077d36f4942f229ac327a7d30c9892",
+  "main": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+  "ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+  "workflow_path": ".github/workflows/symphony-g63-synthetic-verifier.yml",
+  "workflow_git_blob": "be611f59c922830bf3819e83c8abe1ab1b3e7263",
+  "workflow_sha256": "28c6085b5c9bbe335dc242ba3a2584e64da7943fce5e03b490f134889727e37e",
+  "approved_images": [
+    "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+    "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
+  ],
+  "backup_archive_sha256": "57083b6da83e7c83ae7bacaac6ac7423457d6c0c959721e57d984350374fcd92",
+  "host_free_bytes": {
+    "wsl": 7701012480,
+    "windows": 1238838525952
+  },
+  "docker_desktop_vhd_free_bytes": "UNKNOWN_NOT_HOST_DF",
+  "permission_route": "NORMAL_SYSTEM_REVIEW",
+  "image_pull_limit_each": 1
+}

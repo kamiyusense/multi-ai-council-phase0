@@ -1,0 +1,68 @@
+[
+  {
+    "approved_ref": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+    "distribution": "docker.io/library/python",
+    "before": null,
+    "before_error": {
+      "exit": 1,
+      "stderr": "Error response from daemon: No such image: python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce\n"
+    },
+    "pull_count": 1,
+    "state": "PASS_EXACT_DIGEST_PLATFORM_READBACK",
+    "pull_exit": 0,
+    "pull_seconds": 6.051,
+    "sanitized_log_sha256": "3fcf0a04e2d22f9a6ccac11000f516bc821d74f5f05936ee146566e03832b989",
+    "compressed_log_sha256": "2e02e1fca4d6c3a2ab421a07ef1f7d95e5b51afdef66e3dae9c95811a376d1f1",
+    "after": {
+      "id": "sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "repo_digests": [
+        "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce"
+      ],
+      "architecture": "amd64",
+      "os": "linux",
+      "size_bytes": 187061249,
+      "created": "2026-10-06T02:04:46.323675117Z",
+      "env_selector_names": [
+        "PATH",
+        "LANG",
+        "GPG_KEY",
+        "PYTHON_VERSION",
+        "PYTHON_SHA256"
+      ],
+      "entrypoint": null
+    },
+    "after_error": null
+  },
+  {
+    "approved_ref": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+    "distribution": "ghcr.io/gitleaks/gitleaks",
+    "before": null,
+    "before_error": {
+      "exit": 1,
+      "stderr": "Error response from daemon: No such image: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f\n"
+    },
+    "pull_count": 1,
+    "state": "PASS_EXACT_DIGEST_PLATFORM_READBACK",
+    "pull_exit": 0,
+    "pull_seconds": 3.542,
+    "sanitized_log_sha256": "0a26d369d5efab19b6d3294c3f1051206e87eb1236dac08b7b0ea40f13f16e97",
+    "compressed_log_sha256": "9ae0ad4560765a9f6e1dea77faeb01935f836bc45ff892de43b71cc5419353ae",
+    "after": {
+      "id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "repo_digests": [
+        "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
+      ],
+      "architecture": "amd64",
+      "os": "linux",
+      "size_bytes": 76584831,
+      "created": "2026-03-21T02:19:08.677791034Z",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "entrypoint": [
+        "gitleaks"
+      ]
+    },
+    "after_error": null
+  }
+]
