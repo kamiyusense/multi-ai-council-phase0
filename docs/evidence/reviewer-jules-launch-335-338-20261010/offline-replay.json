@@ -1,0 +1,37 @@
+{
+  "result": "PASS",
+  "positive": {
+    "issue335_launch": "PASS",
+    "issue338_not_started": "PASS_WITHIN_GITHUB_LABEL_ROUTE",
+    "provider_internal_state": "UNKNOWN",
+    "new_jules_start_count": 0
+  },
+  "negative_cases": [
+    {
+      "case": "label_only",
+      "unsafe_PASS_rejected": true
+    },
+    {
+      "case": "wrong_app",
+      "unsafe_PASS_rejected": true
+    },
+    {
+      "case": "wrong_task",
+      "unsafe_PASS_rejected": true
+    },
+    {
+      "case": "wrong_head",
+      "unsafe_PASS_rejected": true
+    },
+    {
+      "case": "labeled_338",
+      "unsafe_PASS_rejected": true
+    },
+    {
+      "case": "incomplete_pages",
+      "unsafe_PASS_rejected": true
+    }
+  ],
+  "network_calls": 0,
+  "provider_process_calls": 0
+}

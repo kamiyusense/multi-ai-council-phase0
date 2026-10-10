@@ -1,0 +1,31 @@
+{
+  "recorded_at": "2026-10-10T03:21:21.166112+00:00",
+  "checks": [
+    {
+      "name": "focused-tests",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": [
+        "Ran 95 tests in 17.454s",
+        "OK"
+      ]
+    },
+    {
+      "name": "full-tests",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": [
+        "Ran 2038 tests in 73.020s",
+        "OK (skipped=1)"
+      ]
+    },
+    {
+      "name": "compileall",
+      "exit_code": 0,
+      "result": "PASS",
+      "summaries": []
+    }
+  ],
+  "model_provider_live_count": 0,
+  "new_jules_start_count": 0
+}

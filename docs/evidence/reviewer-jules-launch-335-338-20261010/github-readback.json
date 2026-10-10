@@ -1,0 +1,914 @@
+{
+  "protocol": "REVIEWER_JULES_GITHUB_READBACK_V1",
+  "recorded_at": "2026-10-10T03:26:21.657679+00:00",
+  "scope": "REST GET projections, not raw HTTP bytes; comment bodies exact UTF-8",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "issues": {
+    "335": {
+      "number": 335,
+      "title": "[Claude closed loop GRD-001] graduation proof: test_claude_jules_live_adapter must use sys.executable",
+      "body": "Task for Jules: Claude closed-loop graduation proof GRD-001 (a real, small bug fix with a regression test).\n\n**Bug.** `automation/command_bus/tests/test_claude_jules_live_adapter.py` starts subprocesses with a hard-coded `\"python3\"` (the `FAKE_TESTS` command near the top, and the crash command in `test_tests_run_on_exact_head_in_isolated_worktree`). On machines where `python3` is not the interpreter running the tests (for example Windows, where `python3` can be a Store stub that exits 9009), these tests fail for a reason unrelated to the code under test.\n\n**Fix.** Use `sys.executable` for those commands, keep every existing assertion exactly as strict as it is, and add one regression test that asserts the fake test commands use `sys.executable`.\n\nAcceptance criteria:\n- Every subprocess command in the test file starts the interpreter that runs the tests (sys.executable); no literal \"python3\" interpreter remains in the file\n- The existing assertions keep their meaning: the fake run still reports 7 tests with exit 0, the crash run still reports exit 3 and errors 1; no test is removed, skipped or weakened\n- A new regression test asserts that the fake test commands use sys.executable, so a hard-coded interpreter cannot come back unnoticed\n- No production code and no other file changes\n\nRun before opening the pull request:\n- `python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter`\n- `python3 -m unittest discover -s automation/command_bus/tests -t .`\n\nRules: change only `automation/command_bus/tests/test_claude_jules_live_adapter.py`; do not modify production code, workflows or other tests. Open a pull request against `main` whose description contains `Fixes #<this issue number>`. A Claude reviewer reviews the pull request automatically and may reply with `@jules` and exact instructions.\n\n<!-- claude-closed-loop-task v1\n{\"acceptance_criteria\":[\"Every subprocess command in the test file starts the interpreter that runs the tests (sys.executable); no literal \\\"python3\\\" interpreter remains in the file\",\"The existing assertions keep their meaning: the fake run still reports 7 tests with exit 0, the crash run still reports exit 3 and errors 1; no test is removed, skipped or weakened\",\"A new regression test asserts that the fake test commands use sys.executable, so a hard-coded interpreter cannot come back unnoticed\",\"No production code and no other file changes\"],\"allowed_paths\":[{\"op\":\"MODIFY\",\"path\":\"automation/command_bus/tests/test_claude_jules_live_adapter.py\"}],\"budget_command_id\":\"github-native-grd-001\",\"correlation_id\":\"grd-001-8fbbef9\",\"expected_target_branch\":\"main\",\"expected_target_head\":\"8fbbef941732219e4ad43ce0d32e22922275d040\",\"generation\":1,\"kind\":\"code_change\",\"live_slot\":9,\"loop_id\":\"claude-jules-github-native-001\",\"max_corrective_rounds\":2,\"next_task\":{\"body\":\"Prepared after GRD-001 passed. Not labeled: starting it needs a new LIVE approval (slot 10).\",\"title\":\"[Claude closed loop GRD-002] prepared next task (not started)\"},\"profile\":\"CLAUDE_CLOSED_LOOP_TASK_V1\",\"round\":1,\"route\":\"jules-github-app-issue-label\",\"task_id\":\"grd-001\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n",
+      "state": "closed",
+      "state_reason": "completed",
+      "created_at": "2026-10-08T12:24:37Z",
+      "updated_at": "2026-10-08T20:32:12Z",
+      "closed_at": "2026-10-08T20:32:12Z",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335",
+      "labels": [
+        "jules"
+      ],
+      "comment_count": 3,
+      "events": {
+        "endpoint": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/335/events?per_page=100",
+        "pages": [
+          {
+            "page": 1,
+            "items": 6
+          },
+          {
+            "page": 2,
+            "items": 0
+          }
+        ],
+        "complete_until_empty_page": true,
+        "items": [
+          {
+            "id": 32786803903,
+            "event": "referenced",
+            "created_at": "2026-10-08T12:29:27Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "7aa43b3b41be8dc6d565c9f1b087fc1cb72bb2c9",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32812574766,
+            "event": "renamed",
+            "created_at": "2026-10-08T17:53:04Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32812577102,
+            "event": "labeled",
+            "created_at": "2026-10-08T17:53:06Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": "jules",
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32814809596,
+            "event": "referenced",
+            "created_at": "2026-10-08T18:24:51Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "10d33cd9cb2884b109d3bd08f75a046d45a1a0bb",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32823475243,
+            "event": "closed",
+            "created_at": "2026-10-08T20:32:13Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32863022767,
+            "event": "referenced",
+            "created_at": "2026-10-09T09:30:59Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "ec52074b53d3f38046b1bc4059ccdd77c2687e98",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          }
+        ]
+      },
+      "timeline": {
+        "endpoint": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/335/timeline?per_page=100",
+        "pages": [
+          {
+            "page": 1,
+            "items": 13
+          },
+          {
+            "page": 2,
+            "items": 0
+          }
+        ],
+        "complete_until_empty_page": true,
+        "items": [
+          {
+            "id": null,
+            "event": "cross-referenced",
+            "created_at": "2026-10-08T12:24:44Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": 333,
+            "source_is_pr": false,
+            "source_title": "[Claude closed loop CLP-002] two-phase corrective proof: add docs/closed-loop-proof/CLP-002.md",
+            "html_url": null
+          },
+          {
+            "id": 32786803903,
+            "event": "referenced",
+            "created_at": "2026-10-08T12:29:27Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "7aa43b3b41be8dc6d565c9f1b087fc1cb72bb2c9",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32812574766,
+            "event": "renamed",
+            "created_at": "2026-10-08T17:53:04Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32812577102,
+            "event": "labeled",
+            "created_at": "2026-10-08T17:53:06Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": "jules",
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 6065845035,
+            "event": "commented",
+            "created_at": "2026-10-08T17:53:10Z",
+            "actor": {
+              "login": "google-labs-jules[bot]",
+              "id": 161369871,
+              "type": "Bot"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335#issuecomment-6065845035"
+          },
+          {
+            "id": null,
+            "event": "cross-referenced",
+            "created_at": "2026-10-08T18:01:04Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": 337,
+            "source_is_pr": true,
+            "source_title": "Fix test_claude_jules_live_adapter to use sys.executable",
+            "html_url": null
+          },
+          {
+            "id": 6065977783,
+            "event": "commented",
+            "created_at": "2026-10-08T18:01:06Z",
+            "actor": {
+              "login": "google-labs-jules[bot]",
+              "id": 161369871,
+              "type": "Bot"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335#issuecomment-6065977783"
+          },
+          {
+            "id": 6066036644,
+            "event": "commented",
+            "created_at": "2026-10-08T18:04:38Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335#issuecomment-6066036644"
+          },
+          {
+            "id": 32814809596,
+            "event": "referenced",
+            "created_at": "2026-10-08T18:24:51Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "10d33cd9cb2884b109d3bd08f75a046d45a1a0bb",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": null,
+            "event": "cross-referenced",
+            "created_at": "2026-10-08T19:42:23Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": 330,
+            "source_is_pr": true,
+            "source_title": "Claude × Jules GitHub-native closed loop: two-layer reviewer, route guard, live proofs (slots 7–9)",
+            "html_url": null
+          },
+          {
+            "id": 32823475243,
+            "event": "closed",
+            "created_at": "2026-10-08T20:32:13Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": null,
+            "event": "cross-referenced",
+            "created_at": "2026-10-09T01:50:03Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": 340,
+            "source_is_pr": true,
+            "source_title": "Autonomous Claude × Jules loop: Production Starter v2, planner, merge-free continuation (STATIC + mock)",
+            "html_url": null
+          },
+          {
+            "id": 32863022767,
+            "event": "referenced",
+            "created_at": "2026-10-09T09:30:59Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "ec52074b53d3f38046b1bc4059ccdd77c2687e98",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          }
+        ]
+      },
+      "comments": {
+        "endpoint": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/335/comments?per_page=100",
+        "pages": [
+          {
+            "page": 1,
+            "items": 3
+          },
+          {
+            "page": 2,
+            "items": 0
+          }
+        ],
+        "complete_until_empty_page": true,
+        "items": [
+          {
+            "id": 6065845035,
+            "created_at": "2026-10-08T17:53:10Z",
+            "updated_at": "2026-10-08T17:53:10Z",
+            "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335#issuecomment-6065845035",
+            "body": "Jules is [on it](https://jules.google.com/task/5755515948434524038). When finished, you will see another comment and be able to review a PR.",
+            "user": {
+              "login": "google-labs-jules[bot]",
+              "id": 161369871,
+              "type": "Bot"
+            },
+            "performed_via_github_app": {
+              "id": 842251,
+              "slug": "google-labs-jules"
+            },
+            "body_sha256": "b9692cd131d03f119e23dd031439254b64bfdb35874b1a8c021d1ae754ce81c3"
+          },
+          {
+            "id": 6065977783,
+            "created_at": "2026-10-08T18:01:06Z",
+            "updated_at": "2026-10-08T18:01:06Z",
+            "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335#issuecomment-6065977783",
+            "body": "Ready for a review! A [PR](https://github.com/kamiyusense/multi-ai-council-phase0/pull/337) has been created.",
+            "user": {
+              "login": "google-labs-jules[bot]",
+              "id": 161369871,
+              "type": "Bot"
+            },
+            "performed_via_github_app": {
+              "id": 842251,
+              "slug": "google-labs-jules"
+            },
+            "body_sha256": "0f91f34445255f435227d4c89b89b2bb51ebdd3bd5c287b4e330b36beadfb4de"
+          },
+          {
+            "id": 6066036644,
+            "created_at": "2026-10-08T18:04:38Z",
+            "updated_at": "2026-10-08T18:04:38Z",
+            "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/335#issuecomment-6066036644",
+            "body": "Claude closed-loop review of PR #337 (head 2ce8caa): PASS. All four acceptance criteria met; both test commands pass (18 tests, full suite 1912 OK). Next task issue #338 prepared, unlabeled.\n\n<!-- claude-closed-loop-receipt v1\n{\"profile\": \"CLAUDE_CLOSED_LOOP_REVIEW_V2\", \"task_id\": \"grd-001\", \"loop_id\": \"claude-jules-github-native-001\", \"correlation_id\": \"grd-001-8fbbef9\", \"generation\": 1, \"round\": 1, \"phase\": \"FINAL\", \"pr\": 337, \"pr_head_sha\": \"2ce8caabb63df36c8fb7be1057344dceb7f732ab\", \"pr_head_tree\": \"01fb0ddf8c237d2978c169fce5abd1d59905f4f4\", \"expected_target_head\": \"8fbbef941732219e4ad43ce0d32e22922275d040\", \"observed_base_head\": \"8fbbef941732219e4ad43ce0d32e22922275d040\", \"verdict\": \"PASS\", \"decision\": \"ADOPT_RECORDED\", \"criteria\": [{\"criterion\": \"Every subprocess command in the test file starts the interpreter that runs the tests (sys.executable); no literal \\\"python3\\\" interpreter remains in the file\", \"met\": true, \"evidence\": \"grep python3 count is 0; FAKE_TESTS and crash command use sys.executable\"}, {\"criterion\": \"The existing assertions keep their meaning: the fake run still reports 7 tests with exit 0, the crash run still reports exit 3 and errors 1; no test is removed, skipped or weakened\", \"met\": true, \"evidence\": \"Diff only swaps interpreter; assertions unchanged; nothing removed or skipped\"}, {\"criterion\": \"A new regression test asserts that the fake test commands use sys.executable, so a hard-coded interpreter cannot come back unnoticed\", \"met\": true, \"evidence\": \"test_fake_tests_command_uses_sys_executable asserts FAKE_TESTS[0]==sys.executable\"}, {\"criterion\": \"No production code and no other file changes\", \"met\": true, \"evidence\": \"Only the one allowed test file changed\"}], \"findings\": [], \"escalate_root_cause\": false, \"tests\": {\"result\": \"PASS\", \"commands_run\": [\"python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter\", \"python3 -m unittest discover -s automation/command_bus/tests -t .\"], \"evidence\": \"18 tests OK; full discover 1912 tests OK (skipped=1)\"}, \"live_slot\": 9, \"corrective_comment\": null, \"next_issue\": 338, \"wake_event\": \"pull_request.opened\", \"reviewed_at\": \"2026-10-08T18:04:30Z\"}\n-->\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+            "user": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "performed_via_github_app": {
+              "id": 1236702,
+              "slug": "claude"
+            },
+            "body_sha256": "3807f57eb02faf41aa5ad5cd970c37c29f89414c8edad844071b54f631cad9e7"
+          }
+        ]
+      }
+    },
+    "338": {
+      "number": 338,
+      "title": "[Claude closed loop GRD-002] prepared next task (not started)",
+      "body": "Prepared after GRD-001 passed. Not labeled: starting it needs a new LIVE approval (slot 10).",
+      "state": "open",
+      "state_reason": null,
+      "created_at": "2026-10-08T18:04:22Z",
+      "updated_at": "2026-10-08T18:04:22Z",
+      "closed_at": null,
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/338",
+      "labels": [],
+      "comment_count": 0,
+      "events": {
+        "endpoint": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/338/events?per_page=100",
+        "pages": [
+          {
+            "page": 1,
+            "items": 4
+          },
+          {
+            "page": 2,
+            "items": 0
+          }
+        ],
+        "complete_until_empty_page": true,
+        "items": [
+          {
+            "id": 32814810366,
+            "event": "referenced",
+            "created_at": "2026-10-08T18:24:52Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "10d33cd9cb2884b109d3bd08f75a046d45a1a0bb",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32838071056,
+            "event": "referenced",
+            "created_at": "2026-10-09T01:19:41Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "ecac6d99f2887e1b1a68992ec21d3a04278f48f2",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32839285361,
+            "event": "referenced",
+            "created_at": "2026-10-09T01:49:41Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "f500f71b27216ee031c2ece2e821f24db486da5f",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32863022962,
+            "event": "referenced",
+            "created_at": "2026-10-09T09:30:59Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "ec52074b53d3f38046b1bc4059ccdd77c2687e98",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          }
+        ]
+      },
+      "timeline": {
+        "endpoint": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/338/timeline?per_page=100",
+        "pages": [
+          {
+            "page": 1,
+            "items": 6
+          },
+          {
+            "page": 2,
+            "items": 0
+          }
+        ],
+        "complete_until_empty_page": true,
+        "items": [
+          {
+            "id": null,
+            "event": "cross-referenced",
+            "created_at": "2026-10-08T18:04:39Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": 335,
+            "source_is_pr": false,
+            "source_title": "[Claude closed loop GRD-001] graduation proof: test_claude_jules_live_adapter must use sys.executable",
+            "html_url": null
+          },
+          {
+            "id": 32814810366,
+            "event": "referenced",
+            "created_at": "2026-10-08T18:24:52Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "10d33cd9cb2884b109d3bd08f75a046d45a1a0bb",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": null,
+            "event": "cross-referenced",
+            "created_at": "2026-10-09T00:09:15Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": null,
+            "source_number": 340,
+            "source_is_pr": true,
+            "source_title": "Autonomous Claude × Jules loop: Production Starter v2, planner, merge-free continuation (STATIC + mock)",
+            "html_url": null
+          },
+          {
+            "id": 32838071056,
+            "event": "referenced",
+            "created_at": "2026-10-09T01:19:41Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "ecac6d99f2887e1b1a68992ec21d3a04278f48f2",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32839285361,
+            "event": "referenced",
+            "created_at": "2026-10-09T01:49:41Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "f500f71b27216ee031c2ece2e821f24db486da5f",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          },
+          {
+            "id": 32863022962,
+            "event": "referenced",
+            "created_at": "2026-10-09T09:30:59Z",
+            "actor": {
+              "login": "kamiyusense",
+              "id": 20355232,
+              "type": "User"
+            },
+            "label": null,
+            "commit_id": "ec52074b53d3f38046b1bc4059ccdd77c2687e98",
+            "source_number": null,
+            "source_is_pr": false,
+            "source_title": null,
+            "html_url": null
+          }
+        ]
+      },
+      "comments": {
+        "endpoint": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/issues/338/comments?per_page=100",
+        "pages": [
+          {
+            "page": 1,
+            "items": 0
+          }
+        ],
+        "complete_until_empty_page": true,
+        "items": []
+      }
+    }
+  },
+  "pr_337": {
+    "number": 337,
+    "title": "Fix test_claude_jules_live_adapter to use sys.executable",
+    "body": "Fixes issue where test_claude_jules_live_adapter starts subprocesses using a hard-coded 'python3' command instead of sys.executable.\nAlso adds a regression test ensuring FAKE_TESTS uses sys.executable.\n\nFixes #335\n\n---\n*PR created automatically by Jules for task [5755515948434524038](https://jules.google.com/task/5755515948434524038) started by @kamiyusense*",
+    "state": "closed",
+    "draft": false,
+    "created_at": "2026-10-08T18:01:03Z",
+    "merged": true,
+    "merged_at": "2026-10-08T20:36:44Z",
+    "merge_commit_sha": "ca83d0e4f4e960632e963252f1354fd6257ee8bd",
+    "changed_files": 1,
+    "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/337",
+    "user": {
+      "login": "kamiyusense",
+      "id": 20355232,
+      "type": "User"
+    },
+    "head": {
+      "ref": "jules-5755515948434524038-ead860a1",
+      "sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "8fbbef941732219e4ad43ce0d32e22922275d040"
+    }
+  },
+  "commit": {
+    "sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+    "author": {
+      "login": "google-labs-jules[bot]",
+      "id": 161369871,
+      "type": "Bot"
+    },
+    "committer": {
+      "login": "google-labs-jules[bot]",
+      "id": 161369871,
+      "type": "Bot"
+    },
+    "commit": {
+      "author": {
+        "name": "google-labs-jules[bot]",
+        "email": "161369871+google-labs-jules[bot]@users.noreply.github.com",
+        "date": "2026-10-08T18:01:00Z"
+      },
+      "committer": {
+        "name": "google-labs-jules[bot]",
+        "email": "161369871+google-labs-jules[bot]@users.noreply.github.com",
+        "date": "2026-10-08T18:01:00Z"
+      },
+      "message": "Fix test_claude_jules_live_adapter to use sys.executable\n\nReplace hard-coded 'python3' interpreter calls in subprocess tests\nwith sys.executable to prevent test failures on platforms where\npython3 is not available in PATH (such as Windows store stub).\nAdd a regression test asserting FAKE_TESTS uses sys.executable.\n\nCo-authored-by: kamiyusense <20355232+kamiyusense@users.noreply.github.com>",
+      "tree": {
+        "sha": "01fb0ddf8c237d2978c169fce5abd1d59905f4f4",
+        "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/git/trees/01fb0ddf8c237d2978c169fce5abd1d59905f4f4"
+      },
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "parents": [
+      "8fbbef941732219e4ad43ce0d32e22922275d040"
+    ]
+  },
+  "pr_changed_files": [
+    {
+      "sha": "72bcad05824f0dd5b3a829c1b6bd170372643725",
+      "filename": "automation/command_bus/tests/test_claude_jules_live_adapter.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 2,
+      "changes": 8,
+      "blob_url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/2ce8caabb63df36c8fb7be1057344dceb7f732ab/automation%2Fcommand_bus%2Ftests%2Ftest_claude_jules_live_adapter.py",
+      "raw_url": "https://github.com/kamiyusense/multi-ai-council-phase0/raw/2ce8caabb63df36c8fb7be1057344dceb7f732ab/automation%2Fcommand_bus%2Ftests%2Ftest_claude_jules_live_adapter.py",
+      "contents_url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/contents/automation%2Fcommand_bus%2Ftests%2Ftest_claude_jules_live_adapter.py?ref=2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "patch": "@@ -11,6 +11,7 @@\n import os\n import shutil\n import subprocess\n+import sys\n import tempfile\n import unittest\n from datetime import datetime\n@@ -31,7 +32,7 @@\n )\n \n GOOD = \"import unittest\\nfrom automation.command_bus.alpha import helper\\n\\n\\nclass T(unittest.TestCase):\\n    def test_x(self):\\n        self.assertEqual(helper(1), 2)\\n\"\n-FAKE_TESTS = [\"python3\", \"-c\", \"import sys; sys.stderr.write('...\\\\nRan 7 tests in 0.01s\\\\n\\\\nOK\\\\n')\"]\n+FAKE_TESTS = [sys.executable, \"-c\", \"import sys; sys.stderr.write('...\\\\nRan 7 tests in 0.01s\\\\n\\\\nOK\\\\n')\"]\n \n \n def git(cwd, *args, env=None):\n@@ -412,12 +413,15 @@ def test_bound_recorded_observation_supplies_session(self):\n         self.c.create(observation_path(command_id), canonical_json(good), \"obs\", DATA)\n         self.assertEqual(self.facts.dispatch_observation(command_id)[\"session_id\"], \"777001\")\n \n+    def test_fake_tests_command_uses_sys_executable(self):\n+        self.assertEqual(FAKE_TESTS[0], sys.executable)\n+\n     def test_tests_run_on_exact_head_in_isolated_worktree(self):\n         head = self.remote.head(TARGET)\n         evidence = self.facts.run_tests(head)\n         self.assertEqual((evidence[\"head_sha\"], evidence[\"tests_run\"], evidence[\"exit_code\"]), (head, 7, 0))\n         crash = LiveResultFacts(git=self.c, rest=self.rest, policy=self.policy, scratch_dir=self.scratch,\n-                                test_command=[\"python3\", \"-c\", \"raise SystemExit(3)\"]).run_tests(head)\n+                                test_command=[sys.executable, \"-c\", \"raise SystemExit(3)\"]).run_tests(head)\n         self.assertEqual((crash[\"exit_code\"], crash[\"errors\"]), (3, 1))\n         self.assertIsNone(self.facts.run_tests(\"0\" * 40))\n         self.assertEqual(git(self.remote.clone, \"worktree\", \"list\").count(\"\\n\"), 0)"
+    }
+  ],
+  "reviewer_receipt": {
+    "profile": "CLAUDE_CLOSED_LOOP_REVIEW_V2",
+    "task_id": "grd-001",
+    "loop_id": "claude-jules-github-native-001",
+    "correlation_id": "grd-001-8fbbef9",
+    "generation": 1,
+    "round": 1,
+    "phase": "FINAL",
+    "pr": 337,
+    "pr_head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+    "pr_head_tree": "01fb0ddf8c237d2978c169fce5abd1d59905f4f4",
+    "expected_target_head": "8fbbef941732219e4ad43ce0d32e22922275d040",
+    "observed_base_head": "8fbbef941732219e4ad43ce0d32e22922275d040",
+    "verdict": "PASS",
+    "decision": "ADOPT_RECORDED",
+    "criteria": [
+      {
+        "criterion": "Every subprocess command in the test file starts the interpreter that runs the tests (sys.executable); no literal \"python3\" interpreter remains in the file",
+        "met": true,
+        "evidence": "grep python3 count is 0; FAKE_TESTS and crash command use sys.executable"
+      },
+      {
+        "criterion": "The existing assertions keep their meaning: the fake run still reports 7 tests with exit 0, the crash run still reports exit 3 and errors 1; no test is removed, skipped or weakened",
+        "met": true,
+        "evidence": "Diff only swaps interpreter; assertions unchanged; nothing removed or skipped"
+      },
+      {
+        "criterion": "A new regression test asserts that the fake test commands use sys.executable, so a hard-coded interpreter cannot come back unnoticed",
+        "met": true,
+        "evidence": "test_fake_tests_command_uses_sys_executable asserts FAKE_TESTS[0]==sys.executable"
+      },
+      {
+        "criterion": "No production code and no other file changes",
+        "met": true,
+        "evidence": "Only the one allowed test file changed"
+      }
+    ],
+    "findings": [],
+    "escalate_root_cause": false,
+    "tests": {
+      "result": "PASS",
+      "commands_run": [
+        "python3 -m unittest automation.command_bus.tests.test_claude_jules_live_adapter",
+        "python3 -m unittest discover -s automation/command_bus/tests -t ."
+      ],
+      "evidence": "18 tests OK; full discover 1912 tests OK (skipped=1)"
+    },
+    "live_slot": 9,
+    "corrective_comment": null,
+    "next_issue": 338,
+    "wake_event": "pull_request.opened",
+    "reviewed_at": "2026-10-08T18:04:30Z"
+  },
+  "repository_pr_inventory": {
+    "complete_link_pagination": true,
+    "observed_count": 329,
+    "created_since_issue_338": [
+      {
+        "number": 343,
+        "title": "Symphony G6.1 STATIC production wiring (updateRefs CAS, pre-close snapshot, readers)",
+        "created_at": "2026-10-10T01:53:01Z",
+        "head_ref": "claude/symphony-g61-production-wiring-static",
+        "head_sha": "36ba85e4a9fc7f7ac280c33548b96a74cc451e37",
+        "body": "G6.1 Production Wiring **STATIC** on top of Draft PR #320 (`8c53c505`). Not for merge into #320 without review; no LIVE.\n\n**Counts:** model/provider LIVE 0 · Symphony worker launches 0 · real Git adoption 0 · GitHub writes by G6.1 code 0 · GraphQL mutations sent 0.\n\n## What it adds\n- **Atomic expected-head ref update**: GraphQL `updateRefs` with mandatory `beforeOid`, `force:false`, one ref, one request, no retry. Official schema (read-only introspection) says updates are atomic and `beforeOid` must match. The REST `PATCH git/refs` and `updateRef` have no old-value input and are not used. The reply proves nothing about the new ref value, so the outcome is always settled by a ref GET.\n- **Result bytes survive Symphony cleanup**: before the Issue closes, a snapshot outside the workspace stores create-only SHA-256 objects, checks the workspace didn't change during capture, writes a sealed manifest and reads everything back. Official cleanup is unchanged.\n- **Authenticated readers** (GET / GraphQL query only): hash-verified target inventory, `read_at(expected_head)` for manifests, and an Issue-based task validity / request-revision contract.\n- **Independent verification contract** (syntax / tests / secret_scan), bound to result/source/head/scope digests.\n- **Wiring** into the unchanged G6 bridge; `GitHubGitTransport` rejects non-static HTTP (`NOT_WIRED`).\n\n## Evidence\n- Read-only real GitHub qualification: 143 requests, 0 writes. 134-file branch matches local Git bytes. The 1,581-entry tree is hash-verified. A real commit rebuilt byte-identical (GitHub strips the trailing newline in its message echo).\n- Regression matrix K01–K13 (crash/restart, lost reply, CAS race, stale HEAD, scope, tampering, foreign SHA): never more than one `updateRefs` per adoption, main untouched.\n- Tests: G6.1 44 OK, G6 46 OK. The full suite on Windows shows exactly the same failure set as the untouched base commit. Linux CI is authoritative.\n- See `docs/SYMPHONY_G61_PRODUCTION_WIRING_STATIC_CHECKPOINT.md` and `docs/evidence/symphony-g61-static/`.\n\n## UNKNOWN (stop before LIVE)\nReal `updateRefs` error shape/rulesets (rulesets API 403 on this plan) · real `POST git/commits` byte determinism (fails closed on mismatch) · K04 fence-without-call stays UNKNOWN by the G6 rule · real external test/secret-scan attestations.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/343"
+      },
+      {
+        "number": 340,
+        "title": "Autonomous Claude × Jules loop: Production Starter v2, planner, merge-free continuation (STATIC + mock)",
+        "created_at": "2026-10-09T00:09:14Z",
+        "head_ref": "claude/production-starter-20261009",
+        "head_sha": "119e2efad561193c3465481c1fd8ac6d46187375",
+        "body": "## What this adds\r\n\r\nThe Claude × Jules autonomous loop, as STATIC + mock. **Nothing here runs live**: there is no send path, and the\r\nRoutine and its triggers are unchanged.\r\n\r\n**1. Production Starter** (`claude_jules_production_starter.py`). It decides whether a prepared task issue may\r\nstart, and starts it through the GitHub-native route only (issue + `jules` label):\r\n\r\n* the start sequence is intent → readback → label once → readback → start receipt;\r\n* it resists duplicates instead of assuming exactly-once: label history, write outcomes that are never re-sent,\r\n  lease takeover, and no stale controller;\r\n* operations are typed, so a word in the text never decides by itself;\r\n* paths have risk classes:\r\n  * `execution_config` needs a human;\r\n  * `safety_boundary` may be fixed, tested or strengthened, with the full suite;\r\n  * everything else is ordinary development;\r\n* dependencies and same-file Merge waits give `DEFER MERGE_WAIT`;\r\n* planner-created issues have their own identity check;\r\n* repeated invisible label writes back off and escalate instead of dropping the task.\r\n\r\n**2. Planner** (`claude_jules_task_planner.py`). Humans approve *objectives*. Signals (failing tests, CI failures,\r\nissues, TODOs) become validated proposals:\r\n\r\n* the same problem is never planned twice;\r\n* `GOAL_COMPLETE` only when every signal is resolved on `main`;\r\n* using up a list is not completion.\r\n\r\n**3. Loop** (`claude_jules_loop.py`). One tick per wake, with state from GitHub only:\r\n\r\n* the PR event is the heartbeat;\r\n* `pull_request.closed` (merged) resumes merge-dependent work;\r\n* an optional hourly recovery schedule picks up dead runs and dropped events.\r\n\r\nIt ends each tick with CONTINUE / MERGE_WAIT / NO_SAFE_TASK / GOAL_COMPLETE / DEFER / HARD_STOP_PROVIDER. It keeps\r\na DEFER ledger (reason, first seen, next check, recovery action, dependency, human-required, escalation) and\r\nwrites a checkpoint when the state changes or a heartbeat is due.\r\n\r\n**4. `claude_jules_starter_gh.py`.** A read-only `gh` snapshot and a read-only loop tick. Writes are prepared as\r\ndata, never sent.\r\n\r\n## Official trigger facts (checked 2026-10-09, code.claude.com/docs/en/routines)\r\n\r\n* GitHub triggers support **Pull request and Release only**: no issues or issue_comment trigger.\r\n* Events over the hourly caps are dropped.\r\n* The schedule minimum is 1 hour.\r\n* With usage credits on, routines can continue on metered overage. A human must confirm they are off.\r\n\r\n## Tests\r\n\r\n* WSL full suite: `Ran 2136 tests`, `OK (skipped=1)`.\r\n* Focused:\r\n\r\n  | Module | Tests |\r\n  |---|---|\r\n  | loop | 31 |\r\n  | starter | 61 |\r\n  | starter E2E | 5 |\r\n  | adapter | 3 |\r\n  | route separation | 13 |\r\n  | closed-loop review | 25 |\r\n  | closed-loop protocol | 22 |\r\n  | provider route | 23 |\r\n  | CLI transport | 26 |\r\n\r\n* Windows: 160 OK.\r\n* Planner-loop endurance (`e2e-loop-stats.json`):\r\n\r\n  | Rounds | Merged | Correctives | Loop crashes | Faults fired |\r\n  |---|---|---|---|---|\r\n  | 40 | 40/40 | 8 | 10 | 20 |\r\n  | 100 | 100/100 | 18 | 27 | 50 |\r\n  | 300 | 300/300 | 64 | 67 | 150 |\r\n\r\n  Every run includes human merges, work discovered mid-run, dependencies and duplicate webhooks. **No issue was\r\n  ever labeled twice.**\r\n\r\n## Prepared, not started: the two-task LIVE proof PRD-C2\r\n\r\n`live-plan-prd-c2.md`:\r\n\r\n* Task A is PRD-001 on #338.\r\n* Task B is PRD-002, a real Windows-only cp932 bug. It is independent of A's Merge.\r\n* Rehearsed in the mock with the real manifest.\r\n* A read-only loop tick on live GitHub gives `DEFER` (\"manifest tasks not created\"), not \"complete\".\r\n\r\n## Batch 18: final integration (STATIC)\r\n\r\n* **Routine → Starter wiring.** The v1.6 final apply candidate adds LAYER 4: one deterministic command, `claude_jules_starter_gh tick --live-authorization …`, run after each receipt and on merged or scheduled wakes. The reviewer never chooses a label write.\r\n* **Label history.**\r\n  * Read back for real with `gh api --paginate` (events and timeline: #335 `labeled jules` at 17:53:06Z).\r\n  * The repository is private, so there is no token-less path.\r\n  * `gh_get` now separates a 404 from any other failure.\r\n  * There is no start without a complete history (`DEFER LABEL_HISTORY_UNKNOWN`).\r\n  * Whether `gh` works inside a Routine run is UNKNOWN until a probe run.\r\n* **LIVE write port** (`claude_jules_starter_live.py`). Prepare-only by default. It sends only under a valid, unexpired, human-approved `CLAUDE_JULES_LIVE_AUTHORIZATION_V1` that confirms usage credits off, and only:\r\n  * loop records;\r\n  * `jules` on authorized campaign issues;\r\n  * campaign task issues.\r\n\r\n  It never retries an unknown outcome. The template in evidence is invalid by design.\r\n* **Recovery.**\r\n  * Running tasks now have in-flight records that escalate stalls.\r\n  * The mock proves that a crash with no further PR event needs the hourly recovery schedule. That schedule is not configured (human).\r\n* **PRD-C2 fault matrix.** 19 scenarios PASS: A → B with no human step and no Merge, exactly 2 Jules starts, no double label.\r\n* **Endurance re-run.** 300/300, 150/150 faults fired, max 1 label per issue.\r\n* **Tests.** WSL `Ran 2164 tests` OK (skipped=1); Windows 188 OK.\r\n* **Checklist.** `live-activation-checklist.md` lists the 9 human steps before the first start.\r\n\r\n## Not done (human / LIVE boundary)\r\n\r\n* No label, no Jules task, #338 unchanged, slot 10 unused.\r\n* Routine v1.5.1 unchanged; v1.6 (reviewer + loop tick) is a draft.\r\n* No trigger added.\r\n* `.github/` unchanged; `jules-chat-semiauto.yml` is still `177c614`.\r\n\r\nNot merged by automation; merging is a human decision.\r\n\r\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\r\n",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/340"
+      },
+      {
+        "number": 339,
+        "title": "docs: post-merge checkpoint (batch 15) for the Claude × Jules closed loop",
+        "created_at": "2026-10-08T20:42:45Z",
+        "head_ref": "claude/post-merge-checkpoint-20261009",
+        "head_sha": "20ecbb6e70cb150365e2e2dff70da7c4e0abcc65",
+        "body": "Evidence only (3 files under docs/evidence/claude-jules-stop-resistant-20261007/): #330 and #337 merge readbacks, Routine prompt v1.5.1 copy, #332/#334 closure, ledger 9/10 (slot 10 unused). No code change. Draft; merge is a human decision.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+        "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/339"
+      }
+    ],
+    "no_jules_task_bound_to_338_found": true
+  },
+  "actions_exact_head": [
+    {
+      "id": 37840745588,
+      "name": "Phase 0 development lane status",
+      "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-08T20:36:47Z",
+      "event": "pull_request_target",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37840745588"
+    },
+    {
+      "id": 37821035973,
+      "name": "Phase 0 development lane status",
+      "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-08T18:01:07Z",
+      "event": "pull_request_target",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37821035973"
+    },
+    {
+      "id": 37821036202,
+      "name": "Blue Work reconciliation offline validation",
+      "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-08T18:01:07Z",
+      "event": "pull_request",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/actions/runs/37821036202"
+    }
+  ],
+  "launch_window_actions": {
+    "total_count": 5,
+    "runs": [
+      {
+        "id": 37821251762,
+        "name": "Symphony-inspired controller static validation",
+        "head_sha": "6579ba41ad7c11683f25276674df1b6ffde61c35",
+        "created_at": "2026-10-08T18:02:49Z",
+        "event": "pull_request",
+        "conclusion": "success"
+      },
+      {
+        "id": 37821251468,
+        "name": "Blue Work reconciliation offline validation",
+        "head_sha": "6579ba41ad7c11683f25276674df1b6ffde61c35",
+        "created_at": "2026-10-08T18:02:49Z",
+        "event": "pull_request",
+        "conclusion": "success"
+      },
+      {
+        "id": 37821248563,
+        "name": "Phase 0 development lane status",
+        "head_sha": "6579ba41ad7c11683f25276674df1b6ffde61c35",
+        "created_at": "2026-10-08T18:02:47Z",
+        "event": "pull_request_target",
+        "conclusion": "skipped"
+      },
+      {
+        "id": 37821035973,
+        "name": "Phase 0 development lane status",
+        "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+        "created_at": "2026-10-08T18:01:07Z",
+        "event": "pull_request_target",
+        "conclusion": "skipped"
+      },
+      {
+        "id": 37821036202,
+        "name": "Blue Work reconciliation offline validation",
+        "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+        "created_at": "2026-10-08T18:01:07Z",
+        "event": "pull_request",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "check_runs": [
+    {
+      "id": 113529177539,
+      "name": "refresh-development",
+      "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "status": "completed",
+      "conclusion": "skipped",
+      "app": "github-actions"
+    },
+    {
+      "id": 113461812043,
+      "name": "offline-validation",
+      "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "status": "completed",
+      "conclusion": "success",
+      "app": "github-actions"
+    },
+    {
+      "id": 113461811844,
+      "name": "refresh-development",
+      "head_sha": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "status": "completed",
+      "conclusion": "skipped",
+      "app": "github-actions"
+    }
+  ],
+  "provider_session_state": "UNKNOWN / not fetched; no provider CLI/API model/session operation in this batch",
+  "claude_routine_private_run_state": "UNKNOWN / historical run ID appears in old docs only; not re-queried"
+}

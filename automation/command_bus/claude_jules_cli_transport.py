@@ -10,6 +10,9 @@ covered.
 
 What this module guarantees, independent of the CLI's own behaviour:
 
+* UTF-8 output is decoded explicitly on every platform; invalid bytes fail
+  without replacement, output promotion, or a decode-error retry;
+
 * only an explicit allowlist of read commands can run
   (``jules version``, ``jules remote list --session``,
   ``jules remote list --repo``); ``remote new``, ``login``/``logout``, the
@@ -111,10 +114,16 @@ def run_read(args: Sequence[str], *, runner: Callable[..., Any] = subprocess.run
         if attempt > 1:
             sleep(BACKOFF_SECONDS[attempt - 1])
         try:
-            proc = runner(list(argv), capture_output=True, text=True, timeout=timeout, env=child_env)
+            proc = runner(list(argv), capture_output=True, text=True, encoding="utf-8", errors="strict",
+                          timeout=timeout, env=child_env)
         except FileNotFoundError:
             return CliRead("UNAVAILABLE", argv, attempts=attempt, reason="jules CLI is not installed",
                            attempt_log=log + [{"attempt": attempt, "result": "not installed"}])
+        except UnicodeDecodeError:
+            # Corrupt/mismatched encoding is not a transient network failure.
+            # Do not substitute characters into session identities or retry.
+            return CliRead("FAILED", argv, attempts=attempt, reason="invalid UTF-8 CLI output",
+                           attempt_log=log + [{"attempt": attempt, "result": "invalid UTF-8"}])
         except subprocess.TimeoutExpired:
             log.append({"attempt": attempt, "result": "timeout"})
             last = CliRead("FAILED", argv, attempts=attempt, reason="timeout", attempt_log=list(log))

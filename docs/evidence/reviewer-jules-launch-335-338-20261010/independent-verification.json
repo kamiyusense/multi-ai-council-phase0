@@ -1,0 +1,26 @@
+{
+  "label_event": {
+    "id": 32812577102,
+    "at": "2026-10-08T17:53:06Z",
+    "actor": "kamiyusense"
+  },
+  "bot_start": {
+    "id": 6065845035,
+    "at": "2026-10-08T17:53:10Z",
+    "task": "5755515948434524038",
+    "app_id": 842251,
+    "slug": "google-labs-jules"
+  },
+  "bot_ready": {
+    "id": 6065977783,
+    "at": "2026-10-08T18:01:06Z",
+    "pr": 337
+  },
+  "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+  "tree": "01fb0ddf8c237d2978c169fce5abd1d59905f4f4",
+  "reviewer_receipt_comment": 6066036644,
+  "issue335_launch": "PASS",
+  "issue338_not_started": "PASS within observed GitHub issue-label route",
+  "universal_provider_session_absence": "UNKNOWN",
+  "label_only_is_start_evidence": false
+}

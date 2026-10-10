@@ -1,0 +1,91 @@
+{
+  "protocol": "REVIEWER_JULES_STATIC_MANIFEST_V1",
+  "files": [
+    {
+      "path": "automation/command_bus/claude_jules_cli_transport.py",
+      "bytes": 14558,
+      "sha256": "d77738a2db3384e149efa8c7d061fbb68c7c9fc79b833cfb336409ec0c322733"
+    },
+    {
+      "path": "automation/command_bus/tests/test_claude_jules_cli_transport.py",
+      "bytes": 15690,
+      "sha256": "d0dcb070cbf5a7037df17013dde57f4ad23f1845f757663df6ca47812bf23b4a"
+    },
+    {
+      "path": "docs/REVIEWER_JULES_LAUNCH_335_338_VERIFICATION.md",
+      "bytes": 6786,
+      "sha256": "883c91846cff301514449aa70d5cc736333d71f01217ba10025729fe633a3a31"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/checkpoint.json",
+      "bytes": 6306,
+      "sha256": "0dc44691c8089d143a8df4d18947ab3714adf89d904f6092420f971d016c782d"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/compileall.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/focused-tests.txt",
+      "bytes": 18170,
+      "sha256": "252e4a01f2676d4080aa66b5df63678e4b0e7583a72c1a58f5e05d82b78c4d8c"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/full-tests.txt",
+      "bytes": 416104,
+      "sha256": "8f7cd857f19707cc5bc5f41f36a575ecdc1a05778ed546a9f2d4092885f199a6"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/github-readback.json",
+      "bytes": 47904,
+      "sha256": "17ab6510d7f75177699b4ac39320259d3f6b3dbdeac96e2af03c4e54286975e3"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/historical-exact-head-tests.txt",
+      "bytes": 3551,
+      "sha256": "4edb6992dda60f2083b6faa7599ce679b2009c9fa2486c581f209a50cb7324fd"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/historical-job-113461812043.txt",
+      "bytes": 485680,
+      "sha256": "45b1d650dd79a971cd650c63aa1bce2c35965d748fd0124d5a69a8756bf9ac22"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/historical-verification.json",
+      "bytes": 3299,
+      "sha256": "fc8284480f568a5ab70e2d35216a11cf5aa70598e1578e2c273cebd092fb244f"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/independent-verification.json",
+      "bytes": 716,
+      "sha256": "c378a61771aae2dc3a63100f6e5ca9f6cec25a130f4db72fa57522b188dfc234"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/offline-replay.json",
+      "bytes": 751,
+      "sha256": "496e545abb070aba0c063e57a2778764113671248bb24b506c4e39f7e1b6698e"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/publication-inspection.json",
+      "bytes": 265,
+      "sha256": "4cb95ac1dbfef9bbeea8b98d96c9bdb6706b617db4aa5691dd5e8b3d07417395"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/reviewer-receipt-validated.json",
+      "bytes": 2145,
+      "sha256": "cdb5b051626ff81859177c9ad6e5d2cc9d8835c2d524747f647fe49be40d1100"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/validation.json",
+      "bytes": 592,
+      "sha256": "9fb2dc0112ec904f17b462b05a9c9136c96ea21f1c77b87d61da6cb63fac3cb5"
+    },
+    {
+      "path": "docs/evidence/reviewer-jules-launch-335-338-20261010/verify.py",
+      "bytes": 3337,
+      "sha256": "eb6bd889590dc8e8723703789b2c3d1b5dc2efc784ee562b7e0e2668deea9729"
+    }
+  ],
+  "self_excluded": true
+}

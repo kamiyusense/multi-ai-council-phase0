@@ -1,0 +1,99 @@
+{
+  "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+  "workflow_run_id": 37821036202,
+  "jobs": [
+    {
+      "id": 113461812043,
+      "conclusion": "success",
+      "steps_inspected": 14,
+      "test_summaries": [
+        "OK",
+        "Ran 1912 tests in 83.384s",
+        "OK (skipped=1)",
+        "OK",
+        "Ran 42 tests in 0.244s",
+        "OK"
+      ],
+      "sanitized_log_sha256": "788bfeabbd69f6959f85c0ecedb22051a41f3dd7bd86408ae4f572e3e173a926",
+      "published_log_sha256": "45b1d650dd79a971cd650c63aa1bce2c35965d748fd0124d5a69a8756bf9ac22",
+      "published_log_derivation": "strip trailing whitespace per line; original sanitized bytes preserved outside worktree and in final evidence bundle"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 11568963154,
+      "name": "work-prepare-only-37821036202",
+      "sha256": "fd161f8bde64664cba0e3676f20854d931361c0647f61a15f5e9cc2518b1039b",
+      "github_digest": "sha256:fd161f8bde64664cba0e3676f20854d931361c0647f61a15f5e9cc2518b1039b",
+      "files": [
+        {
+          "name": "command-bus-tests.txt",
+          "bytes": 391565,
+          "sha256": "f615ae0d25bbb8ee42c20951359ddaa088c096b58adc459cae016718fbacd032"
+        },
+        {
+          "name": "blue-static-candidate.json",
+          "bytes": 1598,
+          "sha256": "efa85944992cb849a3aec47fc2a432f57cdc3564a52b6a09a6dc79a83adc8b53"
+        },
+        {
+          "name": "formal-static-cycle.json",
+          "bytes": 14909,
+          "sha256": "44cc29cb917a1ca2b288436994a1ec9e0e0d06e8cd1760342d5b1a87b2484ef3"
+        },
+        {
+          "name": "github-event-preflight.json",
+          "bytes": 257,
+          "sha256": "43f3d87e71a2c376f07346be64fc6d217eecdf26d8f67847d9a9262dbbfad9d1"
+        },
+        {
+          "name": "bridge-review-candidate.json",
+          "bytes": 2144,
+          "sha256": "dc52ee6271a0f9ca898a4c58432bd9c803c94674f9468a7ab74377cc318a46f0"
+        },
+        {
+          "name": "four-lane-static-soak.json",
+          "bytes": 7627,
+          "sha256": "89634ae0aec8c5ac5a3af4f0caf0776c22b726e7f723165444ba84b5508f3c1b"
+        },
+        {
+          "name": "bridge-next-candidate.json",
+          "bytes": 12272,
+          "sha256": "1c178a7fa16d2880abb45989fcc1cc56cad47975b957390a15e0b91f55457508"
+        },
+        {
+          "name": "bwj4-6-boundary-static.json",
+          "bytes": 4674,
+          "sha256": "e3e611549da4d98a5e1e96ef67092b8d08c245b83b6547a295a6f2fa9fd042df"
+        },
+        {
+          "name": "bwj4-proof-contract-tests.txt",
+          "bytes": 8263,
+          "sha256": "80c0568cd4c5a56d0e8bbb89977c457b29456cf65f700a7ce29bd41d430036e2"
+        }
+      ],
+      "digest_matches": true
+    }
+  ],
+  "source_inspection": {
+    "changed_files": 1,
+    "allowed_file": "automation/command_bus/tests/test_claude_jules_live_adapter.py",
+    "python3_literals_before": 2,
+    "python3_literals_after": 0,
+    "existing_assertions_unchanged": true,
+    "assertions_before": 76,
+    "assertions_after": 77,
+    "new_test": [
+      "test_fake_tests_command_uses_sys_executable"
+    ]
+  },
+  "independent_exact_head_tests": {
+    "result": "PASS",
+    "summaries": [
+      "Ran 18 tests in 17.251s",
+      "OK"
+    ],
+    "provider_execution": 0
+  },
+  "recorded_at": "2026-10-10T03:21:33.368614+00:00"
+}

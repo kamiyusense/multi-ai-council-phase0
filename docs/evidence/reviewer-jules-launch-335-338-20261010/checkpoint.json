@@ -1,0 +1,180 @@
+{
+  "protocol": "REVIEWER_JULES_335_338_CHECKPOINT_V1",
+  "recorded_at": "2026-10-10T03:26:21.657679+00:00",
+  "phase": "prepared commit; final HEAD/CI in final exact-head PR checkpoint",
+  "starting_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "starting_pr320_head": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "branch": "codex/reviewer-jules-launch-evidence-335-338",
+  "issue335_launch": "PASS",
+  "issue338_not_started": "PASS_WITHIN_OBSERVED_GITHUB_LABEL_ROUTE",
+  "provider_internal_session_state": "UNKNOWN",
+  "actual_launch_evidence": {
+    "label_event": {
+      "id": 32812577102,
+      "at": "2026-10-08T17:53:06Z",
+      "actor": "kamiyusense"
+    },
+    "bot_start": {
+      "id": 6065845035,
+      "at": "2026-10-08T17:53:10Z",
+      "task": "5755515948434524038",
+      "app_id": 842251,
+      "slug": "google-labs-jules"
+    },
+    "bot_ready": {
+      "id": 6065977783,
+      "at": "2026-10-08T18:01:06Z",
+      "pr": 337
+    },
+    "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+    "tree": "01fb0ddf8c237d2978c169fce5abd1d59905f4f4",
+    "reviewer_receipt_comment": 6066036644,
+    "issue335_launch": "PASS",
+    "issue338_not_started": "PASS within observed GitHub issue-label route",
+    "universal_provider_session_absence": "UNKNOWN",
+    "label_only_is_start_evidence": false
+  },
+  "historical_ci": {
+    "head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+    "workflow_run_id": 37821036202,
+    "jobs": [
+      {
+        "id": 113461812043,
+        "conclusion": "success",
+        "steps_inspected": 14,
+        "test_summaries": [
+          "OK",
+          "Ran 1912 tests in 83.384s",
+          "OK (skipped=1)",
+          "OK",
+          "Ran 42 tests in 0.244s",
+          "OK"
+        ],
+        "sanitized_log_sha256": "788bfeabbd69f6959f85c0ecedb22051a41f3dd7bd86408ae4f572e3e173a926",
+        "published_log_sha256": "45b1d650dd79a971cd650c63aa1bce2c35965d748fd0124d5a69a8756bf9ac22",
+        "published_log_derivation": "strip trailing whitespace per line; original sanitized bytes preserved outside worktree and in final evidence bundle"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": 11568963154,
+        "name": "work-prepare-only-37821036202",
+        "sha256": "fd161f8bde64664cba0e3676f20854d931361c0647f61a15f5e9cc2518b1039b",
+        "github_digest": "sha256:fd161f8bde64664cba0e3676f20854d931361c0647f61a15f5e9cc2518b1039b",
+        "files": [
+          {
+            "name": "command-bus-tests.txt",
+            "bytes": 391565,
+            "sha256": "f615ae0d25bbb8ee42c20951359ddaa088c096b58adc459cae016718fbacd032"
+          },
+          {
+            "name": "blue-static-candidate.json",
+            "bytes": 1598,
+            "sha256": "efa85944992cb849a3aec47fc2a432f57cdc3564a52b6a09a6dc79a83adc8b53"
+          },
+          {
+            "name": "formal-static-cycle.json",
+            "bytes": 14909,
+            "sha256": "44cc29cb917a1ca2b288436994a1ec9e0e0d06e8cd1760342d5b1a87b2484ef3"
+          },
+          {
+            "name": "github-event-preflight.json",
+            "bytes": 257,
+            "sha256": "43f3d87e71a2c376f07346be64fc6d217eecdf26d8f67847d9a9262dbbfad9d1"
+          },
+          {
+            "name": "bridge-review-candidate.json",
+            "bytes": 2144,
+            "sha256": "dc52ee6271a0f9ca898a4c58432bd9c803c94674f9468a7ab74377cc318a46f0"
+          },
+          {
+            "name": "four-lane-static-soak.json",
+            "bytes": 7627,
+            "sha256": "89634ae0aec8c5ac5a3af4f0caf0776c22b726e7f723165444ba84b5508f3c1b"
+          },
+          {
+            "name": "bridge-next-candidate.json",
+            "bytes": 12272,
+            "sha256": "1c178a7fa16d2880abb45989fcc1cc56cad47975b957390a15e0b91f55457508"
+          },
+          {
+            "name": "bwj4-6-boundary-static.json",
+            "bytes": 4674,
+            "sha256": "e3e611549da4d98a5e1e96ef67092b8d08c245b83b6547a295a6f2fa9fd042df"
+          },
+          {
+            "name": "bwj4-proof-contract-tests.txt",
+            "bytes": 8263,
+            "sha256": "80c0568cd4c5a56d0e8bbb89977c457b29456cf65f700a7ce29bd41d430036e2"
+          }
+        ],
+        "digest_matches": true
+      }
+    ],
+    "source_inspection": {
+      "changed_files": 1,
+      "allowed_file": "automation/command_bus/tests/test_claude_jules_live_adapter.py",
+      "python3_literals_before": 2,
+      "python3_literals_after": 0,
+      "existing_assertions_unchanged": true,
+      "assertions_before": 76,
+      "assertions_after": 77,
+      "new_test": [
+        "test_fake_tests_command_uses_sys_executable"
+      ]
+    },
+    "independent_exact_head_tests": {
+      "result": "PASS",
+      "summaries": [
+        "Ran 18 tests in 17.251s",
+        "OK"
+      ],
+      "provider_execution": 0
+    },
+    "recorded_at": "2026-10-10T03:21:33.368614+00:00"
+  },
+  "encoding_fix": "explicit UTF-8 strict decoding in existing read-only Jules CLI; UnicodeDecodeError -> FAILED once, no replacement or decode-error retry",
+  "Windows_native_test": "NOT_RUN; Windows cp932 mock fixture and portable real fake-child on Linux executed",
+  "tests": {
+    "recorded_at": "2026-10-10T03:21:21.166112+00:00",
+    "checks": [
+      {
+        "name": "focused-tests",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": [
+          "Ran 95 tests in 17.454s",
+          "OK"
+        ]
+      },
+      {
+        "name": "full-tests",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": [
+          "Ran 2038 tests in 73.020s",
+          "OK (skipped=1)"
+        ]
+      },
+      {
+        "name": "compileall",
+        "exit_code": 0,
+        "result": "PASS",
+        "summaries": []
+      }
+    ],
+    "model_provider_live_count": 0,
+    "new_jules_start_count": 0
+  },
+  "offline_evidence_replay": "PASS with six negative cases",
+  "new_jules_start_count": 0,
+  "claude_jules_live_retry_count": 0,
+  "provider_api_key_calls": 0,
+  "label_mutation_count": 0,
+  "issue_comment_write_count": 0,
+  "main_write_count": 0,
+  "pr320_write_count": 0,
+  "execution_workflow_changes": 0,
+  "settings_permissions_secrets_changes": 0,
+  "remaining_blocker": "None for GitHub-observable launch verification; private provider state/global session absence UNKNOWN, Windows-native test not run, merge remains human-only"
+}

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 import unittest
 from types import SimpleNamespace
 
@@ -90,6 +91,56 @@ class ReadRetryTests(unittest.TestCase):
         runner = Recorder(FileNotFoundError("jules"))
         result = run_read(("version",), runner=runner, sleep=lambda s: None)
         self.assertEqual((result.status, result.attempts), ("UNAVAILABLE", 1))
+
+
+class OutputEncodingTests(unittest.TestCase):
+    OUTPUT = "コピー撲滅委員会 — Jules ✅\n"
+
+    def test_utf8_output_survives_windows_cp932_and_linux_utf8_defaults(self):
+        raw = self.OUTPUT.encode("utf-8")
+        # Reproduces the original Windows failure before testing the fix.
+        with self.assertRaises(UnicodeDecodeError):
+            raw.decode("cp932")
+        for platform_default in ("cp932", "utf-8"):
+            with self.subTest(platform_default=platform_default):
+                calls = []
+                def runner(argv, **kwargs):
+                    calls.append(kwargs)
+                    encoding = kwargs.get("encoding", platform_default)
+                    return done(out=raw.decode(encoding, errors=kwargs.get("errors", "strict")),
+                                err="日本語の診断 🔎".encode("utf-8").decode(encoding))
+                result = run_read(("version",), runner=runner, max_attempts=1)
+                self.assertEqual((result.status, result.stdout, result.stderr),
+                                 ("OK", self.OUTPUT, "日本語の診断 🔎"))
+                self.assertEqual((calls[0]["encoding"], calls[0]["errors"]), ("utf-8", "strict"))
+
+    def test_real_fake_child_preserves_unicode_stdout_and_stderr(self):
+        calls = []
+        def runner(argv, **kwargs):
+            calls.append(argv)
+            # The only child is this test's interpreter; no Jules binary/model.
+            code = "import sys; sys.stdout.buffer.write(%r); sys.stderr.buffer.write(%r)" % (
+                self.OUTPUT.encode("utf-8"), "日本語の診断 🔎".encode("utf-8"))
+            return subprocess.run([sys.executable, "-c", code], **kwargs)
+        result = run_read(("version",), runner=runner, max_attempts=1)
+        self.assertEqual((result.status, result.stdout, result.stderr),
+                         ("OK", self.OUTPUT, "日本語の診断 🔎"))
+        self.assertEqual(calls, [["jules", "version"]])
+
+    def test_invalid_utf8_is_typed_failure_without_retry_or_replacement(self):
+        sleeps = []
+        def runner(argv, **kwargs):
+            b"invalid \xff output".decode(kwargs["encoding"], errors=kwargs["errors"])
+        result = run_read(("remote", "list", "--session"), runner=runner, sleep=sleeps.append)
+        self.assertEqual((result.status, result.attempts, result.stdout, result.stderr), ("FAILED", 1, "", ""))
+        self.assertEqual(result.reason, "invalid UTF-8 CLI output")
+        self.assertEqual(sleeps, [])
+
+    def test_non_ascii_error_does_not_become_success(self):
+        runner = Recorder(done(1, err="認証の読み取り失敗 ❌"))
+        result = run_read(("version",), runner=runner, max_attempts=1)
+        self.assertEqual((result.status, result.returncode, result.stderr),
+                         ("FAILED", 1, "認証の読み取り失敗 ❌"))
 
 
 class FindSessionTests(unittest.TestCase):

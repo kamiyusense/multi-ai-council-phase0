@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "scanned_paths": 16,
+  "credential_value_matches": 0,
+  "known_secret_pattern_matches": 0,
+  "execution_workflow_changes": 0,
+  "label_mutation_count": 0,
+  "jules_new_start_count": 0,
+  "github_snapshot_replay": "PASS / 6 negative cases"
+}

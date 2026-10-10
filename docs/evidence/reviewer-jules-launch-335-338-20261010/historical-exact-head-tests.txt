@@ -1,0 +1,23 @@
+test_cap_is_fixed_slots_are_sequential_and_never_released (automation.command_bus.tests.test_claude_jules_live_adapter.BudgetLedgerTests.test_cap_is_fixed_slots_are_sequential_and_never_released) ... ok
+test_slot_race_loser_takes_next_slot_and_tampering_is_unknown (automation.command_bus.tests.test_claude_jules_live_adapter.BudgetLedgerTests.test_slot_race_loser_takes_next_slot_and_tampering_is_unknown) ... ok
+test_create_is_single_file_create_only_and_read_back (automation.command_bus.tests.test_claude_jules_live_adapter.GitLiveClientTests.test_create_is_single_file_create_only_and_read_back) ... ok
+test_refs_compare_and_branch_creation (automation.command_bus.tests.test_claude_jules_live_adapter.GitLiveClientTests.test_refs_compare_and_branch_creation) ... ok
+test_rejected_push_never_forces (automation.command_bus.tests.test_claude_jules_live_adapter.GitLiveClientTests.test_rejected_push_never_forces) ... ok
+test_remote_moved_push_is_rebuilt_on_new_tip_without_losing_their_commit (automation.command_bus.tests.test_claude_jules_live_adapter.GitLiveClientTests.test_remote_moved_push_is_rebuilt_on_new_tip_without_losing_their_commit) ... ok
+test_unsafe_names_are_refused (automation.command_bus.tests.test_claude_jules_live_adapter.GitLiveClientTests.test_unsafe_names_are_refused) ... ok
+test_bound_recorded_observation_supplies_session (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_bound_recorded_observation_supplies_session) ... ok
+test_budget_exhaustion_blocks_before_any_carrier_write (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_budget_exhaustion_blocks_before_any_carrier_write) ... ok
+test_dispatch_poll_review_inspect_adopt_on_real_git (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_dispatch_poll_review_inspect_adopt_on_real_git) ... ok
+test_fake_tests_command_uses_sys_executable (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_fake_tests_command_uses_sys_executable) ... ok
+test_full_pass_and_adoption_with_real_fast_forward (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_full_pass_and_adoption_with_real_fast_forward) ... ok
+test_no_result_pr_times_out_fail_closed (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_no_result_pr_times_out_fail_closed) ... ok
+test_tests_run_on_exact_head_in_isolated_worktree (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_tests_run_on_exact_head_in_isolated_worktree) ... ok
+test_unreachable_job_log_uses_only_a_bound_recorded_observation (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_unreachable_job_log_uses_only_a_bound_recorded_observation) ... ok
+test_wake_resume_step_budget_is_bounded (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_wake_resume_step_budget_is_bounded) ... ok
+test_wake_resume_without_result_stops_at_wait_not_human (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_wake_resume_without_result_stops_at_wait_not_human) ... ok
+test_round_trip_on_real_git (automation.command_bus.tests.test_claude_jules_live_adapter.LiveHandoverTests.test_round_trip_on_real_git) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 17.251s
+
+OK
