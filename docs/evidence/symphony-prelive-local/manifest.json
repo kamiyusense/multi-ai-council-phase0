@@ -12,8 +12,8 @@
     },
     {
       "path": "docs/SYMPHONY_PRELIVE_LOCAL_GATE_REPORT.md",
-      "bytes": 9357,
-      "sha256": "babdccdcdef08d9c2dafa2a216d77d7066142fc8b47ea3450871a771417a5b6a"
+      "bytes": 9636,
+      "sha256": "cc11eee77a6568710667a9f7609a80f2b0aa542b47d44cd4a4b90d9d8858db58"
     },
     {
       "path": "docs/evidence/symphony-prelive-local/checkpoint.json",
@@ -74,6 +74,11 @@
       "path": "docs/evidence/symphony-prelive-local/work-order.md",
       "bytes": 9055,
       "sha256": "375949940b99e71a34b87c62c1801b60d7a0b3c8933a54dbf5f0dbacd09d439f"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/process-readback-correction.json",
+      "bytes": 434,
+      "sha256": "d0791efbb5d7db15141bd13a90c43258a298c4ff29f3534d14eec96735de82a0"
     }
   ]
 }

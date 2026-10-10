@@ -1,0 +1,10 @@
+{
+  "result": "PASS_DIRECT_EXECUTABLE_NAME_READBACK",
+  "supersedes_field": "local.json.existing_processes.official_symphony_beam_count",
+  "original_reported_count": 1,
+  "corrected_official_symphony_beam_count": 0,
+  "codex_development_app_server_count": 1,
+  "cause": "Original substring filter matched the diagnostic shell command text; exact comm=beam.smp excludes it",
+  "process_launch_or_stop": 0,
+  "raw_argv_saved": false
+}
