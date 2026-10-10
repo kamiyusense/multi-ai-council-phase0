@@ -1,0 +1,15 @@
+{
+  "note": "Issue events pages as GET repos/{owner}/{repo}/issues/{n}/events?per_page=2&page=N returns them. #338 ids and event types are the ones independently read back on 2026-10-10 (batch 22); created_at was not recorded there and is left out. #335 keeps only the recorded labeled/jules event id and time; its other ids are SYNTHETIC (9000000000x) and only give the page shape (2,2,2).",
+  "repo_numeric_id": 1048576,
+  "issues": {
+    "338": [
+      [{"id": 32814810366, "event": "referenced"}, {"id": 32838071056, "event": "referenced"}],
+      [{"id": 32839285361, "event": "referenced"}, {"id": 32863022962, "event": "referenced"}]
+    ],
+    "335": [
+      [{"id": 90000000001, "event": "referenced"}, {"id": 32812577102, "event": "labeled", "label": {"name": "jules"}, "actor": {"login": "kamiyusense"}, "created_at": "2026-10-08T17:53:06Z"}],
+      [{"id": 90000000003, "event": "referenced"}, {"id": 90000000004, "event": "referenced"}],
+      [{"id": 90000000005, "event": "referenced"}, {"id": 90000000006, "event": "closed"}]
+    ]
+  }
+}

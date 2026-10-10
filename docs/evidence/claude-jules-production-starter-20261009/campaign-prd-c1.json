@@ -1,0 +1,52 @@
+{
+  "profile": "CLAUDE_JULES_CAMPAIGN_V1",
+  "campaign_id": "prd-c1",
+  "loop_id": "claude-jules-production-001",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "policy": {
+    "profile": "CLAUDE_JULES_STARTER_POLICY_V1",
+    "policy_version": 1,
+    "repository": "kamiyusense/multi-ai-council-phase0",
+    "base_branch": "main",
+    "route": "jules-github-app-issue-label",
+    "billing": "subscription",
+    "allow_api_fallback": false,
+    "allow_metered_fallback": false,
+    "trusted_writers": [
+      "kamiyusense"
+    ],
+    "max_concurrent_tasks": 1,
+    "max_campaign_rounds": null,
+    "max_corrective_rounds": 2,
+    "intent_lease_minutes": 15,
+    "max_label_attempts": 2,
+    "jules_ack_timeout_minutes": 30,
+    "read_retry": {
+      "attempts": 3,
+      "backoff_seconds": [
+        0,
+        5,
+        30
+      ]
+    },
+    "allowed_task_kinds": [
+      "proof",
+      "code_change"
+    ],
+    "on_quota_unknown": "proceed",
+    "base_policy": "descendant_untouched",
+    "forbidden_path_prefixes": [
+      ".github/",
+      "automation/command_bus/claude_jules_",
+      "automation/command_bus/claude_closed_loop_"
+    ]
+  },
+  "tasks": [
+    {
+      "seq": 1,
+      "title": "[Claude x Jules production PRD-001] carrier blob SHA test must ignore CRLF checkouts",
+      "body": "Task for Jules: Claude x Jules production campaign PRD-C1, task PRD-001 (a small real bug fix with a regression test).\n\n**Bug.** `automation/command_bus/tests/test_claude_jules_dispatch_contract.py::PinnedCarrierTests::test_vendored_carrier_validators_match_pinned_blob_shas` computes a git blob SHA from the raw bytes of each vendored carrier file. On a Windows checkout with `core.autocrlf=true` the working tree has CRLF line endings, git itself stores LF, so the test fails on Windows only. Observed on main `702497c` with Windows Python: `jules_api_request.py` gives `6db9d48...` instead of the pinned `1aebad3...`. On Linux the test passes.\n\n**Fix.** In that test file only, compute the blob SHA from the file content with CRLF normalized to LF (what git stores), using a small helper function. Keep comparing against the same pinned SHAs. Do not change `jules_carrier_current.PINNED_BLOB_SHA`, the vendored carrier files, or any production code.\n\n**Regression test.** Add a test in the same file that shows: the helper gives the same SHA for `b\"a\r\nb\r\n\"` and `b\"a\nb\n\"`; that SHA equals git's blob SHA of the LF content (`hashlib.sha1(b\"blob %d\u0000\" % len(data) + data)` on the LF bytes); and different content gives a different SHA.\n\nChange only `automation/command_bus/tests/test_claude_jules_dispatch_contract.py`. Do not weaken, skip or delete any existing test. Run the test commands below before opening the pull request, and put `Fixes #<this issue>` in the pull request body.\n\n<!-- claude-closed-loop-task v1\n{\"acceptance_criteria\":[\"test_vendored_carrier_validators_match_pinned_blob_shas computes each blob SHA from the file content with CRLF normalized to LF, so a Windows checkout with core.autocrlf=true gives the same SHA as git\",\"The pinned SHAs (jules_carrier_current.PINNED_BLOB_SHA) and the vendored carrier files are unchanged, and the comparison still fails when a vendored file's content really changes\",\"A new regression test shows that CRLF and LF versions of the same content give the same blob SHA, equal to git's blob SHA of the LF content, and that different content gives a different SHA\",\"No production code and no other file changes; no existing test is removed, skipped or weakened\"],\"allowed_paths\":[{\"op\":\"MODIFY\",\"path\":\"automation/command_bus/tests/test_claude_jules_dispatch_contract.py\"}],\"campaign\":{\"campaign_id\":\"prd-c1\",\"predecessor\":{\"correlation_id\":\"grd-001-8fbbef9\",\"issue\":335,\"task_id\":\"grd-001\"},\"profile\":\"CLAUDE_JULES_STARTER_META_V1\",\"seq\":1},\"correlation_id\":\"prd-001-702497c\",\"expected_target_branch\":\"main\",\"expected_target_head\":\"702497c6b464a3b1ab09441b21fc6f96bd3bb2d0\",\"generation\":1,\"kind\":\"code_change\",\"live_slot\":0,\"loop_id\":\"claude-jules-production-001\",\"max_corrective_rounds\":2,\"profile\":\"CLAUDE_CLOSED_LOOP_TASK_V1\",\"round\":1,\"route\":\"jules-github-app-issue-label\",\"task_id\":\"prd-001\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_claude_jules_dispatch_contract\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n",
+      "task_sha256": "f36a5d2b832583ae054c5983b5ad02405a52ec9f9f975b02021e7c6f728239d8"
+    }
+  ]
+}

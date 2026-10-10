@@ -1,0 +1,53 @@
+{
+  "read_at": "2026-10-09T01:06:38Z",
+  "base_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "active_tasks": [],
+  "issue_338_as_is": {
+    "title": "[Claude closed loop GRD-002] prepared next task (not started)",
+    "labels": [],
+    "label_events": [],
+    "step": "IGNORE",
+    "reason": "not a closed-loop task issue"
+  },
+  "predecessor_335_pr_head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+  "overlay_prd_c2_task_a": {
+    "step1": "WRITE_INTENT",
+    "checks": [
+      "policy",
+      "manifest",
+      "route",
+      "task_identity",
+      "task_policy",
+      "not_started",
+      "dependencies",
+      "predecessor_pass",
+      "base",
+      "capacity"
+    ],
+    "intent": {
+      "attempt": 1,
+      "campaign_id": "prd-c2",
+      "controller": "prd-c2-loop-1",
+      "correlation_id": "prd-001-702497c",
+      "created_at": "2026-10-09T01:06:38Z",
+      "generation": 1,
+      "issue": 338,
+      "nonce": "ad78b5383bb94218bae4fbc8aa97c65f",
+      "policy_version": 1,
+      "predecessor_correlation_id": "grd-001-8fbbef9",
+      "predecessor_pr_head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+      "profile": "CLAUDE_JULES_STARTER_INTENT_V1",
+      "route": "jules-github-app-issue-label",
+      "seq": 1,
+      "supersedes": null,
+      "task_id": "prd-001",
+      "task_sha256": "14d494c50442f9c33e15fc0593e23a025b34a70ad76d4d5778d29844848600e2"
+    },
+    "step2_same_controller": "WRITE_LABEL",
+    "step2_other_run": [
+      "DEFER",
+      "LEASE_HELD"
+    ],
+    "sent": false
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "profile": "CLAUDE_JULES_CAMPAIGN_V1",
+  "campaign_id": "prd-c2",
+  "loop_id": "claude-jules-production-002",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "policy": {
+    "profile": "CLAUDE_JULES_STARTER_POLICY_V1",
+    "policy_version": 1,
+    "repository": "kamiyusense/multi-ai-council-phase0",
+    "base_branch": "main",
+    "route": "jules-github-app-issue-label",
+    "billing": "subscription",
+    "allow_api_fallback": false,
+    "allow_metered_fallback": false,
+    "trusted_writers": [
+      "kamiyusense"
+    ],
+    "max_concurrent_tasks": 1,
+    "max_campaign_rounds": null,
+    "max_corrective_rounds": 2,
+    "intent_lease_minutes": 15,
+    "max_label_attempts": 5,
+    "jules_ack_timeout_minutes": 30,
+    "read_retry": {
+      "attempts": 3,
+      "backoff_seconds": [
+        0,
+        5,
+        30
+      ]
+    },
+    "allowed_task_kinds": [
+      "proof",
+      "code_change"
+    ],
+    "on_quota_unknown": "proceed",
+    "base_policy": "descendant_untouched",
+    "path_classes": {
+      "execution_config": [
+        ".github/",
+        ".claude/",
+        ".mcp.json"
+      ],
+      "safety_boundary": [
+        "automation/command_bus/claude_jules_provider_route.py",
+        "automation/command_bus/claude_jules_production_starter.py",
+        "automation/command_bus/claude_jules_task_planner.py",
+        "automation/command_bus/claude_jules_loop.py",
+        "automation/command_bus/claude_closed_loop_review.py",
+        "automation/command_bus/claude_closed_loop_protocol.py",
+        "automation/command_bus/jules_carrier_current/",
+        "automation/command_bus/tests/test_jules_route_separation.py"
+      ]
+    },
+    "defer_escalate_minutes": 240,
+    "heartbeat_minutes": 360
+  },
+  "tasks": [
+    {
+      "seq": 1,
+      "title": "[Claude x Jules production PRD-001] carrier blob SHA test must ignore CRLF checkouts",
+      "body": "Task for Jules: Claude x Jules production campaign PRD-C1, task PRD-001 (a small real bug fix with a regression test).\n\n**Bug.** `automation/command_bus/tests/test_claude_jules_dispatch_contract.py::PinnedCarrierTests::test_vendored_carrier_validators_match_pinned_blob_shas` computes a git blob SHA from the raw bytes of each vendored carrier file. On a Windows checkout with `core.autocrlf=true` the working tree has CRLF line endings, git itself stores LF, so the test fails on Windows only. Observed on main `702497c` with Windows Python: `jules_api_request.py` gives `6db9d48...` instead of the pinned `1aebad3...`. On Linux the test passes.\n\n**Fix.** In that test file only, compute the blob SHA from the file content with CRLF normalized to LF (what git stores), using a small helper function. Keep comparing against the same pinned SHAs. Do not change `jules_carrier_current.PINNED_BLOB_SHA`, the vendored carrier files, or any production code.\n\n**Regression test.** Add a test in the same file that shows: the helper gives the same SHA for `b\"a\r\nb\r\n\"` and `b\"a\nb\n\"`; that SHA equals git's blob SHA of the LF content (`hashlib.sha1(b\"blob %d\u0000\" % len(data) + data)` on the LF bytes); and different content gives a different SHA.\n\nChange only `automation/command_bus/tests/test_claude_jules_dispatch_contract.py`. Do not weaken, skip or delete any existing test. Run the test commands below before opening the pull request, and put `Fixes #<this issue>` in the pull request body.\n\n<!-- claude-closed-loop-task v1\n{\"acceptance_criteria\":[\"test_vendored_carrier_validators_match_pinned_blob_shas computes each blob SHA from the file content with CRLF normalized to LF, so a Windows checkout with core.autocrlf=true gives the same SHA as git\",\"The pinned SHAs (jules_carrier_current.PINNED_BLOB_SHA) and the vendored carrier files are unchanged, and the comparison still fails when a vendored file's content really changes\",\"A new regression test shows that CRLF and LF versions of the same content give the same blob SHA, equal to git's blob SHA of the LF content, and that different content gives a different SHA\",\"No production code and no other file changes; no existing test is removed, skipped or weakened\"],\"allowed_paths\":[{\"op\":\"MODIFY\",\"path\":\"automation/command_bus/tests/test_claude_jules_dispatch_contract.py\"}],\"campaign\":{\"campaign_id\":\"prd-c2\",\"predecessor\":{\"correlation_id\":\"grd-001-8fbbef9\",\"issue\":335,\"task_id\":\"grd-001\"},\"profile\":\"CLAUDE_JULES_STARTER_META_V1\",\"seq\":1},\"correlation_id\":\"prd-001-702497c\",\"expected_target_branch\":\"main\",\"expected_target_head\":\"702497c6b464a3b1ab09441b21fc6f96bd3bb2d0\",\"generation\":1,\"kind\":\"code_change\",\"live_slot\":0,\"loop_id\":\"claude-jules-production-002\",\"max_corrective_rounds\":2,\"next_task\":{\"body_ref\":{\"campaign_id\":\"prd-c2\",\"path\":\"docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c2.json\",\"ref\":\"claude/production-starter-20261009\",\"seq\":2,\"task_sha256\":\"0d62075b586a68346136c34cdca562e7721c3228b9bfc4fdf173c7e1062c163f\"},\"title\":\"[Claude x Jules production PRD-002] sf8 authority test must read files as UTF-8\"},\"operations\":[\"bug_fix\",\"test_add\"],\"profile\":\"CLAUDE_CLOSED_LOOP_TASK_V1\",\"round\":1,\"route\":\"jules-github-app-issue-label\",\"task_id\":\"prd-001\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_claude_jules_dispatch_contract\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n",
+      "task_sha256": "14d494c50442f9c33e15fc0593e23a025b34a70ad76d4d5778d29844848600e2"
+    },
+    {
+      "seq": 2,
+      "title": "[Claude x Jules production PRD-002] sf8 authority test must read files as UTF-8",
+      "body": "Task for Jules: Claude x Jules production campaign PRD-C2, task PRD-002 (a small real bug fix with a regression test).\n\n**Bug.** `automation/command_bus/tests/test_sf8_authority_issuer_candidate.py` reads files with `Path.read_text()` without an encoding (module level: the candidate workflow and the control tower registry; and in `test_no_other_workflow_uses_authority_profile`). On Windows the default encoding is cp932, and a workflow file contains UTF-8 text, so the test module errors on Windows only. Observed on main `702497c` with Windows Python: `UnicodeDecodeError: 'cp932' codec can't decode byte 0x92`. With `PYTHONUTF8=1` the same tests pass. On Linux they pass.\n\n**Fix.** In that test file only, pass `encoding=\"utf-8\"` to every `read_text()` call. Keep every assertion and regex exactly as it is.\n\n**Regression test.** Add a test in the same file that reads every workflow file the module scans with `encoding=\"utf-8\"` and asserts each is decodable and non-empty, and a test that asserts the module's file reads name an explicit encoding (for example by checking the source of the module with `ast`, so a bare `read_text()` cannot come back unnoticed).\n\nChange only `automation/command_bus/tests/test_sf8_authority_issuer_candidate.py`. Do not weaken, skip or delete any existing test. Run the test commands below before opening the pull request, and put `Fixes #<this issue>` in the pull request body.\n\n<!-- claude-closed-loop-task v1\n{\"acceptance_criteria\":[\"Every read_text() call in the test module passes encoding=\\\"utf-8\\\", so the module imports and runs on Windows (cp932 default) as on Linux\",\"Every existing assertion and regex keeps its meaning; no test is removed, skipped or weakened\",\"A new regression test fails if a bare read_text() (no explicit encoding) returns to the module, and the scanned workflow files are read as UTF-8 and are non-empty\",\"No production code and no other file changes\"],\"allowed_paths\":[{\"op\":\"MODIFY\",\"path\":\"automation/command_bus/tests/test_sf8_authority_issuer_candidate.py\"}],\"campaign\":{\"campaign_id\":\"prd-c2\",\"predecessor\":{\"correlation_id\":\"prd-001-702497c\",\"issue\":null,\"task_id\":\"prd-001\"},\"profile\":\"CLAUDE_JULES_STARTER_META_V1\",\"seq\":2},\"correlation_id\":\"prd-002-702497c\",\"expected_target_branch\":\"main\",\"expected_target_head\":\"702497c6b464a3b1ab09441b21fc6f96bd3bb2d0\",\"generation\":1,\"kind\":\"code_change\",\"live_slot\":0,\"loop_id\":\"claude-jules-production-002\",\"max_corrective_rounds\":2,\"operations\":[\"bug_fix\",\"test_add\"],\"profile\":\"CLAUDE_CLOSED_LOOP_TASK_V1\",\"round\":1,\"route\":\"jules-github-app-issue-label\",\"task_id\":\"prd-002\",\"test_commands\":[\"python3 -m unittest automation.command_bus.tests.test_sf8_authority_issuer_candidate\",\"python3 -m unittest discover -s automation/command_bus/tests -t .\"]}\n-->\n",
+      "task_sha256": "0d62075b586a68346136c34cdca562e7721c3228b9bfc4fdf173c7e1062c163f"
+    }
+  ]
+}

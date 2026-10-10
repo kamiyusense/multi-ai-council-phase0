@@ -1,0 +1,104 @@
+{
+  "40_rounds": {
+    "invariants": "PASS",
+    "signals_merged": 40,
+    "jules_starts": 40,
+    "max_labeled_events_per_issue": 1,
+    "pass_receipts": 40,
+    "corrective_rounds": 8,
+    "loop_ticks": 152,
+    "loop_crashes": 10,
+    "tick_outcomes": {
+      "CONTINUE": 87,
+      "MERGE_WAIT": 13,
+      "DEFER": 9,
+      "GOAL_COMPLETE": 30,
+      "NO_SAFE_TASK": 13
+    },
+    "checkpoints_written": 78,
+    "human_merge_batches": 14,
+    "faults_injected": 20,
+    "faults_fired": 20,
+    "final_outcome": "NO_SAFE_TASK",
+    "final_human_actions": [
+      {
+        "action": "review isolated task",
+        "task_id": "pl-a14c0bd380",
+        "code": "CLASSIFICATION_MISMATCH",
+        "human_required": true
+      },
+      {
+        "action": "review open signals that cannot be planned",
+        "reason": "1 open signal(s), none can be planned safely"
+      }
+    ]
+  },
+  "100_rounds": {
+    "invariants": "PASS",
+    "signals_merged": 100,
+    "jules_starts": 100,
+    "max_labeled_events_per_issue": 1,
+    "pass_receipts": 100,
+    "corrective_rounds": 18,
+    "loop_ticks": 374,
+    "loop_crashes": 27,
+    "tick_outcomes": {
+      "CONTINUE": 189,
+      "MERGE_WAIT": 20,
+      "DEFER": 18,
+      "GOAL_COMPLETE": 80,
+      "NO_SAFE_TASK": 67
+    },
+    "checkpoints_written": 171,
+    "human_merge_batches": 21,
+    "faults_injected": 50,
+    "faults_fired": 50,
+    "final_outcome": "NO_SAFE_TASK",
+    "final_human_actions": [
+      {
+        "action": "review isolated task",
+        "task_id": "pl-a14c0bd380",
+        "code": "CLASSIFICATION_MISMATCH",
+        "human_required": true
+      },
+      {
+        "action": "review open signals that cannot be planned",
+        "reason": "1 open signal(s), none can be planned safely"
+      }
+    ]
+  },
+  "300_rounds": {
+    "invariants": "PASS",
+    "signals_merged": 300,
+    "jules_starts": 300,
+    "max_labeled_events_per_issue": 1,
+    "pass_receipts": 300,
+    "corrective_rounds": 64,
+    "loop_ticks": 1117,
+    "loop_crashes": 67,
+    "tick_outcomes": {
+      "CONTINUE": 757,
+      "MERGE_WAIT": 27,
+      "GOAL_COMPLETE": 280,
+      "DEFER": 35,
+      "NO_SAFE_TASK": 18
+    },
+    "checkpoints_written": 477,
+    "human_merge_batches": 25,
+    "faults_injected": 150,
+    "faults_fired": 150,
+    "final_outcome": "NO_SAFE_TASK",
+    "final_human_actions": [
+      {
+        "action": "review isolated task",
+        "task_id": "pl-a14c0bd380",
+        "code": "CLASSIFICATION_MISMATCH",
+        "human_required": true
+      },
+      {
+        "action": "review open signals that cannot be planned",
+        "reason": "1 open signal(s), none can be planned safely"
+      }
+    ]
+  }
+}

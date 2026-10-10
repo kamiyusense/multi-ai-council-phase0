@@ -1,0 +1,93 @@
+{
+  "test_twelve_rounds_with_corrective_restarts_duplicates_and_blocked_isolation": {
+    "ok": true,
+    "worlds": [
+      {
+        "pass_receipts": 15,
+        "needs_correction_receipts": 2,
+        "task_blocked": 0,
+        "jules_starts": 13,
+        "max_labeled_events_per_issue": 1,
+        "controller_runs": 214,
+        "controller_crashes": 3,
+        "events_delivered": 104,
+        "faults_left": 0
+      }
+    ]
+  },
+  "test_quota_exhaustion_pauses_and_reset_resumes": {
+    "ok": true,
+    "worlds": [
+      {
+        "pass_receipts": 5,
+        "needs_correction_receipts": 0,
+        "task_blocked": 0,
+        "jules_starts": 4,
+        "max_labeled_events_per_issue": 1,
+        "controller_runs": 12,
+        "controller_crashes": 0,
+        "events_delivered": 30,
+        "faults_left": 0
+      },
+      {
+        "pass_receipts": 4,
+        "needs_correction_receipts": 0,
+        "task_blocked": 0,
+        "jules_starts": 3,
+        "max_labeled_events_per_issue": 1,
+        "controller_runs": 13,
+        "controller_crashes": 0,
+        "events_delivered": 23,
+        "faults_left": 0
+      }
+    ]
+  },
+  "test_two_independent_campaigns_share_one_concurrency_slot": {
+    "ok": true,
+    "worlds": [
+      {
+        "pass_receipts": 12,
+        "needs_correction_receipts": 0,
+        "task_blocked": 0,
+        "jules_starts": 10,
+        "max_labeled_events_per_issue": 1,
+        "controller_runs": 86,
+        "controller_crashes": 0,
+        "events_delivered": 34,
+        "faults_left": 0
+      }
+    ]
+  },
+  "test_budget_exhausted_task_is_isolated": {
+    "ok": true,
+    "worlds": [
+      {
+        "pass_receipts": 2,
+        "needs_correction_receipts": 3,
+        "task_blocked": 1,
+        "jules_starts": 2,
+        "max_labeled_events_per_issue": 1,
+        "controller_runs": 18,
+        "controller_crashes": 0,
+        "events_delivered": 22,
+        "faults_left": 0
+      }
+    ]
+  },
+  "test_forty_round_campaign_under_random_faults": {
+    "ok": true,
+    "worlds": [
+      {
+        "pass_receipts": 41,
+        "needs_correction_receipts": 8,
+        "jules_starts": 40,
+        "max_labeled_events_per_issue": 1,
+        "controller_runs": 1277,
+        "controller_crashes": 13,
+        "events_delivered": 322,
+        "faults_injected": 30,
+        "faults_left": 0
+      }
+    ]
+  }
+}

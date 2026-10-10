@@ -1,0 +1,80 @@
+{
+  "issue_338_as_is": {
+    "title": "[Claude closed loop GRD-002] prepared next task (not started)",
+    "labels": [],
+    "label_events": [],
+    "comments": 0,
+    "body_sha256": "677d3ad4faafc338ac9f52ae2107887d5bb97785ea7f9e6786c109d654894888",
+    "starter_step": {
+      "action": "IGNORE",
+      "reason": "not a closed-loop task issue",
+      "issue": 338,
+      "scope": "task",
+      "body": null,
+      "nonce": null,
+      "retry_after": null,
+      "checks": []
+    }
+  },
+  "read_at": "2026-10-09T00:01:09Z",
+  "base_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "active_tasks": [],
+  "predecessor_335": {
+    "pr_head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+    "comments": 3
+  },
+  "route_observation": {
+    "transport": "jules-github-app-issue-label",
+    "auth_method": "account_oauth",
+    "billing_route": "subscription",
+    "declared_by": "user decision D6 (GitHub-native route, account plan)"
+  },
+  "quota": {
+    "state": "UNKNOWN",
+    "evidence": "Jules subscription usage is not readable"
+  },
+  "overlay_with_prepared_prd001_body": {
+    "step1": {
+      "action": "WRITE_INTENT",
+      "checks": [
+        "policy",
+        "manifest",
+        "route",
+        "task_identity",
+        "task_policy",
+        "not_started",
+        "predecessor_pass",
+        "base",
+        "capacity"
+      ],
+      "intent": {
+        "attempt": 1,
+        "campaign_id": "prd-c1",
+        "controller": "prd-c1-starter-1",
+        "correlation_id": "prd-001-702497c",
+        "created_at": "2026-10-09T00:01:09Z",
+        "generation": 1,
+        "issue": 338,
+        "nonce": "4ba805eb4d5b4f5db6e4cf28079d3dfc",
+        "policy_version": 1,
+        "predecessor_correlation_id": "grd-001-8fbbef9",
+        "predecessor_pr_head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab",
+        "profile": "CLAUDE_JULES_STARTER_INTENT_V1",
+        "route": "jules-github-app-issue-label",
+        "seq": 1,
+        "supersedes": null,
+        "task_id": "prd-001",
+        "task_sha256": "f36a5d2b832583ae054c5983b5ad02405a52ec9f9f975b02021e7c6f728239d8"
+      }
+    },
+    "step2_same_controller": {
+      "action": "WRITE_LABEL",
+      "reason": "this controller owns the current intent: add the label once"
+    },
+    "step2_other_controller": {
+      "action": "DEFER",
+      "reason": "intent attempt 1 by prd-c1-starter-1 is within its lease"
+    },
+    "sent": false
+  }
+}

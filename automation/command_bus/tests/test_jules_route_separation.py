@@ -22,7 +22,8 @@ SEMIAUTO = ROOT / ".github" / "workflows" / "jules-chat-semiauto.yml"
 ROUTINE_PROMPT = ROOT / "docs/evidence/claude-jules-stop-resistant-20261007/routine-prompt-v1.5.md"
 GUARD = "claude_jules_provider_route"
 LEGACY_MODULES = ("jules_api_request", "loop_id_claim", "jules_session_acceptance")
-CLOSED_LOOP_MODULES = ("claude_closed_loop_protocol", "claude_closed_loop_review")
+CLOSED_LOOP_MODULES = ("claude_closed_loop_protocol", "claude_closed_loop_review", "claude_jules_production_starter",
+                       "claude_jules_task_planner", "claude_jules_loop")
 # The only places that may construct or apply the provider-route guard: Claude AUTO dispatch paths.
 GUARD_USERS = {"claude_jules_dispatch", "claude_jules_live", "claude_jules_lane_proof_launcher"}
 
@@ -97,16 +98,42 @@ class GuardScopeTests(unittest.TestCase):
         self.assertNotEqual(gate(SUBSCRIPTION_MODEL_WORK, verdict).decision, ALLOW)
 
 
+class ProductionStarterRouteTests(unittest.TestCase):
+    def test_starter_only_starts_through_the_github_label(self):
+        import automation.command_bus.claude_jules_production_starter as starter
+        self.assertEqual((starter.ROUTE, starter.LABEL), ("jules-github-app-issue-label", "jules"))
+        for module in ("claude_jules_production_starter", "claude_jules_task_planner", "claude_jules_loop"):
+            imports = imports_of(BUS / f"{module}.py")
+            self.assertFalse({GUARD, "claude_jules_dispatch", "claude_jules_live", "urllib", "requests", "http",
+                              "subprocess", "socket"} & imports, (module, imports))
+        policy = starter.make_policy()
+        self.assertEqual(starter.validate_policy(policy), [])
+        for bad in ({"allow_api_fallback": True}, {"allow_metered_fallback": True}, {"billing": "metered"},
+                    {"route": "carrier-rest-api-key"}):
+            self.assertTrue(starter.validate_policy({**policy, **bad}), bad)
+        self.assertIn(".github/", policy["path_classes"]["execution_config"])
+        self.assertIn("automation/command_bus/claude_jules_provider_route.py", policy["path_classes"]["safety_boundary"])
+        self.assertTrue(starter.validate_policy({**policy, "path_classes": {"execution_config": [],
+                                                                           "safety_boundary": []}}))
+
+    def test_semiauto_workflow_does_not_know_the_starter(self):
+        self.assertNotIn("production_starter", SEMIAUTO.read_text(encoding="utf-8"))
+
+
 class ClosedLoopRouteTests(unittest.TestCase):
-    FORBIDDEN = ("JULES_API_KEY", "X-Goog-Api-Key", "jules.googleapis.com", GUARD, "claude_jules_dispatch",
+    FORBIDDEN = ("JULES_API_KEY", "X-Goog-Api-Key", "jules.googleapis.com", "claude_jules_dispatch",
                  "jules_api_requests", "jules-chat-semiauto")
 
     def test_closed_loop_code_never_touches_the_api_key_or_rest_route(self):
         for module in CLOSED_LOOP_MODULES:
-            text = (BUS / f"{module}.py").read_text(encoding="utf-8")
+            path = BUS / f"{module}.py"
+            text = path.read_text(encoding="utf-8")
             for needle in self.FORBIDDEN:
                 with self.subTest(module=module, needle=needle):
                     self.assertNotIn(needle, text)
+            with self.subTest(module=module, check="no guard / dispatcher import"):
+                # the starter lists the guard's file as a protected path; it must never import or call it
+                self.assertFalse({GUARD, "claude_jules_dispatch", "claude_jules_live"} & imports_of(path))
 
     def test_routine_prompt_uses_github_only_and_forbids_labels_keys_and_merge(self):
         prompt = ROUTINE_PROMPT.read_text(encoding="utf-8")

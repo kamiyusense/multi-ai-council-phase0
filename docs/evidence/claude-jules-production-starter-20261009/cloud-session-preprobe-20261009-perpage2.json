@@ -1,0 +1,93 @@
+{
+ "profile": "CLAUDE_JULES_READONLY_LABEL_HISTORY_PROBE_V1",
+ "started_at": "2026-10-09T09:30:23Z",
+ "gh_path": "/usr/local/bin/gh",
+ "python3": true,
+ "writes": 0,
+ "gh_version": "gh version 2.89.0 (2026-03-26)",
+ "gh_auth_status_exit": 1,
+ "gh_auth_status_summary": "  X Failed to log in to github.com using token (GH_TOKEN)",
+ "repo_get": {
+  "status": 200,
+  "private": true,
+  "error": null
+ },
+ "issues": {
+  "335": {
+   "events_complete": true,
+   "pages": [
+    {
+     "page": 1,
+     "status": 200,
+     "items": 2,
+     "has_next": true,
+     "error": null
+    },
+    {
+     "page": 2,
+     "status": 200,
+     "items": 2,
+     "has_next": true,
+     "error": null
+    },
+    {
+     "page": 3,
+     "status": 200,
+     "items": 1,
+     "has_next": false,
+     "error": null
+    }
+   ],
+   "event_count": 5,
+   "event_types": [
+    "closed",
+    "labeled",
+    "referenced",
+    "renamed"
+   ],
+   "label_events": [
+    [
+     "labeled",
+     "jules",
+     "kamiyusense",
+     "2026-10-08T17:53:06Z"
+    ]
+   ],
+   "ever_labeled_jules": true,
+   "current_labels": [
+    "jules"
+   ],
+   "updated_at": "2026-10-08T20:32:12Z",
+   "body_sha256": "07938034421bf675d382c51bee5c76746ce6a0870cbc0439440b6b1c4620a5cf"
+  },
+  "338": {
+   "events_complete": true,
+   "pages": [
+    {
+     "page": 1,
+     "status": 200,
+     "items": 2,
+     "has_next": true,
+     "error": null
+    },
+    {
+     "page": 2,
+     "status": 200,
+     "items": 1,
+     "has_next": false,
+     "error": null
+    }
+   ],
+   "event_count": 3,
+   "event_types": [
+    "referenced"
+   ],
+   "label_events": [],
+   "ever_labeled_jules": false,
+   "current_labels": [],
+   "updated_at": "2026-10-08T18:04:22Z",
+   "body_sha256": "677d3ad4faafc338ac9f52ae2107887d5bb97785ea7f9e6786c109d654894888"
+  }
+ },
+ "finished_at": "2026-10-09T09:30:27Z"
+}

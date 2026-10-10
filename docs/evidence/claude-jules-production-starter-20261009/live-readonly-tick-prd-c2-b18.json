@@ -1,0 +1,18 @@
+{
+  "outcome": "DEFER",
+  "reason": "manifest task(s) ['prd-001', 'prd-002'] not created or not finished yet",
+  "started": [],
+  "created": [],
+  "defers": [],
+  "isolated": [],
+  "human_actions": [],
+  "next_wake": "the next pull_request event, the recovery schedule, or a human Run now",
+  "prepared_writes": [],
+  "sent": [],
+  "live": false,
+  "authorization_problems": [
+    "authorization is not approved by a named human",
+    "authorization has no approval reference",
+    "usage credits are not confirmed off by the human (metered overage risk)"
+  ]
+}

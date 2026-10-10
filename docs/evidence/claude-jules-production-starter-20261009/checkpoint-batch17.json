@@ -1,0 +1,45 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 17,
+  "date_jst": "2026-10-09",
+  "main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "pr_340": {"branch": "claude/production-starter-20261009", "parent_head": "aabe1b683ca123e8e9e0e01d0fccf66adc426e12", "state": "Draft OPEN"},
+  "semiauto_workflow_blob": "177c614b050bc9ae3cc4b1169be55919c50591de",
+  "files": {
+    "automation/command_bus/claude_jules_production_starter.py": {"git_blob": "a0d14e5a708dbed9bdbc8aa799f864927cf29890", "sha256": "760dfaab8b0d9ce1e0a6cb53be197e139cd34b98b000713d0066136c44fbc661"},
+    "automation/command_bus/claude_jules_task_planner.py": {"git_blob": "56bf4846960a684a258c2fc27fa7bc4afa24b524", "sha256": "cc38bc215cf529b53d58d0dfbc403588834964d286db381ad49f303f20491ec7"},
+    "automation/command_bus/claude_jules_loop.py": {"git_blob": "ffed9f5039ebe8ed00cb2b39808d02ed34643db8", "sha256": "7dd3b60f6dca5db7f592e27e9dcee3da8f9bbd949518e4d7f6c1c5dff2c19020"},
+    "automation/command_bus/claude_jules_starter_gh.py": {"git_blob": "3ee1110c4b8c54fb77d5bda701cd764690d02322", "sha256": "87f70923e6ade167d86c5de8e824fd9335cf2372aff155c2d93c92cea5b23f05"},
+    "docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c2.json": {"git_blob": "092658768b3ad8b01d7119ef7e97fd325a223ddb", "sha256": "107d47fa2db9595e2f008baa92f8440bedd3cf19348b0c364b7e9bdb61a50450"},
+    "docs/evidence/claude-jules-production-starter-20261009/campaign-prd-c1.json": {"git_blob": "ab8870efc2506d3e304e3344a8612bc63d8c0326", "sha256": "e6b180fc234a4d41bb08fef9d6dcd17147af36dc08a20991d4572f25c81f6ae5", "note": "unchanged since batch 16 (history)"}
+  },
+  "tests": {
+    "wsl_full": {"ran": 2136, "result": "OK (skipped=1)"},
+    "wsl_focused": {
+      "test_claude_jules_loop": 31, "test_claude_jules_production_starter": 61, "test_claude_jules_starter_e2e": 5,
+      "test_claude_jules_starter_gh": 3, "test_jules_route_separation": 13, "test_claude_closed_loop_review": 25,
+      "test_claude_closed_loop_protocol": 22, "test_claude_jules_provider_route": 23, "test_claude_jules_cli_transport": 26
+    },
+    "windows_focused": {"ran": 160, "result": "OK"},
+    "compileall": "ok", "json": "ok", "diff_check": "ok"
+  },
+  "endurance": "e2e-loop-stats.json (40 / 100 / 300 rounds, all invariants PASS)",
+  "prd_c2": {
+    "task_a": {"task_id": "prd-001", "correlation_id": "prd-001-702497c", "task_sha256": "14d494c50442f9c33e15fc0593e23a025b34a70ad76d4d5778d29844848600e2", "issue": 338},
+    "task_b": {"task_id": "prd-002", "correlation_id": "prd-002-702497c", "task_sha256": "0d62075b586a68346136c34cdca562e7721c3228b9bfc4fdf173c7e1062c163f", "issue": "created by the reviewer on A's PASS"},
+    "predecessor": {"issue": 335, "correlation_id": "grd-001-8fbbef9", "pr_head": "2ce8caabb63df36c8fb7be1057344dceb7f732ab"},
+    "issue_338_written": false, "label_written": false
+  },
+  "official_docs_checked": {"url": "https://code.claude.com/docs/en/routines", "github_trigger_events": ["pull_request", "release"], "schedule_min_interval": "1 hour", "events_over_cap": "dropped", "usage_credits_overage_risk": "routines may continue on metered overage when usage credits are on"},
+  "routine": {"trigger": "trig_01U2DaBYLqaF5uLgovs1WY2Y", "version": "v1.5.1", "changed_in_batch": false},
+  "ledger": {"slots_used": 9, "slot_10": "unused"},
+  "live": {"jules_tasks_started": 0, "labels_written": 0, "issues_written": 0, "model_runs": 0},
+  "unknown": [
+    "gh authentication inside a Routine run (label history needs the issue events API)",
+    "label history through the GitHub MCP tools",
+    "real-port loop tick CLI with a send path (LIVE activation step; not implemented: no send path exists)",
+    "usage credits off (Billing; human)",
+    "pull_request.closed (merged) trigger and hourly recovery schedule not configured (human)",
+    "production signal discovery wiring (Claude in the Routine reads failing tests / CI / issues); mock and file-based only"
+  ]
+}
