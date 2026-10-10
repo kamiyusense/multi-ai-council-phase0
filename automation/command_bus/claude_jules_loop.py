@@ -46,6 +46,7 @@ CONTINUE, MERGE_WAIT, NO_SAFE_TASK, GOAL_COMPLETE, DEFER, HARD_STOP_PROVIDER = (
 
 RECOVERY = {
     "READ_UNKNOWN": "re-read on the next wake",
+    "WRITE_READBACK_UNKNOWN": "read GitHub back on the next wake before any new start; never re-send",
     "JULES_PENDING": "Jules' PR or next commit (a pull_request event) wakes the loop",
     "REVIEW_PENDING": "the recovery wake reviews any PR head without a receipt",
     "RECORD_UNREADABLE": "a human repairs the unreadable record; nothing is written over it",
@@ -124,7 +125,10 @@ def task_states(issues: list[dict[str, Any]], *, campaign: dict[str, Any],
             starts = []
         started = bool(starts) or st.LABEL in (issue.get("labels") or [])
         if any(r.get("verdict") == "PASS" for r in mine):
-            merged = pr_merged(issue["number"])
+            try:
+                merged = pr_merged(issue["number"])
+            except TransientRead:
+                merged = False        # unknown merge state never unlocks merge-dependent work
             state = planner.MERGED if merged else planner.PASS_UNMERGED
         elif any(r.get("decision") == "TASK_BLOCKED" or r.get("verdict") == "BLOCKED" for r in mine):
             state = planner.ISOLATED
@@ -198,9 +202,30 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
                 "pending_merge": [{"task_id": k["task_id"], "paths": k["paths"]} for k in known
                                   if k["state"] == planner.PASS_UNMERGED], "event": {}}
 
+    wrote: list[tuple[str, int]] = []
+
+    def add_comment(n: int, body: str) -> Any:
+        wrote.append(("comment", n))
+        return port.add_comment(n, body)
+
+    def add_label(n: int, label: str) -> Any:
+        wrote.append(("label", n))
+        return port.add_label(n, label)
+
+    halt_new = None       # a write whose readback failed: its state is UNKNOWN, so no new start this tick
+
     def offer(n: int) -> st.Step:
-        res = st.run_starter(read_snapshot=lambda: snapshot(n), add_comment=port.add_comment,
-                             add_label=port.add_label, campaign=campaign, controller=controller)
+        nonlocal halt_new
+        before = len(wrote)
+        try:
+            res = st.run_starter(read_snapshot=lambda: snapshot(n), add_comment=add_comment,
+                                 add_label=add_label, campaign=campaign, controller=controller)
+        except TransientRead as exc:
+            if len(wrote) > before:
+                halt_new = f"issue #{n}: a write was attempted and the readback failed ({exc})"
+                return st.Step(st.DEFER, halt_new, n, code="WRITE_READBACK_UNKNOWN")
+            return st.Step(st.DEFER, f"issue #{n}: GitHub read failed ({exc}); the next wake re-reads", n,
+                           code="READ_UNKNOWN")
         last = res.steps[-1]
         if any(s.action == st.WRITE_START_RECEIPT for s in res.steps) or last.code == "STARTED":
             result.started.append(n)
@@ -208,6 +233,11 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
 
     hard_stop = None
     for k in sorted((k for k in known if k["state"] == planner.PREPARED), key=lambda k: k["issue"]):
+        if halt_new is not None:
+            result.defers.append({"task_id": k["task_id"], "issue": k["issue"], "code": "WRITE_READBACK_UNKNOWN",
+                                  "reason": "not offered: " + halt_new, "dependency": [], "retry_after": None,
+                                  "human_required": False})
+            continue
         last = offer(k["issue"])
         if k["issue"] in result.started:
             k["state"] = planner.RUNNING
@@ -227,8 +257,14 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
     for k in running:                     # in-flight work is tracked too, so a stalled task never waits silently
         if k["issue"] in result.started:
             continue
-        head = port.pr_head(k["issue"])
-        issue = by_number.get(k["issue"]) or port.read_issue(k["issue"])
+        try:
+            head = port.pr_head(k["issue"])
+            issue = by_number.get(k["issue"]) or port.read_issue(k["issue"])
+        except TransientRead as exc:
+            result.defers.append({"task_id": k["task_id"], "issue": k["issue"], "code": "READ_UNKNOWN",
+                                  "reason": f"in-flight task could not be read ({exc})", "dependency": [],
+                                  "retry_after": None, "human_required": False, "in_flight": True})
+            continue
         mine = [r for r in _receipts(issue, trusted) if r.get("_unreadable") or
                 r.get("correlation_id") == k["correlation_id"]]
         if any(r.get("_unreadable") for r in mine):
@@ -245,6 +281,8 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
     if hard_stop is not None:
         result.outcome, result.reason = HARD_STOP_PROVIDER, hard_stop.reason
         result.human_actions.append({"action": "resolve provider / policy boundary", "reason": hard_stop.reason})
+    elif halt_new is not None:
+        result.outcome, result.reason = DEFER, "no new task this tick: " + halt_new
     elif len(running) < policy["max_concurrent_tasks"] and not result.started:
         try:
             signals = read_retry(port.signals, attempts)

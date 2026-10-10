@@ -1,3 +1,7 @@
+> **SUPERSEDED (batch 24).** Background notes only. The single paste-ready v1.6 candidate is
+> `routine-prompt-v1.6.CANDIDATE.txt` (copy from the GitHub Raw view); its changes against v1.5.1 are in
+> `routine-prompt-v1.5.1-to-v1.6.diff`.
+
 # Reviewer + Loop Routine prompt v1.6: final apply candidate (NOT applied)
 
 Status: **prepared, not applied** (batch 18). The live Routine `trig_01U2DaBYLqaF5uLgovs1WY2Y` stays on v1.5.1, and

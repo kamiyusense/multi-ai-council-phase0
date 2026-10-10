@@ -31,7 +31,7 @@ from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
 from .claude_jules_loop import CHECKPOINT_MARKER
-from .claude_jules_starter_gh import GhLoopPort, Getter
+from .claude_jules_starter_gh import GhLoopPort, Getter, find_duplicate_issue
 
 AUTH_PROFILE = "CLAUDE_JULES_LIVE_AUTHORIZATION_V1"
 WRITE_KINDS = {"comment", "add_label", "create_issue"}
@@ -167,6 +167,10 @@ class GhLiveWritePort(GhLoopPort):
         meta = (task or {}).get("campaign") or {}
         if not isinstance(meta, dict) or meta.get("campaign_id") != self.campaign["campaign_id"]:
             self._refuse("create_issue", None, "issue body must hold this campaign's task block", payload)
+        self._issue_list = None                        # fresh listing: Layer 3 may have created it since
+        dup = find_duplicate_issue(self._all_issues(), title, body)
+        if dup is not None:
+            self._refuse("create_issue", dup["issue"], f"DUPLICATE: issue #{dup['issue']} ({dup['match']})", payload)
         proc = self._send("create_issue", f"repos/{self.repo}/issues", payload, None)
         try:
             return int(json.loads(proc.stdout)["number"])

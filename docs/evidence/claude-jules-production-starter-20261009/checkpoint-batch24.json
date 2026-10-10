@@ -1,0 +1,38 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 24,
+  "date_jst": "2026-10-10",
+  "start_main_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "parent_head": "119e2efad561193c3465481c1fd8ac6d46187375",
+  "parent_ci_run": 38020080910,
+  "route_a": "VERIFIED_READ (batch 22); Layer 4 preflight = authenticated repo GET, gh auth status never the gate",
+  "route_b": "STATIC_PREPARED_NOT_CONNECTED (unchanged)",
+  "reviewer_v1_6": {
+    "file": "routine-prompt-v1.6.CANDIDATE.txt",
+    "sha256": "c0f47b55b9eba645a941a26bf5ff3c9eb15c87dbb42d3f05033db9bc54f994be",
+    "built_from_v1_5_1_blob": "83068a713f0a4c4a8681d4e1c7f71f34714562f1",
+    "status": "CANDIDATE_NOT_DEPLOYED"
+  },
+  "tests": {
+    "new_local": "45 PASS (26 gh hardening, 8 probe, 11 prompt)",
+    "full_local": "2227 tests OK (skipped=1); baseline before this batch 2182 OK (skipped=1)",
+    "compileall": "OK",
+    "new_head_ci": "UNKNOWN until exact-head readback"
+  },
+  "live": {
+    "jules_starts": 0,
+    "labels_written": 0,
+    "routine_changed": false,
+    "routine_run_now": false,
+    "schedule_changed": false,
+    "actions_workflow_added": false,
+    "slot_10": "UNUSED at readback"
+  },
+  "pending_human": [
+    "PR #340 Merge",
+    "apply v1.6 to the Routine",
+    "pull_request.closed trigger / recovery schedule",
+    "LIVE authorization file + usage credits off",
+    "slot 10 first start on #338"
+  ]
+}

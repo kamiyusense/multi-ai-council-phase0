@@ -1,0 +1,53 @@
+{
+  "profile": "CLAUDE_REVIEWER_PROMPT_CANDIDATE_MANIFEST_V1",
+  "status": "CANDIDATE - not deployed; applying it to the Routine needs explicit human approval",
+  "original": {
+    "path": "docs/evidence/claude-jules-stop-resistant-20261007/routine-prompt-v1.5.1.md",
+    "git_blob": "83068a713f0a4c4a8681d4e1c7f71f34714562f1",
+    "sha256": "76cc97936c0e3512ea0d43e8a86d35f0ac3638785f87bc58b0ec41ebf076bedb",
+    "lines": 43
+  },
+  "candidate": {
+    "path": "docs/evidence/claude-jules-production-starter-20261009/routine-prompt-v1.6.CANDIDATE.txt",
+    "sha256": "c0f47b55b9eba645a941a26bf5ff3c9eb15c87dbb42d3f05033db9bc54f994be",
+    "lines": 61,
+    "bytes": 10732
+  },
+  "diff_sha256": "2644ffb85ab8c80856440831c585b7fa9b1d327c215b093d0b6a555e5da23b85",
+  "changes": [
+    {
+      "kind": "replace",
+      "original_line": 1,
+      "why": "version identifier"
+    },
+    {
+      "kind": "replace",
+      "original_line": 2,
+      "why": "a recovery wake (schedule or Run now) is routed explicitly instead of being mistaken for a PR event"
+    },
+    {
+      "kind": "replace",
+      "original_line": 7,
+      "why": "the single, narrow LAYER 4 exception; Claude itself still never labels"
+    },
+    {
+      "kind": "insert",
+      "after": "- Writes per wake: at most one receipt comment on the task i",
+      "lines": 6,
+      "why": "how each wake reaches LAYERS 1-3 and LAYER 4; recovery wakes review a PR whose event was lost"
+    },
+    {
+      "kind": "insert",
+      "after": "Build the JSON with a Bash command (for example python3 -c '",
+      "lines": 11,
+      "why": "LAYER 4 itself, after the receipt so a LAYER 4 failure can never erase or block LAYERS 1-3"
+    },
+    {
+      "kind": "insert",
+      "after": "Finish with one line: \"<verdict> pr=<n> head=<sha7> round=<r",
+      "lines": 1,
+      "why": "the LAYER 4 report line; the v1.5.1 finish line stays the reviewer's line"
+    }
+  ],
+  "copy_from": "GitHub Raw view of the candidate file (the rendered Markdown view hides <...> text)"
+}
