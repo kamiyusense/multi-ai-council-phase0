@@ -84,8 +84,8 @@
     },
     {
       "path": "docs/evidence/symphony-g61-static/full-tests-windows.txt",
-      "bytes": 434211,
-      "sha256": "c62b01fcf572560d8087f94080db3145712d370d4a7ec66ac8c9761506df6a70"
+      "bytes": 434209,
+      "sha256": "bd2f073a690f6ff7deca9c9e37c5245183984851ee04f7a85664a006c2fbadc0"
     },
     {
       "path": "docs/evidence/symphony-g61-static/g61-tests.txt",

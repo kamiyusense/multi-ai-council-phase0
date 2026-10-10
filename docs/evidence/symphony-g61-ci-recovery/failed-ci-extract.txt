@@ -1,0 +1,5 @@
+static-validation	UNKNOWN STEP	2026-10-10T01:53:12.8353462Z Ran 244 tests in 1.204s
+static-validation	UNKNOWN STEP	2026-10-10T01:54:26.4281502Z Ran 2003 tests in 72.825s
+static-validation	UNKNOWN STEP	2026-10-10T01:54:26.5539223Z docs/evidence/symphony-g61-static/full-tests-windows.txt:1025: trailing whitespace.
+static-validation	UNKNOWN STEP	2026-10-10T01:54:26.5544579Z docs/evidence/symphony-g61-static/full-tests-windows.txt:1671: trailing whitespace.
+static-validation	UNKNOWN STEP	2026-10-10T01:54:26.5563838Z ##[error]Process completed with exit code 2.

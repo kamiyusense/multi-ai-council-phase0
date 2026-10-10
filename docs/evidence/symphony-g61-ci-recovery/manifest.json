@@ -1,0 +1,35 @@
+{
+  "protocol": "SYMPHONY_G61_CI_RECOVERY_EVIDENCE_V1",
+  "files": [
+    {
+      "path": "docs/evidence/symphony-g61-ci-recovery/checkpoint.json",
+      "bytes": 788,
+      "sha256": "5cf369539499bd394c2911dae574c0cef743ca65b5605d490f894d53dd1eb778"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-ci-recovery/compileall.txt.gz",
+      "bytes": 20,
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-ci-recovery/failed-ci-extract.txt",
+      "bytes": 563,
+      "sha256": "bbdd2aa74e251f33a32b031968b54e2afa45e3dc3ca0b0059918497d1de01b83"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-ci-recovery/focused.txt.gz",
+      "bytes": 6952,
+      "sha256": "034fcb46ecfe12cb573f571f96cfe460b8ce40e1a32fd1817b71050b4c432f86"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-ci-recovery/full.txt.gz",
+      "bytes": 50749,
+      "sha256": "ae49a1af1d52cf41729a7639481ff0abcc9c4d1651cf06923d2bce7230829913"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-ci-recovery/original-full-tests-windows.txt.gz",
+      "bytes": 53820,
+      "sha256": "339ad68191a4bc7b874feab24d8e321aa0fa3f4b50800454b4e371d42350627c"
+    }
+  ]
+}

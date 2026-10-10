@@ -1022,7 +1022,7 @@ test_sanitized_evidence_reuses_same_session_get (automation.command_bus.tests.te
 test_session_get_remains_single_retry_zero_readback (automation.command_bus.tests.test_jules_session_readback_timing_workflow.JulesSessionReadbackTimingWorkflowTests.test_session_get_remains_single_retry_zero_readback) ... ok
 test_timing_is_extracted_from_same_get_response (automation.command_bus.tests.test_jules_session_readback_timing_workflow.JulesSessionReadbackTimingWorkflowTests.test_timing_is_extracted_from_same_get_response) ... ok
 test_active_proof_can_skip_activities_get (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_active_proof_can_skip_activities_get) ... FAIL
-test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) ... 
+test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) ...
   test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/..') ... FAIL
   test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/.') ... FAIL
   test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/a b') ... FAIL
@@ -1668,7 +1668,7 @@ test_run_and_target_readers_pass_through_exactly_what_github_returned (automatio
 test_a_completed_provider_state_never_publishes (automation.command_bus.tests.test_signal_step7_live_workflow.EndToEndCliTests.test_a_completed_provider_state_never_publishes) ... ok
 test_a_provider_http_error_is_unknown_and_not_retried (automation.command_bus.tests.test_signal_step7_live_workflow.EndToEndCliTests.test_a_provider_http_error_is_unknown_and_not_retried) ... ok
 test_a_second_dispatch_is_refused_by_the_terminal_receipt_without_a_jules_read (automation.command_bus.tests.test_signal_step7_live_workflow.EndToEndCliTests.test_a_second_dispatch_is_refused_by_the_terminal_receipt_without_a_jules_read) ... ok
-test_a_typed_authority_run_must_be_one_of_the_valid_candidates (automation.command_bus.tests.test_signal_step7_live_workflow.EndToEndCliTests.test_a_typed_authority_run_must_be_one_of_the_valid_candidates) ... 
+test_a_typed_authority_run_must_be_one_of_the_valid_candidates (automation.command_bus.tests.test_signal_step7_live_workflow.EndToEndCliTests.test_a_typed_authority_run_must_be_one_of_the_valid_candidates) ...
 {"status": "STOPPED", "stage": "setup", "code": "WRONG_LANE_ID"}
 {"status": "STOPPED", "stage": "setup", "code": "ALLOWED_OUTPUT_MISMATCH"}
 {"status": "STOPPED", "stage": "setup", "code": "ALLOWED_OUTPUT_MISMATCH"}
