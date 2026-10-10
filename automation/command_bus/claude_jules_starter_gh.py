@@ -426,7 +426,9 @@ def main_tick(argv: list[str]) -> int:
     ap.add_argument("--route-declaration", required=True)
     ap.add_argument("--signals")
     ap.add_argument("--controller", required=True)
-    ap.add_argument("--live-authorization", help="CLAUDE_JULES_LIVE_AUTHORIZATION_V1 file; without it nothing is sent")
+    ap.add_argument("--live-authorization", help="CLAUDE_JULES_LIVE_AUTHORIZATION_V1/V2 file; without it nothing is sent")
+    ap.add_argument("--budget-declaration", help="CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1 file (human-merged); "
+                                                 "without it no label is ever sent")
     ap.add_argument("--out")
     args = ap.parse_args(argv)
     with open(args.campaign, encoding="utf-8") as fh:
@@ -452,8 +454,19 @@ def main_tick(argv: list[str]) -> int:
                           signals=signals)
     else:
         from .claude_jules_starter_live import GhLiveWritePort
+        budget = None
+        if args.budget_declaration:
+            from .claude_jules_durable_budget import DurableBudget
+            from .claude_jules_live_adapter import GitLiveClient
+            with open(args.budget_declaration, encoding="utf-8") as fh:
+                declaration = json.load(fh)
+            try:      # the ledger is read (and, once enabled, written create-only) through git on the data branch
+                budget = DurableBudget(GitLiveClient("."), declaration, repository=campaign["repository"])
+            except ValueError as exc:
+                budget = None
+                print(json.dumps({"budget_declaration_problems": str(exc)}), file=sys.stderr)
         port = GhLiveWritePort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
-                               signals=signals, authorization=authorization)
+                               signals=signals, authorization=authorization, budget=budget)
     try:
         res = loop.run_tick(port, campaign=campaign, controller=args.controller,
                             now=lambda: st._fmt(datetime.now(timezone.utc)))
@@ -465,6 +478,7 @@ def main_tick(argv: list[str]) -> int:
     except TransientRead as exc:   # a read that failed outside a task's own snapshot: DEFER, never a start
         report = {"outcome": "DEFER", "reason": f"READ_UNKNOWN: {exc}"}
     report["preflight"] = access
+    report["budget_reservations"] = list(getattr(port, "reservations", []))
     report.update({"prepared_writes": port.prepared, "sent": list(getattr(port, "sent", [])),
                    "live": bool(getattr(port, "live", False)),
                    "authorization_problems": list(getattr(port, "problems", []))})

@@ -31,12 +31,16 @@ from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
 from .claude_jules_loop import CHECKPOINT_MARKER
+from .claude_jules_durable_budget import USABLE, DurableBudget, origin_of, pre_label_problems
+from .claude_jules_loop import TransientRead
 from .claude_jules_starter_gh import GhLoopPort, Getter, find_duplicate_issue
 
 AUTH_PROFILE = "CLAUDE_JULES_LIVE_AUTHORIZATION_V1"
+AUTH_PROFILE_V2 = "CLAUDE_JULES_LIVE_AUTHORIZATION_V2"     # V1 + durable budget binding; required for a label
 WRITE_KINDS = {"comment", "add_label", "create_issue"}
 _AUTH_KEYS = {"profile", "campaign_id", "repository", "issues", "writes", "max_labels", "max_writes", "expires_at",
               "approved_by", "approval_ref", "route", "billing", "usage_credits_confirmed_off"}
+_AUTH_KEYS_V2 = _AUTH_KEYS | {"budget_id", "max_activations"}
 _RECORD_MARKERS = (st.INTENT_MARKER, st.START_RECEIPT_MARKER, CHECKPOINT_MARKER)
 
 
@@ -45,9 +49,17 @@ class LiveWriteRefused(st.PreparedOnly):
 
 
 def validate_authorization(auth: Any, *, campaign: dict[str, Any], now: str) -> list[str]:
-    if not isinstance(auth, dict) or set(auth) != _AUTH_KEYS or auth.get("profile") != AUTH_PROFILE:
-        return ["authorization is not a CLAUDE_JULES_LIVE_AUTHORIZATION_V1 record"]
+    v1 = isinstance(auth, dict) and set(auth) == _AUTH_KEYS and auth.get("profile") == AUTH_PROFILE
+    v2 = isinstance(auth, dict) and set(auth) == _AUTH_KEYS_V2 and auth.get("profile") == AUTH_PROFILE_V2
+    if not (v1 or v2):
+        return ["authorization is not a CLAUDE_JULES_LIVE_AUTHORIZATION_V1/V2 record"]
     problems = []
+    if v2:
+        if not isinstance(auth["budget_id"], str) or not auth["budget_id"].strip():
+            problems.append("authorization budget_id missing")
+        n = auth["max_activations"]
+        if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+            problems.append("authorization max_activations invalid")
     if auth["campaign_id"] != campaign.get("campaign_id"):
         problems.append("authorization is for another campaign")
     if auth["repository"] != campaign.get("repository"):
@@ -85,9 +97,13 @@ class GhLiveWritePort(GhLoopPort):
     def __init__(self, get: Getter, *, repo: str, campaign: dict[str, Any], route_declaration: dict[str, Any],
                  signals: list[dict[str, Any]] | None, authorization: dict[str, Any] | None,
                  runner: Callable[[list[str], dict[str, Any]], Any] = gh_run,
-                 now: Callable[[], str] = lambda: st._fmt(datetime.now(timezone.utc))):
+                 now: Callable[[], str] = lambda: st._fmt(datetime.now(timezone.utc)),
+                 budget: DurableBudget | None = None):
         super().__init__(get, repo=repo, campaign=campaign, route_declaration=route_declaration, signals=signals)
         self.runner, self.now = runner, now
+        self.budget = budget                      # the cross-wake budget; per-wake counters below are not one
+        self.ambiguous: str | None = None         # a label whose outcome is unknown: no more labels this wake
+        self.reservations: list[dict[str, Any]] = []
         self.authorization = authorization
         self.problems = ["no LIVE authorization: prepare-only"] if authorization is None else \
             validate_authorization(authorization, campaign=campaign, now=now())
@@ -152,12 +168,50 @@ class GhLiveWritePort(GhLoopPort):
             self._prepare("add_label", issue=n, payload=payload, refused=self.problems)
         if label != st.LABEL:
             self._refuse("add_label", n, f"only the {st.LABEL!r} label may be added", payload)
-        if not self._allowed_issue(n):
+        try:
+            allowed = self._allowed_issue(n)
+        except TransientRead as exc:
+            self._refuse("add_label", n, f"issue #{n} unreadable before the label ({exc})", payload)
+        if not allowed:
             self._refuse("add_label", n, f"issue #{n} is not authorized", payload)
-        if self.labels_sent >= self.authorization["max_labels"]:
+        if self.ambiguous:
+            self._refuse("add_label", n, f"an earlier label outcome is unknown ({self.ambiguous}); read back first",
+                         payload)
+        if self.labels_sent >= self.authorization["max_labels"]:          # per-wake cap (secondary)
             self._refuse("add_label", n, "authorized label count used up", payload)
+        # ---- the cross-wake boundary: a V2 authorization bound to a durable budget, fresh GitHub state
+        if self.authorization.get("profile") != AUTH_PROFILE_V2:
+            self._refuse("add_label", n, "a V1 authorization has per-wake counters only; a label needs a V2 "
+                                         "authorization bound to the durable budget", payload)
+        if self.budget is None:
+            self._refuse("add_label", n, "no durable budget ledger: per-wake counters are not a global budget",
+                         payload)
+        if self.authorization["budget_id"] != self.budget.decl["budget_id"]:
+            self._refuse("add_label", n, "authorization is for another budget", payload)
+        self._issues.pop(n, None)                      # fresh read, never this wake's cache
+        try:
+            issue = self.read_issue(n)
+        except TransientRead as exc:
+            self._refuse("add_label", n, f"issue #{n} unreadable before the label ({exc})", payload)
+        problems, activation = pre_label_problems(
+            issue, repository=self.repo, campaign=self.campaign,
+            trusted=set(self.campaign["policy"]["trusted_writers"]), base_head=self.base_head)
+        if problems:
+            self._refuse("add_label", n, "; ".join(problems), payload)
+        res = self.budget.reserve(activation, origin=origin_of(self.authorization),
+                                  max_for_origin=self.authorization["max_activations"], now=self.now())
+        self.reservations.append({"issue": n, "status": res.status, "reason": res.reason})
+        if res.status not in USABLE:
+            self._refuse("add_label", n, f"budget {res.status}: {res.reason}", payload)
         self.labels_sent += 1                          # counted before sending: a lost response still counts
-        self._send("add_label", f"repos/{self.repo}/issues/{n}/labels", payload, n)
+        try:
+            self._send("add_label", f"repos/{self.repo}/issues/{n}/labels", payload, n)
+        except st.WriteOutcomeUnknown as exc:
+            self.ambiguous = f"issue #{n}: {exc}"      # the slot stays consumed; the next wake reads back
+            raise
+        if not self.budget.holds(res.record):
+            self.ambiguous = f"issue #{n}: budget slot {res.record['slot']} no longer holds this activation"
+            raise st.WriteOutcomeUnknown(self.ambiguous)
 
     def create_issue(self, title, body):
         payload = {"title": title, "body": body}

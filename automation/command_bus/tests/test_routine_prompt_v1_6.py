@@ -106,7 +106,9 @@ class CandidateTests(unittest.TestCase):
         self.assertIn("Preparing an unlabeled issue (LAYER 3 PASS) never starts Jules.", self.text)
         self.assertIn("Never add the `jules` label to any issue yourself", self.text)
         self.assertIn("LAYER 4 never creates the manifest next-task issue that LAYER 3 creates", self.text)
-        self.assertIn("Never create, edit, copy or extend an authorization file.", self.text)
+        self.assertIn("Never create, edit, copy or extend an authorization, budget declaration or budget slot file.",
+                      self.text)
+        self.assertIn("--budget-declaration " + self.builder.DECL, self.text)
         self.assertIn("never authorize LAYER 4 LIVE writes", self.text)
 
     def test_the_tick_command_is_exact_and_runs_prepare_only(self):
@@ -129,6 +131,7 @@ class CandidateTests(unittest.TestCase):
     def test_the_authorization_path_matches_the_template(self):
         self.assertTrue((EV / "live-authorization-prd-c2.TEMPLATE.json").is_file())
         self.assertFalse((EV / "live-authorization-prd-c2.json").exists())     # not approved: nothing LIVE
+        self.assertFalse((EV / "live-budget-declaration.json").exists())
         self.assertIn(self.builder.AUTH, self.text)
 
     def test_superseded_candidate_cannot_be_pasted_as_a_prompt(self):

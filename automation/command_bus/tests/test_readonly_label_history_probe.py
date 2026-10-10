@@ -156,6 +156,11 @@ class ProbeTests(unittest.TestCase):
     def test_early_stop_before_announced_last_is_unknown(self):
         self.unknown_when(1, http(self.fx["338"][0], links={"next": 2, "last": 3}))
 
+    def test_first_page_announcing_more_pages_without_next_is_unknown(self):
+        # the same fail-open the independent audit found in gh_get (batch 25): page 1 says last=2, no next
+        i = self.unknown_when(1, http(self.fx["338"][0], links={"last": 2}))
+        self.assertEqual(len(i["pages"]), 1)
+
     def test_static_get_only(self):
         tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
         literals = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)]

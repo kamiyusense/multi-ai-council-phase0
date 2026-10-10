@@ -47,6 +47,7 @@ CONTINUE, MERGE_WAIT, NO_SAFE_TASK, GOAL_COMPLETE, DEFER, HARD_STOP_PROVIDER = (
 RECOVERY = {
     "READ_UNKNOWN": "re-read on the next wake",
     "WRITE_READBACK_UNKNOWN": "read GitHub back on the next wake before any new start; never re-send",
+    "BUDGET_EXHAUSTED": "a human raises the durable LIVE budget (declaration) and authorizes; re-checked each wake",
     "JULES_PENDING": "Jules' PR or next commit (a pull_request event) wakes the loop",
     "REVIEW_PENDING": "the recovery wake reviews any PR head without a receipt",
     "RECORD_UNREADABLE": "a human repairs the unreadable record; nothing is written over it",
@@ -227,6 +228,12 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
             return st.Step(st.DEFER, f"issue #{n}: GitHub read failed ({exc}); the next wake re-reads", n,
                            code="READ_UNKNOWN")
         last = res.steps[-1]
+        if res.stopped == "PREPARED" and last.action == st.WRITE_LABEL:
+            refused = ((getattr(port, "prepared", None) or [{}])[-1].get("refused") or [])
+            if any(str(r).startswith("budget EXHAUSTED") for r in refused):
+                # the durable budget is spent: a human decision, visible every wake, never a silent retry loop
+                return st.Step(st.ISOLATE, "; ".join(map(str, refused)), n, code="BUDGET_EXHAUSTED",
+                               human_required=True)
         if any(s.action == st.WRITE_START_RECEIPT for s in res.steps) or last.code == "STARTED":
             result.started.append(n)
         return last

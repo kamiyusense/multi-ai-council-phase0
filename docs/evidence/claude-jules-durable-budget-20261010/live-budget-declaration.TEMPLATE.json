@@ -1,0 +1,10 @@
+{
+  "profile": "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1",
+  "budget_id": "jules-live-loop-a",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "data_branch": "claude/claude-jules-autoloop-data",
+  "ledger_prefix": "automation/command_bus/evidence/claude-auto-live-budget/",
+  "cap": 10,
+  "approved_by": "",
+  "approval_ref": ""
+}
