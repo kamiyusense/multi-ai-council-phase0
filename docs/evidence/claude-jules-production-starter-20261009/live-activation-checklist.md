@@ -12,7 +12,7 @@ nothing else on this list has been done (batch 24 re-check).
 | 5 | 🔴 Add the trigger **`pull_request.closed`, is merged = true** | human approval | merge-dependent work resumes without a human "continue" | the trigger list |
 | 6 | 🔴 Add the **hourly recovery schedule** (for example at minute 7) | human approval | resumes after a dead run, a dropped event, a quota reset or an outage. No PR event comes in those cases | the trigger list. In the mock: `test_no_new_pr_event_after_a_crash_needs_the_recovery_wake` |
 | 7 | 🔴 **Prepare #338**: title and body = PRD-C2 entry 1 | human approval | the first task's issue (named by GRD-001's PASS receipt) | readback: the task block hashes to `14d494c5…` |
-| 8 | 🔴 Commit the **LIVE authorization** to `main` as `docs/evidence/claude-jules-production-starter-20261009/live-authorization-prd-c2.json` (the exact path v1.6 LAYER 4 looks for) from the template, with `approved_by`, `approval_ref`, a short `expires_at`, `max_labels: 2`, `usage_credits_confirmed_off: true` | human approval (Merge) | without it the adapter sends nothing | `validate_authorization` returns no problems |
+| 8 | 🔴 Commit the **LIVE authorization** to `main` as `docs/evidence/claude-jules-production-starter-20261009/live-authorization-prd-c2.json` (the exact path v1.6 LAYER 4 looks for) from the template, with `approved_by`, `approval_ref`, a short `expires_at`, `issues: [338]`, `max_labels: 1`, `usage_credits_confirmed_off: true` | human approval (Merge) | without it the adapter sends nothing | `validate_authorization` returns no problems |
 | 9 | 🔴 **First start**: one "Run now" (or this session, with approval) | human | the single LIVE operation: intent → `jules` on #338 → start receipt | exactly one `labeled jules` event on #338 |
 
 After step 9 no human step is planned, until `MERGE_WAIT`:
@@ -27,5 +27,17 @@ After step 9 no human step is planned, until `MERGE_WAIT`:
 * any usage-limit or billing message;
 * a reviewer write outside its allowed writes;
 * any request touching Merge, the default branch, keys, Billing, Credits, Overages or settings.
+
+**CRITICAL GLOBAL-BUDGET LIMIT:** `max_labels` and `max_writes` are currently
+per GhLiveWritePort instance (per Routine wake), **not durable global counters**.
+They do not by themselves enforce the cross-run ledger (currently 9/10).
+For the single remaining LIVE slot, authorization must be narrowly allowlisted
+to Issue #338 only (`issues: [338]`, `max_labels: 1`, short `expires_at`),
+and must not be treated as permission to start PRD-002 or any other Jules task.
+Keep **automatic unattended multi-task LIVE continuation BLOCKED** until
+a cross-wake, durable ledger/authorization budget check with mock tests and
+remote readback is implemented and separately authorized. Avoid merging a
+broad `issues: "campaign"` LIVE authorization simply to get two starts.
+No LIVE operation is permitted by this checklist or by this STATIC edit.
 
 The authorization expiry ends LIVE writes automatically: the adapter re-validates before every write.
