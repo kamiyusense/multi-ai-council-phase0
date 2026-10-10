@@ -58,21 +58,22 @@
   "tasks": [],
   "objectives": [
     {
-      "objective_id": "o1-tests-and-bugs",
-      "title": "Fix failing tests and known bugs; add missing tests",
+      "objective_id": "o1-windows-portability",
+      "title": "Windows portability: explicit UTF-8 in test file reads",
       "scope_prefixes": [
-        "automation/command_bus/demo/"
+        "automation/command_bus/tests/test_blue_review_delivery_prepare.py",
+        "automation/command_bus/tests/test_blue_work_wake_proof.py",
+        "automation/command_bus/tests/test_work_event_prepare_cli.py"
       ],
       "allowed_operations": [
         "bug_fix",
         "test_add",
-        "test_fix",
-        "code_edit",
-        "docs_update"
+        "test_fix"
       ],
       "priority": 10,
       "approved_by": "",
       "approved_at": ""
     }
-  ]
+  ],
+  "control_issue": 346
 }

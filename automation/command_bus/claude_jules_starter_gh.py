@@ -351,6 +351,15 @@ def signals_from_issues(issues: list[dict[str, Any]], trusted: set[str]) -> list
     return out
 
 
+def render_signal_issue(sig: dict[str, Any]) -> tuple[str, str]:
+    """(title, body) of a signal issue that ``signals_from_issues`` reads back exactly.  Not a task: no task
+    block, no ``jules`` label, so neither the Reviewer nor Jules acts on it; the planner turns it into a task."""
+    body = (f"Planner signal for the Claude x Jules loop (objective `{sig['objective_id']}`). Not a task by itself: "
+            "the loop plans a task issue from it. Close this issue when the problem is fixed on main.\n\n"
+            f"{sig.get('detail') or sig['summary']}\n\n{SIGNAL_MARKER}\n{st.canonical(sig)}\n-->\n")
+    return f"[loop signal] {sig['summary']}", body
+
+
 QUOTA_MARKER = "<!-- claude-jules-quota v1"
 QUOTA_PROFILE = "CLAUDE_JULES_QUOTA_V1"
 

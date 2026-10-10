@@ -8,7 +8,8 @@ the budget, the expiry, the human stop switch or the objectives end it. Only the
 1. **Merge the code PR** that contains the loop (budget guard, planner, LIVE port).
 2. **Merge one activation PR** that adds `docs/claude-jules-loop/active/`:
    * `campaign.json` from `docs/evidence/claude-jules-production-mvp-20261010/prod-campaign.TEMPLATE.json`:
-     approved objectives (scope paths, allowed operations), `control_issue` number;
+     approved objectives (scope paths, allowed operations). `control_issue` is **required** (prepared: #346); without
+     an existing, OPEN control issue without `loop-stop`, no Jules start and no new task issue happens;
    * `authorization.json` from `prod-authorization.TEMPLATE.json`: `approved_by`, `approval_ref`, `expires_at`,
      `max_activations`, `usage_credits_confirmed_off: true` (Settings → Usage: credits OFF, so nothing spills into
      metered usage);
@@ -17,6 +18,13 @@ the budget, the expiry, the human stop switch or the objectives end it. Only the
 3. **Routine UI, once**: paste `routine-prompt-v1.6.CANDIDATE.txt` (Raw view) and, for overnight recovery, add an
    hourly schedule to the same Routine.
 4. **Go**: one "Run now" (or the next PR event).
+
+## First work is already on GitHub
+
+`initial-backlog.json`: control issue #346 and three signal issues #347-#349 (real Windows-only `read_text()`
+encoding bugs in three independent test files), created by `kamiyusense` without labels. A read-only tick against
+live GitHub with the template filled in locally planned the first task from them and sent nothing
+(`readonly-tick-rehearsal.json`).
 
 ## While it runs
 

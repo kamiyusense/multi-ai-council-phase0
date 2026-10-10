@@ -1,0 +1,50 @@
+{
+  "profile": "CLAUDE_JULES_BACKLOG_READBACK_V1",
+  "read_with": "claude_jules_starter_gh.gh_get (GET only)",
+  "control_issue": 346,
+  "signal_issues": [
+    347,
+    348,
+    349
+  ],
+  "signals_equal_fixture": true,
+  "control_body_equal_fixture": true,
+  "issues": [
+    {
+      "number": 346,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "b35f6d1e38010c27d50a4d063b19e49857da6935ed8c81bcc932378e971f4605",
+      "title": "[Claude x Jules loop prod-c1] control: checkpoints and stop switch"
+    },
+    {
+      "number": 347,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "2b091fc354f243a45dd250736fdf69c298a82e6530d6a62365f6b3caef32e9a8",
+      "title": "[loop signal] test_blue_review_delivery_prepare.py: read_text() without encoding fails on Windows (cp932)"
+    },
+    {
+      "number": 348,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "199f35769e62c873ff1957090c9034b199a80419048831a5960ce67e70d29b8d",
+      "title": "[loop signal] test_blue_work_wake_proof.py: read_text() without encoding fails on Windows (cp932)"
+    },
+    {
+      "number": 349,
+      "state": "open",
+      "author": "kamiyusense",
+      "labels": [],
+      "label_events": [],
+      "body_sha256": "0072b00a1152dcbe37e7ca3d99c7203c5a9e28d65a6fc976728788322e09933f",
+      "title": "[loop signal] test_work_event_prepare_cli.py: read_text() without encoding fails on Windows (cp932)"
+    }
+  ]
+}

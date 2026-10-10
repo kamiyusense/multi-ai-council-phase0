@@ -151,16 +151,21 @@ class GhLiveWritePort(GhLoopPort):
 
     def stop_requested(self) -> str | None:
         """The human's stop switch, readable from a phone: close the control issue or give it ``loop-stop``.
-        Only NEW starts and NEW task issues stop; records and reviews of running work continue.  An unreadable
-        control issue is treated as a stop for new work (UNKNOWN never starts anything)."""
+        Only NEW starts and NEW task issues stop; records and reviews of running work continue.  A campaign with
+        no control issue, a missing or unreadable one, or one that is not the campaign's control issue never starts
+        anything new (there would be no stop switch and no place for its checkpoints)."""
         n = self.campaign.get("control_issue")
-        if not n:
-            return None
+        if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+            return "the campaign has no control issue (required for LIVE: it is the stop switch)"
         try:
             self._issues.pop(n, None)
             control = self.read_issue(n)
         except TransientRead as exc:
             return f"control issue unreadable ({exc})"
+        if control.get("state") == "MISSING":
+            return f"control issue #{n} does not exist"
+        if st._task_of(control.get("body") or "")[0] is not None:
+            return f"control issue #{n} is a task issue, not a control issue"
         if control.get("state") != "OPEN":
             return f"control issue #{n} is closed (human stop)"
         if self.STOP_LABEL in (control.get("labels") or []):

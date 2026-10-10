@@ -40,12 +40,13 @@ def passed(world, n):
 class Harness:
     """A LoopWorld whose every tick runs through the real LIVE adapter, budget and planner."""
 
-    def __init__(self, signals, *, review_script=None, duplicate_every=0, cap=50):
-        self.campaign = sw.planner_campaign("prod-test", [sw.objective("o1", [DEMO])])
+    def __init__(self, signals, *, review_script=None, duplicate_every=0, cap=50, campaign=None):
+        self.campaign = campaign or sw.planner_campaign("prod-test", [sw.objective("o1", [DEMO])])
         self.w = sw.LoopWorld(self.campaign, signals, review_script=review_script, duplicate_every=duplicate_every)
         self.ledger = bf.LedgerStore(real_slots=0)
         self.decl = bf.declaration_v2(cap=cap)
-        self.auth = {"profile": live.AUTH_PROFILE_V2, "campaign_id": "prod-test", "repository": REPO,
+        self.decl["campaign_id"] = self.campaign["campaign_id"]
+        self.auth = {"profile": live.AUTH_PROFILE_V2, "campaign_id": self.campaign["campaign_id"], "repository": REPO,
                      "budget_id": self.decl["budget_id"], "issues": "campaign",
                      "writes": ["comment", "add_label", "create_issue"], "max_labels": 1, "max_activations": cap,
                      "max_writes": 12, "expires_at": "2099-01-01T00:00:00Z", "approved_by": "test-human",
@@ -210,6 +211,50 @@ class AutonomousMvpTests(unittest.TestCase):
         h.assert_invariants(self)
 
 
+class ControlIssueRequiredTests(unittest.TestCase):
+    """P0-1: no control issue, no new LIVE start (it is the human's stop switch)."""
+
+    def test_every_bad_control_issue_blocks_new_starts(self):
+        cases = {
+            "not set": lambda h: h.campaign.pop("control_issue"),
+            "not a number": lambda h: h.campaign.__setitem__("control_issue", "123"),
+            "does not exist": lambda h: h.campaign.__setitem__("control_issue", 99999),
+            "closed": lambda h: h.w.gh.issues[h.w.control].__setitem__("state", "CLOSED"),
+            "loop-stop": lambda h: h.w.gh.issues[h.w.control]["labels"].append("loop-stop"),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name):
+                h = Harness([sw.signal("s1", "o1", f"{DEMO}c1.py")])
+                mutate(h)
+                h.w.deliver({"name": "start"})
+                try:
+                    h.w.run(max_events=50)
+                except AssertionError:
+                    pass
+                self.assertEqual(sum(1 for n in h.task_issues() if labeled(h.w, n)), 0)
+                self.assertEqual(h.ledger.creates, [])
+                self.assertTrue(any("HUMAN_STOP" in str(r) for p in h.ports for w in p.prepared
+                                    for r in (w.get("refused") or [])), name)
+
+    def test_unreadable_control_issue_blocks_new_starts(self):
+        h = Harness([sw.signal("s1", "o1", f"{DEMO}c1.py")])
+        port = h.port()
+        port.read_issue = lambda n: (_ for _ in ()).throw(ghs.ReadFailed("HTTP 403", 403))
+        self.assertIn("unreadable", port.stop_requested())
+
+    def test_a_task_issue_cannot_be_the_control_issue(self):
+        h = Harness([sw.signal("s1", "o1", f"{DEMO}c1.py")])
+        h.w.deliver({"name": "start"})
+        h.w.run_until_quiet()
+        task_issue = h.task_issues()[0]
+        h.campaign["control_issue"] = task_issue
+        self.assertIn("task issue", h.port().stop_requested())
+
+    def test_a_valid_open_control_issue_lets_the_loop_run(self):
+        h = Harness([sw.signal("s1", "o1", f"{DEMO}c1.py")])
+        self.assertIsNone(h.port().stop_requested())
+
+
 class ProductionTemplateTests(unittest.TestCase):
     """The long-running templates: invalid as committed, valid after ONE human approval fills them in."""
 
@@ -225,6 +270,7 @@ class ProductionTemplateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             st.validate_campaign(camp)
         self.assertTrue(live.validate_authorization(auth, campaign=camp, now="2026-10-11T00:00:00Z"))
+        self.assertEqual(camp["control_issue"], 346)              # the prepared control issue (P0-1)
 
     def test_one_approval_makes_a_long_running_campaign(self):
         decl, auth, camp = self.load()
@@ -244,6 +290,66 @@ class ProductionTemplateTests(unittest.TestCase):
         self.assertGreater(st._ts(auth["expires_at"]) - st._ts("2026-10-11T00:00:00Z"), timedelta(days=7))
         self.assertEqual((auth["route"], auth["billing"]), (st.ROUTE, "subscription"))
         self.assertFalse(camp["policy"]["allow_api_fallback"] or camp["policy"]["allow_metered_fallback"])
+
+
+class InitialBacklogTests(unittest.TestCase):
+    """P0-2: the production campaign starts with at least three real, valid pieces of work on GitHub."""
+
+    def load(self):
+        from pathlib import Path
+        d = Path(__file__).resolve().parents[3] / "docs/evidence/claude-jules-production-mvp-20261010"
+        backlog = json.loads((d / "initial-backlog.json").read_text(encoding="utf-8"))
+        camp = json.loads((d / "prod-campaign.TEMPLATE.json").read_text(encoding="utf-8"))
+        camp["objectives"][0].update(approved_by="human", approved_at="2026-10-11T00:00:00Z")
+        camp["control_issue"] = 1
+        st.validate_campaign(camp)
+        return backlog, camp
+
+    def test_three_valid_independent_tasks_from_the_backlog(self):
+        from pathlib import Path
+        from automation.command_bus import claude_jules_task_planner as planner
+        backlog, camp = self.load()
+        root = Path(__file__).resolve().parents[3]
+        sigs = backlog["signals"]
+        self.assertGreaterEqual(len(sigs), 3)
+        self.assertEqual(len({s["paths"][0] for s in sigs}), len(sigs))          # independent files
+        known = []
+        for _ in sigs:                          # the planner proposes each one in turn, never the same twice
+            d = planner.plan_next(campaign=camp, signals=sigs, known=known)
+            self.assertEqual(d.outcome, planner.PROPOSE, d.reason)
+            self.assertIsNone(planner.validate_proposal(d.proposal, campaign=camp, known=known))
+            title, body, task = planner.build_task(d.proposal, campaign=camp, base_head="4" * 40,
+                                                   now="2026-10-11T00:00:00Z")
+            known.append({"issue": len(known) + 1, "task_id": task["task_id"],
+                          "correlation_id": task["correlation_id"], "fingerprint": task["campaign"]["fingerprint"],
+                          "signal_id": d.proposal["signal_id"], "state": planner.RUNNING,
+                          "paths": [p["path"] for p in task["allowed_paths"]], "source": "planner"})
+        self.assertEqual({k["signal_id"] for k in known}, {s["signal_id"] for s in sigs})
+        for s in sigs:                          # the evidence is real: the file and the line exist on this tree
+            path, line = s["evidence"][0].split(" ", 1)[0].rsplit(":", 1)
+            text = (root / path).read_text(encoding="utf-8").splitlines()[int(line) - 1]
+            self.assertIn("read_text()", text)
+
+    def test_signal_issues_round_trip_through_github(self):
+        backlog, _ = self.load()
+        issues = []
+        for n, sig in enumerate(backlog["signals"], start=10):
+            title, body = ghs.render_signal_issue(sig)
+            self.assertNotIn(st.TASK_MARKER if hasattr(st, "TASK_MARKER") else "claude-closed-loop-task", body)
+            issues.append({"number": n, "state": "open", "title": title, "body": body,
+                           "user": {"login": "kamiyusense"}})
+        got = ghs.signals_from_issues(issues, {"kamiyusense"})
+        self.assertEqual([{k: v for k, v in g.items() if k != "source_issue"} for g in got], backlog["signals"])
+        self.assertEqual(ghs.signals_from_issues(issues, {"someone-else"}), [])
+
+    def test_the_backlog_runs_three_tasks_without_a_human_step(self):
+        backlog, camp = self.load()
+        h = Harness(backlog["signals"], campaign=camp)
+        h.w.deliver({"name": "start"})
+        h.w.run_until_quiet()
+        done = [n for n in h.task_issues() if passed(h.w, n)]
+        self.assertEqual(len(done), 3)
+        h.assert_invariants(self)
 
 
 class SignalSourceTests(unittest.TestCase):

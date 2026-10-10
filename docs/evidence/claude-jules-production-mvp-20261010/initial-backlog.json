@@ -1,0 +1,87 @@
+{
+  "profile": "CLAUDE_JULES_INITIAL_BACKLOG_V1",
+  "campaign_id": "prod-c1",
+  "control_issue": {
+    "title": "[Claude x Jules loop prod-c1] control: checkpoints and stop switch",
+    "body": "Control issue of the Claude x Jules campaign prod-c1.\n\n* Loop checkpoints are recorded here (no action needed).\n* **Stop switch:** close this issue or add the label `loop-stop`. New Jules starts stop; running work continues. Reopen / remove the label to resume.\n* Usage limits: a `claude-jules-quota v1` record here makes the loop wait for the reset.\n\nThis issue is not a task. Do not add the `jules` label to it.\n"
+  },
+  "signals": [
+    {
+      "signal_id": "win-utf8-review-delivery",
+      "objective_id": "o1-windows-portability",
+      "kind": "known_bug",
+      "summary": "test_blue_review_delivery_prepare.py: read_text() without encoding fails on Windows (cp932)",
+      "detail": "`automation/command_bus/tests/test_blue_review_delivery_prepare.py` line 277 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.",
+      "paths": [
+        "automation/command_bus/tests/test_blue_review_delivery_prepare.py"
+      ],
+      "evidence": [
+        "automation/command_bus/tests/test_blue_review_delivery_prepare.py:277 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)",
+        "PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932"
+      ],
+      "acceptance_criteria": [
+        "Every Path.read_text() and open() for reading text in test_blue_review_delivery_prepare.py passes encoding='utf-8'",
+        "A regression test in test_blue_review_delivery_prepare.py fails if a read_text() or open() without an encoding comes back",
+        "No other file changes; no existing test is removed, skipped or weakened"
+      ],
+      "test_commands": [
+        "python3 -m unittest automation.command_bus.tests.test_blue_review_delivery_prepare",
+        "python3 -m unittest discover -s automation/command_bus/tests -t ."
+      ]
+    },
+    {
+      "signal_id": "win-utf8-wake-proof",
+      "objective_id": "o1-windows-portability",
+      "kind": "known_bug",
+      "summary": "test_blue_work_wake_proof.py: read_text() without encoding fails on Windows (cp932)",
+      "detail": "`automation/command_bus/tests/test_blue_work_wake_proof.py` line 258 reads .github/workflows/blue-work-reconcile-static.yml with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.",
+      "paths": [
+        "automation/command_bus/tests/test_blue_work_wake_proof.py"
+      ],
+      "evidence": [
+        "automation/command_bus/tests/test_blue_work_wake_proof.py:258 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)",
+        "PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932"
+      ],
+      "acceptance_criteria": [
+        "Every Path.read_text() and open() for reading text in test_blue_work_wake_proof.py passes encoding='utf-8'",
+        "A regression test in test_blue_work_wake_proof.py fails if a read_text() or open() without an encoding comes back",
+        "No other file changes; no existing test is removed, skipped or weakened"
+      ],
+      "test_commands": [
+        "python3 -m unittest automation.command_bus.tests.test_blue_work_wake_proof",
+        "python3 -m unittest discover -s automation/command_bus/tests -t ."
+      ]
+    },
+    {
+      "signal_id": "win-utf8-work-event-cli",
+      "objective_id": "o1-windows-portability",
+      "kind": "known_bug",
+      "summary": "test_work_event_prepare_cli.py: read_text() without encoding fails on Windows (cp932)",
+      "detail": "`automation/command_bus/tests/test_work_event_prepare_cli.py` line 78 reads the CLI's JSON output file with `Path.read_text()` and no encoding. That file contains non-ASCII UTF-8 text, so on Windows (default encoding cp932) the read raises UnicodeDecodeError or decodes wrongly; on Linux it passes. The same pattern failed on Windows in PRD-002 (main 702497c); this file itself has not been run on Windows yet.",
+      "paths": [
+        "automation/command_bus/tests/test_work_event_prepare_cli.py"
+      ],
+      "evidence": [
+        "automation/command_bus/tests/test_work_event_prepare_cli.py:78 read_text() without encoding of a non-ASCII file (detected by an instrumented test run on main 4bb5cd7, 2026-10-10)",
+        "PRD-002 (campaign prd-c2): the same pattern failed on Windows with UnicodeDecodeError cp932"
+      ],
+      "acceptance_criteria": [
+        "Every Path.read_text() and open() for reading text in test_work_event_prepare_cli.py passes encoding='utf-8'",
+        "A regression test in test_work_event_prepare_cli.py fails if a read_text() or open() without an encoding comes back",
+        "No other file changes; no existing test is removed, skipped or weakened"
+      ],
+      "test_commands": [
+        "python3 -m unittest automation.command_bus.tests.test_work_event_prepare_cli",
+        "python3 -m unittest discover -s automation/command_bus/tests -t ."
+      ]
+    }
+  ],
+  "created_on_github": {
+    "control_issue": 346,
+    "signal_issues": {
+      "win-utf8-review-delivery": 347,
+      "win-utf8-wake-proof": 348,
+      "win-utf8-work-event-cli": 349
+    }
+  }
+}
