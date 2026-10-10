@@ -1,0 +1,26 @@
+[
+  {
+    "suite": "new",
+    "exit": 0,
+    "summaries": [
+      "Ran 38 tests in 0.373s",
+      "OK"
+    ]
+  },
+  {
+    "suite": "focused",
+    "exit": 0,
+    "summaries": [
+      "Ran 376 tests in 4.716s",
+      "OK"
+    ]
+  },
+  {
+    "suite": "full",
+    "exit": 0,
+    "summaries": [
+      "Ran 2135 tests in 71.734s",
+      "OK (skipped=1)"
+    ]
+  }
+]

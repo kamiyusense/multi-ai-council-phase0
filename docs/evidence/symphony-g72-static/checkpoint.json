@@ -1,0 +1,45 @@
+{
+  "protocol": "SYMPHONY_G72_STATIC_CHECKPOINT_V1",
+  "status": "LOCAL_STATIC_PASS_CI_PENDING",
+  "starting_head": "79bb9ea3d46503cce8654f4b5f2e9b849c10b6aa",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pr": 343,
+  "branch": "claude/symphony-g61-production-wiring-static",
+  "workorder_comment": 6094618464,
+  "counts": {
+    "live_worker": 0,
+    "model_provider_live": 0,
+    "actual_result_adoption": 0,
+    "real_git_database_posts": 0,
+    "real_update_refs_mutations": 0,
+    "merge": 0,
+    "default_branch_mutation": 0,
+    "paid_fallback": 0
+  },
+  "publisher_capability": "UNSUPPLIED",
+  "rules_permission": "UNKNOWN_HOLD_EXISTING_403",
+  "local_docker": "NOT_RUN",
+  "static_tests": {
+    "new": 38,
+    "focused": 376,
+    "full": 2135,
+    "inherited_skipped": 1
+  },
+  "fixtures": {
+    "signed_format_lifetimes": 7,
+    "successful_mock_receipts": 4,
+    "controller_generations": [
+      1,
+      2
+    ],
+    "failure_corrective": true,
+    "stale_replan": true,
+    "unknown_isolation": true,
+    "restart_additional_model_dispatch": 0
+  },
+  "historical_evidence_byte_exact_files": 230,
+  "original_symphony_behavior_changes": false,
+  "real_candidate_attestation": "NOT_QUALIFIED",
+  "live_readiness": "NO_GO",
+  "ending_head_ci_artifacts": "final append-only PR343 comment after normal commit/FF push/readback"
+}

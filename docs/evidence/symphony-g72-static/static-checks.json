@@ -1,0 +1,14 @@
+{
+  "compileall": "PASS",
+  "yaml_parse": "PASS",
+  "diff_check": "PASS",
+  "unchanged_official_patch_apply_check": "PASS",
+  "original_symphony_behavior_changes": false,
+  "new_scheduler": false,
+  "real_live_capability": "UNSUPPLIED",
+  "model_provider_starts": 0,
+  "workflow_permissions_unchanged": "PASS_CONTENTS_READ_ONLY",
+  "workflow_no_token_selector_added": "PASS",
+  "candidate_mount_policy": "PASS_STATIC_YAML",
+  "actual_workflow_recording_script_json": "PASS_LOCAL_SYNTHETIC_WITHOUT_TOKENS"
+}

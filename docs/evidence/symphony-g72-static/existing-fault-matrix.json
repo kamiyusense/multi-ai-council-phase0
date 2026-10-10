@@ -1,0 +1,536 @@
+[
+  {
+    "case": "K01",
+    "label": "adopt, workspace cleanup, replay",
+    "first": "ADOPTED",
+    "after_cleanup_restart": "NOOP_DUPLICATE",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K02",
+    "label": "crash after intent",
+    "first": "SIMULATED_CRASH_AFTER_INTENT",
+    "after_cleanup_restart": "ADOPTED",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K03",
+    "label": "crash after objects",
+    "first": "SIMULATED_CRASH_AFTER_OBJECTS",
+    "after_cleanup_restart": "ADOPTED",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "object_posts": 14,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K04",
+    "label": "crash after pre-ref fence",
+    "first": "SIMULATED_CRASH_AFTER_REF_INTENT",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K05",
+    "label": "crash after applied ref",
+    "first": "SIMULATED_CRASH_AFTER_REF",
+    "after_cleanup_restart": "ADOPTED",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K06",
+    "label": "updateRefs reply lost after apply",
+    "first": "ADOPTED",
+    "after_cleanup_restart": "NOOP_DUPLICATE",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K07",
+    "label": "updateRefs request lost before apply",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 0,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K08",
+    "label": "CAS race: other writer at write time",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 0,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K09",
+    "label": "stale HEAD before inspection",
+    "first": "STALE_REPLAN",
+    "after_cleanup_restart": "STALE_REPLAN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K10",
+    "label": "scope-outside file",
+    "first": "ISOLATE_TASK",
+    "after_cleanup_restart": "ISOLATE_TASK",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K11",
+    "label": "result manifest tampered",
+    "first": "CONFLICT",
+    "after_cleanup_restart": "CONFLICT",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K12",
+    "label": "snapshot bytes tampered",
+    "first": "HOLD_AUTHORITY",
+    "after_cleanup_restart": "HOLD_AUTHORITY",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "K13",
+    "label": "GitHub returns foreign object sha",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 2,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "L01",
+    "first": "PREPARED_OFF",
+    "after_cleanup_restart": "PREPARED_OFF",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "L02",
+    "first": "HOLD_AUTHORITY",
+    "after_cleanup_restart": "PREPARED_OFF",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "L03",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "L04",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "ADOPTED",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "object_posts": 7,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "restart_extra_object_posts": 0,
+    "replay": "NOOP_DUPLICATE",
+    "synthetic_ledger_records": [
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/decision.json",
+        "payload": {
+          "action": "ADOPT",
+          "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+          "canonical_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "changed_paths": [
+            "proof/A.md",
+            "src/value.py"
+          ],
+          "expected_target_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "inspection_digest": "f8a99aeb551938ec45228d5f6a8a514b9c3361689478dca56d7ff26b51938770",
+          "lifecycle_status": "sym-g5-status:WORKER_STOPPED",
+          "policy": {
+            "modes": [
+              "100644"
+            ],
+            "operations": [
+              "ADD",
+              "MODIFY"
+            ],
+            "protected_paths": [
+              "AGENTS.md",
+              ".env",
+              ".github",
+              "secrets"
+            ],
+            "required_verifications": [
+              "secret_scan"
+            ]
+          },
+          "protocol": "SYMPHONY_G6_INSPECTION_V1",
+          "reason": "actual result inspected against fresh valid non-default target",
+          "result_digest": "7aab17e3e37a92cb79f06272ebbc91b444ee342eed4512760aeae3fb717d2e88",
+          "scope_digest": "6c3fa1e9d2c2df9716796af8a5416984bd5cf0de5b49fe818e0e7697d8a8c8a8",
+          "source_digest": "9281ac0ee8cefdc7a7052665b9af49076e2d27ba13fa6c6f0852fea113c676e5",
+          "target_inventory_digest": "a2c2d50b4cab29d3b376c73510d86e8461c6b56269d36a52213e91446a146e3c",
+          "verification_refs": [
+            "sym-g61-check:syntax",
+            "sym-g61-check:tests",
+            "sym-g61-check:secret_scan",
+            "sym-g61-check:secret_pattern_scan"
+          ]
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "86ae5ea17355fd294ded13384d9c83a3cd395056103f94e3c647d05f0049af42"
+      },
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/inspection-8d49e71b827e31f68e20ed528a37ae35a53dfc72d577ca020961dd62e2ca064e.json",
+        "payload": {
+          "action": "ADOPT",
+          "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+          "canonical_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "changed_paths": [
+            "proof/A.md",
+            "src/value.py"
+          ],
+          "expected_target_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "inspection_digest": "f8a99aeb551938ec45228d5f6a8a514b9c3361689478dca56d7ff26b51938770",
+          "lifecycle_status": "sym-g5-status:WORKER_STOPPED",
+          "policy": {
+            "modes": [
+              "100644"
+            ],
+            "operations": [
+              "ADD",
+              "MODIFY"
+            ],
+            "protected_paths": [
+              "AGENTS.md",
+              ".env",
+              ".github",
+              "secrets"
+            ],
+            "required_verifications": [
+              "secret_scan"
+            ]
+          },
+          "protocol": "SYMPHONY_G6_INSPECTION_V1",
+          "reason": "actual result inspected against fresh valid non-default target",
+          "result_digest": "7aab17e3e37a92cb79f06272ebbc91b444ee342eed4512760aeae3fb717d2e88",
+          "scope_digest": "6c3fa1e9d2c2df9716796af8a5416984bd5cf0de5b49fe818e0e7697d8a8c8a8",
+          "source_digest": "9281ac0ee8cefdc7a7052665b9af49076e2d27ba13fa6c6f0852fea113c676e5",
+          "target_inventory_digest": "a2c2d50b4cab29d3b376c73510d86e8461c6b56269d36a52213e91446a146e3c",
+          "verification_refs": [
+            "sym-g61-check:syntax",
+            "sym-g61-check:tests",
+            "sym-g61-check:secret_scan",
+            "sym-g61-check:secret_pattern_scan"
+          ]
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "1193f38132bd627c1ad91480794912289a5ebc617437ec466114e8390cad4714"
+      },
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/intent.json",
+        "payload": {
+          "adoption_id": "adopt-0f521b44e0e27d5bf659f41ae35a0724",
+          "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+          "attempt_number": 1,
+          "campaign_id": "g61-static",
+          "candidate_commit": "509cffa6dace54f68a7c06a62a8f507c8a93a6eb",
+          "candidate_tree": "9aee89d23984686f5ef2b1e1971020b3d83fbb38",
+          "created_at": "2026-10-10T01:00:00Z",
+          "decision_digest": "8d49e71b827e31f68e20ed528a37ae35a53dfc72d577ca020961dd62e2ca064e",
+          "expected_target_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "generation": 1,
+          "manifest_digest": "b71eed65125272e5d86f2e7b7f3135eaa5f9900f8b555592025dad042d192bca",
+          "protocol": "SYMPHONY_G6_ADOPTION_V1",
+          "repository": "fixture/council",
+          "result_digest": "7aab17e3e37a92cb79f06272ebbc91b444ee342eed4512760aeae3fb717d2e88",
+          "runner_generation": 1,
+          "source_digest": "9281ac0ee8cefdc7a7052665b9af49076e2d27ba13fa6c6f0852fea113c676e5",
+          "status": "INTENT",
+          "target_branch": "proof/g61-static",
+          "task_id": "A",
+          "worker_run_id": "41414141414141414141414141414141"
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "3428ef7345ba65a87decc0483ae9092d919b328d9ec511347b42edb9fb5a71b3"
+      },
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/objects.json",
+        "payload": {
+          "candidate_commit": "509cffa6dace54f68a7c06a62a8f507c8a93a6eb",
+          "intent_digest": "1718b4b1d9e0d7fb1af8697b95dceb0b2b5f19165b441327f6e10cd25772835a",
+          "tree": "9aee89d23984686f5ef2b1e1971020b3d83fbb38"
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "b10a7ef7d9c71db2abde1d5bbbca8b47c52cd0f98cd4be8c479be759ff98b29d"
+      },
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/receipt.json",
+        "payload": {
+          "adoption_id": "adopt-0f521b44e0e27d5bf659f41ae35a0724",
+          "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+          "attempt_number": 1,
+          "campaign_id": "g61-static",
+          "generation": 1,
+          "head_after": "509cffa6dace54f68a7c06a62a8f507c8a93a6eb",
+          "head_before": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "intent_digest": "1718b4b1d9e0d7fb1af8697b95dceb0b2b5f19165b441327f6e10cd25772835a",
+          "observed_at": "2026-10-10T01:00:00Z",
+          "protocol": "SYMPHONY_G6_ADOPTION_V1",
+          "ref_intent_digest": "608ec6aadee4a6aaf66fe3fa6eaea4454203250c4901c2c04208084b01a28b5b",
+          "ref_write_retry_count": 0,
+          "remote_tree_blob_ref_verified": true,
+          "repository": "fixture/council",
+          "result_digest": "7aab17e3e37a92cb79f06272ebbc91b444ee342eed4512760aeae3fb717d2e88",
+          "runner_generation": 1,
+          "source_digest": "9281ac0ee8cefdc7a7052665b9af49076e2d27ba13fa6c6f0852fea113c676e5",
+          "status": "ADOPTED",
+          "target_branch": "proof/g61-static",
+          "task_id": "A",
+          "tree_after": "9aee89d23984686f5ef2b1e1971020b3d83fbb38"
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "38ea8bb83e03d4884bfdaef6cfa4e180a61fb19e07ad81150c0e9f5f2650357f"
+      },
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/ref_intent.json",
+        "payload": {
+          "candidate_commit": "509cffa6dace54f68a7c06a62a8f507c8a93a6eb",
+          "intent_digest": "1718b4b1d9e0d7fb1af8697b95dceb0b2b5f19165b441327f6e10cd25772835a"
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "49bca7e30bacf8db866884fa540ea7814fea4f053d98cc09d5779fc950b5ebd3"
+      },
+      {
+        "path": "symphony_adoptions/g61-static/adopt-0f521b44e0e27d5bf659f41ae35a0724/result.json",
+        "payload": {
+          "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+          "attempt_number": 1,
+          "campaign_id": "g61-static",
+          "evidence_refs": [
+            "sym-g61-check:syntax",
+            "sym-g61-check:tests",
+            "sym-g61-check:secret_scan",
+            "sym-g61-check:secret_pattern_scan"
+          ],
+          "expected_target_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+          "generation": 1,
+          "issue_id": "fixture/council#165",
+          "mutations": [
+            {
+              "before_sha256": null,
+              "content_sha256": "26ebb2d0d175a8795cf55055954307def09f068c90ccc95de901dda95dc9d561",
+              "mode": "100644",
+              "operation": "ADD",
+              "path": "proof/A.md",
+              "source_path": null,
+              "type": "blob"
+            },
+            {
+              "before_sha256": "585c93666fcb046b7b264d3fa73202aa2a38254ae82a4b3ba19e873c2d5a9886",
+              "content_sha256": "69ef4f409b530264b0da21ad4054978ada08895c93631a0da1957e2a10b592b5",
+              "mode": "100644",
+              "operation": "MODIFY",
+              "path": "src/value.py",
+              "source_path": null,
+              "type": "blob"
+            }
+          ],
+          "protocol": "SYMPHONY_G6_RESULT_V1",
+          "repository": "fixture/council",
+          "request_digest": "5d277dcbfbda2d8b7cd704189848961239bbdb7b41a3c8470192db628a0d2bb6",
+          "result_digest": "7aab17e3e37a92cb79f06272ebbc91b444ee342eed4512760aeae3fb717d2e88",
+          "runner_generation": 1,
+          "schema_version": 1,
+          "scope_digest": "6c3fa1e9d2c2df9716796af8a5416984bd5cf0de5b49fe818e0e7697d8a8c8a8",
+          "source_digest": "9281ac0ee8cefdc7a7052665b9af49076e2d27ba13fa6c6f0852fea113c676e5",
+          "target_branch": "proof/g61-static",
+          "task_id": "A",
+          "worker_run_id": "41414141414141414141414141414141",
+          "workspace_fingerprint": "79796f49dda3ca79f76c292a307e57a241c35b56a53768bd18891a83ead0e842"
+        },
+        "protocol": "SYMPHONY_G6_ADOPTION_V1",
+        "record_digest": "484448a1c95a82a5998e32172e769a098b062dfc935656f99b17fc59fe246586"
+      }
+    ]
+  },
+  {
+    "case": "L05",
+    "first": "PASS",
+    "after_cleanup_restart": "REJECTED",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "object_posts": 0,
+    "default_branch_unchanged": true,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0
+  },
+  {
+    "case": "M01-valid-replay",
+    "first": "ADOPTED",
+    "after_cleanup_restart": "NOOP_DUPLICATE",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M02-expired",
+    "first": "REJECTED",
+    "after_cleanup_restart": "REJECTED",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M03-head-race",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M04-task-change",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M05-default-drift",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M06-before-fence-crash",
+    "first": "CRASH",
+    "after_cleanup_restart": "ADOPTED",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M07-after-fence-crash",
+    "first": "CRASH",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 0,
+    "our_ref_mutations": 0,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M08-after-ref-crash",
+    "first": "CRASH",
+    "after_cleanup_restart": "ADOPTED",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M09-lost-before",
+    "first": "UNKNOWN",
+    "after_cleanup_restart": "UNKNOWN",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 0,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  },
+  {
+    "case": "M10-lost-after",
+    "first": "ADOPTED",
+    "after_cleanup_restart": "NOOP_DUPLICATE",
+    "update_refs_requests": 1,
+    "our_ref_mutations": 1,
+    "real_github_writes": 0,
+    "model_provider_LIVE": 0,
+    "default_branch_unchanged": true
+  }
+]

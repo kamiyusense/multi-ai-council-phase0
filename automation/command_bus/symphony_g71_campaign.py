@@ -53,6 +53,10 @@ class StaticReceiptCampaignSeam:
         self.flow = flow; self.store = campaign_store
         self.campaign_id = campaign_id; self.generation = generation; self.policy = policy
 
+    def _campaign_attempt_number(self, manifest):
+        """Logical counter; observation adapters may supply a durable binding."""
+        return manifest['attempt_number']
+
     def _restore(self, manifest, expected_revision):
         if seal_manifest(manifest) != manifest:
             raise ValueError('manifest integrity mismatch')
@@ -72,7 +76,7 @@ class StaticReceiptCampaignSeam:
                 or digest(attempt.intent['scope']) != manifest['scope_digest']):
             raise ValueError('worker/workspace/scope mismatch')
         task = cp.state.tasks[manifest['task_id']]
-        if task.attempts != manifest['attempt_number'] or task.expected_target_head != manifest['expected_target_head']:
+        if task.attempts != self._campaign_attempt_number(manifest) or task.expected_target_head != manifest['expected_target_head']:
             raise ValueError('task attempt/head mismatch')
         if task.status not in (TaskStatus.RUNNING,TaskStatus.WAITING,TaskStatus.BLOCKED,TaskStatus.COMPLETE):
             raise ValueError('task has no active observed attempt')

@@ -3,6 +3,9 @@ name: Symphony G6.3 synthetic independent verifier
 on:
   pull_request:
     paths:
+      - automation/command_bus/symphony_g72*.py
+      - automation/command_bus/tests/test_symphony_g72*.py
+      - automation/command_bus/scripts/symphony_g72*.py
       - automation/command_bus/symphony_g71*.py
       - automation/command_bus/tests/test_symphony_g71_campaign.py
       - automation/command_bus/scripts/symphony_g71_synthetic_candidate.py
@@ -38,15 +41,18 @@ jobs:
           docker pull "$PYTHON_IMAGE"
           docker pull "$SCANNER_IMAGE"
           mkdir -p "$RUNNER_TEMP/g63-synthetic"
+          python -m automation.command_bus.scripts.symphony_g72_synthetic_candidate export
 
       - name: Independent syntax
         run: |
           set -o pipefail
           docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
             --user 65534:65534 --pids-limit 64 --memory 256m --cpus 2 --tmpfs /tmp:rw,noexec,nosuid,size=64m \
-            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly --workdir /source \
+            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate",dst=/candidate,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate-inputs.json",dst=/candidate-inputs.json,readonly --workdir /source \
             -e PYTHONDONTWRITEBYTECODE=1 -e SYMPHONY_G63_ISOLATED=1 "$PYTHON_IMAGE" \
-            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier syntax && python -m automation.command_bus.scripts.symphony_g71_synthetic_candidate' \
+            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier syntax && python -m automation.command_bus.scripts.symphony_g71_synthetic_candidate && python -m automation.command_bus.scripts.symphony_g72_synthetic_candidate syntax' \
             | tee "$RUNNER_TEMP/g63-synthetic/syntax.jsonl"
 
       - name: Independent tests
@@ -54,9 +60,11 @@ jobs:
           set -o pipefail
           docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
             --user 65534:65534 --pids-limit 64 --memory 256m --cpus 2 --tmpfs /tmp:rw,noexec,nosuid,size=64m \
-            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly --workdir /source \
+            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate",dst=/candidate,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate-inputs.json",dst=/candidate-inputs.json,readonly --workdir /source \
             -e PYTHONDONTWRITEBYTECODE=1 -e SYMPHONY_G63_ISOLATED=1 "$PYTHON_IMAGE" \
-            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier isolation && python -m unittest automation.command_bus.tests.test_symphony_g63_connection automation.command_bus.tests.test_symphony_g7_static automation.command_bus.tests.test_symphony_g71_campaign -v' \
+            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier isolation && python -m unittest automation.command_bus.tests.test_symphony_g63_connection automation.command_bus.tests.test_symphony_g7_static automation.command_bus.tests.test_symphony_g71_campaign automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_g72_candidate -v && python -m automation.command_bus.scripts.symphony_g72_independent_test' \
             2>&1 | tee "$RUNNER_TEMP/g63-synthetic/tests.txt"
 
       - name: Independent secret scan
@@ -75,6 +83,7 @@ jobs:
           fixture_dir="$RUNNER_TEMP/g63-scanner-fixtures"
           args=(--rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --user 65534:65534 --pids-limit 64 --memory 128m --tmpfs /tmp:rw,noexec,nosuid,size=32m --mount "type=bind,src=$fixture_dir,dst=/fixtures,readonly")
           docker run "${args[@]}" "$SCANNER_IMAGE" dir /fixtures/clean --config /fixtures/trusted.toml --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner
+          docker run "${args[@]}" --mount "type=bind,src=$RUNNER_TEMP/g72-candidate,dst=/candidate,readonly" "$SCANNER_IMAGE" dir /candidate --config /fixtures/trusted.toml --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner
           set +e
           docker run "${args[@]}" "$SCANNER_IMAGE" dir /fixtures/negative --config /fixtures/trusted.toml --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner > "$RUNNER_TEMP/g63-synthetic/negative-scan.txt" 2>&1
           status=$?
@@ -88,6 +97,8 @@ jobs:
         run: |
           python - <<'PY'
           import os,json,hashlib
+          from automation.command_bus.symphony_g72_candidate import PROTOCOL
+          from automation.command_bus.symphony_result_manifest import digest
           from pathlib import Path
           p=Path(os.environ['RUNNER_TEMP'])/'g63-synthetic'
           body={'protocol':'SYMPHONY_G63_SYNTHETIC_QUALIFICATION_V1','exact_head':os.environ['EXACT_HEAD'],
@@ -96,6 +107,17 @@ jobs:
                 'actual_result_adoption':0,'independent_steps':['syntax','tests','secret_scan'],
                 'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.iterdir())}}
           (p/'synthetic-qualification.json').write_text(json.dumps(body,indent=2)+'\n')
+          # Run/job slug is emitted without tokens; numeric job pin is verified by the external GET-only reader.
+          inputs=json.loads((p.parent/'g72-candidate-inputs.json').read_text())
+          att={'protocol':PROTOCOL,'synthetic':True,'workflow_source_commit':os.environ['EXACT_HEAD'],
+               'workflow_sha256':inputs['workflow_sha256'],'run_id':int(os.environ['GITHUB_RUN_ID']),
+               'run_attempt':int(os.environ['GITHUB_RUN_ATTEMPT']),'job_name':os.environ['GITHUB_JOB'],
+               'actual_candidate_attestation':False,'actual_result_adoption':0,'model_starts':0,
+               **{k:inputs[k] for k in ('candidate_commit','candidate_tree','result_digest','source_digest','scope_digest','expected_target_head','input_digest')},
+               'checks':{k:'PASS' for k in ('syntax','tests','secret_scan')}}
+          (p/'g72-attestation.json').write_text(json.dumps({**att,'attestation_digest':digest(att)},indent=2)+'\n')
+          # Audit input bytes are synthetic and contain no credentials.
+          (p/'g72-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
           PY
 
       - name: Upload synthetic qualification
