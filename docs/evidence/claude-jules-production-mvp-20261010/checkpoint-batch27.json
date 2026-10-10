@@ -1,0 +1,70 @@
+{
+  "profile": "CLAUDE_JULES_EVIDENCE_CHECKPOINT_V1",
+  "batch": 27,
+  "date_jst": "2026-10-10",
+  "goal": "production MVP: automatic durable slots, production budgets, long-running authorization, 3-task mock",
+  "branch": "feature/claude-jules-durable-budget-guard",
+  "start_head": "c5978fcab2fa7e42737419fe75eb452fd3873971",
+  "main_head": "4bb5cd72ee0d9912376b0bb3b989cbb028806392",
+  "done": [
+    "V2 budget declaration with slot_create",
+    "production ledger namespace separate from the 9/10 proof ledger",
+    "loser advances to next slot",
+    "fresh ledger reads (cache drop)",
+    "TOCTOU base re-check before label",
+    "local bare-git race tests",
+    "3+ task autonomous mock with faults",
+    "quota WAIT/resume",
+    "GitHub signal issues",
+    "human stop switch",
+    "long-running templates",
+    "active campaign directory in v1.6"
+  ],
+  "tests": {
+    "full_local": "2280 OK (skipped=1)",
+    "compileall": "OK",
+    "new_git": "7 PASS",
+    "new_mvp": "8 PASS",
+    "durable_budget": "37 PASS"
+  },
+  "live": {
+    "jules_starts": 0,
+    "labels_written": 0,
+    "proof_ledger": "9/10 unchanged",
+    "issue_338_labels": [],
+    "routine_changed": false,
+    "active_campaign_files": false,
+    "authorization_files_valid": false
+  },
+  "artifacts_sha256": {
+    "automation/command_bus/claude_jules_durable_budget.py": "0dda8b41f6fe90080f93e6350dff61e34e478844311db59cc658cf0114573bfc",
+    "automation/command_bus/claude_jules_starter_gh.py": "165a0b1d3b54d085d40c810d44fdd865ea22e75b2e6e7529e0b315e501cb308e",
+    "automation/command_bus/claude_jules_starter_live.py": "ff71da9cd7d914e71c746af300051969533f45cea5f66316c23c3de6a0c16244",
+    "automation/command_bus/tests/budget_fixtures.py": "e38ed206eb5d321f79bdd5713e53ba2771c677512d9d0a11ca7ca338d2ec437b",
+    "automation/command_bus/tests/test_claude_jules_autonomous_mvp.py": "7fb523b9b2a1c3af1a2f71d6e539c958042a93ba508dceed865b63caee7b2fb2",
+    "automation/command_bus/tests/test_claude_jules_durable_budget.py": "19206087b404b24c604f0583eb9efba6c9b280c6c28eee434a266ac03ee35e04",
+    "automation/command_bus/tests/test_claude_jules_durable_budget_git.py": "d389836aec35cebe1d7dd5b29c5f46365d516035a91e38babb8e2939805c6bd8",
+    "automation/command_bus/tests/test_routine_prompt_v1_6.py": "16770cf8c6d6fd4de7ae38351f68b3ed8cd3bbbc247c50c00d5d50a697743636",
+    "docs/claude-jules-loop/ACTIVATION.md": "ddbeccf7b45c253d687313810eeb44d946410305b06dc2809d9747a9dd78157b",
+    "docs/evidence/claude-jules-production-mvp-20261010/batch27-production-mvp.md": "1da9d0f2a5d3843ac873fc73bd83e103d2f5d418879744b32d82be20864cb70e",
+    "docs/evidence/claude-jules-production-mvp-20261010/prod-authorization.TEMPLATE.json": "f5c30f6f68eaf0d66d03bbf7423a282a97e142983a45c77486d5f77c0180cd1e",
+    "docs/evidence/claude-jules-production-mvp-20261010/prod-budget-declaration.TEMPLATE.json": "5cc463db0a116ab067262c92e902def860d61fce1a1331298a5aa8a363dbdfe3",
+    "docs/evidence/claude-jules-production-mvp-20261010/prod-campaign.TEMPLATE.json": "389a1fe7c6de150ab84897fe8ff5f4877e65f0a95e7f93324af35edbcaf412a9",
+    "docs/evidence/claude-jules-production-starter-20261009/build_routine_prompt_v1_6.py": "2b84fc04ca7880d33c5655928bdefc7d84ff84c2073fa931cb0eb5595d2f036f",
+    "docs/evidence/claude-jules-production-starter-20261009/routine-prompt-v1.5.1-to-v1.6.diff": "f65c1fd6d6d313ef8d60a366f558d1f6519450f0e9b189b3b65bf3f7e5d07678",
+    "docs/evidence/claude-jules-production-starter-20261009/routine-prompt-v1.6.CANDIDATE.txt": "00445019c5971f61a539a04f269f68beaf83ee7758b59c3144455621cc766b94",
+    "docs/evidence/claude-jules-production-starter-20261009/routine-prompt-v1.6.manifest.json": "75bfa00c67abbf8731707efcc85d79b1343b1428b04a14c360ccb1fe3dc1100b"
+  },
+  "unknown": [
+    "Routine cloud session push to the data branch",
+    "Jules duplicate-label behaviour",
+    "Draft PR Routine wake",
+    "real LIVE multi-task run"
+  ],
+  "human_steps_to_first_live": [
+    "merge code PR",
+    "merge activation PR (active/ files, credits off)",
+    "Routine UI: paste v1.6 + hourly schedule",
+    "Run now"
+  ]
+}

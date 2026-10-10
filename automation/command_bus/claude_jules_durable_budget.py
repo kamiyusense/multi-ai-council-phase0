@@ -19,9 +19,11 @@ human Merge, and records written under a smaller cap still count.
   file commit on the tip each controller read (``GitLiveClient.create``).  Git's ref update carries the old
   value and the server rejects a non-fast-forward, so at most one of the two commits lands; the loser's
   readback shows the winner's record and it moves on (and finds the cap).  This is the git protocol contract;
-  it has NOT been independently exercised against GitHub in this repository, so ``SLOT_CREATE_ENABLED`` is
-  False: this module never creates a slot by itself yet.  A slot can still be used when its record already
-  exists (written by a separately approved step) and is bound to exactly this activation.
+  is exercised here against a local bare git remote with two independent clones racing for the same slot
+  (``test_claude_jules_durable_budget_git``), not against GitHub itself.  Whether a budget creates slots by
+  itself is decided by its human-approved declaration (V2 ``slot_create``); a V1 declaration never creates.
+  A provable loser (the slot reads back as another controller's record) re-reads and tries the next slot,
+  bounded by the cap; every read and readback drops the client's cached branch tip first.
 * Per issue: a slot is bound (``command_id`` + ``intent_sha256``) to one repository, campaign, issue, task,
   correlation, generation, task digest and expected head.  The same activation finding its own slot is
   ``RECOVERED`` (restart), any other binding is ``COLLISION``.  Two controllers holding the same RECOVERED slot
@@ -42,13 +44,15 @@ from . import claude_jules_production_starter as st
 from .claude_jules_dispatch import canonical_json, sha256_of
 
 DECLARATION_PROFILE = "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1"
+DECLARATION_PROFILE_V2 = "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V2"   # + campaign_id, slot_create
 SLOT_PROFILE = "CLAUDE_AUTO_LIVE_BUDGET_SLOT_V1"
-SLOT_CREATE_ENABLED = False          # see the module docstring; flipping it needs review + Merge
+SLOT_CREATE_ENABLED = False          # default when the declaration does not decide (V1); a V2 declaration decides
 _DECL_KEYS = {"profile", "budget_id", "repository", "data_branch", "ledger_prefix", "cap", "approved_by",
               "approval_ref"}
+_DECL_KEYS_V2 = _DECL_KEYS | {"campaign_id", "slot_create"}
 _SLOT_KEYS = {"schema_version", "profile", "slot", "cap", "command_id", "intent_sha256", "origin_loop_id",
               "acquired_at", "counts_as_used", "retry_count", "slot_sha256"}
-_SLOT_FILE = re.compile(r"^slot-([0-9]{2})\.json$")
+_SLOT_FILE = re.compile(r"^slot-([0-9]{2,4})\.json$")
 _SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:#@-]{0,199}$")
 
 ACQUIRED, RECOVERED, EXHAUSTED, COLLISION, UNKNOWN, DISABLED = (
@@ -68,14 +72,21 @@ class Reservation:
 
 
 def validate_declaration(decl: Any, *, repository: str) -> list[str]:
-    if not isinstance(decl, dict) or set(decl) != _DECL_KEYS or decl.get("profile") != DECLARATION_PROFILE:
-        return ["budget declaration is not a CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1 record"]
+    v1 = isinstance(decl, dict) and set(decl) == _DECL_KEYS and decl.get("profile") == DECLARATION_PROFILE
+    v2 = isinstance(decl, dict) and set(decl) == _DECL_KEYS_V2 and decl.get("profile") == DECLARATION_PROFILE_V2
+    if not (v1 or v2):
+        return ["budget declaration is not a CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1/V2 record"]
     problems = []
+    if v2:
+        if not isinstance(decl["campaign_id"], str) or not decl["campaign_id"].strip():
+            problems.append("budget declaration campaign_id missing")
+        if not isinstance(decl["slot_create"], bool):
+            problems.append("budget declaration slot_create must be true or false")
     if decl["repository"] != repository:
         problems.append("budget declaration is for another repository")
     cap = decl["cap"]
-    if isinstance(cap, bool) or not isinstance(cap, int) or not 1 <= cap <= 99:
-        problems.append("budget cap must be an integer 1..99")
+    if isinstance(cap, bool) or not isinstance(cap, int) or not 1 <= cap <= 9999:
+        problems.append("budget cap must be an integer 1..9999")
     for key in ("budget_id", "data_branch", "ledger_prefix", "approved_by", "approval_ref"):
         if not isinstance(decl[key], str) or not decl[key].strip():
             problems.append(f"budget declaration {key} missing")
@@ -109,15 +120,23 @@ def origin_of(authorization: dict[str, Any]) -> str:
 
 class DurableBudget:
     def __init__(self, client: Any, declaration: dict[str, Any], *, repository: str,
-                 create_enabled: bool = SLOT_CREATE_ENABLED):
+                 create_enabled: bool | None = None):
         problems = validate_declaration(declaration, repository=repository)
         if problems:
             raise ValueError("; ".join(problems))
+        if create_enabled is None:      # the human-approved declaration decides; V1 never creates
+            create_enabled = declaration.get("slot_create", SLOT_CREATE_ENABLED) is True
         self.client, self.decl, self.create_enabled = client, declaration, create_enabled
         self.cap, self.prefix, self.branch = declaration["cap"], declaration["ledger_prefix"], declaration["data_branch"]
 
     def path(self, slot: int) -> str:
-        return f"{self.prefix}slot-{slot:02d}.json"
+        return f"{self.prefix}slot-{slot:02d}.json" if slot < 100 else f"{self.prefix}slot-{slot:04d}.json"
+
+    def _fresh(self) -> None:
+        """Drop any cached branch tip: a ledger read or readback is never served from a stale cache."""
+        invalidate = getattr(self.client, "invalidate", None)
+        if callable(invalidate):
+            invalidate(self.branch)
 
     def _validate(self, record: Any, path: str) -> dict[str, Any]:
         if not isinstance(record, dict) or set(record) != _SLOT_KEYS or record.get("profile") != SLOT_PROFILE:
@@ -134,6 +153,7 @@ class DurableBudget:
 
     def slots(self) -> list[dict[str, Any]]:
         """Every consumed slot, verified.  Anything unexpected is UNKNOWN, never "free"."""
+        self._fresh()
         try:
             contents = list(self.client.list(self.prefix, self.branch))
         except Exception as exc:          # noqa: BLE001 - every read failure is UNKNOWN
@@ -167,6 +187,16 @@ class DurableBudget:
             cid, intent = command_id(activation), sha256_of(activation)
         except (ValueError, KeyError) as exc:
             return Reservation(UNKNOWN, f"activation identity invalid: {exc}")
+        for _ in range(self.cap + 1):              # bounded: each pass is one fresh read and at most one create
+            res = self._reserve_once(cid, intent, origin=origin, max_for_origin=max_for_origin, now=now)
+            if res is not None:
+                return res
+        return Reservation(UNKNOWN, "the budget ledger kept changing; the next wake re-reads it")
+
+    def _reserve_once(self, cid: str, intent: str, *, origin: str, max_for_origin: int,
+                      now: str) -> Reservation | None:
+        """One fresh read and at most one create.  None = a DIFFERENT controller provably took this slot number
+        (its record is what reads back), so ours did not land and the next slot may be tried."""
         try:
             slots = self.slots()
         except BudgetUnknown as exc:
@@ -184,8 +214,8 @@ class DurableBudget:
         if sum(1 for s in slots if s["origin_loop_id"] == origin) >= max_for_origin:
             return Reservation(EXHAUSTED, f"this authorization's {max_for_origin} activation(s) are used up")
         if not self.create_enabled:
-            return Reservation(DISABLED, "creating a budget slot is disabled until the create-only reservation "
-                                         "is proven against GitHub; an approved pre-written slot record is required")
+            return Reservation(DISABLED, "slot creation is not enabled by the budget declaration; an approved "
+                                         "pre-written slot record is required")
         record = {"schema_version": 1, "profile": SLOT_PROFILE, "slot": len(slots) + 1, "cap": self.cap,
                   "command_id": cid, "intent_sha256": intent, "origin_loop_id": origin, "acquired_at": now,
                   "counts_as_used": True, "retry_count": 0}
@@ -196,6 +226,7 @@ class DurableBudget:
                                self.branch)
         except Exception:               # noqa: BLE001 - the response is not the truth; readback decides
             pass
+        self._fresh()
         try:
             back = self.client.get(path, self.branch)
         except Exception as exc:        # noqa: BLE001
@@ -203,17 +234,19 @@ class DurableBudget:
         if back is None:
             return Reservation(UNKNOWN, f"slot {record['slot']} not visible on readback; not re-sent")
         try:
-            if json.loads(back.text) == record:
-                return Reservation(ACQUIRED, f"slot {record['slot']}/{self.cap} reserved", record)
+            other = json.loads(back.text)
         except (ValueError, TypeError):
             return Reservation(UNKNOWN, f"slot {record['slot']} unreadable on readback")
-        # another controller holds this slot number: one more read, no second create in this call
-        return Reservation(UNKNOWN, f"slot {record['slot']} was taken by another controller; the next wake "
-                                    "re-reads the ledger")
+        if other == record:
+            return Reservation(ACQUIRED, f"slot {record['slot']}/{self.cap} reserved", record)
+        if isinstance(other, dict) and other.get("command_id") == cid:
+            return None                 # ours under an earlier timestamp (a racing twin of this wake): re-read
+        return None                     # another controller won this slot number: re-read, try the next one
 
     def holds(self, record: dict[str, Any]) -> bool:
         """After the label: the slot still holds exactly our record (the ledger was not rewritten)."""
         try:
+            self._fresh()
             back = self.client.get(self.path(record["slot"]), self.branch)
             return back is not None and json.loads(back.text) == record
         except Exception:               # noqa: BLE001
@@ -230,7 +263,9 @@ def prepared_slot_record(activation: dict[str, Any], *, slot: int, cap: int, ori
 
 
 def pre_label_problems(issue: dict[str, Any], *, repository: str, campaign: dict[str, Any], trusted: set[str],
-                       base_head: Callable[[], str]) -> tuple[list[str], dict[str, Any] | None]:
+                       base_head: Callable[[], str],
+                       changed_paths: Callable[[str, str], list[str] | None] | None = None
+                       ) -> tuple[list[str], dict[str, Any] | None]:
     """Fresh-issue checks right before a label (points 3-7, 15-18).  Any problem means no label."""
     problems: list[str] = []
     task, err = st._task_of(issue.get("body") or "")
@@ -268,8 +303,23 @@ def pre_label_problems(issue: dict[str, Any], *, repository: str, campaign: dict
         problems.append(f"base head unreadable ({exc})")
     if head is not None and not st._SHA40.fullmatch(str(head)):
         problems.append("base head unreadable")
-    if not st._SHA40.fullmatch(str(task.get("expected_target_head") or "")):
+    expected = str(task.get("expected_target_head") or "")
+    if not st._SHA40.fullmatch(expected):
         problems.append("task expected_target_head invalid")
+    elif head is not None and st._SHA40.fullmatch(str(head)) and head != expected:
+        # the base moved since the snapshot (TOCTOU): re-evaluate the same base policy on the fresh head
+        policy = campaign["policy"].get("base_policy", "descendant_untouched")
+        allowed = {p.get("path") for p in task.get("allowed_paths") or []}
+        try:
+            changed = changed_paths(expected, head) if changed_paths else None
+        except Exception:                 # noqa: BLE001
+            changed = None
+        if policy == "exact":
+            problems.append("base branch moved (exact base policy)")
+        elif changed is None:
+            problems.append("base branch moved and its changed paths are unknown")
+        elif set(changed) & allowed:
+            problems.append("base branch changed an allowed path since the task was prepared")
     if issue.get("state") != "OPEN":
         problems.append("issue is not open")
     act = activation_of(task, repository=repository, campaign_id=campaign["campaign_id"], issue=issue["number"]) \

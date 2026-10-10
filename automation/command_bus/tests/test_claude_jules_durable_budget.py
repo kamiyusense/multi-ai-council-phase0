@@ -91,10 +91,21 @@ class LedgerTests(unittest.TestCase):
                            now="t"))
         results["a"] = a.reserve(activation(), origin=AUTH_ORIGIN, max_for_origin=5, now="t")
         self.assertEqual(results["b"].status, db.ACQUIRED)
-        self.assertEqual(results["a"].status, db.UNKNOWN)            # its readback shows B's record: not ours
+        self.assertEqual(results["a"].status, db.EXHAUSTED)          # B's record reads back; A re-reads: 10/10
         self.assertEqual(len(store.files), 10)
         self.assertEqual(bf.budget(store).reserve(activation(), origin=AUTH_ORIGIN, max_for_origin=5,
                                                   now="t").status, db.EXHAUSTED)
+
+    def test_the_provable_loser_moves_to_the_next_slot(self):
+        store = bf.LedgerStore()
+        a, b = bf.budget(store, cap=12), bf.budget(store, cap=12)
+        out = {}
+        store.before_create = lambda: out.setdefault("b", b.reserve(
+            activation(issue=339, corr="prd-002-702497c"), origin=AUTH_ORIGIN, max_for_origin=5, now="t"))
+        out["a"] = a.reserve(activation(), origin=AUTH_ORIGIN, max_for_origin=5, now="t")
+        self.assertEqual((out["b"].record["slot"], out["a"].record["slot"]), (10, 11))
+        self.assertEqual((out["a"].status, out["b"].status), (db.ACQUIRED, db.ACQUIRED))
+        self.assertEqual(bf.budget(store, cap=12).usage()["used"], 11)
 
     def test_lost_create_response_is_decided_by_readback(self):                           # C, I
         store = bf.LedgerStore()
@@ -148,6 +159,13 @@ class LedgerTests(unittest.TestCase):
                                                                                max_for_origin=1, now="t")
         self.assertEqual(r.status, db.DISABLED)
         self.assertEqual(store.creates, [])
+
+    def test_v2_declaration_decides_slot_creation(self):
+        on = db.DurableBudget(bf.LedgerStore(), bf.declaration_v2(), repository=REPO)
+        off = db.DurableBudget(bf.LedgerStore(), bf.declaration_v2(slot_create=False), repository=REPO)
+        self.assertEqual((on.create_enabled, off.create_enabled), (True, False))
+        self.assertTrue(db.validate_declaration(bf.declaration_v2(slot_create="yes"), repository=REPO))
+        self.assertTrue(db.validate_declaration(bf.declaration_v2(campaign_id=""), repository=REPO))
 
     def test_declaration_validation(self):
         good = bf.declaration()
@@ -332,6 +350,27 @@ class LivePortBudgetTests(Base):
                                     now=lambda: st._fmt(self.w.now), budget=bf.budget(self.ledger))
         res = self.tick(port)
         self.assertEqual((res.started, self.ledger.creates), ([], []))
+
+    def test_main_moves_right_before_the_label(self):
+        """TOCTOU: the snapshot saw the expected head, then main moved before the label."""
+        task, _ = st._task_of(self.w.gh.issues[self.first]["body"])
+        allowed = task["allowed_paths"][0]["path"]
+        cases = {"touches the task's file": ([allowed], "changed an allowed path"),
+                 "changed paths unreadable": (None, "changed paths are unknown"),
+                 "unrelated file": (["docs/unrelated.md"], None)}
+        for name, (changed, why) in cases.items():
+            with self.subTest(name):
+                self.setUp()
+                port = self.port(authorization(self.c2))
+                port.base_head = lambda: "b" * 40                        # fresh read: main moved
+                port.base_changed_paths = lambda expected, head, c=changed: c
+                if why:
+                    with self.assertRaisesRegex(live.LiveWriteRefused, why):
+                        port.add_label(self.first, "jules")
+                    self.assertEqual((label_posts(self.runner), self.ledger.creates), ([], []))
+                else:                                                     # descendant_untouched: continue
+                    port.add_label(self.first, "jules")
+                    self.assertEqual(len(label_posts(self.runner)), 1)
 
     def test_only_allowed_writes(self):
         self.tick(self.port(authorization(self.c2)))

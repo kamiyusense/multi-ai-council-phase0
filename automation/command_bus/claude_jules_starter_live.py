@@ -147,6 +147,26 @@ class GhLiveWritePort(GhLoopPort):
             raise st.WriteOutcomeUnknown(f"{kind} #{issue}: exit {getattr(proc, 'returncode', None)}")
         return proc
 
+    STOP_LABEL = "loop-stop"
+
+    def stop_requested(self) -> str | None:
+        """The human's stop switch, readable from a phone: close the control issue or give it ``loop-stop``.
+        Only NEW starts and NEW task issues stop; records and reviews of running work continue.  An unreadable
+        control issue is treated as a stop for new work (UNKNOWN never starts anything)."""
+        n = self.campaign.get("control_issue")
+        if not n:
+            return None
+        try:
+            self._issues.pop(n, None)
+            control = self.read_issue(n)
+        except TransientRead as exc:
+            return f"control issue unreadable ({exc})"
+        if control.get("state") != "OPEN":
+            return f"control issue #{n} is closed (human stop)"
+        if self.STOP_LABEL in (control.get("labels") or []):
+            return f"control issue #{n} has the {self.STOP_LABEL!r} label (human stop)"
+        return None
+
     def _refuse(self, kind: str, issue: int | None, reason: str, payload: dict[str, Any]):
         self.prepared.append({"write": kind, "issue": issue, "payload": payload, "refused": [reason]})
         raise LiveWriteRefused(reason)
@@ -174,6 +194,9 @@ class GhLiveWritePort(GhLoopPort):
             self._refuse("add_label", n, f"issue #{n} unreadable before the label ({exc})", payload)
         if not allowed:
             self._refuse("add_label", n, f"issue #{n} is not authorized", payload)
+        stop = self.stop_requested()
+        if stop:
+            self._refuse("add_label", n, f"HUMAN_STOP: {stop}", payload)
         if self.ambiguous:
             self._refuse("add_label", n, f"an earlier label outcome is unknown ({self.ambiguous}); read back first",
                          payload)
@@ -188,6 +211,8 @@ class GhLiveWritePort(GhLoopPort):
                          payload)
         if self.authorization["budget_id"] != self.budget.decl["budget_id"]:
             self._refuse("add_label", n, "authorization is for another budget", payload)
+        if self.budget.decl.get("campaign_id", self.campaign["campaign_id"]) != self.campaign["campaign_id"]:
+            self._refuse("add_label", n, "the budget declaration is for another campaign", payload)
         self._issues.pop(n, None)                      # fresh read, never this wake's cache
         try:
             issue = self.read_issue(n)
@@ -195,7 +220,8 @@ class GhLiveWritePort(GhLoopPort):
             self._refuse("add_label", n, f"issue #{n} unreadable before the label ({exc})", payload)
         problems, activation = pre_label_problems(
             issue, repository=self.repo, campaign=self.campaign,
-            trusted=set(self.campaign["policy"]["trusted_writers"]), base_head=self.base_head)
+            trusted=set(self.campaign["policy"]["trusted_writers"]), base_head=self.base_head,
+            changed_paths=self.base_changed_paths)
         if problems:
             self._refuse("add_label", n, "; ".join(problems), payload)
         res = self.budget.reserve(activation, origin=origin_of(self.authorization),
@@ -221,6 +247,9 @@ class GhLiveWritePort(GhLoopPort):
         meta = (task or {}).get("campaign") or {}
         if not isinstance(meta, dict) or meta.get("campaign_id") != self.campaign["campaign_id"]:
             self._refuse("create_issue", None, "issue body must hold this campaign's task block", payload)
+        stop = self.stop_requested()
+        if stop:
+            self._refuse("create_issue", None, f"HUMAN_STOP: {stop}", payload)
         self._issue_list = None                        # fresh listing: Layer 3 may have created it since
         dup = find_duplicate_issue(self._all_issues(), title, body)
         if dup is not None:

@@ -1,0 +1,12 @@
+{
+  "profile": "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V2",
+  "budget_id": "jules-prod-c1",
+  "campaign_id": "prod-c1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "data_branch": "claude/claude-jules-autoloop-data",
+  "ledger_prefix": "automation/command_bus/evidence/claude-jules-production-budget/jules-prod-c1/",
+  "cap": 50,
+  "slot_create": true,
+  "approved_by": "",
+  "approval_ref": ""
+}

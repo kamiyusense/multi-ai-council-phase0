@@ -21,6 +21,19 @@ def declaration(**over):
     return decl
 
 
+def declaration_v2(**over):
+    """A production-style budget: its own id and ledger namespace (never the 9/10 proof ledger)."""
+    decl = {"profile": db.DECLARATION_PROFILE_V2, "budget_id": "jules-prod-test", "campaign_id": "prod-test",
+            "repository": "kamiyusense/multi-ai-council-phase0", "data_branch": DATA_BRANCH,
+            "ledger_prefix": PROD_PREFIX, "cap": 50, "slot_create": True, "approved_by": "test-human",
+            "approval_ref": "test approval"}
+    decl.update(over)
+    return decl
+
+
+PROD_PREFIX = "automation/command_bus/evidence/claude-jules-production-budget/jules-prod-test/"
+
+
 @dataclass
 class Content:
     path: str

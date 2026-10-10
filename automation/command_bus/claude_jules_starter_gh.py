@@ -325,6 +325,53 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # ---------------------------------------------------------------- loop tick over real GitHub reads (prepare-only)
+SIGNAL_MARKER = "<!-- claude-jules-signal v1"
+
+
+def signals_from_issues(issues: list[dict[str, Any]], trusted: set[str]) -> list[dict[str, Any]]:
+    """Planner signals kept on GitHub: an issue by a trusted writer holding one ``claude-jules-signal v1`` block
+    (signal_id, objective_id, kind, summary, paths, evidence, ...).  A closed signal issue is resolved.  The
+    planner validates each one against the approved objectives; anything malformed is skipped there, visibly."""
+    out = []
+    for i in issues:
+        body = i.get("body") or ""
+        if "pull_request" in i or SIGNAL_MARKER not in body or (i.get("user") or {}).get("login") not in trusted:
+            continue
+        try:
+            blocks = st._block(body, SIGNAL_MARKER)
+        except (ValueError, TypeError):
+            out.append({"signal_id": f"issue-{i.get('number')}-unreadable"})     # skipped by the planner
+            continue
+        for sig in blocks:
+            if isinstance(sig, dict):
+                sig = dict(sig, source_issue=i.get("number"))
+                if i.get("state") == "closed":
+                    sig["resolved"] = True
+                out.append(sig)
+    return out
+
+
+QUOTA_MARKER = "<!-- claude-jules-quota v1"
+QUOTA_PROFILE = "CLAUDE_JULES_QUOTA_V1"
+
+
+def quota_from_records(comments: list[dict[str, Any]], trusted: set[str]) -> dict[str, Any] | None:
+    """The latest trusted quota record, if it still applies.  An unreadable record is ignored (UNKNOWN)."""
+    for c in sorted(comments, key=lambda c: c.get("id") or 0, reverse=True):
+        body = c.get("body") or ""
+        if c.get("author") not in trusted or QUOTA_MARKER not in body:
+            continue
+        try:
+            rec = st._block(body, QUOTA_MARKER)[0]
+            if rec.get("profile") != QUOTA_PROFILE or rec.get("state") != st.QUOTA_EXHAUSTED:
+                return None
+            st._ts(rec["reset_at"])
+        except (ValueError, KeyError, TypeError, IndexError):
+            return None
+        return {"state": st.QUOTA_EXHAUSTED, "reset_at": rec["reset_at"], "evidence": rec.get("evidence", "")}
+    return None
+
+
 class GhLoopPort:
     """The loop's port over ``gh`` GETs.  Every write raises ``PreparedOnly`` after recording what it would send."""
 
@@ -395,13 +442,26 @@ class GhLoopPort:
         return None if cmp.get("status") not in {"ahead", "identical"} else [f["filename"] for f in cmp["files"]]
 
     def quota(self):
-        return {"state": st.QUOTA_UNKNOWN, "evidence": "Jules subscription usage is not readable"}
+        """Jules subscription usage is not readable, so it is never invented.  A trusted ``claude-jules-quota v1``
+        record on the control issue (written when the provider itself reported its limit) makes it
+        CONFIRMED_EXHAUSTED until ``reset_at``; the starter then WAITs (DEFER QUOTA_EXHAUSTED) and resumes after
+        the reset.  Never a fallback to an API key or metered route."""
+        unknown = {"state": st.QUOTA_UNKNOWN, "evidence": "Jules subscription usage is not readable"}
+        try:
+            control = self.read_control_issue()
+        except TransientRead:
+            return unknown
+        return quota_from_records((control or {}).get("comments") or [],
+                                  set(self.campaign["policy"]["trusted_writers"])) or unknown
 
     def route(self):
         return dict(self.route_declaration)
 
     def signals(self):
-        return self.signal_list
+        """The given signal list, or (None) the signal issues on GitHub: the backlog never lives in a session."""
+        if self.signal_list is not None:
+            return self.signal_list
+        return signals_from_issues(self._all_issues(), set(self.campaign["policy"]["trusted_writers"]))
 
     def _prepare(self, kind: str, **data: Any):
         self.prepared.append({"write": kind, **data})
@@ -439,7 +499,7 @@ def main_tick(argv: list[str]) -> int:
     if args.live_authorization:
         with open(args.live_authorization, encoding="utf-8") as fh:
             authorization = json.load(fh)
-    signals = []
+    signals = None                # default: the signal issues on GitHub
     if args.signals:
         with open(args.signals, encoding="utf-8") as fh:
             signals = json.load(fh)
