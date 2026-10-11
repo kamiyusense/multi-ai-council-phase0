@@ -91,6 +91,10 @@ def attach_same_job(*, requested_unsigned, reviewed_unsigned, signature_verifier
                 or not callable(token_once) or not callable(signature_verifier)):
             raise ValueError('canonical reviewed unsigned envelope required')
         p = envelope['payload']
+        if (c.repository != p['candidate_binding']['repository']
+                or (signature_verifier.issuer, signature_verifier.key_id) !=
+                   (envelope['issuer'],envelope['key_id'])):
+            raise ValueError('issuer job and candidate repository/trust root differ')
         if (not clock(p['issued_at']) <= clock(now()) < clock(p['expires_at'])
                 or not 0 < (clock(p['expires_at'])-clock(p['issued_at'])).total_seconds() <= 600):
             raise ValueError('stale approval before token request')

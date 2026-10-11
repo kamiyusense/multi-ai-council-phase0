@@ -64,10 +64,11 @@ class InstallationTests(TempCase):
             transport,cap,_,flow,issuer,raw=capability_fixture(f)
         import json
         env=json.loads(raw);env['payload'].update(issued_at='2026-10-10T00:59:00Z',expires_at='2026-10-10T01:05:00Z');env=json.loads(issuer.issue(env['payload']));unsigned=canonical({k:v for k,v in env.items()if k!='signature'}).encode()
-        ctx=GitHubOidcExpectedContext(audience='dynamic',subject='repo:kamiyusense/multi-ai-council-phase0:ref:refs/heads/main',
-            repository='kamiyusense/multi-ai-council-phase0',repository_id='1378815294',repository_owner_id='20355232',
+        repo=f.w.manifest['repository']
+        ctx=GitHubOidcExpectedContext(audience='dynamic',subject='repo:'+repo+':ref:refs/heads/main',
+            repository=repo,repository_id='1378815294',repository_owner_id='20355232',
             ref='refs/heads/main',sha=f.w.head,workflow_sha=f.w.head,event_name='workflow_dispatch',run_id='123',
-            workflow_ref='kamiyusense/multi-ai-council-phase0/.github/workflows/symphony-operator-authorize.yml@refs/heads/main',repository_visibility='private')
+            workflow_ref=repo+'/.github/workflows/symphony-operator-authorize.yml@refs/heads/main',repository_visibility='private')
         sig=GitHubOIDCEnvelopeSignatureVerifier(issuer=env['issuer'],key_id=env['key_id'],context=ctx,actor_id='20355232',
             metadata={'issuer':ISSUER,'jwks_uri':ISSUER+'/.well-known/jwks','id_token_signing_alg_values_supported':['RS256']},
             jwks={'keys':[{'kty':'RSA','kid':'fixture-public-only'}]},now=lambda:NOW)
@@ -98,6 +99,13 @@ class InstallationTests(TempCase):
             args,_,_=self.attachment();args['job_context'][k]='wrong'
             with self.subTest(k=k),self.assertRaises(PermissionError):attach_same_job(**args)
             args['token_once'].assert_not_called()
+
+    def test_cross_repository_issuer_context_cannot_authorize_candidate(self):
+        args,_,_=self.attachment();sig=args['signature_verifier']
+        sig.context=replace(sig.context,repository='attacker/other',workflow_ref='attacker/other/.github/workflows/symphony-operator-authorize.yml@refs/heads/main')
+        args['job_context'].update(repository=sig.context.repository,workflow_ref=sig.context.workflow_ref)
+        with self.assertRaises(PermissionError):attach_same_job(**args)
+        args['token_once'].assert_not_called()
 
     def test_no_capability_no_token_and_no_default_credential_lookup(self):
         args,_,_=self.attachment();args['transport_inputs']['capability_factory']=None

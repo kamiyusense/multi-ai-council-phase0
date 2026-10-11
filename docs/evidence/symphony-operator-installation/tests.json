@@ -11,10 +11,10 @@
     ],
     "returncode": 0,
     "result": "PASS",
-    "tests": 43,
+    "tests": 44,
     "skipped": 0,
-    "seconds": 1.24,
-    "log_sha256": "e72c1dcdb43ec32c5cc0b512afac289cba5a8453fc1426b2e20e75d31a43e1ea"
+    "seconds": 1.127,
+    "log_sha256": "93b234cde7b9fb962d232e1e7f8aee2972fd2b10eb6b87fc349ed10c09872075"
   },
   "full": {
     "command": [
@@ -30,10 +30,10 @@
     ],
     "returncode": 0,
     "result": "PASS",
-    "tests": 2213,
+    "tests": 2214,
     "skipped": 1,
-    "seconds": 73.956,
-    "log_sha256": "5087398267c72cc17c5897de6e48207719fb5d6342c31e3783f3c3b6cbdb506a"
+    "seconds": 71.821,
+    "log_sha256": "475effeea8a055040d5305111df1f5d4a67d435b3afdee8b3f30b7dca5535ee4"
   },
   "crypto": {
     "command": [

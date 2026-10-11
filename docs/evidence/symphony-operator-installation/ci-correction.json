@@ -10,5 +10,7 @@
   "cause": "shallow checkout omitted exact PR base object for diff check",
   "correction": "checkout fetch-depth:0; no runtime logic/permissions changes",
   "rerun_of_terminal_job": 0,
-  "next_action": "normal corrective commit and new exact-head CI"
+  "next_action": "normal corrective commit and new exact-head CI",
+  "additional_security_correction": "Require issuer context repository and key/issuer to match independently verified candidate and reviewed envelope before request",
+  "mock_fixture_correction": "Original recorded repo is fixture/council; issuer fixture now uses that identity rather than production repository"
 }

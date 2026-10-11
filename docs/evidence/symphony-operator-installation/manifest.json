@@ -20,13 +20,13 @@
     },
     {
       "path": "automation/command_bus/symphony_operator_installation.py",
-      "bytes": 9975,
-      "sha256": "af9327a8b96cf44d03042e677576b8d881b41d597c1fc1b49cbb045c03719ac6"
+      "bytes": 10264,
+      "sha256": "caab85058e99b43afee2b3ccbf988d7988cef034d3d9a1ad73145ef8d90c25ed"
     },
     {
       "path": "automation/command_bus/tests/test_symphony_operator_installation.py",
-      "bytes": 10552,
-      "sha256": "f613727bc7009bef7d1a3a13f3454229f78e6ef8eb73d37fba929d1042823ff3"
+      "bytes": 11040,
+      "sha256": "8ab6eb9bac360cfd3a8dc4fdba47918ebc3026259e9ea8dab23c62be7aefbf40"
     },
     {
       "path": "docs/SYMPHONY_OPERATOR_INSTALLATION_REVIEW.md",
@@ -35,13 +35,13 @@
     },
     {
       "path": "docs/evidence/symphony-operator-installation/checkpoint.json",
-      "bytes": 2721,
-      "sha256": "0676a6a5bbf0fbd40c3cb1525fa75c0f60f003dd3b3fd62fadb86326a1502a27"
+      "bytes": 2722,
+      "sha256": "e6dd046411dbae0851f760cee1de7b4d3d39337cdf5edf1628c85cf49644a0c9"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/ci-correction.json",
-      "bytes": 475,
-      "sha256": "5f5174f35c4a194ad5865e3b7326320943b7c418c6036ac2765eae9e99471085"
+      "bytes": 789,
+      "sha256": "fce535414105facb5e5bcf10232e695039dfaf890c1a48efc94f24b210976bc0"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/compile.txt.gz",
@@ -65,18 +65,18 @@
     },
     {
       "path": "docs/evidence/symphony-operator-installation/final-secret-scan.json",
-      "bytes": 1535,
-      "sha256": "5c19a1677189fb39cd33d5377f50b155e883d2761947b8244e480b3bade9bf9f"
+      "bytes": 1747,
+      "sha256": "9aa643f79f8ae5d05b085ee98dab0760ac3e1d0ca8373c7a023a135a5462cfaf"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/focused.txt.gz",
-      "bytes": 1682,
-      "sha256": "ada2d5e89e37d9b532c395c7dfe362e1c20bd03827d6372768dfce17a96ad54a"
+      "bytes": 1705,
+      "sha256": "f136324d3c80a6f5c723a77080314e42fe44b8dc3f107b3b4386528c90239f2c"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/full.txt.gz",
-      "bytes": 56685,
-      "sha256": "452bcd2128197a91b2be59883747ba2261f6ed6846f0d2562b3e6d43fb262709"
+      "bytes": 56709,
+      "sha256": "6e66b72043d13d5a05f5913d4eff0566fcc2e4aebb309b41d3619189ee0b94b0"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/gates.json",
@@ -96,12 +96,12 @@
     {
       "path": "docs/evidence/symphony-operator-installation/source-checks.json",
       "bytes": 1094,
-      "sha256": "935786323482804758eefff26bb9ee33ccf64fbc90172c9d769b571466367538"
+      "sha256": "dbcf0b51998fcbce631f4300c1937c3725455ead668baa962bfa289dfcf22e21"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/tests.json",
-      "bytes": 1850,
-      "sha256": "747041b9b73d094c250d5fe060a903ce02f09aea97821830a2c4fcd0266bb550"
+      "bytes": 1851,
+      "sha256": "371ea32c21fde6e694cd954a670e3d4d36416c8b31feabc8ad7260cbeb111e62"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/work-order.md",
