@@ -4,5 +4,18 @@
       "Bash(python3 -m automation.command_bus.claude_jules_live:*)",
       "Bash(python3 -m automation.command_bus.claude_jules_lane_proof_cli:*)"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "grep -qs 'Current Japan time' \"$HOME/.claude/settings.json\" || echo \"Current Japan time: $(TZ=JST-9 date '+%Y-%m-%d %H:%M JST') (use this for the HH:MM footer)\"; true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }
