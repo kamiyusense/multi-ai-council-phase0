@@ -15,8 +15,8 @@
     },
     {
       "path": ".github/workflows/symphony-operator-installation-static.yml",
-      "bytes": 2381,
-      "sha256": "63bb2e9d8599679e8bad62c101dcbd1f5e525bd8a8f7f8334d31764a9934e73d"
+      "bytes": 2406,
+      "sha256": "db32a2b32c90881ddc3903dd678d45e307be331dfe10d5d29936e5c4333af249"
     },
     {
       "path": "automation/command_bus/symphony_operator_installation.py",
@@ -37,6 +37,11 @@
       "path": "docs/evidence/symphony-operator-installation/checkpoint.json",
       "bytes": 2721,
       "sha256": "0676a6a5bbf0fbd40c3cb1525fa75c0f60f003dd3b3fd62fadb86326a1502a27"
+    },
+    {
+      "path": "docs/evidence/symphony-operator-installation/ci-correction.json",
+      "bytes": 475,
+      "sha256": "5f5174f35c4a194ad5865e3b7326320943b7c418c6036ac2765eae9e99471085"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/compile.txt.gz",
@@ -91,7 +96,7 @@
     {
       "path": "docs/evidence/symphony-operator-installation/source-checks.json",
       "bytes": 1094,
-      "sha256": "6439f024559fe10f8e49297f5abbb178fab3e481b9dc6762e51cac708b348a40"
+      "sha256": "935786323482804758eefff26bb9ee33ccf64fbc90172c9d769b571466367538"
     },
     {
       "path": "docs/evidence/symphony-operator-installation/tests.json",
