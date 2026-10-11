@@ -88,6 +88,10 @@ class TestStatusRequestPath(unittest.TestCase):
             "automation/command_bus/jules_api_status_requests/req1.json",
         )
         self.assertEqual(
+            status_request_path("claude-c1-status-001"),
+            "automation/command_bus/jules_api_status_requests/claude-c1-status-001.json",
+        )
+        self.assertEqual(
             status_request_path("a.b_c-d"),
             "automation/command_bus/jules_api_status_requests/a.b_c-d.json",
         )
@@ -97,7 +101,20 @@ class TestStatusRequestPath(unittest.TestCase):
         )
 
     def test_invalid_request_id_raises(self):
-        for bad_req_id in ("", "Req1", "_req", ".req", "-req", "req@1", "a" * 65, None, 123):
+        for bad_req_id in (
+            "",
+            "Req1",
+            "Upper",
+            "../x",
+            "a/b",
+            "_req",
+            ".req",
+            "-req",
+            "req@1",
+            "a" * 65,
+            None,
+            123,
+        ):
             with self.assertRaises(ValueError, msg=f"Should raise for {bad_req_id!r}"):
                 status_request_path(bad_req_id)  # type: ignore[arg-type]
 
