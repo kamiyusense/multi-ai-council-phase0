@@ -200,3 +200,34 @@ class LivePortTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HelperAndKeyScopeTests(unittest.TestCase):
+    """The port builds requests only through Jules' helpers; the key is read only inside the jules-api
+    environment, whose deployment-branch rule the owner sets (docs/CLAUDE_JULES_API_ROUTE_V1.md)."""
+
+    def test_helpers_accept_only_ascii_ids_without_trailing_newline(self):
+        from automation.command_bus.claude_jules_api_message import message_request_path, validate_message_request
+        from automation.command_bus.claude_jules_api_session_link import session_id_of_pr
+        self.assertIsNone(session_id_of_pr("https://jules.google.com/task/²"))
+        self.assertIsNone(session_id_of_pr("https://jules.google.com/task/١٢"))
+        self.assertEqual(session_id_of_pr(PR_BODY), SESSION)
+        with self.assertRaises(ValueError):
+            message_request_path("abc\n")
+        self.assertTrue(validate_message_request({"session_id": "12\n", "expected_state": "COMPLETED",
+                                                  "prompt": "x"}))
+
+    def test_every_job_that_reads_the_key_runs_in_the_jules_api_environment(self):
+        import re
+        from pathlib import Path
+        found = 0
+        for path in sorted((Path(__file__).resolve().parents[3] / ".github" / "workflows").glob("*.yml")):
+            text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+            if "jobs:\n" not in text:
+                continue
+            jobs = re.split(r"\n(?=  [A-Za-z0-9_-]+:\n)", text.split("jobs:\n", 1)[1])
+            for job in jobs:
+                if "JULES_API_KEY" in job and "secrets." in job:
+                    found += 1
+                    self.assertIn("\n    environment: jules-api\n", job, f"{path.name}: {job.split(chr(10))[0]}")
+        self.assertGreaterEqual(found, 7)

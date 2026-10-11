@@ -8,7 +8,7 @@ from pathlib import Path
 
 from automation.command_bus.claude_closed_loop_protocol import (
     BUDGET_EXHAUSTED, CORRECTIVE, CORRECTIVE_EXISTS, NO_OP, NOT_A_TASK, PASS, TASK_BLOCKED, TASK_MARKER,
-    _block, decide, read_with_retry, verify_live_receipt,
+    _block, decide, linked_issue, read_with_retry, verify_live_receipt,
 )
 
 FIX = Path(__file__).parent / "fixtures" / "closed_loop"
@@ -126,6 +126,20 @@ class UnrelatedAndMalformedTests(unittest.TestCase):
         d = decide(pr=PR, issue_body="a normal issue without a task block", issue_comments=[], pr_comments=[],
                    files=FILES, contents=CONTENT)
         self.assertEqual((d.outcome, d.writes), (NOT_A_TASK, ()))
+
+    def test_jules_provider_task_id_is_not_a_second_repository_issue_link(self):
+        task_id = "4724323400892625017"
+        body = (
+            f"Fixes #{task_id}\n\nFixes #331\n\n"
+            f"*PR created automatically by Jules for task [{task_id}](https://jules.google.com/task/{task_id})*"
+        )
+        self.assertEqual(linked_issue(body), 331)
+        d = decide(pr=dict(PR, body=body), issue_body=ISSUE["body"], issue_comments=[], pr_comments=[],
+                   files=FILES, contents=CONTENT)
+        self.assertEqual(d.outcome, PASS)
+
+    def test_two_real_repository_links_remain_ambiguous(self):
+        self.assertIsNone(linked_issue("Fixes #330 and Fixes #331"))
 
     def test_bad_metadata_blocks_the_task_without_any_jules_instruction(self):
         base = task_of(ISSUE["body"])

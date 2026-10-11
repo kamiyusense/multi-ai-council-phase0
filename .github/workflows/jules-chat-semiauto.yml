@@ -18,6 +18,7 @@ jobs:
   dispatch-jules:
     if: github.repository == 'kamiyusense/multi-ai-council-phase0'
     runs-on: ubuntu-latest
+    environment: jules-api
     timeout-minutes: 10
     steps:
       - name: Checkout exact carrier commit

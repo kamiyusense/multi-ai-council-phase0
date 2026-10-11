@@ -36,6 +36,7 @@ RECEIPT_MARKER = "<!-- claude-closed-loop-receipt v1"
 CORRECTIVE_MARKER = "<!-- claude-closed-loop-corrective v1"
 TASK_PROFILE = "CLAUDE_CLOSED_LOOP_TASK_V1"
 _LINK = re.compile(r"\b(?:fixes|closes|resolves)\s+#([0-9]+)\b", re.I)
+_JULES_TASK_URL = re.compile(r"https://jules\.google\.com/task/([0-9]+)\b", re.I)
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _STATUS_OP = {"added": "ADD", "modified": "MODIFY"}
 
@@ -79,8 +80,16 @@ def _block(text: str, marker: str) -> list[Any]:
     return found
 
 
-def linked_issue(pr_body: str) -> int | None:
-    numbers = {int(n) for n in _LINK.findall(pr_body or "")}
+def linked_issue(pr_body: str, is_task: Callable[[int], bool] | None = None) -> int | None:
+    """Return the one repository issue link, ignoring Jules provider task IDs in auto-generated PR bodies.
+
+    With ``is_task`` (reviewer v1.7), only referenced issues that hold exactly one closed-loop task block count, so a
+    stray reference Jules adds (for example a recently merged PR) is ignored; two task issues stay ambiguous."""
+    body = pr_body or ""
+    provider_task_ids = {int(n) for n in _JULES_TASK_URL.findall(body)}
+    numbers = {int(n) for n in _LINK.findall(body)} - provider_task_ids
+    if is_task is not None:
+        numbers = {n for n in numbers if is_task(n)}
     return numbers.pop() if len(numbers) == 1 else None
 
 

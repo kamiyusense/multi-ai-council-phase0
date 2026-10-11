@@ -20,6 +20,8 @@ from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
 from .claude_closed_loop_protocol import CORRECTIVE_MARKER, RECEIPT_MARKER
+from .claude_jules_api_message import build_message_request, message_request_path
+from .claude_jules_api_session_link import session_id_of_pr
 from .claude_jules_loop import TransientRead
 
 Getter = Callable[[str], Any]
@@ -47,8 +49,6 @@ MESSAGE_DIR = "automation/command_bus/jules_api_message_requests/"
 START_DIR = "automation/command_bus/claude_jules_api_start_requests/"
 START_PROFILE = "CLAUDE_JULES_API_START_V1"
 MESSAGE_LIMIT = 4000                       # .github/workflows/jules-session-message.yml refuses longer prompts
-_REQUEST_ID = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
-_JULES_TASK = re.compile(r"https://jules\.google\.com/task/([0-9]+)\b")
 _COMMENT_ID = re.compile(r"#issuecomment-([0-9]+)$")
 _STATUS = re.compile(r"HTTP/\S+\s+(\d{3})")
 _STDERR_STATUS = re.compile(r"\(HTTP (\d{3})\)")
@@ -537,13 +537,11 @@ class GhLoopPort:
     def api_message_request(self, rid, *, receipt, head):
         """(path, request) resending the receipt's corrective comment to the PR's Jules session.  ValueError when
         it cannot be built exactly (no single Jules session link, a corrective that is not a trusted record)."""
-        if not _REQUEST_ID.fullmatch(rid):
-            raise ValueError(f"request id {rid!r} is not a valid file name")
+        path = message_request_path(rid)
         pr = receipt.get("pr")
-        body = self.get(f"repos/{self.repo}/pulls/{pr}").get("body") or ""
-        sessions = set(_JULES_TASK.findall(body))
-        if len(sessions) != 1:
-            raise ValueError(f"PR #{pr} body names {len(sessions)} Jules sessions, not exactly one")
+        session = session_id_of_pr(self.get(f"repos/{self.repo}/pulls/{pr}").get("body") or "")
+        if session is None:
+            raise ValueError(f"PR #{pr} body does not name exactly one Jules session")
         url = receipt.get("corrective_comment") or ""
         m = _COMMENT_ID.search(url)
         if not m:
@@ -558,8 +556,7 @@ class GhLoopPort:
             f"commit {head[:7]} has exactly the same content as"
         prompt = (f"The review comment {url} on PR #{pr} was not applied: {what} the reviewed commit "
                   f"{reviewed[:7]}. Apply that review now on the same PR branch and push the change.\n\n{text}")
-        return f"{MESSAGE_DIR}{rid}.json", {"session_id": sessions.pop(), "expected_state": "COMPLETED",
-                                            "prompt": prompt[:MESSAGE_LIMIT]}
+        return path, build_message_request(session, prompt[:MESSAGE_LIMIT], "COMPLETED")
 
     def api_message(self, rid, *, issue, receipt, head):
         try:
