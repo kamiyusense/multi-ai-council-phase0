@@ -17,8 +17,13 @@ Responsibilities are split on purpose:
   no human-boundary request), the campaign has capacity, quota is not confirmed
   exhausted, and the start was not already made.
 
-The only start mechanism is ``GitHub issue -> jules label -> Jules GitHub
-integration``.  There is no other transport here and no fallback to one.
+Start mechanisms (one per campaign, chosen by the human-merged policy; never switched or fallen back to by the
+loop):
+
+* ``jules-github-app-issue-label``: GitHub issue -> ``jules`` label -> Jules GitHub integration;
+* ``jules-api-carrier`` (owner decision 2026-10-11, docs/CLAUDE_JULES_API_ROUTE_V1.md): GitHub issue -> one
+  create-only start request file on the carrier branch -> GitHub Actions calls the Jules API with the repository
+  secret.  The request file plays the label's role: it is written at most once per issue, ever.
 
 Start sequence (every step is re-derived from a fresh read of GitHub):
 
@@ -62,6 +67,9 @@ from .claude_closed_loop_protocol import RECEIPT_MARKER, TASK_MARKER, _block
 from .claude_closed_loop_review import PASS, parse_receipt, validate_task_v2
 
 ROUTE = "jules-github-app-issue-label"
+ROUTE_API = "jules-api-carrier"
+ROUTES = (ROUTE, ROUTE_API)
+API_AUTH_METHOD = "repository_secret_api_key"     # the key lives only in GitHub Actions secrets
 LABEL = "jules"
 INTENT_MARKER = "<!-- claude-jules-starter-intent v1"
 START_RECEIPT_MARKER = "<!-- claude-jules-starter-receipt v1"
@@ -196,8 +204,8 @@ def validate_policy(policy: Any) -> list[str]:
     if not isinstance(policy, dict) or policy.get("profile") != POLICY_PROFILE:
         return ["policy profile is not CLAUDE_JULES_STARTER_POLICY_V1"]
     problems = []
-    if policy.get("route") != ROUTE:
-        problems.append(f"policy route must be {ROUTE}")
+    if policy.get("route") not in ROUTES:
+        problems.append(f"policy route must be one of {list(ROUTES)}")
     if policy.get("billing") != "subscription":
         problems.append("policy billing must be subscription")
     if policy.get("allow_api_fallback") is not False or policy.get("allow_metered_fallback") is not False:
@@ -240,16 +248,20 @@ def make_policy(**overrides: Any) -> dict[str, Any]:
     return policy
 
 
-def route_problem(observation: Any) -> tuple[str, str] | None:
-    """(action, reason) when the observed start route is not the GitHub-native subscription route."""
+def route_problem(observation: Any, route: str = ROUTE) -> tuple[str, str] | None:
+    """(action, reason) when the observed start route is not the policy's subscription route.
+
+    ``route`` is the policy's route.  The API route is accepted only as the declared ``jules-api-carrier`` with the
+    key in a repository secret and subscription billing; a paid word or another REST API route still stops."""
     if not isinstance(observation, dict) or not observation:
         return DEFER, "start route not observed (UNKNOWN): nothing starts until it is"
     values = {str(observation.get(k, "")).lower() for k in ("transport", "auth_method", "billing_route")}
     if values & _PAID_WORDS or any("rest" in v and "api" in v for v in values):
         return HARD_STOP, f"API / metered route observed {sorted(values)}: new model work stops"
-    if observation.get("transport") != ROUTE or observation.get("billing_route") != "subscription" \
-            or observation.get("auth_method") != "account_oauth":
-        return DEFER, f"start route is not confirmed GitHub-native subscription ({sorted(values)}): UNKNOWN"
+    auth = API_AUTH_METHOD if route == ROUTE_API else "account_oauth"
+    if observation.get("transport") != route or observation.get("billing_route") != "subscription" \
+            or observation.get("auth_method") != auth:
+        return DEFER, f"start route is not the declared {route} subscription route ({sorted(values)}): UNKNOWN"
     return None
 
 
@@ -584,7 +596,7 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     except (ValueError, json.JSONDecodeError) as exc:
         return Step(HARD_STOP, f"campaign manifest invalid: {exc}", scope="campaign", code="MANIFEST_INVALID",
                     human_required=True)
-    if (rp := route_problem(snapshot.get("route_observation"))) is not None:
+    if (rp := route_problem(snapshot.get("route_observation"), policy["route"])) is not None:
         if rp[0] == HARD_STOP:
             return Step(HARD_STOP, rp[1], scope="provider_execution", code="PAID_ROUTE", human_required=True)
         return Step(DEFER, rp[1], scope="provider_execution", code="ROUTE_UNKNOWN")
@@ -605,6 +617,10 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     if not isinstance(cand.get("comments"), list) or not isinstance(cand.get("label_events"), list) \
             or not isinstance(cand.get("labels"), list):
         return defer("READ_UNKNOWN", "issue comments / labels / label history not read (UNKNOWN): nothing starts")
+    api = policy["route"] == ROUTE_API
+    if api and cand.get("api_start_read") is not True:
+        return defer("START_RECORD_UNKNOWN", "the carrier's start request for this issue was not read (UNKNOWN): "
+                     "this issue waits, other work continues")
     if cand.get("label_events_complete") is not True:
         # without the complete label history "never labeled" cannot be proven; no other record can stand in for it
         return defer("LABEL_HISTORY_UNKNOWN", "label history not proven complete (every page of the issue events "
@@ -638,8 +654,8 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     checks.append("task_identity")
     if snapshot.get("repository") != policy["repository"] or campaign.get("repository") != policy["repository"]:
         return iso("WRONG_REPOSITORY", "wrong repository")
-    if task.get("route") not in (None, ROUTE):
-        return iso("ROUTE", f"task asks for route {task.get('route')!r}; only {ROUTE} may start")
+    if task.get("route") not in (None, policy["route"]):
+        return iso("ROUTE", f"task asks for route {task.get('route')!r}; only {policy['route']} may start")
     if task.get("kind", "proof") not in policy["allowed_task_kinds"]:
         return iso("TASK_KIND", f"task kind {task.get('kind')!r} is not allowed by policy")
     if task.get("expected_target_branch") != policy["base_branch"]:
@@ -667,6 +683,12 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
     cur = current_intent(intents, lease)
     labels = set(cand.get("labels") or [])
     ever_labeled = any(e.get("event") == "labeled" and e.get("label") == LABEL for e in cand.get("label_events") or [])
+    if api:
+        if LABEL in labels or ever_labeled:     # the Jules GitHub App would start a second Jules task
+            return iso("LABELED_OUTSIDE", "issue has the jules label on the API route; not started again", True)
+        # the create-only start request is this route's label: present = started, never written twice
+        labels = {LABEL} if cand.get("api_start_exists") else set()
+        ever_labeled = bool(cand.get("api_start_exists"))
     if LABEL in labels or ever_labeled:
         if cur is not None and LABEL in labels:
             body = render_start_receipt({
@@ -674,7 +696,7 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
                 "task_id": task["task_id"], "correlation_id": task["correlation_id"],
                 "generation": task["generation"], "issue": number, "task_sha256": identity_sha,
                 "attempt": cur["attempt"], "intent_comment": cur["_comment"], "controller": controller,
-                "label": LABEL, "outcome": "STARTED", "created_at": _fmt(now)})
+                "label": "start-request" if api else LABEL, "outcome": "STARTED", "created_at": _fmt(now)})
             return Step(WRITE_START_RECEIPT, "label observed after the intent: record the start", number,
                         body=body, checks=tuple(checks + ["label_observed"]))
         if cur is not None:
@@ -792,7 +814,7 @@ def next_step(snapshot: dict[str, Any], *, campaign: dict[str, Any], controller:
             "task_id": task["task_id"], "correlation_id": task["correlation_id"], "generation": task["generation"],
             "issue": number, "task_sha256": identity_sha, "predecessor_correlation_id": pred_correlation,
             "predecessor_pr_head": pred_head, "attempt": attempt, "supersedes": supersedes,
-            "controller": controller, "nonce": nonce, "policy_version": policy["policy_version"], "route": ROUTE,
+            "controller": controller, "nonce": nonce, "policy_version": policy["policy_version"], "route": policy["route"],
             "created_at": _fmt(now)}), nonce
 
     if cur is None:

@@ -12,6 +12,8 @@ A tick:
 3. offers each PREPARED task to the Production Starter.  The first one that may start is started (intent → label
    → receipt).  The others are recorded as DEFER or ISOLATE with a reason code.  An ISOLATE affects only that
    task;
+   A RUNNING task whose corrective Jules did not apply (same tree, or no commit for the ack timeout) gets that
+   corrective resent once through the Jules API (``ignored_corrective``);
 4. if nothing could start and capacity is free, asks the planner for the next task inside the approved
    objectives, creates its issue (one atomic write) and offers it to the Starter;
 5. ends with one outcome:
@@ -66,7 +68,32 @@ RECOVERY = {
     "QUOTA_UNKNOWN": "re-check quota on the next wake",
     "ROUND_LIMIT": "a human may extend the campaign",
     "WRITE_PATH_UNHEALTHY": "retry with backoff after a label-never-present readback; a human checks GitHub",
+    "JULES_IGNORED_CORRECTIVE": "the corrective was resent once through the Jules API; Jules' next commit wakes "
+                                "the loop",
+    "JULES_UNRESPONSIVE": "a human looks at the task: Jules ignored the corrective and its Jules API resend",
 }
+
+
+def ignored_corrective(mine: list[dict[str, Any]], *, head: str, head_tree: Callable[[], str | None], now: str,
+                       ack_minutes: int) -> dict[str, Any] | None:
+    """The latest corrective receipt when Jules did not apply it, else None.
+
+    Not applied means: Jules pushed a commit with exactly the reviewed tree (the reviewer's LAYER 1 NO-OP, which
+    otherwise waits forever), or nothing at all for ``ack_minutes`` after the review.  A later review of any
+    kind means the corrective was answered."""
+    corr = [r for r in mine if r.get("decision") == "CORRECTIVE_REQUESTED" and r.get("corrective_comment")]
+    if not corr:
+        return None
+    latest = max(corr, key=lambda r: r.get("round") or 0)
+    if any((r.get("round") or 0) > (latest.get("round") or 0) for r in mine):
+        return None
+    if head == latest.get("pr_head_sha"):
+        try:
+            overdue = st._ts(now) - st._ts(latest["reviewed_at"]) >= timedelta(minutes=ack_minutes)
+        except (KeyError, TypeError, ValueError):
+            return None
+        return latest if overdue else None
+    return latest if latest.get("pr_head_tree") and head_tree() == latest["pr_head_tree"] else None
 
 
 class TransientRead(Exception):
@@ -144,6 +171,40 @@ def task_states(issues: list[dict[str, Any]], *, campaign: dict[str, Any],
                       "paths": [p["path"] for p in task.get("allowed_paths") or []], "source": meta.get("source",
                                                                                                         "manifest")})
     return known
+
+
+def _resend_corrective(port: Any, task: dict[str, Any], receipt: dict[str, Any], *, head: str, now: str,
+                       ack_minutes: int) -> tuple[str, str, bool]:
+    """Resend an ignored corrective once through the Jules API: one create-only request file per corrective round.
+
+    The request id is derived from the task and round, so a lost response is read back on the next wake and never
+    sent twice.  If Jules ignores the resend too, the task waits for a human (visible, never a silent stop)."""
+    rnd = receipt.get("round")
+    rid = f"{task['task_id']}-r{rnd}-msg"
+    try:
+        sent_at = port.api_message_sent_at(rid)
+    except TransientRead as exc:
+        return "READ_UNKNOWN", f"Jules API resend {rid}: carrier unreadable ({exc}); the next wake re-reads", False
+    if sent_at is not None:
+        try:
+            overdue = st._ts(now) - st._ts(sent_at) >= timedelta(minutes=ack_minutes)
+        except (TypeError, ValueError):
+            overdue = False
+        if overdue:
+            return ("JULES_UNRESPONSIVE", f"Jules applied neither corrective round {rnd} nor its Jules API resend "
+                    f"{rid} (sent {sent_at})", True)
+        return "JULES_IGNORED_CORRECTIVE", f"corrective round {rnd} resent via the Jules API at {sent_at}", False
+    try:
+        status = port.api_message(rid, issue=task["issue"], receipt=receipt, head=head)
+    except st.WriteOutcomeUnknown as exc:
+        return "WRITE_UNCONFIRMED", f"Jules API resend {rid}: outcome unknown ({exc}); read back, never re-sent", False
+    except TransientRead as exc:
+        return "READ_UNKNOWN", f"Jules API resend {rid}: a read failed before sending ({exc})", False
+    if status != "SENT":
+        return ("JULES_IGNORED_CORRECTIVE", f"Jules did not apply corrective round {rnd}; the Jules API resend was "
+                f"not sent: {status}", True)
+    return "JULES_IGNORED_CORRECTIVE", f"Jules did not apply corrective round {rnd}; resent via the Jules API ({rid})", \
+        False
 
 
 def _previous_checkpoint(control: dict[str, Any] | None, trusted: set[str]) -> dict[str, Any] | None:
@@ -274,9 +335,19 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
             continue
         mine = [r for r in _receipts(issue, trusted) if r.get("_unreadable") or
                 r.get("correlation_id") == k["correlation_id"]]
+        ignored = None
+        if head is not None and hasattr(port, "api_message") and not any(r.get("_unreadable") for r in mine):
+            try:
+                ignored = ignored_corrective(mine, head=head, head_tree=lambda: port.commit_tree(head), now=now(),
+                                             ack_minutes=policy["jules_ack_timeout_minutes"])
+            except TransientRead:
+                ignored = None        # unknown tree: the normal path below reports it; the next wake re-checks
         if any(r.get("_unreadable") for r in mine):
             code, reason, human = "RECORD_UNREADABLE", "a receipt on the task issue is unreadable; the reviewer " \
                                                        "will not write over it", True
+        elif ignored is not None:
+            code, reason, human = _resend_corrective(port, k, ignored, head=head, now=now(),
+                                                     ack_minutes=policy["jules_ack_timeout_minutes"])
         elif head is None:
             code, reason, human = "JULES_PENDING", "started; Jules has not opened a PR yet", False
         elif any(r.get("pr_head_sha") == head for r in mine):

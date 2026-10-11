@@ -26,18 +26,19 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
 from .claude_jules_loop import CHECKPOINT_MARKER
 from .claude_jules_durable_budget import USABLE, DurableBudget, origin_of, pre_label_problems
 from .claude_jules_loop import TransientRead
-from .claude_jules_starter_gh import GhLoopPort, Getter, find_duplicate_issue
+from .claude_jules_starter_gh import CARRIER_BRANCH, MESSAGE_DIR, GhLoopPort, Getter, find_duplicate_issue
 
 AUTH_PROFILE = "CLAUDE_JULES_LIVE_AUTHORIZATION_V1"
 AUTH_PROFILE_V2 = "CLAUDE_JULES_LIVE_AUTHORIZATION_V2"     # V1 + durable budget binding; required for a label
-WRITE_KINDS = {"comment", "add_label", "create_issue"}
+WRITE_KINDS = {"comment", "add_label", "create_issue", "api_message"}
+API_MESSAGES_PER_WAKE, API_MESSAGES_PER_DAY = 1, 3          # owner limits for Jules API resends, 2026-10-11
 _AUTH_KEYS = {"profile", "campaign_id", "repository", "issues", "writes", "max_labels", "max_writes", "expires_at",
               "approved_by", "approval_ref", "route", "billing", "usage_credits_confirmed_off"}
 _AUTH_KEYS_V2 = _AUTH_KEYS | {"budget_id", "max_activations"}
@@ -73,8 +74,9 @@ def validate_authorization(auth: Any, *, campaign: dict[str, Any], now: str) -> 
             problems.append("authorization expired")
     except (TypeError, ValueError):
         problems.append("authorization expires_at invalid")
-    if auth["route"] != st.ROUTE or auth["billing"] != "subscription":
-        problems.append("authorization must name the GitHub-native subscription route")
+    if auth["route"] != (campaign.get("policy") or {}).get("route", st.ROUTE) or auth["route"] not in st.ROUTES \
+            or auth["billing"] != "subscription":
+        problems.append("authorization must name the campaign's subscription start route")
     if auth["usage_credits_confirmed_off"] is not True:
         problems.append("usage credits are not confirmed off by the human (metered overage risk)")
     if not isinstance(auth["writes"], list) or not auth["writes"] or not set(auth["writes"]) <= WRITE_KINDS:
@@ -98,7 +100,7 @@ class GhLiveWritePort(GhLoopPort):
                  signals: list[dict[str, Any]] | None, authorization: dict[str, Any] | None,
                  runner: Callable[[list[str], dict[str, Any]], Any] = gh_run,
                  now: Callable[[], str] = lambda: st._fmt(datetime.now(timezone.utc)),
-                 budget: DurableBudget | None = None):
+                 budget: DurableBudget | None = None, carrier: Any = None):
         super().__init__(get, repo=repo, campaign=campaign, route_declaration=route_declaration, signals=signals)
         self.runner, self.now = runner, now
         self.budget = budget                      # the cross-wake budget; per-wake counters below are not one
@@ -109,6 +111,8 @@ class GhLiveWritePort(GhLoopPort):
             validate_authorization(authorization, campaign=campaign, now=now())
         self.sent: list[dict[str, Any]] = []
         self.labels_sent = 0
+        self.carrier = carrier                    # git client for the Jules API carrier branch (None: no resend)
+        self.api_messages_sent = 0
 
     @property
     def live(self) -> bool:
@@ -229,6 +233,14 @@ class GhLiveWritePort(GhLoopPort):
             changed_paths=self.base_changed_paths)
         if problems:
             self._refuse("add_label", n, "; ".join(problems), payload)
+        api = self.campaign["policy"]["route"] == st.ROUTE_API
+        if api:                                        # everything that could refuse is checked before the slot
+            try:
+                path, request = self.api_start_request(n, issue)
+            except ValueError as exc:
+                self._refuse("add_label", n, f"API start request: {exc}", payload)
+            if self.carrier is None or self.carrier.remote_head(CARRIER_BRANCH) is None:
+                self._refuse("add_label", n, f"API route: carrier branch {CARRIER_BRANCH} unavailable", payload)
         res = self.budget.reserve(activation, origin=origin_of(self.authorization),
                                   max_for_origin=self.authorization["max_activations"], now=self.now())
         self.reservations.append({"issue": n, "status": res.status, "reason": res.reason})
@@ -236,7 +248,10 @@ class GhLiveWritePort(GhLoopPort):
             self._refuse("add_label", n, f"budget {res.status}: {res.reason}", payload)
         self.labels_sent += 1                          # counted before sending: a lost response still counts
         try:
-            self._send("add_label", f"repos/{self.repo}/issues/{n}/labels", payload, n)
+            if api:
+                self._send_api_start(n, path, request)
+            else:
+                self._send("add_label", f"repos/{self.repo}/issues/{n}/labels", payload, n)
         except st.WriteOutcomeUnknown as exc:
             self.ambiguous = f"issue #{n}: {exc}"      # the slot stays consumed; the next wake reads back
             raise
@@ -264,6 +279,79 @@ class GhLiveWritePort(GhLoopPort):
             return int(json.loads(proc.stdout)["number"])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             raise st.WriteOutcomeUnknown("issue created but its number is unreadable") from exc
+
+    def _send_api_start(self, n, path, request):
+        """The API route's label: one create-only start request file; the start workflow calls the Jules API."""
+        problems = list(validate_authorization(self.authorization, campaign=self.campaign, now=self.now()))
+        if "add_label" not in self.authorization["writes"]:
+            problems.append("add_label (start) is not an authorized write")
+        if len(self.sent) >= self.authorization["max_writes"]:
+            problems.append("authorized write count used up")
+        if problems:
+            self.prepared.append({"write": "add_label", "issue": n, "path": path, "refused": problems})
+            raise LiveWriteRefused("; ".join(problems))
+        self.sent.append({"write": "add_label", "issue": n, "path": path})
+        try:
+            self.carrier.create(path, json.dumps(request, indent=2, ensure_ascii=False) + "\n",
+                                f"Jules API start for issue #{n}", CARRIER_BRANCH)
+        except RuntimeError as exc:
+            if "create-only conflict" not in str(exc):  # an existing file is an earlier start: never a second one
+                raise st.WriteOutcomeUnknown(f"API start #{n}: {exc}") from exc
+        except Exception as exc:                       # noqa: BLE001 - outcome unknown, read back next wake
+            raise st.WriteOutcomeUnknown(f"API start #{n}: {type(exc).__name__}") from exc
+        finally:
+            self._issues.pop(n, None)                  # the readback sees the carrier afresh
+
+    def api_message(self, rid, *, issue, receipt, head):
+        """Resend an ignored corrective through the Jules API: one create-only request file on the carrier branch.
+
+        Limits (owner, 2026-10-11): one per corrective round (the request id), one per wake, three per 24 hours.
+        Returns "SENT", or "NOT_SENT: ..." / "REFUSED: ..." when nothing was written; an unknown push outcome raises
+        ``WriteOutcomeUnknown`` and the next wake reads the carrier back instead of sending again."""
+        try:
+            path, request = self.api_message_request(rid, receipt=receipt, head=head)
+        except ValueError as exc:
+            return f"NOT_SENT: {exc}"
+        if not self.live:
+            self._prepare("api_message", issue=issue, path=path, request=request, refused=self.problems)
+        problems = list(validate_authorization(self.authorization, campaign=self.campaign, now=self.now()))
+        if "api_message" not in self.authorization["writes"]:
+            problems.append("api_message is not an authorized write")
+        if len(self.sent) >= self.authorization["max_writes"]:
+            problems.append("authorized write count used up")
+        if self.api_messages_sent >= API_MESSAGES_PER_WAKE:
+            problems.append("Jules API message already sent this wake")
+        if stop := self.stop_requested():
+            problems.append(f"HUMAN_STOP: {stop}")
+        if self.carrier is None:
+            problems.append("no carrier git client")
+        if not problems:
+            since = st._fmt(st._ts(self.now()) - timedelta(hours=24))
+            try:
+                recent = self._carrier_commits(MESSAGE_DIR.rstrip("/"), since=since)
+            except TransientRead as exc:
+                recent = None
+                problems.append(f"Jules API messages of the last 24 hours unreadable ({exc})")
+            if recent is not None and len(recent) >= API_MESSAGES_PER_DAY:
+                problems.append(f"{len(recent)} Jules API messages in the last 24 hours (limit "
+                                f"{API_MESSAGES_PER_DAY})")
+        if problems:
+            self.prepared.append({"write": "api_message", "issue": issue, "path": path, "refused": problems})
+            return "REFUSED: " + "; ".join(problems)
+        self.api_messages_sent += 1                    # counted before sending: a lost response still counts
+        self.sent.append({"write": "api_message", "issue": issue, "path": path})
+        try:
+            self.carrier.create(path, json.dumps(request, indent=2, ensure_ascii=False) + "\n",
+                                f"Jules API resend {rid}", CARRIER_BRANCH)
+        except RuntimeError as exc:
+            if "create-only conflict" in str(exc):
+                return "SENT"                          # an earlier wake sent it; the file is the record
+            if "does not exist" in str(exc):           # GitLiveClient checks the branch before writing anything
+                return f"NOT_SENT: carrier branch {CARRIER_BRANCH} does not exist"
+            raise st.WriteOutcomeUnknown(f"api_message {rid}: {exc}") from exc
+        except Exception as exc:                       # noqa: BLE001 - any other failure: outcome unknown
+            raise st.WriteOutcomeUnknown(f"api_message {rid}: {type(exc).__name__}") from exc
+        return "SENT"
 
     def _prepare(self, kind: str, **data: Any):
         self.prepared.append({"write": kind, **data})

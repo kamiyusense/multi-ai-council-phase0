@@ -1,0 +1,123 @@
+name: Claude x Jules API start
+
+# Jules API route of the Claude x Jules loop (docs/CLAUDE_JULES_API_ROUTE_V1.md).
+# The loop pushes one create-only start request per issue to the carrier branch; this job makes exactly one
+# Jules session-create call with the repository secret. retry=0, no fallback, no merge.
+
+on:
+  push:
+    branches:
+      - claude/jules-api-carrier
+    paths:
+      - automation/command_bus/claude_jules_api_start_requests/*.json
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: claude-jules-api-start
+  cancel-in-progress: false
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact carrier commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate one newly-added start request
+        id: validate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          api() {
+            curl --fail-with-body --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPOSITORY}/$1"
+          }
+          commit_json="$(api "commits/${COMMIT_SHA}")"
+          [[ "$(jq '.files | length' <<<"${commit_json}")" == "1" ]] || { echo "Expected one start request file." >&2; exit 1; }
+          [[ "$(jq -r '.files[0].status' <<<"${commit_json}")" == "added" ]] || { echo "Start request must be append-only." >&2; exit 1; }
+          path="$(jq -r '.files[0].filename' <<<"${commit_json}")"
+          [[ "${path}" =~ ^automation/command_bus/claude_jules_api_start_requests/issue-([0-9]+)\.json$ ]] || { echo "Unexpected start request path." >&2; exit 1; }
+          file_issue="${BASH_REMATCH[1]}"
+
+          jq -e 'keys == ["correlation_id","issue","profile","prompt","repository","starting_branch"]' "${path}" >/dev/null || { echo "Unexpected request keys." >&2; exit 1; }
+          [[ "$(jq -r '.profile' "${path}")" == "CLAUDE_JULES_API_START_V1" ]] || { echo "Unexpected profile." >&2; exit 1; }
+          [[ "$(jq -r '.repository' "${path}")" == "${REPOSITORY}" ]] || { echo "Wrong repository." >&2; exit 1; }
+          [[ "$(jq -r '.issue' "${path}")" == "${file_issue}" ]] || { echo "Issue does not match the file name." >&2; exit 1; }
+          default_branch="${DEFAULT_BRANCH}"
+          starting_branch="$(jq -er '.starting_branch' "${path}")"
+          [[ "${starting_branch}" == "${default_branch}" ]] || { echo "Starting branch must be the default branch." >&2; exit 1; }
+          prompt="$(jq -er '.prompt' "${path}")"
+          [[ -n "${prompt}" && "${#prompt}" -le 60000 ]] || { echo "Prompt empty or too long." >&2; exit 1; }
+          correlation_id="$(jq -er '.correlation_id' "${path}")"
+          [[ "${correlation_id}" =~ ^[A-Za-z0-9._-]{1,128}$ ]] || { echo "Invalid correlation_id." >&2; exit 1; }
+
+          issue_json="$(api "issues/${file_issue}")"
+          [[ "$(jq -r '.state' <<<"${issue_json}")" == "open" ]] || { echo "Task issue is not open." >&2; exit 1; }
+          jq -e 'has("pull_request") | not' <<<"${issue_json}" >/dev/null || { echo "Not an issue." >&2; exit 1; }
+          jq -r '.body // ""' <<<"${issue_json}" | grep -qF "\"correlation_id\":\"${correlation_id}\"" || { echo "Issue does not hold this task." >&2; exit 1; }
+          jq -r '.labels[].name' <<<"${issue_json}" | grep -qxF jules && { echo "Issue has the jules label: the GitHub App route owns it." >&2; exit 1; }
+
+          echo "path=${path}" >> "${GITHUB_OUTPUT}"
+          echo "issue=${file_issue}" >> "${GITHUB_OUTPUT}"
+          echo "starting_branch=${starting_branch}" >> "${GITHUB_OUTPUT}"
+
+      - name: Invoke Jules REST exactly once
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          REPOSITORY: ${{ github.repository }}
+          REQUEST_PATH: ${{ steps.validate.outputs.path }}
+          ISSUE: ${{ steps.validate.outputs.issue }}
+          EXPECTED_BRANCH: ${{ steps.validate.outputs.starting_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg prompt "$(jq -er '.prompt' "${REQUEST_PATH}")" \
+            --arg source "sources/github/${REPOSITORY}" \
+            --arg starting_branch "${EXPECTED_BRANCH}" \
+            '{
+              prompt: $prompt,
+              sourceContext: {
+                source: $source,
+                githubRepoContext: {startingBranch: $starting_branch}
+              },
+              requirePlanApproval: false,
+              automationMode: "AUTO_CREATE_PR"
+            }' > "${RUNNER_TEMP}/jules_payload.json"
+          response_file="${RUNNER_TEMP}/jules-response.json"
+          http_code="$(curl --silent --show-error --fail-with-body --retry 0 \
+            --output "${response_file}" \
+            --write-out '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H "X-Goog-Api-Key: ${JULES_API_KEY}" \
+            --data-binary "@${RUNNER_TEMP}/jules_payload.json" \
+            'https://jules.googleapis.com/v1alpha/sessions')"
+          [[ "${http_code}" =~ ^2[0-9][0-9]$ ]] || { echo "Unexpected Jules HTTP status ${http_code}." >&2; exit 1; }
+          session_name="$(jq -er '.name' "${response_file}")"
+          returned_branch="$(jq -er '.sourceContext.githubRepoContext.startingBranch' "${response_file}")"
+          [[ "${session_name}" =~ ^sessions/[0-9]+$ ]] || { echo "Malformed Jules session name." >&2; exit 1; }
+          [[ "${returned_branch}" == "${EXPECTED_BRANCH}" ]] || { echo "Jules returned starting branch mismatch." >&2; exit 1; }
+          echo "Jules session accepted: ${session_name} issue=#${ISSUE}"
+          {
+            echo "## Claude x Jules API start"
+            echo "- issue: #${ISSUE}"
+            echo "- session: \`${session_name}\`"
+            echo "- starting_branch: \`${returned_branch}\`"
+            echo "- retry: \`0\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
