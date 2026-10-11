@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/chat-work-command-bus
+      - claude/jules-api-carrier
     paths:
       - automation/command_bus/jules_api_status_requests/*.json
 

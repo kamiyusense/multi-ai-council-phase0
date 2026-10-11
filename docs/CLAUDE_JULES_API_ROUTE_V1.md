@@ -1,6 +1,7 @@
 # Claude x Jules: Jules API route V1 (design, STATIC)
 
-Status: design for review. Nothing here is wired or LIVE yet.
+Status: change 1 (corrective resend) implemented on this branch, STATIC only; change 2 (start route) is next.
+Nothing is LIVE until this is merged and the carrier branch exists.
 
 ## Owner decisions (2026-10-11 JST, chat with Claude Code)
 
@@ -62,6 +63,23 @@ Routine (Claude) -> deterministic tick command -> append-only request JSON
    `route_problem` accepts the API route only with `billing_route: subscription` declared by the owner.
 3. **Reviewer prompt v1.7** = v1.6.1 (PR #354) + nothing else, unless the tick command needs a new flag.
 
+## Change 1 as implemented
+
+- `claude_jules_loop.ignored_corrective` / `_resend_corrective`: runs for every RUNNING task in a tick. Request id
+  `<task_id>-r<round>-msg`, so a lost push is read back on the next wake (`api_message_sent_at`, one GET of the
+  carrier's commits for that path) and never sent twice. Sent and still unchanged one ack timeout later ->
+  `JULES_UNRESPONSIVE`, `human_required` (the task stays visible in the checkpoint; it does not end the campaign).
+- `GhLoopPort.api_message_request`: session id from the PR body's Jules task link (exactly one), prompt = a short
+  reason plus the reviewer's corrective comment (trusted author and corrective marker required), cut to 4000
+  characters, `expected_state` `COMPLETED`.
+- `GhLiveWritePort.api_message`: needs `api_message` in the human-merged authorization `writes` (added here), the
+  stop switch open, one per wake, three per 24 hours (counted from the carrier's commits), and pushes the file
+  with `GitLiveClient.create` (create-only, no force).
+- The reviewer prompt needs no change: LAYER 4 already runs after a LAYER 1 NO-OP.
+- After merge, a human-approved one-time step creates `claude/jules-api-carrier` from main; the workflows run from
+  the carrier's own copy, so the carrier is refreshed from main when these workflows change.
+- When Jules' helpers from objective `o2-jules-api-requests` land, the port uses them instead of its inline code.
+
 ## Not in V1
 
 `approvePlan`, session listing, any automatic route fallback, merging, changing the Routine trigger.
@@ -79,6 +97,8 @@ separately.
 
 ## UNKNOWN until the first LIVE use
 
+- Whether the id in a Jules PR's `https://jules.google.com/task/<id>` link is the API session id (the semi-auto
+  loop used the same number for both; not re-checked for label-started tasks).
 - Whether `sendMessage` is accepted for a session in state `COMPLETED` (the web "Talk to Jules" worked on such a
   session on 2026-10-11; the API path is untested).
 - Whether a PR from an API-started session keeps the `Fixes #N` line the prompt asks for (the reviewer needs it).

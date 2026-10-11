@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/chat-work-command-bus
+      - claude/jules-api-carrier
     paths:
       - automation/command_bus/jules_api_message_requests/*.json
 
@@ -55,7 +56,7 @@ jobs:
           prompt="$(jq -er '.prompt' "${MESSAGE_PATH}")"
 
           [[ "${session_id}" =~ ^[0-9]+$ ]] || { echo "Invalid session_id." >&2; exit 1; }
-          [[ "${expected_state}" == "AWAITING_USER_FEEDBACK" ]] || { echo "Unsupported expected_state." >&2; exit 1; }
+          [[ "${expected_state}" == "AWAITING_USER_FEEDBACK" || "${expected_state}" == "COMPLETED" ]] || { echo "Unsupported expected_state." >&2; exit 1; }
           [[ -n "${prompt}" ]] || { echo "Prompt must be non-empty." >&2; exit 1; }
           [[ "${#prompt}" -le 4000 ]] || { echo "Prompt too long." >&2; exit 1; }
 

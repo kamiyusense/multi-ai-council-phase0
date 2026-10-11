@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
-from .claude_closed_loop_protocol import RECEIPT_MARKER
+from .claude_closed_loop_protocol import CORRECTIVE_MARKER, RECEIPT_MARKER
 from .claude_jules_loop import TransientRead
 
 Getter = Callable[[str], Any]
@@ -41,6 +41,13 @@ class ReadFailed(TransientRead):
 
 
 MAX_PAGES = 50
+# Jules API route: request files on the Claude lane's carrier branch; workflows on main make the call
+CARRIER_BRANCH = "claude/jules-api-carrier"
+MESSAGE_DIR = "automation/command_bus/jules_api_message_requests/"
+MESSAGE_LIMIT = 4000                       # .github/workflows/jules-session-message.yml refuses longer prompts
+_REQUEST_ID = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
+_JULES_TASK = re.compile(r"https://jules\.google\.com/task/([0-9]+)\b")
+_COMMENT_ID = re.compile(r"#issuecomment-([0-9]+)$")
 _STATUS = re.compile(r"HTTP/\S+\s+(\d{3})")
 _STDERR_STATUS = re.compile(r"\(HTTP (\d{3})\)")
 _LINK = re.compile(r'<([^>]*)>\s*;\s*rel="([^"]+)"')
@@ -486,6 +493,55 @@ class GhLoopPort:
     def add_label(self, n, label):
         self._prepare("add_label", issue=n, label=label)
 
+    # ---- Jules API resend of an ignored corrective (docs/CLAUDE_JULES_API_ROUTE_V1.md)
+    def commit_tree(self, sha):
+        return self.get(f"repos/{self.repo}/git/commits/{sha}")["tree"]["sha"]
+
+    def _carrier_commits(self, path: str, since: str | None = None) -> list[dict[str, Any]]:
+        query = f"sha={CARRIER_BRANCH}&path={path}&per_page=100" + (f"&since={since}" if since else "")
+        try:
+            return self.get(f"repos/{self.repo}/commits?{query}")
+        except NotFound:              # no carrier branch yet: nothing was ever sent through it
+            return []
+
+    def api_message_sent_at(self, rid):
+        commits = self._carrier_commits(f"{MESSAGE_DIR}{rid}.json")
+        return commits[-1]["commit"]["committer"]["date"] if commits else None
+
+    def api_message_request(self, rid, *, receipt, head):
+        """(path, request) resending the receipt's corrective comment to the PR's Jules session.  ValueError when
+        it cannot be built exactly (no single Jules session link, a corrective that is not a trusted record)."""
+        if not _REQUEST_ID.fullmatch(rid):
+            raise ValueError(f"request id {rid!r} is not a valid file name")
+        pr = receipt.get("pr")
+        body = self.get(f"repos/{self.repo}/pulls/{pr}").get("body") or ""
+        sessions = set(_JULES_TASK.findall(body))
+        if len(sessions) != 1:
+            raise ValueError(f"PR #{pr} body names {len(sessions)} Jules sessions, not exactly one")
+        url = receipt.get("corrective_comment") or ""
+        m = _COMMENT_ID.search(url)
+        if not m:
+            raise ValueError("corrective comment URL unreadable")
+        comment = self.get(f"repos/{self.repo}/issues/comments/{m.group(1)}")
+        text = comment.get("body") or ""
+        if (comment.get("user") or {}).get("login") not in set(self.campaign["policy"]["trusted_writers"]) \
+                or CORRECTIVE_MARKER not in text:
+            raise ValueError("the corrective comment is not a trusted reviewer corrective")
+        reviewed = receipt.get("pr_head_sha") or ""
+        what = "there is no new commit since" if head == reviewed else \
+            f"commit {head[:7]} has exactly the same content as"
+        prompt = (f"The review comment {url} on PR #{pr} was not applied: {what} the reviewed commit "
+                  f"{reviewed[:7]}. Apply that review now on the same PR branch and push the change.\n\n{text}")
+        return f"{MESSAGE_DIR}{rid}.json", {"session_id": sessions.pop(), "expected_state": "COMPLETED",
+                                            "prompt": prompt[:MESSAGE_LIMIT]}
+
+    def api_message(self, rid, *, issue, receipt, head):
+        try:
+            path, request = self.api_message_request(rid, receipt=receipt, head=head)
+        except ValueError as exc:
+            return f"NOT_SENT: {exc}"
+        self._prepare("api_message", issue=issue, path=path, request=request)
+
 
 def main_tick(argv: list[str]) -> int:
     from . import claude_jules_loop as loop
@@ -534,8 +590,12 @@ def main_tick(argv: list[str]) -> int:
             except ValueError as exc:
                 budget = None
                 print(json.dumps({"budget_declaration_problems": str(exc)}), file=sys.stderr)
+        carrier = None
+        if "api_message" in (authorization.get("writes") or []):
+            from .claude_jules_live_adapter import GitLiveClient
+            carrier = GitLiveClient(".")      # request files on CARRIER_BRANCH; the key stays in GitHub Actions
         port = GhLiveWritePort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
-                               signals=signals, authorization=authorization, budget=budget)
+                               signals=signals, authorization=authorization, budget=budget, carrier=carrier)
     try:
         res = loop.run_tick(port, campaign=campaign, controller=args.controller,
                             now=lambda: st._fmt(datetime.now(timezone.utc)))
