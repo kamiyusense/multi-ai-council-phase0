@@ -138,7 +138,7 @@ class GitLiveClient:
             self.pushes.append((dst, src))
             return
         text = f"{proc.stdout}\n{proc.stderr}"
-        if "!" in flags and re.search(r"non-fast-forward|fetch first|stale info|already exists", text):
+        if "!" in flags and re.search(r"non-fast-forward|fetch first|stale info|already exists|cannot lock ref", text):
             raise PushRejected(f"push to {dst} rejected: {text.strip()[:300]}")
         raise RuntimeError(f"push to {dst} outcome ambiguous: {text.strip()[:300]}")
 

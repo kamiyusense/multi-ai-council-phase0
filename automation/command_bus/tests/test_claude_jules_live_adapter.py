@@ -152,6 +152,70 @@ class GitLiveClientTests(unittest.TestCase):
             self.c._push(sibling, TARGET)  # even a raw push is rejected by git (non-fast-forward)
         self.assertEqual(self.remote.head(TARGET), moved)
 
+    def test_cannot_lock_ref_push_is_reported_as_push_rejected(self):
+        class MockProc:
+            def __init__(self, stdout, stderr, returncode=1):
+                self.stdout = stdout
+                self.stderr = stderr
+                self.returncode = returncode
+
+        # Valid cannot lock ref rejection
+        self.c._git = lambda *args, **kwargs: MockProc(
+            stdout="!\trefs/heads/main\trefs/heads/main\t[remote rejected] (failed to update ref)",
+            stderr="remote: error: cannot lock ref 'refs/heads/main': is at 1234567890123456789012345678901234567890 but expected 0987654321098765432109876543210987654321"
+        )
+        with self.assertRaises(PushRejected):
+            self.c._push("1234567890123456789012345678901234567890", "main")
+
+        # (a) returncode 1 with a cannot lock ref message but NO '!' flag line -> RuntimeError (ambiguous)
+        self.c._git = lambda *args, **kwargs: MockProc(
+            stdout="",
+            stderr="remote: error: cannot lock ref 'refs/heads/main': is at 1234567890123456789012345678901234567890 but expected 0987654321098765432109876543210987654321"
+        )
+        with self.assertRaises(RuntimeError) as ctx_a:
+            self.c._push("1234567890123456789012345678901234567890", "main")
+        self.assertNotIsInstance(ctx_a.exception, PushRejected)
+        self.assertIn("outcome ambiguous", str(ctx_a.exception))
+
+        # (b) '!'-flagged line with an unrelated error such as [remote rejected] (hook declined) -> RuntimeError (ambiguous)
+        self.c._git = lambda *args, **kwargs: MockProc(
+            stdout="!\trefs/heads/main\trefs/heads/main\t[remote rejected] (hook declined)",
+            stderr="remote: error: hook declined"
+        )
+        with self.assertRaises(RuntimeError) as ctx_b:
+            self.c._push("1234567890123456789012345678901234567890", "main")
+        self.assertNotIsInstance(ctx_b.exception, PushRejected)
+        self.assertIn("outcome ambiguous", str(ctx_b.exception))
+
+    def test_cannot_lock_ref_push_rebuilds_on_new_tip_without_losing_their_commit(self):
+        self.c.get("README.md", DATA)  # warm the tip cache
+        self.c.tip_ttl = 3600
+
+        real_git = self.c._git
+        pushed = []
+
+        class MockProc:
+            returncode = 1
+            stdout = f"!\trefs/heads/{DATA}\trefs/heads/{DATA}\t[remote rejected] (failed to update ref)"
+            stderr = f"remote: error: cannot lock ref 'refs/heads/{DATA}': is at 1234567890123456789012345678901234567890 but expected 0987654321098765432109876543210987654321"
+
+        def intercept_git(*args, **kwargs):
+            if args and args[0] == "push" and not pushed:
+                pushed.append(True)
+                theirs = self.remote.outside_commit(DATA, "theirs_lock.txt", "y", "outside during lock")
+                return MockProc()
+            return real_git(*args, **kwargs)
+
+        self.c._git = intercept_git
+        created = self.c.create("mine_lock.json", "{}", "mine lock", DATA)
+
+        head = self.remote.head(DATA)
+        self.assertEqual(created.path, "mine_lock.json")
+        self.assertEqual(self.c.get("mine_lock.json", DATA).text, "{}")
+        self.assertEqual(self.c.get("theirs_lock.txt", DATA).text, "y")
+        self.assertEqual(len(self.c.pushes), 1)
+        self.assertEqual(self.c.pushes[0][0], f"refs/heads/{DATA}")
+
     def test_refs_compare_and_branch_creation(self):
         base = self.remote.head(TARGET)
         self.assertEqual(self.c.get_branch_head(TARGET), base)
