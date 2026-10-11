@@ -80,11 +80,16 @@ def _block(text: str, marker: str) -> list[Any]:
     return found
 
 
-def linked_issue(pr_body: str) -> int | None:
-    """Return the one repository issue link, ignoring Jules provider task IDs in auto-generated PR bodies."""
+def linked_issue(pr_body: str, is_task: Callable[[int], bool] | None = None) -> int | None:
+    """Return the one repository issue link, ignoring Jules provider task IDs in auto-generated PR bodies.
+
+    With ``is_task`` (reviewer v1.7), only referenced issues that hold exactly one closed-loop task block count, so a
+    stray reference Jules adds (for example a recently merged PR) is ignored; two task issues stay ambiguous."""
     body = pr_body or ""
     provider_task_ids = {int(n) for n in _JULES_TASK_URL.findall(body)}
     numbers = {int(n) for n in _LINK.findall(body)} - provider_task_ids
+    if is_task is not None:
+        numbers = {n for n in numbers if is_task(n)}
     return numbers.pop() if len(numbers) == 1 else None
 
 
