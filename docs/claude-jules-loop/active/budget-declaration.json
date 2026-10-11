@@ -1,12 +1,13 @@
 {
-  "profile": "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V2",
+  "profile": "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V3",
   "budget_id": "jules-prod-c1",
   "campaign_id": "prod-c1",
   "repository": "kamiyusense/multi-ai-council-phase0",
   "data_branch": "claude/claude-jules-autoloop-data",
   "ledger_prefix": "automation/command_bus/evidence/claude-jules-production-budget/jules-prod-c1/",
-  "cap": 50,
+  "cap": 9999,
   "slot_create": true,
   "approved_by": "kamiyusense",
-  "approval_ref": "owner kamiyusense, Claude Code session session_017GTgUEFiWQkP6Ft5CwdQQt, chat instruction 'Production Activation / LIVE MVP 一括実行指示' received 2026-10-10 16:09 JST"
+  "approval_ref": "owner kamiyusense, Claude Code session local_12474bfc (claude-loop-local), chat 2026-10-12 08:39-08:44 JST: rolling limit 80 starts per 24 hours, no total cap (9999), expiry 3 months (option 1, trial; the owner may remove the expiry later); usage credits OFF as confirmed by the owner on 2026-10-10 16:32 JST",
+  "rolling_24h_limit": 80
 }

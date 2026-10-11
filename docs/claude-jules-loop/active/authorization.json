@@ -11,11 +11,11 @@
     "api_message"
   ],
   "max_labels": 1,
-  "max_activations": 50,
+  "max_activations": 9999,
   "max_writes": 12,
-  "expires_at": "2026-10-24T07:00:00Z",
+  "expires_at": "2027-01-12T07:00:00Z",
   "approved_by": "kamiyusense",
-  "approval_ref": "owner kamiyusense, Claude Code session session_017GTgUEFiWQkP6Ft5CwdQQt, chat instruction 'Production Activation / LIVE MVP 一括実行指示' received 2026-10-10 16:09 JST; usage credits OFF confirmed by the owner in the same session, 2026-10-10 16:32 JST (owner's statement; Claude cannot read Settings > Usage itself)",
+  "approval_ref": "owner kamiyusense, Claude Code session local_12474bfc (claude-loop-local), chat 2026-10-12 08:39-08:44 JST: rolling limit 80 starts per 24 hours, no total cap (9999), expiry 3 months (option 1, trial; the owner may remove the expiry later); usage credits OFF as confirmed by the owner on 2026-10-10 16:32 JST",
   "route": "jules-github-app-issue-label",
   "billing": "subscription",
   "usage_credits_confirmed_off": true
