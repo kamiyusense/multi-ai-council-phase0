@@ -24,7 +24,7 @@ If this file conflicts with a formal Phase 0 specification or safety boundary, t
 - Do not call something PASS merely because an AI says it passed; use tests, readback, diff, hashes, receipts, or direct inspection when available.
 - Before composing any user-pasted handover or completed prompt, read [ユーザー向けコピー文章・引き継ぎの必須表示規則](docs/USER_COPY_TEXT_FORMAT.md).
 - Put the entire completed copyable text in one fenced `markdown` code block beneath a destination-specific H2 bold 🔵 heading. Do not substitute Writing Block, Canvas or editable cards. Carry this rule forward in every new handover.
-- The last line of every user-facing reply must show the user's local time as `HH:MM` (Japan time unless told otherwise). Never write `UNKNOWN` for it because you did not check: get it with `TZ=Asia/Tokyo date '+%H:%M'` (Bash) each time. Use `UNKNOWN` only if the command truly fails.
+- The last line of every user-facing reply must show the user's local time as `HH:MM` (Japan time unless told otherwise). Never write `UNKNOWN` for it because you did not check: get it with `TZ=JST-9 date '+%H:%M %Z'` (Bash) each time and check that it prints `JST`. Do not use `TZ=Asia/Tokyo`: in environments without the time zone database (the cloud Routine container, Windows Git Bash) it silently prints UTC. Use `UNKNOWN` only if the command truly fails.
 - When the user personally must perform an action, make that requirement visually obvious.
 - Avoid asking for confirmation at ordinary progress boundaries. Continue safe, authorized work until completion criteria or a real blocker.
 
