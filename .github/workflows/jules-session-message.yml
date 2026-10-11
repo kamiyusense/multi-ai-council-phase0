@@ -14,6 +14,7 @@ permissions:
 jobs:
   send-message:
     runs-on: ubuntu-latest
+    environment: jules-api
     timeout-minutes: 5
     steps:
       - name: Checkout exact carrier commit

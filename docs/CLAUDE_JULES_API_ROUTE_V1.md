@@ -78,7 +78,8 @@ Routine (Claude) -> deterministic tick command -> append-only request JSON
 - The reviewer prompt needs no change: LAYER 4 already runs after a LAYER 1 NO-OP.
 - After merge, a human-approved one-time step creates `claude/jules-api-carrier` from main; the workflows run from
   the carrier's own copy, so the carrier is refreshed from main when these workflows change.
-- When Jules' helpers from objective `o2-jules-api-requests` land, the port uses them instead of its inline code.
+- The port builds message requests only through Jules' helpers from objective `o2-jules-api-requests`
+  (`session_id_of_pr`, `build_message_request`, `message_request_path`; merged in #363, #366, #369).
 
 ## Change 2 as implemented
 
@@ -108,6 +109,20 @@ Routine (Claude) -> deterministic tick command -> append-only request JSON
 
 Unstarted tasks prepared for the old route are isolated and re-planned; running tasks are unaffected. Switching
 back is the same three edits in reverse.
+
+## Key scope: the `jules-api` environment
+
+Every job that reads `JULES_API_KEY` declares `environment: jules-api` (pinned by a test). Owner steps, in order:
+
+1. Settings -> Environments -> New environment `jules-api` -> Deployment branches and tags -> Selected branches:
+   `main`, `claude/jules-api-carrier`, `feature/chat-work-command-bus`.
+2. In that environment add the secret `JULES_API_KEY` (a new key from the Jules settings page is fine).
+3. Delete the repository-level secret `JULES_API_KEY`.
+
+After step 3 a workflow pushed to any other branch gets no key. Residual risk: a writer who can push to one of the
+three branches can still change that branch's workflow copy; the carrier is append-only by convention, not by a
+GitHub rule. The ChatGPT carrier `feature/chat-work-command-bus` keeps its own workflow copies, which still lack
+`environment:`; its semi-auto workflows stop finding the key after step 3 until main is merged into it.
 
 ## Not in V1
 
