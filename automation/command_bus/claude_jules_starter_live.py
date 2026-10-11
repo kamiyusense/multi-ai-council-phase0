@@ -74,8 +74,9 @@ def validate_authorization(auth: Any, *, campaign: dict[str, Any], now: str) -> 
             problems.append("authorization expired")
     except (TypeError, ValueError):
         problems.append("authorization expires_at invalid")
-    if auth["route"] != st.ROUTE or auth["billing"] != "subscription":
-        problems.append("authorization must name the GitHub-native subscription route")
+    if auth["route"] != (campaign.get("policy") or {}).get("route", st.ROUTE) or auth["route"] not in st.ROUTES \
+            or auth["billing"] != "subscription":
+        problems.append("authorization must name the campaign's subscription start route")
     if auth["usage_credits_confirmed_off"] is not True:
         problems.append("usage credits are not confirmed off by the human (metered overage risk)")
     if not isinstance(auth["writes"], list) or not auth["writes"] or not set(auth["writes"]) <= WRITE_KINDS:
@@ -232,6 +233,14 @@ class GhLiveWritePort(GhLoopPort):
             changed_paths=self.base_changed_paths)
         if problems:
             self._refuse("add_label", n, "; ".join(problems), payload)
+        api = self.campaign["policy"]["route"] == st.ROUTE_API
+        if api:                                        # everything that could refuse is checked before the slot
+            try:
+                path, request = self.api_start_request(n, issue)
+            except ValueError as exc:
+                self._refuse("add_label", n, f"API start request: {exc}", payload)
+            if self.carrier is None or self.carrier.remote_head(CARRIER_BRANCH) is None:
+                self._refuse("add_label", n, f"API route: carrier branch {CARRIER_BRANCH} unavailable", payload)
         res = self.budget.reserve(activation, origin=origin_of(self.authorization),
                                   max_for_origin=self.authorization["max_activations"], now=self.now())
         self.reservations.append({"issue": n, "status": res.status, "reason": res.reason})
@@ -239,7 +248,10 @@ class GhLiveWritePort(GhLoopPort):
             self._refuse("add_label", n, f"budget {res.status}: {res.reason}", payload)
         self.labels_sent += 1                          # counted before sending: a lost response still counts
         try:
-            self._send("add_label", f"repos/{self.repo}/issues/{n}/labels", payload, n)
+            if api:
+                self._send_api_start(n, path, request)
+            else:
+                self._send("add_label", f"repos/{self.repo}/issues/{n}/labels", payload, n)
         except st.WriteOutcomeUnknown as exc:
             self.ambiguous = f"issue #{n}: {exc}"      # the slot stays consumed; the next wake reads back
             raise
@@ -267,6 +279,28 @@ class GhLiveWritePort(GhLoopPort):
             return int(json.loads(proc.stdout)["number"])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             raise st.WriteOutcomeUnknown("issue created but its number is unreadable") from exc
+
+    def _send_api_start(self, n, path, request):
+        """The API route's label: one create-only start request file; the start workflow calls the Jules API."""
+        problems = list(validate_authorization(self.authorization, campaign=self.campaign, now=self.now()))
+        if "add_label" not in self.authorization["writes"]:
+            problems.append("add_label (start) is not an authorized write")
+        if len(self.sent) >= self.authorization["max_writes"]:
+            problems.append("authorized write count used up")
+        if problems:
+            self.prepared.append({"write": "add_label", "issue": n, "path": path, "refused": problems})
+            raise LiveWriteRefused("; ".join(problems))
+        self.sent.append({"write": "add_label", "issue": n, "path": path})
+        try:
+            self.carrier.create(path, json.dumps(request, indent=2, ensure_ascii=False) + "\n",
+                                f"Jules API start for issue #{n}", CARRIER_BRANCH)
+        except RuntimeError as exc:
+            if "create-only conflict" not in str(exc):  # an existing file is an earlier start: never a second one
+                raise st.WriteOutcomeUnknown(f"API start #{n}: {exc}") from exc
+        except Exception as exc:                       # noqa: BLE001 - outcome unknown, read back next wake
+            raise st.WriteOutcomeUnknown(f"API start #{n}: {type(exc).__name__}") from exc
+        finally:
+            self._issues.pop(n, None)                  # the readback sees the carrier afresh
 
     def api_message(self, rid, *, issue, receipt, head):
         """Resend an ignored corrective through the Jules API: one create-only request file on the carrier branch.

@@ -1,6 +1,6 @@
 # Claude x Jules: Jules API route V1 (design, STATIC)
 
-Status: change 1 (corrective resend) implemented on this branch, STATIC only; change 2 (start route) is next.
+Status: changes 1 (corrective resend) and 2 (selectable start route) implemented on this branch, STATIC only.
 Nothing is LIVE until this is merged and the carrier branch exists.
 
 ## Owner decisions (2026-10-11 JST, chat with Claude Code)
@@ -80,6 +80,35 @@ Routine (Claude) -> deterministic tick command -> append-only request JSON
   the carrier's own copy, so the carrier is refreshed from main when these workflows change.
 - When Jules' helpers from objective `o2-jules-api-requests` land, the port uses them instead of its inline code.
 
+## Change 2 as implemented
+
+- Policy `route` is `jules-github-app-issue-label` (today) or `jules-api-carrier`. `allow_api_fallback` stays
+  `false`: the loop never switches routes; a human merges the switch.
+- `route_problem(observation, route)`: the API route needs the declaration `transport: jules-api-carrier`,
+  `auth_method: repository_secret_api_key`, `billing_route: subscription`. Paid words or another REST route still
+  HARD_STOP; a declaration for the other route is DEFER.
+- Starter on the API route: the create-only file `claude_jules_api_start_requests/issue-<n>.json` on the carrier is
+  the label (present = started, never written twice). The `jules` label on such an issue isolates it (the GitHub
+  App would start a second task). An unread carrier is DEFER `START_RECORD_UNKNOWN`. Everything that can refuse
+  (task block, carrier branch present) is checked before the budget slot is reserved.
+- Planner tasks carry the policy's route; a task prepared for the other route is isolated, never started.
+- `.github/workflows/claude-jules-api-start.yml`: one added request file, exact keys and profile, repository,
+  file name = issue, starting branch = default branch, the issue is open, holds this correlation id and has no
+  `jules` label; then one `POST /v1alpha/sessions` (`AUTO_CREATE_PR`, no plan approval), returned starting branch
+  checked, session id in the run summary. The secret appears only in that step; retry 0.
+- The prompt is the issue title and body plus "the PR description must contain `Fixes #<n>`" (the reviewer links
+  PRs to tasks by it).
+
+### Switching the start route (one owner-merged PR, three files)
+
+1. `docs/claude-jules-loop/active/campaign.json`: `policy.route` -> `jules-api-carrier`.
+2. `docs/claude-jules-loop/active/authorization.json`: `route` -> `jules-api-carrier`.
+3. `docs/evidence/claude-jules-production-starter-20261009/route-declaration.json` (the path the Routine prompt
+   passes): `transport` -> `jules-api-carrier`, `auth_method` -> `repository_secret_api_key`.
+
+Unstarted tasks prepared for the old route are isolated and re-planned; running tasks are unaffected. Switching
+back is the same three edits in reverse.
+
 ## Not in V1
 
 `approvePlan`, session listing, any automatic route fallback, merging, changing the Routine trigger.
@@ -102,3 +131,5 @@ separately.
 - Whether `sendMessage` is accepted for a session in state `COMPLETED` (the web "Talk to Jules" worked on such a
   session on 2026-10-11; the API path is untested).
 - Whether a PR from an API-started session keeps the `Fixes #N` line the prompt asks for (the reviewer needs it).
+- Whether `pull_request` events from an API-started Jules PR wake the Routine the same way (same bot account
+  expected).

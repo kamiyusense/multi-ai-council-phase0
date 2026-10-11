@@ -44,6 +44,8 @@ MAX_PAGES = 50
 # Jules API route: request files on the Claude lane's carrier branch; workflows on main make the call
 CARRIER_BRANCH = "claude/jules-api-carrier"
 MESSAGE_DIR = "automation/command_bus/jules_api_message_requests/"
+START_DIR = "automation/command_bus/claude_jules_api_start_requests/"
+START_PROFILE = "CLAUDE_JULES_API_START_V1"
 MESSAGE_LIMIT = 4000                       # .github/workflows/jules-session-message.yml refuses longer prompts
 _REQUEST_ID = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
 _JULES_TASK = re.compile(r"https://jules\.google\.com/task/([0-9]+)\b")
@@ -428,8 +430,32 @@ class GhLoopPort:
 
     def read_issue(self, n):
         if n not in self._issues:
-            self._issues[n] = read_issue(self.get, self.repo, n)
+            issue = read_issue(self.get, self.repo, n)
+            if self.campaign["policy"].get("route") == st.ROUTE_API:
+                issue.update(self.api_start_state(n))
+            self._issues[n] = issue
         return dict(self._issues[n])
+
+    def api_start_state(self, n):
+        """API route: whether the create-only start request for issue n exists on the carrier (its label)."""
+        try:
+            self.get(f"repos/{self.repo}/contents/{START_DIR}issue-{n}.json?ref={CARRIER_BRANCH}")
+            return {"api_start_read": True, "api_start_exists": True}
+        except NotFound:
+            return {"api_start_read": True, "api_start_exists": False}
+        except ReadFailed:
+            return {"api_start_read": False, "api_start_exists": None}
+
+    def api_start_request(self, n, issue):
+        """(path, request) that starts issue n's task through the Jules API workflow (base branch, exact task text)."""
+        task, _ = st._task_of(issue.get("body") or "")
+        if task is None:
+            raise ValueError(f"issue #{n} holds no task block")
+        prompt = (f"{issue.get('title') or ''}\n\n{issue.get('body') or ''}\n\nWhen you open the pull request, its "
+                  f"description must contain the line: Fixes #{n}")
+        return f"{START_DIR}issue-{n}.json", {
+            "profile": START_PROFILE, "repository": self.repo, "issue": n, "correlation_id": task["correlation_id"],
+            "starting_branch": self.campaign["policy"]["base_branch"], "prompt": prompt}
 
     def find_issue_by_correlation(self, corr):
         if not corr:
@@ -591,7 +617,7 @@ def main_tick(argv: list[str]) -> int:
                 budget = None
                 print(json.dumps({"budget_declaration_problems": str(exc)}), file=sys.stderr)
         carrier = None
-        if "api_message" in (authorization.get("writes") or []):
+        if "api_message" in (authorization.get("writes") or []) or campaign["policy"]["route"] == st.ROUTE_API:
             from .claude_jules_live_adapter import GitLiveClient
             carrier = GitLiveClient(".")      # request files on CARRIER_BRANCH; the key stays in GitHub Actions
         port = GhLiveWritePort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
