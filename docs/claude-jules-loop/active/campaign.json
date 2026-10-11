@@ -72,6 +72,21 @@
       "priority": 10,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-10T07:09:00Z"
+    },
+    {
+      "objective_id": "o2-jules-api-requests",
+      "title": "Pure request helpers for the Claude x Jules Jules API route (docs/CLAUDE_JULES_API_ROUTE_V1.md)",
+      "scope_prefixes": [
+        "automation/command_bus/claude_jules_api_",
+        "automation/command_bus/tests/test_claude_jules_api_"
+      ],
+      "allowed_operations": [
+        "code_edit",
+        "test_add"
+      ],
+      "priority": 20,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-11T04:47:00Z"
     }
   ],
   "control_issue": 346
