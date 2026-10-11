@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/tmp/symphony-prelive-node-998806e722/node",
+    "--test",
+    "automation/command_bus/tests/test_github_oidc_signature_proof.mjs"
+  ],
+  "returncode": 0,
+  "tests": 8,
+  "skip_count": 0,
+  "elapsed_seconds": 0.866,
+  "log_sha256": "c25483eba54dbebf9181258ca610fd11165bbf258d7afa9d8ca10c207a61cb39",
+  "result": "PASS",
+  "round": "FINAL_PRECOMMIT_CURRENT_SOURCE"
+}

@@ -1,0 +1,42 @@
+{
+  "starting_PR_HEAD": "8bfe01b64cdf9206dc47af32b5f25c85ab1be8ed",
+  "final_PR_HEAD": "RESOLVE_THIS_COMMIT_THEN_FINAL_REMOTE_READBACK_RECEIPT",
+  "current_main": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+  "current_PR_base": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "state": "PRELIVE_BLOCKED_ONE_OR_MORE_OPERATOR_CAPABILITIES",
+  "gates_file": "docs/evidence/symphony-prelive-convergence/gates.json",
+  "local_tests": {
+    "focused": 420,
+    "full": 2200,
+    "full_skipped": 1,
+    "crypto": 8,
+    "Docker_new_boundary_tests": 14
+  },
+  "final_exact_head_CI": "PENDING_AFTER_NORMAL_FF_PUSH_SEPARATE_FINAL_RECEIPT",
+  "immutable_past_source": "8bfe01b64cdf9206dc47af32b5f25c85ab1be8ed",
+  "forbidden_counts": {
+    "new_product_worker": 0,
+    "new_product_model": 0,
+    "new_provider": 0,
+    "OIDC_token_request": 0,
+    "OIDC_workflow_dispatch": 0,
+    "real_Git_Database_POST": 0,
+    "real_updateRefs": 0,
+    "real_result_adoption": 0,
+    "proof_issue_creation": 0,
+    "proof_ref_creation": 0,
+    "main_write": 0,
+    "parent320_write": 0,
+    "sibling344_write": 0,
+    "Merge": 0,
+    "Secrets_or_key_changes": 0,
+    "permissions_or_settings_changes": 0,
+    "billing_changes": 0,
+    "paid_or_API_fallback": 0,
+    "automatic_adoption": 0
+  },
+  "operator_approval": "NONE",
+  "Windows_evidence_path": "/mnt/c/Users/yuuki/Documents/Codex/2026-10-09/ai/work/prelive-convergence/20261011T013220Z-998806e722",
+  "final_receipt_correlation": "prelive-convergence-final-998806e722",
+  "scope": "No current-state result qualification from simulated crypto/candidate/sender tests"
+}
