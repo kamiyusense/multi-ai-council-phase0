@@ -9,6 +9,7 @@ permissions:
 jobs:
   jules-smoke:
     runs-on: ubuntu-latest
+    environment: jules-api
     steps:
       - name: Invoke Jules from exact Phase 0 target branch
         uses: google-labs-code/jules-action@bff7875eaa123cac6742b7cfc51005b95ba4d566

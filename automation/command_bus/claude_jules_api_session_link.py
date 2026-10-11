@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import re
 
+_DIGITS = re.compile(r"[0-9]+")
 _URL_PATTERN = re.compile(r"([a-zA-Z0-9+.-]+://[^\s\)\],>\"']+)")
 
 
@@ -34,7 +35,7 @@ def session_id_of_pr(body: str | None) -> str | None:
         if not u.startswith("https://jules.google.com/task/"):
             return None
         rest = u[len("https://jules.google.com/task/"):]
-        if not rest or not rest.isdigit():
+        if not _DIGITS.fullmatch(rest):          # ASCII digits only; str.isdigit() also accepts e.g. "²"
             return None
         ids.add(rest)
 

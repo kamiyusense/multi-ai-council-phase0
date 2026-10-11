@@ -32,7 +32,7 @@ def validate_message_request(obj: Any) -> list[str]:
             problems.append(f"unexpected extra key(s): {', '.join(extra)}")
 
     session_id = obj.get("session_id")
-    if not isinstance(session_id, str) or not SESSION_ID_RE.match(session_id):
+    if not isinstance(session_id, str) or not SESSION_ID_RE.fullmatch(session_id):
         problems.append("session_id must be a numeric string matching ^[0-9]+$")
 
     expected_state = obj.get("expected_state")
@@ -67,6 +67,6 @@ def message_request_path(request_id: str) -> str:
 
     Raises ValueError if request_id does not match the workflow's path rule.
     """
-    if not isinstance(request_id, str) or not REQUEST_ID_RE.match(request_id):
+    if not isinstance(request_id, str) or not REQUEST_ID_RE.fullmatch(request_id):
         raise ValueError(f"invalid request_id: {request_id!r}")
     return f"automation/command_bus/jules_api_message_requests/{request_id}.json"
