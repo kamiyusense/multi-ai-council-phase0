@@ -1,0 +1,168 @@
+{
+  "base": "794488c3f4a47d328bcf1109e60c71f97ce9aa3c",
+  "main": "c90392712d0781dd475acd0f65ceb4746c43dc49",
+  "roots": [
+    "symphony_operator_installation",
+    "symphony_operator_oidc",
+    "symphony_operator_capability",
+    "symphony_operator_verifier_route"
+  ],
+  "python_closure": [
+    {
+      "path": "automation/command_bus/executor.py",
+      "on_main": true
+    },
+    {
+      "path": "automation/command_bus/executor_backend.py",
+      "on_main": true
+    },
+    {
+      "path": "automation/command_bus/github_oidc_claims_policy.py",
+      "on_main": true
+    },
+    {
+      "path": "automation/command_bus/state_machine.py",
+      "on_main": true
+    },
+    {
+      "path": "automation/command_bus/symphony_attempt_store.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_autonomous_policy.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_autonomous_runtime.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_campaign_store.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g61_wiring.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g62_attestation.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_archive.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_sender.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_snapshot.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g63_verifier.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g71_campaign.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g72_runtime.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_g73_host.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_git_adoption.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_github_adapter.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_github_git_transport.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_github_readers.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_ledger_reader.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_candidate.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_capability.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_installation.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_oidc.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_readiness.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_sender.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_verifier_route.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_result_adoption.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_result_manifest.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_result_verification.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_subscription_boundary.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_verifier_provenance.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/symphony_workspace_snapshot.py",
+      "on_main": false
+    },
+    {
+      "path": "automation/command_bus/validator.py",
+      "on_main": true
+    }
+  ],
+  "stack": [
+    "320",
+    "343",
+    "INSTALLER"
+  ],
+  "additional_runtime": [
+    "symphony_operator_oidc_signature.mjs",
+    "github_oidc_signature_proof.mjs",
+    "operator reviewed Node path/hash",
+    "pinned Docker images/config/tests"
+  ],
+  "self_contained_on_main": false
+}

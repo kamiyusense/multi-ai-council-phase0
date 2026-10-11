@@ -1,0 +1,36 @@
+{
+  "state": "INSTALLATION_REVIEW_READY",
+  "installed": false,
+  "LIVE_GO": false,
+  "base_sha": "794488c3f4a47d328bcf1109e60c71f97ce9aa3c",
+  "observed_main_sha": "c90392712d0781dd475acd0f65ceb4746c43dc49",
+  "mode": "OFF",
+  "stack": [
+    "PR320",
+    "PR343",
+    "installer"
+  ],
+  "issuer_entrypoint": "IMPLEMENTED_OFF",
+  "same_job_memory_seam": "IMPLEMENTED_OFF",
+  "candidate_stage_preflight": "IMPLEMENTED_OFF",
+  "runtime_activation": "REQUIRES_MAIN_MERGE_AND_SEPARATE_RUNTIME_IMPLEMENTATION_REVIEW",
+  "operator_credential_factory": "REQUIRES_PERMISSION_REVIEW_NOT_IMPLEMENTED",
+  "real_candidate": "REAL_CANDIDATE_NOT_RUN",
+  "live": "LIVE_NOT_APPROVED",
+  "rules": "UNKNOWN_REST403",
+  "new_product_worker": 0,
+  "OIDC_token_request": 0,
+  "production_dispatch": 0,
+  "real_stage_creation": 0,
+  "real_git_post_updateRefs": 0,
+  "adoption": 0,
+  "secret_permission_billing_change": 0,
+  "preserved_sha256": {
+    "automation/command_bus/symphony_operator_oidc.py": "af1010dfbdbdb2bfc3fd947f643b4dbb50f59f6fdbed475559c711acbb2d79a9",
+    "automation/command_bus/symphony_operator_capability.py": "e9a0adf89592681f17e9ba8f06333d4b3f259ddb9f50adeba92f15a5f0b3d0d2",
+    "automation/command_bus/symphony_operator_verifier_route.py": "b115c0b0ebbbb2adf4c374bbbeb776778d4ef2b75259fcabc130193a6be83bba",
+    "automation/command_bus/symphony_github_git_transport.py": "53a3466e79e21a1d42f6ab446bbbd108a8d03a44092d36df2ac85deb581323b6",
+    "automation/command_bus/symphony_g5_observer.patch": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+    ".github/workflows/signal-sf8-authority-issuer.yml": "220fc26002aa191074bc6fc29783bb13c3fd61f2f8dd7ae3e0d6ed9b8ae27bbf"
+  }
+}

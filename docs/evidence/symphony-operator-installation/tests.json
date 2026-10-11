@@ -1,0 +1,79 @@
+{
+  "focused": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_operator_installation",
+      "automation.command_bus.tests.test_symphony_operator_convergence",
+      "automation.command_bus.tests.test_symphony_operator_integration",
+      "-v"
+    ],
+    "returncode": 0,
+    "result": "PASS",
+    "tests": 43,
+    "skipped": 0,
+    "seconds": 1.24,
+    "log_sha256": "e72c1dcdb43ec32c5cc0b512afac289cba5a8453fc1426b2e20e75d31a43e1ea"
+  },
+  "full": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "automation/command_bus/tests",
+      "-t",
+      ".",
+      "-v"
+    ],
+    "returncode": 0,
+    "result": "PASS",
+    "tests": 2213,
+    "skipped": 1,
+    "seconds": 73.956,
+    "log_sha256": "5087398267c72cc17c5897de6e48207719fb5d6342c31e3783f3c3b6cbdb506a"
+  },
+  "crypto": {
+    "command": [
+      "/tmp/symphony-prelive-node-998806e722/node",
+      "--test",
+      "automation/command_bus/tests/test_github_oidc_signature_proof.mjs"
+    ],
+    "returncode": 0,
+    "result": "PASS",
+    "tests": 8,
+    "skipped": 0,
+    "seconds": 0.925,
+    "log_sha256": "16c6256be20733612d1d66d2d8bed28f9a1eb05718192ba29e3a68bd21b3f967"
+  },
+  "compile": {
+    "command": [
+      "python3",
+      "-m",
+      "compileall",
+      "-q",
+      "automation/command_bus"
+    ],
+    "returncode": 0,
+    "result": "PASS",
+    "tests": null,
+    "skipped": 0,
+    "seconds": 0.048,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "diff": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "returncode": 0,
+    "result": "PASS",
+    "tests": null,
+    "skipped": 0,
+    "seconds": 0.034,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

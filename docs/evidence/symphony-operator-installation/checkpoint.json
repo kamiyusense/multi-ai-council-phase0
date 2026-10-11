@@ -1,0 +1,103 @@
+{
+  "state": "INSTALLATION_REVIEW_READY",
+  "installed": false,
+  "LIVE_NO_GO": true,
+  "base": "794488c3f4a47d328bcf1109e60c71f97ce9aa3c",
+  "branch": "codex/symphony-operator-installation-draft",
+  "main": "c90392712d0781dd475acd0f65ceb4746c43dc49",
+  "tests": {
+    "focused": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "automation.command_bus.tests.test_symphony_operator_installation",
+        "automation.command_bus.tests.test_symphony_operator_convergence",
+        "automation.command_bus.tests.test_symphony_operator_integration",
+        "-v"
+      ],
+      "returncode": 0,
+      "result": "PASS",
+      "tests": 43,
+      "skipped": 0,
+      "seconds": 1.24,
+      "log_sha256": "e72c1dcdb43ec32c5cc0b512afac289cba5a8453fc1426b2e20e75d31a43e1ea"
+    },
+    "full": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "automation/command_bus/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "returncode": 0,
+      "result": "PASS",
+      "tests": 2213,
+      "skipped": 1,
+      "seconds": 73.956,
+      "log_sha256": "5087398267c72cc17c5897de6e48207719fb5d6342c31e3783f3c3b6cbdb506a"
+    },
+    "crypto": {
+      "command": [
+        "/tmp/symphony-prelive-node-998806e722/node",
+        "--test",
+        "automation/command_bus/tests/test_github_oidc_signature_proof.mjs"
+      ],
+      "returncode": 0,
+      "result": "PASS",
+      "tests": 8,
+      "skipped": 0,
+      "seconds": 0.925,
+      "log_sha256": "16c6256be20733612d1d66d2d8bed28f9a1eb05718192ba29e3a68bd21b3f967"
+    },
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "automation/command_bus"
+      ],
+      "returncode": 0,
+      "result": "PASS",
+      "tests": null,
+      "skipped": 0,
+      "seconds": 0.048,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "diff": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "result": "PASS",
+      "tests": null,
+      "skipped": 0,
+      "seconds": 0.034,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "new_tests": 13,
+  "CI": "PENDING_POST_PUSH",
+  "remote_readback": "PENDING_POST_PUSH",
+  "real_runtime_not_installed": [
+    "reviewed intention reader",
+    "OIDC request callback",
+    "credential factory/store runtime",
+    "approved staging lease/dispatcher",
+    "immutable post-merge source pins"
+  ],
+  "original_symphony_changes": 0,
+  "LIVE": 0,
+  "OIDC": 0,
+  "actual_adoption": 0,
+  "main_write": 0,
+  "permissions_secrets_billing": 0
+}

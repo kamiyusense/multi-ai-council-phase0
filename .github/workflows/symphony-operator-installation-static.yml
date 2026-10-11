@@ -1,0 +1,44 @@
+name: Symphony installation proposal STATIC
+on:
+  pull_request:
+    paths:
+      - .github/workflows/symphony-operator-*.yml
+      - automation/command_bus/symphony_operator_installation.py
+      - automation/command_bus/tests/test_symphony_operator_installation.py
+      - docs/SYMPHONY_OPERATOR_INSTALLATION_REVIEW.md
+      - docs/evidence/symphony-operator-installation/**
+permissions:
+  contents: read
+concurrency:
+  group: symphony-installation-static-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  offline-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact Draft PR head without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Offline installation gates and existing sender regression
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/installation-evidence"
+          python3 -m unittest automation.command_bus.tests.test_symphony_operator_installation automation.command_bus.tests.test_symphony_operator_convergence automation.command_bus.tests.test_symphony_operator_integration -v 2>&1 | tee "$RUNNER_TEMP/installation-evidence/tests.txt"
+      - name: Parse proposed YAML and reject active jobs or extra permissions
+        run: |
+          ruby -rpsych -e 'ARGV.each { |p| x=Psych.safe_load(File.read(p), permitted_classes: [], aliases: false); abort "invalid proposal" unless x["permissions"] == {"contents"=>"read"} && x["jobs"].values.all? { |j| j["if"] == "$"+"{{ false }}" } }' .github/workflows/symphony-operator-authorize.yml .github/workflows/symphony-operator-candidate.yml
+      - name: Compile and check proposal diff
+        run: |
+          python3 -m compileall -q automation/command_bus
+          git diff --check "${{ github.event.pull_request.base.sha }}" HEAD
+          git rev-parse HEAD > "$RUNNER_TEMP/installation-evidence/head.txt"
+      - name: Preserve STATIC evidence only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphony-installation-static-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/installation-evidence/
+          if-no-files-found: error
+          retention-days: 30

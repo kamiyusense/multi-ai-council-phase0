@@ -1,0 +1,30 @@
+# Installation proposal only. Removing this guard is a separate reviewed PR.
+name: Symphony operator authorization (NOT INSTALLED)
+on:
+  workflow_dispatch:
+    inputs:
+      review_id:
+        description: Independently reviewed one-run identity; never authority by itself
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: symphony-operator-authorize
+  cancel-in-progress: false
+jobs:
+  authorize:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout dispatched main source without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Refuse until separately reviewed main runtime installation
+        run: python3 -m automation.command_bus.symphony_operator_installation
+# Activation review must bind main/event/actor/run attempt and independently
+# pinned review source; same-job memory-only JWT -> exact verifier -> capability.
+# id-token:write and any contents:write are intentionally NOT requested here.

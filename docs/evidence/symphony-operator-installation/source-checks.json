@@ -1,0 +1,19 @@
+{
+  "schema_yaml": "PASS",
+  "workflow_jobs_hard_off": true,
+  "workflow_runtime_cli_refuses": true,
+  "source_sha256": {
+    ".github/workflows/symphony-operator-authorize.yml": "74266345f8ad43eaf3446a1bd98324b318dc99a04b7c211a14891d4d37b45a7d",
+    ".github/workflows/symphony-operator-candidate.yml": "558cba654f12d098b164c7dd75e7af0f05cebf21e67f7405fdf9cdf999b2bfba",
+    ".github/workflows/symphony-operator-installation-static.yml": "63bb2e9d8599679e8bad62c101dcbd1f5e525bd8a8f7f8334d31764a9934e73d",
+    "automation/command_bus/symphony_operator_installation.py": "af9327a8b96cf44d03042e677576b8d881b41d597c1fc1b49cbb045c03719ac6",
+    "automation/command_bus/tests/test_symphony_operator_installation.py": "f613727bc7009bef7d1a3a13f3454229f78e6ef8eb73d37fba929d1042823ff3"
+  },
+  "pinned_actions": {
+    "checkout": "11d5960a326750d5838078e36cf38b85af677262",
+    "upload_artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+  },
+  "old_static_guard_changed": false,
+  "original_symphony_changed": false,
+  "runtime_node_and_images": "REUSED_PINS_REQUIRES_POST_MERGE_RUNTIME_REVIEW"
+}
