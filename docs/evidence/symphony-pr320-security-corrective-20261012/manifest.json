@@ -1,0 +1,60 @@
+{
+  "protocol": "SYMPHONY_SECURITY_CORRECTIVE_EVIDENCE_MANIFEST_V1",
+  "files": [
+    {
+      "path": "docs/evidence/symphony-pr320-security-corrective-20261012/regression-index.json",
+      "bytes": 4491,
+      "sha256": "75b301f66b875ff735f2f1daf0b5d1a1d049e1b20ceaf20ea449a3fd4736c9a6"
+    },
+    {
+      "path": "docs/evidence/symphony-pr320-security-corrective-20261012/full-tests.txt.gz",
+      "bytes": 50252,
+      "sha256": "41ec1fdb7ba43c16d6a8b6939579cecdeef958ac6dd562f8f68fc7fa657e463a"
+    },
+    {
+      "path": "docs/evidence/symphony-pr320-security-corrective-20261012/focused-tests.txt.gz",
+      "bytes": 6420,
+      "sha256": "731b0187c7ede2d199f81fea5588d1e5939cf9247d3fe3c20d04802f23671ca9"
+    },
+    {
+      "path": "docs/evidence/symphony-pr320-security-corrective-20261012/checkpoint.json",
+      "bytes": 11939,
+      "sha256": "15fed4bfbf9e18c3781ec3ada89e645bb928b59d62d6a46a84cdc6af4268df5e"
+    },
+    {
+      "path": "docs/SYMPHONY_PR320_SECURITY_CORRECTIVE_STATIC.md",
+      "bytes": 8154,
+      "sha256": "4169e6111641985428ae73f5693c6e7fa5771744ff7be3e8097cde2ea9b4fde8"
+    },
+    {
+      "path": "automation/command_bus/symphony_attempt_store.py",
+      "bytes": 29359,
+      "sha256": "70ef4f832a01defcaf01498d216ee5f6d89e7d16d5c1949f5be764ac9e968a9c"
+    },
+    {
+      "path": "automation/command_bus/symphony_campaign_store.py",
+      "bytes": 11921,
+      "sha256": "b4ba66608cafaf0fde4b17255fb84b93acad8fab5a635eff69999a35d8893864"
+    },
+    {
+      "path": "automation/command_bus/symphony_codex_app_server.py",
+      "bytes": 28467,
+      "sha256": "aba5cd9ee3700818fabbdae04b574493b0b103b1fd98efe29633a06195bb3572"
+    },
+    {
+      "path": "automation/command_bus/symphony_subscription_boundary.py",
+      "bytes": 3922,
+      "sha256": "dc4d1c55d1d461e04e277c98564ef22ed946124e082eebb5a73eb330d07149d8"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_controller.py",
+      "bytes": 41365,
+      "sha256": "04eb6953348d07629af91e785a4f7058b9eb01800fc459115922e9ffcd728f4d"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_security_corrective.py",
+      "bytes": 20730,
+      "sha256": "9fbb59498bbab4779eaaec1dcc0104801de1f3d8489fa2f04223d53d2bcee08e"
+    }
+  ]
+}

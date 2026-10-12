@@ -20,7 +20,49 @@ from urllib.parse import urlsplit
 
 from .symphony_autonomous_policy import STRICT_PROOF_POLICY
 from .symphony_controller import Command
-from .symphony_subscription_boundary import subscription_worker_environment
+from .symphony_subscription_boundary import (
+    assess_new_worker_route, metered_worker_environment_present, subscription_worker_environment,
+)
+
+
+def _summarize_account(account: dict[str, Any]) -> dict[str, Any]:
+    # Load the existing pure file without executing relay.__init__, whose provider
+    # imports are unrelated to this read-only parser. Path is trusted repo source.
+    import importlib.util
+    parser_path = Path(__file__).resolve().parents[2] / "src/relay/codex_account_readonly.py"
+    spec = importlib.util.spec_from_file_location("symphony_account_readonly", parser_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("read-only account parser unavailable")
+    parser = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(parser)
+    return parser.summarize_account_evidence(account, None)
+
+# Fresh reads belong to this exact app-server session, not dispatch payloads or
+# fixture dictionaries. They never authorize LIVE or probe quota endpoints.
+_ROUTE_EVIDENCE_MAX_AGE_SECONDS = 60
+
+
+def _assert_new_worker_environment(source: dict[str, str]) -> None:
+    if metered_worker_environment_present(tuple(source)):
+        raise RuntimeError("metered worker environment is forbidden")
+
+
+def _subscription_runtime_config(config_response: dict[str, Any]) -> bool:
+    config = config_response.get("config")
+    if not isinstance(config, dict) or config.get("model_provider") != "openai":
+        return False
+    if config.get("model_providers") not in (None, {}):
+        return False  # Unknown/custom endpoint/auth cannot be a subscription proof.
+    if config.get("forced_login_method") not in (None, "chatgpt"):
+        return False
+    if config.get("service_tier") not in (None, "default"):
+        return False  # Do not infer that an explicit paid speed tier is free.
+    if any(config.get(k) is not None and config.get(k) is not False for k in (
+        "metered_fallback_configured", "paid_provider_fallback_configured",
+        "paid_credit_fallback_configured", "model_provider_fallback", "billing_route",
+    )):
+        return False
+    return True
 
 
 # These constants deliberately describe the strict proof profile only. They are
@@ -60,7 +102,8 @@ class CodexDispatchResult:
 
 
 class AppServer(Protocol):
-    def execute_one_turn(self, *, cwd: str, prompt: str) -> CodexDispatchResult: ...
+    def execute_one_turn(self, *, cwd: str, prompt: str,
+                         live_enabled: bool = False) -> CodexDispatchResult: ...
 
 
 class WorkspaceVerifier(Protocol):
@@ -209,7 +252,8 @@ class JsonlCodexAppServer:
         self.executable = executable
         self.timeout_seconds = timeout_seconds
 
-    def execute_one_turn(self, *, cwd: str, prompt: str) -> CodexDispatchResult:
+    def execute_one_turn(self, *, cwd: str, prompt: str,
+                         live_enabled: bool = False) -> CodexDispatchResult:
         proc: subprocess.Popen[str] | None = None
         attempted = False
         model_started: bool | None = False
@@ -221,11 +265,15 @@ class JsonlCodexAppServer:
         output: queue.Queue[str | None] = queue.Queue()
         deadline = time.monotonic() + self.timeout_seconds
         try:
+            if live_enabled is not True:
+                return CodexDispatchResult("BLOCKED", False, False, None, None, (), "Codex LIVE flag is off")
+            parent_environment = dict(os.environ)
+            _assert_new_worker_environment(parent_environment)
             proc = subprocess.Popen(
                 [self.executable, "app-server"], cwd=cwd, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
                 encoding="utf-8", bufsize=1,
-                env=subscription_worker_environment(os.environ),
+                env=subscription_worker_environment(parent_environment),
             )
 
             def pump_output() -> None:
@@ -257,6 +305,8 @@ class JsonlCodexAppServer:
                 nonlocal model_started, turn_id, turn_status
                 if not item.get("method"):
                     return
+                if item["method"].startswith(("account/", "config/")):
+                    return  # Do not put authentication/config notifications in evidence.
                 events.append(item)
                 params_obj = item.get("params") or {}
                 if item.get("method") == "turn/started":
@@ -302,12 +352,32 @@ class JsonlCodexAppServer:
             assert proc.stdin is not None
             proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}) + "\n")
             proc.stdin.flush()
+            # Read-only admission occurs in the same authenticated process before
+            # any thread/model dispatch. No refresh, login, quota, or cache fallback.
+            evidence_started = time.monotonic()
+            account = call("account/read", {"refreshToken": False})
+            config = call("config/read", {"includeLayers": False, "cwd": cwd})
+            route = assess_new_worker_route(
+                _summarize_account(account),
+                worker_environment_keys=tuple(parent_environment),
+                paid_provider_fallback_configured=not _subscription_runtime_config(config),
+            )
+            if account.get("requiresOpenaiAuth") is not True or not route.new_worker_route_compatible:
+                return CodexDispatchResult("BLOCKED", False, False, None, None, (),
+                                           "fresh subscription account/config route unverified")
             started = call("thread/start", {"cwd": cwd, "approvalPolicy": "never",
                                              "sandboxPolicy": {"type": "workspaceWrite"}})
             thread = started.get("thread") or started
             thread_id = thread.get("id") if isinstance(thread, dict) else None
             if not isinstance(thread_id, str) or not thread_id:
                 raise RuntimeError("thread/start returned no thread id")
+            age = time.monotonic() - evidence_started
+            if age < 0 or age > _ROUTE_EVIDENCE_MAX_AGE_SECONDS:
+                return CodexDispatchResult("BLOCKED", False, False, thread_id, None, (),
+                                           "subscription route evidence became stale")
+            if started.get("modelProvider") != "openai":
+                return CodexDispatchResult("BLOCKED", False, False, thread_id, None, (),
+                                           "thread provider is not the verified subscription route")
             completed = call("turn/start", {
                 "threadId": thread_id,
                 "input": [{"type": "text", "text": prompt}],
@@ -412,12 +482,26 @@ class CodexAppServerAgentRunner:
         if (not isinstance(prompt, str) or not prompt.strip()
                 or PROOF_PATH not in prompt or PROOF_CONTENT not in prompt):
             raise ValueError("command task must bind the exact proof path and content")
+        self._guard_worker_route(command)
         head_before, tree_before, default_head_before = self._workspace_verifier.prepare(command, self.cwd)
         return PreparedCodexCommand(command, self.cwd, prompt, head_before, tree_before, default_head_before)
+
+    @staticmethod
+    def _guard_worker_route(command: Command) -> None:
+        _assert_new_worker_environment(dict(os.environ))
+        if any(type(command.payload.get(flag, False)) is not bool
+               or command.payload.get(flag, False) for flag in (
+                   "metered_fallback_configured", "paid_provider_fallback_configured",
+                   "paid_credit_fallback_configured",
+               )):
+            raise RuntimeError("paid worker fallback is forbidden")
+        # Caller supplied account_evidence is intentionally ignored. The exact
+        # built-in transport reads fresh runtime account/config before turn/start.
 
     def dispatch(self, prepared: PreparedCodexCommand) -> CodexDispatchResult:
         if not self.live_enabled:
             raise RuntimeError("Codex LIVE flag is off")
+        self._guard_worker_route(prepared.command)
         if not self._dispatch_lock.acquire(blocking=False):
             raise RuntimeError("Codex concurrency limit is one")
         try:
@@ -428,7 +512,9 @@ class CodexAppServerAgentRunner:
             # ambiguity therefore consumes only this task's proof budget, while a
             # different durable task can still use its own configured budget.
             self._start_attempts_by_task[key] = self._start_attempts_by_task.get(key, 0) + 1
-            result = self._app_server.execute_one_turn(cwd=prepared.cwd, prompt=prepared.prompt)
+            result = self._app_server.execute_one_turn(
+                cwd=prepared.cwd, prompt=prepared.prompt, live_enabled=self.live_enabled,
+            )
             if result.status == "DONE":
                 try:
                     verification, paths, commit_sha = self._workspace_verifier.verify(prepared)

@@ -10,6 +10,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import os
+import secrets
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -89,6 +92,13 @@ def _decode(content_path: str, text: str) -> tuple[dict[str, Any], CampaignCheck
         raise RuntimeError("incomplete campaign checkpoint")
     if record["record_type"] != CHECKPOINT_TYPE or record["protocol_version"] != PROTOCOL_VERSION:
         raise RuntimeError("wrong campaign checkpoint protocol")
+    if "write_claim_version" in record or "write_claim_nonce" in record:
+        if (type(record.get("write_claim_version")) is not int
+                or record["write_claim_version"] != 1
+                or not isinstance(record.get("write_claim_nonce"), str)
+                or _DIGEST.fullmatch(record["write_claim_nonce"]) is None):
+            raise RuntimeError("invalid versioned write claim")
+    # Legacy state/hash-chain semantics are unchanged by the optional claim.
     revision = record["revision"]
     previous_revision = record["previous_revision"]
     if (isinstance(revision, bool) or not isinstance(revision, int) or revision < 1
@@ -135,6 +145,12 @@ class GitHubCampaignStateStore:
         self.client = client
         self.write_branch = write_branch
         self.default_branch = default_branch
+        # Claims belong to a fresh operation, never a caller-supplied writer ID.
+        # Reserve once before I/O: repeated/overlapping calls cannot resend a
+        # lost create with new nonce. Forked copies must construct fresh stores.
+        self._process_id = os.getpid()
+        self._submitted_paths: set[str] = set()
+        self._submission_lock = threading.Lock()
 
     def _chain(self, campaign_id: str) -> list[CampaignCheckpoint]:
         if not isinstance(campaign_id, str) or _ID.fullmatch(campaign_id) is None:
@@ -184,6 +200,9 @@ class GitHubCampaignStateStore:
                 latest.state_digest if latest else None,
                 "stale campaign checkpoint revision",
             )
+        if latest is not None and state.generation < latest.state.generation:
+            return SaveResult("CONFLICT", actual_revision, latest.state_digest,
+                              "stale campaign generation")
         revision = expected_revision + 1
         previous_digest = latest.state_digest if latest else None
         record = _record_for(
@@ -193,6 +212,13 @@ class GitHubCampaignStateStore:
             previous_state_digest=previous_digest,
         )
         path = _path(state.campaign_id, revision)
+        with self._submission_lock:
+            if os.getpid() != self._process_id or path in self._submitted_paths:
+                return SaveResult("CONFLICT", revision, record["state_digest"],
+                                  "write already attempted or process copied; restore only")
+            self._submitted_paths.add(path)
+            record = {**record, "write_claim_version": 1,
+                      "write_claim_nonce": secrets.token_hex(32)}
         text = _canonical(record)
         try:
             if self.client.get(path, self.write_branch) is not None:
@@ -207,8 +233,12 @@ class GitHubCampaignStateStore:
             # Ambiguous create: read back once and never resend.
             try:
                 found = self.client.get(path, self.write_branch)
-                if found is not None and found.text == text:
-                    return SaveResult("ACCEPTED", revision, record["state_digest"])
+                if found is not None:
+                    return SaveResult(
+                        "ACCEPTED" if found.text == text else "CONFLICT", revision,
+                        record["state_digest"],
+                        None if found.text == text else "different write claim owns checkpoint",
+                    )
             except Exception:
                 pass
             return SaveResult(
@@ -217,8 +247,12 @@ class GitHubCampaignStateStore:
             )
         try:
             found = self.client.get(path, self.write_branch)
-            if found is not None and found.text == text:
-                return SaveResult("ACCEPTED", revision, record["state_digest"])
+            if found is not None:
+                return SaveResult(
+                    "ACCEPTED" if found.text == text else "CONFLICT", revision,
+                    record["state_digest"],
+                    None if found.text == text else "different write claim owns checkpoint",
+                )
         except Exception:
             pass
         return SaveResult(
