@@ -8,7 +8,8 @@
     "comment",
     "add_label",
     "create_issue",
-    "api_message"
+    "api_message",
+    "takeover"
   ],
   "max_labels": 1,
   "max_activations": 9999,

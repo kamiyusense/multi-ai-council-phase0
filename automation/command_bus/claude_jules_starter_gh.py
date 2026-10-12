@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
-from .claude_closed_loop_protocol import CORRECTIVE_MARKER, RECEIPT_MARKER
+from .claude_closed_loop_protocol import CORRECTIVE_MARKER, RECEIPT_MARKER, _block
 from .claude_jules_api_message import build_message_request, message_request_path
 from .claude_jules_api_session_link import session_id_of_pr
 from .claude_jules_loop import TransientRead
@@ -48,6 +48,10 @@ CARRIER_BRANCH = "claude/jules-api-carrier"
 MESSAGE_DIR = "automation/command_bus/jules_api_message_requests/"
 START_DIR = "automation/command_bus/claude_jules_api_start_requests/"
 START_PROFILE = "CLAUDE_JULES_API_START_V1"
+# Claude takeover (owner rule 2026-10-12): after two failed Jules attempts the takeover routine works on this branch
+TAKEOVER_PREFIX = "claude/takeover-"
+TAKEOVER_MARKER = "<!-- claude-takeover-request v1"
+TAKEOVER_PROFILE = "CLAUDE_TAKEOVER_REQUEST_V1"
 MESSAGE_LIMIT = 4000                       # .github/workflows/jules-session-message.yml refuses longer prompts
 _COMMENT_ID = re.compile(r"#issuecomment-([0-9]+)$")
 _STATUS = re.compile(r"HTTP/\S+\s+(\d{3})")
@@ -530,6 +534,49 @@ class GhLoopPort:
         except NotFound:              # no carrier branch yet: nothing was ever sent through it
             return []
 
+    def commit_date(self, sha):
+        return self.get(f"repos/{self.repo}/commits/{sha}")["commit"]["committer"]["date"]
+
+    def takeover_state(self, task_id):
+        """The takeover PR of a task: {pr, head, start, opened_at}, or None when it was not opened yet."""
+        owner = self.repo.split("/", 1)[0]
+        pulls = self.get(f"repos/{self.repo}/pulls?state=all&head={owner}:{TAKEOVER_PREFIX}{task_id}&per_page=100")
+        if not pulls:
+            return None
+        pr = min(pulls, key=lambda p: p["number"])
+        try:
+            rec = _block(pr.get("body") or "", TAKEOVER_MARKER)[0]
+        except (ValueError, IndexError, json.JSONDecodeError):
+            rec = {}
+        return {"pr": pr["number"], "head": pr["head"]["sha"], "start": rec.get("start_head"),
+                "opened_at": pr["created_at"]}
+
+    def takeover_request(self, task_id, *, issue, receipt):
+        """(branch, start sha, PR payload) handing the task to the Claude takeover routine.  The branch starts at
+        the last reviewed Jules head, so the routine continues from Jules' work; the PR links the task issue."""
+        n = issue
+        cand = self.read_issue(n)
+        task, _ = st._task_of(cand.get("body") or "")
+        start = receipt.get("pr_head_sha") or ""
+        if task is None or task.get("task_id") != task_id or not re.fullmatch(r"[0-9a-f]{40}", start):
+            raise ValueError("the takeover request needs this task's block and the reviewed head")
+        record = {"profile": TAKEOVER_PROFILE, "task_id": task_id, "correlation_id": task["correlation_id"],
+                  "issue": n, "jules_pr": receipt.get("pr"), "start_head": start, "review_round": receipt.get("round")}
+        body = (f"Takeover request: Jules did not pass task #{n} (PR #{receipt.get('pr')}, review round "
+                f"{receipt.get('round')}). The Claude takeover routine applies the latest review findings on this "
+                f"branch, inside the task's allowed paths; the reviewer then reviews it like any task PR. No merge "
+                f"without the owner.\n\nFixes #{n}\n\n{TAKEOVER_MARKER}\n{st.canonical(record)}\n-->\n")
+        payload = {"title": f"[takeover] {cand.get('title') or task_id}", "head": TAKEOVER_PREFIX + task_id,
+                   "base": self.campaign["policy"]["base_branch"], "body": body, "draft": False}
+        return TAKEOVER_PREFIX + task_id, start, payload
+
+    def open_takeover(self, task_id, *, issue, receipt):
+        try:
+            branch, start, payload = self.takeover_request(task_id, issue=issue, receipt=receipt)
+        except ValueError as exc:
+            return f"NOT_SENT: {exc}"
+        self._prepare("takeover", issue=issue, branch=branch, start=start, payload=payload)
+
     def api_message_sent_at(self, rid):
         commits = self._carrier_commits(f"{MESSAGE_DIR}{rid}.json")
         return commits[-1]["commit"]["committer"]["date"] if commits else None
@@ -614,7 +661,8 @@ def main_tick(argv: list[str]) -> int:
                 budget = None
                 print(json.dumps({"budget_declaration_problems": str(exc)}), file=sys.stderr)
         carrier = None
-        if "api_message" in (authorization.get("writes") or []) or campaign["policy"]["route"] == st.ROUTE_API:
+        if {"api_message", "takeover"} & set(authorization.get("writes") or []) \
+                or campaign["policy"]["route"] == st.ROUTE_API:
             from .claude_jules_live_adapter import GitLiveClient
             carrier = GitLiveClient(".")      # request files on CARRIER_BRANCH; the key stays in GitHub Actions
         port = GhLiveWritePort(gh_get, repo=campaign["repository"], campaign=campaign, route_declaration=route,
