@@ -1,0 +1,107 @@
+[
+  {
+    "path": ".github/workflows/symphony-controller-static.yml",
+    "bytes": 6684,
+    "sha256": "1fad3f784fd662e9bb63dacf993b1e2703f60d5edb4fea88d7b95ba42016f9bf"
+  },
+  {
+    "path": "automation/command_bus/scripts/validate_symphony_g51.py",
+    "bytes": 4678,
+    "sha256": "61c653bcfba6744d8e19ca25e43923bef1a9ce45f0736ffa2e5845290f15f1d8"
+  },
+  {
+    "path": "automation/command_bus/symphony_g5_observer.patch",
+    "bytes": 9512,
+    "sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b"
+  },
+  {
+    "path": "automation/command_bus/symphony_production_observer.py",
+    "bytes": 8843,
+    "sha256": "9ddbb29d867b21e8ac75054b5420e4c2cb003792811c3e3660831a83f0c50bbc"
+  },
+  {
+    "path": "automation/command_bus/tests/fixtures/symphony_g51/otp-signed-events.jsonl",
+    "bytes": 750,
+    "sha256": "88b4418e87f5e1c405c81b4c8214d460123f748eb0bc29c0a01c2a281a36762d"
+  },
+  {
+    "path": "automation/command_bus/tests/fixtures/symphony_g51/worker_lifecycle_test.exs",
+    "bytes": 12106,
+    "sha256": "ca1f08d1584c96b62e326273e7c218b95caf138459119b84ec4c425b1e42ec25"
+  },
+  {
+    "path": "automation/command_bus/tests/test_symphony_g51_worker_lifecycle.py",
+    "bytes": 5109,
+    "sha256": "3a5751ff1a0b6d291d760ea81fa37bef4873ef001699c9a4973ddbcb72086a1f"
+  },
+  {
+    "path": "docs/SYMPHONY_G51_LOCAL_LIVE_PLAN.md",
+    "bytes": 5521,
+    "sha256": "9a8c9db3bbafc02a07a03f95ae797564371d0becba8c92c11d97a4e7a05213fe"
+  },
+  {
+    "path": "docs/SYMPHONY_G51_STATIC_CHECKPOINT.md",
+    "bytes": 7953,
+    "sha256": "f6b01a53fb35e2057f0e5cbd7629d96339fb25879ed67170fe64b0dfbd57119a"
+  },
+  {
+    "path": "docs/SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md",
+    "bytes": 12106,
+    "sha256": "74f3c4f8b49ca0bc6a705a501723caf90f0f1230e398ffa07cde62a93ddc0603"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/checkpoint.json",
+    "bytes": 3917,
+    "sha256": "17f4350a8deb97eae1a78277543892b0552ac8d592dbe526cf45445657909b11"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/elixir-compile.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/elixir-fixtures.txt",
+    "bytes": 6580,
+    "sha256": "1e957fb48b49d2e4606de8ad1b31b53d4d05c461202e7e5499d5fbc925bc31a4"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/elixir-format.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/elixir-specs.txt",
+    "bytes": 58,
+    "sha256": "e1f1ed15933185226053f7f7d3b929461a1cc3bc4b0931b7a69a552d0b0c1969"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/focused-tests.txt",
+    "bytes": 33988,
+    "sha256": "00c9ace1d0048fb4a799568a9b6088395a5ca88d5fe69fb7667f272883054cfe"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/fresh-readback.json",
+    "bytes": 1187,
+    "sha256": "efb6f2a4afb54270ada4f489a0c93a18c0959900907d0d73208c753d2bd5178c"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/full-tests.txt",
+    "bytes": 395457,
+    "sha256": "c802db2a60e3855fea83680470ea777eb9297bcedc0d641164e9c2a1d14535b8"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/otp-signed-events.jsonl",
+    "bytes": 750,
+    "sha256": "88b4418e87f5e1c405c81b4c8214d460123f748eb0bc29c0a01c2a281a36762d"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/root-cause.json",
+    "bytes": 1789,
+    "sha256": "2dd38836761c0f1cf91e3308f559baf9a4f9c6ef12ac053f46fef2fac0bc6171"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-static/validation.json",
+    "bytes": 1140,
+    "sha256": "2b10655af1ffa29fd90f3e2daf534c50d3779517b16f2a33a9e49328e35c7084"
+  }
+]

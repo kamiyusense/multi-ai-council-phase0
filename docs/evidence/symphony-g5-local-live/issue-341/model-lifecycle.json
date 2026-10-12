@@ -1,0 +1,116 @@
+[
+  {
+    "timestamp": "2026-10-09T02:49:13.884Z",
+    "type": "session_meta",
+    "payload": {
+      "id": "01a11e90-77f0-77b3-a4a6-8c76b42c7bfb",
+      "source": "vscode",
+      "originator": "Codex Desktop",
+      "model_provider": "openai",
+      "cwd": "/tmp/symphony-g5-local-20261009T024653Z-d646fcdc-p_ciwgtr/workspaces/GH-341",
+      "cli_version": "0.162.0-alpha.2"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:49:13.885Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "task_started",
+      "turn_id": "01a11e90-9227-7b13-b57f-1bff05b0848d",
+      "root_turn_id": "01a11e90-9227-7b13-b57f-1bff05b0848d",
+      "started_at": 1791514153,
+      "model_context_window": 258400,
+      "collaboration_mode_kind": "default"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:49:15.002Z",
+    "type": "turn_context",
+    "payload": {
+      "turn_id": "01a11e90-9227-7b13-b57f-1bff05b0848d",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "cwd": "/tmp/symphony-g5-local-20261009T024653Z-d646fcdc-p_ciwgtr/workspaces/GH-341"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:51:44.205Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "task_complete",
+      "turn_id": "01a11e90-9227-7b13-b57f-1bff05b0848d",
+      "started_at": 1791514153,
+      "completed_at": 1791514304,
+      "duration_ms": 150333,
+      "time_to_first_token_ms": 11411
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:51:44.878Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "task_started",
+      "turn_id": "01a11e92-dfeb-7df3-a46c-2eeae3729ae6",
+      "root_turn_id": "01a11e92-dfeb-7df3-a46c-2eeae3729ae6",
+      "started_at": 1791514304,
+      "model_context_window": 258400,
+      "collaboration_mode_kind": "default"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:51:44.966Z",
+    "type": "turn_context",
+    "payload": {
+      "turn_id": "01a11e92-dfeb-7df3-a46c-2eeae3729ae6",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "cwd": "/tmp/symphony-g5-local-20261009T024653Z-d646fcdc-p_ciwgtr/workspaces/GH-341"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:52:58.102Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "task_complete",
+      "turn_id": "01a11e92-dfeb-7df3-a46c-2eeae3729ae6",
+      "started_at": 1791514304,
+      "completed_at": 1791514378,
+      "duration_ms": 73224,
+      "time_to_first_token_ms": 4423
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:52:58.771Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "task_started",
+      "turn_id": "01a11e94-0093-7682-a2ac-f7adb82cf4fa",
+      "root_turn_id": "01a11e94-0093-7682-a2ac-f7adb82cf4fa",
+      "started_at": 1791514378,
+      "model_context_window": 258400,
+      "collaboration_mode_kind": "default"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:52:58.856Z",
+    "type": "turn_context",
+    "payload": {
+      "turn_id": "01a11e94-0093-7682-a2ac-f7adb82cf4fa",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "cwd": "/tmp/symphony-g5-local-20261009T024653Z-d646fcdc-p_ciwgtr/workspaces/GH-341"
+    }
+  },
+  {
+    "timestamp": "2026-10-09T02:53:18.609Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "turn_aborted",
+      "turn_id": "01a11e94-0093-7682-a2ac-f7adb82cf4fa",
+      "reason": "interrupted",
+      "started_at": 1791514378,
+      "completed_at": 1791514398,
+      "duration_ms": 19838
+    }
+  }
+]

@@ -1,0 +1,571 @@
+2026-10-09T02:56:05.122402+09:00 info: Running SymphonyElixirWeb.Endpoint with Bandit 1.10.3 at 127.0.0.1:4000 (http)
+2026-10-09T02:56:05.122501+09:00 info: Access SymphonyElixirWeb.Endpoint at http://127.0.0.1:4000
+2026-10-09T02:56:05.152190+09:00 info: GET /api/v1/state
+2026-10-09T02:56:05.163048+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:06.236426+09:00 info: GET /api/v1/state
+2026-10-09T02:56:06.236678+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.170726+09:00 info: Dispatching issue to agent: issue_id=336 issue_identifier=GH-336 pid=#PID<0.551.0> attempt=nil worker_host=local
+2026-10-09T02:56:07.171553+09:00 info: Starting agent run for issue_id=336 issue_identifier=GH-336 worker_host=local
+2026-10-09T02:56:07.171652+09:00 info: Starting worker attempt for issue_id=336 issue_identifier=GH-336 worker_host=local
+2026-10-09T02:56:07.174158+09:00 info: Running workspace hook hook=after_create issue_id=336 issue_identifier=GH-336 workspace=/home/yuuki/symphony-proof-workspaces-g2/GH-336 worker_host=local
+2026-10-09T02:56:07.175471+09:00 info: Sent 200 in 939ms
+2026-10-09T02:56:07.175457+09:00 info: Sent 200 in 2023ms
+2026-10-09T02:56:07.277549+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.277721+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.278050+09:00 info: Sent 200 in 506µs
+2026-10-09T02:56:07.379883+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.380011+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.380315+09:00 info: Sent 200 in 437µs
+2026-10-09T02:56:07.482523+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.482689+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.482989+09:00 info: Sent 200 in 473µs
+2026-10-09T02:56:07.584848+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.584987+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.585307+09:00 info: Sent 200 in 468µs
+2026-10-09T02:56:07.687436+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.687601+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.687902+09:00 info: Sent 200 in 470µs
+2026-10-09T02:56:07.789691+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.789816+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.790035+09:00 info: Sent 200 in 349µs
+2026-10-09T02:56:07.891904+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.892171+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.892405+09:00 info: Sent 200 in 519µs
+2026-10-09T02:56:07.994699+09:00 info: GET /api/v1/state
+2026-10-09T02:56:07.994847+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:07.995269+09:00 info: Sent 200 in 575µs
+2026-10-09T02:56:08.097033+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.097164+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.097527+09:00 info: Sent 200 in 493µs
+2026-10-09T02:56:08.199044+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.199167+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.199430+09:00 info: Sent 200 in 391µs
+2026-10-09T02:56:08.301129+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.301251+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.301499+09:00 info: Sent 200 in 373µs
+2026-10-09T02:56:08.403060+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.403148+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.403431+09:00 info: Sent 200 in 371µs
+2026-10-09T02:56:08.504993+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.505208+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.505590+09:00 info: Sent 200 in 594µs
+2026-10-09T02:56:08.607386+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.607613+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.607875+09:00 info: Sent 200 in 496µs
+2026-10-09T02:56:08.709341+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.709496+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.709756+09:00 info: Sent 200 in 416µs
+2026-10-09T02:56:08.811598+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.811854+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.812141+09:00 info: Sent 200 in 558µs
+2026-10-09T02:56:08.913717+09:00 info: GET /api/v1/state
+2026-10-09T02:56:08.913825+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:08.914066+09:00 info: Sent 200 in 349µs
+2026-10-09T02:56:09.015646+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.015838+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.016165+09:00 info: Sent 200 in 523µs
+2026-10-09T02:56:09.118080+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.118251+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.118611+09:00 info: Sent 200 in 537µs
+2026-10-09T02:56:09.220753+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.220957+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.221327+09:00 info: Sent 200 in 583µs
+2026-10-09T02:56:09.323653+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.323853+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.324213+09:00 info: Sent 200 in 572µs
+2026-10-09T02:56:09.426067+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.426200+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.426497+09:00 info: Sent 200 in 438µs
+2026-10-09T02:56:09.528401+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.528488+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.528739+09:00 info: Sent 200 in 339µs
+2026-10-09T02:56:09.630323+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.630408+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.630716+09:00 info: Sent 200 in 395µs
+2026-10-09T02:56:09.732395+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.732497+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.732873+09:00 info: Sent 200 in 479µs
+2026-10-09T02:56:09.834638+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.834832+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.835158+09:00 info: Sent 200 in 526µs
+2026-10-09T02:56:09.936824+09:00 info: GET /api/v1/state
+2026-10-09T02:56:09.936951+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:09.937231+09:00 info: Sent 200 in 409µs
+2026-10-09T02:56:10.038845+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.038988+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.039319+09:00 info: Sent 200 in 482µs
+2026-10-09T02:56:10.141076+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.141237+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.141684+09:00 info: Sent 200 in 622µs
+2026-10-09T02:56:10.243466+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.243636+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.243897+09:00 info: Sent 200 in 442µs
+2026-10-09T02:56:10.345742+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.345919+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.346218+09:00 info: Sent 200 in 484µs
+2026-10-09T02:56:10.448334+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.448474+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.448893+09:00 info: Sent 200 in 568µs
+2026-10-09T02:56:10.550791+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.550966+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.551284+09:00 info: Sent 200 in 505µs
+2026-10-09T02:56:10.653634+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.653819+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.654165+09:00 info: Sent 200 in 542µs
+2026-10-09T02:56:10.756072+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.756224+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.756560+09:00 info: Sent 200 in 497µs
+2026-10-09T02:56:10.858317+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.858478+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.858797+09:00 info: Sent 200 in 491µs
+2026-10-09T02:56:10.862262+09:00 debug: Ignoring message while waiting for response: %{"emittedAtMs" => 1791482170858, "method" => "remoteControl/status/changed", "params" => %{"environmentId" => nil, "installationId" => "922d0bc6-b157-4b90-a710-33d0a3f6791f", "serverName" => "yuki", "status" => "disabled"}}
+2026-10-09T02:56:10.960727+09:00 info: GET /api/v1/state
+2026-10-09T02:56:10.960868+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:10.961232+09:00 info: Sent 200 in 510µs
+2026-10-09T02:56:11.062986+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.063147+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.063470+09:00 info: Sent 200 in 478µs
+2026-10-09T02:56:11.165183+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.165344+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.165696+09:00 info: Sent 200 in 517µs
+2026-10-09T02:56:11.267383+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.267544+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.267883+09:00 info: Sent 200 in 505µs
+2026-10-09T02:56:11.369530+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.369708+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.369985+09:00 info: Sent 200 in 467µs
+2026-10-09T02:56:11.471859+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.472005+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.472290+09:00 info: Sent 200 in 436µs
+2026-10-09T02:56:11.532630+09:00 debug: Ignoring message while waiting for response: %{"emittedAtMs" => 1791482171532, "method" => "account/updated", "params" => %{"authMode" => "chatgpt", "planType" => "plus"}}
+2026-10-09T02:56:11.573991+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.574100+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.574444+09:00 info: Sent 200 in 451µs
+2026-10-09T02:56:11.676117+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.676250+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.676643+09:00 info: Sent 200 in 528µs
+2026-10-09T02:56:11.778470+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.778669+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.779040+09:00 info: Sent 200 in 578µs
+2026-10-09T02:56:11.880992+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.881194+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.881539+09:00 info: Sent 200 in 551µs
+2026-10-09T02:56:11.983338+09:00 info: GET /api/v1/state
+2026-10-09T02:56:11.983447+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:11.983762+09:00 info: Sent 200 in 434µs
+2026-10-09T02:56:12.085468+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.085572+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.085834+09:00 info: Sent 200 in 372µs
+2026-10-09T02:56:12.187304+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.187396+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.187581+09:00 info: Sent 200 in 284µs
+2026-10-09T02:56:12.289276+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.289524+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.289831+09:00 info: Sent 200 in 565µs
+2026-10-09T02:56:12.391321+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.391512+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.391770+09:00 info: Sent 200 in 454µs
+2026-10-09T02:56:12.493515+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.493713+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.494021+09:00 info: Sent 200 in 511µs
+2026-10-09T02:56:12.595572+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.595696+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.596030+09:00 info: Sent 200 in 463µs
+2026-10-09T02:56:12.697524+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.697682+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.698009+09:00 info: Sent 200 in 484µs
+2026-10-09T02:56:12.799739+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.799905+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.800295+09:00 info: Sent 200 in 563µs
+2026-10-09T02:56:12.901880+09:00 info: GET /api/v1/state
+2026-10-09T02:56:12.901995+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:12.902227+09:00 info: Sent 200 in 354µs
+2026-10-09T02:56:13.003805+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.003934+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.004232+09:00 info: Sent 200 in 430µs
+2026-10-09T02:56:13.105731+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.105815+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.106028+09:00 info: Sent 200 in 301µs
+2026-10-09T02:56:13.207790+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.207894+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.208141+09:00 info: Sent 200 in 358µs
+2026-10-09T02:56:13.310280+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.310584+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.310991+09:00 info: Sent 200 in 728µs
+2026-10-09T02:56:13.412628+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.412773+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.413034+09:00 info: Sent 200 in 413µs
+2026-10-09T02:56:13.514885+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.515080+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.515413+09:00 info: Sent 200 in 538µs
+2026-10-09T02:56:13.617301+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.617493+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.618004+09:00 info: Sent 200 in 707µs
+2026-10-09T02:56:13.719608+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.719849+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.720160+09:00 info: Sent 200 in 564µs
+2026-10-09T02:56:13.821911+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.822019+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.822336+09:00 info: Sent 200 in 425µs
+2026-10-09T02:56:13.924190+09:00 info: GET /api/v1/state
+2026-10-09T02:56:13.924296+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:13.924559+09:00 info: Sent 200 in 375µs
+2026-10-09T02:56:14.026727+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.026880+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.027225+09:00 info: Sent 200 in 499µs
+2026-10-09T02:56:14.128762+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.128881+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.129145+09:00 info: Sent 200 in 388µs
+2026-10-09T02:56:14.231047+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.231239+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.231624+09:00 info: Sent 200 in 583µs
+2026-10-09T02:56:14.333535+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.333733+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.334109+09:00 info: Sent 200 in 577µs
+2026-10-09T02:56:14.436132+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.436276+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.436562+09:00 info: Sent 200 in 442µs
+2026-10-09T02:56:14.538630+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.538719+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.539048+09:00 info: Sent 200 in 418µs
+2026-10-09T02:56:14.640479+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.640609+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.640939+09:00 info: Sent 200 in 460µs
+2026-10-09T02:56:14.742414+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.742509+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.742738+09:00 info: Sent 200 in 331µs
+2026-10-09T02:56:14.844325+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.844466+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.844760+09:00 info: Sent 200 in 436µs
+2026-10-09T02:56:14.946959+09:00 info: GET /api/v1/state
+2026-10-09T02:56:14.947099+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:14.947400+09:00 info: Sent 200 in 450µs
+2026-10-09T02:56:15.049601+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.049893+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.050282+09:00 info: Sent 200 in 701µs
+2026-10-09T02:56:15.152124+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.152264+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.152505+09:00 info: Sent 200 in 394µs
+2026-10-09T02:56:15.254364+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.254503+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.254721+09:00 info: Sent 200 in 364µs
+2026-10-09T02:56:15.357170+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.357295+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.357558+09:00 info: Sent 200 in 397µs
+2026-10-09T02:56:15.460535+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.460662+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.460906+09:00 info: Sent 200 in 377µs
+2026-10-09T02:56:15.562659+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.562878+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.563257+09:00 info: Sent 200 in 605µs
+2026-10-09T02:56:15.665017+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.665154+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.665482+09:00 info: Sent 200 in 476µs
+2026-10-09T02:56:15.766864+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.766942+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.767115+09:00 info: Sent 200 in 257µs
+2026-10-09T02:56:15.835945+09:00 debug: Ignoring message while waiting for response: %{"fields" => %{"message" => "failed to refresh available models: request timed out"}, "level" => "ERROR", "target" => "codex_models_manager::manager", "timestamp" => "2026-10-08T17:56:15.835595Z"}
+2026-10-09T02:56:15.868682+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.868790+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.869092+09:00 info: Sent 200 in 415µs
+2026-10-09T02:56:15.970706+09:00 info: GET /api/v1/state
+2026-10-09T02:56:15.970853+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:15.971158+09:00 info: Sent 200 in 452µs
+2026-10-09T02:56:16.072714+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.072832+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.073216+09:00 info: Sent 200 in 501µs
+2026-10-09T02:56:16.174700+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.174798+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.175021+09:00 info: Sent 200 in 320µs
+2026-10-09T02:56:16.276673+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.276847+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.277151+09:00 info: Sent 200 in 482µs
+2026-10-09T02:56:16.378704+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.378833+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.379141+09:00 info: Sent 200 in 435µs
+2026-10-09T02:56:16.480672+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.480800+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.481130+09:00 info: Sent 200 in 467µs
+2026-10-09T02:56:16.582696+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.582806+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.583122+09:00 info: Sent 200 in 428µs
+2026-10-09T02:56:16.684773+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.684938+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.685262+09:00 info: Sent 200 in 494µs
+2026-10-09T02:56:16.786870+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.786979+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.787282+09:00 info: Sent 200 in 411µs
+2026-10-09T02:56:16.888995+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.889170+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.889462+09:00 info: Sent 200 in 478µs
+2026-10-09T02:56:16.991218+09:00 info: GET /api/v1/state
+2026-10-09T02:56:16.991350+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:16.991679+09:00 info: Sent 200 in 469µs
+2026-10-09T02:56:17.093521+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.093729+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.094102+09:00 info: Sent 200 in 587µs
+2026-10-09T02:56:17.174158+09:00 error: Task #PID<0.551.0> started from SymphonyElixir.Orchestrator terminating, ** (Jason.EncodeError) invalid byte 0xE5 in <<79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 227, 129, 174, 32, 71, 105, 116, 72, 117, 98, 32, 73, 115, 115, 117, 101, 32, 96, 71, 72, 45, 51, 51, 54, 96, 32, 227, 130, 146, 230, 137, 177, 227, 129, 132, 227, 129, 190, 227, 129, 153, 227, 128, 130, 10, 227, 130, 191, 227, 130, 164, 227, 131, 136, 227, 131, 171, 58, 32, 79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 109, 105, 110, 105, 109, ...>>, (jason 1.4.4) lib/jason.ex:164: Jason.encode!/2, (symphony_elixir 0.0.3) lib/symphony_elixir/codex/app_server.ex:1031: SymphonyElixir.Codex.AppServer.send_message/2, (symphony_elixir 0.0.3) lib/symphony_elixir/codex/app_server.ex:344: SymphonyElixir.Codex.AppServer.start_turn/7, (symphony_elixir 0.0.3) lib/symphony_elixir/codex/app_server.ex:94: SymphonyElixir.Codex.AppServer.run_turn/4, (symphony_elixir 0.0.3) lib/symphony_elixir/agent_runner.ex:105: SymphonyElixir.AgentRunner.do_run_codex_turns/8, (symphony_elixir 0.0.3) lib/symphony_elixir/agent_runner.ex:94: SymphonyElixir.AgentRunner.run_codex_turns/5, (symphony_elixir 0.0.3) lib/symphony_elixir/agent_runner.ex:47: SymphonyElixir.AgentRunner.run_on_worker_host/4, (symphony_elixir 0.0.3) lib/symphony_elixir/agent_runner.ex:28: SymphonyElixir.AgentRunner.run/3, Function: #Function<29.34712223/0 in SymphonyElixir.Orchestrator.spawn_issue_on_worker_host/5>, Args: []
+2026-10-09T02:56:17.181456+09:00 warning: Agent task exited for issue_id=336 session_id=n/a reason={%Jason.EncodeError{message: "invalid byte 0xE5 in <<79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 227, 129, 174, 32, 71, 105, 116, 72, 117, 98, 32, 73, 115, 115, 117, 101, 32, 96, 71, 72, 45, 51, 51, 54, 96, 32, 227, 130, 146, 230, 137, 177, 227, 129, 132, 227, 129, 190, 227, 129, 153, 227, 128, 130, 10, 227, 130, 191, 227, 130, 164, 227, 131, 136, 227, 131, 171, 58, 32, 79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 109, 105, 110, 105, 109, ...>>"}, [{Jason, :encode!, 2, [file: ~c"lib/jason.ex", line: 164, error_info: %{module: Exception}]}, {SymphonyElixir.Codex.AppServer, :send_message, 2, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 1031]}, {SymphonyElixir.Codex.AppServer, :start_turn, 7, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 344]}, {SymphonyElixir.Codex.AppServer, :run_turn, 4, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 94]}, {SymphonyElixir.AgentRunner, :do_run_codex_turns, 8, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 105]}, {SymphonyElixir.AgentRunner, :run_codex_turns, 5, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 94]}, {SymphonyElixir.AgentRunner, :run_on_worker_host, 4, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 47]}, {SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 28]}]}; scheduling retry
+2026-10-09T02:56:17.181799+09:00 warning: Retrying issue_id=336 issue_identifier=GH-336 in 10000ms (attempt 1) error=agent exited: {%Jason.EncodeError{message: "invalid byte 0xE5 in <<79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 227, 129, 174, 32, 71, 105, 116, 72, 117, 98, 32, 73, 115, 115, 117, 101, 32, 96, 71, 72, 45, 51, 51, 54, 96, 32, 227, 130, 146, 230, 137, 177, 227, 129, 132, 227, 129, 190, 227, 129, 153, 227, 128, 130, 10, 227, 130, 191, 227, 130, 164, 227, 131, 136, 227, 131, 171, 58, 32, 79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 109, 105, 110, 105, 109, ...>>"}, [{Jason, :encode!, 2, [file: ~c"lib/jason.ex", line: 164, error_info: %{module: Exception}]}, {SymphonyElixir.Codex.AppServer, :send_message, 2, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 1031]}, {SymphonyElixir.Codex.AppServer, :start_turn, 7, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 344]}, {SymphonyElixir.Codex.AppServer, :run_turn, 4, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 94]}, {SymphonyElixir.AgentRunner, :do_run_codex_turns, 8, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 105]}, {SymphonyElixir.AgentRunner, :run_codex_turns, 5, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 94]}, {SymphonyElixir.AgentRunner, :run_on_worker_host, 4, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 47]}, {SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 28]}]}
+2026-10-09T02:56:17.181960+09:00 info: Agent task finished for issue_id=336 session_id=n/a reason={%Jason.EncodeError{message: "invalid byte 0xE5 in <<79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 227, 129, 174, 32, 71, 105, 116, 72, 117, 98, 32, 73, 115, 115, 117, 101, 32, 96, 71, 72, 45, 51, 51, 54, 96, 32, 227, 130, 146, 230, 137, 177, 227, 129, 132, 227, 129, 190, 227, 129, 153, 227, 128, 130, 10, 227, 130, 191, 227, 130, 164, 227, 131, 136, 227, 131, 171, 58, 32, 79, 102, 102, 105, 99, 105, 97, 108, 32, 83, 121, 109, 112, 104, 111, 110, 121, 32, 109, 105, 110, 105, 109, ...>>"}, [{Jason, :encode!, 2, [file: ~c"lib/jason.ex", line: 164, error_info: %{module: Exception}]}, {SymphonyElixir.Codex.AppServer, :send_message, 2, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 1031]}, {SymphonyElixir.Codex.AppServer, :start_turn, 7, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 344]}, {SymphonyElixir.Codex.AppServer, :run_turn, 4, [file: ~c"lib/symphony_elixir/codex/app_server.ex", line: 94]}, {SymphonyElixir.AgentRunner, :do_run_codex_turns, 8, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 105]}, {SymphonyElixir.AgentRunner, :run_codex_turns, 5, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 94]}, {SymphonyElixir.AgentRunner, :run_on_worker_host, 4, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 47]}, {SymphonyElixir.AgentRunner, :run, 3, [file: ~c"lib/symphony_elixir/agent_runner.ex", line: 28]}]}
+2026-10-09T02:56:17.196221+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.196329+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.198001+09:00 info: Sent 200 in 1ms
+2026-10-09T02:56:17.299960+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.300184+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.300488+09:00 info: Sent 200 in 539µs
+2026-10-09T02:56:17.402835+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.403010+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.403308+09:00 info: Sent 200 in 484µs
+2026-10-09T02:56:17.505349+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.505554+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.505879+09:00 info: Sent 200 in 541µs
+2026-10-09T02:56:17.607762+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.607918+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.608226+09:00 info: Sent 200 in 473µs
+2026-10-09T02:56:17.710228+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.710446+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.710782+09:00 info: Sent 200 in 564µs
+2026-10-09T02:56:17.812778+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.812926+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.813225+09:00 info: Sent 200 in 455µs
+2026-10-09T02:56:17.915446+09:00 info: GET /api/v1/state
+2026-10-09T02:56:17.915611+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:17.915851+09:00 info: Sent 200 in 454µs
+2026-10-09T02:56:18.017588+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.017694+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.018057+09:00 info: Sent 200 in 467µs
+2026-10-09T02:56:18.119712+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.119831+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.120116+09:00 info: Sent 200 in 409µs
+2026-10-09T02:56:18.222213+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.222300+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.222624+09:00 info: Sent 200 in 410µs
+2026-10-09T02:56:18.324520+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.324642+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.324914+09:00 info: Sent 200 in 399µs
+2026-10-09T02:56:18.426874+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.426979+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.427224+09:00 info: Sent 200 in 354µs
+2026-10-09T02:56:18.528879+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.529013+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.529346+09:00 info: Sent 200 in 468µs
+2026-10-09T02:56:18.631589+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.631876+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.632283+09:00 info: Sent 200 in 702µs
+2026-10-09T02:56:18.734465+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.734620+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.735010+09:00 info: Sent 200 in 554µs
+2026-10-09T02:56:18.836970+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.837151+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.837587+09:00 info: Sent 200 in 627µs
+2026-10-09T02:56:18.869130+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.869282+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.869721+09:00 info: Sent 200 in 611µs
+2026-10-09T02:56:18.939774+09:00 info: GET /api/v1/state
+2026-10-09T02:56:18.939965+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:18.940344+09:00 info: Sent 200 in 582µs
+2026-10-09T02:56:19.042441+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.042601+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.042926+09:00 info: Sent 200 in 491µs
+2026-10-09T02:56:19.145041+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.145165+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.145492+09:00 info: Sent 200 in 453µs
+2026-10-09T02:56:19.247550+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.247743+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.248273+09:00 info: Sent 200 in 728µs
+2026-10-09T02:56:19.350359+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.350535+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.350829+09:00 info: Sent 200 in 471µs
+2026-10-09T02:56:19.452905+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.453085+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.453488+09:00 info: Sent 200 in 593µs
+2026-10-09T02:56:19.555370+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.555536+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.555827+09:00 info: Sent 200 in 468µs
+2026-10-09T02:56:19.657598+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.657727+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.658039+09:00 info: Sent 200 in 446µs
+2026-10-09T02:56:19.759659+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.759754+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.760191+09:00 info: Sent 200 in 536µs
+2026-10-09T02:56:19.862085+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.862271+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.862640+09:00 info: Sent 200 in 562µs
+2026-10-09T02:56:19.964774+09:00 info: GET /api/v1/state
+2026-10-09T02:56:19.964939+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:19.965294+09:00 info: Sent 200 in 525µs
+2026-10-09T02:56:20.067438+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.067630+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.067950+09:00 info: Sent 200 in 521µs
+2026-10-09T02:56:20.169870+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.169993+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.170294+09:00 info: Sent 200 in 427µs
+2026-10-09T02:56:20.271977+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.272085+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.272320+09:00 info: Sent 200 in 346µs
+2026-10-09T02:56:20.374314+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.374452+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.374671+09:00 info: Sent 200 in 365µs
+2026-10-09T02:56:20.476582+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.476727+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.477032+09:00 info: Sent 200 in 455µs
+2026-10-09T02:56:20.578975+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.579120+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.579465+09:00 info: Sent 200 in 493µs
+2026-10-09T02:56:20.681560+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.681818+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.682135+09:00 info: Sent 200 in 584µs
+2026-10-09T02:56:20.784430+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.784640+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.784966+09:00 info: Sent 200 in 546µs
+2026-10-09T02:56:20.886817+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.886982+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.887315+09:00 info: Sent 200 in 509µs
+2026-10-09T02:56:20.989407+09:00 info: GET /api/v1/state
+2026-10-09T02:56:20.989588+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:20.989911+09:00 info: Sent 200 in 538µs
+2026-10-09T02:56:21.091945+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.092177+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.092887+09:00 info: Sent 200 in 958µs
+2026-10-09T02:56:21.194898+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.195081+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.195364+09:00 info: Sent 200 in 493µs
+2026-10-09T02:56:21.297305+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.297556+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.297925+09:00 info: Sent 200 in 625µs
+2026-10-09T02:56:21.399743+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.399887+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.400267+09:00 info: Sent 200 in 534µs
+2026-10-09T02:56:21.502722+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.502889+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.503183+09:00 info: Sent 200 in 472µs
+2026-10-09T02:56:21.605270+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.605449+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.605751+09:00 info: Sent 200 in 488µs
+2026-10-09T02:56:21.707791+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.707968+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.708223+09:00 info: Sent 200 in 441µs
+2026-10-09T02:56:21.810516+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.810774+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.811217+09:00 info: Sent 200 in 718µs
+2026-10-09T02:56:21.913002+09:00 info: GET /api/v1/state
+2026-10-09T02:56:21.913147+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:21.913633+09:00 info: Sent 200 in 632µs
+2026-10-09T02:56:22.015602+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.015824+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.016107+09:00 info: Sent 200 in 514µs
+2026-10-09T02:56:22.118009+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.118173+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.118466+09:00 info: Sent 200 in 469µs
+2026-10-09T02:56:22.220322+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.220477+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.221114+09:00 info: Sent 200 in 799µs
+2026-10-09T02:56:22.322991+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.323154+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.323434+09:00 info: Sent 200 in 451µs
+2026-10-09T02:56:22.425441+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.425610+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.426029+09:00 info: Sent 200 in 597µs
+2026-10-09T02:56:22.527846+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.528013+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.528328+09:00 info: Sent 200 in 492µs
+2026-10-09T02:56:22.630399+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.630610+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.630968+09:00 info: Sent 200 in 579µs
+2026-10-09T02:56:22.733129+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.733429+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.733919+09:00 info: Sent 200 in 795µs
+2026-10-09T02:56:22.836139+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.836424+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.836902+09:00 info: Sent 200 in 777µs
+2026-10-09T02:56:22.939069+09:00 info: GET /api/v1/state
+2026-10-09T02:56:22.939320+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:22.939717+09:00 info: Sent 200 in 676µs
+2026-10-09T02:56:23.042003+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.042349+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.042797+09:00 info: Sent 200 in 812µs
+2026-10-09T02:56:23.145278+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.145604+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.145986+09:00 info: Sent 200 in 727µs
+2026-10-09T02:56:23.247710+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.247841+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.248172+09:00 info: Sent 200 in 466µs
+2026-10-09T02:56:23.350113+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.350271+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.350592+09:00 info: Sent 200 in 495µs
+2026-10-09T02:56:23.452028+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.452089+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.452564+09:00 info: Sent 200 in 527µs
+2026-10-09T02:56:23.554351+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.554458+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.554693+09:00 info: Sent 200 in 348µs
+2026-10-09T02:56:23.656241+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.656443+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.656863+09:00 info: Sent 200 in 627µs
+2026-10-09T02:56:23.758297+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.758428+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.758755+09:00 info: Sent 200 in 463µs
+2026-10-09T02:56:23.860368+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.860544+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.860876+09:00 info: Sent 200 in 515µs
+2026-10-09T02:56:23.962502+09:00 info: GET /api/v1/state
+2026-10-09T02:56:23.962611+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:23.962952+09:00 info: Sent 200 in 455µs
+2026-10-09T02:56:24.065131+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.065340+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.065808+09:00 info: Sent 200 in 689µs
+2026-10-09T02:56:24.167456+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.167598+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.167964+09:00 info: Sent 200 in 510µs
+2026-10-09T02:56:24.269886+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.269999+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.270325+09:00 info: Sent 200 in 438µs
+2026-10-09T02:56:24.372062+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.372288+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.372492+09:00 info: Sent 200 in 445µs
+2026-10-09T02:56:24.474524+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.474715+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.475101+09:00 info: Sent 200 in 585µs
+2026-10-09T02:56:24.577111+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.577262+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.577736+09:00 info: Sent 200 in 629µs
+2026-10-09T02:56:24.679722+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.679887+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.680185+09:00 info: Sent 200 in 476µs
+2026-10-09T02:56:24.781994+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.782077+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.782322+09:00 info: Sent 200 in 332µs
+2026-10-09T02:56:24.884009+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.884169+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.884448+09:00 info: Sent 200 in 448µs
+2026-10-09T02:56:24.985840+09:00 info: GET /api/v1/state
+2026-10-09T02:56:24.985939+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:24.986148+09:00 info: Sent 200 in 315µs
+2026-10-09T02:56:25.087788+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.087900+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.088245+09:00 info: Sent 200 in 455µs
+2026-10-09T02:56:25.190149+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.190306+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.190656+09:00 info: Sent 200 in 517µs
+2026-10-09T02:56:25.292961+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.293085+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.293470+09:00 info: Sent 200 in 513µs
+2026-10-09T02:56:25.395367+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.395495+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.395781+09:00 info: Sent 200 in 426µs
+2026-10-09T02:56:25.497601+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.497696+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.497962+09:00 info: Sent 200 in 361µs
+2026-10-09T02:56:25.599995+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.600151+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.600434+09:00 info: Sent 200 in 445µs
+2026-10-09T02:56:25.702371+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.702482+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.702777+09:00 info: Sent 200 in 409µs
+2026-10-09T02:56:25.804194+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.804324+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.804694+09:00 info: Sent 200 in 505µs
+2026-10-09T02:56:25.906430+09:00 info: GET /api/v1/state
+2026-10-09T02:56:25.906552+09:00 debug: Processing with SymphonyElixirWeb.ObservabilityApiController.state/2, Parameters: %{}, Pipelines: []
+2026-10-09T02:56:25.906875+09:00 info: Sent 200 in 451µs

@@ -1,0 +1,12 @@
+[
+  {
+    "status": "RUNNING",
+    "protocol": "SYMPHONY_G5_WORKER_OBSERVATION_V1",
+    "kind": "STARTED",
+    "issue_id": "341",
+    "workspace": "/tmp/symphony-g5-local-20261009T024653Z-d646fcdc-p_ciwgtr/workspaces/GH-341",
+    "attempt_number": 261970724618508935,
+    "worker_run_id": "3a2b4fc6e701a86ca26df0b415e13b86",
+    "mac_valid": true
+  }
+]

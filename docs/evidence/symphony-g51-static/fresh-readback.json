@@ -1,0 +1,37 @@
+{
+  "recorded_at": "2026-10-09T09:50:54.670128+00:00",
+  "starting_readback_at": "2026-10-09T09:21:42.180891+00:00",
+  "starting_pr_head": "10372c408ac2215c205ac7558af05a79e3f93dfd",
+  "starting_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "starting_ci": [
+    {
+      "id": 37877554899,
+      "name": "Symphony-inspired controller static validation",
+      "head_sha": "10372c408ac2215c205ac7558af05a79e3f93dfd",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 37877554904,
+      "name": "Blue Work reconciliation offline validation",
+      "head_sha": "10372c408ac2215c205ac7558af05a79e3f93dfd",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "latest_g5_checkpoint_url": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/320#issuecomment-6073466391",
+  "precommit_readback": {
+    "pr": {
+      "head": "10372c408ac2215c205ac7558af05a79e3f93dfd",
+      "state": "open",
+      "draft": true
+    },
+    "main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+    "historical_g5_issue": {
+      "number": 341,
+      "state": "closed",
+      "closed_at": "2026-10-09T02:53:04Z"
+    }
+  },
+  "new_live_count": 0
+}

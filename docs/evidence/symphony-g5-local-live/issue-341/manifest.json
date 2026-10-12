@@ -1,0 +1,92 @@
+[
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/checkpoint.json",
+    "bytes": 5682,
+    "sha256": "7d987d6c5f07ed157184c2da986244be15baf279b89c48e98ba7492fa7316661"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/child-environment-observations.jsonl",
+    "bytes": 1748,
+    "sha256": "f03869bad34383043c74b9ecba7f565fc94b55b0505ab2cd4e4ff382552f1ff7"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/cleanup-readback.json",
+    "bytes": 1069,
+    "sha256": "bbd560766b7968a65c32055ed1a30a6a1edc3bea9dca2d4b477c3d1b11b6bba1"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/event-validation.json",
+    "bytes": 353,
+    "sha256": "38b3b23a02f9a8ce8aaf4fa470a8fdd9ea0e9f92bb3e6b55f71891d8956b0728"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/focused-tests.txt",
+    "bytes": 32851,
+    "sha256": "a4b263740d609d2c4c128cbea41543dd7ce361950e2e1c6357c17027f8683771"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/full-tests.txt",
+    "bytes": 394320,
+    "sha256": "008cf495733f0e7746400ae5d4b9a87807744776fe391079aaf29bf0ce4e889b"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/issue-readback.json",
+    "bytes": 2594,
+    "sha256": "9fafd37a7b003f83b8ea077101b7d71d93aab80d864b497b8d443cd84f1be26a"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/model-lifecycle.json",
+    "bytes": 3358,
+    "sha256": "509581a090327612becbf3179c4f72a30b027c68ea316de307370b5031a4a778"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer-restart.json",
+    "bytes": 806,
+    "sha256": "c88b65f5f2d6ef614434ffabf3994ef7b619ebfc00c106b41315548e26d5f10c"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer-restart.txt",
+    "bytes": 64,
+    "sha256": "bdae898f15ee9514abd82f295b274dc64e1aa080117d520a3de9979acfddd958"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/observer.txt",
+    "bytes": 96,
+    "sha256": "52c3494fc2b282ab85ec50c09f0ddaf948833dfa404908544714c67f9886352d"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/signed-events.jsonl",
+    "bytes": 397,
+    "sha256": "99b528c4d986df64957f319cd2475e595550e987bebbe72fcc5d39f80bff82ed"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/started-durable-readback.json",
+    "bytes": 2339,
+    "sha256": "2e2a997f8853f3054952bd340f7b42a3757415969d30581919c392187206d8ce"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/static-validation.json",
+    "bytes": 917,
+    "sha256": "5be20c73b07be8f8fe3b305794e934cad27dcfff239b542d9c4e6ff09ba60d36"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/symphony.txt",
+    "bytes": 116350,
+    "sha256": "9491a47e03629092bf56a5b1dbe2e0bd73b89429c4cefb28dd54795784a32dd8"
+  },
+  {
+    "path": "docs/evidence/symphony-g5-local-live/issue-341/workspace-verification-before-close.json",
+    "bytes": 5351,
+    "sha256": "1094a1de240450134fd00dfaf44edf9adcb392e3cfe0b6a259ea76034b6f15eb"
+  },
+  {
+    "path": "docs/SYMPHONY_G5_LOCAL_LIVE_RESULT_ISSUE_341.md",
+    "bytes": 6139,
+    "sha256": "e12ef1c6f2d1f374953058e9279d8ad5b844c85dbc031a4f103a5173f0c7aa7b"
+  },
+  {
+    "path": "docs/SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md",
+    "bytes": 9929,
+    "sha256": "557355a8f927cc5b189805eac5450edb1ecf2fec12c6da6092074367402dff19"
+  }
+]

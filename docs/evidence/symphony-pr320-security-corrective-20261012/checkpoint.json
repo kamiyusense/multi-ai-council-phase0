@@ -1,0 +1,299 @@
+{
+  "protocol": "SYMPHONY_PR320_SECURITY_CORRECTIVE_STATIC_V1",
+  "correlation": "sym-pr320-claude-security-correction-20261012-v1-codex-result",
+  "status": "SECURITY_CORRECTIVE_STATIC_PASS",
+  "review": "CLAUDE_REVIEW_PENDING",
+  "merge": "NO_GO",
+  "LIVE": "NO_GO",
+  "starting_PR_HEAD": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "starting_main": "bf18c9d92e8b94c574fed6e9c5603758b3c23816",
+  "source_tree_before_evidence": "6405e7305dd90d3afe2ea2e5d713d1cfdb65aec0",
+  "source_files": [
+    {
+      "path": "automation/command_bus/symphony_attempt_store.py",
+      "bytes": 29359,
+      "sha256": "70ef4f832a01defcaf01498d216ee5f6d89e7d16d5c1949f5be764ac9e968a9c"
+    },
+    {
+      "path": "automation/command_bus/symphony_campaign_store.py",
+      "bytes": 11921,
+      "sha256": "b4ba66608cafaf0fde4b17255fb84b93acad8fab5a635eff69999a35d8893864"
+    },
+    {
+      "path": "automation/command_bus/symphony_codex_app_server.py",
+      "bytes": 28467,
+      "sha256": "aba5cd9ee3700818fabbdae04b574493b0b103b1fd98efe29633a06195bb3572"
+    },
+    {
+      "path": "automation/command_bus/symphony_subscription_boundary.py",
+      "bytes": 3922,
+      "sha256": "dc4d1c55d1d461e04e277c98564ef22ed946124e082eebb5a73eb330d07149d8"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_controller.py",
+      "bytes": 41365,
+      "sha256": "04eb6953348d07629af91e785a4f7058b9eb01800fc459115922e9ffcd728f4d"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_security_corrective.py",
+      "bytes": 20730,
+      "sha256": "9fbb59498bbab4779eaaec1dcc0104801de1f3d8489fa2f04223d53d2bcee08e"
+    }
+  ],
+  "red": {
+    "starting_HEAD": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_security_corrective",
+      "-v"
+    ],
+    "tests": 4,
+    "failures": 4,
+    "seconds": 0.006,
+    "returncode": 1,
+    "observed": {
+      "attempt_concurrent_ACCEPTED": 2,
+      "campaign_concurrent_ACCEPTED": 2,
+      "worker_controller_authority_leaked": true,
+      "missing_account_model_started": true
+    },
+    "actual_execution": "STATIC fake atomic backend and fake subprocess; no real worker/API/write"
+  },
+  "focused": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_attempt_faults",
+      "automation.command_bus.tests.test_symphony_attempt_reconciler",
+      "automation.command_bus.tests.test_symphony_attempt_store",
+      "automation.command_bus.tests.test_symphony_autonomous_controller",
+      "automation.command_bus.tests.test_symphony_autonomous_runtime",
+      "automation.command_bus.tests.test_symphony_campaign_store",
+      "automation.command_bus.tests.test_symphony_controller",
+      "automation.command_bus.tests.test_symphony_g51_worker_lifecycle",
+      "automation.command_bus.tests.test_symphony_g6_adoption",
+      "automation.command_bus.tests.test_symphony_minimal_live_preflight",
+      "automation.command_bus.tests.test_symphony_production_observer",
+      "automation.command_bus.tests.test_symphony_result_adoption",
+      "automation.command_bus.tests.test_symphony_security_corrective",
+      "automation.command_bus.tests.test_symphony_subscription_boundary",
+      "automation.command_bus.tests.test_symphony_upstream_event_adapter",
+      "automation.command_bus.tests.test_symphony_upstream_reference",
+      "-v"
+    ],
+    "returncode": 0,
+    "tests": 220,
+    "skipped": 0,
+    "seconds": 0.65,
+    "sha256": "9eea84cbdaf8509116d0c66121a22ffce64d3c89338a9887e6cc9f7a9ad96b3d"
+  },
+  "full": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "automation/command_bus/tests",
+      "-t",
+      ".",
+      "-v"
+    ],
+    "returncode": 0,
+    "tests": 1979,
+    "skipped": 1,
+    "seconds": 71.677,
+    "sha256": "b1af681dabe8f04c203d3e1797dffc54266777de7bfaab983ff097859b3a0a01"
+  },
+  "Blue": {
+    "blue": {
+      "returncode": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bridge": {
+      "returncode": 0,
+      "sha256": "89634ae0aec8c5ac5a3af4f0caf0776c22b726e7f723165444ba84b5508f3c1b"
+    },
+    "delivery": {
+      "returncode": 0,
+      "sha256": "e3e611549da4d98a5e1e96ef67092b8d08c245b83b6547a295a6f2fa9fd042df"
+    },
+    "mock_only": true,
+    "worker_provider_dispatch_count": 0
+  },
+  "static": {
+    "compileall": "PASS",
+    "AST": "PASS",
+    "YAML_parse": 23,
+    "diff_check": "PASS",
+    "Official_Symphony_patch_changed": false,
+    "live_count": 0
+  },
+  "patch": {
+    "patch_unchanged": true,
+    "patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+    "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+    "apply": false,
+    "LIVE": 0,
+    "apply_check_returncode": 0,
+    "result": "PASS"
+  },
+  "historical_evidence_verified_files": 174,
+  "legacy_read": "optional write_claim_version=1/nonce extension; original V1 bytes and state-digest chain preserved",
+  "ownership": "fresh 32-byte nonce per operation; process-bound once-only submitted path fence; exact readback only own nonce; existing/foreign/copy/fork denied; atomic create-only backend required; nonce is not a transferable distributed lease",
+  "recovery": "lost reply may be accepted within original invocation only if exact own bytes readable; subsequent invocation restore-only; restart gets durable evidence and existing generation/fence reconciler, no dispatch permission from nonce",
+  "subscription": "parent keys only inspected by name; OS/locale/config-directory child allowlist; exact built-in same-session account/read refreshToken:false + effective config/read before thread/model; account/config payloads absent from saved events; stale>60s denied; unknown quota alone allowed; flags remain off by default",
+  "post_rehearsal_change": {
+    "file": "automation/command_bus/symphony_codex_app_server.py",
+    "change": "AppServer Protocol declares the already-tested optional live_enabled parameter; concrete implementation/test bodies unchanged",
+    "requires_no_new_worker": true,
+    "previous_source_tree": "7ab0113ed95e5debb76ecc49185e63803bd94b33",
+    "exact_head_CI_will_validate_final_source": true
+  },
+  "downstream_impact": {
+    "snapshot": {
+      "main": "bf18c9d92e8b94c574fed6e9c5603758b3c23816",
+      "heads": {
+        "320": "8c53c505a21318c6133da0bef85af18ae3711103",
+        "343": "794488c3f4a47d328bcf1109e60c71f97ce9aa3c",
+        "364": "215d962d838aba913e2dde08ec392bb7fcaef4be"
+      },
+      "fixed_320_source_tree_before_evidence": "7ab0113ed95e5debb76ecc49185e63803bd94b33",
+      "stages": [
+        {
+          "stage": "320",
+          "tree": "17a9a2d5b572268febdb6359c664cdb61b2af12e",
+          "source": "/tmp/pr320-security-impact-320-20261012"
+        },
+        {
+          "stage": "343",
+          "tree": "b47864f642bd04dab09bcd8304bf9c88fd97bee1",
+          "source": "/tmp/pr320-security-impact-343-20261012"
+        },
+        {
+          "stage": "364",
+          "tree": "7b5e9caf97093d1479b10be51e9b17c1eba71729",
+          "source": "/tmp/pr320-security-impact-364-20261012"
+        }
+      ],
+      "parent_heads_are_NOT_updated": true,
+      "remote_other_branch_write_count": 0,
+      "merge_commits": 0,
+      "method": "main+old320 merge-tree, apply corrected320 via 3way isolated read-tree; merge unchanged343 and364 with their actual parent bases"
+    },
+    "full_results": [
+      {
+        "stage": "320",
+        "tree": "17a9a2d5b572268febdb6359c664cdb61b2af12e",
+        "source": "/tmp/pr320-security-impact-320-20261012",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "automation/command_bus/tests",
+          "-t",
+          ".",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 2606,
+        "skipped": 1,
+        "seconds": 115.605,
+        "log_sha256": "76ea8d8964291bb2596ac98226bcb78735c6ef254912e94728834ca442d97784"
+      },
+      {
+        "stage": "343",
+        "tree": "b47864f642bd04dab09bcd8304bf9c88fd97bee1",
+        "source": "/tmp/pr320-security-impact-343-20261012",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "automation/command_bus/tests",
+          "-t",
+          ".",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 2847,
+        "skipped": 1,
+        "seconds": 122.922,
+        "log_sha256": "eb9cbe9b04fc13f74d4ffedb909912966d7f8cc94cbd27b87dca8d18aa837ea9"
+      },
+      {
+        "stage": "364",
+        "tree": "7b5e9caf97093d1479b10be51e9b17c1eba71729",
+        "source": "/tmp/pr320-security-impact-364-20261012",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "automation/command_bus/tests",
+          "-t",
+          ".",
+          "-v"
+        ],
+        "returncode": 0,
+        "tests": 2861,
+        "skipped": 1,
+        "seconds": 123.841,
+        "log_sha256": "411db63e4f0dc5dd3aed40096eb276a024f5a592014651b2e856b4345c55375f"
+      }
+    ],
+    "immutable_validators": {
+      "validate_symphony_operator_static": {
+        "returncode": 0,
+        "sha256": "4e6c310ff5c6a020197d1a92a01fa84724520117d8e079b22056b24e7afe0396",
+        "output": "{\"result\": \"PASS\", \"verified_files\": 51, \"historical_source_reads\": 2, \"historical_commit\": \"db578364c3bb22d5ed1af382085645cfb952f36e\", \"live_count\": 0}\n{\"result\": \"PASS\", \"verified_files\": 101, \"historical_g72_head\": \"d9255aeb966a16f484ae0b4044e3e43c38f4c103\", \"live_count\": 0}\n{\"result\": \"PASS\", \"current_operator_files\": 21, \"LIVE\": 0, \"actual_candidate\": \"NOT_QUALIFIED\", \"real_sender\": \"NOT_WIRED\"}\n"
+      },
+      "validate_symphony_g73": {
+        "returncode": 0,
+        "sha256": "637035763f354260abaf332c8d12e48aff9076bdbbab577c1830efee93ea9bcb",
+        "output": "{\"result\": \"PASS\", \"verified_files\": 51, \"historical_source_reads\": 2, \"historical_commit\": \"db578364c3bb22d5ed1af382085645cfb952f36e\", \"live_count\": 0}\n{\"result\": \"PASS\", \"verified_files\": 101, \"historical_g72_head\": \"d9255aeb966a16f484ae0b4044e3e43c38f4c103\", \"live_count\": 0}\n"
+      }
+    },
+    "actual_remote_heads_UNCHANGED": {
+      "320": "8c53c505a21318c6133da0bef85af18ae3711103",
+      "343": "794488c3f4a47d328bcf1109e60c71f97ce9aa3c",
+      "364": "215d962d838aba913e2dde08ec392bb7fcaef4be"
+    },
+    "sync": "NOT_PERFORMED; approved future parent synchronization and fresh exact-head child CI required; no rebase/retarget/merge in this task"
+  },
+  "rights": "rules/protection fresh GET403 UNKNOWN; no settings changes",
+  "runtime_version_compatibility": "NOT_OBSERVED; supported account/config/thread provider shape required, unsupported shapes fail closed; no app-server/provider launched",
+  "CI": "PENDING_AFTER_NORMAL_FF_PUSH; exact ending HEAD/run/artifact/digests belong in append-only external final checkpoint to avoid self-reference",
+  "forbidden_counts": {
+    "real_model_worker": 0,
+    "provider": 0,
+    "LIVE": 0,
+    "OIDC": 0,
+    "workflow_dispatch": 0,
+    "actual_result_adoption": 0,
+    "GitDatabasePOST": 0,
+    "updateRefs": 0,
+    "main_write": 0,
+    "other_branch_write": 0,
+    "force_push": 0,
+    "rebase": 0,
+    "destructive_reset_clean": 0,
+    "permission_Secrets_settings_billing_change": 0
+  },
+  "UTC": "2026-10-12T02:56:10.012805+00:00",
+  "secret_scan": {
+    "returncode": 0,
+    "files": 29,
+    "sha256": "e4ca78e279920a7c055988a3ffba353f462add8a1638e738c0c5f2129b3162bd",
+    "scope": "all changed/new source/docs/evidence plus logs and decompressed evidence; baseline untouched old files separately hash verified",
+    "config_ignore_modified": false,
+    "image_pull": 0
+  }
+}

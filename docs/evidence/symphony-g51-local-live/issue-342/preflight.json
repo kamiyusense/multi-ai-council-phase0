@@ -1,0 +1,40 @@
+{
+  "starting_pr_head": "d567ea71c89ce44f6db442fa37f4f4ce3a9cc32c",
+  "starting_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "starting_ci": [
+    {
+      "id": 37914254072,
+      "name": "Symphony-inspired controller static validation",
+      "head_sha": "d567ea71c89ce44f6db442fa37f4f4ce3a9cc32c",
+      "conclusion": "success"
+    },
+    {
+      "id": 37914254176,
+      "name": "Blue Work reconciliation offline validation",
+      "head_sha": "d567ea71c89ce44f6db442fa37f4f4ce3a9cc32c",
+      "conclusion": "success"
+    }
+  ],
+  "ledger_starting_head": "dcbd16be97e9279911ff37611608f509fef852b6",
+  "historical_issues": {
+    "336": "open",
+    "341": "closed"
+  },
+  "subscription": {
+    "observed_at": "2026-10-09T22:53:25.165538+00:00",
+    "login": "ChatGPT",
+    "api_selectors_present": [],
+    "model_provider": "openai",
+    "custom_providers_present": false,
+    "fallback_configured": false,
+    "configured_model": "gpt-6.1-sol",
+    "configured_reasoning_effort": "high",
+    "quota": "UNKNOWN telemetry; not EXHAUSTED",
+    "billing_login_key_permission_changes": 0
+  },
+  "port_4000": "closed",
+  "controller_worktree": "clean",
+  "upstream_pin": "clean",
+  "preexisting_desktop_appserver_pid": 744030,
+  "LIVE": 0
+}

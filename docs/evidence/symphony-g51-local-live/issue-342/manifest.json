@@ -1,0 +1,142 @@
+[
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/checkpoint.json",
+    "bytes": 5144,
+    "sha256": "87805ad3d63fb92b907d18046c3c3dd80e23a8d542ba646f1646750fa6d38dc9"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/child-observations.jsonl",
+    "bytes": 1314,
+    "sha256": "3bdae2e7d59236b21775b593095cab95bc176cb53f546c1a8e2087d13b0df13c"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/cleanup-readback.json",
+    "bytes": 1865,
+    "sha256": "265dd9f359b8b4bbb5762384b308a96a4eb1f55769384af22e8d3c35c35739d8"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/compileall.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/event-validation.json",
+    "bytes": 713,
+    "sha256": "13a68bc062dc2efb666481cf200175dde639bfc2c8d7ae4f3898945b0de3a2bd"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/focused-tests.txt",
+    "bytes": 33988,
+    "sha256": "e7c4bf2e7ffe91d3a557acf8196a99ef4ae90139a3648b72a488d52ecd94eb0b"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/full-tests.txt",
+    "bytes": 395457,
+    "sha256": "d4b867b0953ee77820e92731d7de7aa2d4d911d132fa08b02a4594db0c08ac92"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/issue-closed-readback.json",
+    "bytes": 6786,
+    "sha256": "4a695763c551ecb3efacd2f40c8ea11b1152605511d2e10d2f764900de1ab069"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/issue-open-readback.json",
+    "bytes": 5677,
+    "sha256": "dca6d904fdf0e43b151be0ba9d59702871eb08a49002c55951cc1968275dd624"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/model-lifecycle.json",
+    "bytes": 1789,
+    "sha256": "686332d77fe2300d183616ff5a4cb3743b4a2678098d53ff997ebd49bed009ec"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/observer-restart.json",
+    "bytes": 1182,
+    "sha256": "8a603994b1720e1ab07a1f32beb08f3bad0abdc4f09272aa6974298df8797a97"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/observer-restart.txt",
+    "bytes": 129,
+    "sha256": "0baa2fe7a3339f3950fac606255758592f63c86142bd80b12e319e5b5cfbab18"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/observer.txt",
+    "bytes": 156,
+    "sha256": "3cb2698e45c02efc54cf57133a772c8007b28962283ab3ea725f911aa6c29327"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/otp-validation.txt",
+    "bytes": 82,
+    "sha256": "df92ff698c474d697fd0570803483c3196a7ac31c56afca5a7526f85448c077f"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/post-live-elixir-compile.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/post-live-elixir-fixtures.txt",
+    "bytes": 6602,
+    "sha256": "092149390639df122b182a4bacf96bb6f9f27e91e20ce5d03758007e239873e2"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/post-live-elixir-format.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/post-live-elixir-specs.txt",
+    "bytes": 58,
+    "sha256": "e1f1ed15933185226053f7f7d3b929461a1cc3bc4b0931b7a69a552d0b0c1969"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/post-live-otp-signed-events.jsonl",
+    "bytes": 750,
+    "sha256": "453355cd03dcd5a1db0ece81f2e288e4343ac26755bc1c73459f519853843da4"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/post-live-validation.json",
+    "bytes": 1140,
+    "sha256": "1054bab576e2aadb758faabd5a9109b10ce10ecb69aa463ce8025c5352b1219d"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/preflight.json",
+    "bytes": 1244,
+    "sha256": "758a0841db58314cb9c760fce19fb2a545d209f21c246492984d31f182b94e84"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/signed-events.jsonl",
+    "bytes": 804,
+    "sha256": "a7e24891dbd816af6d663c37671db79de110df994d48b754a53dfb01cd2cf691"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/started-durable-readback.json",
+    "bytes": 5244,
+    "sha256": "3e52aab5327f6b25f9608e40e74e9f8d416a41f460700fc46e92ce28d9fb4147"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/symphony-sanitized.txt",
+    "bytes": 71204,
+    "sha256": "f39ac21174d1286f57ff7e53bb2bfb716dbe5569e6c5fa17c50d3180fc1af631"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/terminal-durable-readback.json",
+    "bytes": 5084,
+    "sha256": "30eca354128b819c51aa582eb311a2cace584b23fb9e0053ac02c30a69c0ee51"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/upstream-build.txt",
+    "bytes": 103,
+    "sha256": "7d9d6d2e4ab8486416b88eb11d8c76682d5e7b5f2836c39b0e0c0f8688cd9f0c"
+  },
+  {
+    "path": "docs/evidence/symphony-g51-local-live/issue-342/workspace-verification-before-close.json",
+    "bytes": 4090,
+    "sha256": "49deb7acdd94e391bc558f233f1a0f5824e99d1ee5155ac1642590ca6aaf5c62"
+  },
+  {
+    "path": "docs/SYMPHONY_G51_LOCAL_LIVE_RESULT_ISSUE_342.md",
+    "bytes": 5647,
+    "sha256": "b76bc65fead6e9fcde8f90479ab090616e679e50b3a87692b7d29cd513919af1"
+  }
+]

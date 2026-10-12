@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "SYMPHONY_ADOPTION_BRIDGE_STATIC_V1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pull_request": 320,
+  "branch": "codex/symphony-inspired-minimal-controller",
+  "starting_remote_head": "483178a418e2832bba054fec8edeecba208f2330",
+  "date_utc": "2026-10-07",
+  "focused_tests": {
+    "count": 137,
+    "status": "PASS"
+  },
+  "full_command_bus_regression": {
+    "count": 1896,
+    "status": "PASS",
+    "skipped": 1
+  },
+  "compileall": "PASS",
+  "static_cases": [
+    "head_advance_before_result_adoption_discard_and_replan",
+    "destructive_mutation_isolation_with_independent_task_continuation",
+    "terminal_recovery_rechecks_task_validity_and_mutation_class",
+    "unknown_quota_does_not_imply_exhaustion",
+    "api_key_and_paid_fallback_routes_rejected_at_new_worker_admission",
+    "codex_app_server_process_does_not_inherit_metered_api_environment_selectors",
+    "upstream_issue_update_is_read_only_without_full_worker_identity",
+    "fake_upstream_start_terminal_duplicate_conflict_and_untrusted_capture",
+    "terminal_recovery_requires_explicit_task_validity_reader"
+  ],
+  "live_model_starts": 0,
+  "live_provider_starts": 0,
+  "production_upstream_transport": "NOT_WIRED",
+  "production_subscription_enforcement": "NOT_WIRED",
+  "git_ref_adoption": "NOT_WIRED",
+  "strict_proof_command_reused": false
+}

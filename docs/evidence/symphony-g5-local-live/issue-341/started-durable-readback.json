@@ -1,0 +1,52 @@
+[
+  {
+    "path": "symphony_attempts/symphony-g5-local-20261009T024653Z-d646fcdc/attempt-1fdd3890e399898ee905068f55b87e72/intent.json",
+    "blob_sha": "3cb25ebf87dc9b7a10b4b8439812d81db7fb99e5",
+    "sha256": "d856331b615ecf64dfd67fc1088e96f06551a0bd563402b3b1b41368ee4a41a9",
+    "record": {
+      "attempt_id": "attempt-1fdd3890e399898ee905068f55b87e72",
+      "attempt_number": 261970724618508935,
+      "campaign_id": "symphony-g5-local-20261009T024653Z-d646fcdc",
+      "dispatch_authorized": false,
+      "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+      "expected_target_tree": null,
+      "generation": 1,
+      "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+      "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_INTENT_V1",
+      "runner_generation": 1,
+      "scope": {
+        "allowed_paths": [
+          "docs/evidence/symphony-g5-observation-proof/symphony-g5-local-20261009T024653Z-d646fcdc.md"
+        ],
+        "issue": "341"
+      },
+      "scope_digest": "fd2762b4b5c443f86b97f1b4b8171c7a89e5cb609a3b8e1d1c9d43c3493d5ae2",
+      "task_id": "issue-341"
+    }
+  },
+  {
+    "path": "symphony_attempts/symphony-g5-local-20261009T024653Z-d646fcdc/attempt-1fdd3890e399898ee905068f55b87e72/started.json",
+    "blob_sha": "bf8704da463efe89d2bfa521c6afea49f0fa602d",
+    "sha256": "9d91ae6655ddb83890e31b0609c6c9f0692ed6448c0cf0b8348b2bd2f14b5885",
+    "record": {
+      "attempt_id": "attempt-1fdd3890e399898ee905068f55b87e72",
+      "attempt_number": 261970724618508935,
+      "campaign_id": "symphony-g5-local-20261009T024653Z-d646fcdc",
+      "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+      "expected_target_tree": null,
+      "generation": 1,
+      "intent_digest": "d856331b615ecf64dfd67fc1088e96f06551a0bd563402b3b1b41368ee4a41a9",
+      "observation_source": "LIVE_OBSERVATION",
+      "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+      "provider_attempt_ref": "3a2b4fc6e701a86ca26df0b415e13b86",
+      "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+      "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+      "runner_generation": 1,
+      "start_observed": true,
+      "task_id": "issue-341",
+      "thread_id": null,
+      "turn_id": null,
+      "workspace_fingerprint": "48deb76dd344ac353bfb8ed606cae74513b5eb860dd2ea2893206c62e29ec3b8"
+    }
+  }
+]

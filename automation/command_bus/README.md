@@ -1,5 +1,37 @@
 # Chat/Work GitHub command bus
 
+## G5 Official Symphony worker observation (STATIC preparation)
+
+`symphony_production_observer.py` accepts signed worker STARTED/TERMINAL
+events from the pinned upstream `symphony_g5_observer.patch` and writes only
+create-only attempt evidence to a separate non-default ledger branch. The
+optional `symphony_g5_observer_cli.py` reads local JSONL; it never starts a
+worker, controls Symphony retries, or adopts Git results. See
+[G5 observation bridge](../../docs/SYMPHONY_G5_PRODUCTION_OBSERVATION_BRIDGE.md).
+No G5 LIVE process or provider/model run is part of this STATIC integration.
+
+## Static Symphony-inspired controller core
+
+`symphony_controller.py` provides an opt-in single-dispatch polling loop over
+the existing executor request/claim/result/receipt protocol. Only requests
+marked `SYMPHONY_INSPIRED_STATIC_V1` with complete generation and logical
+identity are eligible. The adapter requires a non-default durable write branch,
+uses fresh target and carrier reads, and preserves the command bus's
+PREPARE_ONLY, retry-zero, fallback-disabled and readback rules. The controller
+admits the built-in static fake and the exact `CodexAppServerAgentRunner` type;
+objects that merely expose `live_enabled=True` are rejected. The Codex adapter
+is OFF by default and enforces one turn, one model-start attempt, retry zero,
+and fallback disabled. The concrete GitHub Contents transport sends no
+automatic retry; the executor backend remains responsible for durable record
+validation and write readback. The existing executor schema remains
+PREPARE_ONLY with `model_executed=false`; it is never reused for LIVE results.
+`symphony_live_store.py` adds separate command, claim, and terminal-result
+schemas under `symphony_live/`, with create-only writes and exact readback.
+Missing result verification is terminal UNKNOWN, and the next poll cannot
+replay a claimed or terminal command. The one-round LIVE proof still requires
+fresh GitHub readback and all remote postconditions. See [the design and
+limitations](../../docs/SYMPHONY_INSPIRED_MINIMAL_ORCHESTRATOR.md).
+
 > **MANDATORY BEFORE JULES DISPATCH:** read `docs/JULES_TASK_PROMPT_SPEC.md` before creating any new `automation/command_bus/jules_api_requests/*.json`. The prompt contract requires bounded scope, exact allowed paths, reuse-first, semantic acceptance criteria, negative/tamper tests, no vacuous tests, exact validation commands, and explicit stop conditions. Green Jules tests alone are not acceptance.
 
 ## Jules Loop ID claim — mandatory duplicate guard
@@ -270,3 +302,118 @@ BLOCKED instead of appearing IDLE.
 The production transition caller and live observation writer are still not
 connected. Issue #33 therefore remains fail-closed until those layers exist.
 PR activity, Chat silence, and commit timestamps are not ownership signals.
+
+
+## Autonomous Symphony / New Chinponey policy kernel
+
+### STATIC upstream/adoption/cost seam (PR #320)
+
+`symphony_upstream_event_adapter.prepare_upstream_reconciliation_hint` accepts
+Official Symphony issue/worker/retry/stall notifications as **read-only** wake
+hints. It requires only the upstream issue ID; the complete attempt identity is
+needed later for a result or fence. These notifications cannot dispatch a
+worker, retire an attempt, or stop Symphony's same-session turns/backoff.
+The same adapter maps exact fake upstream `STARTED`/`TERMINAL` events into the
+existing create-only attempt ledger. Duplicate matching lifecycle events are
+NO-OP, conflicting or untrusted events do not write, and turn/continuation
+updates stay read-only. The STATIC controller now uses this seam; production
+transport authentication and LIVE dispatch remain separate.
+
+`symphony_result_adoption.py` is called at the result seam, after the STATIC
+runner and again when a durable terminal is restored. It rechecks the current
+canonical HEAD, task validity, and declared mutation operations. A stale result
+becomes `STALE` and can replan; an unsafe/unknown mutation isolates its task.
+The reconciliation caller must supply a task-validity reader; an absent reader
+cannot silently turn into "valid".
+The terminal ledger retains the mutation class so crash recovery applies the
+same guard. A real Git ref write must additionally use an expected-HEAD lease;
+this STATIC guard itself makes no Git write.
+
+`symphony_subscription_boundary.py` checks the sanitized account evidence
+shape produced by `src/relay/codex_account_readonly.py` **only at new worker
+admission**. API-key/custom API endpoint environment keys and configured paid
+fallback are incompatible with the subscription route. A missing quota number
+alone is allowed. The classifier does not call `account/read`, launch a worker,
+or authorize LIVE. The production worker launcher must still enforce its
+environment and auth route before LIVE use.
+The current strict JSONL app-server launch now removes ambient API-key and
+custom API-endpoint variables from its child environment; the parent process
+is not changed. This is structural paid-route protection for that existing
+launch path, not proof of a future Official Symphony launcher or config-file
+authentication behavior.
+
+The strict one-shot Symphony proof remains intact. Autonomous-loop product
+semantics live separately in `symphony_autonomous_policy.py` and `symphony_autonomous_runtime.py`.
+
+The minimal Local LIVE preparation has a [copy-ready Issue](../../docs/SYMPHONY_MINIMAL_LIVE_PROOF_ISSUE.md),
+an [Official Symphony WORKFLOW](../../docs/SYMPHONY_MINIMAL_LIVE_PROOF_WORKFLOW.md), and a
+[Japanese runbook](../../docs/SYMPHONY_MINIMAL_LIVE_PROOF_RUNBOOK.md). A dedicated STATIC fixture
+exercises Issue admission, route rejection, INTENT/STARTED/TERMINAL capture,
+fresh-HEAD stale discard, and fresh-controller continuation. It remains
+incapable of model dispatch; production transport and actual subscription
+authentication are still unverified.
+
+These modules are STATIC-only and do not start Codex or perform GitHub writes.
+They provide configurable policy profiles, typed UNKNOWN recovery, stale-target
+replan semantics, subscription-only gating, serializable campaign/task state,
+corrective task identities, blocker isolation, duplicate-result suppression and
+guarded restart reclaim. This lets the long-running controller grow without
+turning proof-only one-turn/retry-zero limits into permanent architecture.
+
+
+### Durable autonomous campaign checkpoints
+
+`symphony_campaign_store.py` persists Track-B campaign state as create-only,
+hash-linked checkpoints on a non-default branch. A stale controller must present
+the latest revision before appending. Ambiguous creates are never resent; exact
+readback can resolve success, and a fresh controller can later restore a
+checkpoint whose original response was unverifiable.
+
+
+### STATIC durable multi-round controller
+
+`symphony_autonomous_controller.py` connects the autonomous kernel to the
+create-only campaign store and proves claim-before-dispatch/result-checkpoint
+continuation across multiple tasks. Its admitted runner/observer/replanner/quota
+adapters are exact built-in STATIC fixtures, so this integration cannot start a
+model or provider. It is the seam where an explicitly authorized production
+adapter can later be attached without changing campaign semantics.
+
+
+### Pinned upstream reuse baseline
+
+`symphony_upstream_reference.json` and
+`docs/SYMPHONY_UPSTREAM_REUSE_MATRIX.md` pin the inspected upstream Symphony
+baseline and separate what should be reused from what Track B intentionally
+hardens. Retry/backoff/stall valves now mirror the pinned upstream defaults
+without enabling any LIVE transport.
+
+
+### Autonomous attempt evidence ledger
+
+`symphony_attempt_store.py` is intentionally separate from the existing
+PREPARE_ONLY executor ledger. It records create-only attempt INTENT, observed
+STARTED evidence and TERMINAL evidence, with deterministic path-safe identities
+and predecessor digests. It cannot dispatch a model/provider.
+
+On restart it distinguishes `CLAIMED_UNSTARTED`,
+`STARTED_UNRESOLVED` and `TERMINAL`. A STARTED_UNRESOLVED attempt is never
+blindly redispatched. An unstarted intent can only be reclaimed after explicit
+proof that the old attempt is stopped or fenced.
+
+### Attempt reconciliation / crash-safe STATIC continuation
+
+`symphony_attempt_reconciler.py` restores attempt evidence before the controller
+selects more work. Verified TERMINAL repairs a missing campaign result checkpoint;
+late TERMINAL can recover the matching isolated BLOCKED task. STARTED_UNRESOLVED
+is never redispatched. Unstarted reclaim appends a bound retirement and uses a
+new attempt ID. Read recovery has append-only observation evidence.
+
+The controller now writes INTENT -> RUNNING -> simulated start -> STARTED ->
+fixture -> TERMINAL -> result checkpoint -> next task. Ordinary runner/read
+faults isolate or consume bounded read retries while independent work continues.
+Tests include crash/ambiguity boundaries and thirty rounds across five fresh
+controllers. `symphony_upstream_event_adapter.py` receives stall/status event
+envelopes without implementing a second detector or enabling upstream retry.
+Production event authentication remains NOT_WIRED and LIVE remains disabled.
+See `docs/SYMPHONY_ATTEMPT_RECOVERY_STATIC_CHECKPOINT.md` for the precise boundary.

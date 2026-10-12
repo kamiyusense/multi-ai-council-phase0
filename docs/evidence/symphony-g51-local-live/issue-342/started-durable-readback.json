@@ -1,0 +1,122 @@
+{
+  "observed_at": "2026-10-09T22:59:56.594536+00:00",
+  "MAC": "PASS",
+  "signed_event": {
+    "status": "RUNNING",
+    "protocol": "SYMPHONY_G5_WORKER_OBSERVATION_V1",
+    "kind": "STARTED",
+    "issue_id": "342",
+    "workspace": "/tmp/symphony-g51-local-20261009T225229Z-41fddcf6-f0k5q8nu/workspaces/GH-342",
+    "worker_run_id": "b8f1a7db6c6358a76555365062d8a776",
+    "attempt_number": 832913583326508427
+  },
+  "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+  "snapshot": {
+    "state": "STARTED_UNRESOLVED",
+    "identity": {
+      "campaign_id": "symphony-g51-local-20261009T225229Z-41fddcf6",
+      "task_id": "issue-342",
+      "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+      "generation": 1,
+      "attempt_number": 832913583326508427,
+      "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+      "expected_target_tree": null,
+      "runner_generation": 1
+    },
+    "intent": {
+      "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+      "attempt_number": 832913583326508427,
+      "campaign_id": "symphony-g51-local-20261009T225229Z-41fddcf6",
+      "dispatch_authorized": false,
+      "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+      "expected_target_tree": null,
+      "generation": 1,
+      "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+      "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_INTENT_V1",
+      "runner_generation": 1,
+      "scope": {
+        "allowed_paths": [
+          "docs/evidence/symphony-g5-observation-proof/symphony-g51-local-20261009T225229Z-41fddcf6.md"
+        ],
+        "issue": "342"
+      },
+      "scope_digest": "2b107d11d118bf7385ab906e8f51d862175e6442c8f6b46cb13a5d22b752c347",
+      "task_id": "issue-342"
+    },
+    "started": {
+      "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+      "attempt_number": 832913583326508427,
+      "campaign_id": "symphony-g51-local-20261009T225229Z-41fddcf6",
+      "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+      "expected_target_tree": null,
+      "generation": 1,
+      "intent_digest": "68dc273f7724982f0644aa9682491bcc10aceb5cce485cdf6647c1a17847bcfd",
+      "observation_source": "LIVE_OBSERVATION",
+      "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+      "provider_attempt_ref": "b8f1a7db6c6358a76555365062d8a776",
+      "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+      "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+      "runner_generation": 1,
+      "start_observed": true,
+      "task_id": "issue-342",
+      "thread_id": null,
+      "turn_id": null,
+      "workspace_fingerprint": "347d3be319dd7ce9b2d0e1ed972428fee6469052b66f3c1b053b15caa1384f38"
+    },
+    "terminal": null,
+    "retired": null
+  },
+  "records": [
+    {
+      "path": "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/intent.json",
+      "git_blob_sha": "c7b7012f35f4dc63a418d56c63144903a8d35112",
+      "sha256": "68dc273f7724982f0644aa9682491bcc10aceb5cce485cdf6647c1a17847bcfd",
+      "record": {
+        "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+        "attempt_number": 832913583326508427,
+        "campaign_id": "symphony-g51-local-20261009T225229Z-41fddcf6",
+        "dispatch_authorized": false,
+        "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+        "expected_target_tree": null,
+        "generation": 1,
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_INTENT_V1",
+        "runner_generation": 1,
+        "scope": {
+          "allowed_paths": [
+            "docs/evidence/symphony-g5-observation-proof/symphony-g51-local-20261009T225229Z-41fddcf6.md"
+          ],
+          "issue": "342"
+        },
+        "scope_digest": "2b107d11d118bf7385ab906e8f51d862175e6442c8f6b46cb13a5d22b752c347",
+        "task_id": "issue-342"
+      }
+    },
+    {
+      "path": "symphony_attempts/symphony-g51-local-20261009T225229Z-41fddcf6/attempt-14219f5ac8d71a5ea86ceecfe24f4f02/started.json",
+      "git_blob_sha": "fc2a1be646934d6d8f5002895a10aba30c95b5ca",
+      "sha256": "aa65d774590bf231d12e9a1f597ff869743e6ce7aed928bc76ce81cd99c0de9b",
+      "record": {
+        "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+        "attempt_number": 832913583326508427,
+        "campaign_id": "symphony-g51-local-20261009T225229Z-41fddcf6",
+        "expected_target_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+        "expected_target_tree": null,
+        "generation": 1,
+        "intent_digest": "68dc273f7724982f0644aa9682491bcc10aceb5cce485cdf6647c1a17847bcfd",
+        "observation_source": "LIVE_OBSERVATION",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "provider_attempt_ref": "b8f1a7db6c6358a76555365062d8a776",
+        "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+        "runner_generation": 1,
+        "start_observed": true,
+        "task_id": "issue-342",
+        "thread_id": null,
+        "turn_id": null,
+        "workspace_fingerprint": "347d3be319dd7ce9b2d0e1ed972428fee6469052b66f3c1b053b15caa1384f38"
+      }
+    }
+  ],
+  "exact_readback": "PASS"
+}

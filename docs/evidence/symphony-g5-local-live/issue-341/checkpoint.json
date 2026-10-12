@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "campaign_id": "symphony-g5-local-20261009T024653Z-d646fcdc",
+  "starting_pr_head": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+  "starting_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "proof_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "ledger_branch": "codex/symphony-g5-proof-ledger",
+  "live_launch_count": 1,
+  "actual_model_starts": 3,
+  "actual_turns": 3,
+  "outcome": "FAIL",
+  "starting_ci": [
+    {
+      "id": 37874526988,
+      "name": "Symphony-inspired controller static validation",
+      "head_sha": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+      "conclusion": "success"
+    },
+    {
+      "id": 37874526987,
+      "name": "Blue Work reconciliation offline validation",
+      "head_sha": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+      "conclusion": "success"
+    }
+  ],
+  "proof_branch": "codex/symphony-g5-local-20261009T024653Z-d646fcdc",
+  "artifact_path": "docs/evidence/symphony-g5-observation-proof/symphony-g5-local-20261009T024653Z-d646fcdc.md",
+  "label_create_intent": true,
+  "issue_create_intent": true,
+  "issue_number": 341,
+  "proof_branch_create_intent": true,
+  "workspace_root": "/tmp/symphony-g5-local-20261009T024653Z-d646fcdc-p_ciwgtr/workspaces",
+  "ledger_branch_create_intent": true,
+  "ledger_starting_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "key_permission": "0600",
+  "event_permission": "0600",
+  "root_permission": "0700",
+  "prepared": true,
+  "observer_pid": 565300,
+  "observer_ready": true,
+  "observer_ready_at": "2026-10-09T02:48:25.282825+00:00",
+  "launch_intent_at": "2026-10-09T02:48:57.179476+00:00",
+  "subscription_preflight": {
+    "login": "ChatGPT",
+    "api_selectors_present": [],
+    "custom_provider_count": 0,
+    "configured_model": "gpt-6.1-sol",
+    "fallback_configured": false,
+    "quota": "UNKNOWN; not treated as exhausted"
+  },
+  "live_pid": 565569,
+  "live_launched_at": "2026-10-09T02:48:57.183694+00:00",
+  "artifact_verified": true,
+  "artifact_sha256_at_close": "cbb3f12020870f0043b63ed522b5bd4281fc7114bcc5d4d0a31d4d568a650a8d",
+  "issue_close_intent": true,
+  "issue_close_intent_at": "2026-10-09T02:53:00.785599+00:00",
+  "issue_state": "closed",
+  "issue_closed_at": "2026-10-09T02:53:04Z",
+  "processes_stopped_at": "2026-10-09T02:54:57.763248+00:00",
+  "process_cleanup": {
+    "symphony_stopped": true,
+    "appserver_pids": [
+      565693
+    ],
+    "appserver_stopped": true,
+    "observer_stopped": true,
+    "port_4000_closed": true
+  },
+  "observer_restart_count": 1,
+  "attempt_state": "STARTED_UNRESOLVED",
+  "terminal_evidence": "NOT_OBSERVED",
+  "actual_model_sessions": 1,
+  "actual_worker_starts": 1,
+  "completed_turns": 2,
+  "aborted_turns": 1,
+  "continuation_count": 2,
+  "retry": "NOT_OBSERVED",
+  "backoff": "NOT_OBSERVED",
+  "stall": "NOT_OBSERVED",
+  "normal_worker_terminal": "NOT_OBSERVED",
+  "paid_api_fallback_count": 0,
+  "git_adoption_count": 0,
+  "main_mutation_count": 0,
+  "unauthorized_worker_mutation_count": 0,
+  "final_main": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "final_proof_head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "final_ledger_head": "dcbd16be97e9279911ff37611608f509fef852b6",
+  "failure_reason": "Official upstream periodic terminal-state reconciliation stopped the active worker during turn 3 before run_on_worker_host returned; the existing G5 hook is not guaranteed to execute on this shutdown path. No TERMINAL was invented.",
+  "g6_boundary": "No durable terminal/result adoption; fresh canonical HEAD validation and safe Git result adoption remain disconnected. No G6 LIVE authorized.",
+  "protocol": "SYMPHONY_G5_LOCAL_LIVE_CHECKPOINT_V1",
+  "recorded_at": "2026-10-09T02:56:57.554588+00:00",
+  "final_pr_head": "Resolved in the single final PR checkpoint comment after normal commit/push and exact-head CI; embedding the containing commit SHA is self-referential.",
+  "actual_model_starts_definition": "three task_started / model turn starts in one App Server session, not three Symphony launches",
+  "worker_artifact_adopted": false,
+  "observer_restart_full_result": "FAIL; only real STARTED replay verified; TERMINAL replay unavailable",
+  "tests": {
+    "recorded_at": "2026-10-09T03:01:50.070591+00:00",
+    "focused_symphony": {
+      "tests": 149,
+      "outcome": "PASS",
+      "summary": "----------------------------------------------------------------------\nRan 149 tests in 0.576s\n\nOK\n"
+    },
+    "full_command_bus": {
+      "tests": 1908,
+      "inherited_skip": 1,
+      "outcome": "PASS",
+      "summary": "Ran 1908 tests in 95.288s\n\nOK (skipped=1)"
+    },
+    "compileall": "PASS",
+    "pinned_upstream_patch_check": "PASS",
+    "upstream_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+    "patch_sha256": "4739670e6afea6dab98f8711369e3533b848655b1437408418738ad228b23e19",
+    "diff_check": "PASS",
+    "secret_scan": "PASS",
+    "additional_live_launches": 0,
+    "producer_scheduler_code_changes_after_live": 0,
+    "live_outcome": "FAIL / STARTED_UNRESOLVED",
+    "ci": "Final exact-head CI recorded in final PR checkpoint; existing starting-head CI is not final-head validation."
+  },
+  "ci": {
+    "starting_exact_head": [
+      {
+        "id": 37874526988,
+        "name": "Symphony-inspired controller static validation",
+        "head_sha": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+        "conclusion": "success"
+      },
+      {
+        "id": 37874526987,
+        "name": "Blue Work reconciliation offline validation",
+        "head_sha": "2f6d2dcc1d9761797a19aad10263a5025ae8300b",
+        "conclusion": "success"
+      }
+    ],
+    "final_exact_head": "Resolved in final PR checkpoint after normal fast-forward push."
+  }
+}

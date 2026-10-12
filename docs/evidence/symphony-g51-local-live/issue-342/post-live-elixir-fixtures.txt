@@ -1,0 +1,105 @@
+Running ExUnit with seed: 570623, max_cases: 1
+
+
+SymphonyG51LifecycleTest [/tmp/symphony-g51-local-20261009T225229Z-41fddcf6-f0k5q8nu/controller/automation/command_bus/tests/fixtures/symphony_g51/worker_lifecycle_test.exs]
+  * test case 7: patched/baseline OTP callbacks agree on completion, failure, reconciliation and capacity [L#184]
+08:08:39.009 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.010 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.010 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+08:08:39.016 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.016 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.016 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+08:08:39.017 [warning] Agent task exited for issue_id=g51-static session_id=n/a reason=:fixture_failure; scheduling retry
+
+08:08:39.047 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 20000ms (attempt 2) error=agent exited: :fixture_failure
+
+08:08:39.047 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:fixture_failure
+
+08:08:39.047 [warning] Agent task exited for issue_id=g51-static session_id=n/a reason=:fixture_failure; scheduling retry
+
+08:08:39.048 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 20000ms (attempt 2) error=agent exited: :fixture_failure
+
+08:08:39.048 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:fixture_failure
+
+08:08:39.054 [info] Issue moved to terminal state: issue_id=g51-static issue_identifier=GH-STATIC state=Closed; stopping active agent
+
+08:08:39.059 [info] Issue moved to terminal state: issue_id=g51-static issue_identifier=GH-STATIC state=Closed; stopping active agent
+
+08:08:39.062 [info] Issue moved to non-active state: issue_id=g51-static issue_identifier=GH-STATIC state=Backlog; stopping active agent
+
+08:08:39.064 [info] Issue moved to non-active state: issue_id=g51-static issue_identifier=GH-STATIC state=Backlog; stopping active agent
+
+08:08:39.068 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.068 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.068 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+08:08:39.071 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.071 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.071 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+  * test case 7: patched/baseline OTP callbacks agree on completion, failure, reconciliation and capacity (76.0ms) [L#184]
+  * test case 7: all functions outside the explicit observation seams match the pin AST [L#210]
+  * test case 7: all functions outside the explicit observation seams match the pin AST (17.2ms) [L#210]
+  * test case 6: unavailable, nonregular and stalled writer never delay or change worker termination [L#166]
+08:08:39.091 [info] Issue moved to terminal state: issue_id=g51-static issue_identifier=GH-STATIC state=Closed; stopping active agent
+
+08:08:39.092 [warning] G5 observation append unavailable: target is not a regular file
+
+08:08:39.092 [warning] G5 observation append unavailable: target is not a regular file
+
+08:08:39.094 [info] Issue moved to terminal state: issue_id=g51-static issue_identifier=GH-STATIC state=Closed; stopping active agent
+
+08:08:39.095 [warning] G5 observation append unavailable: target is not a regular file
+
+08:08:39.095 [warning] G5 observation append unavailable: target is not a regular file
+
+  * test case 6: unavailable, nonregular and stalled writer never delay or change worker termination (5.6ms) [L#166]
+  * test disabled or dead observer does not require worker gates [L#241]
+08:08:39.095 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.095 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.095 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+  * test disabled or dead observer does not require worker gates (0.6ms) [L#241]
+  * test case 2/4: real natural DOWN is sole terminal authority; repeated notification is a no-op [L#126]
+08:08:39.096 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.096 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.096 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+  * test case 2/4: real natural DOWN is sole terminal authority; repeated notification is a no-op (34.7ms) [L#126]
+  * test failure DOWN remains FAILED and upstream exponential retry is unchanged [L#141]
+08:08:39.131 [warning] Agent task exited for issue_id=g51-static session_id=n/a reason=:fixture_failure; scheduling retry
+
+08:08:39.132 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 20000ms (attempt 2) error=agent exited: :fixture_failure
+
+08:08:39.132 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:fixture_failure
+
+  * test failure DOWN remains FAILED and upstream exponential retry is unchanged (1.8ms) [L#141]
+  * test case 5: stale runtime identity never rebinds an observed lifetime [L#151]
+08:08:39.133 [info] Agent task completed for issue_id=g51-static session_id=n/a; scheduling active-state continuation check
+
+08:08:39.133 [warning] Retrying issue_id=g51-static issue_identifier=GH-STATIC in 1000ms (attempt 1)
+
+08:08:39.133 [info] Agent task finished for issue_id=g51-static session_id=n/a reason=:normal
+
+  * test case 5: stale runtime identity never rebinds an observed lifetime (11.0ms) [L#151]
+  * test case 1: two natural continuation decisions then tracker close stops a real OTP task and records STOPPED [L#104]
+08:08:39.150 [info] Issue moved to terminal state: issue_id=g51-static issue_identifier=GH-STATIC state=Closed; stopping active agent
+
+  * test case 1: two natural continuation decisions then tracker close stops a real OTP task and records STOPPED (52.2ms) [L#104]
+
+Finished in 0.6 seconds (0.00s async, 0.6s sync)
+8 tests, 0 failures

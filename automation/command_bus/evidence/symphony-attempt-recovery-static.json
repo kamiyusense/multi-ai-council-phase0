@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "profile": "STATIC_ONLY",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "pr": 320,
+  "parent_head": "052ccdd37810cf99f527616e4b45c0014910af76",
+  "milestones": [
+    "ATTEMPT_CAMPAIGN_RECONCILIATION",
+    "DURABLE_STATIC_CONTROLLER_WIRING",
+    "UNSTARTED_RETIREMENT",
+    "LATE_TERMINAL_RECOVERY",
+    "OBSERVATION_EVIDENCE_CHAIN",
+    "FAULT_MATRIX",
+    "UPSTREAM_EVENT_PREPARATION",
+    "THIRTY_ROUND_FIVE_SESSION_SOAK"
+  ],
+  "focused_tests": {
+    "status": "PASS",
+    "count": 120
+  },
+  "full_regression": {
+    "status": "PASS_WITH_PLATFORM_SKIP",
+    "count": 1879,
+    "skipped": 1,
+    "skip_reason": "Windows-only production bootstrap ACL boundary"
+  },
+  "compileall": "PASS",
+  "diff_check": "PASS",
+  "static_soak": {
+    "rounds": 30,
+    "fresh_controller_sessions": 5,
+    "unique_simulated_starts": 30,
+    "duplicate_starts": 0
+  },
+  "fault_assertions": {
+    "duplicate_simulated_attempt_starts": 0,
+    "blind_write_resends": 0,
+    "independent_task_continuation": "PASS",
+    "terminal_replay_prevention": "PASS"
+  },
+  "code_sha256": {
+    "automation/command_bus/symphony_attempt_reconciler.py": "9f2b754c820d6698262c928308dc800ef3fb34bba553835cd3ac44b762bbd9d8",
+    "automation/command_bus/symphony_attempt_store.py": "d5ff5b9a8e5c5447eb1b0462193ccf7281b5dc39c52adb75d10d9bbdaa75e37d",
+    "automation/command_bus/symphony_autonomous_controller.py": "0af7a5ad7d0e33b894dfeae889c05581274dc71859265f927a17e4623e09df33",
+    "automation/command_bus/symphony_autonomous_runtime.py": "d3dbbd12e1f4c4c390d4c5abf6b27fdee3671db6d169c975b42dd9a958c96363",
+    "automation/command_bus/symphony_upstream_event_adapter.py": "90c80f3c490a587a7f7c99daffcfb93ffbc62e9863f08c16186970067e7ca7c6",
+    "automation/command_bus/tests/test_symphony_attempt_faults.py": "5834b64d1f94c9344656469ea9e5222224489976a281c50f656214e206924abb",
+    "automation/command_bus/tests/test_symphony_attempt_reconciler.py": "79d98c6eb676f3b66eb517b4cd842e579cc87afcd8c9664082c2fcfe53103b3f",
+    "automation/command_bus/tests/test_symphony_attempt_store.py": "20d2a95fa78a55dcd5cb5df3f17e8fcbc280a96ccdee826b9b8e473729a98a1b",
+    "automation/command_bus/tests/test_symphony_upstream_event_adapter.py": "c3714d89b15412709777eb9bf5322b7fe98324fd7329c4d0fde49b3fa84057f2"
+  },
+  "local_log_sha256": {
+    "focused": "790d076ea3e6bd21d0b9fd6390b11a17c1815f6c97f37ab7ece99eddda387339",
+    "full": "7c99e1121ae65a5e0aee387efa87ce51866de7946df85c7b519e8a21be0ed524"
+  },
+  "upstream_pin": "openai/symphony@be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "real_provider_starts": 0,
+  "real_model_starts": 0,
+  "billing_permission_secret_changes": 0,
+  "production_upstream_source_authentication": "NOT_WIRED",
+  "autonomous_live_state": "NOT_READY",
+  "remaining_boundary": [
+    "authenticated actual upstream worker/session provenance",
+    "provider cancellation/fence evidence",
+    "subscription-only runtime route verification",
+    "durable overlay on upstream retry/continuation before authorized LIVE"
+  ],
+  "strict_proof": "UNCHANGED_CONSUMED_COMMAND_NOT_REPLAYED"
+}

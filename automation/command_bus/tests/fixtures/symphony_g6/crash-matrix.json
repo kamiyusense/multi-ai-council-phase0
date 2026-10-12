@@ -1,0 +1,19 @@
+{
+  "protocol": "SYMPHONY_G6_STATIC_MATRIX_V1",
+  "expected_results": {
+    "A": "ADOPTED",
+    "B": "ADOPTED",
+    "C": "ADOPTED",
+    "D": "NOOP_DUPLICATE",
+    "E": "STALE_REPLAN",
+    "F": "ISOLATE_TASK",
+    "G": "ISOLATE_TASK",
+    "H": "ISOLATE_TASK",
+    "I": "CONFLICT",
+    "J": "CONFLICT"
+  },
+  "ref_resends_C_D": 0,
+  "independent_H": "ADOPTED",
+  "real_git_adoption_count": 0,
+  "model_provider_LIVE_count": 0
+}

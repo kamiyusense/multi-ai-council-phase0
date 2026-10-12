@@ -1,0 +1,87 @@
+# Symphony adoption bridge — STATIC checkpoint
+
+Historical checkpoint below. Current G6 actual-result inspection/adoption STATIC
+implementation: [G6 checkpoint](SYMPHONY_G6_STATIC_CHECKPOINT.md).
+The older declaration-only guard is retained for synthetic campaign compatibility
+and is not authority for a real Git write.
+
+Date: 2026-10-07. Workbench: Draft PR #320 on
+`codex/symphony-inspired-minimal-controller`.
+Starting remote HEAD: `483178a418e2832bba054fec8edeecba208f2330`.
+
+This batch keeps Official Symphony responsible for polling, workspaces,
+multi-turn sessions, continuation, retry/backoff, and stall detection. The new
+issue-level hint receiver only requests read-only durable reconciliation. It
+does not require a full worker/thread/turn identity for that harmless wake and
+never authorizes dispatch or fencing. Attempt-bound evidence remains necessary
+when a terminal result is adopted or an unstarted attempt is retired.
+
+The fake upstream lifecycle adapter now sends exact STATIC `STARTED` and
+`TERMINAL` captures through the existing create-only attempt store. The STATIC
+controller uses this adapter, including its crash/restart paths. Duplicate
+matching captures are NO-OP; conflicting identity/result/source captures cannot
+write. Turn continuation and retry events are read-only. The official upstream
+`agent_runner.ex` sends issue-ID based `codex_worker_update` messages, so the
+issue hint deliberately does not require all worker IDs just to reconcile.
+
+## Result adoption
+
+The STATIC controller now rereads canonical HEAD after a fixture worker result
+and before durable TERMINAL/checkpoint. The same decision runs when a terminal
+is recovered after controller death. The decision checks:
+
+- trusted current canonical HEAD against the attempt's expected target HEAD;
+- current task validity (caller supplied); and
+- declared mutation operations, currently only `ADD`/`MODIFY` as safe classes.
+
+An intervening HEAD yields `STALE` without counting a completed round and the
+task is replanned. An invalid task or destructive/unknown mutation class is
+isolated while independent tasks continue. The original reported mutation
+class is stored in terminal evidence, so a crash after TERMINAL cannot erase
+the risk before campaign reconciliation. An actual Git ref adoption still needs
+an atomic expected-HEAD check at the write; this STATIC work does not implement
+or perform a Git ref write.
+The reconciliation caller must provide a task-validity evaluator. Missing
+validity evaluation cannot default to a successful adoption.
+
+## Subscription route
+
+The new-worker route classifier consumes the existing sanitized Codex account
+summary shape from `src/relay/codex_account_readonly.py`. It rejects API-key or
+custom API endpoint environment keys, non-ChatGPT account routes and configured
+metered/paid-provider/credit fallback. `ordinary_usage_allowed=False` defers
+new worker starts. An unreadable allowance value alone does not. This is a
+STATIC compatibility decision, never LIVE dispatch authorization. The worker
+launcher still needs to enforce the environment and account route in a real
+runtime; no real account request was made in this batch.
+
+The existing strict Codex JSONL app-server adapter now passes a copied process
+environment with ambient API-key and custom API-endpoint selectors removed.
+The parent environment is unchanged. This closes the concrete inherited
+`OPENAI_API_KEY`/`CODEX_API_KEY` process-launch path in that adapter without
+adding a per-turn quota check. A future Official Symphony worker launcher must
+apply the same structural rule. Codex config-file/auth behavior is not proved
+by this STATIC process fixture.
+
+## Verification and boundary
+
+- Focused Symphony tests: 137 PASS.
+- Full command-bus regression: 1896 PASS (one inherited platform skip).
+- Command-bus compile: PASS.
+- New cases cover mid-result HEAD advance and restart/replan, destructive
+  mutation isolation with an independent task continuing, recovered terminal
+  validity/risk checks, subscription route classification and the spawned
+  app-server process environment. Fake upstream lifecycle tests cover duplicate,
+  conflicting and untrusted event capture without a second scheduler.
+- No model/provider LIVE, merge, default-branch write, billing, Secret or
+  permission operation occurred.
+
+The local read-only sandbox initially prevented temporary test files. The same
+tests passed when run with normal test-file write permission; that infrastructure
+failure was not a code failure.
+
+Remaining STATIC work: bind the actual upstream transport envelope and its
+trusted source to durable STARTED/TERMINAL evidence. A later LIVE
+proof needs separately authorized real Symphony/Codex execution, verified
+subscription-only launcher behavior, and expected-HEAD Git adoption. The strict
+one-turn proof and consumed command remain unchanged.

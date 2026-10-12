@@ -1,0 +1,13 @@
+{
+  "number": 341,
+  "title": "G5 proof: record one isolated worker observation note",
+  "body": "Repository: `kamiyusense/multi-ai-council-phase0`.\nProof branch: `codex/symphony-g5-local-20261009T024653Z-d646fcdc` at starting HEAD `702497c6b464a3b1ab09441b21fc6f96bd3bb2d0`.\nAllowed artifact: `docs/evidence/symphony-g5-observation-proof/symphony-g5-local-20261009T024653Z-d646fcdc.md` (one new Markdown file only).\n\nTask: Read the branch, HEAD and working tree. Write a brief note in the\nallowed artifact with the Issue identifier, the observed starting branch and\nHEAD, the file you created, and the local verification you performed. Then\ninspect the file, `git status --short` and `git diff --check`. Report the exact\nresult and any uncertainty. If Official Symphony gives you a continuation\nturn, use it to verify the same file and report new facts; do not create a\nsecond artifact merely to fill the turn.\n\nCompletion criteria: the allowed new file exists, contains the observed facts,\npasses the whitespace check, and no other tracked or untracked path changed.\nExpected result: one local workspace artifact and a worker report. The file is\nnot automatically adopted into PR #320 or main.\n\nAllowed mutations: create or edit `docs/evidence/symphony-g5-observation-proof/symphony-g5-local-20261009T024653Z-d646fcdc.md` inside the isolated proof\nworkspace only. Read-only Git and status commands are allowed.\n\nForbidden mutations: commit, push, merge, rebase, force push, reset, clean,\ndelete, close the Issue, modify PR #320/main, change Billing/Credits/Overages,\nAPI keys, Secrets or permissions, or use a paid provider/API fallback.\n\nEvidence required: starting and ending HEAD, `git status --short`, artifact\ncontent/hash, `git diff --check`, actual turns/continuations, and any observed\nretry/backoff/stall. Mark unobserved behavior `NOT_OBSERVED`.\n\nStop and report without a blind retry if the branch or allowed path differs,\nthe workspace contains unrelated changes, a paid route appears, a destructive\nmutation would be required, or an external write response is ambiguous.\n\nCampaign identity: `symphony-g5-local-20261009T024653Z-d646fcdc`. Generation: 1. Starting source is the freshly read current main; this proof branch is separate from main, PR #320 and all G4 branches.\n",
+  "state": "closed",
+  "state_reason": "completed",
+  "created_at": "2026-10-09T02:46:58Z",
+  "closed_at": "2026-10-09T02:53:04Z",
+  "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/issues/341",
+  "labels": [
+    "symphony-g5-observation-proof"
+  ]
+}

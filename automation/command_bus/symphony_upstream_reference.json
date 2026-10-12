@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-07",
+  "repository": "openai/symphony",
+  "commit": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "sources": [
+    "SPEC.md",
+    "elixir/README.md",
+    "elixir/lib/symphony_elixir/orchestrator.ex",
+    "elixir/lib/symphony_elixir/agent_runner.ex",
+    "elixir/lib/symphony_elixir/workspace.ex"
+  ],
+  "upstream_defaults": {
+    "polling_interval_ms": 30000,
+    "max_concurrent_agents": 10,
+    "max_turns": 20,
+    "continuation_retry_ms": 1000,
+    "failure_retry_base_ms": 10000,
+    "max_retry_backoff_ms": 300000,
+    "stall_timeout_ms": 300000,
+    "turn_timeout_ms": 3600000
+  },
+  "reuse_from_upstream": [
+    "workflow/config layering",
+    "poll/reconciliation scheduling",
+    "per-issue workspace lifecycle",
+    "same-session multi-turn continuation",
+    "continuation and exponential-backoff scheduling",
+    "stall detection and runtime observability",
+    "Codex app-server protocol shape from the targeted Codex schema"
+  ],
+  "track_b_extensions": [
+    "GitHub-backed hash-linked campaign checkpoints",
+    "ambiguous side-effect readback without blind resend",
+    "durable duplicate-result suppression",
+    "target HEAD stale replan and blocker isolation",
+    "subscription-only quota gate",
+    "explicit human boundary for merge, billing, permissions, secrets, and new LIVE execution"
+  ],
+  "note": "Pinned reference metadata only; no provider/model execution is authorized by this file."
+}
