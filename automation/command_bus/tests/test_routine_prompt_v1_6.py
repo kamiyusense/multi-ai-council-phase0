@@ -83,7 +83,7 @@ class CandidateTests(unittest.TestCase):
                          self.original.count("<!-- claude-closed-loop-receipt v1"))
 
     def test_paste_safety(self):
-        raw = CANDIDATE.read_bytes()
+        raw = CANDIDATE.read_bytes().replace(b"\r\n", b"\n")  # a Windows checkout may add CR; the blob has none
         raw.decode("ascii")                                   # no smart quotes or invisible characters
         self.assertNotIn(b"\r", raw)
         self.assertNotIn(b"\t", raw)

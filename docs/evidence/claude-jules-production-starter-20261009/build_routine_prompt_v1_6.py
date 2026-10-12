@@ -139,9 +139,9 @@ def outputs() -> dict[Path, str]:
     manifest = {
         "profile": "CLAUDE_REVIEWER_PROMPT_CANDIDATE_MANIFEST_V1",
         "status": "CANDIDATE - not deployed; applying it to the Routine needs explicit human approval",
-        "original": {"path": str(ORIGINAL.relative_to(HERE.parents[2])), "git_blob": ORIGINAL_BLOB,
+        "original": {"path": ORIGINAL.relative_to(HERE.parents[2]).as_posix(), "git_blob": ORIGINAL_BLOB,
                      "sha256": sha(original), "lines": original.count("\n") + 1},
-        "candidate": {"path": str(CANDIDATE.relative_to(HERE.parents[2])), "sha256": sha(candidate),
+        "candidate": {"path": CANDIDATE.relative_to(HERE.parents[2]).as_posix(), "sha256": sha(candidate),
                       "lines": candidate.count("\n") + 1, "bytes": len(candidate.encode("utf-8"))},
         "diff_sha256": sha(diff), "changes": changes,
         "copy_from": "GitHub Raw view of the candidate file (the rendered Markdown view hides <...> text)",
