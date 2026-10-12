@@ -1,0 +1,30 @@
+{
+  "protocol": "SYMPHONY_INSTALLATION_CORRECTION_SEAL_V1",
+  "files": [
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 9524,
+      "sha256": "8b48fa5ed810c069afeb1cb2b356d6736b5a5590c77588211094652ee79b87a5"
+    },
+    {
+      "path": "automation/command_bus/symphony_subscription_startup.patch",
+      "bytes": 5001,
+      "sha256": "719d1090bdd996def915ca7469b02d7868b968111027a31c1f970179457fd78c"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/format-correction/checkpoint.json",
+      "bytes": 1398,
+      "sha256": "5286467d7e7f987a314e45755b99a870dfb24451ff722a0fe793d68e2f36bc32"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/format-correction/focused-tests.txt.gz",
+      "bytes": 2579,
+      "sha256": "412723c1e499fef8ec4b2df35224f8cf9ed3b5ea5e487cf661f156a54a91d415"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/format-correction/full-tests.txt.gz",
+      "bytes": 74017,
+      "sha256": "fa3f3fc2d688bddca2be1a130f774ed2c3c6b527aecfb1c8388ef21e8e17266a"
+    }
+  ]
+}

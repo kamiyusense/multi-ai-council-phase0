@@ -267,13 +267,15 @@ class GitWorkspaceVerifier:
 class JsonlCodexAppServer:
     """Minimal JSON-RPC 2.0 JSONL client; one process and one turn, no retry."""
 
-    def __init__(self, executable: str = "codex", *, timeout_seconds: float = 900):
+    def __init__(self, executable: str = "codex", *, timeout_seconds: float = 900,
+                 production_storage=None):
         if timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive")
         if Path(executable).name.lower() not in {"codex", "codex.exe"}:
             raise ValueError("only the Codex executable is allowed")
         self.executable = executable
         self.timeout_seconds = timeout_seconds
+        self.production_storage = production_storage
 
     def execute_one_turn(self, *, cwd: str, prompt: str,
                          live_enabled: bool = False) -> CodexDispatchResult:
@@ -310,6 +312,12 @@ class JsonlCodexAppServer:
             parent_environment = dict(os.environ)
             _assert_new_worker_environment(parent_environment)
             args = [self.executable, "app-server"]
+            if self.production_storage is not None:
+                from .symphony_sqlite_storage import ReviewedSQLiteStorage
+                if type(self.production_storage) is not ReviewedSQLiteStorage or sqlite_home is not None:
+                    raise PermissionError("production binding differs from fresh diagnostic isolation")
+                args = self.production_storage.app_server_args(executable=self.executable,
+                    auth_home=parent_environment.get("CODEX_HOME"), readonly=readonly)
             if sqlite_home is not None:
                 if not readonly:
                     raise ValueError("SQLite isolation is read-only diagnostic only")
@@ -324,6 +332,7 @@ class JsonlCodexAppServer:
                 args, cwd=cwd, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
                 encoding="utf-8", bufsize=1,
+                **({"umask": 0o077} if self.production_storage is not None else {}),
                 env=subscription_worker_environment(parent_environment),
             )
 

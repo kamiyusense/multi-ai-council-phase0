@@ -1,0 +1,11 @@
+{
+  "source_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "apply_order": [
+    "symphony_g5_observer.patch",
+    "symphony_subscription_startup.patch"
+  ],
+  "git_apply_check": "PASS",
+  "syntax": "PASS",
+  "official_repository_commit_push": 0,
+  "LIVE": 0
+}

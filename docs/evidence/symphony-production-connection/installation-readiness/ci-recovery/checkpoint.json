@@ -1,0 +1,41 @@
+{
+  "protocol": "SYMPHONY_INSTALLATION_CI_RECOVERY_V1",
+  "starting_main": "e5498abf55a386c6a8c11aa7069727cd2fc66030",
+  "failed_ci_head": "0714d94ce1e255c0de088586e2ea094bd0a43829",
+  "failed_ci_run": 38263359058,
+  "failure": "Concurrent seal creator could observe a partial O_EXCL final-file publication and misclassify it as a conflicting seal.",
+  "fix": "Nonblocking OS file lock fences installation publication only. Busy installer returns HOLD_IN_PROGRESS_GET_ONLY. Completed replay NOOP_DUPLICATE; incomplete/crashed seal remains CONFLICT with overwrite forbidden. Process exit releases lock; worker readiness/launch never acquires it.",
+  "deterministic_regression": "First creator deliberately writes eight bytes and waits; second installer is HOLD without reading a partial seal as conflict; after release exactly one CREATED and replay NOOP_DUPLICATE.",
+  "scheduler_changed": false,
+  "worker_concurrency_changed": false,
+  "workflow_change": "Existing credential-free synthetic CI gains only storage/startup/evidence trigger paths. Production workflows remain byte-identical OFF.",
+  "mode": "OFF",
+  "LIVE_GO": false,
+  "production_cutover": false,
+  "historical_receipts": "Initial installation and format-correction bytes unchanged; superseded source hashes validated at their historical commits.",
+  "focused_tests": {
+    "tests": 96,
+    "result": "PASS"
+  },
+  "final_head_ci_and_artifact_receipt": "APPEND_ONLY_PR_FINAL_COMMENT_AFTER_PUSH",
+  "forbidden_counts": {
+    "LIVE": 0,
+    "model_dispatch": 0,
+    "production_OIDC": 0,
+    "production_send": 0,
+    "adoption": 0,
+    "Merge": 0,
+    "main_write": 0,
+    "settings": 0,
+    "permissions": 0,
+    "Secrets": 0,
+    "billing": 0,
+    "force_push": 0
+  },
+  "full_tests": {
+    "tests": 2916,
+    "seconds": 116.143,
+    "skip_count": 1,
+    "result": "PASS"
+  }
+}

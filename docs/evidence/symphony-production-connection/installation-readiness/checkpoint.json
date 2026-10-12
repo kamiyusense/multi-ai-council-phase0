@@ -1,0 +1,66 @@
+{
+  "protocol": "SYMPHONY_INSTALLATION_READINESS_STATIC_V1",
+  "starting_main": "e5498abf55a386c6a8c11aa7069727cd2fc66030",
+  "branch": "codex/symphony-production-installation-readiness-v1",
+  "result": "STATIC_READINESS_PASS_CI_PENDING",
+  "expected_final_classification": [
+    "INSTALLATION_READINESS_COMPLETE",
+    "ACTIVATION_REVIEW_READY",
+    "LIVE_NO_GO"
+  ],
+  "mode": "OFF",
+  "LIVE_GO": false,
+  "production_cutover": false,
+  "production_storage_worker_approval": false,
+  "operator_callbacks_installed": false,
+  "real_candidate_qualified": false,
+  "real_app_server_readonly_initializations": 2,
+  "real_app_server_readonly_restarts": 3,
+  "real_thread_starts": 0,
+  "real_model_turn_starts": 0,
+  "full_tests": {
+    "tests": 2915,
+    "seconds": 114.99,
+    "result": "PASS",
+    "skip_count": 1
+  },
+  "focused_tests": {
+    "tests": 71,
+    "seconds": 0.245,
+    "result": "PASS",
+    "skip_count": 0
+  },
+  "real_elixir_fixture_cases": 16,
+  "existing_evidence_byte_preserved": 537,
+  "old_db_noninterference_scope": "Six existing SQLite MAIN files plus auth/config byte-equal; WAL/SHM not a whole-state proof",
+  "github_classic_rules_graphql": {
+    "totalCount": 0,
+    "result": "OBSERVED_ZERO_CLASSIC_RULES_ONLY"
+  },
+  "github_protection_rest": "UNKNOWN_HTTP_403_PLAN_BOUNDARY",
+  "github_rulesets_rest": "UNKNOWN_HTTP_403_PLAN_BOUNDARY",
+  "effective_rules": "UNKNOWN_HTTP_403_PLAN_BOUNDARY",
+  "current_main_exact_head_ci": "UNKNOWN_NO_RUNS",
+  "quota": "NOT_QUERIED_NOT_EXHAUSTED",
+  "workflow_off": true,
+  "original_scheduler_changed": false,
+  "new_scheduler": false,
+  "final_head_ci_and_remote_receipt": "APPEND_ONLY_PR_FINAL_COMMENT_REQUIRED_AFTER_PUSH",
+  "forbidden_counts": {
+    "LIVE_worker": 0,
+    "model_dispatch": 0,
+    "production_OIDC": 0,
+    "workflow_dispatch": 0,
+    "production_Git_POST": 0,
+    "updateRefs": 0,
+    "real_adoption": 0,
+    "main_write": 0,
+    "Merge": 0,
+    "force_push": 0,
+    "settings_changes": 0,
+    "permissions_changes": 0,
+    "Secrets_changes": 0,
+    "billing_changes": 0,
+    "destructive_cleanup": 0
+  }
+}

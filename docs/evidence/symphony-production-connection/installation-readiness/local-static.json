@@ -1,0 +1,10 @@
+{
+  "compileall": "PASS",
+  "diff_check": "PASS",
+  "yaml_parse_files": 28,
+  "operator_authorize_off": true,
+  "operator_candidate_off": true,
+  "combined_patch_check": "PASS",
+  "real_elixir_cases": 16,
+  "github_oidc_node_local": "UNKNOWN_NODE_NOT_INSTALLED_USE_EXACT_HEAD_CI"
+}

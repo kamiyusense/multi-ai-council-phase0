@@ -1,0 +1,261 @@
+{
+  "mode": "REAL_ELIXIR_UPSTREAM_WITH_FAKE_JSONL_ONLY",
+  "source_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "original_source_sha256": "40b87a197e96755a5343ffb7f211fb3c68e90b4dcdb7658f62d971f07f7e4e6e",
+  "patched_source_sha256": "bd65321a1ce498a5de38ce626a5225d087bd384e7c064260966c2b1a7b3e11e6",
+  "patch_sha256": "37cae01e11df751fc2e43957672d52c3c4bf8d977993c554c8b35a31145639b9",
+  "cases": [
+    {
+      "case": "baseline-good",
+      "result": "PASS",
+      "mock_turn_starts": 3,
+      "methods": [
+        "initialize",
+        "initialized",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "81e4510bd8b47ed88430ca13a2c283ad92f1ae6ed1aefbe5556cd3afbd6f048a"
+    },
+    {
+      "case": "good",
+      "result": "PASS",
+      "mock_turn_starts": 3,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "838364b78ed33527b83c0d2a92890314652ba3c842e3dbc651f589b4e1af071d"
+    },
+    {
+      "case": "explicit",
+      "result": "PASS",
+      "mock_turn_starts": 3,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "c76d075fb4f6165ba6ca2c874b4f5d6c3edd5ded699c4e0129b425c5e6d70833"
+    },
+    {
+      "case": "notice",
+      "result": "PASS",
+      "mock_turn_starts": 3,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "f428850f57c8b0391130ee8bb8eb81cc30cbf1bd8dbafa78b1c10f2a6eae8611"
+    },
+    {
+      "case": "api",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "missing",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "no-auth",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "custom",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "paid",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "fallback",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "partial",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "error",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "api-selector",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "metered",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "provider-fallback",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    },
+    {
+      "case": "billing",
+      "result": "PASS",
+      "mock_turn_starts": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "auth_response_logged": false,
+      "child_authority_selectors": 0,
+      "model_live": 0,
+      "output_sha256": "ec4a1c93b94de7d96dd50a0193d870820963cd2413dab527ae4457604f0caff8"
+    }
+  ],
+  "good_case_mock_continuation_delta": 0,
+  "real_codex_launched": false,
+  "live_model_dispatch": 0,
+  "scheduler_code_changed": false
+}

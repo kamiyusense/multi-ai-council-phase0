@@ -1,0 +1,7 @@
+{
+  "repository": "openai/symphony",
+  "pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "path": "elixir/lib/symphony_elixir/codex/app_server.ex",
+  "git_blob": "ae3db622f3e88f7109fafd878619e0915eb47246",
+  "sha256": "40b87a197e96755a5343ffb7f211fb3c68e90b4dcdb7658f62d971f07f7e4e6e"
+}

@@ -1,0 +1,28 @@
+{
+  "prior_evidence_files": 537,
+  "unchanged_count": 537,
+  "all_byte_equal": true,
+  "autonomy_unchanged": {
+    "automation/command_bus/symphony_g5_observer.patch": true,
+    "automation/command_bus/symphony_g72_runtime.py": true,
+    "automation/command_bus/symphony_autonomous_runtime.py": true,
+    "automation/command_bus/symphony_controller.py": true,
+    "automation/command_bus/symphony_subscription_boundary.py": true
+  },
+  "operator_workflows": {
+    "authorize": {
+      "hard_off": true,
+      "permissions": {
+        "contents": "read"
+      },
+      "byte_unchanged": true
+    },
+    "candidate": {
+      "hard_off": true,
+      "permissions": {
+        "contents": "read"
+      },
+      "byte_unchanged": true
+    }
+  }
+}
