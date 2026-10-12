@@ -87,6 +87,41 @@
       "priority": 20,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-11T04:47:00Z"
+    },
+    {
+      "objective_id": "o3-relay-windows",
+      "title": "Relay (red lane): fix tests that fail on the owner's Windows machine (observed 2026-10-12)",
+      "scope_prefixes": [
+        "tests/relay/test_acp_client.py",
+        "tests/relay/test_live_readiness_inventory.py",
+        "tests/relay/test_core_pr3_overlay_runner.py"
+      ],
+      "allowed_operations": [
+        "bug_fix",
+        "test_fix",
+        "test_add"
+      ],
+      "priority": 30,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-12T06:02:00Z"
+    },
+    {
+      "objective_id": "o4-loop-windows",
+      "title": "Claude x Jules loop: fix its own tests that fail on the owner's Windows machine (observed 2026-10-11/12)",
+      "scope_prefixes": [
+        "docs/evidence/claude-jules-production-starter-20261009/build_routine_prompt_v1_6.py",
+        "automation/command_bus/tests/test_routine_prompt_v1_6.py",
+        "automation/command_bus/tests/test_routine_prompt_v1_6_1.py",
+        "automation/command_bus/tests/test_jules_session_readback_output.py"
+      ],
+      "allowed_operations": [
+        "bug_fix",
+        "test_fix",
+        "test_add"
+      ],
+      "priority": 30,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-12T06:02:00Z"
     }
   ],
   "control_issue": 346
