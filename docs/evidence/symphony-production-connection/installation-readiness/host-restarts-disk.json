@@ -1,0 +1,60 @@
+{
+  "filesystem": "ext4 /",
+  "diagnostic_store_only": true,
+  "binary_version": "codex-cli 0.162.0-alpha.17.2",
+  "binary_sha256": "73b73b048546993298234a295de01ef2424e7a8b29def9d0ecb1ca7cb77500d4",
+  "initial_seal": "CREATED",
+  "migration_sha256": "b57eef2aa0dc216a8f0f67eb74be69b5e155daf00ca3f3839fbe1937f68be570",
+  "new_isolated_migration_counts": {
+    "goals_1.sqlite": 2,
+    "logs_2.sqlite": 2,
+    "memories_1.sqlite": 2,
+    "queue_1.sqlite": 2,
+    "state_5.sqlite": 59
+  },
+  "readonly_restarts": [
+    {
+      "restart": 1,
+      "result": {
+        "status": "DONE",
+        "reason": null,
+        "route": {
+          "auth_state": "CHATGPT_ACCOUNT",
+          "requires_openai_auth": true,
+          "config_route_compatible": true,
+          "subscription_route_compatible": true,
+          "provenance": "SAME_PROCESS_FRESH_READ_ONLY_NOT_ADMISSION",
+          "quota": "NOT_QUERIED",
+          "raw_response_saved": false
+        },
+        "model_dispatch": 0,
+        "thread_starts": 0
+      },
+      "elapsed_seconds": 1.782,
+      "readiness": {
+        "state": "STORAGE_READINESS_PASS_NOT_WORKER_ADMISSION",
+        "migration_sha256": "b57eef2aa0dc216a8f0f67eb74be69b5e155daf00ca3f3839fbe1937f68be570",
+        "database_count": 5,
+        "wal_present": true,
+        "model_dispatch": 0,
+        "credentials_copied": 0
+      }
+    }
+  ],
+  "existing_files_byte_unchanged": {
+    "goals_1.sqlite": true,
+    "logs_2.sqlite": true,
+    "memories_1.sqlite": true,
+    "queue_1.sqlite": true,
+    "state_5.sqlite": true,
+    "thread_history_1.sqlite": true,
+    "auth.json": true,
+    "config.toml": true
+  },
+  "model_dispatch": 0,
+  "thread_starts": 0,
+  "worker_approval_installed": false,
+  "production_cutover": false,
+  "raw_responses_saved": false,
+  "actual_db_uploaded": false
+}

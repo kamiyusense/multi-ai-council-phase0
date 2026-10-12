@@ -1,0 +1,18 @@
+{
+  "focused": {
+    "tests": 71,
+    "seconds": 0.245,
+    "result": "PASS",
+    "skip_count": 0
+  },
+  "full": {
+    "tests": 2915,
+    "seconds": 114.99,
+    "result": "PASS",
+    "skip_count": 1
+  },
+  "new_unit_tests": 15,
+  "real_elixir_upstream_static_cases": 16,
+  "real_model_live": 0,
+  "skip_reason": "Existing Windows-native production ACL bootstrap test on Linux"
+}

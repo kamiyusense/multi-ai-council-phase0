@@ -1,0 +1,106 @@
+--- a/elixir/lib/symphony_elixir/codex/app_server.ex
++++ b/elixir/lib/symphony_elixir/codex/app_server.ex
+@@ -238,13 +238,13 @@
+   end
+ 
+   defp tracker_secret_port_env(dynamic_tool_binding) do
+-    dynamic_tool_binding.secret_environment_names
++    worker_secret_environment_names(dynamic_tool_binding)
+     |> valid_environment_names()
+     |> Enum.map(fn name -> {String.to_charlist(name), false} end)
+   end
+ 
+   defp tracker_secret_unset_command(dynamic_tool_binding) do
+-    case dynamic_tool_binding.secret_environment_names |> valid_environment_names() do
++    case worker_secret_environment_names(dynamic_tool_binding) |> valid_environment_names() do
+       [] -> nil
+       names -> "unset " <> Enum.join(names, " ")
+     end
+@@ -306,8 +306,86 @@
+ 
+   defp do_start_session(port, workspace, session_policies, dynamic_tool_binding) do
+     case send_initialize(port) do
+-      :ok -> start_thread(port, workspace, session_policies, dynamic_tool_binding)
++      :ok ->
++        with :ok <- verify_subscription_route(port, workspace) do
++          start_thread(port, workspace, session_policies, dynamic_tool_binding)
++        end
+       {:error, reason} -> {:error, reason}
++    end
++  end
++
++  defp worker_secret_environment_names(dynamic_tool_binding) do
++    dynamic_tool_binding.secret_environment_names ++
++      ~w(SYMPHONY_G5_OBSERVER_KEY_HEX SYMPHONY_G5_OBSERVER_EVENTS GITHUB_TOKEN GH_TOKEN OPENAI_API_KEY CODEX_API_KEY AZURE_OPENAI_API_KEY OPENAI_BASE_URL OPENAI_API_BASE)
++  end
++
++  # Startup-only observation in the SAME Codex process. Never log auth/config
++  # bodies, refresh credentials, cap turns or alter upstream retry/scheduling.
++  defp verify_subscription_route(port, workspace) do
++    blocked_names = ~w(OPENAI_API_KEY CODEX_API_KEY AZURE_OPENAI_API_KEY OPENAI_BASE_URL OPENAI_API_BASE)
++
++    with true <- Enum.all?(blocked_names, &(System.get_env(&1) == nil)),
++         {:ok, %{"account" => %{"type" => "chatgpt"}, "requiresOpenaiAuth" => true}} <-
++           subscription_request(port, 4, "account/read", %{"refreshToken" => false}),
++         {:ok, %{"config" => config}} when is_map(config) <-
++           subscription_request(port, 5, "config/read", %{"includeLayers" => false, "cwd" => workspace}),
++         true <- subscription_config?(config) do
++      :ok
++    else
++      _ -> {:error, :subscription_route_unverified}
++    end
++  end
++
++  defp subscription_config?(config) do
++    provider = Map.get(config, "model_provider")
++    null_defaults =
++      Enum.all?(~w(model_provider model_providers openai_base_url chatgpt_base_url service_tier forced_login_method),
++        &Map.has_key?(config, &1)) and
++        config["model_providers"] == %{} and is_nil(config["openai_base_url"]) and
++        config["chatgpt_base_url"] in ["https://chatgpt.com/backend-api", "https://chatgpt.com/backend-api/"] and
++        config["service_tier"] == "default"
++
++    Map.has_key?(config, "model_provider") and
++      (provider == "openai" or (is_nil(provider) and null_defaults)) and
++      config["model_providers"] in [nil, %{}] and is_nil(config["openai_base_url"]) and
++      config["chatgpt_base_url"] in [nil, "https://chatgpt.com/backend-api", "https://chatgpt.com/backend-api/"] and
++      config["forced_login_method"] in [nil, "chatgpt"] and config["service_tier"] in [nil, "default"] and
++      Enum.all?(~w(metered_fallback_configured paid_provider_fallback_configured paid_credit_fallback_configured model_provider_fallback billing_route),
++        &(Map.get(config, &1) in [nil, false]))
++  end
++
++  defp subscription_request(port, id, method, params) do
++    send_message(port, %{"id" => id, "method" => method, "params" => params})
++    deadline = System.monotonic_time(:millisecond) + Config.settings!().codex.read_timeout_ms
++    subscription_response(port, id, deadline, "")
++  end
++
++  # Original response logger deliberately remains unchanged. Auth responses use
++  # this private receiver so unexpected messages/errors cannot reveal PII/token.
++  # The deadline is absolute; extra notifications cannot extend startup forever.
++  defp subscription_response(port, id, deadline, pending) do
++    remaining = max(deadline - System.monotonic_time(:millisecond), 0)
++
++    if remaining <= 0 do
++      {:error, :subscription_route_unverified}
++    else
++    receive do
++      {^port, {:data, {:eol, chunk}}} ->
++        case Jason.decode(pending <> to_string(chunk)) do
++          {:ok, %{"id" => ^id, "result" => result} = reply} ->
++            if Map.has_key?(reply, "method") or Map.has_key?(reply, "error"),
++              do: {:error, :subscription_route_unverified}, else: {:ok, result}
++          {:ok, %{"id" => ^id}} -> {:error, :subscription_route_unverified}
++          _ -> subscription_response(port, id, deadline, "")
++        end
++      {^port, {:data, {:noeol, chunk}}} ->
++        if byte_size(pending) + byte_size(chunk) > @port_line_bytes,
++          do: {:error, :subscription_route_unverified},
++          else: subscription_response(port, id, deadline, pending <> chunk)
++      {^port, {:exit_status, _}} -> {:error, :subscription_route_unverified}
++    after
++      remaining -> {:error, :subscription_route_unverified}
++    end
+     end
+   end
+ 

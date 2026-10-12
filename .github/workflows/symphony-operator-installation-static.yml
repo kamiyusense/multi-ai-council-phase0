@@ -3,6 +3,13 @@ on:
   pull_request:
     paths:
       - .github/workflows/symphony-operator-*.yml
+      - automation/command_bus/symphony_subscription_startup.patch
+      - automation/command_bus/tests/test_symphony_subscription_startup_patch.py
+      - automation/command_bus/tests/fixtures/symphony_sqlite_installation/**
+      - automation/command_bus/symphony_sqlite_storage.py
+      - automation/command_bus/symphony_codex_app_server.py
+      - automation/command_bus/tests/test_symphony_sqlite_installation.py
+      - docs/SYMPHONY_PRODUCTION_INSTALLATION_READINESS.md
       - automation/command_bus/symphony_operator_installation.py
       - automation/command_bus/symphony_operator_runtime.py
       - automation/command_bus/tests/test_symphony_production_connection.py
@@ -32,7 +39,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/installation-evidence"
-          python3 -m unittest automation.command_bus.tests.test_symphony_production_connection automation.command_bus.tests.test_symphony_operator_installation automation.command_bus.tests.test_symphony_operator_convergence automation.command_bus.tests.test_symphony_operator_integration -v 2>&1 | tee "$RUNNER_TEMP/installation-evidence/tests.txt"
+          python3 -m unittest automation.command_bus.tests.test_symphony_subscription_startup_patch automation.command_bus.tests.test_symphony_sqlite_installation automation.command_bus.tests.test_symphony_sqlite_host_recovery automation.command_bus.tests.test_symphony_production_connection automation.command_bus.tests.test_symphony_operator_installation automation.command_bus.tests.test_symphony_operator_convergence automation.command_bus.tests.test_symphony_operator_integration -v 2>&1 | tee "$RUNNER_TEMP/installation-evidence/tests.txt"
       - name: Parse proposed YAML and reject active jobs or extra permissions
         run: |
           ruby -rpsych -e 'ARGV.each { |p| x=Psych.safe_load(File.read(p), permitted_classes: [], aliases: false); abort "invalid proposal" unless x["permissions"] == {"contents"=>"read"} && x["jobs"].values.all? { |j| j["if"] == "$"+"{{ false }}" } }' .github/workflows/symphony-operator-authorize.yml .github/workflows/symphony-operator-candidate.yml

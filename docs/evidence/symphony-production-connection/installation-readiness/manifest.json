@@ -1,0 +1,145 @@
+{
+  "protocol": "SYMPHONY_INSTALLATION_READINESS_SEAL_V1",
+  "files": [
+    {
+      "path": ".github/workflows/symphony-operator-installation-static.yml",
+      "bytes": 3448,
+      "sha256": "49177afdaf4f0d05cf2f0827291db2ca3fdb676bc2898173697e22cc6bc31d15"
+    },
+    {
+      "path": "automation/command_bus/scripts/check_symphony_subscription_startup.py",
+      "bytes": 4818,
+      "sha256": "5f1b49714339ae4518e813bb883490ff314addac9aa1e1ba52794a0b7e79b8b4"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 8208,
+      "sha256": "a3d8da866de85658b964849374f18a1c3f4f86746337266feb9ee0363fa41d9d"
+    },
+    {
+      "path": "automation/command_bus/symphony_codex_app_server.py",
+      "bytes": 33184,
+      "sha256": "e629cbf653f9d7bb5cdee6e0464fde6abae51893f94096d31992e8d2a536b86b"
+    },
+    {
+      "path": "automation/command_bus/symphony_sqlite_storage.py",
+      "bytes": 10043,
+      "sha256": "0a7db9a4511c624c180a1678125903fe446a1dd3c8206481ae4183135078aabf"
+    },
+    {
+      "path": "automation/command_bus/symphony_subscription_startup.patch",
+      "bytes": 5223,
+      "sha256": "37cae01e11df751fc2e43957672d52c3c4bf8d977993c554c8b35a31145639b9"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/symphony_sqlite_installation/codex_jsonl_fixture.py",
+      "bytes": 2472,
+      "sha256": "095d4cdf9976f1bb8e95f885881ce4cfc645bc2ffced0f345fbd339f2f9a2a3d"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/symphony_sqlite_installation/pinned_app_server.ex.gz",
+      "bytes": 5806,
+      "sha256": "0ff83a0a01d82c282e5ae1e62a66349c620fa857a154c3d1171b57be392406f7"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/symphony_sqlite_installation/startup_fixture.exs",
+      "bytes": 1671,
+      "sha256": "f357b645b8984b8590d5b48b1bf0c62b5b760bfdf314f0b979a5c92c640f2d4d"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_sqlite_installation.py",
+      "bytes": 11879,
+      "sha256": "80dd7e2359520ff87d4c8df1a86a6d02c7cba1b80ba04775e34d4cbac04aba37"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_subscription_startup_patch.py",
+      "bytes": 2658,
+      "sha256": "180498a04ce0b7f4aa780c2be4302c9e61bebba68765aa7973ba8ba1ca879db2"
+    },
+    {
+      "path": "docs/SYMPHONY_PRODUCTION_INSTALLATION_READINESS.md",
+      "bytes": 11700,
+      "sha256": "75fbadd65cd40b7785b4bd7a94df3575439a9831475e6a083c0536313c6d2099"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/checkpoint.json",
+      "bytes": 2091,
+      "sha256": "79e8c0337d8e2fc19e89005afb2e7639ba5e47df3c806fbbd2ac9f3dfc9ab852"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/combined-upstream-patch.json",
+      "bytes": 265,
+      "sha256": "4ab4eeed52a62363ea229cc023875ca9d67c29945dd35c90665c61c11bb43d02"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/focused-tests.txt.gz",
+      "bytes": 2579,
+      "sha256": "6b3efcd641eff6066e5e56216ec670d395df74ae8ea7f3af02123135435b2648"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/full-tests.txt.gz",
+      "bytes": 74017,
+      "sha256": "d5e3ad3db0c21073f9fa009c2924711c57f649406f750293e4320fbb4a2c8f19"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/github-readonly-sanitized.json",
+      "bytes": 6889,
+      "sha256": "8fe832a484c6493b99e225714499b13c326b1870f95a91cb81d32e80c9ccec88"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/host-initial-disk.json",
+      "bytes": 517,
+      "sha256": "5a56c231f137656a6fcb1e1ddf7dac562e32369875d0e75a308861be56fa8854"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/host-initial.json",
+      "bytes": 517,
+      "sha256": "45f98bb81adc05b891ae9a9683344ad7ed1e31fdfbf6470f3e92d07f2d71b68d"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/host-restarts-disk.json",
+      "bytes": 1816,
+      "sha256": "e859da92a46a7d0fc74570ea4b2a8f28c376d3843334dc0e094dcde372ae966f"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/host-restarts.json",
+      "bytes": 2609,
+      "sha256": "0642639d2fc650ee16fad8c61c93eb71ec3bd479fe3cd289abc3df1d2c622ce6"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/local-static.json",
+      "bytes": 282,
+      "sha256": "9545fe6c300458af4c77eddc8a9e153e0e7e7213360d2421f1a68bb281ea1d78"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/preservation.json",
+      "bytes": 741,
+      "sha256": "1dc4605d582536fb519c06920d8b255d379349fe46d918efc2a98136a749b0c2"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/secret-scan.json",
+      "bytes": 1313,
+      "sha256": "94ed062717bc24c401fc668730d8a948ee2ac9f2cd5156d7c547117d44f06e53"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/tests.json",
+      "bytes": 379,
+      "sha256": "298f91c8d02a4b38e6825973fbd5c6495421937e16c8b424fddc4f30e739633a"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/upstream-source-pin.json",
+      "bytes": 289,
+      "sha256": "4e4154280cd90782d40f811a9cbf5ac466854fdc6eb276523221b43190c47963"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/upstream-startup-static-final.json",
+      "bytes": 7100,
+      "sha256": "99057e06835c0ecfc56db5cf96816b2034998f2c538f4542a19a9106721af5ce"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/worktrees-preserved.json",
+      "bytes": 2900,
+      "sha256": "aaef07f6cdbfe1b12713d9ac1ed601a8251234c8f8382dcaf5b901b4e98a604e"
+    }
+  ]
+}
