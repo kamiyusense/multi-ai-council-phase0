@@ -1,0 +1,16 @@
+{
+  "failed_head": "98f28c761a94708d88cf13d177e6623ab31ac6fe",
+  "failed_run": 38118844158,
+  "failed_job": 114409202134,
+  "passed_before_failure": [
+    "offline tests 43",
+    "YAML OFF/permissions",
+    "compile"
+  ],
+  "cause": "shallow checkout omitted exact PR base object for diff check",
+  "correction": "checkout fetch-depth:0; no runtime logic/permissions changes",
+  "rerun_of_terminal_job": 0,
+  "next_action": "normal corrective commit and new exact-head CI",
+  "additional_security_correction": "Require issuer context repository and key/issuer to match independently verified candidate and reviewed envelope before request",
+  "mock_fixture_correction": "Original recorded repo is fixture/council; issuer fixture now uses that identity rather than production repository"
+}

@@ -1,0 +1,29 @@
+# Proposed manual staging-ref route; never push/pull_request_target/workflow_run.
+name: Symphony exact candidate verifier (NOT INSTALLED)
+on:
+  workflow_dispatch:
+    inputs:
+      review_id:
+        description: Independent approved stage lease; input is not authority
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: symphony-operator-candidate
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Refuse until reviewed immutable trusted-source runtime is installed
+        run: |
+          python3 -c "raise SystemExit('NOT_INSTALLED: exact source/runtime pins required')"
+# Future dispatch uses ref=<approved stage>, so GitHub run.head_sha is candidate.
+# Before dispatch, independent operator verifies ALL candidate bytes except the
+# one artifact equal the reviewed baseline, including this YAML and all code.
+# Activation adds immutable trusted main checkout/pins and the existing
+# run_real_verifier_job; no candidate scripts, credentials, OIDC or write scope.
+# Upload only attestation.json + operator-attestation.json; GET final ZIP digest.
