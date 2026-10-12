@@ -56,7 +56,11 @@ class ActiveCampaignTests(unittest.TestCase):
 
     def test_budget_is_its_own_ledger_and_within_the_template(self):
         tpl = json.loads((EV / "prod-budget-declaration.TEMPLATE.json").read_text(encoding="utf-8"))
-        self.assertLessEqual(self.decl["cap"], tpl["cap"])
+        if "rolling_24h_limit" in self.decl:
+            # owner decision 2026-10-12: no total cap, a rolling 24-hour limit below Jules' own (100 on AI Pro)
+            self.assertLess(self.decl["rolling_24h_limit"], 100)
+        else:
+            self.assertLessEqual(self.decl["cap"], tpl["cap"])
         self.assertLessEqual(self.auth["max_activations"], self.decl["cap"])
         self.assertNotEqual(self.decl["ledger_prefix"], bf.PREFIX)                   # never the 9/10 proof ledger
         self.assertIn(self.decl["budget_id"], self.decl["ledger_prefix"])

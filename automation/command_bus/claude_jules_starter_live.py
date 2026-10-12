@@ -113,6 +113,7 @@ class GhLiveWritePort(GhLoopPort):
         self.labels_sent = 0
         self.carrier = carrier                    # git client for the Jules API carrier branch (None: no resend)
         self.api_messages_sent = 0
+        self.retry_after: str | None = None       # a rolling-window budget refusal: when a start is possible again
 
     @property
     def live(self) -> bool:
@@ -245,6 +246,8 @@ class GhLiveWritePort(GhLoopPort):
                                   max_for_origin=self.authorization["max_activations"], now=self.now())
         self.reservations.append({"issue": n, "status": res.status, "reason": res.reason})
         if res.status not in USABLE:
+            if res.retry_after:
+                self.retry_after = res.retry_after
             self._refuse("add_label", n, f"budget {res.status}: {res.reason}", payload)
         self.labels_sent += 1                          # counted before sending: a lost response still counts
         try:
@@ -279,6 +282,12 @@ class GhLiveWritePort(GhLoopPort):
             return int(json.loads(proc.stdout)["number"])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             raise st.WriteOutcomeUnknown("issue created but its number is unreadable") from exc
+
+    def start_rate_limited_until(self):
+        """The rolling 24-hour start limit, checked before any intent: None when a start may be attempted."""
+        if not self.live or self.budget is None:
+            return None
+        return self.budget.rate_limited_until(self.now())
 
     def _send_api_start(self, n, path, request):
         """The API route's label: one create-only start request file; the start workflow calls the Jules API."""

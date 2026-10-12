@@ -68,6 +68,7 @@ RECOVERY = {
     "QUOTA_UNKNOWN": "re-check quota on the next wake",
     "ROUND_LIMIT": "a human may extend the campaign",
     "WRITE_PATH_UNHEALTHY": "retry with backoff after a label-never-present readback; a human checks GitHub",
+    "RATE_LIMITED": "the rolling 24-hour start limit frees a start at retry_after; a scheduled wake resumes",
     "JULES_IGNORED_CORRECTIVE": "the corrective was resent once through the Jules API; Jules' next commit wakes "
                                 "the loop",
     "JULES_UNRESPONSIVE": "a human looks at the task: Jules ignored the corrective and its Jules API resend",
@@ -291,6 +292,10 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         last = res.steps[-1]
         if res.stopped == "PREPARED" and last.action == st.WRITE_LABEL:
             refused = ((getattr(port, "prepared", None) or [{}])[-1].get("refused") or [])
+            if any(str(r).startswith("budget RATE_LIMITED") for r in refused):
+                # the rolling 24-hour limit: temporary, never a human decision; the start resumes by itself
+                return st.Step(st.DEFER, "; ".join(map(str, refused)), n, code="RATE_LIMITED",
+                               retry_after=getattr(port, "retry_after", None))
             if any(str(r).startswith("budget EXHAUSTED") for r in refused):
                 # the durable budget is spent: a human decision, visible every wake, never a silent retry loop
                 return st.Step(st.ISOLATE, "; ".join(map(str, refused)), n, code="BUDGET_EXHAUSTED",
@@ -300,7 +305,16 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         return last
 
     hard_stop = None
+    rate_check = getattr(port, "start_rate_limited_until", None)
+    rate_until = rate_check() if callable(rate_check) else None
+    if rate_until is not None:            # a full rolling window: no intent, no new issue; resumes by itself
+        halt_new = f"rolling 24-hour start limit reached; a start is possible after {rate_until}"
     for k in sorted((k for k in known if k["state"] == planner.PREPARED), key=lambda k: k["issue"]):
+        if rate_until is not None:
+            result.defers.append({"task_id": k["task_id"], "issue": k["issue"], "code": "RATE_LIMITED",
+                                  "reason": halt_new, "dependency": [], "retry_after": rate_until,
+                                  "human_required": False})
+            continue
         if halt_new is not None:
             result.defers.append({"task_id": k["task_id"], "issue": k["issue"], "code": "WRITE_READBACK_UNKNOWN",
                                   "reason": "not offered: " + halt_new, "dependency": [], "retry_after": None,
@@ -361,6 +375,9 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         result.human_actions.append({"action": "resolve provider / policy boundary", "reason": hard_stop.reason})
     elif halt_new is not None:
         result.outcome, result.reason = DEFER, "no new task this tick: " + halt_new
+        if rate_until is not None and not result.defers:
+            result.defers.append({"task_id": None, "issue": None, "code": "RATE_LIMITED", "reason": halt_new,
+                                  "dependency": [], "retry_after": rate_until, "human_required": False})
     elif len(running) < policy["max_concurrent_tasks"] and not result.started:
         try:
             signals = read_retry(port.signals, attempts)
@@ -455,6 +472,11 @@ def _checkpoint(port: Any, result: TickResult, *, campaign: dict[str, Any], cont
         age = st._ts(now) - st._ts(first)
         if d.get("in_flight"):            # a running task that does not move: escalate even while other work runs
             escalated = age >= timedelta(minutes=policy.get("stall_escalate_minutes", 720))
+        elif d["code"] == "RATE_LIMITED":  # an expected wait of up to 24 hours: escalate only if it outlives it
+            try:
+                escalated = st._ts(now) - st._ts(d["retry_after"]) >= timedelta(minutes=policy["defer_escalate_minutes"])
+            except (KeyError, TypeError, ValueError):
+                escalated = age >= timedelta(hours=24) + timedelta(minutes=policy["defer_escalate_minutes"])
         else:
             escalated = age >= timedelta(minutes=policy["defer_escalate_minutes"]) and not independent
         defers.append({"task_id": d["task_id"], "issue": d["issue"], "code": d["code"], "reason": d["reason"],

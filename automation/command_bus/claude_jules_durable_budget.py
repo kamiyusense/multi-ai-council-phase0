@@ -7,7 +7,9 @@ budget: N wakes could each send ``max_labels``.  This module is the global, dura
 ``slot-NN.json`` on a data branch; 9/10 used on 2026-10-10).  One slot is consumed BEFORE the label write and is
 never released: an unknown outcome still consumes it.  The cap is not a constant here: it comes from a
 human-approved ``CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1`` file on the default branch, so raising it needs a
-human Merge, and records written under a smaller cap still count.
+human Merge, and records written under a smaller cap still count.  A V3 declaration adds ``rolling_24h_limit``:
+at most that many slots acquired in any 24 hours (Jules' daily task limit is a rolling 24 hours); a full window is
+``RATE_LIMITED`` with the time it frees, a temporary wait, never a human decision.
 
 **Which GitHub guarantee this relies on, and which it does not.**
 
@@ -38,6 +40,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Callable
 
 from . import claude_jules_production_starter as st
@@ -45,18 +48,20 @@ from .claude_jules_dispatch import canonical_json, sha256_of
 
 DECLARATION_PROFILE = "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1"
 DECLARATION_PROFILE_V2 = "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V2"   # + campaign_id, slot_create
+DECLARATION_PROFILE_V3 = "CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V3"   # + rolling_24h_limit
 SLOT_PROFILE = "CLAUDE_AUTO_LIVE_BUDGET_SLOT_V1"
 SLOT_CREATE_ENABLED = False          # default when the declaration does not decide (V1); a V2 declaration decides
 _DECL_KEYS = {"profile", "budget_id", "repository", "data_branch", "ledger_prefix", "cap", "approved_by",
               "approval_ref"}
 _DECL_KEYS_V2 = _DECL_KEYS | {"campaign_id", "slot_create"}
+_DECL_KEYS_V3 = _DECL_KEYS_V2 | {"rolling_24h_limit"}
 _SLOT_KEYS = {"schema_version", "profile", "slot", "cap", "command_id", "intent_sha256", "origin_loop_id",
               "acquired_at", "counts_as_used", "retry_count", "slot_sha256"}
 _SLOT_FILE = re.compile(r"^slot-([0-9]{2,4})\.json$")
 _SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:#@-]{0,199}$")
 
-ACQUIRED, RECOVERED, EXHAUSTED, COLLISION, UNKNOWN, DISABLED = (
-    "ACQUIRED", "RECOVERED", "EXHAUSTED", "COLLISION", "UNKNOWN", "DISABLED")
+ACQUIRED, RECOVERED, EXHAUSTED, COLLISION, UNKNOWN, DISABLED, RATE_LIMITED = (
+    "ACQUIRED", "RECOVERED", "EXHAUSTED", "COLLISION", "UNKNOWN", "DISABLED", "RATE_LIMITED")
 USABLE = {ACQUIRED, RECOVERED}
 
 
@@ -69,15 +74,21 @@ class Reservation:
     status: str
     reason: str
     record: dict[str, Any] | None = None
+    retry_after: str | None = None          # RATE_LIMITED: when the oldest start in the window leaves it
 
 
 def validate_declaration(decl: Any, *, repository: str) -> list[str]:
     v1 = isinstance(decl, dict) and set(decl) == _DECL_KEYS and decl.get("profile") == DECLARATION_PROFILE
     v2 = isinstance(decl, dict) and set(decl) == _DECL_KEYS_V2 and decl.get("profile") == DECLARATION_PROFILE_V2
-    if not (v1 or v2):
-        return ["budget declaration is not a CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1/V2 record"]
+    v3 = isinstance(decl, dict) and set(decl) == _DECL_KEYS_V3 and decl.get("profile") == DECLARATION_PROFILE_V3
+    if not (v1 or v2 or v3):
+        return ["budget declaration is not a CLAUDE_JULES_LIVE_BUDGET_DECLARATION_V1/V2/V3 record"]
     problems = []
-    if v2:
+    if v3:
+        limit = decl["rolling_24h_limit"]
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 9999:
+            problems.append("budget rolling_24h_limit must be an integer 1..9999")
+    if v2 or v3:
         if not isinstance(decl["campaign_id"], str) or not decl["campaign_id"].strip():
             problems.append("budget declaration campaign_id missing")
         if not isinstance(decl["slot_create"], bool):
@@ -128,6 +139,9 @@ class DurableBudget:
             create_enabled = declaration.get("slot_create", SLOT_CREATE_ENABLED) is True
         self.client, self.decl, self.create_enabled = client, declaration, create_enabled
         self.cap, self.prefix, self.branch = declaration["cap"], declaration["ledger_prefix"], declaration["data_branch"]
+        # V3: at most this many starts in any 24 hours, counted from the slots' own acquired_at (Jules' daily task
+        # limit is a rolling 24 hours too); None = the total cap only
+        self.rolling_limit = declaration.get("rolling_24h_limit")
 
     def path(self, slot: int) -> str:
         return f"{self.prefix}slot-{slot:02d}.json" if slot < 100 else f"{self.prefix}slot-{slot:04d}.json"
@@ -213,6 +227,17 @@ class DurableBudget:
             return Reservation(EXHAUSTED, f"LIVE budget exhausted ({len(slots)}/{self.cap}); no further start")
         if sum(1 for s in slots if s["origin_loop_id"] == origin) >= max_for_origin:
             return Reservation(EXHAUSTED, f"this authorization's {max_for_origin} activation(s) are used up")
+        if self.rolling_limit is not None:
+            try:
+                since = st._ts(now) - timedelta(hours=24)
+                recent = sorted(st._ts(s["acquired_at"]) for s in slots if st._ts(s["acquired_at"]) > since)
+            except (TypeError, ValueError) as exc:
+                return Reservation(UNKNOWN, f"slot time unreadable ({exc}); no start")
+            if len(recent) >= self.rolling_limit:
+                free_at = st._fmt(recent[len(recent) - self.rolling_limit] + timedelta(hours=24))
+                return Reservation(RATE_LIMITED, f"{len(recent)} starts in the last 24 hours (limit "
+                                   f"{self.rolling_limit}); the next start is possible after {free_at}",
+                                   retry_after=free_at)
         if not self.create_enabled:
             return Reservation(DISABLED, "slot creation is not enabled by the budget declaration; an approved "
                                          "pre-written slot record is required")
@@ -242,6 +267,21 @@ class DurableBudget:
         if isinstance(other, dict) and other.get("command_id") == cid:
             return None                 # ours under an earlier timestamp (a racing twin of this wake): re-read
         return None                     # another controller won this slot number: re-read, try the next one
+
+    def rate_limited_until(self, now: str) -> str | None:
+        """When the rolling 24-hour limit is reached: the time a start is possible again, else None.  Read before
+        any intent is written, so a full window never turns into repeated start attempts."""
+        if self.rolling_limit is None:
+            return None
+        try:
+            slots = self.slots()
+            since = st._ts(now) - timedelta(hours=24)
+            recent = sorted(st._ts(s["acquired_at"]) for s in slots if st._ts(s["acquired_at"]) > since)
+        except (BudgetUnknown, TypeError, ValueError):
+            return None                 # unknown here is decided at reserve(), which never starts on UNKNOWN
+        if len(recent) < self.rolling_limit:
+            return None
+        return st._fmt(recent[len(recent) - self.rolling_limit] + timedelta(hours=24))
 
     def holds(self, record: dict[str, Any]) -> bool:
         """After the label: the slot still holds exactly our record (the ledger was not rewritten)."""
