@@ -1,0 +1,17 @@
+{
+  "focused": {
+    "result": "PASS",
+    "count": 56,
+    "new_regression_cases": 9
+  },
+  "full": {
+    "result": "PASS",
+    "count": 2897,
+    "skipped": 1,
+    "skipped_case": [
+      "test_windows_production_path_bootstrap_is_blocked (automation.command_bus.tests.test_claude_admission_gate.ProductionStoreBootstrapTests.test_windows_production_path_bootstrap_is_blocked) ... skipped 'Windows-only production bootstrap ACL boundary'"
+    ]
+  },
+  "real_readonly_probe": "PASS",
+  "real_model_turns": 0
+}

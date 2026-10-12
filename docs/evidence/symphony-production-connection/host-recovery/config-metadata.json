@@ -1,0 +1,9 @@
+{
+  "sqlite_home_present": false,
+  "sqlite_home": null,
+  "log_dir_present": false,
+  "sqlite_home_type": "NoneType",
+  "provider_selector_present": false,
+  "custom_provider_count": 0,
+  "user_config_sha256": "294f9e2a47e20cd2fbe36e8d1f9762ce89607c9622e1579476ea154a634df270"
+}

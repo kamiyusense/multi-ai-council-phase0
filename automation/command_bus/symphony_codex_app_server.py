@@ -11,6 +11,7 @@ import os
 import queue
 import re
 import subprocess
+import stat
 import threading
 import time
 from dataclasses import dataclass
@@ -49,7 +50,29 @@ def _assert_new_worker_environment(source: dict[str, str]) -> None:
 
 def _subscription_runtime_config(config_response: dict[str, Any]) -> bool:
     config = config_response.get("config")
-    if not isinstance(config, dict) or config.get("model_provider") != "openai":
+    if not isinstance(config, dict) or "model_provider" not in config:
+        return False
+    provider = config["model_provider"]
+    if provider is None:
+        # Installed 0.162 config/read preserves an unset selector as JSON null.
+        # Accept only its complete, observed built-in-default shape; an empty
+        # or partial config is still UNKNOWN. Fresh ChatGPT account/read and
+        # requiresOpenaiAuth are independently required by the same session.
+        if (config.get("model_providers") != {} or "model_providers" not in config
+                or "openai_base_url" not in config or config["openai_base_url"] is not None
+                or config.get("chatgpt_base_url") not in (
+                    "https://chatgpt.com/backend-api", "https://chatgpt.com/backend-api/")
+                or config.get("service_tier") != "default"
+                or "forced_login_method" not in config):
+            return False
+    elif provider != "openai":
+        return False
+    # Endpoint overrides cannot silently convert a verified account into a
+    # proxy/API route. No login, provider or persistent setting is changed.
+    if config.get("openai_base_url") is not None:
+        return False
+    if config.get("chatgpt_base_url") not in (
+            None, "https://chatgpt.com/backend-api", "https://chatgpt.com/backend-api/"):
         return False
     if config.get("model_providers") not in (None, {}):
         return False  # Unknown/custom endpoint/auth cannot be a subscription proof.
@@ -256,18 +279,21 @@ class JsonlCodexAppServer:
                          live_enabled: bool = False) -> CodexDispatchResult:
         return self._session(cwd=cwd, prompt=prompt, live_enabled=live_enabled, readonly=False)
 
-    def probe_read_only(self, *, cwd: str) -> dict[str, Any]:
+    def probe_read_only(self, *, cwd: str, sqlite_home: str | Path | None = None) -> dict[str, Any]:
         """Initialize/account/config only; no thread, model, refresh or saved raw response.
 
         This diagnostic is never reusable model admission evidence. A later
-        worker must acquire account/config afresh in its own session.
+        worker must acquire account/config afresh in its own session. An optional
+        fresh private SQLite directory isolates platform-specific migrations;
+        CODEX_HOME/auth/config remain unchanged. It is never a worker override.
         """
-        result = self._session(cwd=cwd, prompt="", live_enabled=False, readonly=True)
+        result = self._session(cwd=cwd, prompt="", live_enabled=False, readonly=True,
+                               sqlite_home=sqlite_home)
         return {"status": result.status, "reason": result.reason,
                 "route": result.verification, "model_dispatch": 0, "thread_starts": 0}
 
     def _session(self, *, cwd: str, prompt: str, live_enabled: bool,
-                 readonly: bool) -> CodexDispatchResult:
+                 readonly: bool, sqlite_home: str | Path | None = None) -> CodexDispatchResult:
         proc: subprocess.Popen[str] | None = None
         attempted = False
         model_started: bool | None = False
@@ -283,8 +309,19 @@ class JsonlCodexAppServer:
                 return CodexDispatchResult("BLOCKED", False, False, None, None, (), "Codex LIVE flag is off")
             parent_environment = dict(os.environ)
             _assert_new_worker_environment(parent_environment)
+            args = [self.executable, "app-server"]
+            if sqlite_home is not None:
+                if not readonly:
+                    raise ValueError("SQLite isolation is read-only diagnostic only")
+                path = Path(sqlite_home)
+                if (not path.is_absolute() or path.is_symlink() or path.resolve() != path
+                        or not path.is_dir() or any(path.iterdir())
+                        or stat.S_IMODE(path.stat().st_mode) != 0o700
+                        or path.stat().st_uid != os.getuid()):
+                    raise ValueError("SQLite diagnostic directory must be empty, private and owned")
+                args += ["-c", "sqlite_home=" + json.dumps(str(path))]
             proc = subprocess.Popen(
-                [self.executable, "app-server"], cwd=cwd, stdin=subprocess.PIPE,
+                args, cwd=cwd, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
                 encoding="utf-8", bufsize=1,
                 env=subscription_worker_environment(parent_environment),

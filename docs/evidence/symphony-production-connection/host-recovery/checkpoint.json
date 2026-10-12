@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "result": "PRELIVE_BLOCKED",
+  "host_recovery": "ISOLATED_READONLY_RECOVERY_PASS",
+  "subscription_route": "SAME_PROCESS_READONLY_PASS_NOT_ADMISSION",
+  "mode": "OFF",
+  "LIVE_GO": false,
+  "starting_pr_head": "0d32c7fa345b8eea73deae1505ec2c59ed7116e7",
+  "starting_main": "c989aeb08018684ed092c6ce9b78a434903e4b8c",
+  "subsequent_fresh_main": "5e035302bad19250b0c47790be9f1fdd727afaf1",
+  "root_cause": "Windows CRLF migration checksum conflicts with Linux LF checksum; version 1 verified using pinned official SQL blob",
+  "state_db_common_checksum_mismatch_count": 58,
+  "default_storage_repaired": false,
+  "persistent_sqlite_configuration_installed": false,
+  "sqlite_override_scope": "read-only probe, fresh private empty owned directory only",
+  "original_auth_config_preserved": true,
+  "original_db_manually_mutated": false,
+  "quota": "NOT_QUERIED_NOT_EXHAUSTED",
+  "github_protection": "UNKNOWN_HTTP403_PLAN_FEATURE",
+  "runtime_sender_credential_approved": false,
+  "operator_workflows": "OFF",
+  "remaining": [
+    "Approve permanent separate operator SQLite location before runtime use; no existing DB repair",
+    "Independent installation/candidate review and narrowly scoped runtime credential approval",
+    "Resolve protection-policy evidence; plan feature unavailable via API",
+    "Separate one-run LIVE approval; never inferred from read-only subscription probe",
+    "Latest main advanced independently; fresh integration/base review before Merge"
+  ],
+  "forbidden_counts": {
+    "live": 0,
+    "model_turn": 0,
+    "thread_start": 0,
+    "token_refresh": 0,
+    "login": 0,
+    "existing_db_delete": 0,
+    "existing_db_reinitialize": 0,
+    "existing_db_manual_overwrite": 0,
+    "auth_config_change": 0,
+    "permission_change": 0,
+    "secret_change": 0,
+    "billing_change": 0,
+    "api_key_creation_or_use": 0,
+    "oidc_issuance": 0,
+    "production_workflow_dispatch": 0,
+    "result_adoption": 0,
+    "production_git_send": 0,
+    "merge": 0,
+    "main_write": 0,
+    "force_push": 0
+  },
+  "tests": {
+    "focused": {
+      "result": "PASS",
+      "count": 56,
+      "new_regression_cases": 9
+    },
+    "full": {
+      "result": "PASS",
+      "count": 2897,
+      "skipped": 1,
+      "skipped_case": [
+        "test_windows_production_path_bootstrap_is_blocked (automation.command_bus.tests.test_claude_admission_gate.ProductionStoreBootstrapTests.test_windows_production_path_bootstrap_is_blocked) ... skipped 'Windows-only production bootstrap ACL boundary'"
+      ]
+    },
+    "real_readonly_probe": "PASS",
+    "real_model_turns": 0
+  },
+  "original_evidence_file_count": 515
+}

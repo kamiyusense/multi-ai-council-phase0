@@ -1,0 +1,16 @@
+{
+  "sqlite_override": true,
+  "sqlite_state_is_new": true,
+  "auth_home_unchanged": true,
+  "model_turns": 0,
+  "raw_responses_saved": false,
+  "failure_type": "Empty",
+  "initialize": "FAIL",
+  "rpc_methods": [
+    "initialize"
+  ],
+  "same_process_pid": 1771867,
+  "process_stopped": true,
+  "stderr_sanitized": "",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
