@@ -12,6 +12,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import os
+import secrets
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -167,6 +170,13 @@ def _validate_record(record: dict[str, Any], *, kind: str) -> AttemptIdentity:
         or record.get("record_type") != expected_type
     ):
         raise ValueError("wrong autonomous attempt protocol")
+    if "write_claim_version" in record or "write_claim_nonce" in record:
+        if (type(record.get("write_claim_version")) is not int
+                or record["write_claim_version"] != 1
+                or not isinstance(record.get("write_claim_nonce"), str)
+                or _DIGEST.fullmatch(record["write_claim_nonce"]) is None):
+            raise ValueError("invalid versioned write claim")
+    # Ownerless V1 evidence remains read-compatible; never rewrite its bytes.
     identity = _validate_identity(record)
     if validation_kind == "observation":
         number = record.get("observation_number")
@@ -269,6 +279,12 @@ class GitHubAutonomousAttemptStore:
         self.client = client
         self.write_branch = write_branch
         self.default_branch = default_branch
+        # Claims belong to a fresh operation, never a caller-supplied writer ID.
+        # Reserve once before I/O: repeated/overlapping calls cannot resend a
+        # lost create with new nonce. Forked copies must construct fresh stores.
+        self._process_id = os.getpid()
+        self._submitted_paths: set[str] = set()
+        self._submission_lock = threading.Lock()
 
     def _get(self, campaign_id: str, attempt_id: str, kind: str) -> tuple[dict[str, Any], AttemptIdentity] | None:
         path = _path(campaign_id, attempt_id, kind)
@@ -280,6 +296,13 @@ class GitHubAutonomousAttemptStore:
     def _append(self, record: dict[str, Any], *, kind: str) -> AttemptWriteResult:
         identity = _validate_record(record, kind=kind)
         path = _path(identity.campaign_id, identity.attempt_id, kind)
+        with self._submission_lock:
+            if os.getpid() != self._process_id or path in self._submitted_paths:
+                return AttemptWriteResult("CONFLICT", identity.attempt_id, kind,
+                                          "write already attempted or process copied; restore only")
+            self._submitted_paths.add(path)
+            record = {**record, "write_claim_version": 1,
+                      "write_claim_nonce": secrets.token_hex(32)}
         text = _canonical(record)
         try:
             if self.client.get(path, self.write_branch) is not None:
@@ -293,8 +316,12 @@ class GitHubAutonomousAttemptStore:
         except Exception:
             try:
                 found = self.client.get(path, self.write_branch)
-                if found is not None and found.text == text:
-                    return AttemptWriteResult("ACCEPTED", identity.attempt_id, kind)
+                if found is not None:
+                    return AttemptWriteResult(
+                        "ACCEPTED" if found.text == text else "CONFLICT",
+                        identity.attempt_id, kind,
+                        None if found.text == text else "different write claim owns record",
+                    )
             except Exception:
                 pass
             return AttemptWriteResult(
@@ -303,8 +330,12 @@ class GitHubAutonomousAttemptStore:
             )
         try:
             found = self.client.get(path, self.write_branch)
-            if found is not None and found.text == text:
-                return AttemptWriteResult("ACCEPTED", identity.attempt_id, kind)
+            if found is not None:
+                return AttemptWriteResult(
+                    "ACCEPTED" if found.text == text else "CONFLICT",
+                    identity.attempt_id, kind,
+                    None if found.text == text else "different write claim owns record",
+                )
         except Exception:
             pass
         return AttemptWriteResult(

@@ -16,6 +16,15 @@ _METERED_ENV_KEYS = frozenset({
     "OPENAI_BASE_URL", "OPENAI_API_BASE",
 })
 
+# OS/locale/config-directory selectors only. Unknown authority aliases, signing
+# keys, proxies, token variables and observer paths never enter model workers.
+_WORKER_ENV_KEYS = frozenset({
+    "PATH", "HOME", "CODEX_HOME", "USER", "LOGNAME", "USERNAME", "USERPROFILE",
+    "HOMEDRIVE", "HOMEPATH", "APPDATA", "LOCALAPPDATA", "SYSTEMROOT", "WINDIR",
+    "COMSPEC", "PATHEXT", "TMP", "TEMP", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE",
+    "TZ", "TERM", "COLORTERM", "NO_COLOR",
+})
+
 
 def subscription_worker_environment(source: Mapping[str, str]) -> dict[str, str]:
     """Make a worker environment without ambient metered API selectors.
@@ -23,7 +32,15 @@ def subscription_worker_environment(source: Mapping[str, str]) -> dict[str, str]
     This is a process-launch boundary, not an account or quota probe. The
     original mapping is never changed, and no credential values are inspected.
     """
-    return {key: value for key, value in source.items() if key not in _METERED_ENV_KEYS}
+    return {key: value for key, value in source.items()
+            if type(key) is str and key.upper() in _WORKER_ENV_KEYS and type(value) is str}
+
+
+def metered_worker_environment_present(keys: Collection[str]) -> bool:
+    """Selector names only; no authentication assumption or credential values."""
+    if not isinstance(keys, (set, frozenset, tuple, list)) or any(type(k) is not str for k in keys):
+        return True
+    return bool(_METERED_ENV_KEYS.intersection(k.upper() for k in keys))
 
 
 @dataclass(frozen=True)
@@ -55,7 +72,7 @@ def assess_new_worker_route(
     if (not isinstance(worker_environment_keys, (set, frozenset, tuple, list))
             or any(type(key) is not str for key in worker_environment_keys)):
         return SubscriptionRouteDecision(False, "worker environment keys unverified")
-    if _METERED_ENV_KEYS.intersection(worker_environment_keys):
+    if metered_worker_environment_present(worker_environment_keys):
         return SubscriptionRouteDecision(False, "metered API route present in worker environment")
     if not isinstance(account_evidence, Mapping):
         return SubscriptionRouteDecision(False, "Codex account route unverified")
