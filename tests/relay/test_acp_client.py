@@ -73,10 +73,11 @@ class TestACPClient(unittest.TestCase):
                 "Unsupported capability shape",
             ),
         ):
-            with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as f:
-                json.dump(payload, f)
-                f.flush()
-                client = ACPClient(init_fixture_path=f.name, policy=make_policy())
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                fixture_path = os.path.join(tmp_dir, "init.json")
+                with open(fixture_path, "w", encoding="utf-8") as f:
+                    json.dump(payload, f)
+                client = ACPClient(init_fixture_path=fixture_path, policy=make_policy())
                 with self.assertRaisesRegex(ValueError, message):
                     client.initialize("test")
 
@@ -87,10 +88,11 @@ class TestACPClient(unittest.TestCase):
             "auth": {"kind": "account"},
             "capabilities": {},
         }
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as f:
-            json.dump(payload, f)
-            f.flush()
-            client = ACPClient(init_fixture_path=f.name, policy=make_policy())
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            fixture_path = os.path.join(tmp_dir, "init.json")
+            with open(fixture_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f)
+            client = ACPClient(init_fixture_path=fixture_path, policy=make_policy())
             with self.assertRaisesRegex(ValueError, "live_process_started must be false"):
                 client.initialize("test")
 
