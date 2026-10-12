@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "purpose": "current repaired source and sanitized host recovery evidence; old connection seal is immutable",
+  "historical_connection_head": "0d32c7fa345b8eea73deae1505ec2c59ed7116e7",
+  "files": [
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 6463,
+      "sha256": "e3c705678ca5aa1cb654435731018d2f034c6811b4224f5cdee6f98a9857524b"
+    },
+    {
+      "path": "automation/command_bus/symphony_codex_app_server.py",
+      "bytes": 32489,
+      "sha256": "e42e0a8092c07bf9648cb02f8804fa21f68949fd49a66983c6845f7108ce79ec"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_sqlite_host_recovery.py",
+      "bytes": 6837,
+      "sha256": "cf77507aa2a532a0110bcb8aeabcaa4a8f9d59c5c107fadc01883eb556809c08"
+    },
+    {
+      "path": "docs/SYMPHONY_PRELIVE_SQLITE_HOST_RECOVERY.md",
+      "bytes": 5546,
+      "sha256": "99fa4c1bbddf74b0ec5e02cfb1fbe481c7b0d708379be91f0c9cd489a9fbb94a"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/baseline-initialize.json",
+      "bytes": 356,
+      "sha256": "5554c5e101c9e346647a8b016536d54ad8a76b915d1ce2ff074988a860252023"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/baseline-sanitized-error.json",
+      "bytes": 187,
+      "sha256": "856c0ff72c1e507b381d1ef7dfb487aba33f2c3b3657e97dbd11180a4cfa2b7f"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/checkpoint.json",
+      "bytes": 2645,
+      "sha256": "afc0ac4da68dbd3ef5b65385235595d881f96f6fc23ef003ebbf7625b41f94d2"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/config-metadata.json",
+      "bytes": 280,
+      "sha256": "74aecf531ffdedb3b7db20116109049d63752f92d65a90a8ada25e9c9d090e73"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/drvfs-fresh-readonly.json",
+      "bytes": 1718,
+      "sha256": "1ea6ba4f89c1a873a3b3d3aebc6bb79bdbb484a69ab64835bac24615be20dca5"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/ext4-long-readonly.json",
+      "bytes": 651,
+      "sha256": "4145e7328b0bd459808ab4dfcf53a9ebb7f8687557975db8dc8dfc86a1f19a27"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/fixed-transport-readonly.json",
+      "bytes": 915,
+      "sha256": "2d70b100932b6cc16d397f8575d2333cd0c4fcde8d5b08fe81375031295682bd"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/focused-tests.txt.gz",
+      "bytes": 2039,
+      "sha256": "2772647c8382e03f68bd5817cb8adb19c7ac0a3cb4994a78a7b25552934d64ff"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/full-regression.txt.gz",
+      "bytes": 73581,
+      "sha256": "2df1b4289ae399f438622a99964216c9787fc226b28412c6785d0dfd0b8326fb"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/github-readonly.json",
+      "bytes": 1903,
+      "sha256": "6407a4a8352c06a2768e31b68d7128900b84ab0129f6c1685a6cf68890595a70"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/github-workflow-off-readback.json",
+      "bytes": 1113,
+      "sha256": "53eb3de35b4a917c4f141ead484c8fecbb63b9286e631f2b97961db1cb880c77"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/isolated-initialize-readonly.json",
+      "bytes": 407,
+      "sha256": "501794e41e961f1dc488b50b704336fcae167bdc4eb4f65e03c23368b53d5b96"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/line-ending-root-cause.json",
+      "bytes": 641,
+      "sha256": "4f67f0cb2810ce4a274b1b720ec694c6ab5d8444cf05eafde595cbc3d04df763"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/local-validation.json",
+      "bytes": 352,
+      "sha256": "845b8b6eb403ca4fc267fa10bae9673697f058555105af1d99830a9302ef4c67"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/negative-checksum-reproduction.json",
+      "bytes": 635,
+      "sha256": "409e5a85eb68b2d7fead4c17fda8f6e682d27149a3ad273f8557d07552567054"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/positive-checksum-control.json",
+      "bytes": 1756,
+      "sha256": "e8f4571f2ac690230a7de59f227c34b6c1d78c8ff5870393540e6a84a652d464"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/preservation.json",
+      "bytes": 1462,
+      "sha256": "b32558f0dd348f7cf0a6948f50ceee11988d208617f8cda67c478fdd3a458f14"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/readonly-migration-comparison.json",
+      "bytes": 26297,
+      "sha256": "46b320e18b624f85da6381377b53732d6c38b46b7f091d07b381da4a602f7e34"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/secret-scan.json",
+      "bytes": 2724,
+      "sha256": "1cdbb247175e7490d22dd0236fa4fb82d30a558aac4999e43dbc83b1b4c24032"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/host-recovery/tests.json",
+      "bytes": 511,
+      "sha256": "0f440698f6d255dc30db66bb7d3d93ff720370b6451e8f36d1881adef723f23c"
+    }
+  ]
+}

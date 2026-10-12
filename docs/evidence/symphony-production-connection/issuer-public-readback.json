@@ -1,0 +1,15 @@
+{
+  "issuer": "https://token.actions.githubusercontent.com",
+  "JWT_issuance": 0,
+  "authorization_generated": false,
+  "private_key_fields_present": false,
+  "status": "PUBLIC_READBACK_PASS_NOT_AUTHORITY",
+  "metadata_sha256": "c3fba014c6fc3be9f3950c3ce883ceb2670d586dd2efbfec9342d49bef33516b",
+  "jwks_uri": "https://token.actions.githubusercontent.com/.well-known/jwks",
+  "jwks_sha256": "5f8164c9696c27837ad18c5fe7c7022a433bd5390183e8ff15c74d82233270f4",
+  "public_keys": 4,
+  "algorithms": [
+    "RS256"
+  ],
+  "future_installation_pins_approved": false
+}

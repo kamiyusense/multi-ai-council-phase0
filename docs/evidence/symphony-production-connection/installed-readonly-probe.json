@@ -1,0 +1,11 @@
+{
+  "status": "READONLY_UNKNOWN",
+  "reason_type": "RuntimeError",
+  "RPC_methods": [
+    "initialize"
+  ],
+  "model_turns": 0,
+  "raw_responses_saved": false,
+  "read_only_process_stopped": true,
+  "version": "codex-cli 0.162.0-alpha.17.2"
+}

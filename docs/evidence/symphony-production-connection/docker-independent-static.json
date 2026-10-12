@@ -1,0 +1,39 @@
+{
+  "mode": "STATIC_FIXTURE_ONLY_REAL_DOCKER_EXECUTION",
+  "real_worker": false,
+  "candidate_qualified": false,
+  "model_dispatch": 0,
+  "JWT_issuance": 0,
+  "GitHub_runtime_mutations": 0,
+  "raw_candidate_output_saved": false,
+  "python_image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+  "scanner_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+  "earlier_Windows_mount_fixture_preparation": "BLOCKED_BEFORE_CONTAINER_START; moved newly generated inputs to native WSL filesystem without changing existing data",
+  "status": "PASS",
+  "invocations": [
+    {
+      "check": "syntax",
+      "argv_digest": "eff853ff830661540b85e122f9ba5a5d86bd2c9bff36fcab46f8bf58800757b1",
+      "returncode": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "tests",
+      "argv_digest": "ebfc6b207dba386e55c62c1e34e667bc297e5c6858283d424652c382c71a8b17",
+      "returncode": 0,
+      "stdout_sha256": "81fca6b7e262ba554e5128f217051b496f1438e2f21515355ade0f6a203cc786",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "secret_scan",
+      "argv_digest": "49093212c70fc264c724679540a8e1e27623f1643b358fc3c0c273897f04a92c",
+      "returncode": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "71a204e6f147a758ca906d53044f6502ef09fd2178a579d1e0a7f46ca22a044a"
+    }
+  ],
+  "local_generated_archive_sha256": "332319bb9b7fa4b34685740974d4687f3ecb0567e65965e72128743fd3cc6ad5",
+  "synthetic_lifetime_is_not_real_authority": true,
+  "archive_not_saved_or_uploaded": true
+}

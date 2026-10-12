@@ -1,0 +1,63 @@
+{
+  "repository": {
+    "status": "READBACK",
+    "data": {
+      "full_name": "kamiyusense/multi-ai-council-phase0",
+      "id": 1378815294,
+      "default_branch": "main",
+      "archived": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    }
+  },
+  "main_protection": {
+    "status": "UNKNOWN",
+    "http_status": "403",
+    "returncode": 1
+  },
+  "rulesets": {
+    "status": "UNKNOWN",
+    "http_status": "403",
+    "returncode": 1
+  },
+  "main_rules": {
+    "status": "UNKNOWN",
+    "http_status": "403",
+    "returncode": 1
+  },
+  "authorize": {
+    "status": "READBACK",
+    "data": {
+      "id": 381919800,
+      "node_id": "W_kwDOUi8NPs4Ww6I4",
+      "name": "Symphony operator authorization (NOT INSTALLED)",
+      "path": ".github/workflows/symphony-operator-authorize.yml",
+      "state": "active",
+      "created_at": "2026-10-12T17:03:52.000+09:00",
+      "updated_at": "2026-10-12T17:03:52.000+09:00",
+      "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/actions/workflows/381919800",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/.github/workflows/symphony-operator-authorize.yml",
+      "badge_url": "https://github.com/kamiyusense/multi-ai-council-phase0/workflows/Symphony%20operator%20authorization%20(NOT%20INSTALLED)/badge.svg"
+    }
+  },
+  "candidate": {
+    "status": "READBACK",
+    "data": {
+      "id": 381919801,
+      "node_id": "W_kwDOUi8NPs4Ww6I5",
+      "name": "Symphony exact candidate verifier (NOT INSTALLED)",
+      "path": ".github/workflows/symphony-operator-candidate.yml",
+      "state": "active",
+      "created_at": "2026-10-12T17:03:52.000+09:00",
+      "updated_at": "2026-10-12T17:03:52.000+09:00",
+      "url": "https://api.github.com/repos/kamiyusense/multi-ai-council-phase0/actions/workflows/381919801",
+      "html_url": "https://github.com/kamiyusense/multi-ai-council-phase0/blob/main/.github/workflows/symphony-operator-candidate.yml",
+      "badge_url": "https://github.com/kamiyusense/multi-ai-council-phase0/workflows/Symphony%20exact%20candidate%20verifier%20(NOT%20INSTALLED)/badge.svg"
+    }
+  }
+}

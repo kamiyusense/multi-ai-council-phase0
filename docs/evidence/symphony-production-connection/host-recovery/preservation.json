@@ -1,0 +1,41 @@
+{
+  "old_evidence_files_verified": 515,
+  "changed_old_evidence_files": [],
+  "upstream_scheduler_and_continuation_blobs": [
+    {
+      "path": "automation/command_bus/symphony_controller.py",
+      "sha256": "b08758bb95996c107d5d2fc6f4b55c22c6b55326a28a3d63b84d61d501459454",
+      "unchanged": true
+    },
+    {
+      "path": "automation/command_bus/symphony_autonomous_policy.py",
+      "sha256": "ad87df4b4ba1a18940773b1dae5caed21fc0e2f018ed7e6f5923074ca338ee41",
+      "unchanged": true
+    },
+    {
+      "path": "automation/command_bus/symphony_autonomous_controller.py",
+      "sha256": "f431e9dfc8bfb0b93b977d82d172e04c403d4a6049d3c0790ab30d4313009692",
+      "unchanged": true
+    },
+    {
+      "path": "automation/command_bus/symphony_autonomous_runtime.py",
+      "sha256": "4a5b54ad2fb91d9f3695187a663d31a495b33b97195aeee5f07da7c6b35c42d3",
+      "unchanged": true
+    },
+    {
+      "path": "automation/command_bus/symphony_production_observer.py",
+      "sha256": "9ddbb29d867b21e8ac75054b5420e4c2cb003792811c3e3660831a83f0c50bbc",
+      "unchanged": true
+    },
+    {
+      "path": "automation/command_bus/symphony_g5_observer.patch",
+      "sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+      "unchanged": true
+    },
+    {
+      "path": "automation/command_bus/symphony_g5_observer_cli.py",
+      "sha256": "b956d1f2f2f10cc9a2f258ff58192d9487c6880a3f346f9e1132ab99ad658e40",
+      "unchanged": true
+    }
+  ]
+}

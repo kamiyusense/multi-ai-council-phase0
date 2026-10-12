@@ -1,0 +1,52 @@
+{
+  "result": "PRELIVE_BLOCKED",
+  "mode": "OFF",
+  "LIVE_GO": false,
+  "actual_candidate_qualified": false,
+  "starting_main": "c989aeb08018684ed092c6ce9b78a434903e4b8c",
+  "development_branch": "codex/symphony-production-connection-v1",
+  "work_order_sha256": "daeeb3f0e0ce1fa6310b78e40d51b96f2ea639b0b308860129918afca1912b6e",
+  "subscription_actual": "UNKNOWN_INITIALIZE_SQLITE_FAILURE_BEFORE_ACCOUNT_CONFIG",
+  "runtime_rules_actual": "UNKNOWN_403",
+  "production_installation": "NOT_INSTALLED_JOBS_HARD_OFF",
+  "actual_Docker_static_checks": 3,
+  "approved_source_runtime_credential_installed": false,
+  "Official_Symphony_control_changes": false,
+  "forbidden_counts": {
+    "model_starts": 0,
+    "thread_starts": 0,
+    "live_launches": 0,
+    "OIDC_issuance": 0,
+    "runtime_github_mutations": 0,
+    "adoptions": 0,
+    "merges": 0,
+    "default_branch_writes": 0,
+    "permission_or_secret_changes": 0,
+    "settings_changes": 0,
+    "paid_or_API_fallback": 0
+  },
+  "baseline_tests": 2861,
+  "baseline_skipped": 1,
+  "focused_tests": 119,
+  "new_unique_tests": 27,
+  "full_tests": 2888,
+  "initial_regression_failure": "One old fixture expected recreating a deleted acknowledged binding; corrected to UNKNOWN then exact original GET recovery, without extra create.",
+  "local_missing_tools": [
+    "node",
+    "ruby"
+  ],
+  "yaml_fallback_actual": "PyYAML safe_load PASS; 28 files; OFF verified",
+  "remaining_human_boundary": [
+    "independently reviewed host SQLite repair and same-process subscription readback",
+    "effective branch-rule and credential capability proof; 403 must not be treated as PASS",
+    "installed immutable review/source/runtime/public issuer pins",
+    "separate reviewed OFF-to-installed activation and minimum permission approval",
+    "separate one-LIVE approval, followed by separate stage/dispatch/send/adoption approval as needed"
+  ],
+  "final_head_and_CI": "Append-only Draft PR checkpoint after commit; not self-referential commit evidence",
+  "full_skipped": 1,
+  "full_status": "PASS",
+  "full_seconds": 125.854,
+  "focused_status": "PASS",
+  "secret_scan": "FINAL_CODE_DOCS_AND_DECODED_LOGS_PASS"
+}

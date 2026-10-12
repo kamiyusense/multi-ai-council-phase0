@@ -7,6 +7,8 @@ from .validate_symphony_g72 import G63_HEAD, G71_HEAD, WORKFLOWS, G71_SUPERSEDED
 from .validate_symphony_g63 import validate as historical
 from ..symphony_result_manifest import safe_path
 ROOT = Path(__file__).resolve().parents[3]
+PRODUCTION_EXTENSION_HEAD = 'c989aeb08018684ed092c6ce9b78a434903e4b8c'
+PRODUCTION_SUPERSEDED = {'automation/command_bus/tests/test_symphony_g72_runtime.py'}
 G72_HEAD = 'd9255aeb966a16f484ae0b4044e3e43c38f4c103'
 # Last immutable source before the operator-interface CI extension. Old G7.3
 # workflows/validator are checked at their real Git bytes; evidence is not resealed.
@@ -24,7 +26,8 @@ def validate(root=ROOT):
             p = entry['path']
             if not safe_path(p) or p in seen: raise ValueError('unsafe/duplicate manifest path')
             seen.add(p)
-            ref = (G63_HEAD if name == 'symphony-g63-static' and p in WORKFLOWS else
+            ref = (PRODUCTION_EXTENSION_HEAD if p in PRODUCTION_SUPERSEDED else
+                   G63_HEAD if name == 'symphony-g63-static' and p in WORKFLOWS else
                    G71_HEAD if name == 'symphony-g71-static' and p in G71_SUPERSEDED else
                    G72_HEAD if name == 'symphony-g72-static' and p in WORKFLOWS else
                    G73_HEAD if name == 'symphony-g73-static' and p in G73_SUPERSEDED else None)

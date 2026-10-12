@@ -1,0 +1,33 @@
+{
+  "status": "DONE",
+  "reason": null,
+  "route": {
+    "auth_state": "CHATGPT_ACCOUNT",
+    "requires_openai_auth": true,
+    "config_route_compatible": true,
+    "subscription_route_compatible": true,
+    "provenance": "SAME_PROCESS_FRESH_READ_ONLY_NOT_ADMISSION",
+    "quota": "NOT_QUERIED",
+    "raw_response_saved": false
+  },
+  "model_dispatch": 0,
+  "thread_starts": 0,
+  "elapsed_s": 26.504,
+  "original_auth_and_config_bytes_unchanged": {
+    "auth.json": true,
+    "config.toml": true
+  },
+  "original_db_metadata_unchanged": {
+    "goals_1.sqlite": true,
+    "logs_2.sqlite": true,
+    "memories_1.sqlite": true,
+    "queue_1.sqlite": true,
+    "state_5.sqlite": true,
+    "thread_history_1.sqlite": true
+  },
+  "sqlite_directory_permissions": "0o700",
+  "isolated_runtime_db_not_published": true,
+  "quota_not_queried": true,
+  "not_live_admission": true,
+  "persistent_configuration_changed": false
+}

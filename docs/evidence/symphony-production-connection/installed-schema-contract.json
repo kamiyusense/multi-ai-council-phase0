@@ -1,0 +1,86 @@
+{
+  "codex_version": "codex-cli 0.162.0-alpha.17.2",
+  "schema_generated_from_installed_binary": true,
+  "schema_file_count": 317,
+  "selected_requests": {
+    "InitializeParams": {
+      "sha256": "b55124e7c0f36a1789396daa5578217a92be67f053903696236686e59f6f212e",
+      "required": [
+        "clientInfo"
+      ],
+      "properties": [
+        "capabilities",
+        "clientInfo"
+      ]
+    },
+    "GetAccountParams": {
+      "sha256": "30b545275f60975b55bd6fbaafd70f15505801d14168ee82d3931b6e93c78aab",
+      "required": [],
+      "properties": [
+        "refreshToken"
+      ]
+    },
+    "ConfigReadParams": {
+      "sha256": "257c54a423b47c1d209ff1076765a1564d82322fd5161670fd489a2874de1bac",
+      "required": [],
+      "properties": [
+        "cwd",
+        "includeLayers"
+      ]
+    },
+    "ThreadStartParams": {
+      "sha256": "e9c6d3cc18d049bfbc0249add3808fb8e5a27e1a0b5a423767aafbc3859a9428",
+      "required": [],
+      "properties": [
+        "approvalPolicy",
+        "approvalsReviewer",
+        "baseInstructions",
+        "config",
+        "cwd",
+        "developerInstructions",
+        "ephemeral",
+        "model",
+        "modelProvider",
+        "personality",
+        "sandbox",
+        "serviceName",
+        "serviceTier",
+        "sessionStartSource",
+        "threadSource"
+      ]
+    },
+    "TurnStartParams": {
+      "sha256": "583aff13e7a2da43fbb0150e0edc3c73171f374f0aa745dddba256166988a005",
+      "required": [
+        "input",
+        "threadId"
+      ],
+      "properties": [
+        "approvalPolicy",
+        "approvalsReviewer",
+        "clientUserMessageId",
+        "cwd",
+        "disabledPluginIds",
+        "effort",
+        "input",
+        "model",
+        "outputSchema",
+        "parentTurnId",
+        "personality",
+        "rootTurnId",
+        "sandboxPolicy",
+        "serviceTier",
+        "serviceTierForTurn",
+        "summary",
+        "threadId",
+        "toolOutput",
+        "turnTrigger"
+      ]
+    }
+  },
+  "thread_start_sandbox": "workspace-write",
+  "thread_start_sandboxPolicy": false,
+  "turn_start_sandboxPolicy_networkAccess": false,
+  "schema_is_auth_evidence": false,
+  "model_starts": 0
+}

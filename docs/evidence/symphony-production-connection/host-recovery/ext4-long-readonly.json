@@ -1,0 +1,25 @@
+{
+  "label": "ext4-long-readonly",
+  "sqlite_override": true,
+  "sqlite_state_is_new": true,
+  "auth_home_unchanged": true,
+  "model_turns": 0,
+  "thread_starts": 0,
+  "raw_responses_saved": false,
+  "initialize": "PASS",
+  "auth_state": "CHATGPT_ACCOUNT",
+  "requires_openai_auth": true,
+  "config_route_compatible": false,
+  "account_read": "PASS",
+  "config_read": "PASS",
+  "rpc_methods": [
+    "initialize",
+    "account/read",
+    "config/read"
+  ],
+  "same_process_pid": 1772151,
+  "process_stopped": true,
+  "stderr_sanitized": "",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "elapsed_s": 32.107
+}

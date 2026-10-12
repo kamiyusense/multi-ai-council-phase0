@@ -1,0 +1,17 @@
+{
+  "main": "c989aeb08018684ed092c6ce9b78a434903e4b8c",
+  "worktree": "/tmp/symphony-production-connection-20261012",
+  "branch": "codex/symphony-production-connection-v1",
+  "environment": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "PR_heads": {
+    "320": "5ba8b0223e41de3e49eff156e0f1e959da3f8a0d",
+    "343": "12e7fbec5d28a705129fd1bc830203547287cd6b",
+    "364": "7f61d886410f740a0fa925f916bde2ce5ca4294c"
+  },
+  "PR_merges": {
+    "320": "ff09d0c4fba2f34a58272543c3b369a001a52952",
+    "343": "d1f47a7ae79dd222a4a878a2d8f7c1fb3b0f986a",
+    "364": "c989aeb08018684ed092c6ce9b78a434903e4b8c"
+  },
+  "all_merge_commits_ancestors": true
+}

@@ -301,11 +301,21 @@ class G72RaceTests(TempCase):
         w=ObservedWorld(self.tmp).reserve()
         p=w.adapter()._path('lifetime',w.attempt_id)
         # Fixture-only loss of local binding after signed STARTED was saved.
+        preserved_binding = w.client.files[p]
         del w.client.files[p]
         with mock.patch.object(w.ledger,'_put',return_value='UNKNOWN'):
             self.assertEqual(w.adapter().capture(signed(w,'STARTED')).status,'UNKNOWN')
         self.assertEqual(w.gh.update_refs_requests,0)
-        self.assertEqual(w.adapter().capture(signed(w,'STARTED')).status,'ACCEPTED')
+        creates = w.client.create_calls
+        # Availability alone cannot reconstruct a missing acknowledged immutable
+        # record or discard an owning-process fence. GET-only recovery holds.
+        self.assertEqual(w.adapter().capture(signed(w,'STARTED')).status,'UNKNOWN')
+        self.assertEqual(w.client.create_calls,creates)
+        # Explicit fixture restoration of the exact original bytes lets replay
+        # resume via readback, without any new observation/store create.
+        w.client.files[p] = preserved_binding
+        self.assertEqual(w.adapter().capture(signed(w,'STARTED')).status,'NOOP_DUPLICATE')
+        self.assertEqual(w.client.create_calls,creates)
 
     def test_post_snapshot_unapproved_mutation_cannot_enter_saved_result(self):
         w=ObservedWorld(self.tmp).reserve();w.snapshot_before_close()

@@ -1,0 +1,20 @@
+[
+  {
+    "stream": "stderr",
+    "bytes": 146,
+    "known_words": [
+      "error",
+      "failed",
+      "init",
+      "initialize",
+      "code",
+      "sqlite"
+    ]
+  },
+  {
+    "reason_type": "Empty"
+  },
+  {
+    "before_cleanup_exitcode": 1
+  }
+]

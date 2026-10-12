@@ -1,0 +1,17 @@
+{
+  "exitcode": 1,
+  "stdout_bytes": 0,
+  "stderr_bytes": 146,
+  "stderr_sha256": "4d7dbbced479e24235a85bb67a33082af23f7674dacbf6f080347c0dc5fc9aba",
+  "error_terms": [
+    "failed to initialize sqlite",
+    "sqlite"
+  ],
+  "numeric_codes": [],
+  "raw_saved": false,
+  "rpc_methods": [
+    "initialize"
+  ],
+  "model_turns": 0,
+  "process_stopped": true
+}

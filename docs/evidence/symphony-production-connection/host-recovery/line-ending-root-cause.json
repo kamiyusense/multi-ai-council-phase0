@@ -1,0 +1,14 @@
+{
+  "official_blob_oid": "7063ce11a45be508749bfe70de23bc64ac2a03d0",
+  "official_source": "https://github.com/openai/codex/blob/main/codex-rs/state/migrations/0001_threads.sql",
+  "source_bytes": 863,
+  "source_sha256": "7a89ab37ba540b92781868aec12e7dc0a49eeb9a4b81125236e500534b012758",
+  "migration_checksum_algorithm": "SHA384",
+  "checksum_digest_algorithm": "SHA256",
+  "line_endings_digest": {
+    "LF": "14b91b7ab95012dfd485a630da924b426921135d23c8ae20ed55d0c16c6afed6",
+    "CRLF": "e2f61b1c8f618b43ffbb8fc30ae60e2392edf1bee970d7af4a358be33231e1ba"
+  },
+  "linux_checksum_matches_LF": true,
+  "windows_checksum_matches_CRLF": true
+}

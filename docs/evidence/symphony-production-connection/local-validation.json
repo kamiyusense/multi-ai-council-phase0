@@ -1,0 +1,41 @@
+[
+  {
+    "check": "compile",
+    "returncode": 0,
+    "status": "PASS",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "check": "oidc-negative-signatures",
+    "status": "UNKNOWN",
+    "error_type": "PermissionError"
+  },
+  {
+    "check": "g63-historical",
+    "returncode": 0,
+    "status": "PASS",
+    "log_sha256": "4762e7f411cec37315992d38f1febf3d33eda6fe8d0ad581aed22e7ea7affe25"
+  },
+  {
+    "check": "g73-historical",
+    "returncode": 0,
+    "status": "PASS",
+    "log_sha256": "637035763f354260abaf332c8d12e48aff9076bdbbab577c1830efee93ea9bcb"
+  },
+  {
+    "check": "yaml-off",
+    "status": "UNKNOWN",
+    "error_type": "PermissionError"
+  },
+  {
+    "check": "yaml-all",
+    "status": "UNKNOWN",
+    "error_type": "PermissionError"
+  },
+  {
+    "check": "diff",
+    "returncode": 0,
+    "status": "PASS",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

@@ -1,0 +1,5 @@
+{
+  "stderr_sanitized": "Error: failed to initialize sqlite state runtime under <codex-home>: failed to initialize state runtime at <codex-home>\n",
+  "exitcode": 1,
+  "model_turns": 0
+}

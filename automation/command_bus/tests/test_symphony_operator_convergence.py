@@ -42,6 +42,10 @@ def capability_fixture(f, *, factory=None, raw=None, sender_kwargs=None):
     else:
         flow,s,issuer,oldraw,v,verifier=sender_fixture(f)
         f._verified_sender_fixture=(v,issuer,oldraw,verifier)
+    # Prepare durable mock intent without consuming the separately issued
+    # operator nonce. Ownership cannot transfer from another sender lifetime.
+    flow.transport = flow.transport._transport
+    flow.bridge.transport = flow.transport
     cap=FakeNarrowCapability(f); calls=[]
     def default(claims):
         calls.append(claims); return cap

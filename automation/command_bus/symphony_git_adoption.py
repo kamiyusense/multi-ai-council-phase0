@@ -9,6 +9,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import os
+import secrets
+import threading
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Callable, Mapping, Protocol
@@ -131,6 +134,9 @@ class AppendOnlyAdoptionStore:
         if not safe_branch(write_branch, default_branch):
             raise ValueError("adoption ledger requires a canonical non-default branch")
         self.client, self.branch = client, write_branch
+        self._process_id = os.getpid()
+        self._claim_lock = threading.Lock()
+        self._submitted_paths = set()
 
     def path(self, campaign: str, adoption: str, kind: str) -> str:
         if not ID.fullmatch(campaign) or not ID.fullmatch(adoption) or (kind not in KINDS and re.fullmatch(r"inspection-[0-9a-f]{64}", kind) is None):
@@ -143,7 +149,16 @@ class AppendOnlyAdoptionStore:
             return None
         try:
             record = json.loads(content.text)
-            if (content.path != path or set(record) != {"protocol", "path", "payload", "record_digest"}
+            base = {"protocol", "path", "payload", "record_digest"}
+            claim = {"write_claim_version", "write_claim_nonce"}
+            if (set(record) not in (base, base | claim)
+                    or (set(record) == base | claim and (
+                        type(record["write_claim_version"]) is not int
+                        or record["write_claim_version"] != 1
+                        or type(record["write_claim_nonce"]) is not str
+                        or DIGEST.fullmatch(record["write_claim_nonce"]) is None))):
+                raise ValueError("invalid optional operation claim")
+            if (content.path != path
                     or record["protocol"] != PROTOCOL or record["path"] != path
                     or digest({k: v for k, v in record.items() if k != "record_digest"}) != record["record_digest"]):
                 raise ValueError("ledger digest/path mismatch")
@@ -155,21 +170,33 @@ class AppendOnlyAdoptionStore:
         return self._get(self.path(campaign, adoption, kind))
 
     def _put(self, path: str, payload: dict) -> str:
-        record = {"protocol": PROTOCOL, "path": path, "payload": payload}
-        text = canonical({**record, "record_digest": digest(record)})
+        # Legacy payloads/digests remain unchanged. A fresh operation nonce in
+        # record metadata distinguishes independent concurrent create owners.
         try:
             old = self._get(path)
             if old is not None:
                 return "NOOP_DUPLICATE" if old == payload else "CONFLICT"
-            self.client.create(path, text, "append Symphony G6 observation", self.branch)
         except AdoptionConflict:
             return "CONFLICT"
         except Exception:
-            # Unknown create: GET only. No retry, including receipt/dispatch fences.
-            pass
+            return "UNKNOWN"
+        with self._claim_lock:
+            if os.getpid() != self._process_id or path in self._submitted_paths:
+                return "UNKNOWN"  # prior absent readback cannot authorize resend
+            self._submitted_paths.add(path)
+            record = {"protocol": PROTOCOL, "path": path, "payload": payload,
+                      "write_claim_version": 1, "write_claim_nonce": secrets.token_hex(32)}
+        text = canonical({**record, "record_digest": digest(record)})
         try:
-            found = self._get(path)
-            return "ACCEPTED" if found == payload else ("CONFLICT" if found is not None else "UNKNOWN")
+            self.client.create(path, text, "append Symphony G6 observation", self.branch)
+        except Exception:
+            pass  # own lost reply is settled by one exact GET, never resent
+        try:
+            content = self.client.get(path, self.branch)
+            found = self._get(path) if content is not None else None
+            if content is not None and content.text == text and found == payload:
+                return "ACCEPTED"
+            return "CONFLICT" if content is not None else "UNKNOWN"
         except AdoptionConflict:
             return "CONFLICT"
         except Exception:

@@ -1,0 +1,18 @@
+{
+  "compileall": {
+    "returncode": 0
+  },
+  "diff_check": {
+    "returncode": 0
+  },
+  "yaml": {
+    "count": 28,
+    "result": "PASS"
+  },
+  "sqlite_dependencies": {
+    "binary": "static-pie ELF",
+    "system_sqlite_shared_library_required": false,
+    "python_sqlite_version": "3.46.1",
+    "python_version_not_binary_sqlite_version": true
+  }
+}

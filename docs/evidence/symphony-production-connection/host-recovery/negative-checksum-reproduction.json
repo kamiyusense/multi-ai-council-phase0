@@ -1,0 +1,19 @@
+{
+  "label": "negative-checksum-reproduction",
+  "sqlite_override": true,
+  "sqlite_state_is_new": true,
+  "auth_home_unchanged": true,
+  "model_turns": 0,
+  "thread_starts": 0,
+  "raw_responses_saved": false,
+  "failure_type": "RuntimeError",
+  "initialize": "UNKNOWN",
+  "rpc_methods": [
+    "initialize"
+  ],
+  "same_process_pid": 1772463,
+  "process_stopped": true,
+  "stderr_sanitized": "Error: failed to initialize sqlite state runtime under <isolated-state>: failed to initialize state runtime at <isolated-state>\n",
+  "stderr_sha256": "aa57a986196625f0596fa023014d20c9da0764ebac91af96baa38d7d6ad961f2",
+  "elapsed_s": 0.076
+}

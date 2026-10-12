@@ -1,0 +1,134 @@
+{
+  "read_only_metadata": [
+    {
+      "path": "/home/yuuki/.codex",
+      "mode": "drwxr-xr-x",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": true,
+      "size": 4096
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex",
+      "mode": "drwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": true,
+      "size": 4096
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/goals_1.sqlite",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 32768
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/logs_2.sqlite",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 73584640
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/logs_2.sqlite-shm",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 65536
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/logs_2.sqlite-wal",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 27698792
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/memories_1.sqlite",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 45056
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/queue_1.sqlite",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 4096
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/queue_1.sqlite-shm",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 32768
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/queue_1.sqlite-wal",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 1429672
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/state_5.sqlite",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 2396160
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/thread_history_1.sqlite",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 181514240
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/thread_history_1.sqlite-shm",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 32768
+    },
+    {
+      "path": "/mnt/c/Users/yuuki/.codex/thread_history_1.sqlite-wal",
+      "mode": "-rwxrwxrwx",
+      "uid": 1000,
+      "gid": 1000,
+      "is_symlink": false,
+      "is_directory": false,
+      "size": 2682152
+    }
+  ],
+  "database_contents_read": false,
+  "auth_files_read": false,
+  "files_or_settings_changed": false,
+  "diagnosis": "Initialization failed before account/config reads; metadata does not prove an auth route or permit database repair"
+}
