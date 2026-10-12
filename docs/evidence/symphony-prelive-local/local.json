@@ -1,0 +1,64 @@
+{
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "kernel": "6.18.33.2-microsoft-standard-WSL2",
+  "os_release": "PRETTY_NAME=\"Ubuntu 26.04.1 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"26.04\"\nVERSION=\"26.04.1 LTS (Resolute Raccoon)\"\nVERSION_CODENAME=resolute\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=resolute\nLOGO=ubuntu-logo\n",
+  "wsl": true,
+  "distribution": "Ubuntu",
+  "tools": {
+    "python3": true,
+    "gh": true,
+    "git": true,
+    "docker": true,
+    "codex": true
+  },
+  "selectors_present": {
+    "OPENAI_API_KEY": false,
+    "CODEX_API_KEY": false,
+    "AZURE_OPENAI_API_KEY": false,
+    "OPENAI_BASE_URL": false,
+    "OPENAI_API_BASE": false,
+    "SYMPHONY_G5_OBSERVER_KEY_HEX": false,
+    "SYMPHONY_G5_OBSERVER_EVENTS": false,
+    "GH_TOKEN": false,
+    "GITHUB_TOKEN": false
+  },
+  "docker": {
+    "status": "NOT_RUN",
+    "exit": 1,
+    "daemon_verified": false,
+    "diagnostic": "\nThe command 'docker' could not be found in this WSL 2 distro.\nWe recommend to activate the WSL integration in Docker Desktop settings.\n\nFor details about using Docker Desktop with WSL 2, visit:\n\nhttps://docs.docker.com/go/wsl2/\n\n"
+  },
+  "subscription_login": {
+    "exit": 0,
+    "chatgpt_login_observed": true,
+    "api_key_login_observed": false,
+    "raw_output_saved": false
+  },
+  "private_filesystem": {
+    "status": "PASS",
+    "root_mode": "0o700",
+    "file_mode": "0o600",
+    "create_only": true,
+    "hardlink": true,
+    "file_and_directory_fsync": true,
+    "outside_worker_workspace": true,
+    "path": "/tmp/prelive-filesystem-map7axd1"
+  },
+  "model_launch_count": 0,
+  "existing_processes": {
+    "official_symphony_beam_count": 1,
+    "codex_app_server_count": 1,
+    "app_server_attribution": "CURRENT_DEVELOPMENT_SESSION_NOT_NEW_LIVE",
+    "raw_argv_saved": false
+  },
+  "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "official_clean": true,
+  "selected_codex_config": {
+    "status": "READ_SELECTOR_NAMES_ONLY",
+    "selected_builtin_openai": true,
+    "nondefault_provider_selected": false,
+    "sensitive_route_selector_names_present": [],
+    "values_saved": false
+  },
+  "child_effective_environment": "NOT_STARTED_FRESH_CHILD_PREFLIGHT_REQUIRED"
+}

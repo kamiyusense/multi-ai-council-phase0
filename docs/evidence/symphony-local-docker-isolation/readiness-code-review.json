@@ -1,0 +1,15 @@
+{
+  "checked_modules": [
+    "symphony_operator_readiness.py",
+    "symphony_verifier_provenance.py",
+    "symphony_g73_host.py",
+    "symphony_g72_runtime.py"
+  ],
+  "scope": "REUSED_EXISTING_PINNED_CI_AND_STATIC_CANDIDATE_EXPORTER",
+  "new_scheduler_or_launcher": false,
+  "new_speculative_mock_framework": false,
+  "real_candidate": "NOT_QUALIFIED",
+  "real_sender": "NOT_WIRED",
+  "live_authorization": "NONE",
+  "production_code_change_required_for_this_measurement": false
+}

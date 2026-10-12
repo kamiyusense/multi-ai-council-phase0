@@ -1,0 +1,87 @@
+{
+  "daemon": "PASS",
+  "isolation": "NOT_RUN_IMAGE_UNAVAILABLE",
+  "readback": [
+    {
+      "command": [
+        "uname",
+        "-r"
+      ],
+      "exit_code": 0,
+      "stdout": "6.18.33.2-microsoft-standard-WSL2\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "version"
+      ],
+      "exit_code": 0,
+      "stdout": "Client:\n Version:           29.8.0\n API version:       1.56\n Go version:        go1.26.8\n Git commit:        88096ef\n Built:             Thu Sep  3 21:49:51 2026\n OS/Arch:           linux/amd64\n Context:           default\n\nServer: Docker Desktop 4.91.0 (239619)\n Engine:\n  Version:          29.8.0\n  API version:      1.56 (minimum version 1.40)\n  Go version:       go1.26.8\n  Git commit:       3ce5872\n  Built:            Thu Sep  3 21:51:20 2026\n  OS/Arch:          linux/amd64\n  Experimental:     false\n containerd:\n  Version:          v2.3.4\n  GitCommit:        db8809540e1a7a9da5d518876894933ff55692ab\n runc:\n  Version:          1.4.3\n  GitCommit:        v1.4.3-0-gbb14dabe\n docker-init:\n  Version:          0.19.0\n  GitCommit:        de40ad0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "info",
+        "--format",
+        "{{json .ServerVersion}} {{json .OperatingSystem}} {{json .SecurityOptions}}"
+      ],
+      "exit_code": 0,
+      "stdout": "\"29.8.0\" \"Docker Desktop\" [\"name=seccomp,profile=builtin\",\"name=cgroupns\"]\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "context",
+        "show"
+      ],
+      "exit_code": 0,
+      "stdout": "default\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "image",
+        "ls",
+        "--digests",
+        "--format",
+        "{{.Repository}}@{{.Digest}} {{.ID}}"
+      ],
+      "exit_code": 0,
+      "stdout": "phase0-claude-runtime@sha256:111c427baa006b794801c7083ad89ffd91aa81ece8ab802f31a9d65c1d9ca361 111c427baa00\nphase0-bwrap-diagnostic@sha256:166888f743784efd396f4ee704067eac957ba425159f43749e111c8793789137 166888f74378\nphase0-claude-runtime@sha256:0f2d274abaaf5aa218d0b64ebd6a7b79fe0826d27d946862bb0a81615fdde60f 0f2d274abaaf\nphase0-claude-gate@sha256:96cece7841225a9f8ae106ea43c07985df8680408efcb4574c315bb59ff91103 96cece784122\nhello-world@sha256:5e23090353324d887c48ad5e5c56d294eab81588df9605b07d1afe895f9cc8f8 5e2309035332\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "image",
+        "inspect",
+        "--format",
+        "{{json .Id}} {{json .RepoDigests}}",
+        "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce"
+      ],
+      "exit_code": 1,
+      "stdout": "\n",
+      "stderr": "Error response from daemon: No such image: python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce\n"
+    },
+    {
+      "command": [
+        "docker",
+        "image",
+        "inspect",
+        "--format",
+        "{{json .Id}} {{json .RepoDigests}}",
+        "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
+      ],
+      "exit_code": 1,
+      "stdout": "\n",
+      "stderr": "Error response from daemon: No such image: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f\n"
+    }
+  ],
+  "image_pull_count": 0,
+  "container_launch_count": 0,
+  "settings_changes": 0
+}

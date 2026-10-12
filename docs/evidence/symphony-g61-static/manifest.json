@@ -1,0 +1,106 @@
+{
+  "protocol": "SYMPHONY_G61_STATIC_EVIDENCE_MANIFEST_V1",
+  "hash_basis": "git index blobs (LF-normalized committed bytes)",
+  "files": [
+    {
+      "path": ".github/workflows/symphony-controller-static.yml",
+      "bytes": 8577,
+      "sha256": "e4d32a8f8919fe2c06183d3457fa4cbbf1008a95646b3a062bf490e1d5860adf"
+    },
+    {
+      "path": "automation/command_bus/scripts/symphony_g61_readonly_smoke.py",
+      "bytes": 5723,
+      "sha256": "4c5c709bf1821bc21b317f9c7349d7dd2a2aab2b8e821719faead342336c3799"
+    },
+    {
+      "path": "automation/command_bus/symphony_g61_wiring.py",
+      "bytes": 7493,
+      "sha256": "dcd1593259065cc197d8b427847c47e4c8a3da1e2095939ea3ad40e8f1e00568"
+    },
+    {
+      "path": "automation/command_bus/symphony_github_git_transport.py",
+      "bytes": 16817,
+      "sha256": "53a3466e79e21a1d42f6ab446bbbd108a8d03a44092d36df2ac85deb581323b6"
+    },
+    {
+      "path": "automation/command_bus/symphony_github_readers.py",
+      "bytes": 15738,
+      "sha256": "6e1465fa21ab9fb5c0510e17754756e26eea7ffa0bb8302252e647de4d7ae567"
+    },
+    {
+      "path": "automation/command_bus/symphony_result_verification.py",
+      "bytes": 9220,
+      "sha256": "cffa4b6095f550d13891be597ac17fb91926f28cd403aac08602fbd7d1fbf4a5"
+    },
+    {
+      "path": "automation/command_bus/symphony_workspace_snapshot.py",
+      "bytes": 16140,
+      "sha256": "98cf3f73df2d72a2e06c24daae4d4112de9ba4254a7779d587fe5d237249c93d"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/symphony_g61/graphql-updaterefs-schema.json",
+      "bytes": 4586,
+      "sha256": "1377fd0b7c9867487137fe72d48fd3c6c004181755fa83b6427cf8ab4013e775"
+    },
+    {
+      "path": "automation/command_bus/tests/fixtures/symphony_g61/regression-matrix.json",
+      "bytes": 906,
+      "sha256": "fa025d4d830a557aaf5d3116d2e91cd542ce708dd6de9dededd9eec0cc802434"
+    },
+    {
+      "path": "automation/command_bus/tests/symphony_g61_github_sim.py",
+      "bytes": 10626,
+      "sha256": "7d6077c36c8256c63ca356541aafaad84fab2511c1b30278927da4294d2604db"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_g61_production_wiring.py",
+      "bytes": 39522,
+      "sha256": "d1921be4e63eb433cb506cfc3df41ef1bd3f9108edbd74a04be5a3bed709c603"
+    },
+    {
+      "path": "docs/SYMPHONY_G61_PRODUCTION_WIRING_STATIC_CHECKPOINT.md",
+      "bytes": 8155,
+      "sha256": "7d49e67757a2589d6157f2b253dcbf2749a11f922783b4b28279a096c87c0b8f"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/checkpoint.json",
+      "bytes": 1817,
+      "sha256": "b13250b4a0c2624a4b70a56dae5efc1b649130e08492f2790f403eb44b15734d"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/compileall.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/focused-tests.txt",
+      "bytes": 53205,
+      "sha256": "422273c794a3dd5014e507dbd2290769b5c735c9ef26c483534f2fa0105f8144"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/full-tests-windows-summary.json",
+      "bytes": 5774,
+      "sha256": "0d6eb388428fba15dd6f283dd83467327da3af0357af6355303301f132349ce8"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/full-tests-windows.txt",
+      "bytes": 434209,
+      "sha256": "bd2f073a690f6ff7deca9c9e37c5245183984851ee04f7a85664a006c2fbadc0"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/g61-tests.txt",
+      "bytes": 8897,
+      "sha256": "2287e987a7cc24e9be31c1545f4d4348950a48f6233225517ebbca1567aa2c98"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/readonly-github-smoke.json",
+      "bytes": 1648,
+      "sha256": "39eccade80e407d7b76b14cc0a1c3d5b767227e758ab4b5db5ef54b3b3ee47cb"
+    },
+    {
+      "path": "docs/evidence/symphony-g61-static/regression-matrix-observed.json",
+      "bytes": 4736,
+      "sha256": "b8f57031a9e18c4d4e1cd049dc53b021c9d1d2dc7e5cec5a58eeb0b56ec2217a"
+    }
+  ]
+}

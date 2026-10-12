@@ -1,0 +1,12 @@
+{
+  "purpose": "OFFLINE_EXISTING_CRYPTO_TEST_ONLY",
+  "source_cached_image_id": "sha256:111c427baa006b794801c7083ad89ffd91aa81ece8ab802f31a9d65c1d9ca361",
+  "image_entrypoint_executed": false,
+  "container_started": false,
+  "new_image_pull": 0,
+  "node_binary_sha256": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+  "node_version": "v22.23.3",
+  "rc": 0,
+  "system_install_or_config_change": 0,
+  "provider_or_model_launch": 0
+}

@@ -1,0 +1,24 @@
+{
+  "protocol": "SYMPHONY_G61_CI_RECOVERY_V1",
+  "starting_head": "36ba85e4a9fc7f7ac280c33548b96a74cc451e37",
+  "failed_run_id": 38014884249,
+  "original_ci_conclusion": "FAIL",
+  "original_windows_tests": "FAIL_WITH_PREEXISTING_PLATFORM_FAILURES",
+  "changed_lines": [
+    1025,
+    1671
+  ],
+  "original_sha256": "c62b01fcf572560d8087f94080db3145712d370d4a7ec66ac8c9761506df6a70",
+  "published_sha256": "bd2f073a690f6ff7deca9c9e37c5245183984851ee04f7a85664a006c2fbadc0",
+  "original_archive_sha256": "339ad68191a4bc7b874feab24d8e321aa0fa3f4b50800454b4e371d42350627c",
+  "live_count": 0,
+  "next_ci": "PENDING_EXACT_HEAD",
+  "local_validation": {
+    "focused": 244,
+    "full": 2003,
+    "skipped": 1,
+    "compileall": "PASS",
+    "diff_check": "PASS",
+    "secret_scan": "PASS"
+  }
+}

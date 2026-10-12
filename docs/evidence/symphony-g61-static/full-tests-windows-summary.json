@@ -1,0 +1,45 @@
+{
+  "base_commit": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "base_run": {
+    "errors": 8,
+    "failures": 16,
+    "ran": 1959,
+    "skipped": 1
+  },
+  "failure_sets_identical": true,
+  "g61_run": {
+    "errors": 8,
+    "failures": 16,
+    "ran": 2003,
+    "skipped": 2
+  },
+  "inherited_platform_failures": [
+    "ERROR: test_cli_existing_artifact_or_symlink_causes_zero_get (automation.command_bus.tests.test_work_bridge_github_preflight.BridgeGitHubPreflightTests.test_cli_existing_artifact_or_symlink_causes_zero_get)",
+    "ERROR: test_cli_mock_cycle_createonly_and_no_send_option (automation.command_bus.tests.test_work_event_prepare_cli.EventPrepareTests.test_cli_mock_cycle_createonly_and_no_send_option)",
+    "ERROR: test_default_static_workflow_keeps_read_permissions_and_only_mock_delivery (automation.command_bus.tests.test_blue_review_delivery_prepare.DeliveryTests.test_default_static_workflow_keeps_read_permissions_and_only_mock_delivery)",
+    "ERROR: test_isolated_bash_execution_safety (automation.command_bus.tests.test_jules_session_readback_output.TestJulesSessionReadbackOutput.test_isolated_bash_execution_safety)",
+    "ERROR: test_isolated_bash_execution_safety_no_activities (automation.command_bus.tests.test_jules_session_readback_output.TestJulesSessionReadbackOutput.test_isolated_bash_execution_safety_no_activities)",
+    "ERROR: test_no_other_workflow_uses_authority_profile (automation.command_bus.tests.test_sf8_authority_issuer_candidate.IssuerCandidate.test_no_other_workflow_uses_authority_profile)",
+    "ERROR: test_repository_claim_files_are_unique_and_valid (automation.command_bus.tests.test_loop_id_claim.LoopIdClaimTests.test_repository_claim_files_are_unique_and_valid)",
+    "ERROR: test_workflow_dispatch_only_main_code_job_scoped_permissions (automation.command_bus.tests.test_blue_work_wake_proof.ProofTests.test_workflow_dispatch_only_main_code_job_scoped_permissions)",
+    "FAIL: test_active_proof_can_skip_activities_get (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_active_proof_can_skip_activities_get)",
+    "FAIL: test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='')",
+    "FAIL: test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/.')",
+    "FAIL: test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/..')",
+    "FAIL: test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/a b')",
+    "FAIL: test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/123/activities/a/../b')",
+    "FAIL: test_bad_activity_names_are_reported_unknown (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_bad_activity_names_are_reported_unknown) (name='sessions/999/activities/abc')",
+    "FAIL: test_dispatch_poll_review_inspect_adopt_on_real_git (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_dispatch_poll_review_inspect_adopt_on_real_git)",
+    "FAIL: test_full_pass_and_adoption_with_real_fast_forward (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_full_pass_and_adoption_with_real_fast_forward)",
+    "FAIL: test_hostile_message_text_is_rendered_literally_never_executed (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_hostile_message_text_is_rendered_literally_never_executed)",
+    "FAIL: test_message_and_name_come_from_the_same_latest_agent_record (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_message_and_name_come_from_the_same_latest_agent_record)",
+    "FAIL: test_no_agent_message_is_none_not_a_guess (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_no_agent_message_is_none_not_a_guess)",
+    "FAIL: test_pinned_official_workflow_prompt_is_ascii (automation.command_bus.tests.test_symphony_minimal_live_preflight.MinimalLivePreflightTests.test_pinned_official_workflow_prompt_is_ascii)",
+    "FAIL: test_sanitized_artifact_preserves_runtime_binding_fields_only (automation.command_bus.tests.test_jules_session_readback_workflow_exec.ReadbackStepExecutionTests.test_sanitized_artifact_preserves_runtime_binding_fields_only)",
+    "FAIL: test_tests_run_on_exact_head_in_isolated_worktree (automation.command_bus.tests.test_claude_jules_live_adapter.LiveControllerIntegrationTests.test_tests_run_on_exact_head_in_isolated_worktree)",
+    "FAIL: test_vendored_carrier_validators_match_pinned_blob_shas (automation.command_bus.tests.test_claude_jules_dispatch_contract.PinnedCarrierTests.test_vendored_carrier_validators_match_pinned_blob_shas)"
+  ],
+  "interpretation": "All failures/errors pre-exist on the untouched base commit on this Windows host; the 44 added G6.1 tests pass. Linux exact-head CI is authoritative.",
+  "platform": "Windows 11, Python 3.12.10 (local)",
+  "protocol": "SYMPHONY_G61_FULL_SUITE_PLATFORM_COMPARISON_V1"
+}

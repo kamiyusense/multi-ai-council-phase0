@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "artifact_id": 11659184481,
+  "run_id": 38026527694,
+  "head": "7da022aa24e82df6b23ccea8fc6d8da3c451a57a",
+  "archive_sha256": "7c392ca5fabe1fb8227393cbb028918c92f63ff5b8ba6545278ddc7c27358898",
+  "github_digest": "sha256:7c392ca5fabe1fb8227393cbb028918c92f63ff5b8ba6545278ddc7c27358898",
+  "bytes": 2940,
+  "members": {
+    "negative-scan.txt": "5482a71297ac823a0f87eacffa5a783e33ca2dafc9a2ba784d35f47b4c97b09e",
+    "scanner.json": "4d4b26500191731aa4a4e34ea8abaf39c6b712af0f40deff44d306be4b83aa73",
+    "syntax.jsonl": "c79eb207a5aadde44fbdcf43eeb83827d7435f70781eb145898c2b943657b072",
+    "synthetic-qualification.json": "96149536adc1363ff3458d5d8922df1e1b5e0a26f59b4845aef43dd8545b186d",
+    "tests.txt": "a7c6835033d53b523ae8b3840ba1133cd8035ba3314c761cd237fc08c5c2f746"
+  },
+  "redirects": 1,
+  "forwarded_credentials": 0,
+  "actual_candidate_attestation": false,
+  "real_github_writes": 0
+}

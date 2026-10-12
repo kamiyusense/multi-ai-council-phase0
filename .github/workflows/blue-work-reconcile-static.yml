@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+      - codex/symphony-inspired-minimal-controller
       - feature/blue-work-jules-webhook-loop
       - 'jules-work/**'
     types: [opened, synchronize, reopened]

@@ -1,0 +1,58 @@
+[
+  {
+    "case": "python-syntax",
+    "id": "f449e1a8d38eaebe1553c36b74c289b0dc943155235c043497fa2344992e0ac2",
+    "exit": 1,
+    "stderr": "Error response from daemon: No such container: f449e1a8d38eaebe1553c36b74c289b0dc943155235c043497fa2344992e0ac2\n",
+    "present": false,
+    "running": null
+  },
+  {
+    "case": "python-tests",
+    "id": "8371801be38a30103bac5f978541f21b4403b22034ba52cc54f9511f2fc190c9",
+    "exit": 0,
+    "stderr": "",
+    "present": true,
+    "running": false
+  },
+  {
+    "case": "scanner-clean",
+    "id": "6480f63101c0553a81e303b543335067604d93c10d2d345703bb43b063b23e60",
+    "exit": 0,
+    "stderr": "",
+    "present": true,
+    "running": false
+  },
+  {
+    "case": "scanner-full-candidate",
+    "id": "40eaf147e9575f19d363909ec8cbfa611f9e3c75d1748e997ffd269f69b1c021",
+    "exit": 0,
+    "stderr": "",
+    "present": true,
+    "running": false
+  },
+  {
+    "case": "scanner-synthetic-negative",
+    "id": "87b541c761bed5f13e0f99a2534d6863cede1c7f73858ebdecdfaeeb6fc95d67",
+    "exit": 0,
+    "stderr": "",
+    "present": true,
+    "running": false
+  },
+  {
+    "case": "python-version",
+    "id": "7e3b8e0ed4611fa00c4e5deeb90d672f7f6c03e7ef527296da51416ba35ecc53",
+    "exit": 0,
+    "stderr": "",
+    "present": true,
+    "running": false
+  },
+  {
+    "case": "scanner-version",
+    "id": "82fca5129310d40e08e83f09ac8000c22943e5c887f22bc59c066d0838af2858",
+    "exit": 0,
+    "stderr": "",
+    "present": true,
+    "running": false
+  }
+]

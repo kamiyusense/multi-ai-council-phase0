@@ -1,0 +1,11 @@
+{
+  "first_focused_invocation": "INVALID_ARGUMENT_ORDER",
+  "corrected_focused": 411,
+  "full_log_footer_check": "FAILED_HARNESS_ASSERTION_ONLY",
+  "reason": "Buffered fixture stdout followed unittest summary; full suite exit0",
+  "corrected_summary_source": "ENTIRE_SAVED_LOG",
+  "full_tests": 2170,
+  "inherited_skip": 1,
+  "implementation_changes_required": false,
+  "failed_test_count": 0
+}

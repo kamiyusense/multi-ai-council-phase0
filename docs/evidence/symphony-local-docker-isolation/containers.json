@@ -1,0 +1,972 @@
+[
+  {
+    "case": "python-syntax",
+    "name": "sym-static-290cb43c9e-python-syntax",
+    "image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+    "expected_exit": 0,
+    "create_command": [
+      "docker",
+      "create",
+      "--name",
+      "sym-static-290cb43c9e-python-syntax",
+      "--pull",
+      "never",
+      "--network",
+      "none",
+      "--read-only",
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--user",
+      "65534:65534",
+      "--pids-limit",
+      "64",
+      "--memory",
+      "256m",
+      "--cpus",
+      "2",
+      "--tmpfs",
+      "/tmp:rw,noexec,nosuid,size=64m",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/source,dst=/source,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate,dst=/candidate,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate-inputs.json,dst=/candidate-inputs.json,readonly",
+      "--workdir",
+      "/source",
+      "-e",
+      "PYTHONDONTWRITEBYTECODE=1",
+      "-e",
+      "SYMPHONY_G63_ISOLATED=1",
+      "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "sh",
+      "-c",
+      "python runtime_probe.py && python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier syntax && python -m automation.command_bus.scripts.symphony_g72_synthetic_candidate syntax"
+    ],
+    "model_starts": 0,
+    "before": {
+      "id": "f449e1a8d38eaebe1553c36b74c289b0dc943155235c043497fa2344992e0ac2",
+      "name": "/sym-static-290cb43c9e-python-syntax",
+      "image_id": "sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "config_image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PYTHONDONTWRITEBYTECODE",
+        "SYMPHONY_G63_ISOLATED",
+        "PATH",
+        "LANG",
+        "GPG_KEY",
+        "PYTHON_VERSION",
+        "PYTHON_SHA256"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate-inputs.json",
+          "Destination": "/candidate-inputs.json",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/source",
+          "Destination": "/source",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "created",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "after": {
+      "id": "f449e1a8d38eaebe1553c36b74c289b0dc943155235c043497fa2344992e0ac2",
+      "name": "/sym-static-290cb43c9e-python-syntax",
+      "image_id": "sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "config_image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PYTHONDONTWRITEBYTECODE",
+        "SYMPHONY_G63_ISOLATED",
+        "PATH",
+        "LANG",
+        "GPG_KEY",
+        "PYTHON_VERSION",
+        "PYTHON_SHA256"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate-inputs.json",
+          "Destination": "/candidate-inputs.json",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/source",
+          "Destination": "/source",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "attach_exit": 0,
+    "duration_seconds": 0.711,
+    "log_sha256": "fc37e491b66637da3d2220ccfd1dd66794badbe8d220713497c80673b7507c9e",
+    "compressed_log_sha256": "7bf515b0ad9e18d49bd5288827dde7d7fa43b508a050dd8f4652f507fb0e4436",
+    "runtime_reports": [
+      {
+        "runtime_isolation": "PASS",
+        "uid": 65534,
+        "cap_eff": "0000000000000000",
+        "no_new_privileges": true,
+        "readonly": {
+          "/": true,
+          "/source": true,
+          "/candidate": true
+        },
+        "write_attempts": {
+          "/isolation-root-write": {
+            "blocked": true,
+            "errno": 30
+          },
+          "/source/isolation-source-write": {
+            "blocked": true,
+            "errno": 30
+          },
+          "/candidate/isolation-candidate-write": {
+            "blocked": true,
+            "errno": 30
+          }
+        },
+        "interfaces": [
+          "lo"
+        ],
+        "docker_socket": false,
+        "forbidden_selector_names_present": [],
+        "cgroup_limits": {
+          "memory.max": "268435456",
+          "pids.max": "64",
+          "cpu.max": "200000 100000"
+        },
+        "model_starts": 0,
+        "real_candidate_verified": false
+      },
+      {
+        "isolation": "PASS",
+        "credential_selectors": 0,
+        "network": "none",
+        "root": "readonly",
+        "source": "readonly",
+        "uid": 65534,
+        "model_starts": 0
+      },
+      {
+        "synthetic_syntax": "PASS",
+        "files": 4
+      },
+      {
+        "isolation": "PASS",
+        "credential_selectors": 0,
+        "network": "none",
+        "root": "readonly",
+        "source": "readonly",
+        "uid": 65534,
+        "model_starts": 0
+      },
+      {
+        "synthetic_full_candidate_syntax": "PASS",
+        "actual_candidate_attestation": false
+      }
+    ],
+    "result": "PASS"
+  },
+  {
+    "case": "python-tests",
+    "name": "sym-static-290cb43c9e-python-tests",
+    "image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+    "expected_exit": 0,
+    "create_command": [
+      "docker",
+      "create",
+      "--name",
+      "sym-static-290cb43c9e-python-tests",
+      "--pull",
+      "never",
+      "--network",
+      "none",
+      "--read-only",
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--user",
+      "65534:65534",
+      "--pids-limit",
+      "64",
+      "--memory",
+      "256m",
+      "--cpus",
+      "2",
+      "--tmpfs",
+      "/tmp:rw,noexec,nosuid,size=64m",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/source,dst=/source,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate,dst=/candidate,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate-inputs.json,dst=/candidate-inputs.json,readonly",
+      "--workdir",
+      "/source",
+      "-e",
+      "PYTHONDONTWRITEBYTECODE=1",
+      "-e",
+      "SYMPHONY_G63_ISOLATED=1",
+      "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "sh",
+      "-c",
+      "python runtime_probe.py && python -m unittest automation.command_bus.tests.test_symphony_operator_readiness -v && python -m automation.command_bus.scripts.symphony_g72_independent_test"
+    ],
+    "model_starts": 0,
+    "before": {
+      "id": "8371801be38a30103bac5f978541f21b4403b22034ba52cc54f9511f2fc190c9",
+      "name": "/sym-static-290cb43c9e-python-tests",
+      "image_id": "sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "config_image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PYTHONDONTWRITEBYTECODE",
+        "SYMPHONY_G63_ISOLATED",
+        "PATH",
+        "LANG",
+        "GPG_KEY",
+        "PYTHON_VERSION",
+        "PYTHON_SHA256"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate-inputs.json",
+          "Destination": "/candidate-inputs.json",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/source",
+          "Destination": "/source",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "created",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "after": {
+      "id": "8371801be38a30103bac5f978541f21b4403b22034ba52cc54f9511f2fc190c9",
+      "name": "/sym-static-290cb43c9e-python-tests",
+      "image_id": "sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "config_image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PYTHONDONTWRITEBYTECODE",
+        "SYMPHONY_G63_ISOLATED",
+        "PATH",
+        "LANG",
+        "GPG_KEY",
+        "PYTHON_VERSION",
+        "PYTHON_SHA256"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate-inputs.json",
+          "Destination": "/candidate-inputs.json",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/source",
+          "Destination": "/source",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "attach_exit": 0,
+    "duration_seconds": 0.897,
+    "log_sha256": "41214f8d9b7afb1f849e956fa511508b427194b0c9ea9e74abb71192ab083ad2",
+    "compressed_log_sha256": "20c4df8e949b9e4f17fb8e48513e5240e265a53e7d74d32be92ad67b48ff8c9d",
+    "runtime_reports": [
+      {
+        "runtime_isolation": "PASS",
+        "uid": 65534,
+        "cap_eff": "0000000000000000",
+        "no_new_privileges": true,
+        "readonly": {
+          "/": true,
+          "/source": true,
+          "/candidate": true
+        },
+        "write_attempts": {
+          "/isolation-root-write": {
+            "blocked": true,
+            "errno": 30
+          },
+          "/source/isolation-source-write": {
+            "blocked": true,
+            "errno": 30
+          },
+          "/candidate/isolation-candidate-write": {
+            "blocked": true,
+            "errno": 30
+          }
+        },
+        "interfaces": [
+          "lo"
+        ],
+        "docker_socket": false,
+        "forbidden_selector_names_present": [],
+        "cgroup_limits": {
+          "memory.max": "268435456",
+          "pids.max": "64",
+          "cpu.max": "200000 100000"
+        },
+        "model_starts": 0,
+        "real_candidate_verified": false
+      },
+      {
+        "isolation": "PASS",
+        "credential_selectors": 0,
+        "network": "none",
+        "root": "readonly",
+        "source": "readonly",
+        "uid": 65534,
+        "model_starts": 0
+      },
+      {
+        "operator_synthetic_behavior": "PASS",
+        "candidate_self_tests_used": false,
+        "actual_candidate_attestation": false,
+        "model_starts": 0
+      }
+    ],
+    "result": "PASS"
+  },
+  {
+    "case": "scanner-clean",
+    "name": "sym-static-290cb43c9e-scanner-clean",
+    "image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+    "expected_exit": 0,
+    "create_command": [
+      "docker",
+      "create",
+      "--name",
+      "sym-static-290cb43c9e-scanner-clean",
+      "--pull",
+      "never",
+      "--network",
+      "none",
+      "--read-only",
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--user",
+      "65534:65534",
+      "--pids-limit",
+      "64",
+      "--memory",
+      "256m",
+      "--cpus",
+      "2",
+      "--tmpfs",
+      "/tmp:rw,noexec,nosuid,size=64m",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/scanner,dst=/scanner,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate,dst=/candidate,readonly",
+      "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "dir",
+      "/scanner/clean",
+      "--config",
+      "/scanner/trusted.toml",
+      "--gitleaks-ignore-path",
+      "/tmp/absent",
+      "--ignore-gitleaks-allow",
+      "--redact",
+      "--no-banner"
+    ],
+    "model_starts": 0,
+    "before": {
+      "id": "6480f63101c0553a81e303b543335067604d93c10d2d345703bb43b063b23e60",
+      "name": "/sym-static-290cb43c9e-scanner-clean",
+      "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "config_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/scanner",
+          "Destination": "/scanner",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "created",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "after": {
+      "id": "6480f63101c0553a81e303b543335067604d93c10d2d345703bb43b063b23e60",
+      "name": "/sym-static-290cb43c9e-scanner-clean",
+      "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "config_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/scanner",
+          "Destination": "/scanner",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "attach_exit": 0,
+    "duration_seconds": 0.238,
+    "log_sha256": "0d3adfd4fb530aa152c2c6f2cd762864645d030bf5beea0569967b57fc152ad7",
+    "compressed_log_sha256": "3ca16b4ea3ae17c607b657add431d59b62059c4283825da4c8f167be947b080f",
+    "result": "PASS"
+  },
+  {
+    "case": "scanner-full-candidate",
+    "name": "sym-static-290cb43c9e-scanner-full-candidate",
+    "image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+    "expected_exit": 0,
+    "create_command": [
+      "docker",
+      "create",
+      "--name",
+      "sym-static-290cb43c9e-scanner-full-candidate",
+      "--pull",
+      "never",
+      "--network",
+      "none",
+      "--read-only",
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--user",
+      "65534:65534",
+      "--pids-limit",
+      "64",
+      "--memory",
+      "256m",
+      "--cpus",
+      "2",
+      "--tmpfs",
+      "/tmp:rw,noexec,nosuid,size=64m",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/scanner,dst=/scanner,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate,dst=/candidate,readonly",
+      "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "dir",
+      "/candidate",
+      "--config",
+      "/scanner/trusted.toml",
+      "--gitleaks-ignore-path",
+      "/tmp/absent",
+      "--ignore-gitleaks-allow",
+      "--redact",
+      "--no-banner"
+    ],
+    "model_starts": 0,
+    "before": {
+      "id": "40eaf147e9575f19d363909ec8cbfa611f9e3c75d1748e997ffd269f69b1c021",
+      "name": "/sym-static-290cb43c9e-scanner-full-candidate",
+      "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "config_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/scanner",
+          "Destination": "/scanner",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "created",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "after": {
+      "id": "40eaf147e9575f19d363909ec8cbfa611f9e3c75d1748e997ffd269f69b1c021",
+      "name": "/sym-static-290cb43c9e-scanner-full-candidate",
+      "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "config_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/scanner",
+          "Destination": "/scanner",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "attach_exit": 0,
+    "duration_seconds": 0.243,
+    "log_sha256": "3edb424f767922a78eac068399711f2cb2c388ddc6b8a51358759c9084726d1b",
+    "compressed_log_sha256": "39e9fd83a6b8d000bb5b6efccaecaa02719b4a4e4d91e4c427fbba6fb00625b1",
+    "result": "PASS"
+  },
+  {
+    "case": "scanner-synthetic-negative",
+    "name": "sym-static-290cb43c9e-scanner-synthetic-negative",
+    "image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+    "expected_exit": 1,
+    "create_command": [
+      "docker",
+      "create",
+      "--name",
+      "sym-static-290cb43c9e-scanner-synthetic-negative",
+      "--pull",
+      "never",
+      "--network",
+      "none",
+      "--read-only",
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--user",
+      "65534:65534",
+      "--pids-limit",
+      "64",
+      "--memory",
+      "256m",
+      "--cpus",
+      "2",
+      "--tmpfs",
+      "/tmp:rw,noexec,nosuid,size=64m",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/scanner,dst=/scanner,readonly",
+      "--mount",
+      "type=bind,src=/tmp/symphony-approved-static-fixture-_uf8jg52/candidate,dst=/candidate,readonly",
+      "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "dir",
+      "/scanner/negative",
+      "--config",
+      "/scanner/trusted.toml",
+      "--gitleaks-ignore-path",
+      "/tmp/absent",
+      "--ignore-gitleaks-allow",
+      "--redact",
+      "--no-banner"
+    ],
+    "model_starts": 0,
+    "before": {
+      "id": "87b541c761bed5f13e0f99a2534d6863cede1c7f73858ebdecdfaeeb6fc95d67",
+      "name": "/sym-static-290cb43c9e-scanner-synthetic-negative",
+      "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "config_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/scanner",
+          "Destination": "/scanner",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "created",
+        "Running": false,
+        "ExitCode": 0,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "after": {
+      "id": "87b541c761bed5f13e0f99a2534d6863cede1c7f73858ebdecdfaeeb6fc95d67",
+      "name": "/sym-static-290cb43c9e-scanner-synthetic-negative",
+      "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "config_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "user": "65534:65534",
+      "env_selector_names": [
+        "PATH"
+      ],
+      "host_config": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Privileged": false,
+        "NanoCpus": 2000000000,
+        "Memory": 268435456,
+        "PidsLimit": 64,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,size=64m"
+        },
+        "PidMode": "",
+        "IpcMode": "private",
+        "PortBindings": {}
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/candidate",
+          "Destination": "/candidate",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/tmp/symphony-approved-static-fixture-_uf8jg52/scanner",
+          "Destination": "/scanner",
+          "RW": false
+        }
+      ],
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "ExitCode": 1,
+        "OOMKilled": false,
+        "Error": ""
+      }
+    },
+    "attach_exit": 1,
+    "duration_seconds": 0.262,
+    "log_sha256": "fe82f11c9f537f7ca8893875c6d363b82d9dfa65b8c1ad7f94757f911cfd5494",
+    "compressed_log_sha256": "fbfa5b2835730c3625573c4b57ebe763ee83676168f57b3b0d5486205f8a6d9b",
+    "result": "PASS"
+  },
+  {
+    "case": "python-version",
+    "name": "sym-static-290cb43c9e-python-version",
+    "before": {
+      "id": "7e3b8e0ed4611fa00c4e5deeb90d672f7f6c03e7ef527296da51416ba35ecc53"
+    },
+    "after": {
+      "id": "7e3b8e0ed4611fa00c4e5deeb90d672f7f6c03e7ef527296da51416ba35ecc53",
+      "state": {
+        "Running": false,
+        "ExitCode": 0
+      }
+    },
+    "result": "PASS",
+    "purpose": "PUBLIC_BINARY_VERSION_ONLY",
+    "model_starts": 0
+  },
+  {
+    "case": "scanner-version",
+    "name": "sym-static-290cb43c9e-scanner-version",
+    "before": {
+      "id": "82fca5129310d40e08e83f09ac8000c22943e5c887f22bc59c066d0838af2858"
+    },
+    "after": {
+      "id": "82fca5129310d40e08e83f09ac8000c22943e5c887f22bc59c066d0838af2858",
+      "state": {
+        "Running": false,
+        "ExitCode": 0
+      }
+    },
+    "result": "PASS",
+    "purpose": "PUBLIC_BINARY_VERSION_ONLY",
+    "model_starts": 0
+  }
+]

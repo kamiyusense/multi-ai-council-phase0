@@ -1,0 +1,16 @@
+{
+  "token_request": 0,
+  "workflow_dispatch": 0,
+  "public_GET_only": true,
+  "production_authority_installed": false,
+  "metadata": {
+    "result": "PASS",
+    "sha256": "c3fba014c6fc3be9f3950c3ce883ceb2670d586dd2efbfec9342d49bef33516b",
+    "bytes": 1217
+  },
+  "jwks": {
+    "result": "PASS",
+    "sha256": "5f8164c9696c27837ad18c5fe7c7022a433bd5390183e8ff15c74d82233270f4",
+    "bytes": 5547
+  }
+}

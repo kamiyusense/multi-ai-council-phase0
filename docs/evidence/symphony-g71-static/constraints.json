@@ -1,0 +1,14 @@
+{
+  "rulesets": {
+    "status": 1,
+    "http_403": true,
+    "result": "UNKNOWN",
+    "body": null
+  },
+  "protection": {
+    "status": 1,
+    "http_403": true,
+    "result": "UNKNOWN",
+    "body": null
+  }
+}

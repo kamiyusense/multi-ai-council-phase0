@@ -1,0 +1,35 @@
+{
+  "protocol": "SYMPHONY_G72_CANDIDATE_INPUTS_V1",
+  "synthetic": true,
+  "candidate_commit": "2ee619f29f5147e8c4c6f21e3046b8e7c8de2ec0",
+  "candidate_tree": "e4455f93bec1848be196ffc4a23d408a64de74e6",
+  "result_digest": "133dc3f6f19fa881f0c7bbe4f0c360826e79cb2f054d372e67fccc6006346e7a",
+  "source_digest": "1aa00415e1f522dc0762c260571ffc33e80fbb578f37d0ba9e2ab311aa07f7f0",
+  "scope_digest": "dc12e73ebdff8009d6c6165a5d9b5c068bb757e8d0995493f2df3a10accf2461",
+  "expected_target_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "workflow_sha256": "28c6085b5c9bbe335dc242ba3a2584e64da7943fce5e03b490f134889727e37e",
+  "test_modules": [
+    "operator.value_equals_two"
+  ],
+  "python_image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+  "scanner_image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+  "files": {
+    "value.py": {
+      "content_base64": "dmFsdWUgPSAyCg==",
+      "sha256": "69ef4f409b530264b0da21ad4054978ada08895c93631a0da1957e2a10b592b5"
+    },
+    "test_value.py": {
+      "content_base64": "aW1wb3J0IHVuaXR0ZXN0CmZyb20gdmFsdWUgaW1wb3J0IHZhbHVlCmNsYXNzIFZhbHVlVGVzdCh1bml0dGVzdC5UZXN0Q2FzZSk6CiBkZWYgdGVzdF92YWx1ZShzZWxmKTogc2VsZi5hc3NlcnRFcXVhbCh2YWx1ZSwyKQo=",
+      "sha256": "1970d4b2d8ad753db3e8733ce332f65ce2c503c267935086323c1e44301136ca"
+    }
+  },
+  "source_mount": "readonly",
+  "root_mount": "readonly",
+  "network": "none",
+  "uid": 65534,
+  "credential_selectors": 0,
+  "scan_config": "operator-default-rules-no-ignore",
+  "actual_candidate_attestation": false,
+  "publication_authorized": false,
+  "input_digest": "4c76d2b21530436fe2383aef25b5f2be24f422e3963274a9f36c393270d9ebdd"
+}

@@ -1,0 +1,84 @@
+{
+  "files": [
+    {
+      "path": "automation/command_bus/symphony_ledger_reader.py",
+      "bytes": 4801,
+      "sha256": "8060833d5d3fe36f917d94c87189d1b230003c607a144194184f346244f4f49f"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_ledger_reader.py",
+      "bytes": 6908,
+      "sha256": "c9177bc182dbe40dacb9be10a81017c7d324ddfcff9a88d0b46d0eb82f40070c"
+    },
+    {
+      "path": "docs/SYMPHONY_PRELIVE_LOCAL_GATE_REPORT.md",
+      "bytes": 9636,
+      "sha256": "cc11eee77a6568710667a9f7609a80f2b0aa542b47d44cd4a4b90d9d8858db58"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/checkpoint.json",
+      "bytes": 1071,
+      "sha256": "619f9ca761447b20a4f6c3cdbebf0797144264f0b18f7f4f908d7f62277c286e"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/focused.txt.gz",
+      "bytes": 11195,
+      "sha256": "e45a02c455722f73448867bcf7fc3f4bc24ac470f2f920cd98e47f2da5da3939"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/full.txt.gz",
+      "bytes": 55122,
+      "sha256": "7d3b306df09d755d3403bf859a74a2a6b842706dac0edf83e233036f5b277631"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/historical.txt.gz",
+      "bytes": 187,
+      "sha256": "20d3a0556600d3295e1ba39a16efdfee6cf5670f687473c9c94ee6052aff00dc"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/local.json",
+      "bytes": 2462,
+      "sha256": "197d5d3d687bb4ec0772eb9cd110b56f151102d92e008366b6b33f2e540c1bfc"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/new.txt.gz",
+      "bytes": 379,
+      "sha256": "d9ae378c83349d2fb6c969f8dc2f07704294f564c57821938cb685649a6e7b0d"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/real-ledger-readback.json",
+      "bytes": 2316,
+      "sha256": "e8140da88120eb44ea111213d6b7283bd2856b34d2734814a2d8a6d5112f5291"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/secret-scan.json",
+      "bytes": 139,
+      "sha256": "c26fe6b75cc6c49ffc8518eb2ff63ea76cb94b821550f03e0942af15cb360770"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/starting-readback.json",
+      "bytes": 1559,
+      "sha256": "21c2f958a5fcd8ef25da83c1e2868f615904facf20690bf6b894ce0705a046a9"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/tests.json",
+      "bytes": 2317,
+      "sha256": "fc2345970a4e810b33c0cbc174420391266ab8eaff5000729ffb517146c9683f"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/work-order-source.json",
+      "bytes": 208,
+      "sha256": "769c9652b07c6a64ac895b7c840c8b07a373074be0af4613f06c132a9d7b9521"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/work-order.md",
+      "bytes": 9055,
+      "sha256": "375949940b99e71a34b87c62c1801b60d7a0b3c8933a54dbf5f0dbacd09d439f"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-local/process-readback-correction.json",
+      "bytes": 434,
+      "sha256": "d0791efbb5d7db15141bd13a90c43258a298c4ff29f3534d14eec96735de82a0"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "compileall": "PASS",
+  "yaml": "PASS",
+  "diff_check": "PASS",
+  "official_patch_check": "PASS",
+  "upstream_behavior_changes": false,
+  "stacked_base": "4007f0c334c31ee73c68e3a9becd35b2ea5f9b6d",
+  "parent_ancestor": true,
+  "main_synced": false,
+  "new_rules_probes": 0,
+  "production_http_client_added": false,
+  "real_ledger_writes": 0
+}

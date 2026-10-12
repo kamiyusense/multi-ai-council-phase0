@@ -1,0 +1,21 @@
+# G7.2 LAST-MILE STATIC checkpoint
+
+Work order: PR343 comment 6094618464, fresh GET at start; starting Draft OPEN head `79bb9ea3d46503cce8654f4b5f2e9b849c10b6aa`. Exact ending HEAD, remote bytes, run/job/artifact IDs and authentic archive SHA-256 are in the final append-only PR343 comment; committed evidence cannot contain its own future commit SHA or CI run.
+
+Feasible STATIC result: LOCAL PASS, exact-head remote CI pending at commit. LIVE readiness remains **NO-GO**. This is implementation/testing, not real adoption or a spent proof reuse.
+
+Changes: one injected lifecycle IO adapter using original G5 signed formats, strict pre-close snapshots, original G6 verified receipt and original G7.1 campaign/checkpoint seam; durable logical-counter/worker-nonce binding; trusted failed qualification to existing corrective policy; cross-generation historical receipt/event NOOP. One protected G7.1 method preserves existing defaults. Original Symphony patch/polling/scheduling/continuation/retry/backoff/stall/concurrency/cleanup and G6/G6.3 success/receipt policy were not modified. No additional scheduler, per-turn admission gate or worker launcher exists.
+
+Candidate readiness: operator-pinned complete candidate inputs and Git object reconstruction, readonly/no-network/nonroot candidate/source isolation, fixed independent behavior check and proper full Gitleaks clean/negative checks in existing read-only CI. Authenticated archive/pinned provenance reader returns SYNTHETIC ONLY, never a production PASS. Workflow source HEAD differs from synthetic candidate OID. Real worker attestation remains unqualified.
+
+Publisher readiness: preparation-only OFF wrapper around original G6.2 exact inspected plan, reviewable one-ref expected-head non-force proposal. Credential/capability remains UNSUPPLIED; no mutable flag enables execution. Existing G6.3 mock sender/intent/lock/fence/object/ref/readback recovery reused, not replaced.
+
+New tests: 38. Focused Symphony tests: 376. Full command-bus regression: 2135, inherited skip 1. Compilation, YAML, unchanged pinned upstream patch application check, diff check and local supplemental secret scan are required and recorded. Proper scanner/isolation proof comes from exact-head CI, separately verified after push.
+
+Seven authentic-format synthetic lifetimes exercise A receipt, B independent failed verification, B corrective receipt, C receipt, D stale replan/isolation, E UNKNOWN rules isolation, F receipt. Four successful mock receipt/CAS results, two controller generations, fresh sessions, duplicate STARTED/TERMINAL/historical receipt NOOP, zero new model dispatch on restart. Two WORKER_UPDATE observations per lifetime exercise un-gated continuation format. Model/Official worker/LIVE provider/real runtime Git write/actual adoption counts are all zero. These are recorded fixtures, not real turns.
+
+Additional races: late TERMINAL after snapshot and workspace cleanup, CLOSED Issue with/without independently approved post-close scope, competing lifetimes/controllers/revisions, delayed verifier, lost checkpoint/ref/receipt response, default/head/task changes at fence, object tamper, unapproved files, post-snapshot mutation, crash after fence/ref/checkpoint and receipt replay after branch advance. Existing 28-case G6.3 fault matrix, safe redirects/archive bounds, forged CI and expired approval remain green.
+
+Prior evidence: all 230 files under historical `docs/evidence` are byte-identical to starting HEAD. Old G6.3/G7.1 manifests remain unchanged; the new validator reads only explicitly superseded workflow/G7.1 seam sources from their exact old commits and verifies new G7.2 bytes in place.
+
+Known blockers: rules/protection existing 403 = UNKNOWN/HOLD, no new probes; real publisher capability/host integration not supplied; real candidate attestation not qualified; Local Docker integration unavailable/NOT_RUN; real subscription/child route not inspected (no LIVE); explicit one-run authorization absent. Viewer ADMIN is not a bypass. Local real filesystem snapshot fixtures passed, Cloud isolation qualification is separate. Readiness proposal lists binary gates and preserves the multi-round product while bounding a separately approved future proof to one worker.

@@ -1,0 +1,35 @@
+{
+  "protocol": "SYMPHONY_G63_ARCHIVE_GET_QUALIFICATION_V1",
+  "result": "PASS",
+  "source": "official GitHub existing CI artifact GET",
+  "artifact_id": 11659300894,
+  "run_id": 38023687825,
+  "archive_sha256": "729f9c51bd4ede50ef4905a5614924b582c286fec9b07a784eaeb17b326f5fb5",
+  "archive_bytes": 60353,
+  "members": [
+    {
+      "path": "evidence.json",
+      "bytes": 352,
+      "sha256": "6a60ae76e24a9206d0201a6680869acc5527f3d69ca5ea63e5fc4a1f99613d60"
+    },
+    {
+      "path": "evidence.sha256",
+      "bytes": 80,
+      "sha256": "9922c02d517367a867df9e8a4eb25238d587c6d24ab4ba9c047f73ed371e625c"
+    },
+    {
+      "path": "focused-tests.txt",
+      "bytes": 58413,
+      "sha256": "3cd6b6f1c2024167d5a2471f01ea6adf61691b438540bc5b8a77f2f509025c98"
+    },
+    {
+      "path": "full-tests.txt",
+      "bytes": 418421,
+      "sha256": "06ac5f3bccd941d97d75cedcbafaf4ea88564437fa75d773b02205f3e9bea836"
+    }
+  ],
+  "redirect_count": 1,
+  "authorization_forwarded_to_redirect": false,
+  "writes": 0,
+  "actual_worker_candidate_attestation": "NOT_QUALIFIED"
+}

@@ -1,0 +1,109 @@
+{
+  "files": {
+    "docs/SYMPHONY_DOCKER_PRODUCTION_WIRING_READINESS.md": {
+      "bytes": 13441,
+      "sha256": "5f99dd4658c6123cb2853cf532b4cfca49e9c3324369bcb342d274e3f701bdab"
+    },
+    "docs/SYMPHONY_LOCAL_DOCKER_ISOLATION_RESULT.md": {
+      "bytes": 5487,
+      "sha256": "4331450e8311170bfc43701d84f40f792b31a2e57f8ad24116c4e6ad1c2d1d7b"
+    },
+    "docs/evidence/symphony-local-docker-isolation/candidate-inputs.json": {
+      "bytes": 1717,
+      "sha256": "a7e30edf999d9064ce77a4c994431802873212078fc380d0706e843283b3fc22"
+    },
+    "docs/evidence/symphony-local-docker-isolation/checkpoint.json": {
+      "bytes": 2667,
+      "sha256": "ffe1223319c78d54f18dce05745659ca082be6b8183fc859ade01b5bee5913ea"
+    },
+    "docs/evidence/symphony-local-docker-isolation/cleanup-readback-after-first-attempt.json": {
+      "bytes": 1477,
+      "sha256": "387e298babf57d62422eb4fe34835df12169f847dcd518906319f9bd03e3af5e"
+    },
+    "docs/evidence/symphony-local-docker-isolation/cleanup.json": {
+      "bytes": 3653,
+      "sha256": "06272fc286cb9b9c7dd9e7643f28ee0a3bb72f75a4299c15d184720a701a65d2"
+    },
+    "docs/evidence/symphony-local-docker-isolation/containers.json": {
+      "bytes": 28448,
+      "sha256": "ae94aecf90cfa0931dc07d7ebe228d504deeeed723c2fc7fc46df5a8127c2dfe"
+    },
+    "docs/evidence/symphony-local-docker-isolation/fixture-manifest.json": {
+      "bytes": 11508,
+      "sha256": "d58458aaa0b8ee2ec4707576e43a918b06aa8434363d2053039fd7047b28e269"
+    },
+    "docs/evidence/symphony-local-docker-isolation/image-acquisition.json": {
+      "bytes": 2466,
+      "sha256": "7c37c7d9d3ac8ed9c9165d0e97e60529ca805c3295560f843f053ccda4a38b49"
+    },
+    "docs/evidence/symphony-local-docker-isolation/isolation-result.json": {
+      "bytes": 2739,
+      "sha256": "2df220420b2b0f42112685b8d7d51d85384f29c7df48b98effa19c0c1249fff3"
+    },
+    "docs/evidence/symphony-local-docker-isolation/pull-0.txt.gz": {
+      "bytes": 270,
+      "sha256": "2e02e1fca4d6c3a2ab421a07ef1f7d95e5b51afdef66e3dae9c95811a376d1f1"
+    },
+    "docs/evidence/symphony-local-docker-isolation/pull-1.txt.gz": {
+      "bytes": 259,
+      "sha256": "9ae0ad4560765a9f6e1dea77faeb01935f836bc45ff892de43b71cc5419353ae"
+    },
+    "docs/evidence/symphony-local-docker-isolation/python-syntax.txt.gz": {
+      "bytes": 400,
+      "sha256": "7bf515b0ad9e18d49bd5288827dde7d7fa43b508a050dd8f4652f507fb0e4436"
+    },
+    "docs/evidence/symphony-local-docker-isolation/python-tests.txt.gz": {
+      "bytes": 905,
+      "sha256": "20c4df8e949b9e4f17fb8e48513e5240e265a53e7d74d32be92ad67b48ff8c9d"
+    },
+    "docs/evidence/symphony-local-docker-isolation/python-version.txt.gz": {
+      "bytes": 35,
+      "sha256": "981fbb658d2f5679f57fa3cd938d39cb78f527fcd9939193a2e961a5fcba65d0"
+    },
+    "docs/evidence/symphony-local-docker-isolation/readiness-code-review.json": {
+      "bytes": 481,
+      "sha256": "570f10317c05b84ae4345c86647ae403f06ae544ca85ef49b16c0a8f930722d5"
+    },
+    "docs/evidence/symphony-local-docker-isolation/runtime-probe.py": {
+      "bytes": 1902,
+      "sha256": "259f6a02167623fcfa3bfa7b25dec82c6b3bf6ccb518c03139c3f75272afbdbf"
+    },
+    "docs/evidence/symphony-local-docker-isolation/scanner-clean.txt.gz": {
+      "bytes": 102,
+      "sha256": "3ca16b4ea3ae17c607b657add431d59b62059c4283825da4c8f167be947b080f"
+    },
+    "docs/evidence/symphony-local-docker-isolation/scanner-full-candidate.txt.gz": {
+      "bytes": 103,
+      "sha256": "39e9fd83a6b8d000bb5b6efccaecaa02719b4a4e4d91e4c427fbba6fb00625b1"
+    },
+    "docs/evidence/symphony-local-docker-isolation/scanner-synthetic-negative.txt.gz": {
+      "bytes": 108,
+      "sha256": "fbfa5b2835730c3625573c4b57ebe763ee83676168f57b3b0d5486205f8a6d9b"
+    },
+    "docs/evidence/symphony-local-docker-isolation/scanner-version.txt.gz": {
+      "bytes": 28,
+      "sha256": "24d6577eb2f6c0437d1ac47b37b3aa796d3e4e4aded447ca93fd2fc571cd39ed"
+    },
+    "docs/evidence/symphony-local-docker-isolation/secret-scan.json": {
+      "bytes": 238,
+      "sha256": "a0b5c069ea028218909d1b7857fb63556bce74123935d57854a224188f45d76a"
+    },
+    "docs/evidence/symphony-local-docker-isolation/starting-readback.json": {
+      "bytes": 1144,
+      "sha256": "66cb4933b8328bd44ef66c174f2d9cf2cb018f575837fa99ade88df8a3557a6f"
+    },
+    "docs/evidence/symphony-local-docker-isolation/versions.json": {
+      "bytes": 1114,
+      "sha256": "588446aae32379f3d5af4db450e691d531cf38ad0c5839702f799db78d58d47f"
+    },
+    "docs/evidence/symphony-local-docker-isolation/work-order-source.json": {
+      "bytes": 208,
+      "sha256": "4193fbe8fd4ae859ffabbcaabd47eaa7c6da837ab21990671b44e4071c0e9075"
+    },
+    "docs/evidence/symphony-local-docker-isolation/work-order.md": {
+      "bytes": 8166,
+      "sha256": "e6d732c9270d00a5b96f00c0231026749d2b845aa2e5f0009dff31f99bfe125a"
+    }
+  },
+  "self_excluded": true
+}

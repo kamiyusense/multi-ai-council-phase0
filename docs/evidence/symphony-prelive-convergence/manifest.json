@@ -1,0 +1,192 @@
+{
+  "protocol": "SYMPHONY_PRELIVE_OPERATOR_STATIC_MANIFEST_V1",
+  "starting_head": "8bfe01b64cdf9206dc47af32b5f25c85ab1be8ed",
+  "files": [
+    {
+      "path": ".github/workflows/symphony-controller-static.yml",
+      "bytes": 11595,
+      "sha256": "64cd1b1036393366801c529955c99ed96b5997a7c1224c13f94304665af952c8"
+    },
+    {
+      "path": ".github/workflows/symphony-g63-synthetic-verifier.yml",
+      "bytes": 10042,
+      "sha256": "19c76189210a01351d074dbfc7c5dddf48222baec9fc8e2d8938ba3ad8d17b33"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 3034,
+      "sha256": "0d0203491e822b5e883c8eab8d418b7e19e71c1e4ba0e5bd30cc1464312f55da"
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_capability.py",
+      "bytes": 13745,
+      "sha256": "e9a0adf89592681f17e9ba8f06333d4b3f259ddb9f50adeba92f15a5f0b3d0d2"
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_oidc.py",
+      "bytes": 5793,
+      "sha256": "af1010dfbdbdb2bfc3fd947f643b4dbb50f59f6fdbed475559c711acbb2d79a9"
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_oidc_signature.mjs",
+      "bytes": 1686,
+      "sha256": "2ba55c7c376a9deb61379bf44b20b5dedde66d8e20bec46ca5eb4addb8db49a8"
+    },
+    {
+      "path": "automation/command_bus/symphony_operator_verifier_route.py",
+      "bytes": 11636,
+      "sha256": "b115c0b0ebbbb2adf4c374bbbeb776778d4ef2b75259fcabc130193a6be83bba"
+    },
+    {
+      "path": "automation/command_bus/tests/test_github_oidc_signature_proof.mjs",
+      "bytes": 13702,
+      "sha256": "2d349300a24281d6e1f58330f352c0fbc7c9cc26b699f09e364e5295667df329"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_operator_convergence.py",
+      "bytes": 16593,
+      "sha256": "d2cc9ec2b985ccac8f228b05507d6232664e4d519d4e99ee2fddec3c8d29e1fa"
+    },
+    {
+      "path": "docs/SYMPHONY_PRELIVE_READINESS.md",
+      "bytes": 10221,
+      "sha256": "f9fb4e7dee8bc1c4fd4075935ba9a25a54809fcecae095ab96379c6eeee4bc58"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/checkpoint.json",
+      "bytes": 1601,
+      "sha256": "f466b3508532c68c3afd9a2e77c784f84ee9804481e3be6f551e12d46d0e25f2"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/docker-tests.json",
+      "bytes": 1309,
+      "sha256": "4789ff57ace21959d9493746617465611997d14344c0278209410410ab119d38"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/docker-tests.txt.gz",
+      "bytes": 790,
+      "sha256": "4037c9940afd26a4c8c43c01eca33d8480bbac7be38f4083a208ceee77c535d8"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/final-secret-scan.json",
+      "bytes": 3649,
+      "sha256": "c4ee87536247c96e2d67ab8b45aace295478fc4f4a4cc417bb89c649532c515d"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/final-secret-scan.txt.gz",
+      "bytes": 133,
+      "sha256": "854a3ad6b1619ab0d3e0697acf6f2e6b963040865b4b5acd69ec276377253009"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/focused-tests.json",
+      "bytes": 1976,
+      "sha256": "a81d26e4664411956ac6ac72722cd752129db5d2ad01e98636dcf00c537bdb9b"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/focused-tests.txt.gz",
+      "bytes": 11930,
+      "sha256": "5b102d22287792814b72f5658358085ebfd0267f92bd6b5489f1acd3411f4d4d"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/full-tests.json",
+      "bytes": 387,
+      "sha256": "9b4b03b4a2a790fc54545fcffa56261845454bc56842906a432aa16c4cceebb9"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/full-tests.txt.gz",
+      "bytes": 56373,
+      "sha256": "6bea8cdb3a28309ccf008c50010f21337343a30046546aec1381fd3cb655d53e"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/future-proof.json",
+      "bytes": 839,
+      "sha256": "9b2d5d1fb759acdda864b84015ed4ec1022c7088a31ed9275b2e213638d212f1"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/gates.json",
+      "bytes": 2267,
+      "sha256": "bff4041ddb72b77475d9e78f619d498b4c3e583a3ccc6f5c5c3b77c70a319749"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/node-runtime.json",
+      "bytes": 452,
+      "sha256": "e742533448753bb513696fc0bf4d51840ba1a8d5c24137725ad0f5c217e51cda"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/operator-oidc-tests.json",
+      "bytes": 388,
+      "sha256": "39c16e163d0958d94337d3c32585482704d236fc7f198decd8b3c2774791f906"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/operator-oidc-tests.txt.gz",
+      "bytes": 628,
+      "sha256": "64fb7994ebb4a2f3abecdc187d341301cb5f24e106fb97ae90fe7e22bbf283bf"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/pre-save-readback.json",
+      "bytes": 52588,
+      "sha256": "78044728599c0f94705dc3bdea517b52defa0719d6032b99fbe7a1035344c361"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/public-oidc-jwks.json",
+      "bytes": 5547,
+      "sha256": "5f8164c9696c27837ad18c5fe7c7022a433bd5390183e8ff15c74d82233270f4"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/public-oidc-metadata.json",
+      "bytes": 1217,
+      "sha256": "c3fba014c6fc3be9f3950c3ce883ceb2670d586dd2efbfec9342d49bef33516b"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/public-oidc-readback.json",
+      "bytes": 402,
+      "sha256": "0562238f02dbcbd6fce57781405661c742094e7914152e6db19320e3d70418a4"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/real-verifier-route-local.json",
+      "bytes": 1699,
+      "sha256": "c1b41725038099d200c0d9fd78f2ef5123005aae039bd27854b89b60bc27f73c"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/real-verifier-route-local.txt.gz",
+      "bytes": 133,
+      "sha256": "e8c78971139f63cd9ffd0630a8ce78024e7a740d1c08db2b63229ffdb75c3619"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/runtime-readback.json",
+      "bytes": 6461,
+      "sha256": "eb4bb9519d70dba7a4a922fef78f73521284cf95864a6dc6eaec9a435881645a"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/secret-scan.json",
+      "bytes": 1753,
+      "sha256": "37dce81ef3be79fcfea098519462553864fc9317dfa570a2bfdd68aa9aa7aa13"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/secret-scan.txt.gz",
+      "bytes": 127,
+      "sha256": "2655e1b2ff454f0e6be134cf489f7ec783118964402e9f0cce61f6971b88e4df"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/static-checks.json",
+      "bytes": 2169,
+      "sha256": "f4d3168688710aef88117c2c413b2d87ec35fa5902913b7010c92bcd3992859b"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/work-order-6103625550.md",
+      "bytes": 12834,
+      "sha256": "8cf37119fba18f3fe615a35bd651f74a6ef1e375c3b5b999e735442151db4bff"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/work-order-6103763038.md",
+      "bytes": 7066,
+      "sha256": "115d386608ebe39d2356c71951c81e1ba03634f230092f73459f65af960ab420"
+    },
+    {
+      "path": "docs/evidence/symphony-prelive-convergence/work-order-6104065023.md",
+      "bytes": 13835,
+      "sha256": "8ca082e7031582a8ff655ee33866539cbdb3b635cbc64fc420713cb5c5c211df"
+    }
+  ],
+  "self_excluded": true
+}

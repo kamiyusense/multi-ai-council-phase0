@@ -1,0 +1,19 @@
+{
+  "protocol": "SYMPHONY_PRELIVE_TECHNICAL_GATES_V1",
+  "mode": "OFF",
+  "LIVE_GO": false,
+  "local_Docker_isolation": "PASS",
+  "read_only_ledger_recovery": "PASS",
+  "real_candidate_verifier_interface": "PASS",
+  "actual_real_candidate_qualification": "NOT_QUALIFIED",
+  "sender_capability_interface": "PASS",
+  "actual_real_write_capability": "NOT_WIRED",
+  "subscription_child_route": "REQUIRES_FRESH_SELECTOR_ONLY_PREFLIGHT",
+  "future_proof_ref_protection_ownership_default_head": "REQUIRES_FRESH_READBACK",
+  "human_one_run_approval": "NONE",
+  "model_provider_LIVE": 0,
+  "actual_adoption": 0,
+  "real_updateRefs": 0,
+  "boundary": "STOP_NO_MORE_MEANINGFUL_STATIC",
+  "prior_local_proof": "https://github.com/kamiyusense/multi-ai-council-phase0/pull/343#issuecomment-6098009564"
+}

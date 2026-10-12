@@ -1,0 +1,694 @@
+{
+  "protocol": "SYMPHONY_G71_STATIC_CHAIN_V1",
+  "result": "PASS",
+  "synthetic": true,
+  "tasks": [
+    {
+      "task": "A",
+      "attempt_id": "attempt-2c17af5967baaf25cf75b3e00f0dcab1",
+      "worker_run_id": "c5a46af6f12a75aca70cda2bb03c3d42",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 2,
+        "checkpoint_digest": "3fd9f996755c55803e2f13657a9a597752e5d6752d6cfb8f93159f28fbb770ef",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "B",
+      "attempt_id": "attempt-7cbf403139c2e9e27188d8e3309313bd",
+      "worker_run_id": "5680027765f11dbcdb18e385adb04d27",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "STALE_REPLAN",
+        "adoption_status": "STALE_REPLAN",
+        "revision": 4,
+        "checkpoint_digest": "0da4b298119c16d7b7c393d0194056668c646652567f5ef34bedda14dab84f50",
+        "continuation_ready": true
+      },
+      "task_state": "STALE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "C",
+      "attempt_id": "attempt-ec58cef7321ae49760b5df535ac31a98",
+      "worker_run_id": "4d08b1fe83963913d5939ecdaa693d5c",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "UNKNOWN",
+        "adoption_status": "UNKNOWN",
+        "revision": 7,
+        "checkpoint_digest": "bb682cef9c7dce08ec4ea57d35a0ebb912b67a9bd070217d4c7b7696530a826b",
+        "continuation_ready": true
+      },
+      "task_state": "BLOCKED",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "D",
+      "attempt_id": "attempt-8a8c709671b6621333c60f07b97ef822",
+      "worker_run_id": "6cf7c8b688f57aec07c358d7726be3da",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 9,
+        "checkpoint_digest": "71a66ee8a95a8f5adf5a738e2f214c793754e7f6689c2cdc7903b2b9f14faa06",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "E",
+      "attempt_id": "attempt-7c609dd96daa1cae9ec623a275816469",
+      "worker_run_id": "6cb2fc431820f97c236b20e592031442",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 11,
+        "checkpoint_digest": "8681b7b6cec164d2bcecef7efcec20b3a7e1d990eea64faa78f0f1273f7574e9",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "F",
+      "attempt_id": "attempt-3c6d7242a9a6fceffaa4cbf8f117cecb",
+      "worker_run_id": "5489b31ab57db8022c2d0c160dc42073",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 13,
+        "checkpoint_digest": "8a9e4505afa5e778ea4b3fd9291be875c66c7e7bffaef20914b8353f3b4e6873",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "G",
+      "attempt_id": "attempt-1055dba87ff4dcdcb22e6c1f64d150bf",
+      "worker_run_id": "70469a1d6814befce3af4b16c3eecbff",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 15,
+        "checkpoint_digest": "db03f51b01cb9dcd1954cbb101dc44333aebca43a21ee7bfc75f5f5e7d7035c1",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "H",
+      "attempt_id": "attempt-a6dd344d4d76f109ee33815e0b70152b",
+      "worker_run_id": "86a1fc325c01c4bfefa48e6e578bd356",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 17,
+        "checkpoint_digest": "5a4b38f47343859dba29e7a1a5b5638e0a000a2c2a4192f0ab8fa74951c0f7cb",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "I",
+      "attempt_id": "attempt-2ee86acb9ba21d161a0576643cd1895c",
+      "worker_run_id": "1157e36e9d04d58c64ed09f20da23659",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 19,
+        "checkpoint_digest": "4d2e2d5750033428a7b930da727ffbf564fb78b0a84c73c764729e35091a8aec",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "J",
+      "attempt_id": "attempt-de74eb1abb24e3febe2e90ed0ac7e0ac",
+      "worker_run_id": "6a68706f3585fe9610c7efba87937053",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 21,
+        "checkpoint_digest": "6290e9aeab4fbafc1a727a90a3b959b0657ab27d8cbad718bc246f75311c1223",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "K",
+      "attempt_id": "attempt-a342dcf191d6609424921e99787ed931",
+      "worker_run_id": "bc6a20f88ee9f9cd34a1081dbb01abb6",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 23,
+        "checkpoint_digest": "022645852c132c14cc687e69ac27f8baf10b0c84154d86d60cb0191e70fd4158",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "L",
+      "attempt_id": "attempt-eb3e7526f974ab25d7c8beee0694e099",
+      "worker_run_id": "23c15e15599de12c1eaec0c95fc2da12",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 25,
+        "checkpoint_digest": "50bf6a26fe05beb9f8ea760329a1c98b4147484a84766256f959065e910531fd",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "M",
+      "attempt_id": "attempt-7247df979cb9d359e29d4d47052a8da1",
+      "worker_run_id": "f4198294660e034c53194fa2afe2518c",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 27,
+        "checkpoint_digest": "c20ea2515bdd1d8c35b0e14d6a6b3dca111596d0a2ed59949b0272a641afa9a7",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "N",
+      "attempt_id": "attempt-3cc1d086eda5f19dbf58b8708d7aa69c",
+      "worker_run_id": "f6d0607a5d11f3ca2ec5fe4bcb6d3cce",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 29,
+        "checkpoint_digest": "b76252ec0a7f6427e7e9f6dd6bc8275b15d82df42c4cc1ddf5a2cf096bfec337",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "O",
+      "attempt_id": "attempt-1a2e300dcf306b4e0d76e877e305657c",
+      "worker_run_id": "4cc83a322e9a90d409297523b1d9f0ef",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 31,
+        "checkpoint_digest": "be0abd3451bf6631a3749a59daaab0c572f9a06d1246fbfd4b69f69e752797d5",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "P",
+      "attempt_id": "attempt-426485df902839109ad9cb5db8a7b85c",
+      "worker_run_id": "1ff07d765310f38e12caa843889a2925",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 33,
+        "checkpoint_digest": "ba230be2576c41dd45911a5f44919787bd7f366271293e0065101566f122354e",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Q",
+      "attempt_id": "attempt-b4ea65a8ca127abf1456491336c2fe93",
+      "worker_run_id": "87776900b1e0fe7c8c14da076ea87dba",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 35,
+        "checkpoint_digest": "39f83cd8b8bb0e9105c3ad6dd547875d5d1bc5c817db59f4f3bd47cde1f7aee8",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "R",
+      "attempt_id": "attempt-fbbd2c9a5de5548333c1fd54a60bfacc",
+      "worker_run_id": "c303fcca9ac80632b05bb2e4b1727a64",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 37,
+        "checkpoint_digest": "b092700728b4c5c5ea42f5aa5ad8263e605673c2a5f8456256858555ce23eee1",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "S",
+      "attempt_id": "attempt-aa7e80f4521ecc0b34495755f2156ebf",
+      "worker_run_id": "75219f2202904efdd7bf42f4d2d96684",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 39,
+        "checkpoint_digest": "bfff6a3e769aca3d3170b88d5babfbd0047c32595e1236604e2d3147a870255e",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "T",
+      "attempt_id": "attempt-727913d4a46b79c866651897c74b2e37",
+      "worker_run_id": "954a7a28337009e21450b8a630bae721",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 41,
+        "checkpoint_digest": "68f0def562b97a57a2921df2ff0780cdfb65053f6f53e4d128def7ad9dfbc8d7",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "U",
+      "attempt_id": "attempt-f3fa6c244219b16167526db6e4da3893",
+      "worker_run_id": "a8621b679f84582d78501f3939d33d84",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 43,
+        "checkpoint_digest": "8c8a8c3a2458dac52506f23eccea2bd1788378dc2ee303133184c4c2367eea97",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "V",
+      "attempt_id": "attempt-aef5ce58679b19f5fc2faac5e5f4df72",
+      "worker_run_id": "05b9b001d87b340a77e7c7aeea755754",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 45,
+        "checkpoint_digest": "2317e1d360cc2aef6920d39f9fc462750c9dfab58aaddb5ecc274fd0409a5144",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "W",
+      "attempt_id": "attempt-57764f2d6f9efb541528c0e308e73d8d",
+      "worker_run_id": "04707cf2864235dcbef2403d1302eb13",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 47,
+        "checkpoint_digest": "d8953ced6b83d8c78ed4d08c2b1ad90d1564bb43e999776bd89d95b3dec1e10d",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "X",
+      "attempt_id": "attempt-7c6129a96b2f21f863a5bb7f4bd93377",
+      "worker_run_id": "21d2722be18363bb2449e88bca1aab62",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 49,
+        "checkpoint_digest": "915c4ef51f6fad37b8686d89add2397b313f51f12567e2599754caf0f0bc7dec",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Y",
+      "attempt_id": "attempt-88ca80690915b5b3d6e3065b8283a3ac",
+      "worker_run_id": "032da0a3d092c0fc867235b7ddb10cde",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 51,
+        "checkpoint_digest": "aed832de355052845f5bd43a8be26f4a519a7adf61ea74db5f38711b8e19a41a",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z",
+      "attempt_id": "attempt-17a0518675b9017b8e750bae5e3064c8",
+      "worker_run_id": "ea685cb48a9819ea653d3ff697802abe",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 53,
+        "checkpoint_digest": "6c0f560b25bd7e50e3df800b48410a398fccef0d82810dcbef58b89178e89bc4",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z026",
+      "attempt_id": "attempt-7bad95a25fab83f4b797067e941ad857",
+      "worker_run_id": "f37de8dfd4606008a734cd0944f089cc",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 55,
+        "checkpoint_digest": "1d739b5b6482080609103912bef66e00eb05b9f1be52d1b708f54ea4def5a9a5",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z027",
+      "attempt_id": "attempt-f1e95a6f37bf050a347e34289cb6647e",
+      "worker_run_id": "ec4a2111824ba2bdd4b929c744396dae",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 57,
+        "checkpoint_digest": "6f13e798ab9d94675abf1eddee9a825d190db5b3b72f541484f7909a566260ca",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z028",
+      "attempt_id": "attempt-9005275164828bcc0f8a9dca8ed74805",
+      "worker_run_id": "ac17759466b16a2b6731447ae8143805",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 59,
+        "checkpoint_digest": "364e9dceefe137c785ca7fdf0218031b61cc75f8ff07d3f507b0afeb0f594a8a",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z029",
+      "attempt_id": "attempt-e3886a56a7f43e46cbacb99db8dfc795",
+      "worker_run_id": "6cce2eb4e0a02ef3fb95a34a1078e3f8",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 61,
+        "checkpoint_digest": "93a10dc8300b9aee050bc87309fdb2ed09597adad3484f9f488ccf62daabdd1b",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z030",
+      "attempt_id": "attempt-4231c42dc7195fabc279ebf1f257a9b2",
+      "worker_run_id": "287b65b0c4cd7b3a917634def63058d5",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 63,
+        "checkpoint_digest": "e12f929e0f04c2c087fb7a103841c02784158326532c30d9406c04224cb8d295",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z031",
+      "attempt_id": "attempt-d5e2f914273f8744719012773620edd7",
+      "worker_run_id": "5d2cbb1664ac9b8b5a4050ef3992bab5",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 65,
+        "checkpoint_digest": "50c383a24f5b03bbf5ad21572f524b84daf9d1735cec972d5d8d6601410938ec",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z032",
+      "attempt_id": "attempt-267f1f90f92da0f52ecbe557eb2a2a98",
+      "worker_run_id": "bf13adaf61455d04b02d1753de0ce6d4",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 67,
+        "checkpoint_digest": "79c5d08c909b15d425c64e0c779b1d8ce0f1d29c380b4aafe59811e568ce82b8",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z033",
+      "attempt_id": "attempt-bd653046654bde201c03fcd2d80c83cd",
+      "worker_run_id": "d6d46dc6ae91093f3fb4f8a626c99cbd",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 69,
+        "checkpoint_digest": "545d927068103e562212433ff228b08e559147cd0e677416cab2c0210cc3cf67",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z034",
+      "attempt_id": "attempt-789c5c4f169534eb9a1bbce312df7985",
+      "worker_run_id": "5e4879665d44e0651d39e82819a25970",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 71,
+        "checkpoint_digest": "817b01d5951782c69bb063f76f0e7e2a36ca41d87ed7fdd455897600e7fede80",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z035",
+      "attempt_id": "attempt-8d7df82b9c39d0fec651ee59b2faf1cc",
+      "worker_run_id": "9a32f81edc7b397fc5fd922f10ccb9c6",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 73,
+        "checkpoint_digest": "92e7e122cced0cbe2468e36d7c176866650f6271a3d14e29f67ffc18e17b9790",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z036",
+      "attempt_id": "attempt-2da4fea053b0c94c7dd0da040aae0ad4",
+      "worker_run_id": "409071712aa848ad49e6fb6ec6643571",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 75,
+        "checkpoint_digest": "6205ffe4057b432ceddf9afb26d87d77c85180c60ec48664c97298c006504311",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z037",
+      "attempt_id": "attempt-cfaa95700a39e3db7f46c9e79288eee6",
+      "worker_run_id": "5e28e25aadf436ec6c587dcf6ba0184c",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 77,
+        "checkpoint_digest": "7fbd922df6ec91cde79416d944e62cfddcecab29bf6191ac56cd544e6ad9ec7b",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z038",
+      "attempt_id": "attempt-5f10c42f563b713e3f8f4e6c2d05ab24",
+      "worker_run_id": "b30d1b5a0e66efe403f5157afad98308",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 79,
+        "checkpoint_digest": "20ce7016c7494cd552e8c5e0485c971cb1fbd02ed02e530cd44fd2ebdadb8395",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z039",
+      "attempt_id": "attempt-335b98e17172dec47d514cd566a2878a",
+      "worker_run_id": "576bf25a571f62df025c8ce84195036f",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 81,
+        "checkpoint_digest": "5ec1fa535148cf101b65d1fcf0acbb123923e09912f317b1ba310ced1b97c305",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z040",
+      "attempt_id": "attempt-6ab6f50c92798170fe4b8235e2483cfc",
+      "worker_run_id": "97892728dc5f304cdc29996e41b1441c",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 83,
+        "checkpoint_digest": "1d826ee5b6b4bcce6fc39f1b0ea42dfcd04067f33cbf37097ff9eaa717fed125",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    },
+    {
+      "task": "Z041",
+      "attempt_id": "attempt-1999d3f7b4f93df254649ab5a8df1f90",
+      "worker_run_id": "6cee5a1e859c191ab41d294f54e9b452",
+      "terminal_outcome": "UNKNOWN",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 85,
+        "checkpoint_digest": "489fbad7edf29b27304d597866920eafc19edd6a5de6c5f040028e01a59221f8",
+        "continuation_ready": true
+      },
+      "task_state": "COMPLETE",
+      "model_launches": 0,
+      "real_github_writes": 0
+    }
+  ],
+  "rounds": 42,
+  "sessions": 43,
+  "mock_completed": 40,
+  "mock_ref_requests": 41,
+  "receipt_replay": "NOOP_DUPLICATE",
+  "restart_additional_dispatch": 0,
+  "restart_additional_git_writes": 0,
+  "existing_kernel_selected_all_tasks": true,
+  "distinct_attempts": 42,
+  "distinct_fixture_workers": 42,
+  "real_model_starts": 0,
+  "real_result_adoption": 0,
+  "real_github_runtime_writes": 0,
+  "new_scheduler": false,
+  "existing_kernel_next_action": "STOP_NO_SAFE_WORK"
+}

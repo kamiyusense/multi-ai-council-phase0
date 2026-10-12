@@ -1,0 +1,28 @@
+[
+  {
+    "case": "python-version",
+    "image": "python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+    "image_id": "sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce",
+    "container_id": "7e3b8e0ed4611fa00c4e5deeb90d672f7f6c03e7ef527296da51416ba35ecc53",
+    "version_output": "Python 3.11.17",
+    "exit": 0,
+    "model_starts": 0,
+    "no_mounts": true,
+    "network": "none",
+    "root_readonly": true,
+    "log_sha256": "686560bcd94a5a3fe8187b7c4fc49beaff41c87eccb79908cd3da863ec30e52e"
+  },
+  {
+    "case": "scanner-version",
+    "image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+    "image_id": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+    "container_id": "82fca5129310d40e08e83f09ac8000c22943e5c887f22bc59c066d0838af2858",
+    "version_output": "v8.30.1",
+    "exit": 0,
+    "model_starts": 0,
+    "no_mounts": true,
+    "network": "none",
+    "root_readonly": true,
+    "log_sha256": "b97aeb08738a6b820b40be4f64f93adaecec6842397d90dfdc999404c88bdad6"
+  }
+]

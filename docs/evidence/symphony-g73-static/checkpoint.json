@@ -1,0 +1,55 @@
+{
+  "protocol": "SYMPHONY_G73_STATIC_CHECKPOINT_V1",
+  "result": "LOCAL_STATIC_PASS",
+  "starting_refs": {
+    "pr343": "d9255aeb966a16f484ae0b4044e3e43c38f4c103",
+    "pr320": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "pr344": "81bbf1ba42077d36f4942f229ac327a7d30c9892",
+    "main": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+    "ledger": "1e7333caf91c556a48f423a802c48678962e1cbc"
+  },
+  "ci": "PENDING_FINAL_HEAD",
+  "host": "OFF",
+  "operator_approval": "NONE",
+  "publication_capability": "NOT_WIRED",
+  "real_candidate": "NOT_QUALIFIED",
+  "local_docker": "NOT_RUN",
+  "rules": "UNKNOWN_HOLD_HISTORICAL_403",
+  "host_process_restart": {
+    "actual_candidate_attestation": false,
+    "checkpoint_digest": "bfd4bda905502daca240062c7357e6e308e23ebe4ba8ce6c9aa90c3d377707a8",
+    "event_statuses": [
+      "NOOP_DUPLICATE",
+      "READ_ONLY",
+      "READ_ONLY",
+      "NOOP_DUPLICATE"
+    ],
+    "extra_mock_object_posts": 0,
+    "extra_mock_ref_calls": 0,
+    "extra_model_dispatch": 0,
+    "protocol": "SYMPHONY_G73_SYNTHETIC_PROCESS_RECOVERY_V1",
+    "receipt": "NOOP_DUPLICATE",
+    "status": "PASS"
+  },
+  "mock_receipts": 3,
+  "counts": {
+    "live_launch": 0,
+    "model_dispatch": 0,
+    "actual_result_adoption": 0,
+    "real_git_database_post": 0,
+    "real_update_refs": 0,
+    "merge": 0,
+    "main_write": 0,
+    "paid_fallback": 0,
+    "billing_or_permissions_change": 0,
+    "real_ledger_write": 0
+  },
+  "tests": {
+    "new": 14,
+    "focused": 390,
+    "full": 2149,
+    "inherited_skip": 1,
+    "isolated_ci_expected": 116
+  },
+  "changed_interface": "direct callable OFF host, real local record files, independent process GET-only recovery, offline future verifier contract"
+}

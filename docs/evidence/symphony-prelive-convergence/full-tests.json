@@ -1,0 +1,20 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "automation/command_bus/tests",
+    "-t",
+    ".",
+    "-v"
+  ],
+  "returncode": 0,
+  "tests": 2200,
+  "skip_count": 1,
+  "elapsed_seconds": 72.156,
+  "log_sha256": "18d94d28a37967fc74f268e36fe755111799e08b5f6017b3c7fa5fd8949d4063",
+  "result": "PASS",
+  "round": "FINAL_PRECOMMIT_CURRENT_SOURCE"
+}

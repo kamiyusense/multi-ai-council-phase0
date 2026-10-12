@@ -1,0 +1,265 @@
+{
+  "fixture_root": "/tmp/symphony-approved-static-fixture-_uf8jg52",
+  "source_head": "e43636c07f2e51245fdb28a360ed4d7c6847b249",
+  "source_files_copied": 51,
+  "files": {
+    "candidate/test_value.py": {
+      "bytes": 125,
+      "sha256": "1970d4b2d8ad753db3e8733ce332f65ce2c503c267935086323c1e44301136ca"
+    },
+    "candidate/value.py": {
+      "bytes": 10,
+      "sha256": "69ef4f409b530264b0da21ad4054978ada08895c93631a0da1957e2a10b592b5"
+    },
+    "candidate-inputs.json": {
+      "bytes": 1717,
+      "sha256": "a7e30edf999d9064ce77a4c994431802873212078fc380d0706e843283b3fc22"
+    },
+    "scanner/clean/value.py": {
+      "bytes": 10,
+      "sha256": "69ef4f409b530264b0da21ad4054978ada08895c93631a0da1957e2a10b592b5"
+    },
+    "scanner/negative/value.txt": {
+      "bytes": 51,
+      "sha256": "aa49e8433b680f42495b5dbdc6f3f310867274709f3e9ea92d8deae1f6548edb"
+    },
+    "scanner/trusted.toml": {
+      "bytes": 27,
+      "sha256": "27630a96d6c55755cc37620f3933d5cab94b1eb78a726a32e11212972525d76e"
+    },
+    "source/automation/command_bus/__init__.py": {
+      "bytes": 1057,
+      "sha256": "f504992e909c9b1e0674752657183881d1067df10236fe44ca3df001cd567383"
+    },
+    "source/automation/command_bus/event_processor.py": {
+      "bytes": 3493,
+      "sha256": "a6b5d0b00a429ef513982d944b61eca7a6a7469b413be0c59d15d5268f17c27c"
+    },
+    "source/automation/command_bus/executor.py": {
+      "bytes": 28309,
+      "sha256": "6547d3d16af980d79b7ce198ebfd734cf15b0791b2a3961321e5fdda5ca7438a"
+    },
+    "source/automation/command_bus/executor_backend.py": {
+      "bytes": 12854,
+      "sha256": "8086cc08fe78fc96576f5e547931749cf7b01bca006234b1efe43c4bb8c80586"
+    },
+    "source/automation/command_bus/github_backend.py": {
+      "bytes": 18921,
+      "sha256": "839a3edd0d3d5d27c972ef87418df0f490ec4d49471c5cd2d6dca074be751892"
+    },
+    "source/automation/command_bus/ledger.py": {
+      "bytes": 1278,
+      "sha256": "c3e995acf038b20c48054869fb20430773fef37226f1ad22863b5edc50b383ff"
+    },
+    "source/automation/command_bus/reviewer.py": {
+      "bytes": 21643,
+      "sha256": "1a4fe89d2a0eee0e70801cbb83d0f13613a8f39a5869eaa4563a6a1451f4aa4c"
+    },
+    "source/automation/command_bus/scripts/symphony_g63_synthetic_verifier.py": {
+      "bytes": 2073,
+      "sha256": "476a4f4de91c8edc9963dd8170b1f56659a65762bce27936d2f8a70677d149ed"
+    },
+    "source/automation/command_bus/scripts/symphony_g72_independent_test.py": {
+      "bytes": 1256,
+      "sha256": "083c5c6c5587232a79af1ba18632a7bb34302dd6c6f93338d556f2d3555cbecd"
+    },
+    "source/automation/command_bus/scripts/symphony_g72_synthetic_candidate.py": {
+      "bytes": 3544,
+      "sha256": "801034011fbc49869bbe2576a1e399a7247d6020be3fbf5dfb3e526b2fafca16"
+    },
+    "source/automation/command_bus/state_machine.py": {
+      "bytes": 1741,
+      "sha256": "ca947ef53640e0a129bf512e99f0f661230a0f8c423397492db3141d7f610cc8"
+    },
+    "source/automation/command_bus/symphony_attempt_store.py": {
+      "bytes": 27654,
+      "sha256": "fce9b6ef9aa7f451a380c92b8b51f5fb434f98876b676a739e3b60210e216d22"
+    },
+    "source/automation/command_bus/symphony_autonomous_policy.py": {
+      "bytes": 8804,
+      "sha256": "ad87df4b4ba1a18940773b1dae5caed21fc0e2f018ed7e6f5923074ca338ee41"
+    },
+    "source/automation/command_bus/symphony_autonomous_runtime.py": {
+      "bytes": 21457,
+      "sha256": "4a5b54ad2fb91d9f3695187a663d31a495b33b97195aeee5f07da7c6b35c42d3"
+    },
+    "source/automation/command_bus/symphony_campaign_store.py": {
+      "bytes": 9999,
+      "sha256": "ab1699de802e28e202ddac21737398e3ac615231918fef6197286088b6519e1b"
+    },
+    "source/automation/command_bus/symphony_g61_wiring.py": {
+      "bytes": 7493,
+      "sha256": "dcd1593259065cc197d8b427847c47e4c8a3da1e2095939ea3ad40e8f1e00568"
+    },
+    "source/automation/command_bus/symphony_g62_attestation.py": {
+      "bytes": 7817,
+      "sha256": "86dcee93a73b421c35f88880f5f583859c12130ef9d6b621a8715a44a4242aa5"
+    },
+    "source/automation/command_bus/symphony_g62_prepare.py": {
+      "bytes": 5093,
+      "sha256": "33f3eb16e438555b3a26a8e3ce12677395e82c02edcc4d2b66fccb442c252b68"
+    },
+    "source/automation/command_bus/symphony_g63_archive.py": {
+      "bytes": 8335,
+      "sha256": "c1c90038610c056ea57c91879ad6a9a3ec08083f185ae177341b0e4b86695960"
+    },
+    "source/automation/command_bus/symphony_g63_sender.py": {
+      "bytes": 8116,
+      "sha256": "08d78495578db9f4734c0020b139ba8eb8ffa44e277ba51cb8cf019e46ad1fac"
+    },
+    "source/automation/command_bus/symphony_g63_snapshot.py": {
+      "bytes": 1100,
+      "sha256": "518a577d00357bd726b1dc9651bf6062c52e218decbd8bdb2b2b7c2746abc0dc"
+    },
+    "source/automation/command_bus/symphony_g63_verifier.py": {
+      "bytes": 4187,
+      "sha256": "90e05b16e4453b9b29024da5dbbec7f9409a321ffc4179fe65f5b05f63486a11"
+    },
+    "source/automation/command_bus/symphony_g71_campaign.py": {
+      "bytes": 8523,
+      "sha256": "ba0d1c2b7e583da0efd40c7b4abd7db8b3b8e6c9bc625b73ca54f2480ce4dd53"
+    },
+    "source/automation/command_bus/symphony_g72_candidate.py": {
+      "bytes": 8652,
+      "sha256": "d8eccab0ebca4c096bdc58f0dc9eaf07b4ddfd93c0aebc11b7e331766fcb0ce8"
+    },
+    "source/automation/command_bus/symphony_g72_runtime.py": {
+      "bytes": 18727,
+      "sha256": "e71e61a9e7b67f173a8749ff78986062f9165b1ec6ed76c189313ca8052b474e"
+    },
+    "source/automation/command_bus/symphony_g73_host.py": {
+      "bytes": 9458,
+      "sha256": "c75ae3587efa6272646f14be3e2f3dbf25d62ba4f975b77205a19c95a966a353"
+    },
+    "source/automation/command_bus/symphony_git_adoption.py": {
+      "bytes": 30375,
+      "sha256": "60e0f27d017fb4adfeffd735b388c83084981f7d7bd33593e838cb9f4209a599"
+    },
+    "source/automation/command_bus/symphony_github_adapter.py": {
+      "bytes": 5440,
+      "sha256": "cf3a1844fb4282104d9cb5d8b21c552095a6cdc938e9d2c63feef888e0e6a3ef"
+    },
+    "source/automation/command_bus/symphony_github_git_transport.py": {
+      "bytes": 16817,
+      "sha256": "53a3466e79e21a1d42f6ab446bbbd108a8d03a44092d36df2ac85deb581323b6"
+    },
+    "source/automation/command_bus/symphony_github_readers.py": {
+      "bytes": 15738,
+      "sha256": "6e1465fa21ab9fb5c0510e17754756e26eea7ffa0bb8302252e647de4d7ae567"
+    },
+    "source/automation/command_bus/symphony_ledger_reader.py": {
+      "bytes": 4801,
+      "sha256": "8060833d5d3fe36f917d94c87189d1b230003c607a144194184f346244f4f49f"
+    },
+    "source/automation/command_bus/symphony_operator_readiness.py": {
+      "bytes": 7031,
+      "sha256": "3522c1f05cc8130fee8fc025d966609b0807c1602e680d6ac825bc1a67dd3bf4"
+    },
+    "source/automation/command_bus/symphony_production_observer.py": {
+      "bytes": 8843,
+      "sha256": "9ddbb29d867b21e8ac75054b5420e4c2cb003792811c3e3660831a83f0c50bbc"
+    },
+    "source/automation/command_bus/symphony_result_adoption.py": {
+      "bytes": 2516,
+      "sha256": "57bea28b44d1b09d92e48023edb6a31006a7cba62a86bf2feda221de603d771c"
+    },
+    "source/automation/command_bus/symphony_result_manifest.py": {
+      "bytes": 19883,
+      "sha256": "8263df1d305365c9605658b43d5fdc4ed0eeab0c5930554b45e7c10e4f72cf8b"
+    },
+    "source/automation/command_bus/symphony_result_verification.py": {
+      "bytes": 9220,
+      "sha256": "cffa4b6095f550d13891be597ac17fb91926f28cd403aac08602fbd7d1fbf4a5"
+    },
+    "source/automation/command_bus/symphony_subscription_boundary.py": {
+      "bytes": 3032,
+      "sha256": "91ba08b58fdc811fbfa8a8f6daf6d51fc6c2a6dff722191348c298367f94dcf0"
+    },
+    "source/automation/command_bus/symphony_verifier_provenance.py": {
+      "bytes": 2622,
+      "sha256": "5a777d26f4bd10050d5a35a0d4f3dea704c11d6ce4777260aa6db3c827a83214"
+    },
+    "source/automation/command_bus/symphony_workspace_snapshot.py": {
+      "bytes": 16140,
+      "sha256": "98cf3f73df2d72a2e06c24daae4d4112de9ba4254a7779d587fe5d237249c93d"
+    },
+    "source/automation/command_bus/tests/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source/automation/command_bus/tests/fixtures/symphony_g6/crash-matrix.json": {
+      "bytes": 426,
+      "sha256": "a64734f1d76f67732c6f5caadc735e396f6cd21c7c00ee371913b3508bff20d0"
+    },
+    "source/automation/command_bus/tests/fixtures/symphony_g6/example-result-manifest.json": {
+      "bytes": 1625,
+      "sha256": "b3fc4094f6c3afc52b1fa987ceca67888c1ff5363d8d87fc4d0b6d3fcd6d3546"
+    },
+    "source/automation/command_bus/tests/fixtures/symphony_g61/graphql-updaterefs-schema.json": {
+      "bytes": 4586,
+      "sha256": "1377fd0b7c9867487137fe72d48fd3c6c004181755fa83b6427cf8ab4013e775"
+    },
+    "source/automation/command_bus/tests/fixtures/symphony_g61/regression-matrix.json": {
+      "bytes": 906,
+      "sha256": "fa025d4d830a557aaf5d3116d2e91cd542ce708dd6de9dededd9eec0cc802434"
+    },
+    "source/automation/command_bus/tests/fixtures/symphony_g62/regression-matrix.json": {
+      "bytes": 1221,
+      "sha256": "199e2e3a2f01d2f42d19c67b5f5625aaac6993d73899eb88372008e8d6268253"
+    },
+    "source/automation/command_bus/tests/symphony_g61_github_sim.py": {
+      "bytes": 10626,
+      "sha256": "7d6077c36c8256c63ca356541aafaad84fab2511c1b30278927da4294d2604db"
+    },
+    "source/automation/command_bus/tests/symphony_g6_fixtures.py": {
+      "bytes": 10310,
+      "sha256": "0f129dbc065513a73dfa9499b4293dfc4dc3803868ad5c27a1c6d6f48d97d4b6"
+    },
+    "source/automation/command_bus/tests/test_symphony_attempt_store.py": {
+      "bytes": 16145,
+      "sha256": "20d2a95fa78a55dcd5cb5df3f17e8fcbc280a96ccdee826b9b8e473729a98a1b"
+    },
+    "source/automation/command_bus/tests/test_symphony_campaign_store.py": {
+      "bytes": 6513,
+      "sha256": "58273f25f5a7059efe777fdf77b208ede5e4412446a0df32a67e3ca6a5d11940"
+    },
+    "source/automation/command_bus/tests/test_symphony_g61_production_wiring.py": {
+      "bytes": 39522,
+      "sha256": "d1921be4e63eb433cb506cfc3df41ef1bd3f9108edbd74a04be5a3bed709c603"
+    },
+    "source/automation/command_bus/tests/test_symphony_g62_readiness.py": {
+      "bytes": 22732,
+      "sha256": "729637249d5c39a1e8f26e8eef1d8a7e9ed37b353086e2276e7fd3197bbb7570"
+    },
+    "source/automation/command_bus/tests/test_symphony_g63_connection.py": {
+      "bytes": 24833,
+      "sha256": "ed4d7d8a057f63d9aff97fdbe492be1520da515ecc94839c08598519ba35e237"
+    },
+    "source/automation/command_bus/tests/test_symphony_g72_runtime.py": {
+      "bytes": 22384,
+      "sha256": "1c8ed8a8764017e56264116cb6da0998334e829f74617b1cd8f956f1ad0a0019"
+    },
+    "source/automation/command_bus/tests/test_symphony_ledger_reader.py": {
+      "bytes": 6908,
+      "sha256": "c9177bc182dbe40dacb9be10a81017c7d324ddfcff9a88d0b46d0eb82f40070c"
+    },
+    "source/automation/command_bus/tests/test_symphony_operator_readiness.py": {
+      "bytes": 9093,
+      "sha256": "55deb45620cac2aa624ccf9f3cbd790d855cbbbae467fd0410c22db6c83253e3"
+    },
+    "source/automation/command_bus/validator.py": {
+      "bytes": 2961,
+      "sha256": "c5ba58d1ca2e681035faca48ef794bd0df59654af1e721211ab8aae629430a38"
+    },
+    "source/runtime_probe.py": {
+      "bytes": 1902,
+      "sha256": "259f6a02167623fcfa3bfa7b25dec82c6b3bf6ccb518c03139c3f75272afbdbf"
+    }
+  },
+  "candidate_is_synthetic": true,
+  "candidate_file_count": 2,
+  "real_candidate_attestation": false,
+  "personal_workspace_mount": false,
+  "negative_scanner_fixture": "INTENTIONALLY_SYNTHETIC_NOT_A_CREDENTIAL",
+  "runtime_probe_added": true
+}

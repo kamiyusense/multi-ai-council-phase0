@@ -1,0 +1,43 @@
+{
+  "protocol": "SYMPHONY_G61_STATIC_CHECKPOINT_V1",
+  "date": "2026-10-10",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "branch": "claude/symphony-g61-production-wiring-static",
+  "starting_pr": 320,
+  "starting_pr_head": "8c53c505a21318c6133da0bef85af18ae3711103",
+  "main_at_start": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0",
+  "result": "STATIC_PASS",
+  "counts": {
+    "model_provider_live": 0,
+    "symphony_worker_launches": 0,
+    "real_git_adoptions": 0,
+    "github_writes_by_g61_code": 0,
+    "graphql_mutations_sent": 0,
+    "readonly_smoke_requests": 143
+  },
+  "updateRefs": {
+    "schema_atomic_all_or_nothing": "VERIFIED_SCHEMA_TEXT",
+    "beforeOid_expected_old_value": "VERIFIED_SCHEMA_TEXT",
+    "payload_proves_new_ref": false,
+    "token_scopes": ["gist", "read:org", "repo", "workflow"],
+    "viewer_permission": "ADMIN",
+    "rulesets": "UNKNOWN_API_403_PLAN",
+    "live_execution": "NOT_PERFORMED"
+  },
+  "tests": {
+    "g61_suite": {"ran": 44, "result": "OK", "skipped": 1, "skip": "symlink creation not permitted on Windows"},
+    "g6_suite": {"ran": 46, "result": "OK"},
+    "focused_symphony": {"ran": 244, "failures": 1, "note": "test_pinned_official_workflow_prompt_is_ascii fails identically on base commit (Windows)"},
+    "full_command_bus_windows": {"ran": 2003, "failures": 16, "errors": 8, "identical_to_base_failure_set": true},
+    "compileall": "PASS",
+    "diff_check": "PASS",
+    "diff_secret_pattern_hits": 0
+  },
+  "unknown": [
+    "real updateRefs error shape and rulesets",
+    "real POST git/commits byte determinism (trailing newline); mismatch fails closed",
+    "K04 fence-without-call remains UNKNOWN by G6 rule",
+    "external tests/secret_scan attestations for a real candidate",
+    "exact-head Linux CI for this branch (recorded after push)"
+  ]
+}

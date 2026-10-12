@@ -1,0 +1,23 @@
+{
+  "state": "PROPOSED_NOT_CREATED",
+  "seed": "7fbdd0b269680778",
+  "issue_number": null,
+  "issue_title": "Symphony one-run proof 7fbdd0b269680778",
+  "campaign_id": "operator-proof-7fbdd0b269680778",
+  "task_id": "operator-task-7fbdd0b269680778",
+  "generation": 1,
+  "attempt_number": 1,
+  "runner_generation": 1,
+  "workspace": "/home/yuuki/work/symphony-one-run-7fbdd0b269680778",
+  "proof_ref": "codex/symphony-one-run-7fbdd0b269680778",
+  "expected_target_head": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+  "correlation_id": "one-run-7fbdd0b269680778",
+  "max_worker_lifetimes": 1,
+  "max_publication_CAS": 1,
+  "observer_restart": 1,
+  "extra_model_dispatch_on_restart": 0,
+  "human_approval": "NONE",
+  "attempt_id": "attempt-e038c1bfff9cc0d0e28a2179b6ae1235",
+  "fresh_proof_ref_readback_status": 404,
+  "ref_exists": false
+}

@@ -1,0 +1,50 @@
+{
+  "new": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_operator_readiness",
+      "-v"
+    ],
+    "exit": 0,
+    "sha256": "c8dc89b5efd046f171f9bba9dafefbcd30015520de0032ee80a31e941e241941",
+    "summary": "hanged_or_source_changed_workflow_rejected (automation.command_bus.tests.test_symphony_operator_readiness.WorkflowProvenanceTests.test_worker_changed_or_source_changed_workflow_rejected) ... ok\ntest_workflow_blob_oid_and_path_rejected_before_archive (automation.command_bus.tests.test_symphony_operator_readiness.WorkflowProvenanceTests.test_workflow_blob_oid_and_path_rejected_before_archive) ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 0.093s\n\nOK\n"
+  },
+  "focused": {
+    "command": [
+      "python",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_controller",
+      "automation.command_bus.tests.test_symphony_autonomous_runtime",
+      "automation.command_bus.tests.test_symphony_autonomous_controller",
+      "automation.command_bus.tests.test_symphony_campaign_store",
+      "automation.command_bus.tests.test_symphony_attempt_store",
+      "automation.command_bus.tests.test_symphony_attempt_reconciler",
+      "automation.command_bus.tests.test_symphony_result_adoption",
+      "automation.command_bus.tests.test_symphony_g6_adoption",
+      "automation.command_bus.tests.test_symphony_g61_production_wiring",
+      "automation.command_bus.tests.test_symphony_g62_readiness",
+      "automation.command_bus.tests.test_symphony_g63_connection",
+      "automation.command_bus.tests.test_symphony_g7_static",
+      "automation.command_bus.tests.test_symphony_g71_campaign",
+      "automation.command_bus.tests.test_symphony_g72_runtime",
+      "automation.command_bus.tests.test_symphony_g72_candidate",
+      "automation.command_bus.tests.test_symphony_g73_host",
+      "automation.command_bus.tests.test_symphony_subscription_boundary",
+      "automation.command_bus.tests.test_symphony_attempt_faults",
+      "automation.command_bus.tests.test_symphony_upstream_event_adapter",
+      "automation.command_bus.tests.test_symphony_production_observer",
+      "automation.command_bus.tests.test_symphony_g51_worker_lifecycle",
+      "automation.command_bus.tests.test_symphony_upstream_reference",
+      "automation.command_bus.tests.test_symphony_minimal_live_preflight",
+      "-v",
+      "automation.command_bus.tests.test_symphony_ledger_reader",
+      "automation.command_bus.tests.test_symphony_operator_readiness"
+    ],
+    "exit": 2,
+    "sha256": "f06f33008839a9f607696db5b2bd5c70c5ce0ee882682575a5a4d878b9db023e",
+    "summary": "usage: python -m unittest [-h] [-v] [-q] [--locals] [--durations N] [-f] [-c]\n                          [-b] [-k TESTNAMEPATTERNS]\n                          [tests ...]\npython -m unittest: error: unrecognized arguments: automation.command_bus.tests.test_symphony_ledger_reader automation.command_bus.tests.test_symphony_operator_readiness\n"
+  }
+}

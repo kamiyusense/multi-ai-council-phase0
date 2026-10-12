@@ -1,0 +1,8 @@
+{
+  "rulesets": "UNKNOWN",
+  "protection": "UNKNOWN",
+  "http_status": 403,
+  "source": "immutable G7.1 readback docs/evidence/symphony-g71-static/constraints.json",
+  "new_probes": 0,
+  "publication_gate": "HOLD until independently resolved; no ADMIN inference or bypass"
+}

@@ -1,0 +1,118 @@
+{
+  "protocol": "SYMPHONY_STATIC_NEW_FILE_MANIFEST_V1",
+  "files": {
+    "automation/command_bus/symphony_operator_readiness.py": {
+      "bytes": 7031,
+      "sha256": "3522c1f05cc8130fee8fc025d966609b0807c1602e680d6ac825bc1a67dd3bf4"
+    },
+    "automation/command_bus/symphony_verifier_provenance.py": {
+      "bytes": 2622,
+      "sha256": "5a777d26f4bd10050d5a35a0d4f3dea704c11d6ce4777260aa6db3c827a83214"
+    },
+    "automation/command_bus/tests/test_symphony_operator_readiness.py": {
+      "bytes": 9093,
+      "sha256": "55deb45620cac2aa624ccf9f3cbd790d855cbbbae467fd0410c22db6c83253e3"
+    },
+    "docs/SYMPHONY_DOCKER_PRODUCTION_WIRING_READINESS.md": {
+      "bytes": 12957,
+      "sha256": "b2de1b235fac00d537515b1ff7039632c918a085944a7a4b95d525741b42a92a"
+    },
+    "docs/SYMPHONY_LOCAL_SAVE_RECOVERY_RESULT.md": {
+      "bytes": 4599,
+      "sha256": "9254be0f3599622bdd356d4c41361983e7472741ca49a66a55c9908b24dd16bf"
+    },
+    "docs/evidence/symphony-docker-production-wiring/backup.json": {
+      "bytes": 1317,
+      "sha256": "7f5ce2ec5694bc7207cd25755bc2f6a115f4170bc09233cded93e48624c5478d"
+    },
+    "docs/evidence/symphony-docker-production-wiring/checkpoint.json": {
+      "bytes": 2920,
+      "sha256": "fdec12891d02baed54a1b7f8e850dc1d6b2f407e920e22c78a89f3bb64299964"
+    },
+    "docs/evidence/symphony-docker-production-wiring/compile.txt.gz": {
+      "bytes": 20,
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "docs/evidence/symphony-docker-production-wiring/diff.txt.gz": {
+      "bytes": 20,
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "docs/evidence/symphony-docker-production-wiring/docker.json": {
+      "bytes": 3414,
+      "sha256": "2f440036820c1f1c69007e206e8ab2db0cde00b21aa66c5678249d55339a3aaa"
+    },
+    "docs/evidence/symphony-docker-production-wiring/focused-invocation-failure.txt.gz": {
+      "bytes": 198,
+      "sha256": "524df1460d096bce882e1f67fa0ffb7e58a649f8f2844b18c30105aec145acf5"
+    },
+    "docs/evidence/symphony-docker-production-wiring/focused.txt.gz": {
+      "bytes": 11524,
+      "sha256": "23a580c1dfba9fb2ce52014740b12043c05cbf87dbb23344262fa5226f2c8ca5"
+    },
+    "docs/evidence/symphony-docker-production-wiring/full.txt.gz": {
+      "bytes": 55376,
+      "sha256": "f6685d21655f15a123a0dd1438054cddc783f745f30d5e955d0c0a78a64597d7"
+    },
+    "docs/evidence/symphony-docker-production-wiring/historical.txt.gz": {
+      "bytes": 187,
+      "sha256": "20d3a0556600d3295e1ba39a16efdfee6cf5670f687473c9c94ee6052aff00dc"
+    },
+    "docs/evidence/symphony-docker-production-wiring/launcher.json": {
+      "bytes": 710,
+      "sha256": "5a898e8622b9d0f9feab940a0a37af0fcbdff3507a543dba3b4ce678138ed57d"
+    },
+    "docs/evidence/symphony-docker-production-wiring/new.txt.gz": {
+      "bytes": 543,
+      "sha256": "2a0a52936c699db7dde0f35ce76878a2ac2e8e3d72453d1545a9c3518992d003"
+    },
+    "docs/evidence/symphony-docker-production-wiring/patch.txt.gz": {
+      "bytes": 20,
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "docs/evidence/symphony-docker-production-wiring/prior-local-readback.json": {
+      "bytes": 1030,
+      "sha256": "1fcf1364973207913751f3275ec27e144610aaad06712b21d4af54b67ab876f0"
+    },
+    "docs/evidence/symphony-docker-production-wiring/real-host-readback.json": {
+      "bytes": 3002,
+      "sha256": "fb9da31f53e5c54d69f7bd8a1238d53bf48091323161f029cf523a181ca903fe"
+    },
+    "docs/evidence/symphony-docker-production-wiring/secret-scan.json": {
+      "bytes": 229,
+      "sha256": "870bcb16b0f084d314b7c931de659276a93baab3cc72140554303b9b108aebb1"
+    },
+    "docs/evidence/symphony-docker-production-wiring/sender-review-packet.json": {
+      "bytes": 9164,
+      "sha256": "55989199a8a930321f9e7c9e093ac54b26cfe25075dabe05c20962319a1c578f"
+    },
+    "docs/evidence/symphony-docker-production-wiring/starting-readback.json": {
+      "bytes": 1482,
+      "sha256": "17251b301fa81d9554f4e2179146a8be6de7f9291daa76d7bfcc15374c0b050c"
+    },
+    "docs/evidence/symphony-docker-production-wiring/test-invocation-failure.json": {
+      "bytes": 3066,
+      "sha256": "d9838cca552767928906ffcc69c34db8635cdad604b6f451095948790734f361"
+    },
+    "docs/evidence/symphony-docker-production-wiring/tests.json": {
+      "bytes": 5606,
+      "sha256": "17e5d6d8dedbc9515fa106f861cd2ecc6fb5143dfb27d5359bb853dc1ba4972b"
+    },
+    "docs/evidence/symphony-docker-production-wiring/validation-harness-recovery.json": {
+      "bytes": 395,
+      "sha256": "bfae7e6b14e8024722eda884f551f2ee75303abae0183c8c3d4e5de4745bea57"
+    },
+    "docs/evidence/symphony-docker-production-wiring/work-order-6096908254.md": {
+      "bytes": 9258,
+      "sha256": "9ebe974e0742692a21da085a110ad5ba4745d861488e498a0662d219bbdd646a"
+    },
+    "docs/evidence/symphony-docker-production-wiring/work-order-6097299721.md": {
+      "bytes": 6363,
+      "sha256": "ad40c03a2e14bf40bdd4e9855aa29d926a51947df515a88c207c9510937e74c0"
+    },
+    "docs/evidence/symphony-docker-production-wiring/work-order-source.json": {
+      "bytes": 511,
+      "sha256": "ba0fb06a69c8be1b8609fe78f6e6d8e9ce22f440b422258f0cdef292b25a09c0"
+    }
+  },
+  "self_excluded": true
+}

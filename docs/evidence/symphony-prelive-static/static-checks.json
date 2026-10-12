@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "automation/command_bus"
+      ],
+      "exit": 0
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0
+    }
+  ],
+  "upstream_patch_and_scheduler_sources": "UNCHANGED",
+  "signing_key_generation": 0,
+  "model_provider_candidate_execution": 0
+}

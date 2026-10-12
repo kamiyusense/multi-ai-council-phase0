@@ -1,0 +1,14 @@
+{
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "wsl": true,
+  "local_snapshot": "PASS_REAL_FILESYSTEM_STATIC_FIXTURES",
+  "local_docker": "NOT_RUN",
+  "reason": "Docker CLI shim reports command unavailable in this WSL distro; no integration settings changed",
+  "cloud_container_isolation": "PENDING_EXACT_HEAD_CI",
+  "model_provider_launches": 0,
+  "official_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+  "official_worktree_status": "",
+  "official_patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+  "patch_apply_check": "PASS"
+}

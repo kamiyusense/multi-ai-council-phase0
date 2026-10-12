@@ -1,0 +1,61 @@
+{
+  "compileall": {
+    "returncode": 0,
+    "result": "PASS",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "diff-check": {
+    "returncode": 0,
+    "result": "PASS",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "historical-evidence": {
+    "returncode": 0,
+    "result": "PASS",
+    "stdout_sha256": "4e6c310ff5c6a020197d1a92a01fa84724520117d8e079b22056b24e7afe0396"
+  },
+  "official_patch_sha256": "404b4001d279351c8b800816142862ee47dfd209615b0f9211fbe6ccc5170f3b",
+  "official_patch_changed": false,
+  "pinned-upstream-patch-check": {
+    "pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+    "command": [
+      "git",
+      "apply",
+      "--check"
+    ],
+    "returncode": 0,
+    "result": "PASS"
+  },
+  "authority_source_comparison": [
+    {
+      "path": ".github/workflows/signal-sf8-authority-issuer.yml",
+      "main_sha256": "220fc26002aa191074bc6fc29783bb13c3fd61f2f8dd7ae3e0d6ed9b8ae27bbf",
+      "pr_sha256": "220fc26002aa191074bc6fc29783bb13c3fd61f2f8dd7ae3e0d6ed9b8ae27bbf",
+      "identical": true
+    },
+    {
+      "path": "automation/command_bus/github_oidc_signature_proof.mjs",
+      "main_sha256": "bf85caf19d187cb8e4f519c046b895872179cf9de41546fbf02dbbd650d9462a",
+      "pr_sha256": "bf85caf19d187cb8e4f519c046b895872179cf9de41546fbf02dbbd650d9462a",
+      "identical": true
+    },
+    {
+      "path": "automation/command_bus/github_oidc_claims_policy.py",
+      "main_sha256": "f9b1d04b9874f376a49d70a80ea651f5f0cf5c38c9b09a55afeca649e163bf78",
+      "pr_sha256": "f9b1d04b9874f376a49d70a80ea651f5f0cf5c38c9b09a55afeca649e163bf78",
+      "identical": true
+    },
+    {
+      "path": "docs/GITHUB_OIDC_BOUNDED_PROOF_CHECKPOINT.md",
+      "main_sha256": "8605a76eaad682b0cbd399071a60b778278b3268c3de74890feadb8073249a01",
+      "pr_sha256": "8605a76eaad682b0cbd399071a60b778278b3268c3de74890feadb8073249a01",
+      "identical": true
+    }
+  ],
+  "product_processes": [],
+  "node_runtime_default_present": false,
+  "actual_official_behavior_source_changes": [],
+  "wsl_kernel_verified": true,
+  "ubuntu_verified": true,
+  "relevant_ports": []
+}

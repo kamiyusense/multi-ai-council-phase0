@@ -1,0 +1,156 @@
+name: Symphony G6.3 synthetic independent verifier
+
+on:
+  pull_request:
+    paths:
+      - automation/command_bus/symphony_operator_candidate.py
+      - automation/command_bus/symphony_operator_sender.py
+      - automation/command_bus/tests/test_symphony_operator_integration.py
+      - automation/command_bus/symphony_g73*.py
+      - automation/command_bus/tests/test_symphony_g73*.py
+      - automation/command_bus/scripts/symphony_g73*.py
+      - automation/command_bus/scripts/validate_symphony_g73.py
+      - docs/SYMPHONY_G73*.md
+      - docs/evidence/symphony-g73-static/**
+      - automation/command_bus/symphony_g72*.py
+      - automation/command_bus/tests/test_symphony_g72*.py
+      - automation/command_bus/scripts/symphony_g72*.py
+      - automation/command_bus/symphony_g71*.py
+      - automation/command_bus/tests/test_symphony_g71_campaign.py
+      - automation/command_bus/scripts/symphony_g71_synthetic_candidate.py
+      - automation/command_bus/symphony_g63*.py
+      - automation/command_bus/tests/test_symphony_g63_connection.py
+      - automation/command_bus/tests/test_symphony_g7_static.py
+      - automation/command_bus/scripts/symphony_g63_synthetic_verifier.py
+      - .github/workflows/symphony-g63-synthetic-verifier.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: symphony-g63-synthetic-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  synthetic-verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHON_IMAGE: python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
+      SCANNER_IMAGE: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+    steps:
+      - name: Checkout exact STATIC development head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Prepare pinned credential-free sandboxes
+        run: |
+          docker pull "$PYTHON_IMAGE"
+          docker pull "$SCANNER_IMAGE"
+          mkdir -p "$RUNNER_TEMP/g63-synthetic"
+          python -m automation.command_bus.scripts.symphony_g72_synthetic_candidate export
+
+      - name: Independent syntax
+        run: |
+          set -o pipefail
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 256m --cpus 2 --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate",dst=/candidate,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate-inputs.json",dst=/candidate-inputs.json,readonly --workdir /source \
+            -e PYTHONDONTWRITEBYTECODE=1 -e SYMPHONY_G63_ISOLATED=1 "$PYTHON_IMAGE" \
+            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier syntax && python -m automation.command_bus.scripts.symphony_g71_synthetic_candidate && python -m automation.command_bus.scripts.symphony_g72_synthetic_candidate syntax' \
+            | tee "$RUNNER_TEMP/g63-synthetic/syntax.jsonl"
+
+      - name: Independent tests
+        run: |
+          set -o pipefail
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 256m --cpus 2 --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate",dst=/candidate,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/g72-candidate-inputs.json",dst=/candidate-inputs.json,readonly --workdir /source \
+            -e PYTHONDONTWRITEBYTECODE=1 -e SYMPHONY_G63_ISOLATED=1 "$PYTHON_IMAGE" \
+            sh -c 'python -m automation.command_bus.scripts.symphony_g63_synthetic_verifier isolation && python -m unittest automation.command_bus.tests.test_symphony_operator_integration automation.command_bus.tests.test_symphony_operator_convergence automation.command_bus.tests.test_symphony_g63_connection automation.command_bus.tests.test_symphony_g7_static automation.command_bus.tests.test_symphony_g71_campaign automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_g72_candidate automation.command_bus.tests.test_symphony_g73_host -v && python -m automation.command_bus.scripts.symphony_g72_independent_test' \
+            2>&1 | tee "$RUNNER_TEMP/g63-synthetic/tests.txt"
+
+      - name: G7.3 host durable process proof
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 256m --cpus 2 --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --mount type=bind,src="$GITHUB_WORKSPACE",dst=/source,readonly --workdir /source \
+            -e PYTHONDONTWRITEBYTECODE=1 "$PYTHON_IMAGE" \
+            python -m automation.command_bus.scripts.symphony_g73_host_fixture run /tmp/g73-host-proof \
+            > "$RUNNER_TEMP/g63-synthetic/g73-host.json"
+          python - <<'PYCODE'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'g63-synthetic'/'g73-host.json'
+          d=json.loads(p.read_text())
+          assert d['result']=='PASS' and d['host_bound'] and d['disk_durable']
+          assert d['process_restart']['status']=='PASS' and d['process_restart']['extra_mock_ref_calls']==0
+          assert not any(d['counts'].values())
+          PYCODE
+
+      - name: Independent secret scan
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          root=Path(os.environ['RUNNER_TEMP'])/'g63-scanner-fixtures'
+          (root/'clean').mkdir(parents=True)
+          (root/'negative').mkdir()
+          (root/'clean'/'value.py').write_text('value = 2\n')
+          # Deliberately synthetic, never an account credential; kept out of logs.
+          (root/'negative'/'value.txt').write_text('token = "'+'ghp_'+'Ab1Cd2Ef3Gh4Ij5Kl6Mn7Op8Qr9St0Uv1Wx2'+'"\n')
+          (root/'trusted.toml').write_text('[extend]\nuseDefault = true\n')
+          PY
+          fixture_dir="$RUNNER_TEMP/g63-scanner-fixtures"
+          args=(--rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --user 65534:65534 --pids-limit 64 --memory 128m --tmpfs /tmp:rw,noexec,nosuid,size=32m --mount "type=bind,src=$fixture_dir,dst=/fixtures,readonly")
+          docker run "${args[@]}" "$SCANNER_IMAGE" dir /fixtures/clean --config /fixtures/trusted.toml --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner
+          docker run "${args[@]}" --mount "type=bind,src=$RUNNER_TEMP/g72-candidate,dst=/candidate,readonly" "$SCANNER_IMAGE" dir /candidate --config /fixtures/trusted.toml --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner
+          set +e
+          docker run "${args[@]}" "$SCANNER_IMAGE" dir /fixtures/negative --config /fixtures/trusted.toml --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner > "$RUNNER_TEMP/g63-synthetic/negative-scan.txt" 2>&1
+          status=$?
+          set -e
+          test "$status" -eq 1
+          echo '{"synthetic_clean_scan":"PASS","synthetic_secret_refused":true,"real_candidate_verified":false}' > "$RUNNER_TEMP/g63-synthetic/scanner.json"
+
+      - name: Record SYNTHETIC qualification only
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python - <<'PY'
+          import os,json,hashlib
+          from automation.command_bus.symphony_g72_candidate import PROTOCOL
+          from automation.command_bus.symphony_result_manifest import digest
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'g63-synthetic'
+          body={'protocol':'SYMPHONY_G63_SYNTHETIC_QUALIFICATION_V1','exact_head':os.environ['EXACT_HEAD'],
+                'run_id':int(os.environ['GITHUB_RUN_ID']),'run_attempt':int(os.environ['GITHUB_RUN_ATTEMPT']),
+                'live_model_count':0,'live_provider_count':0,'actual_candidate_attestation':False,
+                'actual_result_adoption':0,'independent_steps':['syntax','tests','secret_scan'],
+                'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.iterdir())}}
+          (p/'synthetic-qualification.json').write_text(json.dumps(body,indent=2)+'\n')
+          # Run/job slug is emitted without tokens; numeric job pin is verified by the external GET-only reader.
+          inputs=json.loads((p.parent/'g72-candidate-inputs.json').read_text())
+          att={'protocol':PROTOCOL,'synthetic':True,'workflow_source_commit':os.environ['EXACT_HEAD'],
+               'workflow_sha256':inputs['workflow_sha256'],'run_id':int(os.environ['GITHUB_RUN_ID']),
+               'run_attempt':int(os.environ['GITHUB_RUN_ATTEMPT']),'job_name':os.environ['GITHUB_JOB'],
+               'actual_candidate_attestation':False,'actual_result_adoption':0,'model_starts':0,
+               **{k:inputs[k] for k in ('candidate_commit','candidate_tree','result_digest','source_digest','scope_digest','expected_target_head','input_digest')},
+               'checks':{k:'PASS' for k in ('syntax','tests','secret_scan')}}
+          (p/'g72-attestation.json').write_text(json.dumps({**att,'attestation_digest':digest(att)},indent=2)+'\n')
+          # Audit input bytes are synthetic and contain no credentials.
+          (p/'g72-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+          PY
+
+      - name: Upload synthetic qualification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphony-g63-synthetic-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/g63-synthetic/
+          if-no-files-found: error
+          retention-days: 30

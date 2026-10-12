@@ -1,0 +1,18 @@
+{
+  "protocol": "SYMPHONY_G63_READONLY_CONSTRAINT_RESEARCH_V1",
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "default_branch": "main",
+  "current_main": "4bb5cd72ee0d9912376b0bb3b989cbb028806392",
+  "target": "claude/symphony-g61-production-wiring-static",
+  "rulesets": "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)",
+  "branch_protection": "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)",
+  "result": "UNKNOWN_FRESH_HTTP_403",
+  "actual_ref_permission": "NOT_EXERCISED",
+  "CAS_error_shape": "NOT_EXERCISED_NO_MUTATION",
+  "cas_contract": "official updateRefs atomic mandatory beforeOid force=false; response is not authority",
+  "sources": [
+    "https://docs.github.com/en/graphql/reference/git#updaterefs",
+    "https://docs.github.com/en/rest/actions/artifacts#download-an-artifact",
+    "https://docs.github.com/en/rest/repos/rules"
+  ]
+}

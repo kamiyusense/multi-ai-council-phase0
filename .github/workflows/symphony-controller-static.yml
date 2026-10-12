@@ -3,6 +3,30 @@ name: Symphony-inspired controller static validation
 on:
   pull_request:
     paths:
+      - automation/command_bus/symphony_operator_*.py
+      - automation/command_bus/symphony_operator_oidc_signature.mjs
+      - automation/command_bus/tests/test_symphony_operator_convergence.py
+      - automation/command_bus/tests/test_github_oidc_signature_proof.mjs
+      - docs/SYMPHONY_PRELIVE_READINESS.md
+      - docs/evidence/symphony-prelive-convergence/**
+      - automation/command_bus/scripts/validate_symphony_operator_static.py
+      - docs/SYMPHONY_PRELIVE_OPERATOR_INTEGRATION.md
+      - docs/evidence/symphony-prelive-static/**
+      - automation/command_bus/symphony_operator_candidate.py
+      - automation/command_bus/symphony_operator_sender.py
+      - automation/command_bus/tests/test_symphony_operator_integration.py
+      - automation/command_bus/symphony_g73*.py
+      - automation/command_bus/tests/test_symphony_g73*.py
+      - automation/command_bus/scripts/symphony_g73*.py
+      - automation/command_bus/scripts/validate_symphony_g73.py
+      - docs/SYMPHONY_G73*.md
+      - docs/evidence/symphony-g73-static/**
+      - automation/command_bus/symphony_g72*.py
+      - automation/command_bus/tests/test_symphony_g72*.py
+      - automation/command_bus/scripts/symphony_g72*.py
+      - automation/command_bus/scripts/validate_symphony_g72.py
+      - docs/SYMPHONY_G72*.md
+      - docs/evidence/symphony-g72-static/**
       - automation/command_bus/symphony_controller.py
       - automation/command_bus/symphony_autonomous_policy.py
       - automation/command_bus/symphony_autonomous_runtime.py
@@ -16,6 +40,37 @@ on:
       - automation/command_bus/tests/test_symphony_g6_adoption.py
       - automation/command_bus/tests/symphony_g6_fixtures.py
       - automation/command_bus/tests/fixtures/symphony_g6/**
+      - automation/command_bus/symphony_github_git_transport.py
+      - automation/command_bus/symphony_github_readers.py
+      - automation/command_bus/symphony_workspace_snapshot.py
+      - automation/command_bus/symphony_result_verification.py
+      - automation/command_bus/symphony_g71*.py
+      - automation/command_bus/tests/test_symphony_g71_campaign.py
+      - automation/command_bus/scripts/validate_symphony_g71.py
+      - docs/SYMPHONY_G71*.md
+      - docs/evidence/symphony-g71-static/**
+      - automation/command_bus/symphony_g63*.py
+      - automation/command_bus/tests/test_symphony_g63_connection.py
+      - automation/command_bus/tests/test_symphony_g7_static.py
+      - automation/command_bus/scripts/validate_symphony_g63.py
+      - docs/SYMPHONY_G63*.md
+      - docs/SYMPHONY_G7_STATIC_CHECKPOINT.md
+      - docs/evidence/symphony-g63-static/**
+      - automation/command_bus/symphony_g62_prepare.py
+      - automation/command_bus/symphony_g62_attestation.py
+      - automation/command_bus/tests/test_symphony_g62_readiness.py
+      - automation/command_bus/tests/fixtures/symphony_g62/**
+      - automation/command_bus/scripts/validate_symphony_g62.py
+      - docs/SYMPHONY_G62_STATIC_READINESS_CHECKPOINT.md
+      - docs/SYMPHONY_G62_LOCAL_LIVE_PREFLIGHT.md
+      - docs/evidence/symphony-g62-static/**
+      - automation/command_bus/symphony_g61_wiring.py
+      - automation/command_bus/scripts/symphony_g61_readonly_smoke.py
+      - automation/command_bus/tests/test_symphony_g61_production_wiring.py
+      - automation/command_bus/tests/symphony_g61_github_sim.py
+      - automation/command_bus/tests/fixtures/symphony_g61/**
+      - docs/SYMPHONY_G61_PRODUCTION_WIRING_STATIC_CHECKPOINT.md
+      - docs/evidence/symphony-g61-static/**
       - docs/SYMPHONY_G6_STATIC_CHECKPOINT.md
       - docs/SYMPHONY_G6_LOCAL_LIVE_PLAN.md
       - docs/evidence/symphony-g6-static/**
@@ -80,12 +135,26 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/symphony-static-evidence"
-          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_g6_adoption automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_g51_worker_lifecycle automation.command_bus.tests.test_symphony_upstream_reference automation.command_bus.tests.test_symphony_minimal_live_preflight -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
+          python -m unittest automation.command_bus.tests.test_symphony_controller automation.command_bus.tests.test_symphony_autonomous_runtime automation.command_bus.tests.test_symphony_autonomous_controller automation.command_bus.tests.test_symphony_campaign_store automation.command_bus.tests.test_symphony_attempt_store automation.command_bus.tests.test_symphony_attempt_reconciler automation.command_bus.tests.test_symphony_result_adoption automation.command_bus.tests.test_symphony_g6_adoption automation.command_bus.tests.test_symphony_g61_production_wiring automation.command_bus.tests.test_symphony_g62_readiness automation.command_bus.tests.test_symphony_operator_integration automation.command_bus.tests.test_symphony_operator_convergence automation.command_bus.tests.test_symphony_g63_connection automation.command_bus.tests.test_symphony_g7_static automation.command_bus.tests.test_symphony_g71_campaign automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_g72_candidate automation.command_bus.tests.test_symphony_g73_host automation.command_bus.tests.test_symphony_subscription_boundary automation.command_bus.tests.test_symphony_attempt_faults automation.command_bus.tests.test_symphony_upstream_event_adapter automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_g51_worker_lifecycle automation.command_bus.tests.test_symphony_upstream_reference automation.command_bus.tests.test_symphony_minimal_live_preflight -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/focused-tests.txt"
+
+      - name: Offline operator OIDC signature and exact authorization binding
+        run: |
+          set -o pipefail
+          node --test automation/command_bus/tests/test_github_oidc_signature_proof.mjs 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/operator-oidc-tests.txt"
 
       - name: Full command bus regression suite
         run: |
           set -o pipefail
           python -m unittest discover -s automation/command_bus/tests -t . -v 2>&1 | tee "$RUNNER_TEMP/symphony-static-evidence/full-tests.txt"
+
+      - name: Validate immutable G6.2 historical evidence
+        run: python -m automation.command_bus.scripts.validate_symphony_g63 --historical-only
+
+      - name: Validate G6.3 sealed evidence and OFF boundary
+        run: python -m automation.command_bus.scripts.validate_symphony_g73
+
+      - name: Validate pre-LIVE operator interfaces and evidence
+        run: python -m automation.command_bus.scripts.validate_symphony_operator_static
 
       - name: Compile command bus
         run: python -m compileall -q automation/command_bus

@@ -1,0 +1,14 @@
+{
+  "os": "Linux",
+  "release": "6.18.33.2-microsoft-standard-WSL2",
+  "python": "3.14.4",
+  "secure_primitives": {
+    "O_NOFOLLOW": true,
+    "open_dir_fd": true,
+    "stat_no_follow": true,
+    "fsync": true
+  },
+  "WSL_secure_snapshot_tests": "PASS_REAL_LOCAL_FILES_SYNTHETIC_CONTENT",
+  "local_Docker_qualification": "NOT_RUN",
+  "local_container_settings_changes": 0
+}

@@ -1,0 +1,205 @@
+{
+  "mode": "GET_ONLY",
+  "writes": 0,
+  "graphql_mutations": 0,
+  "credential_value_access": 0,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "repository_metadata": {
+    "id": 1378815294,
+    "node_id": "R_kgDOUi8NPg",
+    "full_name": "kamiyusense/multi-ai-council-phase0",
+    "default_branch": "main",
+    "private": true,
+    "archived": false,
+    "permissions": {
+      "admin": true,
+      "maintain": true,
+      "push": true,
+      "triage": true,
+      "pull": true
+    }
+  },
+  "owner": {
+    "login": "kamiyusense",
+    "id": 20355232,
+    "type": "User"
+  },
+  "identity": {
+    "repository_id": "R_kgDOUi8NPg",
+    "default_branch": "main",
+    "viewer_permission": "ADMIN",
+    "archived": false
+  },
+  "refs": {
+    "main": {
+      "status": 200,
+      "head": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c"
+    },
+    "claude/symphony-g61-production-wiring-static": {
+      "status": 200,
+      "head": "8bfe01b64cdf9206dc47af32b5f25c85ab1be8ed"
+    },
+    "codex/symphony-inspired-minimal-controller": {
+      "status": 200,
+      "head": "8c53c505a21318c6133da0bef85af18ae3711103"
+    },
+    "codex/symphony-g5-proof-ledger": {
+      "status": 200,
+      "head": "1e7333caf91c556a48f423a802c48678962e1cbc"
+    },
+    "codex/symphony-minimal-live-proof-336": {
+      "status": 200,
+      "head": "8ed44bf964d2c74ec7af74c7e26f9992a0b049d7"
+    },
+    "codex/symphony-g5-local-20261009T024653Z-d646fcdc": {
+      "status": 200,
+      "head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0"
+    },
+    "codex/symphony-g51-local-20261009T225229Z-41fddcf6": {
+      "status": 200,
+      "head": "702497c6b464a3b1ab09441b21fc6f96bd3bb2d0"
+    }
+  },
+  "protection": {
+    "branches/main/protection": {
+      "http_status": 403,
+      "state": "UNKNOWN",
+      "body": {
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "status": "403"
+      }
+    },
+    "branches/claude/symphony-g61-production-wiring-static/protection": {
+      "http_status": 403,
+      "state": "UNKNOWN",
+      "body": {
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "status": "403"
+      }
+    },
+    "rulesets?includes_parents=true": {
+      "http_status": 403,
+      "state": "UNKNOWN",
+      "body": {
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-all-repository-rulesets",
+        "status": "403"
+      }
+    },
+    "rules/branches/main": {
+      "http_status": 403,
+      "state": "UNKNOWN",
+      "body": {
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "status": "403"
+      }
+    }
+  },
+  "open_symphony_prs": [
+    {
+      "number": 343,
+      "head": "8bfe01b64cdf9206dc47af32b5f25c85ab1be8ed",
+      "branch": "claude/symphony-g61-production-wiring-static",
+      "draft": true
+    },
+    {
+      "number": 320,
+      "head": "8c53c505a21318c6133da0bef85af18ae3711103",
+      "branch": "codex/symphony-inspired-minimal-controller",
+      "draft": true
+    }
+  ],
+  "latest_comment_on_page_1": 6104065023,
+  "comments_pagination_required": false,
+  "production_ledger_recovery": [
+    {
+      "campaign": "symphony-g5-local-20261009T024653Z-d646fcdc",
+      "mode": "READ_ONLY",
+      "ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+      "view": {
+        "status": "HOLD_CHECKPOINT_MISSING",
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "attempts": [
+        {
+          "attempt_id": "attempt-1fdd3890e399898ee905068f55b87e72",
+          "state": "STARTED_UNRESOLVED",
+          "worker_run_id": "3a2b4fc6e701a86ca26df0b415e13b86",
+          "outcome": null
+        }
+      ],
+      "checkpoint_applied": false,
+      "model_dispatch": 0,
+      "real_publication": 0
+    },
+    {
+      "campaign": "symphony-g51-local-20261009T225229Z-41fddcf6",
+      "mode": "READ_ONLY",
+      "ledger_head": "1e7333caf91c556a48f423a802c48678962e1cbc",
+      "view": {
+        "status": "HOLD_CHECKPOINT_MISSING",
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "attempts": [
+        {
+          "attempt_id": "attempt-14219f5ac8d71a5ea86ceecfe24f4f02",
+          "state": "TERMINAL",
+          "worker_run_id": "b8f1a7db6c6358a76555365062d8a776",
+          "outcome": "UNKNOWN"
+        }
+      ],
+      "checkpoint_applied": false,
+      "model_dispatch": 0,
+      "real_publication": 0
+    }
+  ],
+  "GET_requests": 54,
+  "subscription": {
+    "login_returncode": 0,
+    "chatgpt_subscription_login": true,
+    "active_environment_selector_names": [],
+    "quota": "UNKNOWN_NOT_EXHAUSTED",
+    "model_started": 0,
+    "config_selectors": [
+      {
+        "path": "/mnt/c/Users/yuuki/.codex/config.toml",
+        "model_selector": "gpt-6.1-sol",
+        "model_provider_selector": "openai",
+        "active_custom_base_url_selector_present": false,
+        "active_api_env_selector_present": false,
+        "active_api_key_selector_present": false,
+        "automatic_provider_fallback_configured": false
+      }
+    ]
+  },
+  "future_proof": {
+    "state": "PROPOSED_NOT_CREATED",
+    "seed": "7fbdd0b269680778",
+    "issue_number": null,
+    "issue_title": "Symphony one-run proof 7fbdd0b269680778",
+    "campaign_id": "operator-proof-7fbdd0b269680778",
+    "task_id": "operator-task-7fbdd0b269680778",
+    "generation": 1,
+    "attempt_number": 1,
+    "runner_generation": 1,
+    "workspace": "/home/yuuki/work/symphony-one-run-7fbdd0b269680778",
+    "proof_ref": "codex/symphony-one-run-7fbdd0b269680778",
+    "expected_target_head": "abb5402079d4af341c349ea9e8b6a8a5c3f2d37c",
+    "correlation_id": "one-run-7fbdd0b269680778",
+    "max_worker_lifetimes": 1,
+    "max_publication_CAS": 1,
+    "observer_restart": 1,
+    "extra_model_dispatch_on_restart": 0,
+    "human_approval": "NONE",
+    "attempt_id": "attempt-e038c1bfff9cc0d0e28a2179b6ae1235",
+    "fresh_proof_ref_readback_status": 404,
+    "ref_exists": false
+  }
+}

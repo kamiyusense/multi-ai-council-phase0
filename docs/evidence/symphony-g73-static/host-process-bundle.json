@@ -1,0 +1,379 @@
+{
+  "protocol": "SYMPHONY_G73_HOST_STATIC_EVIDENCE_V1",
+  "result": "PASS",
+  "synthetic": true,
+  "host_bound": true,
+  "disk_durable": true,
+  "tasks": [
+    {
+      "task": "A",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 3,
+        "checkpoint_digest": "7ac33d389471af3a1046192888cbbc6a09e70ae9e708beb86f9e2b8d0fe60c72",
+        "continuation_ready": true
+      },
+      "view": {
+        "protocol": "SYMPHONY_G73_HOST_VIEW_V1",
+        "mode": "OFF",
+        "revision": 3,
+        "checkpoint_digest": "7ac33d389471af3a1046192888cbbc6a09e70ae9e708beb86f9e2b8d0fe60c72",
+        "next_action": {
+          "kind": "DISPATCH_TASK",
+          "task_id": "B",
+          "reason": null
+        },
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "signed_updates": 2,
+      "snapshot_manifest_sha256": "5d42f61d37518d32c83ce5d8f4c90e936d0a99f2560a451178b0014d694f64cd",
+      "started": {
+        "attempt_id": "attempt-da9284a924e9d68669f0ed433ab08318",
+        "attempt_number": 825273771230093590,
+        "campaign_id": "g61-static",
+        "expected_target_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+        "expected_target_tree": null,
+        "generation": 1,
+        "intent_digest": "7d12722d228179fd8ec5cdde246c6433c265405ca03da56fb4d997c2e9252063",
+        "observation_source": "LIVE_OBSERVATION",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "provider_attempt_ref": "b73f61f589de11510693599bc6091c0e",
+        "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+        "runner_generation": 1,
+        "start_observed": true,
+        "task_id": "A",
+        "thread_id": null,
+        "turn_id": null,
+        "workspace_fingerprint": "6fd118cd09af76eb4aa627c4f3df0ebdc9c728028657a85d9a114b583f42abf7"
+      },
+      "terminal": {
+        "affects_campaign_authority": false,
+        "attempt_id": "attempt-da9284a924e9d68669f0ed433ab08318",
+        "attempt_number": 825273771230093590,
+        "campaign_id": "g61-static",
+        "evidence_refs": [
+          "sym-g5:sha256:7568c71e5608d6b817878c4b44c76b8cec13d95a66f7c6317e7f683954352a2c",
+          "sym-g5-status:WORKER_STOPPED"
+        ],
+        "expected_target_head": "cf60d70f3faf310a037fc9d6d180a8363c8bdf3f",
+        "expected_target_tree": null,
+        "generation": 1,
+        "model_started": null,
+        "mutation_operations": [],
+        "outcome": "UNKNOWN",
+        "predecessor_digest": "3c3a0f40c7037796fdd73d53973459976cd6742f4901c418ea451672b27c40aa",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_TERMINAL_V1",
+        "result_id": "sym-g5-worker:b73f61f589de11510693599bc6091c0e",
+        "runner_generation": 1,
+        "task_id": "A",
+        "unknown_class": "RECOVERABLE_UNKNOWN"
+      }
+    },
+    {
+      "task": "B",
+      "result": {
+        "status": "CORRECTIVE_TASK_CREATED",
+        "attempt_id": "attempt-cd716c9aabcf9a5d8017c49e7e232a98",
+        "revision": 5,
+        "close_ready": false
+      },
+      "view": {
+        "protocol": "SYMPHONY_G73_HOST_VIEW_V1",
+        "mode": "OFF",
+        "revision": 5,
+        "checkpoint_digest": "72b45a34e07eb81203bb278a5b78e0844480b9b6007f54e3759c251221411f14",
+        "next_action": {
+          "kind": "DISPATCH_TASK",
+          "task_id": "B::corrective::1",
+          "reason": null
+        },
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "signed_updates": 2,
+      "snapshot_manifest_sha256": "67e5841f32f073ab2a0467c4c8c6a3634094f56d3d9053e4f99c689b354e0426",
+      "started": {
+        "attempt_id": "attempt-cd716c9aabcf9a5d8017c49e7e232a98",
+        "attempt_number": 45178597724672124,
+        "campaign_id": "g61-static",
+        "expected_target_head": "9bc252c986f6ccda784ece552437339b790e7dea",
+        "expected_target_tree": null,
+        "generation": 1,
+        "intent_digest": "6ba4d13aae3f0603c6d64045c925d85bf666f5ed935d823699c3df452eeb8f64",
+        "observation_source": "LIVE_OBSERVATION",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "provider_attempt_ref": "0a081b1fcd4507b8d9606b15a45ac3e4",
+        "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+        "runner_generation": 1,
+        "start_observed": true,
+        "task_id": "B",
+        "thread_id": null,
+        "turn_id": null,
+        "workspace_fingerprint": "a5e7b6cf4609406b07de6462440bbd308888208ddc53e487a77fc8bfe3a17d55"
+      },
+      "terminal": {
+        "affects_campaign_authority": false,
+        "attempt_id": "attempt-cd716c9aabcf9a5d8017c49e7e232a98",
+        "attempt_number": 45178597724672124,
+        "campaign_id": "g61-static",
+        "evidence_refs": [
+          "sym-g5:sha256:0ed3342d585dd45b4fe7ad0b0f9436595c9843d2528d928cfae909d739ac58f7",
+          "sym-g5-status:WORKER_STOPPED"
+        ],
+        "expected_target_head": "9bc252c986f6ccda784ece552437339b790e7dea",
+        "expected_target_tree": null,
+        "generation": 1,
+        "model_started": null,
+        "mutation_operations": [],
+        "outcome": "UNKNOWN",
+        "predecessor_digest": "cfff8425aae570a80a96d00cb020defc45a63c0bed0a6274e0972ece3dd3e062",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_TERMINAL_V1",
+        "result_id": "sym-g5-worker:0a081b1fcd4507b8d9606b15a45ac3e4",
+        "runner_generation": 1,
+        "task_id": "B",
+        "unknown_class": "RECOVERABLE_UNKNOWN"
+      }
+    },
+    {
+      "task": "B::corrective::1",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 7,
+        "checkpoint_digest": "c91f4d441f9016abc8a8f905101885648123d8d38d468570387a6aaa11906305",
+        "continuation_ready": true
+      },
+      "view": {
+        "protocol": "SYMPHONY_G73_HOST_VIEW_V1",
+        "mode": "OFF",
+        "revision": 7,
+        "checkpoint_digest": "c91f4d441f9016abc8a8f905101885648123d8d38d468570387a6aaa11906305",
+        "next_action": {
+          "kind": "DISPATCH_TASK",
+          "task_id": "E",
+          "reason": null
+        },
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "signed_updates": 2,
+      "snapshot_manifest_sha256": "694f659df25914febb5139ef8fe0c7ed90751b92eeff7e7550336a2085f58b77",
+      "started": {
+        "attempt_id": "attempt-50e153a53466b57df593fe92a0b83805",
+        "attempt_number": 121207891303836058,
+        "campaign_id": "g61-static",
+        "expected_target_head": "9bc252c986f6ccda784ece552437339b790e7dea",
+        "expected_target_tree": null,
+        "generation": 1,
+        "intent_digest": "6165a316aa549253c65484ae890b6f8354ed2adc04cebe95ebef0d8bb737fb46",
+        "observation_source": "LIVE_OBSERVATION",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "provider_attempt_ref": "1ae9def5923a9998d4f7c1bdc0539fe4",
+        "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+        "runner_generation": 1,
+        "start_observed": true,
+        "task_id": "B::corrective::1",
+        "thread_id": null,
+        "turn_id": null,
+        "workspace_fingerprint": "58cfd0fe8603d2f4090dcd0227d158be4f5a4f0149aff3ee99888f81b4c4d976"
+      },
+      "terminal": {
+        "affects_campaign_authority": false,
+        "attempt_id": "attempt-50e153a53466b57df593fe92a0b83805",
+        "attempt_number": 121207891303836058,
+        "campaign_id": "g61-static",
+        "evidence_refs": [
+          "sym-g5:sha256:6c2c426404d75f924b33c651ec5a9ffaa9a28d6b955a98f298cd2aef118242a9",
+          "sym-g5-status:WORKER_STOPPED"
+        ],
+        "expected_target_head": "9bc252c986f6ccda784ece552437339b790e7dea",
+        "expected_target_tree": null,
+        "generation": 1,
+        "model_started": null,
+        "mutation_operations": [],
+        "outcome": "UNKNOWN",
+        "predecessor_digest": "29a59f44a00a86f285e917f1067c39fe5daa49b51b878dcc694f05b151eef786",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_TERMINAL_V1",
+        "result_id": "sym-g5-worker:1ae9def5923a9998d4f7c1bdc0539fe4",
+        "runner_generation": 1,
+        "task_id": "B::corrective::1",
+        "unknown_class": "RECOVERABLE_UNKNOWN"
+      }
+    },
+    {
+      "task": "E",
+      "result": {
+        "status": "HOLD_AUTHORITY",
+        "adoption_status": "HOLD_AUTHORITY",
+        "revision": 9,
+        "checkpoint_digest": "32d2e3d056dd47a89513ceed5ba15fef425c06a21731994962eb711e3f64cdeb",
+        "continuation_ready": true
+      },
+      "view": {
+        "protocol": "SYMPHONY_G73_HOST_VIEW_V1",
+        "mode": "OFF",
+        "revision": 9,
+        "checkpoint_digest": "32d2e3d056dd47a89513ceed5ba15fef425c06a21731994962eb711e3f64cdeb",
+        "next_action": {
+          "kind": "DISPATCH_TASK",
+          "task_id": "F",
+          "reason": null
+        },
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "signed_updates": 2,
+      "snapshot_manifest_sha256": "e014c9777c0fb4a117fc0a0db3012e1de1a90a5911ded3fe103ca9efc4f45d6b",
+      "started": {
+        "attempt_id": "attempt-f4a89284d539f92e62f60fef91c69d49",
+        "attempt_number": 137195163450780029,
+        "campaign_id": "g61-static",
+        "expected_target_head": "a29592a5aa591be31d69bdf846614675ec0e5758",
+        "expected_target_tree": null,
+        "generation": 1,
+        "intent_digest": "2a38baa0036424caa9afa58b93f7449d5eb5e9e1eb94bd3913d4f2ad886be87e",
+        "observation_source": "LIVE_OBSERVATION",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "provider_attempt_ref": "1e76a463662a97caabe38bbc6c27bced",
+        "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+        "runner_generation": 1,
+        "start_observed": true,
+        "task_id": "E",
+        "thread_id": null,
+        "turn_id": null,
+        "workspace_fingerprint": "dfd726fcfb1d63ee9460495504f325a9a860e4dca98ac4994e052c2a00f5a259"
+      },
+      "terminal": {
+        "affects_campaign_authority": false,
+        "attempt_id": "attempt-f4a89284d539f92e62f60fef91c69d49",
+        "attempt_number": 137195163450780029,
+        "campaign_id": "g61-static",
+        "evidence_refs": [
+          "sym-g5:sha256:48733cf063df9f06cca30ab465318b97058725d2bdbfe1d484418748e59a28cb",
+          "sym-g5-status:WORKER_STOPPED"
+        ],
+        "expected_target_head": "a29592a5aa591be31d69bdf846614675ec0e5758",
+        "expected_target_tree": null,
+        "generation": 1,
+        "model_started": null,
+        "mutation_operations": [],
+        "outcome": "UNKNOWN",
+        "predecessor_digest": "0416c5000f24d5c64d47c9d0ad32df2f68f94f48cf890abda5f98bdad60899b2",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_TERMINAL_V1",
+        "result_id": "sym-g5-worker:1e76a463662a97caabe38bbc6c27bced",
+        "runner_generation": 1,
+        "task_id": "E",
+        "unknown_class": "RECOVERABLE_UNKNOWN"
+      }
+    },
+    {
+      "task": "F",
+      "result": {
+        "status": "ADOPTED",
+        "adoption_status": "ADOPTED",
+        "revision": 11,
+        "checkpoint_digest": "bfd4bda905502daca240062c7357e6e308e23ebe4ba8ce6c9aa90c3d377707a8",
+        "continuation_ready": true
+      },
+      "view": {
+        "protocol": "SYMPHONY_G73_HOST_VIEW_V1",
+        "mode": "OFF",
+        "revision": 11,
+        "checkpoint_digest": "bfd4bda905502daca240062c7357e6e308e23ebe4ba8ce6c9aa90c3d377707a8",
+        "next_action": {
+          "kind": "STOP_NO_SAFE_WORK",
+          "task_id": null,
+          "reason": "no dependency-satisfied READY task remains"
+        },
+        "advice_only": true,
+        "model_dispatch": 0,
+        "real_publication": 0
+      },
+      "signed_updates": 2,
+      "snapshot_manifest_sha256": "241b4336520bfcb3c47e302bae953f2569992207186eaf3e7111f49124b2f0a4",
+      "started": {
+        "attempt_id": "attempt-167dcc93d028fc6b1a29c13777ae6e34",
+        "attempt_number": 774397922316356569,
+        "campaign_id": "g61-static",
+        "expected_target_head": "a29592a5aa591be31d69bdf846614675ec0e5758",
+        "expected_target_tree": null,
+        "generation": 1,
+        "intent_digest": "312f12eeb4c64bdf88f942c9110851f68e5f1debba39a90ece8f0a96fa401a36",
+        "observation_source": "LIVE_OBSERVATION",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "provider_attempt_ref": "abf36ceb2778bd8794b5b60f88c9cb2b",
+        "provider_kind": "OFFICIAL_SYMPHONY_CODEX",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_STARTED_V1",
+        "runner_generation": 1,
+        "start_observed": true,
+        "task_id": "F",
+        "thread_id": null,
+        "turn_id": null,
+        "workspace_fingerprint": "13b3153727e01dd9caef3ac20765f85407e109a0265541a2285615be37d3453a"
+      },
+      "terminal": {
+        "affects_campaign_authority": false,
+        "attempt_id": "attempt-167dcc93d028fc6b1a29c13777ae6e34",
+        "attempt_number": 774397922316356569,
+        "campaign_id": "g61-static",
+        "evidence_refs": [
+          "sym-g5:sha256:28f988251d450bb0eb4a16f9e4ab5a34e298e41caae320a615082086432cc1e5",
+          "sym-g5-status:WORKER_STOPPED"
+        ],
+        "expected_target_head": "a29592a5aa591be31d69bdf846614675ec0e5758",
+        "expected_target_tree": null,
+        "generation": 1,
+        "model_started": null,
+        "mutation_operations": [],
+        "outcome": "UNKNOWN",
+        "predecessor_digest": "dde0df69a39916caf8f8dbf155ce4f9b1e899f0cf27240a7d23750721f3da855",
+        "protocol_version": "SYMPHONY_AUTONOMOUS_ATTEMPT_V1",
+        "record_type": "SYMPHONY_AUTONOMOUS_ATTEMPT_TERMINAL_V1",
+        "result_id": "sym-g5-worker:abf36ceb2778bd8794b5b60f88c9cb2b",
+        "runner_generation": 1,
+        "task_id": "F",
+        "unknown_class": "RECOVERABLE_UNKNOWN"
+      }
+    }
+  ],
+  "mock_verified_receipts": 3,
+  "independent_failed_check_corrective": true,
+  "blocked_sibling_finished": true,
+  "process_restart": {
+    "actual_candidate_attestation": false,
+    "checkpoint_digest": "bfd4bda905502daca240062c7357e6e308e23ebe4ba8ce6c9aa90c3d377707a8",
+    "event_statuses": [
+      "NOOP_DUPLICATE",
+      "READ_ONLY",
+      "READ_ONLY",
+      "NOOP_DUPLICATE"
+    ],
+    "extra_mock_object_posts": 0,
+    "extra_mock_ref_calls": 0,
+    "extra_model_dispatch": 0,
+    "protocol": "SYMPHONY_G73_SYNTHETIC_PROCESS_RECOVERY_V1",
+    "receipt": "NOOP_DUPLICATE",
+    "status": "PASS"
+  },
+  "counts": {
+    "live_worker": 0,
+    "model": 0,
+    "real_git_write": 0,
+    "actual_result_adoption": 0
+  },
+  "operator_approval": "NONE"
+}

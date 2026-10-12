@@ -1,0 +1,9 @@
+{
+  "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "WSL": "ACTUAL_UBUNTU",
+  "snapshot_no_follow": "QUALIFIED",
+  "local_docker_isolation": "NOT_RUN_WSL_INTEGRATION_UNAVAILABLE",
+  "settings_changed": false,
+  "github_isolated_CI": "PENDING"
+}
