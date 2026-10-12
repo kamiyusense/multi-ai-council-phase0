@@ -1,0 +1,42 @@
+{
+  "protocol": "SYMPHONY_INSTALLATION_FORMAT_CORRECTION_V1",
+  "supersedes_diff_check_claim_only_at": "87c81bb5a7b5f9a199f450edd12544a0b532afd8",
+  "cause": "Untracked patch whitespace was omitted from the initial unstaged diff check; staged check failed but shell continued the local commit. No remote write occurred.",
+  "correction": "Unified patch blank context normalized; git apply check PASS; applied upstream bytes are identical. Original receipt retained unchanged.",
+  "applied_source_byte_equal": true,
+  "applied_source_sha256": "bd65321a1ce498a5de38ce626a5225d087bd384e7c064260966c2b1a7b3e11e6",
+  "patch_sha256": "719d1090bdd996def915ca7469b02d7868b968111027a31c1f970179457fd78c",
+  "exact_base_diff_check": "PASS",
+  "mode": "OFF",
+  "LIVE_GO": false,
+  "production_cutover": false,
+  "tests": {
+    "focused-tests.txt.gz": {
+      "tests": 71,
+      "seconds": 0.273,
+      "result": "PASS",
+      "skip_count": 0
+    },
+    "full-tests.txt.gz": {
+      "tests": 2915,
+      "seconds": 115.477,
+      "result": "PASS",
+      "skip_count": 1
+    }
+  },
+  "final_ci_receipt": "APPEND_ONLY_PR_FINAL_COMMENT_AFTER_PUSH",
+  "forbidden_counts": {
+    "LIVE": 0,
+    "model_dispatch": 0,
+    "OIDC": 0,
+    "production_send": 0,
+    "adoption": 0,
+    "Merge": 0,
+    "main_write": 0,
+    "settings": 0,
+    "permissions": 0,
+    "Secrets": 0,
+    "billing": 0,
+    "force_push": 0
+  }
+}

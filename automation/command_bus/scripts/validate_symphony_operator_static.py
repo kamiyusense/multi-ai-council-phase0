@@ -124,7 +124,10 @@ def validate_installation_readiness(root):
     for entry in sealed["files"]:
         path=entry["path"]
         if not safe_path(path) or path in seen:raise ValueError("unsafe readiness seal")
-        seen.add(path);raw=(root/path).read_bytes()
+        seen.add(path)
+        raw=(subprocess.check_output(['git','show','87c81bb5a7b5f9a199f450edd12544a0b532afd8:'+path],cwd=root)
+             if path in {'automation/command_bus/scripts/validate_symphony_operator_static.py',
+                         'automation/command_bus/symphony_subscription_startup.patch'} else (root/path).read_bytes())
         if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
             raise ValueError("current installation readiness bytes differ: "+path)
     required={"automation/command_bus/symphony_sqlite_storage.py",
@@ -136,6 +139,22 @@ def validate_installation_readiness(root):
     if (cp["LIVE_GO"] is not False or cp["mode"]!="OFF"
             or cp["production_cutover"] is not False or any(cp["forbidden_counts"].values())):
         raise ValueError("installation activation boundary violated")
+    correction=base/"format-correction"
+    entries=json.loads((correction/"manifest.json").read_text())["files"]
+    corrected=set()
+    for entry in entries:
+        path=entry["path"]
+        if not safe_path(path) or path in corrected:raise ValueError("unsafe correction seal")
+        corrected.add(path);raw=(root/path).read_bytes()
+        if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
+            raise ValueError("current correction bytes differ: "+path)
+    if not {"automation/command_bus/symphony_subscription_startup.patch",
+            "automation/command_bus/scripts/validate_symphony_operator_static.py"}<=corrected:
+        raise ValueError("current corrected source absent from seal")
+    cp=json.loads((correction/"checkpoint.json").read_text())
+    if (cp["applied_source_byte_equal"] is not True or cp["mode"]!="OFF"
+            or cp["LIVE_GO"] is not False or any(cp["forbidden_counts"].values())):
+        raise ValueError("format correction boundary differs")
 
 
 if __name__ == '__main__':

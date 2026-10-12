@@ -1,24 +1,16 @@
 --- a/elixir/lib/symphony_elixir/codex/app_server.ex
 +++ b/elixir/lib/symphony_elixir/codex/app_server.ex
-@@ -238,13 +238,13 @@
-   end
- 
+@@ -240,3 +240,3 @@
    defp tracker_secret_port_env(dynamic_tool_binding) do
 -    dynamic_tool_binding.secret_environment_names
 +    worker_secret_environment_names(dynamic_tool_binding)
      |> valid_environment_names()
-     |> Enum.map(fn name -> {String.to_charlist(name), false} end)
-   end
- 
+@@ -246,3 +246,3 @@
    defp tracker_secret_unset_command(dynamic_tool_binding) do
 -    case dynamic_tool_binding.secret_environment_names |> valid_environment_names() do
 +    case worker_secret_environment_names(dynamic_tool_binding) |> valid_environment_names() do
        [] -> nil
-       names -> "unset " <> Enum.join(names, " ")
-     end
-@@ -306,8 +306,86 @@
- 
-   defp do_start_session(port, workspace, session_policies, dynamic_tool_binding) do
+@@ -308,4 +308,82 @@
      case send_initialize(port) do
 -      :ok -> start_thread(port, workspace, session_policies, dynamic_tool_binding)
 +      :ok ->
@@ -102,5 +94,3 @@
 +      remaining -> {:error, :subscription_route_unverified}
 +    end
      end
-   end
- 
