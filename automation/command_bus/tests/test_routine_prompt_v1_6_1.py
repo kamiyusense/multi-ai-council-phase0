@@ -27,7 +27,7 @@ class RoutinePromptV161Tests(unittest.TestCase):
         self.assertIn("exactly one issue #N must remain", new_lines[rule])
 
     def test_paste_safety(self):
-        raw = NEW.read_bytes()
+        raw = NEW.read_bytes().replace(b"\r\n", b"\n")       # a Windows checkout may add CR; the blob has none
         raw.decode("ascii")
         self.assertNotIn(b"\r", raw)
         self.assertNotIn(b"\t", raw)
