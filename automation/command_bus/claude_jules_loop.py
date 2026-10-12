@@ -69,6 +69,9 @@ RECOVERY = {
     "ROUND_LIMIT": "a human may extend the campaign",
     "WRITE_PATH_UNHEALTHY": "retry with backoff after a label-never-present readback; a human checks GitHub",
     "RATE_LIMITED": "the rolling 24-hour start limit frees a start at retry_after; a scheduled wake resumes",
+    "TAKEOVER_REQUESTED": "the takeover PR wakes the Claude takeover routine; its commit wakes the reviewer",
+    "TAKEOVER_PENDING": "the Claude takeover routine's commit on the takeover PR wakes the reviewer",
+    "TAKEOVER_STALLED": "a human looks at the task: the Claude takeover routine pushed nothing",
     "JULES_IGNORED_CORRECTIVE": "the corrective was resent once through the Jules API; Jules' next commit wakes "
                                 "the loop",
     "JULES_UNRESPONSIVE": "a human looks at the task: Jules ignored the corrective and its Jules API resend",
@@ -174,6 +177,50 @@ def task_states(issues: list[dict[str, Any]], *, campaign: dict[str, Any],
     return known
 
 
+TAKEOVER_STALL_MINUTES = 120
+
+
+def takeover_wanted(mine: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The latest receipt when it hands the task to the Claude takeover routine (reviewer v1.8), else None."""
+    readable = [r for r in mine if not r.get("_unreadable")]
+    if not readable:
+        return None
+    latest = max(readable, key=lambda r: r.get("round") or 0)
+    return latest if latest.get("decision") == "TAKEOVER_REQUESTED" else None
+
+
+def _takeover(port: Any, task: dict[str, Any], receipt: dict[str, Any], *, mine: list[dict[str, Any]], now: str,
+              why: str) -> tuple[str, str, bool]:
+    """Open the one takeover PR for this task, or report where it stands.  Owner rule (2026-10-12): Jules gets two
+    attempts, then a stronger Claude (the takeover routine) gets one, reviewed by the reviewer as usual."""
+    try:
+        state = port.takeover_state(task["task_id"])
+    except TransientRead as exc:
+        return "READ_UNKNOWN", f"takeover PR unreadable ({exc}); the next wake re-reads", False
+    if state is None:
+        try:
+            status = port.open_takeover(task["task_id"], issue=task["issue"], receipt=receipt)
+        except st.WriteOutcomeUnknown as exc:
+            return "WRITE_UNCONFIRMED", f"takeover PR: outcome unknown ({exc}); read back, never re-sent", False
+        except TransientRead as exc:
+            return "READ_UNKNOWN", f"takeover PR: a read failed before opening it ({exc})", False
+        if status != "SENT":
+            return "TAKEOVER_REQUESTED", f"{why}; the takeover PR was not opened: {status}", True
+        return "TAKEOVER_REQUESTED", f"{why}; takeover PR opened for the Claude takeover routine", False
+    if state["head"] != state.get("start"):
+        if any(r.get("pr_head_sha") == state["head"] for r in mine):
+            return "TAKEOVER_PENDING", f"takeover PR #{state['pr']} reviewed; waiting for its result", False
+        return "REVIEW_PENDING", f"takeover PR #{state['pr']} head {state['head'][:7]} has no review receipt yet", \
+            False
+    try:
+        stalled = st._ts(now) - st._ts(state["opened_at"]) >= timedelta(minutes=TAKEOVER_STALL_MINUTES)
+    except (KeyError, TypeError, ValueError):
+        stalled = False
+    if stalled:
+        return "TAKEOVER_STALLED", f"takeover PR #{state['pr']} has no commit from the takeover routine", True
+    return "TAKEOVER_PENDING", f"takeover PR #{state['pr']} opened; waiting for the takeover routine", False
+
+
 def _resend_corrective(port: Any, task: dict[str, Any], receipt: dict[str, Any], *, head: str, now: str,
                        ack_minutes: int) -> tuple[str, str, bool]:
     """Resend an ignored corrective once through the Jules API: one create-only request file per corrective round.
@@ -191,6 +238,11 @@ def _resend_corrective(port: Any, task: dict[str, Any], receipt: dict[str, Any],
             overdue = st._ts(now) - st._ts(sent_at) >= timedelta(minutes=ack_minutes)
         except (TypeError, ValueError):
             overdue = False
+        if not overdue and head != receipt.get("pr_head_sha") and hasattr(port, "commit_date"):
+            try:                            # a same-content commit AFTER the resend: Jules ignored it too (owner rule 1)
+                overdue = st._ts(port.commit_date(head)) > st._ts(sent_at)
+            except (TransientRead, KeyError, TypeError, ValueError):
+                overdue = False
         if overdue:
             return ("JULES_UNRESPONSIVE", f"Jules applied neither corrective round {rnd} nor its Jules API resend "
                     f"{rid} (sent {sent_at})", True)
@@ -349,8 +401,10 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
             continue
         mine = [r for r in _receipts(issue, trusted) if r.get("_unreadable") or
                 r.get("correlation_id") == k["correlation_id"]]
+        unreadable = any(r.get("_unreadable") for r in mine)
+        wanted = None if unreadable or not hasattr(port, "open_takeover") else takeover_wanted(mine)
         ignored = None
-        if head is not None and hasattr(port, "api_message") and not any(r.get("_unreadable") for r in mine):
+        if wanted is None and head is not None and hasattr(port, "api_message") and not unreadable:
             try:
                 ignored = ignored_corrective(mine, head=head, head_tree=lambda: port.commit_tree(head), now=now(),
                                              ack_minutes=policy["jules_ack_timeout_minutes"])
@@ -359,9 +413,15 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         if any(r.get("_unreadable") for r in mine):
             code, reason, human = "RECORD_UNREADABLE", "a receipt on the task issue is unreadable; the reviewer " \
                                                        "will not write over it", True
+        elif wanted is not None:
+            code, reason, human = _takeover(port, k, wanted, mine=mine, now=now(),
+                                            why=f"Jules did not pass in two attempts (review round {wanted.get('round')})")
         elif ignored is not None:
             code, reason, human = _resend_corrective(port, k, ignored, head=head, now=now(),
                                                      ack_minutes=policy["jules_ack_timeout_minutes"])
+            if code == "JULES_UNRESPONSIVE" and hasattr(port, "open_takeover"):
+                code, reason, human = _takeover(port, k, ignored, mine=mine, now=now(),
+                                                why="Jules ignored the corrective and its Jules API resend")
         elif head is None:
             code, reason, human = "JULES_PENDING", "started; Jules has not opened a PR yet", False
         elif any(r.get("pr_head_sha") == head for r in mine):

@@ -33,11 +33,12 @@ from . import claude_jules_production_starter as st
 from .claude_jules_loop import CHECKPOINT_MARKER
 from .claude_jules_durable_budget import USABLE, DurableBudget, origin_of, pre_label_problems
 from .claude_jules_loop import TransientRead
-from .claude_jules_starter_gh import CARRIER_BRANCH, MESSAGE_DIR, GhLoopPort, Getter, find_duplicate_issue
+from .claude_jules_starter_gh import (CARRIER_BRANCH, MESSAGE_DIR, TAKEOVER_PREFIX, GhLoopPort, Getter,
+                                      find_duplicate_issue)
 
 AUTH_PROFILE = "CLAUDE_JULES_LIVE_AUTHORIZATION_V1"
 AUTH_PROFILE_V2 = "CLAUDE_JULES_LIVE_AUTHORIZATION_V2"     # V1 + durable budget binding; required for a label
-WRITE_KINDS = {"comment", "add_label", "create_issue", "api_message"}
+WRITE_KINDS = {"comment", "add_label", "create_issue", "api_message", "takeover"}
 API_MESSAGES_PER_WAKE, API_MESSAGES_PER_DAY = 1, 3          # owner limits for Jules API resends, 2026-10-11
 _AUTH_KEYS = {"profile", "campaign_id", "repository", "issues", "writes", "max_labels", "max_writes", "expires_at",
               "approved_by", "approval_ref", "route", "billing", "usage_credits_confirmed_off"}
@@ -310,6 +311,39 @@ class GhLiveWritePort(GhLoopPort):
             raise st.WriteOutcomeUnknown(f"API start #{n}: {type(exc).__name__}") from exc
         finally:
             self._issues.pop(n, None)                  # the readback sees the carrier afresh
+
+    def open_takeover(self, task_id, *, issue, receipt):
+        """Hand the task to the Claude takeover routine: one claude/takeover-<task> branch at the reviewed Jules head
+        and one PR on it (the routine wakes on that PR).  Needs the `takeover` write in the human-merged
+        authorization; one per task, ever (the branch and the PR are found by name before anything is written)."""
+        try:
+            branch, start, payload = self.takeover_request(task_id, issue=issue, receipt=receipt)
+        except ValueError as exc:
+            return f"NOT_SENT: {exc}"
+        if not self.live:
+            self._prepare("takeover", issue=issue, branch=branch, start=start, payload=payload, refused=self.problems)
+        problems = []
+        if "takeover" not in self.authorization["writes"]:
+            problems.append("takeover is not an authorized write")
+        if stop := self.stop_requested():
+            problems.append(f"HUMAN_STOP: {stop}")
+        if self.carrier is None:
+            problems.append("no git client for the takeover branch")
+        if not branch.startswith(TAKEOVER_PREFIX):
+            problems.append("takeover branch name invalid")
+        if problems:
+            self.prepared.append({"write": "takeover", "issue": issue, "branch": branch, "refused": problems})
+            return "REFUSED: " + "; ".join(problems)
+        try:
+            if self.carrier.remote_head(branch) is None:
+                self.carrier.create_branch(branch, start)
+        except RuntimeError as exc:
+            if "ref exists" not in str(exc):
+                raise st.WriteOutcomeUnknown(f"takeover branch {branch}: {exc}") from exc
+        except Exception as exc:                       # noqa: BLE001 - outcome unknown, read back next wake
+            raise st.WriteOutcomeUnknown(f"takeover branch {branch}: {type(exc).__name__}") from exc
+        self._send("takeover", f"repos/{self.repo}/pulls", payload, issue)
+        return "SENT"
 
     def api_message(self, rid, *, issue, receipt, head):
         """Resend an ignored corrective through the Jules API: one create-only request file on the carrier branch.
