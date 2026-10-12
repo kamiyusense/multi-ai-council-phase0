@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -61,6 +62,10 @@ class TestJulesSessionReadbackOutput(unittest.TestCase):
         self.assertNotIn("echo \"- session_id: `${session_id}`\"", self.text)
         self.assertNotIn("eval", self.text)
 
+    @unittest.skipUnless(
+        Path("/bin/bash").exists() and shutil.which("jq") is not None,
+        "/bin/bash or jq is unavailable",
+    )
     def test_isolated_bash_execution_safety(self):
         script = """
 set -euo pipefail
@@ -134,6 +139,10 @@ cat "${GITHUB_STEP_SUMMARY}"
             self.assertNotIn("command not found", result.stderr)
             self.assertEqual(result.stderr, "")
 
+    @unittest.skipUnless(
+        Path("/bin/bash").exists() and shutil.which("jq") is not None,
+        "/bin/bash or jq is unavailable",
+    )
     def test_isolated_bash_execution_safety_no_activities(self):
         script = """
 set -euo pipefail
