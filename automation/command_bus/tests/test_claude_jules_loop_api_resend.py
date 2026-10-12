@@ -64,6 +64,12 @@ class IgnoredCorrectiveTests(unittest.TestCase):
         self.assertIsNone(self.find(H1, now="2026-10-10T15:30:00Z"))
         self.assertEqual(self.find(H1, now="2026-10-10T15:58:31Z"), RECEIPT)
 
+    def test_api_first_sends_at_once_without_waiting_for_a_commit(self):
+        found = loop.ignored_corrective([RECEIPT], head=H1, head_tree=lambda: T1, now="2026-10-10T14:59:00Z",
+                                        ack_minutes=60, api_first=True)
+        self.assertEqual(found, RECEIPT)
+        self.assertIsNone(self.find(H1, now="2026-10-10T14:59:00Z"))              # default still waits
+
     def test_a_later_review_means_the_corrective_was_answered(self):
         later = dict(RECEIPT, round=2, verdict="PASS", decision="ADOPT_RECORDED", corrective_comment=None)
         self.assertIsNone(self.find(H2, mine=(RECEIPT, later)))
@@ -104,6 +110,7 @@ class ResendDecisionTests(unittest.TestCase):
     def test_unknown_outcome_and_refusal_are_visible(self):
         self.assertEqual(self.run_(FakePort(raises=st.WriteOutcomeUnknown("timeout")))[0], "WRITE_UNCONFIRMED")
         code, reason, human = self.run_(FakePort(status="REFUSED: limit"))
+        self.assertEqual(code, "JULES_RESEND_REFUSED")
         self.assertTrue(human)
         self.assertIn("REFUSED: limit", reason)
 
@@ -184,7 +191,8 @@ class LivePortTests(unittest.TestCase):
     def test_limits_and_authorization(self):
         no_kind = dict(AUTH, writes=["comment", "add_label", "create_issue"])
         self.assertIn("not an authorized write", self.send(self.port(auth=no_kind, carrier=Carrier())))
-        self.assertIn("last 24 hours", self.send(self.port(carrier=Carrier(), recent=3)))
+        self.assertIn("last 24 hours", self.send(self.port(carrier=Carrier(), recent=50)))
+        self.assertEqual(self.send(self.port(carrier=Carrier(), recent=49)), "SENT")
         self.assertIn("no carrier", self.send(self.port()))
         with self.assertRaises(st.PreparedOnly):
             self.send(self.port(auth=None, carrier=Carrier()))

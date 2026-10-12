@@ -53,7 +53,8 @@
       ]
     },
     "defer_escalate_minutes": 240,
-    "heartbeat_minutes": 360
+    "heartbeat_minutes": 360,
+    "corrective_api_first": true
   },
   "tasks": [],
   "objectives": [

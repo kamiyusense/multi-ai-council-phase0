@@ -187,3 +187,16 @@ class PromptTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RefusedResendGoesToTakeoverTests(unittest.TestCase):
+    """Owner decision 2026-10-13: a resend that cannot be sent hands the task to the takeover, not to a human."""
+
+    def test_refused_resend_opens_the_takeover_in_the_tick(self):
+        from automation.command_bus import claude_jules_loop as lp
+        src = Path(lp.__file__).read_text(encoding="utf-8")
+        self.assertIn('if code in ("JULES_UNRESPONSIVE", "JULES_RESEND_REFUSED") and hasattr(port, "open_takeover")',
+                      src)
+        port = SimpleNamespace(api_message_sent_at=lambda rid: None, api_message=lambda *a, **k: "REFUSED: limit")
+        self.assertEqual(lp._resend_corrective(port, TASK, R1, head="d" * 40, now=NOW, ack_minutes=60)[0],
+                         "JULES_RESEND_REFUSED")

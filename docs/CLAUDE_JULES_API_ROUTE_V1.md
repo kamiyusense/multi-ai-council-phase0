@@ -73,7 +73,7 @@ Routine (Claude) -> deterministic tick command -> append-only request JSON
   reason plus the reviewer's corrective comment (trusted author and corrective marker required), cut to 4000
   characters, `expected_state` `COMPLETED`.
 - `GhLiveWritePort.api_message`: needs `api_message` in the human-merged authorization `writes` (added here), the
-  stop switch open, one per wake, three per 24 hours (counted from the carrier's commits), and pushes the file
+  stop switch open, one per wake, 50 per 24 hours (owner, 2026-10-13; counted from the carrier's commits), and pushes the file
   with `GitLiveClient.create` (create-only, no force).
 - The reviewer prompt needs no change: LAYER 4 already runs after a LAYER 1 NO-OP.
 - After merge, a human-approved one-time step creates `claude/jules-api-carrier` from main; the workflows run from
@@ -123,6 +123,14 @@ After step 3 a workflow pushed to any other branch gets no key. Residual risk: a
 three branches can still change that branch's workflow copy; the carrier is append-only by convention, not by a
 GitHub rule. The ChatGPT carrier `feature/chat-work-command-bus` keeps its own workflow copies, which still lack
 `environment:`; its semi-auto workflows stop finding the key after step 3 until main is merged into it.
+
+## API-first correctives (owner decision 2026-10-13)
+
+Jules ignored the `@jules` PR-comment corrective in all 6 corrective rounds observed (#353, #369, #380, #384, #386,
+#389) and applied it only after the Jules API message. The owner's rule was: if half or more are ignored, make the
+API the regular route. Policy `corrective_api_first: true` sends the corrective through the Jules API in the same
+tick that sees it (the PR comment stays as the record). A resend that cannot be sent (limit, missing session link)
+goes to the Claude takeover instead of waiting for a human.
 
 ## Not in V1
 
