@@ -1,0 +1,143 @@
+{
+  "source_tree": "6405e7305dd90d3afe2ea2e5d713d1cfdb65aec0",
+  "full": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "automation/command_bus/tests",
+      "-t",
+      ".",
+      "-v"
+    ],
+    "returncode": 0,
+    "tests": 1979,
+    "skipped": 1,
+    "seconds": 71.677,
+    "sha256": "b1af681dabe8f04c203d3e1797dffc54266777de7bfaab983ff097859b3a0a01"
+  },
+  "focused": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_attempt_faults",
+      "automation.command_bus.tests.test_symphony_attempt_reconciler",
+      "automation.command_bus.tests.test_symphony_attempt_store",
+      "automation.command_bus.tests.test_symphony_autonomous_controller",
+      "automation.command_bus.tests.test_symphony_autonomous_runtime",
+      "automation.command_bus.tests.test_symphony_campaign_store",
+      "automation.command_bus.tests.test_symphony_controller",
+      "automation.command_bus.tests.test_symphony_g51_worker_lifecycle",
+      "automation.command_bus.tests.test_symphony_g6_adoption",
+      "automation.command_bus.tests.test_symphony_minimal_live_preflight",
+      "automation.command_bus.tests.test_symphony_production_observer",
+      "automation.command_bus.tests.test_symphony_result_adoption",
+      "automation.command_bus.tests.test_symphony_security_corrective",
+      "automation.command_bus.tests.test_symphony_subscription_boundary",
+      "automation.command_bus.tests.test_symphony_upstream_event_adapter",
+      "automation.command_bus.tests.test_symphony_upstream_reference",
+      "-v"
+    ],
+    "returncode": 0,
+    "tests": 220,
+    "skipped": 0,
+    "seconds": 0.65,
+    "sha256": "9eea84cbdaf8509116d0c66121a22ffce64d3c89338a9887e6cc9f7a9ad96b3d"
+  },
+  "impact": [
+    {
+      "stage": "320",
+      "tree": "17a9a2d5b572268febdb6359c664cdb61b2af12e",
+      "source": "/tmp/pr320-security-impact-320-20261012",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "automation/command_bus/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 2606,
+      "skipped": 1,
+      "seconds": 115.605,
+      "log_sha256": "76ea8d8964291bb2596ac98226bcb78735c6ef254912e94728834ca442d97784"
+    },
+    {
+      "stage": "343",
+      "tree": "b47864f642bd04dab09bcd8304bf9c88fd97bee1",
+      "source": "/tmp/pr320-security-impact-343-20261012",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "automation/command_bus/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 2847,
+      "skipped": 1,
+      "seconds": 122.922,
+      "log_sha256": "eb9cbe9b04fc13f74d4ffedb909912966d7f8cc94cbd27b87dca8d18aa837ea9"
+    },
+    {
+      "stage": "364",
+      "tree": "7b5e9caf97093d1479b10be51e9b17c1eba71729",
+      "source": "/tmp/pr320-security-impact-364-20261012",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "automation/command_bus/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 2861,
+      "skipped": 1,
+      "seconds": 123.841,
+      "log_sha256": "411db63e4f0dc5dd3aed40096eb276a024f5a592014651b2e856b4345c55375f"
+    }
+  ],
+  "raw_logs_location": "/mnt/c/Users/yuuki/Documents/Codex/2026-10-09/ai/work/pr320-security-20261012",
+  "raw_red_test_observation": {
+    "starting_HEAD": "8c53c505a21318c6133da0bef85af18ae3711103",
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "automation.command_bus.tests.test_symphony_security_corrective",
+      "-v"
+    ],
+    "tests": 4,
+    "failures": 4,
+    "seconds": 0.006,
+    "returncode": 1,
+    "observed": {
+      "attempt_concurrent_ACCEPTED": 2,
+      "campaign_concurrent_ACCEPTED": 2,
+      "worker_controller_authority_leaked": true,
+      "missing_account_model_started": true
+    },
+    "actual_execution": "STATIC fake atomic backend and fake subprocess; no real worker/API/write"
+  },
+  "recoverable_diagnostics": [
+    "package import pulled unrelated providers; resolved by fixed-path pure parser load",
+    "race fixture originally also gated observation reads; constrained barrier to intent only",
+    "nonexistent recovery module selector removed; all actual Symphony modules tested"
+  ],
+  "all_diagnostics_preserved_in_local_evidence": true
+}
