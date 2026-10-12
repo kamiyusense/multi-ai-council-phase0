@@ -74,17 +74,19 @@ RECOVERY = {
     "TAKEOVER_STALLED": "a human looks at the task: the Claude takeover routine pushed nothing",
     "JULES_IGNORED_CORRECTIVE": "the corrective was resent once through the Jules API; Jules' next commit wakes "
                                 "the loop",
+    "JULES_RESEND_REFUSED": "the takeover routine gets the task; if it cannot, a human looks",
     "JULES_UNRESPONSIVE": "a human looks at the task: Jules ignored the corrective and its Jules API resend",
 }
 
 
 def ignored_corrective(mine: list[dict[str, Any]], *, head: str, head_tree: Callable[[], str | None], now: str,
-                       ack_minutes: int) -> dict[str, Any] | None:
+                       ack_minutes: int, api_first: bool = False) -> dict[str, Any] | None:
     """The latest corrective receipt when Jules did not apply it, else None.
 
     Not applied means: Jules pushed a commit with exactly the reviewed tree (the reviewer's LAYER 1 NO-OP, which
     otherwise waits forever), or nothing at all for ``ack_minutes`` after the review.  A later review of any
-    kind means the corrective was answered."""
+    kind means the corrective was answered.  With ``api_first`` (owner decision 2026-10-13: Jules ignored 6 of 6
+    PR-comment correctives) the corrective goes through the Jules API as soon as it is posted, without waiting."""
     corr = [r for r in mine if r.get("decision") == "CORRECTIVE_REQUESTED" and r.get("corrective_comment")]
     if not corr:
         return None
@@ -92,6 +94,8 @@ def ignored_corrective(mine: list[dict[str, Any]], *, head: str, head_tree: Call
     if any((r.get("round") or 0) > (latest.get("round") or 0) for r in mine):
         return None
     if head == latest.get("pr_head_sha"):
+        if api_first:
+            return latest
         try:
             overdue = st._ts(now) - st._ts(latest["reviewed_at"]) >= timedelta(minutes=ack_minutes)
         except (KeyError, TypeError, ValueError):
@@ -254,7 +258,7 @@ def _resend_corrective(port: Any, task: dict[str, Any], receipt: dict[str, Any],
     except TransientRead as exc:
         return "READ_UNKNOWN", f"Jules API resend {rid}: a read failed before sending ({exc})", False
     if status != "SENT":
-        return ("JULES_IGNORED_CORRECTIVE", f"Jules did not apply corrective round {rnd}; the Jules API resend was "
+        return ("JULES_RESEND_REFUSED", f"Jules did not apply corrective round {rnd}; the Jules API resend was "
                 f"not sent: {status}", True)
     return "JULES_IGNORED_CORRECTIVE", f"Jules did not apply corrective round {rnd}; resent via the Jules API ({rid})", \
         False
@@ -407,7 +411,8 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         if wanted is None and head is not None and hasattr(port, "api_message") and not unreadable:
             try:
                 ignored = ignored_corrective(mine, head=head, head_tree=lambda: port.commit_tree(head), now=now(),
-                                             ack_minutes=policy["jules_ack_timeout_minutes"])
+                                             ack_minutes=policy["jules_ack_timeout_minutes"],
+                                             api_first=policy.get("corrective_api_first") is True)
             except TransientRead:
                 ignored = None        # unknown tree: the normal path below reports it; the next wake re-checks
         if any(r.get("_unreadable") for r in mine):
@@ -419,9 +424,10 @@ def run_tick(port: Any, *, campaign: dict[str, Any], controller: str, now: Calla
         elif ignored is not None:
             code, reason, human = _resend_corrective(port, k, ignored, head=head, now=now(),
                                                      ack_minutes=policy["jules_ack_timeout_minutes"])
-            if code == "JULES_UNRESPONSIVE" and hasattr(port, "open_takeover"):
+            if code in ("JULES_UNRESPONSIVE", "JULES_RESEND_REFUSED") and hasattr(port, "open_takeover"):
+                # owner rules 1 and 2026-10-13: ignored even after the API resend, or the resend cannot be sent
                 code, reason, human = _takeover(port, k, ignored, mine=mine, now=now(),
-                                                why="Jules ignored the corrective and its Jules API resend")
+                                                why="Jules ignored the corrective; " + reason)
         elif head is None:
             code, reason, human = "JULES_PENDING", "started; Jules has not opened a PR yet", False
         elif any(r.get("pr_head_sha") == head for r in mine):

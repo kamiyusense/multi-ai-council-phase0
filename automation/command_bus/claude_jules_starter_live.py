@@ -39,7 +39,7 @@ from .claude_jules_starter_gh import (CARRIER_BRANCH, MESSAGE_DIR, TAKEOVER_PREF
 AUTH_PROFILE = "CLAUDE_JULES_LIVE_AUTHORIZATION_V1"
 AUTH_PROFILE_V2 = "CLAUDE_JULES_LIVE_AUTHORIZATION_V2"     # V1 + durable budget binding; required for a label
 WRITE_KINDS = {"comment", "add_label", "create_issue", "api_message", "takeover"}
-API_MESSAGES_PER_WAKE, API_MESSAGES_PER_DAY = 1, 3          # owner limits for Jules API resends, 2026-10-11
+API_MESSAGES_PER_WAKE, API_MESSAGES_PER_DAY = 1, 50         # owner limits for Jules API messages (50/day: 2026-10-13)
 _AUTH_KEYS = {"profile", "campaign_id", "repository", "issues", "writes", "max_labels", "max_writes", "expires_at",
               "approved_by", "approval_ref", "route", "billing", "usage_credits_confirmed_off"}
 _AUTH_KEYS_V2 = _AUTH_KEYS | {"budget_id", "max_activations"}
@@ -348,7 +348,7 @@ class GhLiveWritePort(GhLoopPort):
     def api_message(self, rid, *, issue, receipt, head):
         """Resend an ignored corrective through the Jules API: one create-only request file on the carrier branch.
 
-        Limits (owner, 2026-10-11): one per corrective round (the request id), one per wake, three per 24 hours.
+        Limits (owner, 2026-10-11/13): one per corrective round (the request id), one per wake, 50 per 24 hours.
         Returns "SENT", or "NOT_SENT: ..." / "REFUSED: ..." when nothing was written; an unknown push outcome raises
         ``WriteOutcomeUnknown`` and the next wake reads the carrier back instead of sending again."""
         try:
