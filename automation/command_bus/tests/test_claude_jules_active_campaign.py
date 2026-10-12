@@ -19,6 +19,17 @@ ROOT = Path(__file__).resolve().parents[3]
 ACTIVE = ROOT / "docs/claude-jules-loop/active"
 EV = ROOT / "docs/evidence/claude-jules-production-mvp-20261010"
 LANE = ("automation/command_bus/claude_jules_", "automation/command_bus/tests/test_claude_jules_")
+# Owner decision 2026-10-12: besides its own lane the loop may work on the relay (red) lane and on the loop's own
+# Windows test failures; never on the Blue lane.  Each extra path is listed exactly, never by a broad prefix.
+OWNER_APPROVED = {
+    "o3-relay-windows": ("tests/relay/test_acp_client.py", "tests/relay/test_live_readiness_inventory.py",
+                         "tests/relay/test_core_pr3_overlay_runner.py"),
+    "o4-loop-windows": ("docs/evidence/claude-jules-production-starter-20261009/build_routine_prompt_v1_6.py",
+                        "automation/command_bus/tests/test_routine_prompt_v1_6.py",
+                        "automation/command_bus/tests/test_routine_prompt_v1_6_1.py",
+                        "automation/command_bus/tests/test_jules_session_readback_output.py"),
+}
+BLUE = ("blue", "work_event", "cloud_work")
 
 
 def load(name):
@@ -44,7 +55,9 @@ class ActiveCampaignTests(unittest.TestCase):
         self.assertEqual(self.camp["control_issue"], 346)
         for o in self.camp["objectives"]:
             for prefix in o["scope_prefixes"]:
-                self.assertTrue(prefix.startswith(LANE), prefix)
+                self.assertTrue(prefix.startswith(LANE) or prefix in OWNER_APPROVED.get(o["objective_id"], ()),
+                                prefix)
+                self.assertFalse(any(word in prefix.lower() for word in BLUE), f"Blue lane path {prefix}")
         self.assertEqual(self.camp["policy"]["max_concurrent_tasks"], 1)
 
     def test_subscription_only(self):
