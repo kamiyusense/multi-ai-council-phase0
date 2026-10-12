@@ -254,6 +254,20 @@ class JsonlCodexAppServer:
 
     def execute_one_turn(self, *, cwd: str, prompt: str,
                          live_enabled: bool = False) -> CodexDispatchResult:
+        return self._session(cwd=cwd, prompt=prompt, live_enabled=live_enabled, readonly=False)
+
+    def probe_read_only(self, *, cwd: str) -> dict[str, Any]:
+        """Initialize/account/config only; no thread, model, refresh or saved raw response.
+
+        This diagnostic is never reusable model admission evidence. A later
+        worker must acquire account/config afresh in its own session.
+        """
+        result = self._session(cwd=cwd, prompt="", live_enabled=False, readonly=True)
+        return {"status": result.status, "reason": result.reason,
+                "route": result.verification, "model_dispatch": 0, "thread_starts": 0}
+
+    def _session(self, *, cwd: str, prompt: str, live_enabled: bool,
+                 readonly: bool) -> CodexDispatchResult:
         proc: subprocess.Popen[str] | None = None
         attempted = False
         model_started: bool | None = False
@@ -265,7 +279,7 @@ class JsonlCodexAppServer:
         output: queue.Queue[str | None] = queue.Queue()
         deadline = time.monotonic() + self.timeout_seconds
         try:
-            if live_enabled is not True:
+            if live_enabled is not True and not readonly:
                 return CodexDispatchResult("BLOCKED", False, False, None, None, (), "Codex LIVE flag is off")
             parent_environment = dict(os.environ)
             _assert_new_worker_environment(parent_environment)
@@ -362,11 +376,23 @@ class JsonlCodexAppServer:
                 worker_environment_keys=tuple(parent_environment),
                 paid_provider_fallback_configured=not _subscription_runtime_config(config),
             )
+            if readonly:
+                summary = {"auth_state": _summarize_account(account).get("auth_state"),
+                           "requires_openai_auth": account.get("requiresOpenaiAuth") is True,
+                           "config_route_compatible": _subscription_runtime_config(config),
+                           "subscription_route_compatible": (
+                               account.get("requiresOpenaiAuth") is True
+                               and route.new_worker_route_compatible),
+                           "provenance": "SAME_PROCESS_FRESH_READ_ONLY_NOT_ADMISSION",
+                           "quota": "NOT_QUERIED", "raw_response_saved": False}
+                return CodexDispatchResult(
+                    "DONE" if summary["subscription_route_compatible"] else "BLOCKED",
+                    False, False, None, None, (), verification=summary)
             if account.get("requiresOpenaiAuth") is not True or not route.new_worker_route_compatible:
                 return CodexDispatchResult("BLOCKED", False, False, None, None, (),
                                            "fresh subscription account/config route unverified")
             started = call("thread/start", {"cwd": cwd, "approvalPolicy": "never",
-                                             "sandboxPolicy": {"type": "workspaceWrite"}})
+                                             "sandbox": "workspace-write", "ephemeral": True})
             thread = started.get("thread") or started
             thread_id = thread.get("id") if isinstance(thread, dict) else None
             if not isinstance(thread_id, str) or not thread_id:
@@ -382,7 +408,8 @@ class JsonlCodexAppServer:
                 "threadId": thread_id,
                 "input": [{"type": "text", "text": prompt}],
                 "approvalPolicy": "never",
-                "sandboxPolicy": {"type": "workspaceWrite"},
+                "sandboxPolicy": {"type": "workspaceWrite", "networkAccess": False,
+                                  "writableRoots": [cwd]},
             }, dispatch=True)
             turn = completed.get("turn") or completed
             turn_id = turn.get("id") if isinstance(turn, dict) else turn_id

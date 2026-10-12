@@ -6,6 +6,9 @@ distinct adapter cannot fetch credentials, launch work or adopt task results.
 An approved operator must later inject a separately reviewed narrow capability.
 """
 import copy
+import os
+import re
+import threading
 
 from .symphony_g63_sender import RestrictedMockSender, seal_approval, BINDING_KEYS
 from .symphony_github_git_transport import prepare_candidate_requests, classify_update_refs_reply
@@ -37,6 +40,11 @@ class OperatorCapabilityBoundGitTransport:
             raise PermissionError('independent fresh rules/ownership reader required')
         self._constraints = constraints_reader
         self._ref_attempted = False
+        self._objects_attempted = False
+        self._nonce_owned = False
+        self._process_id = os.getpid()
+        self._attempt_lock = threading.Lock()
+        self._attempts = set()
         self._ledger_attempted = set()
         m = self._manifest
         self._resume_only = store.get(m['campaign_id'], make_adoption_id(m), 'ref_intent') is not None
@@ -57,6 +65,8 @@ class OperatorCapabilityBoundGitTransport:
         old = self.store._get(authorization_path(claims['issuer'],claims['nonce']))
         if old is not None and old != self._nonce_record():
             raise PermissionError('issuer nonce bound to conflicting envelope')
+        if old is not None:
+            self._resume_only = True  # a previous sender lifetime never transfers its nonce
         if self._resume_only:
             self._capability = None  # restart after fence never acquires a writer
             return
@@ -140,10 +150,16 @@ class OperatorCapabilityBoundGitTransport:
         old = self.store._get(nonce_path)
         if old is not None:
             raise PermissionError('object send may already have happened; GET-only recovery')
-        for path, payload in [(self._approval_path(), {'approval_digest':self._approval['approval_digest']}),
-                              (nonce_path, self._nonce_record())]:
-            if self.store._put(path, payload) not in ('ACCEPTED','NOOP_DUPLICATE'):
-                raise PermissionError('create-only authorization consumption unresolved')
+        with self._attempt_lock:
+            if self._process_id != os.getpid() or 'objects' in self._attempts:
+                raise PermissionError('object send lifetime is GET-only')
+            self._objects_attempted = True
+            self._attempts.add('objects')
+        if self.store._put(self._approval_path(), {'approval_digest':self._approval['approval_digest']}) not in ('ACCEPTED','NOOP_DUPLICATE'):
+            raise PermissionError('approval record unresolved')
+        if self.store._put(nonce_path, self._nonce_record()) != 'ACCEPTED':
+            raise PermissionError('only owning nonce create may send; GET-only recovery')
+        self._nonce_owned = True
         # One fixed batch; uncertain result is never resent on restart.
         self._capability.post_exact_objects(self._approval['repository'],
                                            copy.deepcopy(self._plan['object_requests']))
@@ -158,12 +174,18 @@ class OperatorCapabilityBoundGitTransport:
                 (a['target_branch'],a['expected_target_head'],a['candidate_commit'])
                 or self._resume_only or self._ref_attempted):
             raise PermissionError('one exact nondefault CAS only; recovery is GET-only')
-        for path, payload in [(self._approval_path(), {'approval_digest':self._approval['approval_digest']}),
-                              (authorization_path(self._claims['issuer'],self._claims['nonce']),self._nonce_record())]:
-            if self.store._put(path,payload) not in ('ACCEPTED','NOOP_DUPLICATE'):
-                raise PermissionError('authorization nonce/approval consumption unresolved')
+        with self._attempt_lock:
+            if self._process_id != os.getpid() or 'ref' in self._attempts:
+                raise PermissionError('one owning process CAS only')
+            self._ref_attempted = True
+            self._attempts.add('ref')
+        if self.store._put(self._approval_path(), {'approval_digest':self._approval['approval_digest']}) not in ('ACCEPTED','NOOP_DUPLICATE'):
+            raise PermissionError('approval record unresolved')
+        if not self._nonce_owned:
+            if self.store._put(authorization_path(self._claims['issuer'], self._claims['nonce']), self._nonce_record()) != 'ACCEPTED':
+                raise PermissionError('nonce belongs to another lifetime; GET-only recovery')
+            self._nonce_owned = True
         # Existing bridge's immutable ref_intent is the cross-session fence.
-        self._ref_attempted = True
         req = copy.deepcopy(self._plan['single_ref_request'])
         status, reply = self._capability.update_exact_ref(a['repository'], req)
         result = classify_update_refs_reply(status, reply, req['variables']['input']['clientMutationId'])
@@ -185,7 +207,14 @@ class OperatorCapabilityBoundGitTransport:
                     ('path_prefix' in n and path.startswith(n['path_prefix']))) for n in allowed):
             raise PermissionError('ledger path outside signed namespaces')
         record = strict_json(text.encode('utf-8'))
-        if (type(record) is not dict or set(record) != {'protocol','path','payload','record_digest'}
+        base = {'protocol','path','payload','record_digest'}
+        claim = {'write_claim_version','write_claim_nonce'}
+        if (type(record) is not dict or set(record) not in (base, base | claim)
+                or (set(record) == base | claim and (
+                    type(record['write_claim_version']) is not int
+                    or record['write_claim_version'] != 1
+                    or type(record['write_claim_nonce']) is not str
+                    or re.fullmatch(r'[0-9a-f]{64}',record['write_claim_nonce']) is None))
                 or record['protocol'] != LEDGER_PROTOCOL or record['path'] != path
                 or record['record_digest'] != digest({k:v for k,v in record.items() if k != 'record_digest'})
                 or canonical(record) != text):
