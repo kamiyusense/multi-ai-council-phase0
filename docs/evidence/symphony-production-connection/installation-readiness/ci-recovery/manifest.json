@@ -1,0 +1,45 @@
+{
+  "protocol": "SYMPHONY_INSTALLATION_CI_RECOVERY_MANIFEST_V1",
+  "files": [
+    {
+      "path": ".github/workflows/symphony-g63-synthetic-verifier.yml",
+      "bytes": 10246,
+      "sha256": "f036610a078c72f96d7b50e2637a2e2c56b5770aab2b76edf9d7fd52f60f541a"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 10943,
+      "sha256": "1bcceefc9dae8e5866bb13fbc1e2c8f9dd6608df334e35241731d0299de15437"
+    },
+    {
+      "path": "automation/command_bus/symphony_sqlite_storage.py",
+      "bytes": 10824,
+      "sha256": "ed319a7f599acfd9ac817e62b9b5809a1f3994ca4602e0585bbfc758ecadbaf3"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_sqlite_installation.py",
+      "bytes": 13474,
+      "sha256": "a1f81f72e9abc28652e03dfd39a1f8ffd26c939ed2c05d17c05d21ffa3cda9a9"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/ci-recovery/checkpoint.json",
+      "bytes": 1847,
+      "sha256": "fb9dac1a492330c6efe290d305e39c695c60c3eaa48b628da15d599bb54c5362"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/ci-recovery/failed-ci-0714.txt.gz",
+      "bytes": 96805,
+      "sha256": "1000549a3046ad7930bbe267160f690ee4dac247a3c3311fab4321bf32dad2f9"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/ci-recovery/focused-tests.txt.gz",
+      "bytes": 3376,
+      "sha256": "47be82c5c8ea3f753553272975251d63c07ae91bc40c80bbe70697fb7f36ebe8"
+    },
+    {
+      "path": "docs/evidence/symphony-production-connection/installation-readiness/ci-recovery/full-tests.txt.gz",
+      "bytes": 74051,
+      "sha256": "b7157a347f232ead7f60e356a8c56948981e3b81b97d6522fabbc9c719ac34a8"
+    }
+  ]
+}

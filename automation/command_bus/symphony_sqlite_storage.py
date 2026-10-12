@@ -6,6 +6,7 @@ credentials or Codex processes are created here. Original migrations own schema.
 """
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -19,6 +20,7 @@ from pathlib import Path
 from .symphony_result_manifest import canonical
 
 SEAL = "symphony-sqlite-storage.json"
+SEAL_LOCK = "symphony-sqlite-storage.lock"
 DB_NAME = re.compile(r"(?:state|memories|goals|logs|queue)_[0-9]+\.sqlite")
 
 
@@ -89,7 +91,7 @@ class ReviewedSQLiteStorage:
             info = p.lstat()
             if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid()
                     or info.st_nlink != 1 or stat.S_IMODE(info.st_mode) & 0o077
-                    or not (p.name == SEAL or DB_NAME.fullmatch(p.name)
+                    or not (p.name in (SEAL, SEAL_LOCK) or DB_NAME.fullmatch(p.name)
                             or DB_NAME.fullmatch(p.name.removesuffix("-wal"))
                             or DB_NAME.fullmatch(p.name.removesuffix("-shm")))):
                 raise PermissionError("unsafe storage entry")
@@ -135,6 +137,20 @@ class ReviewedSQLiteStorage:
         """Create-only seal after independently approved original initialization."""
         if self._installation_check(self.review.binding()) is not True:
             raise PermissionError("storage installation not approved")
+        root = self._paths()
+        # Only installation is fenced; normal worker launches never take this
+        # lock. A busy creator is GET-only HOLD, never a partial duplicate claim.
+        lock = os.open(root / SEAL_LOCK, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        try:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return "HOLD_IN_PROGRESS_GET_ONLY"
+            return self._seal_under_installation_lock()
+        finally:
+            os.close(lock)
+
+    def _seal_under_installation_lock(self):
         record = self.inspect()
         target = self.review.root / SEAL
         raw = canonical(record).encode()
@@ -145,6 +161,8 @@ class ReviewedSQLiteStorage:
         fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "wb") as stream:
             stream.write(raw); stream.flush(); os.fsync(stream.fileno())
+        from .symphony_workspace_snapshot import _sync_directory
+        _sync_directory(self.review.root)
         # A lost/partial create remains a conflict on readback, never overwritten.
         return "CREATED"
 

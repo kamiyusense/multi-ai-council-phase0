@@ -5,6 +5,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
@@ -164,6 +165,31 @@ class PersistentSQLiteTests(unittest.TestCase):
             except FileExistsError:return 'CONCURRENT_CREATE_GET_ONLY'
         with ThreadPoolExecutor(2) as pool:results=list(pool.map(attempt,range(2)))
         self.assertEqual(results.count('CREATED'),1)
+        self.assertTrue(all(r in ('CREATED','NOOP_DUPLICATE','HOLD_IN_PROGRESS_GET_ONLY') for r in results))
+        self.assertEqual(self.store.readiness()['database_count'],1)
+
+    def test_second_installer_cannot_read_partial_first_publication_as_conflict(self):
+        partial=threading.Event();finish=threading.Event();original=os.fdopen
+        class SlowWriter:
+            def __init__(self, fd, mode):self.stream=original(fd,mode)
+            def __enter__(self):return self
+            def __exit__(self,*args):return self.stream.__exit__(*args)
+            def write(self, raw):
+                self.stream.write(raw[:8]);self.stream.flush();partial.set()
+                if not finish.wait(5):raise RuntimeError('STATIC publication timeout')
+                self.stream.write(raw[8:])
+            def flush(self):self.stream.flush()
+            def fileno(self):return self.stream.fileno()
+        with patch('automation.command_bus.symphony_sqlite_storage.os.fdopen',side_effect=SlowWriter):
+            with ThreadPoolExecutor(2) as pool:
+                first=pool.submit(self.store.seal_initialized)
+                try:
+                    self.assertTrue(partial.wait(5))
+                    self.assertEqual(self.store.seal_initialized(),'HOLD_IN_PROGRESS_GET_ONLY')
+                    self.assertEqual((self.root/SEAL).read_bytes(),canonical(self.store.inspect()).encode()[:8])
+                finally:finish.set()
+                self.assertEqual(first.result(timeout=5),'CREATED')
+        self.assertEqual(self.store.seal_initialized(),'NOOP_DUPLICATE')
         self.assertEqual(self.store.readiness()['database_count'],1)
 
     def test_auth_launch_identity_and_missing_installation_review_refused(self):

@@ -3,6 +3,9 @@ name: Symphony G6.3 synthetic independent verifier
 on:
   pull_request:
     paths:
+      - automation/command_bus/symphony_sqlite_storage.py
+      - automation/command_bus/symphony_subscription_startup.patch
+      - docs/evidence/symphony-production-connection/installation-readiness/**
       - automation/command_bus/symphony_operator_candidate.py
       - automation/command_bus/symphony_operator_sender.py
       - automation/command_bus/tests/test_symphony_operator_integration.py

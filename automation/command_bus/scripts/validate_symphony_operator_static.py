@@ -22,6 +22,7 @@ CONNECTION_SUPERSEDED = {"automation/command_bus/symphony_codex_app_server.py",
 
 HISTORICAL_CONVERGENCE_HEAD = "c989aeb08018684ed092c6ce9b78a434903e4b8c"
 CONVERGENCE_SUPERSEDED = {".github/workflows/symphony-controller-static.yml",
+    ".github/workflows/symphony-g63-synthetic-verifier.yml",
     "automation/command_bus/symphony_operator_capability.py",
     "automation/command_bus/tests/test_symphony_operator_convergence.py",
     "automation/command_bus/scripts/validate_symphony_operator_static.py"}
@@ -127,7 +128,9 @@ def validate_installation_readiness(root):
         seen.add(path)
         raw=(subprocess.check_output(['git','show','87c81bb5a7b5f9a199f450edd12544a0b532afd8:'+path],cwd=root)
              if path in {'automation/command_bus/scripts/validate_symphony_operator_static.py',
-                         'automation/command_bus/symphony_subscription_startup.patch'} else (root/path).read_bytes())
+                         'automation/command_bus/symphony_subscription_startup.patch',
+                         'automation/command_bus/symphony_sqlite_storage.py',
+                         'automation/command_bus/tests/test_symphony_sqlite_installation.py'} else (root/path).read_bytes())
         if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
             raise ValueError("current installation readiness bytes differ: "+path)
     required={"automation/command_bus/symphony_sqlite_storage.py",
@@ -145,7 +148,10 @@ def validate_installation_readiness(root):
     for entry in entries:
         path=entry["path"]
         if not safe_path(path) or path in corrected:raise ValueError("unsafe correction seal")
-        corrected.add(path);raw=(root/path).read_bytes()
+        corrected.add(path)
+        raw=(subprocess.check_output(['git','show','0714d94ce1e255c0de088586e2ea094bd0a43829:'+path],cwd=root)
+             if path=='automation/command_bus/scripts/validate_symphony_operator_static.py'
+             else (root/path).read_bytes())
         if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
             raise ValueError("current correction bytes differ: "+path)
     if not {"automation/command_bus/symphony_subscription_startup.patch",
@@ -155,6 +161,21 @@ def validate_installation_readiness(root):
     if (cp["applied_source_byte_equal"] is not True or cp["mode"]!="OFF"
             or cp["LIVE_GO"] is not False or any(cp["forbidden_counts"].values())):
         raise ValueError("format correction boundary differs")
+    recovery=base/"ci-recovery"
+    actual=set()
+    for entry in json.loads((recovery/"manifest.json").read_text())["files"]:
+        path=entry["path"]
+        if not safe_path(path) or path in actual:raise ValueError("unsafe CI recovery seal")
+        actual.add(path);raw=(root/path).read_bytes()
+        if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
+            raise ValueError("current CI recovery bytes differ: "+path)
+    if not {"automation/command_bus/symphony_sqlite_storage.py",
+            "automation/command_bus/tests/test_symphony_sqlite_installation.py",
+            "automation/command_bus/scripts/validate_symphony_operator_static.py"}<=actual:
+        raise ValueError("current race repair absent from seal")
+    cp=json.loads((recovery/"checkpoint.json").read_text())
+    if cp["LIVE_GO"] is not False or any(cp["forbidden_counts"].values()):
+        raise ValueError("CI recovery activation boundary differs")
 
 
 if __name__ == '__main__':
