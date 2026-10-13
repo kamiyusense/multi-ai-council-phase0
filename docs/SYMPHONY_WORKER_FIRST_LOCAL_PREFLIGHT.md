@@ -1,0 +1,90 @@
+# Symphony worker-first path: Local read-only preflight
+
+**Purpose:** let Official Symphony's original worker/continuation loop be qualified
+independently of GitHub publication controls. No GitHub branch-protection result
+is required for *this read-only host diagnostic*. It **does not** remove any
+rule/permission check from the real GitHub sender. Never report GitHub rules 403
+as PASS.
+
+## What this actually implements
+
+\`automation/command_bus/scripts/symphony_worker_first_preflight.py\` runs only:
+
+1. Local workspace canonical-path, fresh dedicated nondefault branch and exact
+   40-character HEAD verification, with a clean working tree. It clears ambient
+   \`GIT_*\` selectors for read-only Git commands.
+2. Private, owned \`0700\`, verified native Linux ext filesystem scratch root.
+   Scratch must not overlap workspace or original \`CODEX_HOME\`.
+3. Strict reject if an API-key/base-URL metered selector exists in the parent
+   process. The script never inspects credential values.
+4. A fresh **ephemeral** SQLite directory under that private scratch root. The
+   existing \`JsonlCodexAppServer.probe_read_only\` performs
+   \`initialize → account/read(refreshToken=false) → config/read\` in one process.
+   The ephemeral directory is removed after the read-only diagnostic.
+5. Output only sanitized \`PASS_READONLY_NOT_ADMISSION\` or \`BLOCKED\`.
+   No authentication payloads, token values, absolute local paths or stderr.
+
+It never runs \`thread/start\`, \`turn/start\`, git push, branch creation,
+GitHub API mutations, OIDC, or result adoption. A pass is **not** permission
+to launch a worker. No schedule, issue selection, polling, timeout/retry,
+same-thread continuation or stall behavior is changed in Official Symphony.
+
+## Offline installation after separately reviewed host setup
+
+Use a **fresh, dedicated** proof checkout/worktree on a branch named
+\`codex/symphony-worker-proof-<fresh-id>\`. Review exact source HEAD before
+the worker. Prepare an empty approved scratch *parent* on WSL native ext4
+with mode \`0700\`; do not place it inside the workspace or \`CODEX_HOME\`.
+
+From the repository root on the already authorized WSL host:
+
+\`\`\`sh
+python3 -m automation.command_bus.scripts.symphony_worker_first_preflight \
+  --workspace /absolute/path/to/dedicated/clean/worker-worktree \
+  --expected-head FULL_40_CHARACTER_REVIEWED_COMMIT \
+  --scratch-parent /absolute/private/ext4/scratch-parent
+\`\`\`
+
+The preflight reads the local git HEAD; it does not query or change the remote.
+For offline unit testing:
+
+\`\`\`sh
+python3 -m unittest automation.command_bus.tests.test_symphony_worker_first_preflight -v
+\`\`\`
+
+The existing WSL/Codex login state must already be usable. Do not request new
+login, repair shared Windows SQLite databases, edit settings or use an API key.
+
+## Separate worker-only LIVE boundary
+
+Only after a specific one-LIVE authorization may a trusted Local operator:
+
+- select a **fresh** Issue/campaign/workspace and independently pin the source,
+  exact branch/HEAD and one allowed artifact;
+- install the previously reviewed separate Codex SQLite store, approved worker
+  launch callback and Official Symphony subscription startup patch;
+- start Official Symphony once, allowing its native multi-turn and safe recovery
+  behavior (do **not** replace it with the one-turn proof adapter);
+- keep the worker isolated from GitHub write credentials, with **no** automatic
+  commit/push/PR, stage/dispatch, OIDC, adoption or GitHub ref mutation;
+- preserve local observer events and full snapshot **before** workspace cleanup;
+  independently read back result bytes, IDs, and lifecycle records.
+
+An unobserved terminal remains UNKNOWN; do not treat a local worker result as a
+verified GitHub adoption receipt. Platform branch rules and minimal credential
+reviews remain **BLOCKED/UNKNOWN** for the later GitHub publication stage.
+Do not weaken existing \`constraints_reader\` or the operator sender.
+
+## Known limitations and stop reasons
+
+- WSL native ext4 scratch is required; Windows-mounted drvfs is not qualified.
+- The diagnostic scratch directory is ephemeral, not the approved durable
+  production SQLite installation. A real worker still needs that independent
+  storage binding and fresh same-process admission.
+- Clean local git status is not a complete security proof of ignored files or
+  arbitrary program behavior. Worker sandbox/trusted runtime isolation is a
+  separate installation responsibility.
+- Parent process credentials/authorization and model quota are not established
+  by checking the route; quota UNKNOWN is not exhaustion.
+- A proof run cannot proceed from this script alone. **LIVE_NO_GO** until
+  explicit operator authority and actual host installation are verified.
