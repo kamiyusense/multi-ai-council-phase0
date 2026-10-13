@@ -42,7 +42,8 @@ class WorkerOnlyPreflightTests(unittest.TestCase):
     def test_clean_worker_proof_without_github_permissions(self):
         result = self.check()
         self.assertEqual(result['status'], 'PASS_READONLY_NOT_ADMISSION')
-        self.assertFalse(result['github_protection_required'])
+        self.assertFalse(result['worker_only_readonly_requires_branch_protection'])
+        self.assertEqual(result['publication_rules_status'], 'NOT_EVALUATED')
         self.assertFalse(result['live_authorized'])
         self.assertEqual(result['model_turns'], 0)
         self.assertEqual(result['github_writes'], 0)
@@ -100,7 +101,7 @@ class WorkerOnlyPreflightTests(unittest.TestCase):
             self.assertEqual(self.check()['status'], 'BLOCKED')
 
     def test_invalid_sha_and_executable_not_executed(self):
-        for arguments in ({'expected_head': 'main'}, {'executable': 'curl'}):
+        for arguments in ({'expected_head': 'main'}, {'executable': 'curl'}, {'executable': 'codex.exe'}):
             self.assertEqual(self.check(**arguments)['status'], 'BLOCKED')
         self.git_mock.assert_not_called()
         self.probe_mock.assert_not_called()
