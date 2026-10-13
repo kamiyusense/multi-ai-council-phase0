@@ -1,0 +1,74 @@
+name: Symphony worker-first Local preflight STATIC
+
+on:
+  pull_request:
+    paths:
+      - automation/command_bus/scripts/symphony_worker_first_preflight.py
+      - automation/command_bus/tests/test_symphony_worker_first_preflight.py
+      - docs/SYMPHONY_WORKER_FIRST_LOCAL_PREFLIGHT.md
+      - .github/workflows/symphony-worker-first-static.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: symphony-worker-first-static-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  worker-first-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact PR HEAD without credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Run dedicated read-only negative tests
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/worker-first-static"
+          python -m unittest automation.command_bus.tests.test_symphony_worker_first_preflight -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/focused.txt"
+      - name: Full command-bus regression
+        run: |
+          set -o pipefail
+          python -m unittest discover -s automation/command_bus/tests -t . -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/full.txt"
+      - name: Verify original sealed evidence and unchanged production OFF gate
+        run: |
+          python -m automation.command_bus.scripts.validate_symphony_operator_static
+          python - <<'PY'
+          from pathlib import Path
+          for name in ('authorize', 'candidate'):
+              p=Path('.github/workflows/symphony-operator-'+name+'.yml')
+              s=p.read_text()
+              assert 'if: '+'$'+'{{ false }}' in s
+              assert 'contents: read' in s
+              assert 'id-token: write' not in s
+              assert 'contents: write' not in s
+          PY
+      - name: Compile, diff and immutable exact-head evidence
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python -m compileall -q automation/command_bus
+          git diff --check "$BASE_SHA...$HEAD_SHA"
+          python - <<'PY'
+          import json,os,pathlib,hashlib
+          dst=pathlib.Path(os.environ['RUNNER_TEMP'])/'worker-first-static'
+          data={'mode':'STATIC_READONLY','head':os.environ['HEAD_SHA'],
+                'model_turns':0,'thread_starts':0,'github_publication':0,
+                'production_off':True,'platform_rules':'NOT_EVALUATED'}
+          raw=(json.dumps(data,sort_keys=True)+'\n').encode()
+          (dst/'receipt.json').write_bytes(raw)
+          (dst/'receipt.sha256').write_text(hashlib.sha256(raw).hexdigest()+'  receipt.json\n')
+          PY
+      - name: Upload static test evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: worker-first-static-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/worker-first-static/
+          if-no-files-found: error
+          retention-days: 30
