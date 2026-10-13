@@ -267,7 +267,7 @@ class TestContractAndGuards(Base):
 @unittest.skipUnless(os.environ.get("RELAY_CODEX_ACP_DIR") and shutil.which("node"),
                      "RELAY_CODEX_ACP_DIR / node not available (TEST_ENVIRONMENT_NOT_PREPARED)")
 class TestFullFlowWithOfficialAdapterAndFixtureBackend(Base):
-    """Real codex-acp 2.1.0 + Relay gate + a fixture standing in for the 'real' backend (outside fixtures/)."""
+    """Real codex-acp 2.1.1 + Relay gate + a fixture standing in for the 'real' backend (outside fixtures/)."""
 
     def terminal(self):
         return json.loads((self.tmp / "state dir" / st.TERMINAL_FILE).read_text(encoding="utf-8"))

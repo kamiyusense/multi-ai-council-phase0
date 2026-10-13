@@ -518,4 +518,4 @@ class TestCodexAdapterContract(unittest.TestCase):
         from relay.acp_client import acp_initialize_wire
         result = asyncio.run(acp_initialize_wire(*self._adapter(), timeout=20.0, env=self._env()))
         self.assertEqual(result["agentInfo"]["version"], CODEX_POLICY.pinned_version)
-        self.assertEqual(CODEX_POLICY.pinned_version, "2.1.0")
+        self.assertEqual(CODEX_POLICY.pinned_version, "2.1.1")
