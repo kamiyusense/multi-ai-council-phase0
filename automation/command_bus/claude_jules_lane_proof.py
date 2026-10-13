@@ -80,6 +80,7 @@ def build_proof_plan(
     *, origin_loop_id: str, origin_generation: int, repository: str, default_branch: str, target_branch: str,
     target_pr: int, target_head: str, target_tree: str, allowed_path: str, allowed_content: str, expires_at: str,
     forbidden_session_ids: list[str], live_authorization: dict[str, Any] | None = None,
+    loop_a_slots_used_before: int = LOOP_A_SLOTS_USED_BEFORE,
 ) -> dict[str, Any]:
     plan = {
         "schema_version": 1, "plan_kind": PLAN_KIND, "lane_id": LANE_ID, "id_owner": ID_OWNER,
@@ -87,7 +88,7 @@ def build_proof_plan(
         "repository": repository, "default_branch": default_branch, "target_branch": target_branch,
         "target_pr": target_pr, "target_head": target_head, "target_tree": target_tree,
         "allowed_path": allowed_path, "allowed_content": allowed_content, "limits": dict(LIMITS),
-        "loop_a_slots_used_before": LOOP_A_SLOTS_USED_BEFORE, "forbidden_session_ids": sorted(forbidden_session_ids),
+        "loop_a_slots_used_before": loop_a_slots_used_before, "forbidden_session_ids": sorted(forbidden_session_ids),
         "forbidden_loop_numbers": list(FORBIDDEN_LOOP_NUMBERS), "retry": 0, "fallback": "disabled",
         "expires_at": expires_at, "live_authorization": live_authorization,
     }
@@ -113,7 +114,8 @@ def validate_proof_plan(plan: Any, *, registry: dict[str, Any] | None, now: str 
         raise ProofError("PLAN_ORIGIN_GENERATION")
     if plan["limits"] != LIMITS or (plan["retry"], plan["fallback"]) != (0, "disabled"):
         raise ProofError("PLAN_LIMITS")
-    if plan["loop_a_slots_used_before"] != LOOP_A_SLOTS_USED_BEFORE or LOOP_A_SLOTS_USED_BEFORE + 1 > LOOP_A_LIVE_BUDGET:
+    used = plan["loop_a_slots_used_before"]
+    if isinstance(used, bool) or not isinstance(used, int) or used < 0 or used + 1 > LOOP_A_LIVE_BUDGET:
         raise ProofError("PLAN_BUDGET")
     if plan["forbidden_loop_numbers"] != list(FORBIDDEN_LOOP_NUMBERS):
         raise ProofError("PLAN_FORBIDDEN_LOOPS")
