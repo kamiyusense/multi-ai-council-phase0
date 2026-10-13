@@ -48,6 +48,16 @@ class CandidateTests(unittest.TestCase):
         manifest = json.loads((EV / "routine-prompt-v1.6.manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["candidate"]["sha256"], hashlib.sha256(self.text.encode()).hexdigest())
 
+    def test_manifest_paths_use_forward_slashes(self):
+        outputs = self.builder.outputs()
+        manifest_path = EV / "routine-prompt-v1.6.manifest.json"
+        self.assertIn(manifest_path, outputs)
+        manifest = json.loads(outputs[manifest_path])
+        paths = [manifest["original"]["path"], manifest["candidate"]["path"]]
+        for p in paths:
+            self.assertNotIn("\\", p, f"Manifest path '{p}' contains backslash")
+            self.assertIn("/", p)
+
     def test_every_v1_5_1_line_survives_except_the_declared_replacements(self):
         replaced = {old for old, _, _ in self.builder.REPLACE}
         self.assertEqual(len(replaced), 3)
@@ -83,7 +93,7 @@ class CandidateTests(unittest.TestCase):
                          self.original.count("<!-- claude-closed-loop-receipt v1"))
 
     def test_paste_safety(self):
-        raw = CANDIDATE.read_bytes()
+        raw = CANDIDATE.read_bytes().replace(b"\r\n", b"\n")  # a Windows checkout may add CR; the blob has none
         raw.decode("ascii")                                   # no smart quotes or invisible characters
         self.assertNotIn(b"\r", raw)
         self.assertNotIn(b"\t", raw)
