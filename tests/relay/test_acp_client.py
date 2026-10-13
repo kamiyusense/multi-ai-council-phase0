@@ -96,6 +96,31 @@ class TestACPClient(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "live_process_started must be false"):
                 client.initialize("test")
 
+    def test_no_named_temporary_file_without_delete_false(self):
+        import ast
+        with open(__file__, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=__file__)
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func_name = None
+                if isinstance(node.func, ast.Name):
+                    func_name = node.func.id
+                elif isinstance(node.func, ast.Attribute):
+                    func_name = node.func.attr
+
+                if func_name == "NamedTemporaryFile":
+                    has_delete_false = any(
+                        kw.arg == "delete"
+                        and isinstance(kw.value, ast.Constant)
+                        and kw.value.value is False
+                        for kw in node.keywords
+                    )
+                    self.assertTrue(
+                        has_delete_false,
+                        "NamedTemporaryFile calls in test_acp_client.py must pass delete=False",
+                    )
+
     def test_deterministic_session_ids(self):
         s1 = self.client.open_session("test", cwd="/")
         s2 = self.client.open_session("test", cwd="/")
