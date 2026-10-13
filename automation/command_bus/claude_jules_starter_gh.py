@@ -52,6 +52,7 @@ START_PROFILE = "CLAUDE_JULES_API_START_V1"
 TAKEOVER_PREFIX = "claude/takeover-"
 TAKEOVER_MARKER = "<!-- claude-takeover-request v1"
 TAKEOVER_PROFILE = "CLAUDE_TAKEOVER_REQUEST_V1"
+MESSAGE_WORKFLOW = "Phase 0 Jules session message"   # .github/workflows/jules-session-message.yml
 MESSAGE_LIMIT = 4000                       # .github/workflows/jules-session-message.yml refuses longer prompts
 _COMMENT_ID = re.compile(r"#issuecomment-([0-9]+)$")
 _STATUS = re.compile(r"HTTP/\S+\s+(\d{3})")
@@ -580,6 +581,21 @@ class GhLoopPort:
     def api_message_sent_at(self, rid):
         commits = self._carrier_commits(f"{MESSAGE_DIR}{rid}.json")
         return commits[-1]["commit"]["committer"]["date"] if commits else None
+
+    def api_message_attempt(self, rid):
+        """None when request `rid` was never written; else {at, result} where result is the message workflow's
+        outcome for the commit that added it: SENT (run succeeded), FAILED (run failed, e.g. the session was busy,
+        so nothing was sent) or PENDING (no finished run yet)."""
+        commits = self._carrier_commits(f"{MESSAGE_DIR}{rid}.json")
+        if not commits:
+            return None
+        commit = commits[-1]
+        runs = self.get(f"repos/{self.repo}/actions/runs?head_sha={commit['sha']}&per_page=20")
+        runs = [r for r in (runs.get("workflow_runs") or []) if r.get("name") == MESSAGE_WORKFLOW]
+        result = "PENDING"
+        if runs and runs[0].get("status") == "completed":
+            result = "SENT" if runs[0].get("conclusion") == "success" else "FAILED"
+        return {"at": commit["commit"]["committer"]["date"], "result": result}
 
     def api_message_request(self, rid, *, receipt, head):
         """(path, request) resending the receipt's corrective comment to the PR's Jules session.  ValueError when
