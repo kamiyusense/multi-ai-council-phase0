@@ -89,8 +89,9 @@ class TestCorePR3OverlayRunner(unittest.TestCase):
         self.assertFalse(overlay._namespace_matches("unrelated.module"))
 
     def test_required_paths_are_deterministic_and_explicit(self):
-        core = Path("/core")
-        relay = Path("/relay")
+        base = Path.cwd()
+        core = base / "core"
+        relay = base / "relay"
         paths = overlay._required_paths(core, relay)
         self.assertEqual(len(paths), len(set(paths)))
         self.assertTrue(all(path.is_absolute() for path in paths))
