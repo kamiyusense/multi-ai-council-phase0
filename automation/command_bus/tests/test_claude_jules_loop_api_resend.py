@@ -239,3 +239,64 @@ class HelperAndKeyScopeTests(unittest.TestCase):
                     found += 1
                     self.assertIn("\n    environment: jules-api\n", job, f"{path.name}: {job.split(chr(10))[0]}")
         self.assertGreaterEqual(found, 7)
+
+
+class DeliveryReadbackTests(unittest.TestCase):
+    """2026-10-13, task #392: the message workflow refused to send (Jules was IN_PROGRESS), yet the request file
+    counted as sent and the task went to the takeover.  Now only a delivered message counts; a refused one is
+    followed by a new request id (never a resend of an unknown outcome), at most three per round."""
+
+    task = {"task_id": "prod-c1-389cd7ecac", "issue": 392}
+
+    class Port:
+        def __init__(self, attempts):
+            self.attempts, self.sent = attempts, []
+
+        def api_message_attempt(self, rid):
+            return self.attempts.get(rid)
+
+        def api_message(self, rid, **kw):
+            self.sent.append(rid)
+            return "SENT"
+
+    def run_(self, attempts):
+        port = self.Port(attempts)
+        out = loop._resend_corrective(port, self.task, RECEIPT, head=H2, now=NOW, ack_minutes=60)
+        return out, port.sent
+
+    def test_a_refused_delivery_is_followed_by_a_new_request(self):
+        base = "prod-c1-389cd7ecac-r1-msg"
+        (code, _, human), sent = self.run_({base: {"at": "2026-10-10T15:00:00Z", "result": "FAILED"}})
+        self.assertEqual((code, human, sent), ("JULES_IGNORED_CORRECTIVE", False, [base + "-a2"]))
+
+    def test_pending_waits_and_delivered_counts(self):
+        base = "prod-c1-389cd7ecac-r1-msg"
+        (code, reason, _), sent = self.run_({base: {"at": "2026-10-10T15:00:00Z", "result": "PENDING"}})
+        self.assertEqual((code, sent), ("JULES_IGNORED_CORRECTIVE", []))
+        self.assertIn("still being delivered", reason)
+        (code, _, _), sent = self.run_({base: {"at": "2026-10-10T15:05:00Z", "result": "SENT"}})
+        self.assertEqual((code, sent), ("JULES_IGNORED_CORRECTIVE", []))
+
+    def test_three_refused_deliveries_go_to_the_takeover_path(self):
+        base = "prod-c1-389cd7ecac-r1-msg"
+        failed = {"at": "2026-10-10T15:00:00Z", "result": "FAILED"}
+        (code, _, human), sent = self.run_({base: failed, base + "-a2": failed, base + "-a3": failed})
+        self.assertEqual((code, human, sent), ("JULES_RESEND_REFUSED", True, []))
+
+    def test_port_reads_the_workflow_outcome_of_the_request_commit(self):
+        sha = "e" * 40
+        calls = []
+
+        def get(path):
+            calls.append(path)
+            tail = path.split(f"repos/{REPO}/", 1)[1]
+            if tail.startswith("commits?"):
+                return [{"sha": sha, "commit": {"committer": {"date": NOW}}}] if "-r1-msg.json" in tail else []
+            if tail.startswith("actions/runs?head_sha="):
+                return {"workflow_runs": [{"name": ghs.MESSAGE_WORKFLOW, "status": "completed",
+                                           "conclusion": "failure"}]}
+            raise AssertionError(path)
+        port = ghs.GhLoopPort(get, repo=REPO, campaign=CAMPAIGN, route_declaration={}, signals=[])
+        self.assertEqual(port.api_message_attempt("x-r1-msg"), {"at": NOW, "result": "FAILED"})
+        self.assertIsNone(port.api_message_attempt("x-r1-msg-a2"))
+        self.assertIn(f"actions/runs?head_sha={sha}", calls[1])

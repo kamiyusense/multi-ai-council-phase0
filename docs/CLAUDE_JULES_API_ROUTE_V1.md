@@ -132,6 +132,11 @@ API the regular route. Policy `corrective_api_first: true` sends the corrective 
 tick that sees it (the PR comment stays as the record). A resend that cannot be sent (limit, missing session link)
 goes to the Claude takeover instead of waiting for a human.
 
+Delivery is read back (2026-10-13, task #392): a request counts as sent only when the message workflow run for its
+commit succeeded. A failed run (for example Jules was IN_PROGRESS, so the workflow refused a stale send) means
+nothing reached Jules; the next wake writes a new request `<rid>-a2` (then `-a3`), never a resend of an unknown
+outcome. Three refused deliveries in one round go to the takeover.
+
 ## Not in V1
 
 `approvePlan`, session listing, any automatic route fallback, merging, changing the Routine trigger.

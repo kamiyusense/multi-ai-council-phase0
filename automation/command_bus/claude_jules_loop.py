@@ -234,9 +234,16 @@ def _resend_corrective(port: Any, task: dict[str, Any], receipt: dict[str, Any],
     rnd = receipt.get("round")
     rid = f"{task['task_id']}-r{rnd}-msg"
     try:
-        sent_at = port.api_message_sent_at(rid)
+        if hasattr(port, "api_message_attempt"):
+            sent_at, rid = _sent_attempt(port, rid)
+        else:
+            sent_at = port.api_message_sent_at(rid)
     except TransientRead as exc:
         return "READ_UNKNOWN", f"Jules API resend {rid}: carrier unreadable ({exc}); the next wake re-reads", False
+    except _AttemptPending as exc:
+        return "JULES_IGNORED_CORRECTIVE", f"Jules API resend {exc} is still being delivered", False
+    except _AttemptsUsedUp as exc:
+        return ("JULES_RESEND_REFUSED", f"Jules did not apply corrective round {rnd}; {exc}", True)
     if sent_at is not None:
         try:
             overdue = st._ts(now) - st._ts(sent_at) >= timedelta(minutes=ack_minutes)
@@ -262,6 +269,33 @@ def _resend_corrective(port: Any, task: dict[str, Any], receipt: dict[str, Any],
                 f"not sent: {status}", True)
     return "JULES_IGNORED_CORRECTIVE", f"Jules did not apply corrective round {rnd}; resent via the Jules API ({rid})", \
         False
+
+
+RESEND_ATTEMPTS = 3          # per corrective round; an attempt counts only when the workflow did not send it
+
+
+class _AttemptPending(Exception):
+    """The latest request's workflow has not finished: wait, never write another one."""
+
+
+class _AttemptsUsedUp(Exception):
+    """Every attempt's workflow refused to send (e.g. Jules was busy each time)."""
+
+
+def _sent_attempt(port: Any, rid: str) -> tuple[str | None, str]:
+    """(sent_at, request id to use).  Attempts are `rid`, `rid-a2`, `rid-a3`.  A delivered attempt gives its time; a
+    failed one (the workflow refused, so nothing reached Jules) moves to the next id, which is a new request, never
+    a resend of an unknown outcome."""
+    ids = [rid] + [f"{rid}-a{n}" for n in range(2, RESEND_ATTEMPTS + 1)]
+    for cur in ids:
+        attempt = port.api_message_attempt(cur)
+        if attempt is None:
+            return None, cur
+        if attempt["result"] == "SENT":
+            return attempt["at"], cur
+        if attempt["result"] == "PENDING":
+            raise _AttemptPending(cur)
+    raise _AttemptsUsedUp(f"the Jules API message workflow refused all {RESEND_ATTEMPTS} attempts ({ids[-1]})")
 
 
 def _previous_checkpoint(control: dict[str, Any] | None, trusted: set[str]) -> dict[str, Any] | None:
