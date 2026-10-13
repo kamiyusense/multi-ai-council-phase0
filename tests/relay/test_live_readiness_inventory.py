@@ -272,7 +272,7 @@ class TestLiveReadinessInventory(unittest.TestCase):
         from pathlib import Path
 
         src_path = Path("src/providers/live_readiness_inventory.py")
-        with open(src_path) as f:
+        with open(src_path, encoding="utf-8") as f:
             tree = ast.parse(f.read())
 
         for node in ast.walk(tree):
