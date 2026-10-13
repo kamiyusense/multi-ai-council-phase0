@@ -15,7 +15,7 @@
     "trusted_writers": [
       "kamiyusense"
     ],
-    "max_concurrent_tasks": 1,
+    "max_concurrent_tasks": 2,
     "max_campaign_rounds": null,
     "max_corrective_rounds": 3,
     "intent_lease_minutes": 15,
