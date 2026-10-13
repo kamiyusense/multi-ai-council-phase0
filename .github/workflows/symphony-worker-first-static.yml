@@ -48,6 +48,41 @@ jobs:
               assert 'id-token: write' not in s
               assert 'contents: write' not in s
           PY
+      - name: Independent secret scan of changed worker-first files
+        env:
+          SCANNER_IMAGE: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        run: |
+          set -euo pipefail
+          docker pull "$SCANNER_IMAGE"
+          python - <<'PY'
+          import os,shutil
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'worker-first-secret-scan'
+          root.mkdir()
+          paths=('.github/workflows/symphony-worker-first-static.yml',
+                 'automation/command_bus/scripts/symphony_worker_first_preflight.py',
+                 'automation/command_bus/tests/test_symphony_worker_first_preflight.py',
+                 'docs/SYMPHONY_WORKER_FIRST_LOCAL_PREFLIGHT.md')
+          for name in paths:
+              target=root/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(Path(name),target)
+          (root/'trusted.toml').write_text('[extend]\nuseDefault = true\n')
+          PY
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 128m --tmpfs /tmp:rw,noexec,nosuid,size=32m \
+            --mount type=bind,src="$RUNNER_TEMP/worker-first-secret-scan",dst=/scan,readonly \
+            "$SCANNER_IMAGE" dir /scan --config /scan/trusted.toml \
+            --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner \
+            2>&1 | tee "$RUNNER_TEMP/worker-first-static/secret-scan.txt"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'worker-first-static'/'secret-scan.json'
+          p.write_text(json.dumps({'result':'PASS','scope':'four worker-first files',
+              'scanner_image':os.environ['SCANNER_IMAGE'],'network':'none',
+              'candidate_allowlist':False,'real_model_starts':0},sort_keys=True)+'\n')
+          PY
       - name: Compile, diff and immutable exact-head evidence
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
