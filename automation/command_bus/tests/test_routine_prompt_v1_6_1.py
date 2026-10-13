@@ -8,6 +8,18 @@ OLD = EV / "routine-prompt-v1.6.CANDIDATE.txt"
 NEW = EV / "routine-prompt-v1.6.1.CANDIDATE.txt"
 
 
+def check_paste_safety(raw: bytes) -> bytes:
+    normalized = raw.replace(b"\r\n", b"\n")
+    normalized.decode("ascii")
+    if b"\r" in normalized:
+        raise AssertionError("Carriage return found in bytes")
+    if b"\t" in normalized:
+        raise AssertionError("Tab found in bytes")
+    if not (normalized.endswith(b"\n") and not normalized.endswith(b"\n\n")):
+        raise AssertionError("Invalid trailing newline structure")
+    return normalized
+
+
 class RoutinePromptV161Tests(unittest.TestCase):
     def setUp(self):
         self.old = OLD.read_text(encoding="utf-8")
@@ -28,10 +40,18 @@ class RoutinePromptV161Tests(unittest.TestCase):
 
     def test_paste_safety(self):
         raw = NEW.read_bytes()
-        raw.decode("ascii")
-        self.assertNotIn(b"\r", raw)
-        self.assertNotIn(b"\t", raw)
-        self.assertTrue(raw.endswith(b"\n") and not raw.endswith(b"\n\n"))
+        normalized = check_paste_safety(raw)
+        raw_normalized = raw.replace(b"\r\n", b"\n")
+        raw_normalized.decode("ascii")
+        self.assertNotIn(b"\r", raw_normalized)
+        self.assertNotIn(b"\t", raw_normalized)
+        self.assertTrue(raw_normalized.endswith(b"\n") and not raw_normalized.endswith(b"\n\n"))
+        self.assertEqual(normalized, raw_normalized)
+
+    def test_paste_safety_crlf_normalization_and_lone_cr_rejection(self):
+        self.assertEqual(check_paste_safety(b"a\r\nb\n"), b"a\nb\n")
+        with self.assertRaises(AssertionError):
+            check_paste_safety(b"a\rb\n")
 
 
 if __name__ == "__main__":
