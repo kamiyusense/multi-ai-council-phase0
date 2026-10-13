@@ -78,7 +78,7 @@ def preflight(*, workspace: str | Path, expected_head: str,
         "model_turns": 0, "thread_starts": 0, "github_writes": 0,
         "worker_only_readonly_requires_branch_protection": False,
         "publication_rules_status": "NOT_EVALUATED", "production_installed": False,
-        "live_authorized": False,
+        "live_authorized": False, "local_branch_verified": False,
     }
     try:
         if type(expected_head) is not str or not COMMIT.fullmatch(expected_head):
@@ -105,7 +105,6 @@ def preflight(*, workspace: str | Path, expected_head: str,
         from ..symphony_subscription_boundary import metered_worker_environment_present
         if metered_worker_environment_present(tuple(os.environ)):
             raise ValueError("metered environment selector present")
-        status["local_branch_verified"] = True
         with tempfile.TemporaryDirectory(prefix="symphony-worker-proof-readonly-", dir=scratch) as temp:
             path = Path(temp)
             path.chmod(0o700)
@@ -117,8 +116,22 @@ def preflight(*, workspace: str | Path, expected_head: str,
                 or result["route"].get("subscription_route_compatible") is not True
                 or result["route"].get("provenance") != "SAME_PROCESS_FRESH_READ_ONLY_NOT_ADMISSION"):
             raise ValueError("same-process subscription readback unavailable")
+        # The read-only app-server probe can take time. Its account/config
+        # evidence never licenses a stale/rebound workspace or parent route.
+        # Revalidate local bindings after the probe; this is no model dispatch,
+        # lease, scheduler gate or replacement for admission in a future worker.
+        _safe_dir(workspace)
+        _safe_dir(scratch, private=True)
+        current_auth = _safe_dir(os.environ.get("CODEX_HOME") or str(Path.home() / ".codex"))
+        if (current_auth != auth or not _native_linux_state(scratch)
+                or metered_worker_environment_present(tuple(os.environ))):
+            raise ValueError("local storage/auth/route binding changed during probe")
+        if (_git(workspace, "symbolic-ref", "--quiet", "--short", "HEAD") != branch
+                or _git(workspace, "rev-parse", "--verify", "HEAD") != expected_head
+                or _git(workspace, "status", "--porcelain=v1", "--untracked-files=all")):
+            raise ValueError("workspace changed during read-only probe")
         status.update({"status": "PASS_READONLY_NOT_ADMISSION", "reason": "VERIFIED_LOCAL_PRECHECK",
-                       "subscription_route_compatible": True})
+                       "subscription_route_compatible": True, "local_branch_verified": True})
     except (ValueError, PermissionError, OSError, subprocess.SubprocessError) as exc:
         # Never emit stderr, raw account data, local paths or token values.
         status["reason"] = (
