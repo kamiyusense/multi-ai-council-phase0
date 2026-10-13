@@ -1,5 +1,8 @@
 # Claude × Jules loop: how to start a long-running campaign
 
+> Historical activation record (2026-10-10). For the current way to give the running loop work, and the current
+> Routine prompts (reviewer v1.9, takeover worker v1), read [README.md](README.md).
+
 One approval starts a campaign; after that the loop chooses, starts, reviews and continues tasks by itself until
 the budget, the expiry, the human stop switch or the objectives end it. Only the subscription route is used.
 

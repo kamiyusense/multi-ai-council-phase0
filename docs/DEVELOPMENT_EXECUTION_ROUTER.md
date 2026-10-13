@@ -4,6 +4,14 @@
 > [コピー文章の必須表示規則](USER_COPY_TEXT_FORMAT.md)。ユーザーが貼る完成文は
 > 全文を1つの `markdown` コードブロックへ。次Chatへの継承も必須。
 
+
+## 💚 Claude × Jules autonomous loop (unattended)
+
+To give the running Claude × Jules loop work (an evidence-backed task in files an approved objective covers),
+follow [docs/claude-jules-loop/README.md](claude-jules-loop/README.md): file one signal issue with
+`claude_jules_signal_cli`; the loop plans, starts, reviews and continues by itself. This is separate from the
+Chat → Jules semi-auto carrier below and needs no Loop-ID claim.
+
 ## Purpose and authority
 
 This is the main-branch entrypoint for choosing the **development worker** in
