@@ -35,6 +35,173 @@ jobs:
         run: |
           set -o pipefail
           python -m unittest discover -s automation/command_bus/tests -t . -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/full.txt"
+      - name: Collect actual test totals from runner logs
+        id: test_totals
+        run: |
+          python - <<'PY'
+          import json,os,re
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'worker-first-static'
+          counts={}
+          for label in ('focused','full'):
+              text=(root/(label+'.txt')).read_text(encoding='utf-8')
+              ran=re.findall(r'^Ran (\d+) tests in [0-9.]+s        run: |
+          python -m automation.command_bus.scripts.validate_symphony_operator_static
+          python - <<'PY'
+          from pathlib import Path
+          for name in ('authorize', 'candidate'):
+              p=Path('.github/workflows/symphony-operator-'+name+'.yml')
+              s=p.read_text()
+              assert 'if: '+'$'+'{{ false }}' in s
+              assert 'contents: read' in s
+              assert 'id-token: write' not in s
+              assert 'contents: write' not in s
+          PY
+      - name: Independent secret scan of changed worker-first files
+        env:
+          SCANNER_IMAGE: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        run: |
+          set -euo pipefail
+          docker pull "$SCANNER_IMAGE"
+          python - <<'PY'
+          import os,shutil
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'worker-first-secret-scan'
+          root.mkdir()
+          paths=('.github/workflows/symphony-worker-first-static.yml',
+                 'automation/command_bus/scripts/symphony_worker_first_preflight.py',
+                 'automation/command_bus/tests/test_symphony_worker_first_preflight.py',
+                 'docs/SYMPHONY_WORKER_FIRST_LOCAL_PREFLIGHT.md')
+          for name in paths:
+              target=root/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(Path(name),target)
+          (root/'trusted.toml').write_text('[extend]\nuseDefault = true\n')
+          PY
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 128m --tmpfs /tmp:rw,noexec,nosuid,size=32m \
+            --mount type=bind,src="$RUNNER_TEMP/worker-first-secret-scan",dst=/scan,readonly \
+            "$SCANNER_IMAGE" dir /scan --config /scan/trusted.toml \
+            --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner \
+            2>&1 | tee "$RUNNER_TEMP/worker-first-static/secret-scan.txt"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'worker-first-static'/'secret-scan.json'
+          p.write_text(json.dumps({'result':'PASS','scope':'four worker-first files',
+              'scanner_image':os.environ['SCANNER_IMAGE'],'network':'none',
+              'candidate_allowlist':False,'real_model_starts':0},sort_keys=True)+'\n')
+          PY
+      - name: Compile, diff and immutable exact-head evidence
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python -m compileall -q automation/command_bus
+          git diff --check "$BASE_SHA...$HEAD_SHA"
+          python - <<'PY'
+          import json,os,pathlib,hashlib
+          dst=pathlib.Path(os.environ['RUNNER_TEMP'])/'worker-first-static'
+          data={'mode':'STATIC_READONLY','head':os.environ['HEAD_SHA'],
+                'model_turns':0,'thread_starts':0,'github_publication':0,
+                'production_off':True,'platform_rules':'NOT_EVALUATED',
+                'test_totals':json.loads((dst/'test-totals.json').read_text()),
+                'secret_scan':'PASS'}
+          raw=(json.dumps(data,sort_keys=True)+'\n').encode()
+          (dst/'receipt.json').write_bytes(raw)
+          (dst/'receipt.sha256').write_text(hashlib.sha256(raw).hexdigest()+'  receipt.json\n')
+          PY
+      - name: Upload static test evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: worker-first-static-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/worker-first-static/
+          if-no-files-found: error
+          retention-days: 30
+,text,re.M)
+              ok=re.findall(r'^OK(?: \(skipped=(\d+)\))?        run: |
+          python -m automation.command_bus.scripts.validate_symphony_operator_static
+          python - <<'PY'
+          from pathlib import Path
+          for name in ('authorize', 'candidate'):
+              p=Path('.github/workflows/symphony-operator-'+name+'.yml')
+              s=p.read_text()
+              assert 'if: '+'$'+'{{ false }}' in s
+              assert 'contents: read' in s
+              assert 'id-token: write' not in s
+              assert 'contents: write' not in s
+          PY
+      - name: Independent secret scan of changed worker-first files
+        env:
+          SCANNER_IMAGE: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        run: |
+          set -euo pipefail
+          docker pull "$SCANNER_IMAGE"
+          python - <<'PY'
+          import os,shutil
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'worker-first-secret-scan'
+          root.mkdir()
+          paths=('.github/workflows/symphony-worker-first-static.yml',
+                 'automation/command_bus/scripts/symphony_worker_first_preflight.py',
+                 'automation/command_bus/tests/test_symphony_worker_first_preflight.py',
+                 'docs/SYMPHONY_WORKER_FIRST_LOCAL_PREFLIGHT.md')
+          for name in paths:
+              target=root/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(Path(name),target)
+          (root/'trusted.toml').write_text('[extend]\nuseDefault = true\n')
+          PY
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --user 65534:65534 --pids-limit 64 --memory 128m --tmpfs /tmp:rw,noexec,nosuid,size=32m \
+            --mount type=bind,src="$RUNNER_TEMP/worker-first-secret-scan",dst=/scan,readonly \
+            "$SCANNER_IMAGE" dir /scan --config /scan/trusted.toml \
+            --gitleaks-ignore-path /tmp/absent --ignore-gitleaks-allow --redact --no-banner \
+            2>&1 | tee "$RUNNER_TEMP/worker-first-static/secret-scan.txt"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'worker-first-static'/'secret-scan.json'
+          p.write_text(json.dumps({'result':'PASS','scope':'four worker-first files',
+              'scanner_image':os.environ['SCANNER_IMAGE'],'network':'none',
+              'candidate_allowlist':False,'real_model_starts':0},sort_keys=True)+'\n')
+          PY
+      - name: Compile, diff and immutable exact-head evidence
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python -m compileall -q automation/command_bus
+          git diff --check "$BASE_SHA...$HEAD_SHA"
+          python - <<'PY'
+          import json,os,pathlib,hashlib
+          dst=pathlib.Path(os.environ['RUNNER_TEMP'])/'worker-first-static'
+          data={'mode':'STATIC_READONLY','head':os.environ['HEAD_SHA'],
+                'model_turns':0,'thread_starts':0,'github_publication':0,
+                'production_off':True,'platform_rules':'NOT_EVALUATED'}
+          raw=(json.dumps(data,sort_keys=True)+'\n').encode()
+          (dst/'receipt.json').write_bytes(raw)
+          (dst/'receipt.sha256').write_text(hashlib.sha256(raw).hexdigest()+'  receipt.json\n')
+          PY
+      - name: Upload static test evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: worker-first-static-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/worker-first-static/
+          if-no-files-found: error
+          retention-days: 30
+,text,re.M)
+              if len(ran)!=1 or len(ok)!=1:
+                  raise SystemExit('actual successful test totals unavailable')
+              counts[label]=int(ran[0])
+              counts[label+'_skipped']=int(ok[0] or 0)
+          (root/'test-totals.json').write_text(json.dumps(counts,sort_keys=True)+'\n')
+          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as out:
+              for name,value in counts.items():
+                  out.write(str(name)+'='+str(value)+'\n')
+          PY
+      - name: 'Record test totals: focused=${{ steps.test_totals.outputs.focused }}, full=${{ steps.test_totals.outputs.full }}, skipped=${{ steps.test_totals.outputs.full_skipped }}'
+        run: test -s "$RUNNER_TEMP/worker-first-static/test-totals.json"
       - name: Verify original sealed evidence and unchanged production OFF gate
         run: |
           python -m automation.command_bus.scripts.validate_symphony_operator_static
