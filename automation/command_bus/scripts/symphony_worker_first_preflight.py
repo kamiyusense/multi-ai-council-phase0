@@ -76,13 +76,14 @@ def preflight(*, workspace: str | Path, expected_head: str,
         "mode": "WORKER_ONLY_READONLY_DIAGNOSTIC",
         "status": "BLOCKED", "reason": "LOCAL_READBACK_UNAVAILABLE",
         "model_turns": 0, "thread_starts": 0, "github_writes": 0,
-        "github_protection_required": False, "production_installed": False,
+        "worker_only_readonly_requires_branch_protection": False,
+        "publication_rules_status": "NOT_EVALUATED", "production_installed": False,
         "live_authorized": False,
     }
     try:
         if type(expected_head) is not str or not COMMIT.fullmatch(expected_head):
             raise ValueError("expected exact commit required")
-        if type(executable) is not str or Path(executable).name not in ("codex", "codex.exe"):
+        if type(executable) is not str or Path(executable).name != "codex":
             raise ValueError("Codex executable required")
         workspace = _safe_dir(workspace)
         scratch = _safe_dir(scratch_parent, private=True)
