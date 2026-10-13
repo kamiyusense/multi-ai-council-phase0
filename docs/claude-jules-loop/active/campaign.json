@@ -123,6 +123,27 @@
       "priority": 30,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-12T06:02:00Z"
+    },
+    {
+      "objective_id": "o5-signal-bundle-1",
+      "title": "Signal thread bundle 1 (owner approved 2026-10-14 JST): open PR inventory table, then the lane proof CLI ledger count that is pinned to 4",
+      "scope_prefixes": [
+        "docs/OPEN_PR_INVENTORY_20261014.md",
+        "automation/command_bus/claude_jules_lane_proof.py",
+        "automation/command_bus/claude_jules_lane_proof_cli.py",
+        "automation/command_bus/tests/test_claude_jules_lane_proof.py",
+        "automation/command_bus/tests/test_claude_jules_lane_proof_cli.py",
+        "automation/command_bus/tests/test_claude_jules_lane_proof_launcher.py"
+      ],
+      "allowed_operations": [
+        "bug_fix",
+        "test_fix",
+        "test_add",
+        "docs_update"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-13T15:41:06Z"
     }
   ],
   "control_issue": 346
