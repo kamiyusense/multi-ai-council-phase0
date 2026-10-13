@@ -26,7 +26,7 @@ class WorkerOnlyPreflightTests(unittest.TestCase):
                                           'OPENAI_API_KEY': ''}, clear=True)
         self.env.start(); self.addCleanup(self.env.stop)
         os.environ.pop('OPENAI_API_KEY')
-        self.git = patch.object(subject, '_git', side_effect=[BRANCH, HEAD, ''])
+        self.git = patch.object(subject, '_git', side_effect=[BRANCH, HEAD, '', BRANCH, HEAD, ''])
         self.fs = patch.object(subject, '_native_linux_state', return_value=True)
         self.probe = patch.object(subject, '_codex_readonly_probe', return_value=GOOD)
         self.git_mock = self.git.start(); self.addCleanup(self.git.stop)
@@ -55,7 +55,7 @@ class WorkerOnlyPreflightTests(unittest.TestCase):
         result = self.check()
         self.assertEqual(result['status'], 'PASS_READONLY_NOT_ADMISSION')
         self.assertNotIn('rules_complete', result)
-        self.assertEqual(self.git_mock.call_count, 3)
+        self.assertEqual(self.git_mock.call_count, 6)
 
     def test_blocks_wrong_head_before_codex(self):
         self.git_mock.side_effect = [BRANCH, 'b'*40]
@@ -99,6 +99,51 @@ class WorkerOnlyPreflightTests(unittest.TestCase):
             self.git_mock.side_effect = [BRANCH, HEAD, '']
             self.probe_mock.return_value = reply
             self.assertEqual(self.check()['status'], 'BLOCKED')
+
+    def test_workspace_changes_during_probe_never_report_fresh_pass(self):
+        for after in (('main',), (BRANCH, 'b' * 40),
+                      (BRANCH, HEAD, '?? arrived-during-probe.txt')):
+            self.git_mock.reset_mock(side_effect=True)
+            self.git_mock.side_effect = [BRANCH, HEAD, '', *after]
+            self.probe_mock.reset_mock()
+            result = self.check()
+            self.assertEqual(result['status'], 'BLOCKED')
+            self.assertFalse(result['local_branch_verified'])
+            self.probe_mock.assert_called_once()
+            self.assertEqual(result['model_turns'], 0)
+            self.assertEqual(result['thread_starts'], 0)
+            self.assertEqual(list(self.scratch.iterdir()), [])
+
+    def test_parent_metered_selector_added_during_probe_blocks_readonly_pass(self):
+        def rebind(**unused):
+            os.environ['OPENAI_API_KEY'] = 'STATIC_NOT_A_CREDENTIAL'
+            return GOOD
+        self.probe_mock.side_effect = rebind
+        result = self.check()
+        self.assertEqual(result['status'], 'BLOCKED')
+        self.assertFalse(result['local_branch_verified'])
+        self.assertEqual(self.git_mock.call_count, 3)
+        self.assertEqual(list(self.scratch.iterdir()), [])
+
+    def test_auth_or_storage_rebound_during_probe_blocks_readonly_pass(self):
+        other = self.auth.parent / 'other-auth'
+        other.mkdir(mode=0o700)
+        def rebind(**unused):
+            os.environ['CODEX_HOME'] = str(other)
+            return GOOD
+        self.probe_mock.side_effect = rebind
+        self.assertEqual(self.check()['status'], 'BLOCKED')
+        self.assertEqual(self.git_mock.call_count, 3)
+        os.environ['CODEX_HOME'] = str(self.auth)
+        self.probe_mock.side_effect = None
+        self.git_mock.reset_mock(side_effect=True)
+        self.git_mock.side_effect = [BRANCH, HEAD, '']
+        with patch.object(subject, '_native_linux_state', side_effect=[True, False]):
+            result = self.check()
+        self.assertEqual(result['status'], 'BLOCKED')
+        self.assertFalse(result['local_branch_verified'])
+        self.assertEqual(self.git_mock.call_count, 3)
+        self.assertEqual(list(self.scratch.iterdir()), [])
 
     def test_invalid_sha_and_executable_not_executed(self):
         for arguments in ({'expected_head': 'main'}, {'executable': 'curl'}, {'executable': 'codex.exe'}):
