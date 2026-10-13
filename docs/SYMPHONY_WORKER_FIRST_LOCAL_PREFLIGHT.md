@@ -88,3 +88,15 @@ Do not weaken existing \`constraints_reader\` or the operator sender.
   by checking the route; quota UNKNOWN is not exhaustion.
 - A proof run cannot proceed from this script alone. **LIVE_NO_GO** until
   explicit operator authority and actual host installation are verified.
+
+## Post-probe freshness
+
+The diagnostic re-reads canonical paths, private scratch ownership/mode and native
+filesystem, the authentication-home selector, metered environment selector names,
+and exact branch/HEAD/clean status after the same-process account/config probe.
+A change while the probe runs produces BLOCKED with local_branch_verified=false.
+This closes a read-only reporting race; it is not worker admission, a durable
+launch claim, or proof that future state cannot change. A later trusted Official
+Symphony launch still needs its own fresh identity/binary/storage/authorization
+binding and same-process subscription checks. No scheduling or continuation is
+changed. Local host execution unavailable is UNKNOWN, never an inferred pass.
