@@ -282,5 +282,56 @@ class TestLiveReadinessInventory(unittest.TestCase):
             elif isinstance(node, ast.ImportFrom):
                 self.assertNotIn(node.module, ["os", "sys", "subprocess", "urllib", "requests", "time", "random"])
 
+    def test_text_reads_declare_encoding(self) -> None:
+        # Regression: on Windows the default codec (e.g. cp932) cannot decode
+        # the UTF-8 sources, so every text open()/read_text() here must pass
+        # an explicit encoding.
+        from pathlib import Path
+
+        source = Path(__file__).read_text(encoding="utf-8")
+        self.assertEqual(_text_reads_without_encoding(source), [])
+
+        # The detector itself must catch a missing encoding.
+        self.assertEqual(
+            _text_reads_without_encoding(
+                "open(p)\n"
+                "open(p, 'r')\n"
+                "open(p, mode='rt')\n"
+                "Path(p).read_text()\n"
+                "open(p, 'rb')\n"
+                "open(p, encoding='utf-8')\n"
+                "Path(p).read_text(encoding='utf-8')\n"
+            ),
+            [1, 2, 3, 4],
+        )
+
+
+def _text_reads_without_encoding(source: str) -> list:
+    import ast
+
+    lines = []
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        keywords = {kw.arg for kw in node.keywords}
+        if isinstance(func, ast.Name) and func.id == "open":
+            mode: Any = "r"
+            if len(node.args) >= 2:
+                mode = node.args[1]
+            for kw in node.keywords:
+                if kw.arg == "mode":
+                    mode = kw.value
+            if isinstance(mode, ast.Constant):
+                mode = mode.value
+            if isinstance(mode, str) and "b" in mode:
+                continue
+            if "encoding" not in keywords and len(node.args) < 4:
+                lines.append(node.lineno)
+        elif isinstance(func, ast.Attribute) and func.attr == "read_text":
+            if "encoding" not in keywords and not node.args:
+                lines.append(node.lineno)
+    return sorted(lines)
+
 if __name__ == "__main__":
     unittest.main()
