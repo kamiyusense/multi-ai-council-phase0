@@ -58,7 +58,8 @@ class ActiveCampaignTests(unittest.TestCase):
                 self.assertTrue(prefix.startswith(LANE) or prefix in OWNER_APPROVED.get(o["objective_id"], ()),
                                 prefix)
                 self.assertFalse(any(word in prefix.lower() for word in BLUE), f"Blue lane path {prefix}")
-        self.assertEqual(self.camp["policy"]["max_concurrent_tasks"], 1)
+        # owner request 2026-10-14: two tasks at once (the relay and signal threads' work in parallel); no more
+        self.assertIn(self.camp["policy"]["max_concurrent_tasks"], (1, 2))
 
     def test_subscription_only(self):
         p = self.camp["policy"]
