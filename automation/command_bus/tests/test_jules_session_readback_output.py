@@ -1,9 +1,22 @@
+import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 WORKFLOW = Path(".github/workflows/jules-session-readback.yml")
+
+
+def _bash_and_jq_available(bash_path="/bin/bash", which=shutil.which):
+    if not Path(bash_path).exists():
+        return False, f"{bash_path} is unavailable"
+    if which("jq") is None:
+        return False, "jq is unavailable"
+    return True, ""
+
+
+_BASH_JQ_AVAILABLE, _BASH_JQ_REASON = _bash_and_jq_available()
+
 
 class TestJulesSessionReadbackOutput(unittest.TestCase):
     @classmethod
@@ -61,6 +74,36 @@ class TestJulesSessionReadbackOutput(unittest.TestCase):
         self.assertNotIn("echo \"- session_id: `${session_id}`\"", self.text)
         self.assertNotIn("eval", self.text)
 
+    def test_bash_and_jq_available_helper(self):
+        # Fake missing bash
+        ok, reason = _bash_and_jq_available(
+            bash_path="/nonexistent/path/to/bash",
+            which=lambda cmd: "/usr/bin/jq",
+        )
+        self.assertFalse(ok)
+        self.assertIn("/nonexistent/path/to/bash is unavailable", reason)
+
+        # Fake missing jq
+        ok, reason = _bash_and_jq_available(
+            bash_path="/bin/bash",
+            which=lambda cmd: None,
+        )
+        if Path("/bin/bash").exists():
+            self.assertFalse(ok)
+            self.assertIn("jq is unavailable", reason)
+
+        # Both present
+        ok, reason = _bash_and_jq_available(
+            bash_path=__file__,
+            which=lambda cmd: "/usr/bin/jq",
+        )
+        self.assertTrue(ok)
+        self.assertEqual(reason, "")
+
+    @unittest.skipUnless(
+        _BASH_JQ_AVAILABLE,
+        _BASH_JQ_REASON,
+    )
     def test_isolated_bash_execution_safety(self):
         script = """
 set -euo pipefail
@@ -134,6 +177,10 @@ cat "${GITHUB_STEP_SUMMARY}"
             self.assertNotIn("command not found", result.stderr)
             self.assertEqual(result.stderr, "")
 
+    @unittest.skipUnless(
+        _BASH_JQ_AVAILABLE,
+        _BASH_JQ_REASON,
+    )
     def test_isolated_bash_execution_safety_no_activities(self):
         script = """
 set -euo pipefail
