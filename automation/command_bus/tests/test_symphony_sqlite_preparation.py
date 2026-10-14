@@ -119,3 +119,37 @@ class SQLitePreparationTests(unittest.TestCase):
         self.assertNotEqual(first['schema'],second['schema'])
         self.assertEqual(second['schema_compatibility'],'EXPECTED_MIGRATION_PIN_MATCH_ONLY')
         self.assertEqual(second['independent_seal_approval'],'REQUIRED')
+
+
+class IndependentSchemaPinTests(unittest.TestCase):
+    def setUp(self):
+        SQLitePreparationTests.setUp(self)
+        self.pins=tuple(subject.SQLiteSchemaPin(**row)
+                        for row in subject.prepare_sqlite_review(self.store)['schema'])
+
+    def test_independent_exact_schema_pins_are_separate_from_migration_pin(self):
+        result=subject.prepare_sqlite_review(self.store,expected_schema=self.pins)
+        self.assertEqual(result['schema_review'],'EXACT_EXPECTED_SCHEMA_MATCH')
+        self.assertFalse(result['seal_created'])
+        self.approval.assert_not_called()
+
+    def test_valid_integrity_and_unchanged_migrations_do_not_hide_schema_drift(self):
+        with sqlite3.connect(self.db) as c:c.execute('CREATE TABLE extra(value TEXT)')
+        with self.assertRaises(PermissionError):
+            subject.prepare_sqlite_review(self.store,expected_schema=self.pins)
+        self.assertFalse((self.root/SEAL).exists())
+
+    def test_missing_duplicate_wrong_version_or_invalid_schema_pins_refused(self):
+        for pins in ((),self.pins+self.pins,
+                     (replace(self.pins[0],user_version=1),),
+                     (replace(self.pins[0],schema_sha256='f'*64),),
+                     (replace(self.pins[0],user_version=True),)):
+            with self.subTest(pins=pins),self.assertRaises(PermissionError):
+                subject.prepare_sqlite_review(self.store,expected_schema=pins)
+
+    def test_unreviewed_optional_official_db_remains_blocked_not_whitelisted(self):
+        p=self.root/'thread_history_1.sqlite'
+        p.write_bytes(b'UNREVIEWED_PRESERVE');p.chmod(0o600)
+        with self.assertRaises(PermissionError):
+            subject.prepare_sqlite_review(self.store,expected_schema=self.pins)
+        self.assertEqual(p.read_bytes(),b'UNREVIEWED_PRESERVE')

@@ -1,0 +1,64 @@
+[
+  {
+    "bytes": 81822,
+    "fresh_bytes_read_this_batch": true,
+    "head": "ba250f12a83d5c4e48c6b2d1ec6b7d45038d9adf",
+    "id": 11890038539,
+    "members": [
+      "focused.txt",
+      "full.txt",
+      "receipt.json",
+      "receipt.sha256",
+      "secret-scan.json",
+      "secret-scan.txt",
+      "test-totals.json"
+    ],
+    "name": "worker-first-static-ba250f12a83d5c4e48c6b2d1ec6b7d45038d9adf",
+    "receipt": {
+      "github_publication": 0,
+      "head": "ba250f12a83d5c4e48c6b2d1ec6b7d45038d9adf",
+      "mode": "STATIC_READONLY",
+      "model_turns": 0,
+      "platform_rules": "NOT_EVALUATED",
+      "production_off": true,
+      "secret_scan": "PASS",
+      "test_totals": {
+        "focused": 129,
+        "focused_skipped": 0,
+        "full": 2983,
+        "full_skipped": 1
+      },
+      "thread_starts": 0
+    },
+    "run": 38556704984,
+    "sha256": "21a8af4ece1576f1e054c5e039739ebccb169936593623838f0741095cbcab97",
+    "totals": {
+      "focused": 129,
+      "focused_skipped": 0,
+      "full": 2983,
+      "full_skipped": 1
+    },
+    "zip_integrity": "PASS"
+  },
+  {
+    "bytes": 89514,
+    "fresh_bytes_read_this_batch": true,
+    "head": "ba250f12a83d5c4e48c6b2d1ec6b7d45038d9adf",
+    "id": 11889314432,
+    "members": [
+      "command-bus-tests.txt",
+      "blue-static-candidate.json",
+      "formal-static-cycle.json",
+      "github-event-preflight.json",
+      "bridge-review-candidate.json",
+      "bridge-next-candidate.json",
+      "four-lane-static-soak.json",
+      "bwj4-6-boundary-static.json",
+      "bwj4-proof-contract-tests.txt"
+    ],
+    "name": "work-prepare-only-38556704961",
+    "run": 38556704961,
+    "sha256": "a244fd2c05deb9b944ca9ce0a4df7fe078e719333641088d4fe8db3af28ec15b",
+    "zip_integrity": "PASS"
+  }
+]

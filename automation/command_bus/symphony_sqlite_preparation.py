@@ -5,6 +5,8 @@ Only independently selected new storage is read; never select an auth DB.
 A live WAL requires existing crash-recovery procedure, not immutable inspection.
 """
 from contextlib import closing
+from dataclasses import asdict, dataclass
+import re
 import os
 from pathlib import Path
 import sqlite3
@@ -16,7 +18,14 @@ from .symphony_sqlite_storage import ReviewedSQLiteStorage, DB_NAME, SEAL, SEAL_
 from .symphony_result_manifest import digest
 
 
-def prepare_sqlite_review(storage):
+@dataclass(frozen=True)
+class SQLiteSchemaPin:
+    database: str
+    user_version: int
+    schema_sha256: str
+
+
+def prepare_sqlite_review(storage, *, expected_schema=None):
     if type(storage) is not ReviewedSQLiteStorage:
         raise PermissionError('existing independently pinned storage required')
     review = storage.review
@@ -52,6 +61,20 @@ def prepare_sqlite_review(storage):
                     'user_version': connection.execute('PRAGMA user_version').fetchone()[0],
                     'schema_sha256': digest(connection.execute(
                         "SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name").fetchall())})
+        schema_review = 'NOT_PROVIDED_REVIEW_MATERIAL_ONLY'
+        if expected_schema is not None:
+            if (type(expected_schema) is not tuple or not expected_schema
+                    or any(type(pin) is not SQLiteSchemaPin
+                           or not DB_NAME.fullmatch(pin.database or '')
+                           or type(pin.user_version) is not int or pin.user_version < 0
+                           or not re.fullmatch(r'[0-9a-f]{64}', pin.schema_sha256 or '')
+                           for pin in expected_schema)
+                    or len({pin.database for pin in expected_schema}) != len(expected_schema)):
+                raise PermissionError('exact independent schema pins required')
+            expected = sorted((asdict(pin) for pin in expected_schema), key=lambda p: p['database'])
+            if schema != expected:
+                raise PermissionError('schema pin conflict; no rewrite or seal')
+            schema_review = 'EXACT_EXPECTED_SCHEMA_MATCH'
         current = {}
         for name in sorted(os.listdir(fd)):
             info = os.stat(name, dir_fd=fd, follow_symlinks=False)
@@ -69,6 +92,7 @@ def prepare_sqlite_review(storage):
             'existing_seal_verified': sealed, 'independent_seal_approval': 'REQUIRED',
             'quick_check': 'ok', 'integrity_check': 'ok',
             'schema_compatibility': 'EXPECTED_MIGRATION_PIN_MATCH_ONLY',
+            'schema_review': schema_review,
             'migration_executed': False, 'seal_created': False, 'model_dispatch': 0,
             'production_installed': False, 'auth_database_accessed': False}
     return {**packet, 'packet_sha256': digest(packet)}

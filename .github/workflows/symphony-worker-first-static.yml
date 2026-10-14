@@ -7,6 +7,13 @@ on:
       - automation/command_bus/tests/test_symphony_worker_first_preflight.py
       - automation/command_bus/symphony_worker_first_preparation.py
       - automation/command_bus/tests/test_symphony_worker_first_preparation.py
+      - automation/command_bus/symphony_native_binary_installation.py
+      - automation/command_bus/symphony_official_runtime_attachment.py
+      - automation/command_bus/tests/test_symphony_native_binary_installation.py
+      - automation/command_bus/tests/test_symphony_official_runtime_attachment.py
+      - automation/command_bus/tests/fixtures/symphony_sqlite_installation/**
+      - docs/SYMPHONY_LOCAL_NIGHT_INSTALLATION_REVIEW.md
+      - docs/evidence/symphony-local-night-20261014/**
       - automation/command_bus/symphony_native_binary_preparation.py
       - automation/command_bus/symphony_sqlite_preparation.py
       - automation/command_bus/scripts/symphony_installation_review.py
@@ -39,7 +46,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/worker-first-static"
-          python -m unittest automation.command_bus.tests.test_symphony_native_binary_preparation automation.command_bus.tests.test_symphony_sqlite_preparation automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_worker_first_preflight automation.command_bus.tests.test_symphony_worker_first_preparation automation.command_bus.tests.test_symphony_sqlite_installation automation.command_bus.tests.test_symphony_g73_host automation.command_bus.tests.test_symphony_subscription_startup_patch -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/focused.txt"
+          python -m unittest automation.command_bus.tests.test_symphony_native_binary_installation automation.command_bus.tests.test_symphony_official_runtime_attachment automation.command_bus.tests.test_symphony_native_binary_preparation automation.command_bus.tests.test_symphony_sqlite_preparation automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_production_observer automation.command_bus.tests.test_symphony_worker_first_preflight automation.command_bus.tests.test_symphony_worker_first_preparation automation.command_bus.tests.test_symphony_sqlite_installation automation.command_bus.tests.test_symphony_g73_host automation.command_bus.tests.test_symphony_subscription_startup_patch -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/focused.txt"
       - name: Full command-bus regression
         run: |
           set -o pipefail
