@@ -39,6 +39,19 @@ Human-only: any account read, login, and every model run (separate explicit appr
 - So Path B needs a **new** container entrypoint that keeps stdin/stdout open and forces the hardening flags. The pure filter for that argv shape is in PR #419 (`src/relay/claude_container_argv.py`); it is not wired in and starts nothing.
 - Biggest risk (UNKNOWN): the Gate admits exactly one upstream request per dispatch. Whether the stream-json CLI (and the adapter's own extra turns, such as title generation) stays within one request cannot be known without a real run on the PC.
 
+## 3c. Second PC measurement and what it changed (2026-10-14, read-only; reported by the human)
+
+Nothing was run, logged in, written or pulled on the PC.
+
+- Docker networks: `command_bus_internal` is **internal-only** (`true`), `command_bus_egress` is not (`false`), plus the default `bridge`/`host`/`none`. This matches the compose file (runtime only on `internal`; only the Gate is on both).
+- Volumes: `command_bus_claude-auth`, `command_bus_gate-state` (compose names `claude-auth`, `gate-state` get the `command_bus_` project prefix). Whether `claude-auth` currently holds a login is UNKNOWN (not opened).
+- The PC's `claude_gate_compose.yaml` is the proven Path A file: the `claude` service has **no proxy variables** and no `auth-control-proxy` service. Its runtime argv contract is the one-shot `-p ... --max-turns 1` form. `docker/claude-runtime/` holds exactly `Dockerfile`, `Dockerfile.dockerignore`, `claude-bwrap-seccomp-amd64.json`, `claude_runtime_launcher.mjs` (3903 bytes, the same size as the file at commit `751a694`).
+- The compose file itself says `automatic_model_fallback: not_proven_disabled`; the Gate's one-upstream-request boundary is what holds. Unchanged UNKNOWN.
+
+Consequence for the code in PR #419: the first version of the container entrypoint copied the **current main** launcher, which requires `HTTPS_PROXY=http://auth-control-proxy:3128`. The PC does not have that proxy (its image does not exist there and it is documented as not live-ready), and its launcher forbids `HTTPS_PROXY`. The entrypoint was therefore changed to the proven no-proxy profile, and a static builder (`src/relay/claude_container_docker.py`) now prints the `docker create` / `docker start` arguments for review: internal-only network, auth volume, read-only bind of the entrypoint file, proven environment, `--pull never`, `--restart no`, no `--rm`, no ports, no `--privileged`. It has a `--dry-run` printer only and cannot execute anything.
+
+Still not built (needs the human's PC and separate approvals): the host-side script that the adapter would run as `CLAUDE_CODE_EXECUTABLE` and that actually calls `docker`; Gate start and dispatch registration (Path A R1/R3); any login or model run. Open UNKNOWN stays: whether the stream-json CLI stays within the Gate's single upstream request.
+
 ## 4. Open questions (UNKNOWN)
 
 - How the adapter's own title-generation turn interacts with Gate admission (the Gate allows exactly one upstream generation).
