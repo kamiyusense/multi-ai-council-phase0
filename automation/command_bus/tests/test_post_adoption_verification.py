@@ -14,6 +14,7 @@ import unittest
 from pathlib import Path
 
 from automation.command_bus import post_adoption_verification as pav
+from automation.command_bus.lane_identity_adoption import registry_digest
 from automation.command_bus.control_tower import build_control_tower, render_control_tower
 from automation.command_bus.control_tower_durable_collector import ControlTowerDurableCollector
 from automation.command_bus.control_tower_live_preflight import prepare_verified_control_tower_migration
@@ -56,7 +57,14 @@ def failed_with(root: Path, fresh=None) -> set[str]:
 
 class CheckpointTests(unittest.TestCase):
     def test_committed_checkpoint_is_exactly_what_the_verifier_computes(self):
-        self.assertEqual(pav.verify(ROOT, FRESH, CHECKPOINT["now"]), CHECKPOINT)
+        # The sealed 2026-10-04 checkpoint is hash-pinned and names the lane-4 row by its old id; the registry row
+        # was renamed on 2026-10-14 (work-jules-auto -> symphony-codex-auto), so map that one id back before comparing.
+        # The two registry-digest items also change with the renamed row; they are mapped back to the sealed values.
+        raw = json.dumps(pav.verify(ROOT, FRESH, CHECKPOINT["now"])).replace("symphony-codex-auto", "work-jules-auto")
+        new_digest = registry_digest(json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8")))
+        old_digest = CHECKPOINT["items"][0]["detail"].split()[-1]
+        self.assertEqual(raw.count(new_digest), 2)
+        self.assertEqual(json.loads(raw.replace(new_digest, old_digest)), CHECKPOINT)
 
     def test_all_25_items_pass_and_the_strict_gate_is_ready(self):
         self.assertEqual(CHECKPOINT["status"], "PASS")
@@ -216,9 +224,9 @@ class MixedRegistryTests(unittest.TestCase):
         transition = self.collect("2026-10-03T22:22:30+00:00").transition
         result = assess_registration_readiness(REGISTRY, {LANE: transition})
         self.assertEqual(result.status, "NOT_WIRED")
-        self.assertEqual(result.placeholder_loop_ids, ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"))
+        self.assertEqual(result.placeholder_loop_ids, ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"))
         self.assertEqual(assess_lane_registration_readiness(REGISTRY, LANE, transition).status, "READY")
-        for other in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
+        for other in ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"):
             self.assertEqual(assess_lane_registration_readiness(REGISTRY, other, transition).status, "NOT_WIRED")
 
     def test_mixed_render_keeps_the_durable_lane_and_never_guesses_the_placeholders(self):
@@ -227,7 +235,7 @@ class MixedRegistryTests(unittest.TestCase):
         model = build_control_tower(REGISTRY, {LANE: lane_input}, generated_at="2026-10-03T20:10:00Z")
         by_id = {lane.loop_id: lane for lane in model.lanes}
         self.assertEqual((by_id[LANE].display_state, by_id[LANE].identity_state), ("SEMI_AUTO", "DURABLE"))
-        for other in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
+        for other in ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"):
             self.assertEqual((by_id[other].display_state, by_id[other].identity_state), ("UNKNOWN", "PLACEHOLDER"))
             self.assertNotIn(by_id[other].display_state, {"STOPPED", "IDLE", "RUNNING"})
         snapshot = parse_control_tower_snapshot_json(render_control_tower(model).snapshot_json)

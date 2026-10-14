@@ -9,14 +9,13 @@ from pathlib import Path
 from automation.command_bus.lane_stable_identity import LANE_SHAPES, validate_lane_stable_identity as validate
 
 ROOT = Path(__file__).resolve().parents[3]
-V3 = json.loads((ROOT / "docs/evidence/signal-lane-model/proposed-registry-v3-fixture.json").read_text(encoding="utf-8"))
 PROD = json.loads((ROOT / "automation/command_bus/config/control_tower_registry.json").read_text(encoding="utf-8"))
-IDS = {"chat-work": "chat-work-semi-auto", "claude-jules": "claude-jules-auto", "work-jules": "work-jules-auto"}
+IDS = {"chat-work": "chat-work-semi-auto", "claude-jules": "claude-jules-auto", "symphony-codex": "symphony-codex-auto"}
 REQUEST = {"origin_loop_id": "relay-dev-loop-137", "command_id": "cmd-1", "target_branch": "b", "target_repo": "r/r"}
 
 
 def durable(lane):
-    registry = copy.deepcopy(V3)
+    registry = copy.deepcopy(PROD)
     next(e for e in registry["loops"] if e["loop_id"] == IDS[lane])["identity_state"] = "DURABLE"
     return registry
 
@@ -33,7 +32,7 @@ class ContractTests(unittest.TestCase):
     def test_reserved_placeholder_names_never_pass(self):
         for lane in LANE_SHAPES:
             with self.assertRaises(ValueError):
-                validate(lane, registry=V3, request=REQUEST, durable_context=context(lane))
+                validate(lane, registry=PROD, request=REQUEST, durable_context=context(lane))
 
     def test_production_registry_fails_closed_for_every_lane(self):
         for lane in LANE_SHAPES:
@@ -56,15 +55,15 @@ class ContractTests(unittest.TestCase):
         registry["loops"].append(twin)
         with self.assertRaises(ValueError):
             validate("claude-jules", registry=registry, request=REQUEST, durable_context=context("claude-jules"))
-        disabled = durable("work-jules")
-        next(e for e in disabled["loops"] if e["loop_id"] == "work-jules-auto")["enabled"] = False
+        disabled = durable("symphony-codex")
+        next(e for e in disabled["loops"] if e["loop_id"] == "symphony-codex-auto")["enabled"] = False
         with self.assertRaises(ValueError):
-            validate("work-jules", registry=disabled, request=REQUEST, durable_context=context("work-jules"))
+            validate("symphony-codex", registry=disabled, request=REQUEST, durable_context=context("symphony-codex"))
 
     def test_the_frozen_claude_claude_lane_has_no_contract(self):
         self.assertNotIn("claude-claude", LANE_SHAPES)
         with self.assertRaises(ValueError):
-            validate("claude-claude", registry=V3, request=REQUEST, durable_context=context("claude-jules"))
+            validate("claude-claude", registry=PROD, request=REQUEST, durable_context=context("claude-jules"))
 
     def test_the_contract_does_not_touch_the_registry_or_the_chat_jules_lane(self):
         before = json.dumps(PROD, sort_keys=True)

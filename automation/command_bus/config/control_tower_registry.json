@@ -35,11 +35,11 @@
       "identity_state": "PLACEHOLDER"
     },
     {
-      "loop_id": "work-jules-auto",
-      "display_name": "Work -> Jules",
+      "loop_id": "symphony-codex-auto",
+      "display_name": "Symphony -> Codex",
       "mode": "AUTO",
-      "controller_kind": "WORK",
-      "worker_kind": "JULES",
+      "controller_kind": "OTHER",
+      "worker_kind": "OTHER",
       "display_order": 40,
       "enabled": true,
       "safe_detail_ref": "issue:33",
