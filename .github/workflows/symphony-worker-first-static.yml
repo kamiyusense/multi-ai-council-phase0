@@ -5,6 +5,8 @@ on:
     paths:
       - automation/command_bus/scripts/symphony_worker_first_preflight.py
       - automation/command_bus/tests/test_symphony_worker_first_preflight.py
+      - automation/command_bus/symphony_worker_first_preparation.py
+      - automation/command_bus/tests/test_symphony_worker_first_preparation.py
       - docs/SYMPHONY_WORKER_FIRST_LOCAL_PREFLIGHT.md
       - .github/workflows/symphony-worker-first-static.yml
 
@@ -30,7 +32,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/worker-first-static"
-          python -m unittest automation.command_bus.tests.test_symphony_worker_first_preflight -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/focused.txt"
+          python -m unittest automation.command_bus.tests.test_symphony_worker_first_preflight automation.command_bus.tests.test_symphony_worker_first_preparation automation.command_bus.tests.test_symphony_sqlite_installation automation.command_bus.tests.test_symphony_g73_host automation.command_bus.tests.test_symphony_subscription_startup_patch -v 2>&1 | tee "$RUNNER_TEMP/worker-first-static/focused.txt"
       - name: Full command-bus regression
         run: |
           set -o pipefail
@@ -85,6 +87,8 @@ jobs:
           paths=('.github/workflows/symphony-worker-first-static.yml',
                  'automation/command_bus/scripts/symphony_worker_first_preflight.py',
                  'automation/command_bus/tests/test_symphony_worker_first_preflight.py',
+                 'automation/command_bus/symphony_worker_first_preparation.py',
+                 'automation/command_bus/tests/test_symphony_worker_first_preparation.py',
                  'docs/SYMPHONY_WORKER_FIRST_LOCAL_PREFLIGHT.md')
           for name in paths:
               target=root/name
@@ -102,7 +106,7 @@ jobs:
           import json,os
           from pathlib import Path
           p=Path(os.environ['RUNNER_TEMP'])/'worker-first-static'/'secret-scan.json'
-          p.write_text(json.dumps({'result':'PASS','scope':'four worker-first files',
+          p.write_text(json.dumps({'result':'PASS','scope':'six worker-first files',
               'scanner_image':os.environ['SCANNER_IMAGE'],'network':'none',
               'candidate_allowlist':False,'real_model_starts':0},sort_keys=True)+'\n')
           PY

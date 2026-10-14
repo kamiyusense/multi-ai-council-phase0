@@ -2,6 +2,8 @@
 import os
 from pathlib import Path
 import tempfile
+import json
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -150,6 +152,31 @@ class WorkerOnlyPreflightTests(unittest.TestCase):
             self.assertEqual(self.check(**arguments)['status'], 'BLOCKED')
         self.git_mock.assert_not_called()
         self.probe_mock.assert_not_called()
+
+    def test_actual_disposable_child_creates_private_files_without_shared_selectors(self):
+        # Real JSONL subprocess, fake account only. No installed Codex is used.
+        self.probe.stop()
+        binary = self.auth.parent/'codex'
+        binary.write_text('#!'+sys.executable+'\n'+'''import sys,json,os,pathlib
+root=pathlib.Path(json.loads(sys.argv[sys.argv.index('-c')+1].split('=',1)[1]))
+(root/'fixture-created').write_text('STATIC_ONLY')
+blocked=['GH_TOKEN','CODEX_SQLITE_HOME','SYMPHONY_G5_OBSERVER_KEY_HEX']
+(root/'child-env.json').write_text(json.dumps([k for k in blocked if k in os.environ]))
+for line in sys.stdin:
+ r=json.loads(line); method=r.get('method')
+ with (root/'methods.jsonl').open('a') as out:out.write(json.dumps({'method':method})+'\\n')
+ if 'id' not in r:continue
+ result={'requiresOpenaiAuth':True,'account':{'type':'chatgpt'}} if method=='account/read' else {'config':{'model_provider':'openai'}} if method=='config/read' else {}
+ print(json.dumps({'id':r['id'],'result':result}),flush=True)
+''')
+        binary.chmod(0o700)
+        with patch.dict(os.environ,{'GH_TOKEN':'STATIC_AUTHORITY','CODEX_SQLITE_HOME':'STATIC_SHARED'}):
+            reply=subject._codex_readonly_probe(workspace=self.work,sqlite_home=self.scratch,executable=str(binary))
+        self.assertEqual(reply['status'],'DONE')
+        self.assertEqual(json.loads((self.scratch/'child-env.json').read_text()),[])
+        methods=[json.loads(s)['method'] for s in (self.scratch/'methods.jsonl').read_text().splitlines()]
+        self.assertEqual(methods,['initialize','initialized','account/read','config/read'])
+        self.assertTrue(all(p.stat().st_mode&0o777==0o600 for p in self.scratch.iterdir()))
 
 
 if __name__ == '__main__':

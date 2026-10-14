@@ -14,6 +14,7 @@ from pathlib import Path
 import re
 import stat
 import subprocess
+import sys
 import tempfile
 
 PROOF_BRANCH = re.compile(r"codex/symphony-worker-proof-[a-z0-9][a-z0-9-]{5,62}")
@@ -57,11 +58,21 @@ def _native_linux_state(parent: Path) -> bool:
 
 
 def _codex_readonly_probe(*, workspace: Path, sqlite_home: Path, executable: str):
-    # Import only after all local-path and Git fences pass. Existing app-server
-    # code handles the same-process account/config request without a model turn.
-    from ..symphony_codex_app_server import JsonlCodexAppServer
-    return JsonlCodexAppServer(executable=executable, timeout_seconds=60).probe_read_only(
-        cwd=str(workspace), sqlite_home=sqlite_home)
+    # A finite isolated Python child sets its OWN mask, never the controller's
+    # process-global umask. Reuse the sealed transport byte-for-byte. It still
+    # reads account/config in one Codex process without thread/turn requests.
+    code = (
+        "import os,sys,json; os.umask(0o077); sys.path.insert(0,sys.argv[1]); "
+        "from automation.command_bus.symphony_codex_app_server import JsonlCodexAppServer; "
+        "print(json.dumps(JsonlCodexAppServer(executable=sys.argv[4],timeout_seconds=60)"
+        ".probe_read_only(cwd=sys.argv[2],sqlite_home=sys.argv[3])))"
+    )
+    root = Path(__file__).resolve().parents[3]
+    reply = subprocess.run([sys.executable, "-I", "-c", code, str(root),
+        str(workspace), str(sqlite_home), executable], cwd=root,
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        encoding="utf-8", timeout=75, check=True)
+    return json.loads(reply.stdout)
 
 
 def preflight(*, workspace: str | Path, expected_head: str,

@@ -20,7 +20,9 @@ as PASS.
 4. A fresh **ephemeral** SQLite directory under that private scratch root. The
    existing \`JsonlCodexAppServer.probe_read_only\` performs
    \`initialize → account/read(refreshToken=false) → config/read\` in one process.
-   The ephemeral directory is removed after the read-only diagnostic.
+   The ephemeral directory is removed after the read-only diagnostic. A finite
+   isolated Python child uses umask 077 before reusing the sealed transport, so
+   SQLite files are created as 0600 without changing the controller's mask.
 5. Output only sanitized \`PASS_READONLY_NOT_ADMISSION\` or \`BLOCKED\`.
    No authentication payloads, token values, absolute local paths or stderr.
 
@@ -100,3 +102,42 @@ launch claim, or proof that future state cannot change. A later trusted Official
 Symphony launch still needs its own fresh identity/binary/storage/authorization
 binding and same-process subscription checks. No scheduling or continuation is
 changed. Local host execution unavailable is UNKNOWN, never an inferred pass.
+
+## Operator-owned OFF preparation seam
+
+`symphony_worker_first_preparation.prepare_worker` composes the existing
+`ReviewedSQLiteStorage` and exact `OperatorStaticHost`; it does not replace or
+modify their sealed source, validators, workflows or receipts. The independent
+operator supplies `WorkerPreparationReview`, storage review and clock. It binds
+Issue/task/generations/scope, source branch/HEAD/clean workspace, canonical target
+branch/HEAD, exact owned executable/digest, existing auth root, native private
+sealed SQLite and observer/event/snapshot/ledger roots outside the workspace.
+
+The entry records create-only INTENT, calls only the existing same-process
+initialize/account/config read-only transport, then re-reads all bindings before
+create-only OUTCOME. INTENT without a verified matching outcome is GET-only HOLD;
+exact duplicates do not repeat the process. Expiry, changed identity, API routes,
+paid config, untrusted storage, broad permissions and linked inputs fail closed.
+It never reserves a campaign task or produces a worker/storage approval.
+
+The prepared OFF host can subsequently exercise its existing authenticated
+observer and verified pre-cleanup snapshot callbacks using synthetic events and
+local records. Snapshot bytes survive disposable fixture cleanup and observer
+restart. This is callable STATIC wiring, not a production host or GitHub sender.
+The 20 new negative/integration tests use a fake JSONL process; they do not count
+fake account evidence as current Local authentication or real model results.
+
+Actual host readback on 2026-10-14 established WSL2 shell execution, Linux Codex
+0.162.0-alpha.17.2, a separate private native scratch and same-process ChatGPT
+account/config compatibility at starting PR HEAD b307334fe329af2e65566d4af61f3e941f0da546.
+Original auth/config byte hashes matched before/after, and no thread/model was
+started. The initial ephemeral files inherited 0644 inside their 0700 private
+parent; the isolated child above addresses this without resealing old evidence.
+Final exact-head diagnostics and test/artifact digests are recorded in the PR
+checkpoint after commit; do not infer them from this historical observation.
+
+`WORKER_FIRST_LOCAL_READY` remains unestablished until the independently approved
+durable storage cutover and real operator/runtime attachment qualify. This Goal
+does not install the proposed production SQLite root or supply its approval
+callback. A successful disposable diagnostic and an OFF composition are not
+that approval, and LIVE is not the only remaining boundary.
