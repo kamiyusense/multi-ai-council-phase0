@@ -5,6 +5,7 @@ Tests:
 - subcommand state --max-age parameter passing
 - subcommand notify output and exit code 0 for valid, missing, and unreadable files, including --first-run
 - subcommand notify missing --seen file handled as empty seen state
+- subcommand notify seen_state round-trip prevents duplicate notifications
 - bad arguments (unknown subcommand, missing option, --now without Z, non-integer --max-age) exit code 2
 - utf-8 encoding compliance when reading files
 - module purity: standard library only, no file writes/network/subprocess
@@ -130,6 +131,16 @@ class StateSubcommandTests(unittest.TestCase):
         self.assertEqual(output["color"], "WHITE")
         self.assertEqual(output["reason_code"], "SNAPSHOT_MISSING")
 
+    def test_state_unreadable_snapshot_directory(self):
+        dir_path = self.temp_dir.name
+        stdout = io.StringIO()
+        with patch("sys.stdout", stdout):
+            code = cli.main(["state", "--snapshot", dir_path, "--now", "2026-09-28T12:00:00Z"])
+        self.assertEqual(code, 0)
+        output = json.loads(stdout.getvalue().strip())
+        self.assertEqual(output["color"], "WHITE")
+        self.assertEqual(output["reason_code"], "SNAPSHOT_MISSING")
+
     def test_state_malformed_snapshot_file(self):
         bad_path = self._write_file("bad.json", "this-is-not-json")
         stdout = io.StringIO()
@@ -164,6 +175,27 @@ class NotifySubcommandTests(unittest.TestCase):
         self.assertIn("seen_state", output)
         self.assertEqual(len(output["notifications"]), 1)
         self.assertEqual(output["notifications"][0]["kind"], "TURN_COMPLETE")
+
+    def test_notify_seen_state_round_trip_gives_no_repeat(self):
+        snap_path = self._write_file("snap.json", _make_snapshot())
+        seen_path_1 = self._write_file("seen_1.json", json.dumps({"seen_event_ids": []}))
+        stdout_1 = io.StringIO()
+        with patch("sys.stdout", stdout_1):
+            code_1 = cli.main(["notify", "--snapshot", snap_path, "--seen", seen_path_1])
+        self.assertEqual(code_1, 0)
+        output_1 = json.loads(stdout_1.getvalue().strip())
+        self.assertEqual(len(output_1["notifications"]), 1)
+        self.assertEqual(output_1["notifications"][0]["event_id"], "receipt-100")
+
+        # Round-trip: write the printed seen_state to a second file and run notify again
+        seen_path_2 = self._write_file("seen_2.json", json.dumps(output_1["seen_state"]))
+        stdout_2 = io.StringIO()
+        with patch("sys.stdout", stdout_2):
+            code_2 = cli.main(["notify", "--snapshot", snap_path, "--seen", seen_path_2])
+        self.assertEqual(code_2, 0)
+        output_2 = json.loads(stdout_2.getvalue().strip())
+        self.assertEqual(output_2["notifications"], [])
+        self.assertEqual(output_2["seen_state"], output_1["seen_state"])
 
     def test_notify_first_run(self):
         snap_path = self._write_file("snap.json", _make_snapshot())
@@ -242,29 +274,64 @@ class BadArgumentsTests(unittest.TestCase):
 
 _MODULE_PATH = Path(__file__).resolve().parents[1] / "signal_companion_cli.py"
 _FORBIDDEN_MODULES = frozenset({"socket", "urllib", "http", "subprocess", "requests"})
+_FORBIDDEN_WRITE_METHODS = frozenset({"write", "writelines", "write_text", "write_bytes"})
+
+
+def _ast_violations(source: str) -> list[str]:
+    violations: list[str] = []
+    tree = ast.parse(source)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in _FORBIDDEN_MODULES:
+                    violations.append(f"import {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            root = (node.module or "").split(".")[0]
+            if root in _FORBIDDEN_MODULES:
+                violations.append(f"from {node.module} import")
+
+        if isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_WRITE_METHODS:
+            violations.append(f"attribute call .{node.attr}()")
+
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "open":
+            encoding_val = None
+            for kw in node.keywords:
+                if kw.arg == "encoding" and isinstance(kw.value, ast.Constant):
+                    encoding_val = kw.value.value
+            if encoding_val != "utf-8":
+                violations.append("open() call missing encoding='utf-8'")
+
+            mode_val = "r"
+            if len(node.args) >= 2 and isinstance(node.args[1], ast.Constant):
+                mode_val = node.args[1].value
+            for kw in node.keywords:
+                if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
+                    mode_val = kw.value.value
+            if mode_val != "r":
+                violations.append(f"open() call uses mode '{mode_val}' instead of 'r'")
+
+    return violations
 
 
 class PurityAndComplianceTests(unittest.TestCase):
-    def test_cli_has_no_forbidden_imports(self):
+    def test_cli_has_no_forbidden_imports_or_writes(self):
         source = _MODULE_PATH.read_text(encoding="utf-8")
-        for node in ast.walk(ast.parse(source)):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    self.assertNotIn(alias.name.split(".")[0], _FORBIDDEN_MODULES)
-            elif isinstance(node, ast.ImportFrom):
-                root = (node.module or "").split(".")[0]
-                self.assertNotIn(root, _FORBIDDEN_MODULES)
+        self.assertEqual(_ast_violations(source), [])
 
-    def test_cli_does_not_perform_file_writes(self):
-        source = _MODULE_PATH.read_text(encoding="utf-8")
-        for node in ast.walk(ast.parse(source)):
-            if isinstance(node, ast.Call):
-                func = node.func
-                if isinstance(func, ast.Name) and func.id == "open":
-                    # ensure open calls only use "r" mode
-                    for arg in node.args[1:]:
-                        if isinstance(arg, ast.Constant):
-                            self.assertEqual(arg.value, "r")
+    def test_ast_checker_flags_missing_encoding(self):
+        bad_source = "def f(p):\n    with open(p, 'r') as handle:\n        return handle.read()\n"
+        self.assertIn("open() call missing encoding='utf-8'", _ast_violations(bad_source))
+
+    def test_ast_checker_flags_write_method(self):
+        for method in ("write", "writelines", "write_text", "write_bytes"):
+            with self.subTest(method=method):
+                bad_source = f"def f(h, x):\n    h.{method}(x)\n"
+                self.assertIn(f"attribute call .{method}()", _ast_violations(bad_source))
+
+    def test_ast_checker_flags_non_read_mode(self):
+        bad_source = "def f(p):\n    with open(p, 'w', encoding='utf-8') as handle:\n        pass\n"
+        self.assertIn("open() call uses mode 'w' instead of 'r'", _ast_violations(bad_source))
 
 
 if __name__ == "__main__":
