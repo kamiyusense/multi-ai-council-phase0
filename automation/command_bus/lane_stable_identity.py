@@ -1,4 +1,4 @@
-"""Static identity contract for the Chat -> Work, Claude -> Jules and Work -> Jules lanes.
+"""Static identity contract for the Chat -> Work, Claude -> Jules and Symphony -> Codex lanes.
 
 Same rules as ``semiauto_stable_identity.validate_semiauto_stable_identity`` (Chat -> Jules), selected by
 (controller, mode, worker). It never issues an identity, never edits the registry and grants no live
@@ -16,7 +16,7 @@ from .runtime_state_initializer import runtime_state_path
 LANE_SHAPES = {
     "chat-work": ("CHATGPT", "SEMI_AUTO", "WORK"),
     "claude-jules": ("CLAUDE", "AUTO", "JULES"),
-    "work-jules": ("WORK", "AUTO", "JULES"),
+    "symphony-codex": ("OTHER", "AUTO", "OTHER"),
 }
 
 

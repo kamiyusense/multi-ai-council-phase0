@@ -48,7 +48,7 @@ class ValidatorTests(unittest.TestCase):
 
     def test_production_registry_is_the_five_row_registry(self):
         self.assertEqual([e["loop_id"] for e in PROD["loops"]],
-                         ["chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "work-jules-auto", "claude-claude-auto"])
+                         ["chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto", "claude-claude-auto"])
         self.assertEqual([e["identity_state"] for e in PROD["loops"]].count("FROZEN"), 1)
 
 

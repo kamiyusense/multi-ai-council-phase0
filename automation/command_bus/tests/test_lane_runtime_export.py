@@ -116,10 +116,10 @@ class FakeClock:
 
 
 class OwnerContractTests(unittest.TestCase):
-    def test_owners_are_the_decided_runtimes_and_work_jules_has_none(self):
+    def test_owners_are_the_decided_runtimes_and_symphony_codex_has_none(self):
         self.assertEqual(lre.STABLE_ID_OWNER, {"chat-work": "CHAT_LED_SEMI_AUTO_RUNTIME", "claude-jules": "CLAUDE_AUTO_RUNTIME"})
         with self.assertRaisesRegex(lre.ExportError, "no stable id owner"):
-            lre.validate_identity_owner("work-jules", "work-jules-auto", {}, {})
+            lre.validate_identity_owner("symphony-codex", "symphony-codex-auto", {}, {})
 
     def test_forbidden_sources_cover_every_owner_listed_one(self):
         for needed in ("cloud_work_colour", "carrier_pr", "lane_label", "worker_generation", "review_event",
@@ -184,13 +184,13 @@ class ExportTests(unittest.TestCase):
                 lre.export_lane_runtime(lane, registry=PROD, request=REQUEST, durable_context=context(lane),
                                         runtime_facts=facts(lane))
         for row in PROD["loops"]:
-            if row["loop_id"] in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
+            if row["loop_id"] in ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"):
                 self.assertEqual(row["identity_state"], "PLACEHOLDER")
 
-    def test_work_jules_lane_is_not_exportable(self):
+    def test_symphony_codex_lane_is_not_exportable(self):
         with self.assertRaises(ValueError):
-            lre.export_lane_runtime("work-jules", registry=PROD, request=REQUEST,
-                                    durable_context=context("claude-jules", loop_id="work-jules-auto"),
+            lre.export_lane_runtime("symphony-codex", registry=PROD, request=REQUEST,
+                                    durable_context=context("claude-jules", loop_id="symphony-codex-auto"),
                                     runtime_facts=facts("claude-jules"))
 
     def test_inconsistent_records_are_rejected(self):

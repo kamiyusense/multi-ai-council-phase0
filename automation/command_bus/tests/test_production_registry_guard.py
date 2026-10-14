@@ -49,7 +49,7 @@ class GuardTests(unittest.TestCase):
         self.assertIn("ADOPTED_LANE_CHANGED", mutated(lambda r: row(r, LANE).update(note="x")))
 
     def test_second_durable_lane_is_rejected(self):
-        for other in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
+        for other in ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"):
             failures = mutated(lambda r, o=other: row(r, o).update(identity_state="DURABLE"))
             self.assertIn("SECOND_DURABLE_LANE", failures, other)
             self.assertIn("ACTIVE_LANE_NOT_PLACEHOLDER", failures, other)
@@ -59,7 +59,7 @@ class GuardTests(unittest.TestCase):
 
     def test_active_non_placeholder_row_is_rejected(self):
         self.assertIn("ACTIVE_LANE_NOT_PLACEHOLDER",
-                      mutated(lambda r: row(r, "work-jules-auto").update(identity_state="FROZEN")))
+                      mutated(lambda r: row(r, "symphony-codex-auto").update(identity_state="FROZEN")))
 
     def test_missing_adopted_row_is_rejected(self):
         self.assertIn("ADOPTED_LANE_MISSING_OR_NOT_DURABLE",
@@ -68,7 +68,7 @@ class GuardTests(unittest.TestCase):
     def test_new_placeholder_rows_alone_are_not_adoption(self):
         only_new = {"schema_version": 1, "loops": [e for e in PROD["loops"] if e["loop_id"] != LANE]}
         self.assertIn("ADOPTED_LANE_MISSING_OR_NOT_DURABLE", cli.production_registry_guard(only_new, ROOT))
-        for other in ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"):
+        for other in ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"):
             self.assertEqual(row(PROD, other)["identity_state"], "PLACEHOLDER")
 
 

@@ -54,8 +54,9 @@ class LaneModelTests(unittest.TestCase):
         from automation.command_bus import control_tower
         self.assertIn("WORK", control_tower._WORKERS)  # gap closed by the additive WORK/FROZEN support change
         self.assertEqual({e["loop_id"] for e in PROD["loops"]},
-                         {"chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "work-jules-auto", "claude-claude-auto"})
-        self.assertEqual({e["worker_kind"] for e in PROD["loops"] if e["loop_id"] in ("claude-jules-auto", "work-jules-auto")}, {"JULES"})
+                         {"chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto", "claude-claude-auto"})
+        # Lane 4 became Symphony -> Codex on 2026-10-14 (controller/worker kind OTHER); only Claude -> Jules stays a Jules worker.
+        self.assertEqual({e["worker_kind"] for e in PROD["loops"] if e["loop_id"] == "claude-jules-auto"}, {"JULES"})
 
     def test_no_forbidden_ids_anywhere_in_the_design_files(self):
         text = json.dumps([MODEL, PROPOSED])

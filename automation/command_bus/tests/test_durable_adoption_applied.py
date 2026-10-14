@@ -56,7 +56,7 @@ class AppliedAdoptionTests(unittest.TestCase):
     def test_global_registration_stays_not_wired_with_three_placeholder_lanes(self):
         result = assess_registration_readiness(PRODUCTION, None)
         self.assertEqual(result.status, "NOT_WIRED")
-        self.assertEqual(result.placeholder_loop_ids, ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto"))
+        self.assertEqual(result.placeholder_loop_ids, ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto"))
 
     def test_issue_33_candidate_stays_stopped(self):
         candidate = json.loads((ROOT / "docs/evidence/signal-step7-proof5/adoption-candidate.json").read_text())
