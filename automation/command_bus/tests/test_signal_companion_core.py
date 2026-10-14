@@ -6,13 +6,17 @@ Tests:
 - notification_plan classification (TURN_COMPLETE, HUMAN_NEEDED)
 - notification_plan deduplication and first_run behavior
 - notification_plan fail-passive handling for missing/malformed inputs
+- AST purity static analysis verifying forbidden imports/calls
 """
 from __future__ import annotations
 
+import ast
 import json
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 
+import automation.command_bus.signal_companion_core as target_module
 from automation.command_bus.signal_companion_core import (
     CompanionNotification,
     TrayState,
@@ -22,6 +26,35 @@ from automation.command_bus.signal_companion_core import (
 
 _NOW = datetime(2026, 9, 28, 12, 0, 0, tzinfo=timezone.utc)
 _GEN_AT = "2026-09-28T11:55:00Z"  # 300 seconds before _NOW
+
+_FORBIDDEN_MODULES = {"socket", "urllib", "http", "subprocess", "requests"}
+
+
+def check_ast_purity(source_code: str) -> None:
+    """Parse source code with AST and raise AssertionError on forbidden imports or calls."""
+    tree = ast.parse(source_code)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top = alias.name.split(".")[0]
+                if top in _FORBIDDEN_MODULES:
+                    raise AssertionError(f"Forbidden import: {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                top = node.module.split(".")[0]
+                if top in _FORBIDDEN_MODULES:
+                    raise AssertionError(f"Forbidden from-import: {node.module}")
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id == "open":
+                raise AssertionError("Forbidden function call: open()")
+            elif isinstance(node.func, ast.Attribute):
+                attr = node.func.attr
+                val = node.func.value
+                if isinstance(val, ast.Name):
+                    if val.id == "time" and attr == "time":
+                        raise AssertionError("Forbidden function call: time.time")
+                    if val.id == "datetime" and attr in ("now", "utcnow"):
+                        raise AssertionError(f"Forbidden function call: datetime.{attr}")
 
 
 def _make_snapshot(
@@ -72,6 +105,44 @@ def _make_lane(
         "human_action": human_action,
         "safe_detail_ref": safe_detail_ref,
     }
+
+
+class PurityTests(unittest.TestCase):
+    def test_signal_companion_core_ast_purity(self):
+        source_path = Path(target_module.__file__)
+        source_code = source_path.read_text(encoding="utf-8")
+        # Assert pure module passes AST purity check
+        check_ast_purity(source_code)
+
+    def test_purity_check_rejects_forbidden_imports(self):
+        forbidden_snippets = [
+            "import socket",
+            "import urllib.request",
+            "import http.client",
+            "import subprocess",
+            "import requests",
+            "from socket import socket",
+            "from urllib.request import urlopen",
+            "from http import client",
+            "from subprocess import Popen",
+            "from requests import get",
+        ]
+        for snippet in forbidden_snippets:
+            with self.subTest(snippet=snippet):
+                with self.assertRaises(AssertionError):
+                    check_ast_purity(snippet)
+
+    def test_purity_check_rejects_forbidden_calls(self):
+        forbidden_calls = [
+            "open('file.txt')",
+            "time.time()",
+            "datetime.now()",
+            "datetime.utcnow()",
+        ]
+        for code in forbidden_calls:
+            with self.subTest(code=code):
+                with self.assertRaises(AssertionError):
+                    check_ast_purity(f"import datetime, time\ndef f(): {code}")
 
 
 class TrayStateTests(unittest.TestCase):
