@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from pathlib import Path
 
 from relay.claude_container_argv import AUTH_PROBE_ARGV, prepare_container_claude_argv
 
@@ -14,7 +15,21 @@ OBSERVED = [
 ]
 
 
+CASES = json.loads((Path(__file__).resolve().parents[2] / "fixtures" / "relay"
+                    / "claude_container_argv_cases.json").read_text(encoding="utf-8"))["cases"]
+
+
 class TestPrepareContainerClaudeArgv(unittest.TestCase):
+    def test_shared_cases_with_the_container_entrypoint(self):
+        # Same file is read by automation/command_bus/tests/test_claude_adapter_entrypoint.mjs (no drift).
+        for case in CASES:
+            with self.subTest(case["name"]):
+                if case["expected"] is None:
+                    with self.assertRaises(ValueError):
+                        prepare_container_claude_argv(case["argv"])
+                else:
+                    self.assertEqual(prepare_container_claude_argv(case["argv"]), case["expected"])
+
     def test_observed_argv_is_accepted_and_hardened(self):
         out = prepare_container_claude_argv(OBSERVED)
         self.assertEqual(out[out.index("--tools") + 1], "")

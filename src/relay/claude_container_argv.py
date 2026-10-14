@@ -40,7 +40,7 @@ _FORCED = (
     "--safe-mode",
     "--max-turns", "1",
     "--tools", "",
-    "--mcp-config", json.dumps({"mcpServers": {}}),
+    "--mcp-config", json.dumps({"mcpServers": {}}, separators=(",", ":")),
     "--strict-mcp-config",
 )
 
