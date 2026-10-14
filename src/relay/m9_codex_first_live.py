@@ -51,7 +51,7 @@ PROMPT = "M9_OK とだけ返答してください。ファイルを読まない�
 EXPECTED_TEXT = "M9_OK"
 TIMEOUT_SECONDS = 60
 EXPECTED_BRANCH = "feature/relay-m9-local-runner-v4"
-ADAPTER_VERSION = "2.1.0"
+ADAPTER_VERSION = "2.1.1"
 GENERATION_METHODS = ("turn/start", "turn/steer", "review/start", "thread/compact/start", "thread/goal/set")
 CHECKLIST_REL = Path("fixtures") / "relay" / "m9_codex_first_live_checklist.json"
 _CODE_FILES = (
@@ -236,7 +236,7 @@ def preflight(cfg: Config) -> dict[str, Any]:
 
 
 def ensure_adapter(cfg: Config) -> Path:
-    """Official codex-acp 2.1.0, installed without scripts and without optional (native) packages."""
+    """Official codex-acp 2.1.1, installed without scripts and without optional (native) packages."""
     adapter = cfg.adapter_path()
     index = adapter / "dist" / "index.js"
     if not index.is_file():
@@ -359,7 +359,7 @@ def request_approval(cfg: Config, pre: dict[str, Any]) -> dict[str, Any]:
     cfg.out("これから、あなたの PC の Codex（ChatGPT ログイン）で、次の操作を「1 回だけ」行います。")
     cfg.out("  ・保存されたログイン情報の置き場所を Codex に渡します（中身は表示・保存しません）")
     cfg.out("  ・まず事前確認用 account/read を 1 回だけ実行（読み取り専用）。ChatGPT アカウント経路でなければモデルは呼ばず停止")
-    cfg.out("  ・その後、固定版 codex-acp 2.1.0 が session 準備中に追加の read-only account/read を行う場合があります（fixture では 2 回観測）。生成ではなく、retry もしません")
+    cfg.out("  ・その後、固定版 codex-acp 2.1.1 が session 準備中に追加の read-only account/read を行う場合があります（fixture では 2 回観測）。生成ではなく、retry もしません")
     cfg.out(f"  ・ChatGPT アカウントなら、モデルに「{PROMPT}」と 1 回だけ依頼（最大 {cfg.timeout_seconds} 秒）")
     cfg.out("  ・成功でも失敗でも、その 1 回で終了し、再実行はできません")
     cfg.out("  ・API キー・login/logout・課金/設定の変更は一切行いません")
@@ -377,7 +377,7 @@ def request_approval(cfg: Config, pre: dict[str, Any]) -> dict[str, Any]:
         "correlation_id": str(uuid.uuid4()), "nonce": uuid.uuid4().hex, "recorded_at": now_utc(),
         "provenance_basis": "LOCAL_INTERACTIVE_CONSOLE_CONFIRMATION",
         "existing_chain_provenance": "NOT_VERIFIED",
-        "account_read_scope": "one explicit preflight read plus pinned codex-acp 2.1.0 internal read-only account reads during the single session setup; no retries",
+        "account_read_scope": "one explicit preflight read plus pinned codex-acp 2.1.1 internal read-only account reads during the single session setup; no retries",
         "runner_version": RUNNER_VERSION,
     }
     approval = {"record": record, "approval_sha256": canonical_sha256(record)}
