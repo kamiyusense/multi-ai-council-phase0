@@ -32,6 +32,13 @@ Human-only: any account read, login, and every model run (separate explicit appr
 - `docker run --rm --network none --entrypoint claude phase0-claude-runtime:2.1.283 --version` printed `2.1.283 (Claude Code)`, exit 0, no auth volume, no network. Nothing was written, no login, no model call.
 - Still UNKNOWN: whether a launcher that runs the CLI through `docker run`/`exec` keeps the adapter's stdio framing and cancel working (needs a build and a fixture run on the PC).
 
+## 3b. Finding: the proven container launcher and the official adapter do not fit together (2026-10-14)
+
+- The proven runtime launcher (`claude_runtime_launcher.mjs`) accepts exactly **one prompt argument** and always runs `claude -p ... --max-turns 1 --tools ""` (one-shot).
+- The official adapter 0.85.1 starts the CLI in **interactive stream-json** mode and, per the tripwire test, passes: `--output-format stream-json --verbose --input-format stream-json --permission-prompt-tool stdio --disallowedTools AskUserQuestion --tools default --setting-sources=user,project,local --permission-mode default --include-partial-messages --session-id=<uuid> --replay-user-messages ""`, after a separate `auth status --json` probe. Note `--tools default` (all built-in tools on).
+- So Path B needs a **new** container entrypoint that keeps stdin/stdout open and forces the hardening flags. The pure filter for that argv shape is in PR #419 (`src/relay/claude_container_argv.py`); it is not wired in and starts nothing.
+- Biggest risk (UNKNOWN): the Gate admits exactly one upstream request per dispatch. Whether the stream-json CLI (and the adapter's own extra turns, such as title generation) stays within one request cannot be known without a real run on the PC.
+
 ## 4. Open questions (UNKNOWN)
 
 - How the adapter's own title-generation turn interacts with Gate admission (the Gate allows exactly one upstream generation).
