@@ -144,6 +144,21 @@
       "priority": 40,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-13T15:41:06Z"
+    },
+    {
+      "objective_id": "o6-signal-companion-core",
+      "title": "Signal Tower (yellow lane) bundle 2 (owner approved 2026-10-14 JST): Windows Signal Companion v1 core logic, tray state and notification dedupe (SF-12)",
+      "scope_prefixes": [
+        "automation/command_bus/signal_companion_core.py",
+        "automation/command_bus/tests/test_signal_companion_core.py"
+      ],
+      "allowed_operations": [
+        "code_edit",
+        "test_add"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-14T03:01:21Z"
     }
   ],
   "control_issue": 346
