@@ -6,11 +6,14 @@ Tests:
 - notification_plan classification (TURN_COMPLETE, HUMAN_NEEDED)
 - notification_plan deduplication and first_run behavior
 - notification_plan fail-passive handling for missing/malformed inputs
+- module purity: no network/subprocess imports, no open(), no clock reads
 """
 from __future__ import annotations
 
+import ast
 import json
 import unittest
+from pathlib import Path
 from datetime import datetime, timezone
 
 from automation.command_bus.signal_companion_core import (
@@ -343,6 +346,71 @@ class NotificationPlanTests(unittest.TestCase):
         self.assertEqual(d["loop_id"], "loop-1")
         self.assertEqual(notif["kind"], "TURN_COMPLETE")
         self.assertEqual(notif["display_name"], "Loop 1")
+
+
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "signal_companion_core.py"
+_FORBIDDEN_MODULES = frozenset({"socket", "urllib", "http", "subprocess", "requests"})
+_FORBIDDEN_CALLS = frozenset({"open", "time.time", "datetime.now", "datetime.datetime.now"})
+
+
+def _dotted_name(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        base = _dotted_name(node.value)
+        return None if base is None else f"{base}.{node.attr}"
+    return None
+
+
+def _purity_violations(source: str) -> list[str]:
+    violations: list[str] = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in _FORBIDDEN_MODULES:
+                    violations.append(f"import {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            root = (node.module or "").split(".")[0]
+            if node.level == 0 and root in _FORBIDDEN_MODULES:
+                violations.append(f"from {node.module} import")
+            for alias in node.names:
+                if f"{node.module}.{alias.name}" in _FORBIDDEN_CALLS:
+                    violations.append(f"from {node.module} import {alias.name}")
+        elif isinstance(node, ast.Call):
+            name = _dotted_name(node.func)
+            if name in _FORBIDDEN_CALLS:
+                violations.append(f"call {name}()")
+    return violations
+
+
+class ModulePurityTests(unittest.TestCase):
+    def test_module_has_no_forbidden_imports_or_calls(self):
+        source = _MODULE_PATH.read_text(encoding="utf-8")
+        self.assertEqual(_purity_violations(source), [])
+
+    def test_checker_flags_each_forbidden_import(self):
+        for mod in ("socket", "urllib.request", "http.client", "subprocess", "requests"):
+            with self.subTest(mod=mod):
+                self.assertTrue(_purity_violations(f"import {mod}\n"))
+                self.assertTrue(_purity_violations(f"from {mod} import x\n"))
+
+    def test_checker_flags_each_forbidden_call(self):
+        samples = (
+            "open('f', 'w')\n",
+            "import time\ntime.time()\n",
+            "from datetime import datetime\ndatetime.now()\n",
+            "import datetime\ndatetime.datetime.now()\n",
+            "from time import time\n",
+        )
+        for sample in samples:
+            with self.subTest(sample=sample):
+                self.assertTrue(_purity_violations(sample))
+
+    def test_checker_allows_pure_code(self):
+        self.assertEqual(
+            _purity_violations("import json\nfrom datetime import datetime\ndatetime.fromisoformat('x')\n"),
+            [],
+        )
 
 
 if __name__ == "__main__":
