@@ -35,6 +35,10 @@ OWNER_APPROVED = {
                                  "automation/command_bus/tests/test_signal_companion_core.py"),
     # owner decision 2026-10-14: the signal thread's bundle 3
     "o7-signal-roadmap-status": ("docs/SIGNAL_FOUNDATION_ROADMAP.md",),
+    # owner decision 2026-10-14: the signal thread's bundle 4 (placeholders added by #418)
+    "o8-signal-companion-cli": ("automation/command_bus/signal_companion_cli.py",
+                                "automation/command_bus/tests/test_signal_companion_cli.py",
+                                "docs/SIGNAL_FOUNDATION_ROADMAP.md"),
 }
 BLUE = ("blue", "work_event", "cloud_work")
 
