@@ -38,7 +38,7 @@ class ProviderPolicy:
 CODEX_POLICY = ProviderPolicy(
     provider_id="openai",
     external_agent="@agentclientprotocol/codex-acp",
-    pinned_version="2.1.0",
+    pinned_version="2.1.1",
 )
 
 CLAUDE_POLICY = ProviderPolicy(

@@ -263,7 +263,7 @@ class TestProviderAdapters(unittest.TestCase):
 
     def test_no_duplicate_provider_versions_or_agent_literals(self):
         forbidden = (
-            "2.1.0",
+            "2.1.1",
             "0.85.1",
             "1.2.1",
             "@agentclientprotocol/codex-acp",

@@ -23,7 +23,7 @@ def get_valid_preflights():
             "reasons": ["ready"],
             "provider_id": "openai",
             "external_agent": "@agentclientprotocol/codex-acp",
-            "pinned_version": "2.1.0",
+            "pinned_version": "2.1.1",
             "retry_count": 0,
             "fallback_state": "disabled",
             "live_ready": False
