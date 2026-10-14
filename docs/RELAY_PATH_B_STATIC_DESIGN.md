@@ -59,6 +59,12 @@ Still not built (needs the human's PC and separate approvals): the host-side scr
 - Where the auth volume is mounted for the adapter-driven path without exposing credentials to the host process.
 - `--allow-dangerously-skip-permissions` must stay off; the adapter's no-bypass `_meta` is already tested, the launcher must not add flags.
 
+## 4a. Points to settle before any LIVE run (from the independent inspection of PR #419, 2026-10-14)
+
+- `--setting-sources=user,project,local` is passed through unchanged by the argv filter. That lets the Claude CLI read settings and hooks from the mounted auth volume (`/home/node/.claude`) and project/local settings. Whether `--safe-mode` stops this is UNKNOWN. Decide before LIVE whether the filter should narrow it (and whether the CLI accepts an empty or narrower value; also UNKNOWN).
+- `--session-id=<uuid>` makes the CLI keep a session. The proven launcher uses `--no-session-persistence`, which the CLI documents for `--print` mode only; the adapter does not use `--print`. What is written into the auth volume by a stream-json session is UNKNOWN.
+- The new Python tests (`tests/relay/`) and the node tests (`automation/command_bus/tests/*.mjs`) are **not** run by the PR check named `offline-validation` (it runs `python -m unittest discover -s automation/command_bus/tests` only). A green PR check therefore says little about them; the evidence for them is a local run (Python suite 968 OK, node 34 pass at the time of writing). Wiring them into a workflow is a `.github/` change and needs the human's decision.
+
 ## 5. Not decided here
 
 Building any of this, Docker use, login, or a model run. Each remains a human decision.
