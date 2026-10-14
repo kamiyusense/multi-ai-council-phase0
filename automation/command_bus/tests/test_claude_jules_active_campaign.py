@@ -30,6 +30,9 @@ OWNER_APPROVED = {
                         "automation/command_bus/tests/test_jules_session_readback_output.py"),
     # owner decision 2026-10-14: the signal thread's bundle; its code paths are in the loop's own lane
     "o5-signal-bundle-1": ("docs/OPEN_PR_INVENTORY_20261014.md",),
+    # owner decision 2026-10-14: the signal thread's bundle 2 (placeholders added by #406)
+    "o6-signal-companion-core": ("automation/command_bus/signal_companion_core.py",
+                                 "automation/command_bus/tests/test_signal_companion_core.py"),
 }
 BLUE = ("blue", "work_event", "cloud_work")
 
