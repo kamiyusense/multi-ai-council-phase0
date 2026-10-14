@@ -17,8 +17,9 @@ Updated: 2026-10-01
 - **Claude LIVE is deliberately postponed** by the human ("do it later, all together").
   Do not start it without a new explicit approval. Checklist for that day:
   `docs/RELAY_CLAUDE_LIVE_TRIAL_CHECKLIST.md`.
-- Pins (updated 2026-10-14): Claude ACP 0.85.1 (PR #315, merged); Codex ACP 2.1.0 on main,
-  2.1.1 proposed in Draft PR #400 (waits for the human's Merge; the carrier workflows still pin 2.1.0);
+- Pins (updated 2026-10-14): Claude ACP 0.85.1 (PR #315, merged); Codex ACP 2.1.1 (PR #400, merged
+  2026-10-14 13:57Z; the real codex-acp 2.1.1 gated tests are still unverified); a carrier workflow on a
+  separate branch was last read as pinning 2.1.0 (not changed here, re-check before relying on it);
   Antigravity 1.2.1 (1.3.0 needs the proprietary binary, a human decision).
 - Counts so far for this line: LIVE 0, real account reads 0, Billing/API-key operations 0.
 
