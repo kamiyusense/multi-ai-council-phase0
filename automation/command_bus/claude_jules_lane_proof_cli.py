@@ -92,7 +92,8 @@ def command_plan(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
         repository=policy["target_repo"], default_branch=policy["default_branch"], target_branch=target,
         target_pr=policy["expected_pr"], target_head=head, target_tree=tree, allowed_path=args.allowed_path,
         allowed_content=args.allowed_content, expires_at=_zulu_plus(now, timedelta(minutes=args.valid_minutes)),
-        forbidden_session_ids=OLD_SESSION_IDS, live_authorization=authorization)
+        forbidden_session_ids=OLD_SESSION_IDS, live_authorization=authorization,
+        loop_a_slots_used_before=args.loop_a_slots_used_before)
 
 
 def _registries(repo_dir: str) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -119,8 +120,9 @@ def command_run(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
         raise ProofError("JULES_KEY_MISSING")
     git, rest = GitLiveClient(args.repo_dir, message_trailer=args.trailer), GitHubRestReader(policy["target_repo"])
     used = len(LiveBudgetLedger(git, data_branch=policy["data_branch"]).slots())
-    if used != LOOP_A_SLOTS_USED_BEFORE:
-        raise ProofError("BUDGET_COUNT_UNEXPECTED", f"{used} slots used, expected {LOOP_A_SLOTS_USED_BEFORE}")
+    expected_used = plan["loop_a_slots_used_before"]
+    if used != expected_used:
+        raise ProofError("BUDGET_COUNT_UNEXPECTED", f"{used} slots used, expected {expected_used}")
     scratch = os.path.join(tempfile.gettempdir(), "claude-jules-lane-proof")
     loop = PrepareOnlyLoop(
         client=git, refs=git, policy=policy, owner_reader=LoopOwnerGitHubBackend(git, branch=policy["data_branch"]),
@@ -164,6 +166,7 @@ def main(argv: list[str] | None = None, clock: Any | None = None) -> int:
     parser.add_argument("--authorized-by", default="")
     parser.add_argument("--approval-ref", default="")
     parser.add_argument("--valid-minutes", type=int, default=120)
+    parser.add_argument("--loop-a-slots-used-before", type=int, default=LOOP_A_SLOTS_USED_BEFORE)
     parser.add_argument("--trailer", default="")
     parser.add_argument("--out")
     args = parser.parse_args(argv)

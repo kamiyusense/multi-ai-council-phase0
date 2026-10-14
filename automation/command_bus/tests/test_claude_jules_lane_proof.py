@@ -111,6 +111,10 @@ class PlanTests(unittest.TestCase):
         self.assertEqual((p["retry"], p["fallback"]), (0, "disabled"))
         self.assertEqual(p["forbidden_loop_numbers"], [128, 129, 130, 131])
 
+        p9 = plan(loop_a_slots_used_before=9)
+        self.assertEqual(p9["loop_a_slots_used_before"], 9)
+        self.assertEqual(proof.validate_proof_plan(p9, registry=PROD)["loop_a_slots_used_before"], 9)
+
     def test_every_tamper_is_rejected(self):
         base = plan(live_authorization=AUTH)
 
@@ -122,7 +126,7 @@ class PlanTests(unittest.TestCase):
             "lane": tampered(lane_id="chatgpt-semi-auto"), "owner": tampered(id_owner="CHAT_LED_SEMI_AUTO_RUNTIME"),
             "limits": tampered(limits={"jules_post": 2, "jules_get": 1, "live_budget_slots": 1, "retry": 0}),
             "retry": tampered(retry=1), "fallback": tampered(fallback="paid"),
-            "budget": tampered(loop_a_slots_used_before=9), "loops": tampered(forbidden_loop_numbers=[]),
+            "budget": tampered(loop_a_slots_used_before=10), "loops": tampered(forbidden_loop_numbers=[]),
             "origin is lane": tampered(origin_loop_id=LANE), "origin numeric": tampered(origin_loop_id="136"),
             "default branch": tampered(target_branch="main"), "head": tampered(target_head="zz"),
             "pr": tampered(target_pr=0), "auth max": tampered(live_authorization={**AUTH, "max_dispatches": 2}),
