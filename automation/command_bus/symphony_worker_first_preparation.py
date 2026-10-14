@@ -21,6 +21,7 @@ from .symphony_production_observer import SymphonyProductionObserver
 from .symphony_sqlite_storage import ReviewedSQLiteStorage
 from .symphony_subscription_boundary import metered_worker_environment_present
 from .symphony_result_manifest import digest
+from .symphony_native_binary_preparation import directory_chain, _regular_read
 
 
 @dataclass(frozen=True)
@@ -71,7 +72,7 @@ def _binding(review, storage, host):
     auth = _safe_dir(review.auth_home)
     root = _safe_dir(storage.review.root, private=True)
     binary = Path(review.executable)
-    if (not _native_linux_state(root)
+    if (not _native_linux_state(root) or not _native_linux_state(binary.parent)
             or not all(_separate(a, b) for a, b in
                        ((workspace, root), (workspace, auth), (root, auth)))
             or binary.name != 'codex' or not binary.is_absolute()
@@ -82,13 +83,15 @@ def _binding(review, storage, host):
             or storage.review.auth_home != auth
             or workspace not in storage.review.workspace_roots
             or review.executable_sha256 != storage.review.executable_sha256
-            or hashlib.sha256(binary.read_bytes()).hexdigest() != review.executable_sha256
             or (os.environ.get('CODEX_HOME') or str(Path.home()/'.codex')) != str(auth)
             or metered_worker_environment_present(tuple(os.environ))
             or _git(workspace, 'symbolic-ref', '--quiet', '--short', 'HEAD') != review.workspace_branch
             or _git(workspace, 'rev-parse', '--verify', 'HEAD') != review.source_head
             or _git(workspace, 'status', '--porcelain=v1', '--untracked-files=all')):
         raise PermissionError('local preparation identity changed or unverified')
+    with directory_chain(binary.parent) as (fd, parents):
+        binary_readback, _ = _regular_read(fd, binary.name, expected_sha256=review.executable_sha256)
+        binary_readback['parent_identities'] = parents
     binary_info = binary.stat()
     if (binary_info.st_uid != os.getuid() or binary_info.st_nlink != 1
             or binary_info.st_mode & 0o022):
@@ -135,7 +138,9 @@ def _binding(review, storage, host):
             'storage_readiness': storage.readiness(), 'host': view,
             'operator_directory_identities': operator_directories,
             'observer_key_sha256': hashlib.sha256(host.adapter.observer.key).hexdigest(),
-            'events_identity': [event_info.st_dev, event_info.st_ino]}
+            'binary_readback': binary_readback,
+            'events_identity': [event_info.st_dev, event_info.st_ino,
+                                event_info.st_size, event_info.st_mtime_ns, event_info.st_ctime_ns]}
 
 
 def prepare_worker(*, review, storage, host, now):

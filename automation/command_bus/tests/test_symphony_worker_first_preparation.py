@@ -24,6 +24,8 @@ TARGET = 'codex/symphony-worker-first-fixture'
 
 class WorkerPreparationTests(TempCase):
     def setUp(self):
+        ancestry = patch('automation.command_bus.symphony_native_binary_preparation.SYSTEM_UID', Path('/').stat().st_uid)
+        ancestry.start(); self.addCleanup(ancestry.stop)
         super().setUp()
         root = Path(self.tmp)
         self.w = ObservedWorld(root/'world', client=LocalStaticContents(root/'records'))
@@ -238,3 +240,41 @@ class WorkerPreparationTests(TempCase):
         self.assertEqual(fresh.handle('replay')['results'][0]['status'],'NOOP_DUPLICATE')
         self.assertEqual(self.w.gh.update_refs_requests,0)
         with self.assertRaises(PermissionError): fresh.execute()
+
+    def test_binary_on_windows_mount_refused_even_with_native_sqlite(self):
+        with patch.object(subject, '_native_linux_state', side_effect=lambda p: p != self.binary.parent):
+            self.assertEqual(self.prepare()['status'],'BLOCKED_UNVERIFIED')
+        self.launched.assert_not_called()
+
+    def test_identical_binary_replacement_during_probe_never_prepares(self):
+        def drift(*args,**kwargs):
+            replacement = self.binary.with_name('replacement')
+            replacement.write_bytes(self.binary.read_bytes());replacement.chmod(0o700)
+            replacement.replace(self.binary)
+            return self.process
+        self.launched.side_effect=drift
+        self.assertEqual(self.prepare()['status'],'HOLD_CHANGED_OR_UNVERIFIED')
+        self.assertEqual(self.prepare()['status'],'CONFLICT')
+        self.assertEqual(self.launched.call_count,1)
+
+    def test_binary_hardlink_added_during_probe_never_prepares(self):
+        def drift(*args,**kwargs):
+            os.link(self.binary,self.binary.with_name('linked-binary'))
+            return self.process
+        self.launched.side_effect=drift
+        self.assertEqual(self.prepare()['status'],'BLOCKED_UNVERIFIED')
+        self.assertEqual(self.launched.call_count,1)
+
+    def test_observer_input_changed_during_probe_never_prepares(self):
+        def drift(*args,**kwargs):
+            self.host.events.write_text(signed(self.w,'STARTED')+'\n')
+            return self.process
+        self.launched.side_effect=drift
+        self.assertEqual(self.prepare()['status'],'HOLD_CHANGED_OR_UNVERIFIED')
+        self.assertEqual(self.prepare()['status'],'CONFLICT')
+        self.assertEqual(self.launched.call_count,1)
+
+    def test_nonregular_binary_is_refused_without_opening_fifo(self):
+        self.binary.unlink();os.mkfifo(self.binary,0o700)
+        self.assertEqual(self.prepare()['status'],'BLOCKED_UNVERIFIED')
+        self.launched.assert_not_called()

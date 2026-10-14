@@ -141,3 +141,14 @@ durable storage cutover and real operator/runtime attachment qualify. This Goal
 does not install the proposed production SQLite root or supply its approval
 callback. A successful disposable diagnostic and an OFF composition are not
 that approval, and LIVE is not the only remaining boundary.
+
+## Cloud installation review continuation (2026-10-14)
+
+See [the Local batch handover](SYMPHONY_CLOUD_INSTALLATION_HANDOVER.md) for the
+new finite binary/SQLite prepare-only packet commands and A-H operator checks.
+No production installation or seal is created. Binary native filesystem,
+descriptor/inode/parent identity and event-input metadata now bind OFF preparation.
+Older INTENT records with the previous binding remain preserved and CONFLICT/GET-only;
+never rewrite them or reuse their ID as new authority.
+Sanitized Cloud tests/hashes live in `docs/evidence/symphony-worker-installation-cloud-20261014`.
+The append-only PR checkpoint and exact-head CI provide the final commit/tree/readback.
