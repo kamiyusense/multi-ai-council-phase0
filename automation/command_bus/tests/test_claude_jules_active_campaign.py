@@ -30,6 +30,15 @@ OWNER_APPROVED = {
                         "automation/command_bus/tests/test_jules_session_readback_output.py"),
     # owner decision 2026-10-14: the signal thread's bundle; its code paths are in the loop's own lane
     "o5-signal-bundle-1": ("docs/OPEN_PR_INVENTORY_20261014.md",),
+    # owner decision 2026-10-14: the signal thread's bundle 2 (placeholders added by #406)
+    "o6-signal-companion-core": ("automation/command_bus/signal_companion_core.py",
+                                 "automation/command_bus/tests/test_signal_companion_core.py"),
+    # owner decision 2026-10-14: the signal thread's bundle 3
+    "o7-signal-roadmap-status": ("docs/SIGNAL_FOUNDATION_ROADMAP.md",),
+    # owner decision 2026-10-14: the signal thread's bundle 4 (placeholders added by #418)
+    "o8-signal-companion-cli": ("automation/command_bus/signal_companion_cli.py",
+                                "automation/command_bus/tests/test_signal_companion_cli.py",
+                                "docs/SIGNAL_FOUNDATION_ROADMAP.md"),
 }
 BLUE = ("blue", "work_event", "cloud_work")
 
@@ -60,8 +69,8 @@ class ActiveCampaignTests(unittest.TestCase):
                 self.assertTrue(prefix.startswith(LANE) or prefix in OWNER_APPROVED.get(o["objective_id"], ()),
                                 prefix)
                 self.assertFalse(any(word in prefix.lower() for word in BLUE), f"Blue lane path {prefix}")
-        # owner request 2026-10-14: two tasks at once (the relay and signal threads' work in parallel); no more
-        self.assertIn(self.camp["policy"]["max_concurrent_tasks"], (1, 2))
+        # owner requests 2026-10-14: two tasks at once (#401), then up to five; no more
+        self.assertIn(self.camp["policy"]["max_concurrent_tasks"], range(1, 6))
 
     def test_subscription_only(self):
         p = self.camp["policy"]

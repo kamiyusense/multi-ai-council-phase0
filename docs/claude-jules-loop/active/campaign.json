@@ -15,7 +15,7 @@
     "trusted_writers": [
       "kamiyusense"
     ],
-    "max_concurrent_tasks": 2,
+    "max_concurrent_tasks": 5,
     "max_campaign_rounds": null,
     "max_corrective_rounds": 3,
     "intent_lease_minutes": 15,
@@ -144,6 +144,51 @@
       "priority": 40,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-13T15:41:06Z"
+    },
+    {
+      "objective_id": "o6-signal-companion-core",
+      "title": "Signal Tower (yellow lane) bundle 2 (owner approved 2026-10-14 JST): Windows Signal Companion v1 core logic, tray state and notification dedupe (SF-12)",
+      "scope_prefixes": [
+        "automation/command_bus/signal_companion_core.py",
+        "automation/command_bus/tests/test_signal_companion_core.py"
+      ],
+      "allowed_operations": [
+        "code_edit",
+        "test_add"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-14T03:01:21Z"
+    },
+    {
+      "objective_id": "o7-signal-roadmap-status",
+      "title": "Signal Tower (yellow lane) bundle 3 (owner approved 2026-10-14 JST): refresh the status override in docs/SIGNAL_FOUNDATION_ROADMAP.md section 3",
+      "scope_prefixes": [
+        "docs/SIGNAL_FOUNDATION_ROADMAP.md"
+      ],
+      "allowed_operations": [
+        "docs_update"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-14T03:28:51Z"
+    },
+    {
+      "objective_id": "o8-signal-companion-cli",
+      "title": "Signal Tower (yellow lane) bundle 4 (owner approved 2026-10-14 JST): stdlib CLI bridge over signal_companion_core plus the SF-12 roadmap status line",
+      "scope_prefixes": [
+        "automation/command_bus/signal_companion_cli.py",
+        "automation/command_bus/tests/test_signal_companion_cli.py",
+        "docs/SIGNAL_FOUNDATION_ROADMAP.md"
+      ],
+      "allowed_operations": [
+        "code_edit",
+        "test_add",
+        "docs_update"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-14T10:42:11Z"
     }
   ],
   "control_issue": 346
