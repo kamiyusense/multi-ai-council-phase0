@@ -13,7 +13,7 @@ Check against a real Claude CLI and the human's own subscription what STATIC tes
 - [ ] Explicit approval for one real Claude run, in the current conversation.
 - [ ] Human is logged in by their own subscription; no API key is set in the environment.
 - [ ] Billing / extra usage settings are not touched by anyone.
-- [ ] Decide whether to bump pins first (Claude ACP 0.84.0 -> 0.85.1, Codex ACP 2.1.0 -> 2.1.1). If bumped, re-run the full STATIC suite first.
+- [ ] Pins: Claude ACP is already 0.85.1 (PR #315). Codex ACP 2.1.0 -> 2.1.1 is Draft PR #400 (human Merge). If either changes, re-run the full STATIC suite first.
 
 ## Run rules
 - One tiny harmless prompt, once. retry = 0, fallback = disabled, no resend on unknown outcome (read back first).
