@@ -45,7 +45,15 @@ checkpoint text.
 
 ## 3. Current checkpoint
 
-> **2026-10-04 status override (current state; the readback below is historical)**
+> **2026-10-14 status override (current state)**
+>
+> - Production Control Tower registry has 5 rows; only `chatgpt-semi-auto` is DURABLE; three lanes are PLACEHOLDER; `claude-claude-auto` is FROZEN/disabled; global registration is NOT_WIRED.
+> - Issue #33 remains STOPPED; its migration has not started.
+> - Claude -> Jules: the LIVE proof CLI's ledger count check is now bound to the validated plan instead of a fixed number (Jules PR #405, main 165f15c).
+> - SF-12 Windows Companion: the core logic (tray colour, notification dedupe, fail-passive) is in progress under objective o6-signal-companion-core (issue #409); the .NET UI has not started.
+> - SF-10: the three remaining lanes still wait for the owner's decision; promotion to DURABLE needs a separate LIVE proof.
+
+> **2026-10-04 status override (historical)**
 >
 > - SF-8 Minimum real trust proof: **complete** (Step 7 proof 5, Loop 136; terminal receipt COMPLETE).
 > - SF-9 One-lane DURABLE promotion: **complete**. `chatgpt-semi-auto` is `DURABLE` in the production
