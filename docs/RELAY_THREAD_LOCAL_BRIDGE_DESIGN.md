@@ -1,8 +1,17 @@
 # Project thread ↔ local chat bridge: design memo (static, no implementation)
 
 Status: DESIGN MEMO only. No code, no workflow, no Relay change, no LIVE, no
-billing, no permission change, no device connection. Nothing here is approved
-for implementation; every "recommended" item below needs the human's decision.
+billing, no permission change. Nothing here is approved for implementation;
+every "recommended" item below needs the human's decision.
+
+**Update 2026-10-14 (later the same day):** the human handed the thread <-> local
+bridge to the 💚 line, which chose the project's built-in Remote Control first.
+Facts changed after this memo was written: the human set the repository folder
+`C:\Users\yuuki\multi-ai-council-phase0` to "always allow", read-only Remote
+Control sessions on device `yuki` succeeded twice (by 💚 and by the Relay line for
+Path B checks), and a GitHub mailbox is "not needed for now". Sections 2 and 3
+below describe the state at writing time; the mailbox safety rules in section 5
+still apply to any future mailbox. This memo is kept as reference.
 
 Question (human, 2026-10-14): after Relay is finished, can the project's cloud
 threads and the local chat (Claude Code on the user's WSL/Windows PC) hand work
@@ -37,7 +46,7 @@ Confirmed:
 | GitHub as durable mailbox with request/claim/response/receipt records, create-only, `retry=0`, `fallback=disabled`; malformed or mismatched records ⇒ UNKNOWN; "correctness must never depend on a specific Chat ID, Work session, browser tab" | `docs/HYBRID_WORK_CHAT_REVIEWER_RELAY_PROPOSAL.md` §0, §2, §3 |
 | Local runs reporting back through a GitHub Issue with a fixed result schema already happened (Symphony proofs, Issues #336/#341/#342) | `docs/SYMPHONY_MINIMAL_LIVE_PROOF_LOCAL_RESULT_ISSUE_336.md` |
 | A wake from a routine/event carries no authority; review, adoption and next dispatch stay with create-only records and need a fresh human approval | `docs/CLAUDE_JULES_ROUTINE_WAKE_V1.md` |
-| This project can see one served device named `yuki` at `C:\Users\yuuki` (folder not yet approved); a thread can ask to start a Claude Code session on it, which first asks the human on a consent card; no Remote Control session exists right now | `list_devices` / `rc_session_status` read-only calls, 2026-10-14 |
+| (At writing time) this project could see one served device named `yuki` at `C:\Users\yuuki` (folder not yet approved); a thread can ask to start a Claude Code session on it. **Superseded:** see the update at the top; Remote Control has since worked read-only twice | `list_devices` / `rc_session_status` read-only calls, 2026-10-14 |
 | A thread that subscribed to a PR is woken by comments/reviews/CI on that PR | session tooling (PR activity events), observed repeatedly in this project |
 
 UNKNOWN (do not assume):
