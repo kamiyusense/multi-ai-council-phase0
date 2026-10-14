@@ -24,6 +24,14 @@ Cloud-static (can be built and unit-tested here with fixtures): items 2 and 3 ab
 Needs the human's PC (Docker + WSL): building and running the launcher against the real runtime image, `claude --version` inside the container, the first `initialize` through the launcher.
 Human-only: any account read, login, and every model run (separate explicit approval each).
 
+## 3a. Measured on the human's PC (WSL, 2026-10-14, read-only; reported by the human)
+
+- Repo HEAD `751a694` (the proven Path A configuration; `RELAY_CLAUDE_GATED_LIVE_PATH_A_RUNBOOK.md` says the PC repo is intentionally not updated, so this differs from `main` on purpose).
+- Docker server 29.8.0.
+- Images present: `phase0-claude-runtime:2.1.283` (`111c427baa00`), `phase0-claude-gate:1` (`96cece784122`), plus diagnostic images `phase0-bwrap-diagnostic:20260928`, `phase0-claude-runtime:2.1.283-bwrap-check`.
+- `docker run --rm --network none --entrypoint claude phase0-claude-runtime:2.1.283 --version` printed `2.1.283 (Claude Code)`, exit 0, no auth volume, no network. Nothing was written, no login, no model call.
+- Still UNKNOWN: whether a launcher that runs the CLI through `docker run`/`exec` keeps the adapter's stdio framing and cancel working (needs a build and a fixture run on the PC).
+
 ## 4. Open questions (UNKNOWN)
 
 - How the adapter's own title-generation turn interacts with Gate admission (the Gate allows exactly one upstream generation).
