@@ -1,6 +1,8 @@
 // Path B (STATIC, unexecuted): container-side entrypoint for the OFFICIAL Claude ACP adapter's CLI calls.
-// Same safety posture as claude_runtime_launcher.mjs (live flag, exact required env, forbidden env, dispatch id),
-// but the adapter drives the CLI as a long-lived stream-json process, so the argv is filtered instead of "one prompt".
+// Same safety posture as the PROVEN claude_runtime_launcher.mjs of repo commit 751a694, which is what runs on the human's PC
+// (live flag, exact required env, forbidden env, dispatch id; NO proxy: HTTPS_PROXY is forbidden). Current main's launcher
+// additionally requires the not-live-ready auth-control-proxy; this entrypoint deliberately does not follow that variant.
+// The adapter drives the CLI as a long-lived stream-json process, so the argv is filtered instead of "one prompt".
 // The argv rules mirror src/relay/claude_container_argv.py; both are tested against
 // fixtures/relay/claude_container_argv_cases.json. Nothing here is run by tests except the pure functions.
 import { spawnSync } from "node:child_process";
@@ -10,8 +12,6 @@ import { pathToFileURL } from "node:url";
 const DISPATCH_HEADER = "X-Phase0-Dispatch-ID";
 const REQUIRED_ENV = Object.freeze({
   ANTHROPIC_BASE_URL: "http://gate:8080",
-  HTTPS_PROXY: "http://auth-control-proxy:3128",
-  CLAUDE_CODE_PROXY_RESOLVES_HOSTS: "1",
   PHASE0_TRANSPORT_MODE: "CONTAINER_INTERNAL",
   CLAUDE_CODE_MAX_RETRIES: "0",
   CLAUDE_CODE_MAX_TURNS: "1",
@@ -30,7 +30,7 @@ const REQUIRED_ENV = Object.freeze({
 const FORBIDDEN_ENV = new Set([
   "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_AWS_API_KEY", "ANTHROPIC_FOUNDRY_API_KEY",
   "ANTHROPIC_FOUNDRY_AUTH_TOKEN", "AWS_BEARER_TOKEN_BEDROCK", "CLAUDE_CODE_OAUTH_TOKEN",
-  "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "HTTP_PROXY", "ALL_PROXY", "NO_PROXY", "NODE_OPTIONS", "NODE_PATH",
+  "CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "NODE_OPTIONS", "NODE_PATH",
 ]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -96,7 +96,7 @@ export function prepareAdapterInvocation(env = process.env, args = process.argv.
   }
   for (const name of Object.keys(env)) {
     const upper = name.toUpperCase();
-    if (FORBIDDEN_ENV.has(upper) || (upper === "HTTPS_PROXY" && name !== "HTTPS_PROXY")) {
+    if (FORBIDDEN_ENV.has(upper)) {
       blocked(`credential, proxy, or Node injection variable is forbidden: ${name}`);
     }
   }
