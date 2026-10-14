@@ -3,13 +3,13 @@
 Status: **prepared, NOT executed.** It must be run by the human on their own Windows PC (where Codex is already logged in). The cloud environment never runs it, never reads `~/.codex`, never copies credentials.
 
 ## Run (user)
-1. Open the repository folder (branch `feature/relay-m9-local-runner-v4`) and update it: `git pull`.
+1. Open the repository folder (branch `claude/relay-m9-local-runner-v5`) and update it: `git pull`.
 2. Run `RUN_M9_CODEX_FIRST_LIVE.cmd` (PowerShell: `.\RUN_M9_CODEX_FIRST_LIVE.cmd`). Starting the file never starts LIVE by itself: the runner asks for a typed confirmation `APPROVE_FIRST_LIVE_POC <first 7 chars of HEAD>`.
 3. Paste the printed sanitized receipt (between `-----8<-----` and `----->8-----`) back to Claude.
 
 ## What it does (fixed order; any failure/UNKNOWN stops, nothing is retried)
 1. **Preflight (existence only, no credential reads):** checklist = runtime contract (`fixtures/relay/m9_codex_first_live_checklist.json`: provider openai, 1 dispatch, 1 prompt, max 1 generation, retry 0, fallback disabled); branch, clean tree, local HEAD == fetched remote tip; Python >= 3.11; Node; Codex executable (`codex` on PATH); Codex home directory exists (`CODEX_HOME` or `~/.codex`); gate launcher; no terminal receipt / no consumed marker. Missing Codex or login directory: a Japanese message and stop; **no install, no login**.
-2. **Official adapter:** `@agentclientprotocol/codex-acp@2.1.0` installed into `.m9_live/adapter` with `--ignore-scripts --omit=optional` (version and absence of native packages verified).
+2. **Official adapter:** `@agentclientprotocol/codex-acp@2.1.1` installed into `.m9_live/adapter` with `--ignore-scripts --omit=optional` (version and absence of native packages verified).
 3. **Typed approval** (interactive console only), bound to exact HEAD, code hash, checklist hash, nonce, correlation ID.
 4. **Read-only account check:** ONE `account/read` (`refreshToken:false`) through the gate; sanitized with `codex_account_readonly`; only `CHATGPT_ACCOUNT` continues (`API_KEY_ROUTE_VIOLATION`, `OTHER_ROUTE_VIOLATION`, `NOT_AUTHENTICATED`, UNKNOWN, error: stop with 0 model turns, approval not consumed).
 5. **Consume** the approval atomically (`consumed.json`, O_EXCL), then **one live turn**: official codex-acp -> `CODEX_PATH` = `src/relay/codex_turn_gate.cmd` (Windows) -> `codex_turn_gate.py` -> the user's real Codex (`codex app-server`). Fixed prompt `M9_OK とだけ返答してください。ファイルを読まない、ファイルを書かない、commandを実行しない、toolを使用しない。`, `timeout_seconds=60` for the whole prompt, adapter mode read-only, empty temp working directory, no API-key/provider env.
@@ -33,7 +33,7 @@ The existing approval chain (`live_readiness_*` -> `live_approval_receipt` -> `l
 ## Account-read scope clarification
 
 The runner performs exactly **one explicit preflight** `account/read` with `refreshToken:false`.
-The pinned official `codex-acp@2.1.0` may also emit additional **read-only**
+The pinned official `codex-acp@2.1.1` may also emit additional **read-only**
 `account/read` calls while creating the single ACP session; fixture-backed contract
 tests currently observe two such internal reads. They are not model generations and
 the runner does not retry them. The local approval screen discloses this before the
@@ -48,4 +48,4 @@ an ancestor of the exact local/remote runner HEAD. A branch that has fallen behi
 must be replaced by a freshly validated current-main successor before LIVE.
 
 ## Branch history
-This branch (`feature/relay-m9-local-runner-v4`) is a plain merge of the Reviewer's current-main successor #263 (`feature/relay-m9-local-runner-v3`, itself a port of #255) into main `28938169b825fb199a4a54a710c5db32cb06f838`, plus the one-line branch-name constant required by the runner's own current-main guard. #263's base was 18 commits behind main, so its runner would have refused LIVE (`CURRENT_MAIN`); this branch contains current main.
+`feature/relay-m9-local-runner-v4` was a plain merge of the Reviewer's current-main successor #263 into main `28938169b825fb199a4a54a710c5db32cb06f838`, plus the one-line branch-name constant required by the runner's own current-main guard. After main moved on (including the Codex ACP 2.1.1 pin, PR #400), the runner would refuse LIVE (`CURRENT_MAIN`) on that branch. `claude/relay-m9-local-runner-v5` is cut from current main (2026-10-15) and changes only that branch-name constant and the version/branch text in this document. Whenever `origin/main` moves again before the run, main must be merged into this branch and the run must use the new tip.
