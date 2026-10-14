@@ -223,7 +223,7 @@ def verify(root: Path, fresh: dict[str, Any], now: str) -> dict[str, Any]:
     add(21, "strict_sf8_post_adoption_gate", gate.status == "READY" and tuple(checks) == REQUIRED_CHECKS,
         f"{gate.status}; reasons={list(gate.reasons)}")
     add(22, "global_registration_not_wired", global_ready.status == "NOT_WIRED"
-        and global_ready.placeholder_loop_ids == ("chat-work-semi-auto", "claude-jules-auto", "work-jules-auto") and migration == "NO",
+        and global_ready.placeholder_loop_ids == ("chat-work-semi-auto", "claude-jules-auto", "symphony-codex-auto") and migration == "NO",
         f"{global_ready.status}; issue33_migration_ready={migration}")
     issue = fresh["issue33"]
     add(23, "issue33_unchanged", issue.get("state") == "open" and issue.get("title_has_stopped") is True and issue.get("owner_none") is True

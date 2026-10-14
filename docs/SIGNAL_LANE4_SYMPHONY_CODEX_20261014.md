@@ -11,11 +11,11 @@ owner reports is about 80 percent complete. Lanes 1 and 2 (`chatgpt-semi-auto`, 
 | 1 | Chat -> Jules | `chatgpt-semi-auto` | DURABLE |
 | 2 | Chat -> Work | `chat-work-semi-auto` | PLACEHOLDER |
 | 3 | Claude -> Jules | `claude-jules-auto` | PLACEHOLDER |
-| 4 | Symphony -> Codex (replaces Work -> Jules) | still `work-jules-auto` in the registry | PLACEHOLDER, in development |
+| 4 | Symphony -> Codex (replaces Work -> Jules) | `symphony-codex-auto` (renamed 2026-10-14) | PLACEHOLDER, in development |
 | - | Claude -> Claude | `claude-claude-auto` | FROZEN |
 
-Registry, tests and sealed evidence are NOT changed by this note. The production registry row keeps its old id and
-display name until the owner approves the rename (see "Rename plan"). Nothing here promotes a lane to DURABLE or wires
+This note itself changed no registry. The owner then approved the rename (2026-10-14) and the production registry row
+was renamed in a follow-up change (see "Rename plan", now executed). Nothing here promotes a lane to DURABLE or wires
 global registration; Issue #33 stays STOPPED.
 
 ## What GitHub shows for Symphony (read 2026-10-14, main 1e24510)
@@ -31,7 +31,7 @@ global registration; Issue #33 stays STOPPED.
 - Unproven per those PRs: automatic Git adoption, real delivery, completed continuation, natural stall recovery,
   quota-reset restart recovery. No claim of 80 percent is verified from GitHub; it is the owner's figure.
 
-## Rename plan (not executed)
+## Rename plan (executed 2026-10-14 after owner approval)
 
 When the owner approves, one change set renames the row and keeps the old id out of live use:
 
@@ -42,3 +42,8 @@ When the owner approves, one change set renames the row and keeps the old id out
    which would need a new sealed render instead of an edit.
 
 Stable id rules still apply: never derived from colour, carrier PR, worker generation, session or command id.
+
+Executed as planned: registry row, `LANE_SHAPES` key (`symphony-codex`), the post-adoption placeholder tuple and the
+tests that read the production registry now use `symphony-codex-auto`. Sealed evidence was NOT edited: the v3 fixture,
+naming-policy JSON, Issue #33 dry-run render and the SF-9 post-adoption checkpoint (hash-pinned) keep the old id, and
+the tests that compare against them map the one renamed id and the registry digest back explicitly.

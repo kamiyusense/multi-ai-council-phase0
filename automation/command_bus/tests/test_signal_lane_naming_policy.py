@@ -83,7 +83,11 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual(assess_registration_readiness(V3, None).status, "NOT_WIRED")
 
     def test_production_registry_is_the_v3_five_rows(self):
-        self.assertEqual(PROD, V3)
+        # Owner decision 2026-10-14: lane 4 Work -> Jules became Symphony -> Codex; the sealed v3 fixture keeps the old row.
+        renamed = json.loads(json.dumps(V3))
+        row = next(e for e in renamed["loops"] if e["loop_id"] == "work-jules-auto")
+        row.update(loop_id="symphony-codex-auto", display_name="Symphony -> Codex", controller_kind="OTHER", worker_kind="OTHER")
+        self.assertEqual(PROD, renamed)
         self.assertEqual(PROD["loops"][0]["display_name"], "Chat -> Jules")
 
 

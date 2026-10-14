@@ -25,7 +25,7 @@ from typing import Any, Mapping
 from .lane_stable_identity import LANE_SHAPES, validate_lane_stable_identity
 
 # Owner decided by the project owner (2026-10-04): the Chat-led SEMI_AUTO runtime owns chat-work-semi-auto.
-# claude-jules follows the same pattern for its own AUTO controller runtime. work-jules has NO owner yet.
+# claude-jules follows the same pattern for its own AUTO controller runtime. symphony-codex has NO owner yet.
 STABLE_ID_OWNER = {
     "chat-work": "CHAT_LED_SEMI_AUTO_RUNTIME",
     "claude-jules": "CLAUDE_AUTO_RUNTIME",
