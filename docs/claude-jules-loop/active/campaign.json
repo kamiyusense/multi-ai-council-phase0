@@ -159,6 +159,19 @@
       "priority": 40,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-14T03:01:21Z"
+    },
+    {
+      "objective_id": "o7-signal-roadmap-status",
+      "title": "Signal Tower (yellow lane) bundle 3 (owner approved 2026-10-14 JST): refresh the status override in docs/SIGNAL_FOUNDATION_ROADMAP.md section 3",
+      "scope_prefixes": [
+        "docs/SIGNAL_FOUNDATION_ROADMAP.md"
+      ],
+      "allowed_operations": [
+        "docs_update"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-14T03:28:51Z"
     }
   ],
   "control_issue": 346
