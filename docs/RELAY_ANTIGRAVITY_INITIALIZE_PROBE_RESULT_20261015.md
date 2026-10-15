@@ -30,3 +30,9 @@ The receipt file stays on the owner's PC (`$HOME\agy-probe-state`). The values a
 - Shows: the official 1.4.0 ACP server starts on the owner's PC and answers one `initialize` with the same four auth methods the repo already expected; the probe sent no `authenticate`, `session/new` or prompt, so no login and no model turn happened.
 - Does not show: which Google account or billing route a later turn would use; a one-generation gate for Google; whether the server read a saved login or made start-up network calls (UNKNOWN, see "Limits found in inspection" in `docs/RELAY_ANTIGRAVITY_INITIALIZE_PROBE.md`); compatibility of the repo pin (1.2.1) with 1.4.0 beyond this initialize.
 - Next steps stay separate owner decisions: bump the pin 1.2.1 to 1.4.0, choosing `oauth-personal`, any Google login, and any Antigravity LIVE turn.
+
+## New fact and what still blocks a login turn
+
+- Auth methods changed: the registry's public matrix for 1.2.1/1.3.0 showed `authMethods: ["agent"]` (see `docs/RELAY_CLAUDE_ROUTE_ADMISSION_STATIC_EVIDENCE.md`); the 1.4.0 binary on the owner's PC offered four (`agent-platform`, `gemini-api-key`, `oauth-business`, `oauth-personal`). `antigravity_route_admission` already admits only `oauth-personal`; the other three stay blocked. The old pin evidence (1.2.1) therefore does not describe 1.4.0.
+- Owner decision 2026-10-15 (decision card): wait; no Google login and no real turn yet.
+- Still `BLOCKED_UNKNOWN` before any login turn: account route and billing route (`RELAY_ANTIGRAVITY_ACCOUNT_ROUTE_READONLY_CHECKLIST.md`, `RELAY_ANTIGRAVITY_BILLING_ROUTE_READONLY_CHECKLIST.md`); Google's one-generation boundary (no Admission-Gate equivalent, no mid-turn identity signal); whether the server inherits any saved login; pin bump 1.2.1 -> 1.4.0 (owner decision). No code exists that sends `authenticate` or a prompt to Antigravity from the one-shot tooling, and none is added here.
