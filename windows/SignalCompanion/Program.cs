@@ -5,11 +5,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
 
 static class Program
 {
+    [DllImport("user32.dll")]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
+    private static readonly Dictionary<string, Icon> _iconCache = new();
     private static string _snapshotPath = "";
     private static string _repoRoot = "";
     private static string _seenPath = "";
@@ -74,6 +79,11 @@ static class Program
         Application.Run();
 
         _trayIcon.Dispose();
+        foreach (var icon in _iconCache.Values)
+        {
+            icon.Dispose();
+        }
+        _iconCache.Clear();
     }
 
     private static void PollCLI()
@@ -198,6 +208,11 @@ static class Program
 
     private static Icon CreateColorIcon(string colorName)
     {
+        if (_iconCache.TryGetValue(colorName, out Icon? cached))
+        {
+            return cached;
+        }
+
         Color color = colorName switch
         {
             "RED" => Color.Red,
@@ -215,6 +230,13 @@ static class Program
             using Pen pen = new Pen(Color.Gray, 1);
             g.DrawRectangle(pen, 0, 0, 15, 15);
         }
-        return Icon.FromHandle(bmp.GetHicon());
+
+        IntPtr hIcon = bmp.GetHicon();
+        using Icon temp = Icon.FromHandle(hIcon);
+        Icon icon = (Icon)temp.Clone();
+        DestroyIcon(hIcon);
+
+        _iconCache[colorName] = icon;
+        return icon;
     }
 }
