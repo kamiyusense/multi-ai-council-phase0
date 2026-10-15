@@ -50,10 +50,16 @@ and gains exactly one exception in `claude_jules_provider_route`: `SUBSCRIPTION_
 declaration
 
 - names the `carrier-rest-api-key` transport, `auth_method: api_key`, `billing_route: subscription`, `auth_state: ok`,
-- is declared by `owner`, and
+- carries `declared_by: owner` (a label in the JSON, not a signature: whoever can write the declaration file can write it), and
 - lives at most 4 hours (`expires_at - declared_at <= 4h`; outside its window the route is `UNKNOWN_ROUTE`).
 
 `READ_ONLY_LIVE`, `PAID_OR_UNKNOWN_PROVIDER`, metered/overage billing, any other transport, any longer window and any other
 declarer stay `HARD_STOP`. The exception is data on the verdict (`owner_time_boxed`), set only by `classify_route`; a hand-built
 verdict never has it. Evidence for the declaration: the owner's 2026-10-11 decision in `docs/CLAUDE_JULES_API_ROUTE_V1.md`
 and the owner's card tap above. The declaration itself is a run-time file, not committed here.
+
+Honest limits (found by the independent inspection of this change): the 4 hours are per declaration (a new declaration can be
+written again, so this is not a total cap), and the exception also applies to any caller that uses the same transport and
+gate (`claude_jules_live` as well as the proof CLI). What actually bounds a run is the plan's `live_authorization`
+(`require_authorized`), the typed confirmation `RUN_ONCE_<plan_sha256>`, the owner's Merge and LIVE sentences, and the old
+Loop A ledger (9 of 10 used, cap fixed). The owner's "label" is not an authentication step.
