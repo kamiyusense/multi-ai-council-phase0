@@ -28,6 +28,10 @@ Download the official `agy_acp_server` for the PC (accepting Google's terms), co
 
 It does not prove which Google account or billing route would be used, does not give a one-generation gate for Google, and does not test `session/new` (which returns `-32000 Authentication required` without a selected method). Those stay `BLOCKED_UNKNOWN` (`docs/RELAY_ANTIGRAVITY_ACCOUNT_ROUTE_READONLY_CHECKLIST.md`).
 
+## Limits found in inspection (UNKNOWN, cannot be stopped by this code)
+
+The binary inherits `APPDATA`/`LOCALAPPDATA`/`HOME`, so it may read its own saved login or settings and may make its own start-up network calls (for example an update check). The file could in theory be swapped between the hash check and the launch (local access only). Neither changes what the probe sends, but both are why the first run is a human decision.
+
 ## Evidence
 
 Tests: `tests/relay/test_antigravity_initialize_probe.py` (10 tests, fake ACP server script only; skipped on Windows because the fake is a POSIX script). Local run `PYTHONPATH=src python3 -m unittest discover -s tests -t .`: 963 tests OK (23 skipped). The `offline-validation` PR check does not run `tests/relay`, so this evidence is a local run.
