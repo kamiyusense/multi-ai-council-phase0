@@ -23,9 +23,10 @@ from .claude_jules_lane_proof import (
     validate_proof_plan,
 )
 from .claude_jules_lane_proof_launcher import build_live_proof_ports
-from .claude_jules_live import CarrierQuietGuard, LiveResultFacts
+from .claude_jules_live import LIVE_DISPATCH_TRANSPORT, CarrierQuietGuard, LiveResultFacts
 from .claude_jules_live_adapter import GitHubRestReader, GitLiveClient
 from .claude_jules_live_budget import LiveBudgetLedger
+from .claude_jules_provider_route import SUBSCRIPTION_MODEL_WORK, classify_route, gate
 from .loop_owner_backend import LoopOwnerGitHubBackend
 
 # Sessions of every earlier LIVE run: never read or reused by this proof.
@@ -102,16 +103,36 @@ def _registries(repo_dir: str) -> tuple[dict[str, Any], dict[str, Any]]:
     return current, proposed_registry_for(current)
 
 
+def _route_declaration(args: argparse.Namespace) -> Any:
+    return _load(args.provider_route) if getattr(args, "provider_route", None) else None
+
+
+def require_route_allows_model_work(declaration: Any, *, now: str) -> dict[str, Any]:
+    """Refuse BEFORE the once-only attempt marker unless the dispatch route may run model work.
+
+    The dispatcher gates every dispatch on the same route record and, without an allowing one, writes nothing; running
+    anyway would only spend the run's attempt marker on a dispatch that can never happen.
+    """
+    route = classify_route(declaration, provider="jules", transport=LIVE_DISPATCH_TRANSPORT, now=now)
+    decision = gate(SUBSCRIPTION_MODEL_WORK, route)
+    if not decision.provider_execution_allowed:
+        raise ProofError("ROUTE_NOT_ALLOWED", f"{route.verdict}: {decision.reason}")
+    return {"route_verdict": route.verdict, "billing_class": route.billing_class}
+
+
 def command_check(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
     plan, (current, _) = _load(args.plan), _registries(args.repo_dir)
     validate_proof_plan(plan, registry=current, now=clock.now(), require_authorized=True)
-    return {"plan_sha256": plan["plan_sha256"], "ok": True, "confirm_text": f"RUN_ONCE_{plan['plan_sha256']}"}
+    route = require_route_allows_model_work(_route_declaration(args), now=clock.now())
+    return {"plan_sha256": plan["plan_sha256"], "ok": True, **route, "confirm_text": f"RUN_ONCE_{plan['plan_sha256']}"}
 
 
 def command_run(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
     plan, policy, roadmap = _load(args.plan), validate_policy(_load(args.policy)), _load(args.roadmap)
     current, proposed = _registries(args.repo_dir)
     validate_proof_plan(plan, registry=current, now=clock.now(), require_authorized=True)
+    declaration = _route_declaration(args)
+    require_route_allows_model_work(declaration, now=clock.now())
     if os.environ.get("CLAUDE_JULES_PROOF_CONFIRM") != f"RUN_ONCE_{plan['plan_sha256']}":
         raise ProofError("CONFIRMATION_MISSING")
     key = os.environ.get("JULES_API_KEY", "")
@@ -145,7 +166,8 @@ def command_run(args: argparse.Namespace, clock: Any) -> dict[str, Any]:
         raise ProofError("TARGET_MOVED_SINCE_PLAN")
     ports = build_live_proof_ports(
         repo_dir=args.repo_dir, policy=policy, intent=intent, jules_api_key=key, dispatches_used=used,
-        scratch_dir=scratch, clock=clock, carrier_wait_seconds=CARRIER_WAIT_SECONDS)
+        scratch_dir=scratch, clock=clock, carrier_wait_seconds=CARRIER_WAIT_SECONDS,
+        provider_route_declaration=declaration)
     run = run_stable_lane_proof(plan, current_registry=current, proposed_registry=proposed, ports=ports,
                                 request=None)
     return {"status": run.status, "code": run.code, "counters": run.counters, "receipt": run.receipt,
@@ -158,6 +180,8 @@ def main(argv: list[str] | None = None, clock: Any | None = None) -> int:
     parser.add_argument("--repo-dir", default=".")
     parser.add_argument("--policy")
     parser.add_argument("--roadmap")
+    parser.add_argument("--provider-route", help="PROVIDER_ROUTE_DECLARATION_V1 JSON; absent means UNKNOWN_ROUTE and "
+                        "check/run refuse before any effect")
     parser.add_argument("--plan")
     parser.add_argument("--origin-loop-id")
     parser.add_argument("--origin-generation", type=int)

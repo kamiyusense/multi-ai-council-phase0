@@ -25,7 +25,8 @@ LEGACY_MODULES = ("jules_api_request", "loop_id_claim", "jules_session_acceptanc
 CLOSED_LOOP_MODULES = ("claude_closed_loop_protocol", "claude_closed_loop_review", "claude_jules_production_starter",
                        "claude_jules_task_planner", "claude_jules_loop")
 # The only places that may construct or apply the provider-route guard: Claude AUTO dispatch paths.
-GUARD_USERS = {"claude_jules_dispatch", "claude_jules_live", "claude_jules_lane_proof_launcher"}
+GUARD_USERS = {"claude_jules_dispatch", "claude_jules_live", "claude_jules_lane_proof_launcher",
+               "claude_jules_lane_proof_cli"}
 
 
 def imports_of(path: Path) -> set[str]:

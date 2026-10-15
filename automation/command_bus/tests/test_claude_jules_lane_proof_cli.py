@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from automation.command_bus import claude_jules_lane_proof_cli as cli
 from automation.command_bus.claude_jules_lane_proof import LANE_ID, ProofError, ProofRun, build_proof_plan
+from automation.command_bus.claude_jules_provider_route import build_route_declaration
 
 REGISTRY = {
     "schema_version": 1,
@@ -17,6 +18,13 @@ REGISTRY = {
          "worker_kind": "JULES", "display_order": 30, "enabled": True, "safe_detail_ref": "issue:33", "identity_state": "PLACEHOLDER"},
     ],
 }
+
+
+def _route(auth_method="account_oauth", billing_route="subscription"):
+    return build_route_declaration(
+        provider="jules", transport=cli.LIVE_DISPATCH_TRANSPORT, auth_method=auth_method, billing_route=billing_route,
+        auth_state="ok", declared_by="owner", evidence_refs=["owner-message"], declared_at="2026-10-04T00:00:00Z",
+        expires_at="2026-10-06T00:00:00Z")
 
 
 class FixedClock:
@@ -62,10 +70,36 @@ class CliTests(unittest.TestCase):
 
     def test_check_accepts_only_an_authorized_unexpired_plan(self):
         plan = self._write("plan.json", _plan())
-        self.assertEqual(cli.main(["check", "--repo-dir", self.dir.name, "--plan", plan], FixedClock()), 0)
+        route = self._write("route.json", _route())
+        base = ["check", "--repo-dir", self.dir.name, "--provider-route", route]
+        self.assertEqual(cli.main([*base, "--plan", plan], FixedClock()), 0)
         for clock, authorized in ((FixedClock("2026-10-05T05:00:00Z"), True), (FixedClock(), False)):
             bad = self._write("bad.json", _plan(authorized))
-            self.assertEqual(cli.main(["check", "--repo-dir", self.dir.name, "--plan", bad], clock), 2)
+            self.assertEqual(cli.main([*base, "--plan", bad], clock), 2)
+
+    def test_check_and_run_refuse_before_any_effect_unless_the_route_allows_model_work(self):
+        plan_doc = _plan()
+        plan = self._write("plan.json", plan_doc)
+        cases = {"no declaration": None, "api key": _route("api_key", "subscription"),
+                 "metered": _route("account_oauth", "metered"), "billing unknown": _route("account_oauth", "unknown")}
+        for name, declaration in cases.items():
+            extra = ["--provider-route", self._write("route.json", declaration)] if declaration else []
+            with self.subTest(name), patch("sys.stdout"):
+                self.assertEqual(cli.main(["check", "--repo-dir", self.dir.name, "--plan", plan, *extra], FixedClock()), 2)
+                env = {"CLAUDE_JULES_PROOF_CONFIRM": f"RUN_ONCE_{plan_doc['plan_sha256']}", "JULES_API_KEY": "k"}
+                with patch.object(cli, "GitLiveClient") as git, patch.object(cli, "build_live_proof_ports") as ports, \
+                        patch.object(cli, "run_stable_lane_proof") as runner, patch.dict(os.environ, env, clear=True):
+                    policy = self._write("p.json", {
+                        "schema_version": 1, "profile": "CLAUDE_AUTO_JULES_POLICY_V1", "controller_id": "claude-auto",
+                        "holder_id": "h", "target_repo": "o/r", "default_branch": "main", "carrier_branch": "carrier",
+                        "data_branch": "data", "allowed_target_branches": ["claude/target"], "allowed_lane_ids": [],
+                        "expected_pr": 7, "max_rounds": 6, "live_dispatch_authorization": None})
+                    args = ["run", "--repo-dir", self.dir.name, "--plan", plan, "--policy", policy,
+                            "--roadmap", self._write("r.json", {}), "--origin-loop-id", "x", "--lane-id", "y", *extra]
+                    self.assertEqual(cli.main(args, FixedClock()), 2)
+                git.assert_not_called()
+                ports.assert_not_called()
+                runner.assert_not_called()
 
     def test_run_refuses_before_any_effect_without_confirmation_or_key(self):
         plan_doc = _plan()
@@ -77,6 +111,7 @@ class CliTests(unittest.TestCase):
                   "expected_pr": 7, "max_rounds": 6, "live_dispatch_authorization": None}
         args[args.index("p.json")] = self._write("p.json", policy)
         args[args.index("r.json")] = self._write("r.json", {})
+        args += ["--provider-route", self._write("route.json", _route())]
         with patch.object(cli, "GitLiveClient") as git, patch.object(cli, "build_live_proof_ports") as ports, \
                 patch.dict(os.environ, {}, clear=True):
             self.assertEqual(cli.main(args, FixedClock()), 2)  # no confirmation
@@ -106,6 +141,7 @@ class CliTests(unittest.TestCase):
         roadmap = {"schema_version": 1, "profile": "CLAUDE_AUTO_JULES_ROADMAP_V1", "roadmap_id": "r1", "tasks": []}
         args[args.index("p.json")] = self._write("p.json", policy)
         args[args.index("r.json")] = self._write("r.json", roadmap)
+        args += ["--provider-route", self._write("route.json", _route())]
         env = {"CLAUDE_JULES_PROOF_CONFIRM": f"RUN_ONCE_{plan_9['plan_sha256']}", "JULES_API_KEY": "k"}
         with patch.object(cli, "GitLiveClient") as git, patch.object(cli, "GitHubRestReader"), \
                 patch.object(cli, "LiveBudgetLedger") as ledger, patch.dict(os.environ, env, clear=True):
@@ -137,6 +173,7 @@ class CliTests(unittest.TestCase):
                   "expected_pr": 7, "max_rounds": 6, "live_dispatch_authorization": None}
         args[args.index("p.json")] = self._write("p.json", policy)
         args[args.index("r.json")] = self._write("r.json", {})
+        args += ["--provider-route", self._write("route.json", _route())]
         env = {"CLAUDE_JULES_PROOF_CONFIRM": f"RUN_ONCE_{plan_doc['plan_sha256']}"}
         with patch.object(cli, "GitLiveClient") as git, patch.object(cli, "GitHubRestReader"), \
                 patch.object(cli, "LiveBudgetLedger") as ledger, patch.dict(os.environ, env, clear=True):

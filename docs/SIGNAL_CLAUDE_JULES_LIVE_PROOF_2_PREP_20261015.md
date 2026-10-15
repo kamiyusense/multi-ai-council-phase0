@@ -30,3 +30,15 @@ Replaces the closed Draft PR #323 (2026-10-06 premise: ledger 6/10), whose ledge
 - The owner's decision to spend the **last** old Loop A slot.
 - Run on the owner's PC via Remote Control (a cloud run was blocked by the auto safety review for policy writes); the API key stays in that window's environment only.
 - Independent inspection (the 💜 thread) of the plan before the owner types the LIVE sentence.
+
+## Route guard finding (2026-10-15, found while preparing the run; STATIC)
+
+- The proof dispatcher is always gated on a `PROVIDER_ROUTE_DECLARATION_V1` for transport `carrier-rest-api-key`
+  (`claude_jules_provider_route.gate`). Without a declaration the route is `UNKNOWN_ROUTE`; with a truthful one
+  (`auth_method: api_key`) it is `REST_API_KEY`, which is `HARD_STOP` (D1, 2026-10-08) whatever the billing field says.
+- Before this change `claude_jules_lane_proof_cli` passed no declaration, so a run would have written its once-only attempt
+  marker and then dispatched nothing (terminal UNKNOWN, run spent, slot not used).
+- Now `check` and `run` take `--provider-route` and refuse with `ROUTE_NOT_ALLOWED` BEFORE any effect (before the marker)
+  unless the route allows model work. No declaration is invented here and the guard itself is unchanged.
+- So the old carrier route cannot run LIVE until the owner decides how D1 applies to it. The owner's 2026-10-11 decision
+  (Jules API route, `docs/CLAUDE_JULES_API_ROUTE_V1.md`) covers the new `jules-api-carrier` route, not this transport.
