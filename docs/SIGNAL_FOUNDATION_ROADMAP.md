@@ -50,7 +50,7 @@ checkpoint text.
 > - Production Control Tower registry has 5 rows; only `chatgpt-semi-auto` is DURABLE; three lanes are PLACEHOLDER; `claude-claude-auto` is FROZEN/disabled; global registration is NOT_WIRED.
 > - Issue #33 remains STOPPED; its migration has not started.
 > - Claude -> Jules: the LIVE proof CLI's ledger count check is now bound to the validated plan instead of a fixed number (Jules PR #405, main 165f15c).
-> - SF-12 Windows Companion: core logic implemented (signal_companion_core.py, PR #416); CLI bridge added (signal_companion_cli.py); .NET UI not started.
+> - SF-12 Windows Companion: core logic implemented (signal_companion_core.py, PR #416); CLI bridge added (signal_companion_cli.py); .NET UI minimal read-only tray app added (windows/SignalCompanion, Jules); real Windows check pending on the owner's PC.
 > - SF-10: the three remaining lanes still wait for the owner's decision; promotion to DURABLE needs a separate LIVE proof.
 > - Lane 4 (owner, 2026-10-14): `Work -> Jules` is dropped; the Codex-based Symphony loop takes its place (about 80% done per the owner). Registry row renamed to `symphony-codex-auto` (still PLACEHOLDER); see `docs/SIGNAL_LANE4_SYMPHONY_CODEX_20261014.md`.
 
