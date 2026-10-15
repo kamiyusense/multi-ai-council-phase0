@@ -90,7 +90,7 @@ def summarize_initialize(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _preflight(binary: Path, expected_sha256: str, state_dir: Path, platform_name: str, architecture: str) -> tuple[str, int]:
+def _preflight_binary(binary: Path, expected_sha256: str, platform_name: str, architecture: str) -> tuple[str, int]:
     if len(expected_sha256) != 64 or any(c not in "0123456789abcdef" for c in expected_sha256):
         raise Stop(2, "PREFLIGHT_EXPECTED_SHA256", "期待するSHA-256（64桁の小文字16進）が正しくありません。停止します。")
     try:
@@ -102,6 +102,11 @@ def _preflight(binary: Path, expected_sha256: str, state_dir: Path, platform_nam
     digest, size = _sha256_file(binary)
     if digest != expected_sha256:
         raise Stop(2, "PREFLIGHT_BINARY_HASH_MISMATCH", "バイナリのSHA-256が、指定された値と違います。起動せず停止します。")
+    return digest, size
+
+
+def _preflight(binary: Path, expected_sha256: str, state_dir: Path, platform_name: str, architecture: str) -> tuple[str, int]:
+    digest, size = _preflight_binary(binary, expected_sha256, platform_name, architecture)
     if (state_dir / RECEIPT_FILE).exists():
         raise Stop(0, "NO_OP_ALREADY_FINISHED", "すでに1回実行済みです（NO-OP）。再実行しません。")
     if (state_dir / CONSUMED_FILE).exists():
