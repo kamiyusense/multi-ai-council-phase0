@@ -50,6 +50,24 @@ class ClassifyRouteTests(unittest.TestCase):
         v = classify(declaration(auth_method="api_key", billing_route="unknown"))
         self.assertEqual((v.verdict, v.auth_class, v.billing_class), (REST_API_KEY, REST_API_KEY, BILLING_UNKNOWN))
 
+    def test_owner_time_boxed_api_key_exception_is_narrow(self):
+        carrier = dict(transport="carrier-rest-api-key", auth_method="api_key", declared_by="owner",
+                       declared_at="2026-10-15T00:00:00+00:00", expires_at="2026-10-15T04:00:00+00:00")
+        now = "2026-10-15T01:00:00+00:00"
+        ok = classify(declaration(**carrier), now=now, transport="carrier-rest-api-key")
+        self.assertEqual((ok.verdict, ok.billing_class, ok.owner_time_boxed), (REST_API_KEY, SUBSCRIPTION_CONFIRMED, True))
+        too_long = dict(carrier, expires_at="2026-10-15T04:00:01+00:00")
+        for name, changes in {"over four hours": too_long, "not the owner": dict(carrier, declared_by="user"),
+                              "billing unknown": dict(carrier, billing_route="unknown"),
+                              "auth broken": dict(carrier, auth_state="broken")}.items():
+            with self.subTest(name):
+                v = classify(declaration(**changes), now=now, transport="carrier-rest-api-key")
+                self.assertFalse(v.owner_time_boxed)
+        other = classify(declaration(**dict(carrier, transport="jules-tools-cli")), now=now, transport="jules-tools-cli")
+        self.assertFalse(other.owner_time_boxed)
+        expired = classify(declaration(**carrier), now="2026-10-15T04:00:00+00:00", transport="carrier-rest-api-key")
+        self.assertEqual(expired.verdict, UNKNOWN_ROUTE)
+
     def test_confirmed_paid_billing_wins_over_auth(self):
         for route, verdict in (("metered", METERED_CONFIRMED), ("overage", OVERAGE_CONFIRMED)):
             for auth in ("account_oauth", "api_key"):
@@ -116,6 +134,15 @@ class GateTests(unittest.TestCase):
                     self.assertFalse(decision.provider_execution_allowed)
                     self.assertTrue(decision.local_safe_work_allowed)
                     self.assertTrue(decision.requires_human)
+
+    def test_owner_time_boxed_api_key_allows_only_new_model_work(self):
+        route = RouteVerdict(REST_API_KEY, "r", "jules", "carrier-rest-api-key", REST_API_KEY, SUBSCRIPTION_CONFIRMED, True)
+        allowed = gate(SUBSCRIPTION_MODEL_WORK, route)
+        self.assertEqual((allowed.decision, allowed.provider_execution_allowed, allowed.requires_human), (ALLOW, True, False))
+        self.assertEqual(gate(READ_ONLY_LIVE, route).decision, HARD_STOP)
+        self.assertEqual(gate(PAID_OR_UNKNOWN_PROVIDER, route).decision, HARD_STOP)
+        no_billing = RouteVerdict(REST_API_KEY, "r", "jules", "carrier-rest-api-key", REST_API_KEY, BILLING_UNKNOWN, True)
+        self.assertEqual(gate(SUBSCRIPTION_MODEL_WORK, no_billing).decision, HARD_STOP)
 
     def test_auth_broken_and_unknown_route_pause_provider_only(self):
         for verdict in (AUTH_BROKEN, UNKNOWN_ROUTE):

@@ -42,3 +42,24 @@ Replaces the closed Draft PR #323 (2026-10-06 premise: ledger 6/10), whose ledge
   unless the route allows model work. No declaration is invented here and the guard itself is unchanged.
 - So the old carrier route cannot run LIVE until the owner decides how D1 applies to it. The owner's 2026-10-11 decision
   (Jules API route, `docs/CLAUDE_JULES_API_ROUTE_V1.md`) covers the new `jules-api-carrier` route, not this transport.
+
+## Owner decision and the narrow exception (2026-10-15, STATIC)
+
+The owner chose "pass it, time-boxed" (decision card, 2026-10-15T10:25:43Z). The guard keeps `REST_API_KEY = HARD_STOP` (D1)
+and gains exactly one exception in `claude_jules_provider_route`: `SUBSCRIPTION_MODEL_WORK` is allowed only when the
+declaration
+
+- names the `carrier-rest-api-key` transport, `auth_method: api_key`, `billing_route: subscription`, `auth_state: ok`,
+- carries `declared_by: owner` (a label in the JSON, not a signature: whoever can write the declaration file can write it), and
+- lives at most 4 hours (`expires_at - declared_at <= 4h`; outside its window the route is `UNKNOWN_ROUTE`).
+
+`READ_ONLY_LIVE`, `PAID_OR_UNKNOWN_PROVIDER`, metered/overage billing, any other transport, any longer window and any other
+declarer stay `HARD_STOP`. The exception is data on the verdict (`owner_time_boxed`), set only by `classify_route`; a hand-built
+verdict never has it. Evidence for the declaration: the owner's 2026-10-11 decision in `docs/CLAUDE_JULES_API_ROUTE_V1.md`
+and the owner's card tap above. The declaration itself is a run-time file, not committed here.
+
+Honest limits (found by the independent inspection of this change): the 4 hours are per declaration (a new declaration can be
+written again, so this is not a total cap), and the exception also applies to any caller that uses the same transport and
+gate (`claude_jules_live` as well as the proof CLI). What actually bounds a run is the plan's `live_authorization`
+(`require_authorized`), the typed confirmation `RUN_ONCE_<plan_sha256>`, the owner's Merge and LIVE sentences, and the old
+Loop A ledger (9 of 10 used, cap fixed). The owner's "label" is not an authentication step.
