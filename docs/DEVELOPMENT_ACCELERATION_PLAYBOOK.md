@@ -28,6 +28,8 @@ For the 💙 Cloud Work ↔ J-BLUE webhook closed-loop path, continue with
 event bridge: reuse the current carrier/claim/receipt/HEAD contracts and add only
 the minimum GitHub wake adapter before considering new infrastructure.
 
+For **Official Symphony** missions, the project-specific [MVP Charter](SYMPHONY_MVP_CHARTER.md) and [PR #398 scope triage](SYMPHONY_MVP_SCOPE_TRIAGE.md) apply before proposing any new implementation. An upstream official boot and one real task come before optional hardening; answer the charter's three reuse/need/evidence questions before and after each task. Formal safety and separate LIVE authorization remain intact.
+
 ## 2. Mandatory new-Chat read order
 
 A fresh development Chat should read in this order:
