@@ -147,3 +147,134 @@ Fourth: separately authorize a fresh same-process read-only app-server diagnosti
 on qualified native storage. Past account/config PASS is historical, not borrowed.
 LIVE and production sender remain forbidden throughout these installation reviews.
 WORKER_FIRST_LOCAL_READY remains NOT_ESTABLISHED; current development is STATIC.
+
+## 0.162.1 placement safety correction (2026-10-15; installation NOT approved)
+
+This supersedes the placement ordering described above; earlier results remain
+historical. Candidate version is stable0.162.1, source commit
+`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`. No actual binary is acquired,
+placed or executed by this correction. No production callback is installed.
+
+### Reservation, permission grant and failure preservation
+
+`place_reviewed_binary` keeps the existing final-name O_EXCL/O_NOFOLLOW reservation
+and descriptor-anchored copy. It now creates that leaf as0600 (nonexecutable).
+The final name can therefore exist while incomplete, but is a quarantined,
+nonexecutable reservation, NOT a published executable or activation receipt.
+After bounded copying/fsync, it independently rereads all destination bytes,
+checks SHA256/size/owner/mode/single-link and descriptor/named inode identities,
+then requires a separately supplied trusted Sigstore verification callback.
+After that callback it rereads bytes and identities again, checks the original
+source and parent chains, and only then fchmod's the SAME open inode to0700.
+Final native qualification/digest/inode/parent readback must succeed.
+
+The later trusted caller must durably create/read back its create-only intent
+before invoking placement and consume that one attempt even if failure occurs
+before leaf creation. This primitive alone is not a durable attempt ledger.
+Missing/ambiguous intent or outcome is GET-only; never invoke placement again.
+
+No rename, overwrite, automatic retry, resume or deletion is added. Existing
+partial/duplicate/colliding leaves stop before any new copy. Caught exceptions,
+including KeyboardInterrupt, revoke execute permission on the created descriptor
+if necessary, never by following a substituted pathname. If revocation/fsync
+itself fails, the result is QUARANTINE_UNKNOWN, never success; preserve all files
+and stop every executor. Hard kill/power loss before permission grant leaves a
+nonexecutable leaf. A kill/power loss AFTER grant can leave fully verified0700
+bytes without a completed receipt. That is UNKNOWN/GET-only, never authority to
+execute, repeat placement or clean up. Filesystem/hardware durability failure is
+not claimed solved by fsync.
+
+Same-UID malicious writers/executors MUST be excluded for the entire operation,
+including the verification-to-chmod/readback interval. O_EXCL excludes competing
+create-only installers; it is not a lock against a same-UID process modifying an
+existing file. Ownership/0700, descriptor checks and cooperative locks cannot
+prove that exclusion. The operator must independently enforce an OS resource
+boundary/no untrusted mounts or inherited writable descriptors, and quiesce
+other installers. If that cannot be established, do not invoke placement.
+This correction installs no such OS boundary. Model workers must remain stopped.
+
+### Independent Sigstore contract; hash is not signature verification
+
+`signature_check(readonly_fd, request)` is mandatory, has no default/factory and
+must be injected by the trusted operator, never by worker/model/env inputs. The
+read-only descriptor is the exact copied inode, still0600. A callback implementing
+real verification must use reviewed trust roots and an independently reviewed
+Sigstore verifier (e.g. existing, separately pinned Cosign verify-blob). Verify
+signature, certificate chain and signing-time validity, transparency-log evidence,
+exact certificate identity and issuer; keep unsafe skip/ignore options disabled.
+Passing just a digest, booleanTrue, decoded certificate or bundle claims is refused.
+The returned receipt must exactly bind the request/descriptor identity/blob hash,
+release reference and installation packet, with all three verification results
+strictly True. This validates a TRUSTED verifier's result, not a substitute
+cryptographic algorithm. The installer does not authenticate arbitrary callbacks.
+A real callback/trust-root/verifier installation is still UNINSTALLED/UNKNOWN.
+The tests inject synthetic receipts and prove gating only, not real Sigstore PASS.
+
+Official method reference: https://docs.sigstore.dev/cosign/verifying/verify/
+For0.162.1 require exact identity (no broad identity regexp):
+`https://github.com/openai/codex/.github/workflows/rust-release.yml@refs/tags/rust-v0.162.1`
+and issuer `https://token.actions.githubusercontent.com`. Verification is read-only;
+no signing, login or OIDC issuance is needed. If the existing verifier cannot
+validate the release's legacy bundle/trust data, stop; do not install/upgrade tools
+or disable certificate/transparency checks under this correction.
+
+### Exact later one-time acquisition/placement approval proposal
+
+Version/platform:0.162.1 / x86_64-unknown-linux-musl, standalone CLI archive:
+https://github.com/openai/codex/releases/download/rust-v0.162.1/codex-x86_64-unknown-linux-musl.tar.gz
+Archive SHA256 (NOT the executable digest):
+`86f268d81b898f3e144c5ecff2ad2fda2c5802e042d6195b72538fe0fa125057`.
+Corresponding executable signature bundle:
+https://github.com/openai/codex/releases/download/rust-v0.162.1/codex-x86_64-unknown-linux-musl.sigstore
+
+Approval would permit ONE acquisition/extraction/placement attempt, fresh remote
+and Local readback first, within30minutes of its actual start. No retries/fallback.
+It must name the containing reviewed PR commit and independently verified
+executable SHA256, verifier/trust pins, actual protected roots and exact placement
+packet before placement. Archive/member names, byte limits and absent paths are
+checked before safe extraction; refuse links, devices, traversal, multiple or
+unexpected members, automatic archive permission restoration and overwrite.
+New contents are nonexecutable until hash AND independent signature verification;
+only then may the extracted source be made0700 for the existing qualifier. The
+installer separately re-verifies the copied nonexecutable destination before its
+permission grant. Newly created directories are0700; existing ancestors/files
+are never chmod/chown'd.
+
+Exact proposed new write targets (none created now):
+- New ancestors below `/home/yuuki/.local/lib/`: `new-chinponey`,
+  `new-chinponey/acquisition`, `new-chinponey/acquisition/0.162.1`,
+  `new-chinponey/codex`, `new-chinponey/codex/0.162.1`.
+- `/home/yuuki/.local/lib/new-chinponey/acquisition/0.162.1/codex-x86_64-unknown-linux-musl.tar.gz`
+- `/home/yuuki/.local/lib/new-chinponey/acquisition/0.162.1/codex-x86_64-unknown-linux-musl.sigstore`
+- `/home/yuuki/.local/lib/new-chinponey/acquisition/0.162.1/codex`
+- `/home/yuuki/.local/lib/new-chinponey/codex/0.162.1/codex`
+- New operator-only review/receipt directory:
+  `/home/yuuki/.local/state/new-chinponey/native-installation-0.162.1/`
+  (new parent `new-chinponey` included); `review.json`, `intent.json`,
+  `verification.json`, `outcome.json`, all create-only0600, no raw auth data.
+
+Protected existing roots, never written/copied/migrated:
+`/mnt/c/Users/yuuki/.codex`,
+`/home/yuuki/projects/multi-ai-council-phase0`,
+`/home/yuuki/symphony-worker-first-local-20261014/workspace`,
+`/home/yuuki/symphony-worker-night-20261014/workspace`.
+Freshly discovered operator key/event/ledger/snapshot roots must also be included
+and disjoint; missing identities or unproven isolation stop that stage. The
+proposed SQLite root is not included in this binary-only approval. Runtime config,
+PATH/Desktop helper selection and existing executable files are not changed.
+
+The current review has NO executable measurement/cryptographic verification or
+exact real placement packet, because acquisition is forbidden. Such values must
+not be fabricated from the archive digest. A bounded acquisition approval cannot
+silently approve an unknown placement packet or replace independent approval.
+Acquisition can stop at verification review; placement requires a trusted explicit
+approval binding the resulting exact packet. Human need not relay progress, but
+absence of that independent approval always blocks placement. No production
+callback is installed by this development task or by the binary-only proposal.
+
+Stop after placement/readback; no binary execution (even --version), app-server,
+SQLite initialization/migration/seal, worker, LIVE or GitHub runtime sender.
+All failure/unknown outcomes preserve acquisition files and the reserved leaf;
+never resend, overwrite, delete, auto-repair or automatically revoke another
+pathname's permissions. WORKER_FIRST_LOCAL_READY remains NOT_ESTABLISHED;
+LIVE_NO_GO remains in force.
