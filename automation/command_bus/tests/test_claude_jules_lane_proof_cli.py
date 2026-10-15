@@ -77,6 +77,19 @@ class CliTests(unittest.TestCase):
             bad = self._write("bad.json", _plan(authorized))
             self.assertEqual(cli.main([*base, "--plan", bad], clock), 2)
 
+    def test_check_accepts_only_the_owner_time_boxed_api_key_declaration(self):
+        plan = self._write("plan.json", _plan())
+        owner = build_route_declaration(
+            provider="jules", transport=cli.LIVE_DISPATCH_TRANSPORT, auth_method="api_key", billing_route="subscription",
+            auth_state="ok", declared_by="owner", evidence_refs=["owner-decision"], declared_at="2026-10-04T23:00:00Z",
+            expires_at="2026-10-05T03:00:00Z")
+        route = self._write("route.json", owner)
+        with patch("sys.stdout"):
+            self.assertEqual(cli.main(["check", "--repo-dir", self.dir.name, "--plan", plan, "--provider-route", route],
+                                      FixedClock()), 0)
+            self.assertEqual(cli.main(["check", "--repo-dir", self.dir.name, "--plan", plan, "--provider-route", route],
+                                      FixedClock("2026-10-05T03:00:00Z")), 2)  # window over
+
     def test_check_and_run_refuse_before_any_effect_unless_the_route_allows_model_work(self):
         plan_doc = _plan()
         plan = self._write("plan.json", plan_doc)

@@ -31,7 +31,11 @@ ACCOUNT_OAUTH_CONFIRMED    READ_ONLY_LIVE allowed (user decision D2, 2026-10-08:
                            existing-session reads without an API key);
                            SUBSCRIPTION_MODEL_WORK only with
                            ``billing_class == SUBSCRIPTION_CONFIRMED``
-REST_API_KEY               HARD_STOP (user decision D1, 2026-10-08)
+REST_API_KEY               HARD_STOP (user decision D1, 2026-10-08), except
+                           SUBSCRIPTION_MODEL_WORK on the carrier transport
+                           under an owner-declared record that is at most
+                           4 hours long and declares subscription billing
+                           (owner decisions 2026-10-11 and 2026-10-15)
 METERED / OVERAGE          HARD_STOP
 AUTH_BROKEN                STOP_PROVIDER (re-login is a human action)
 UNKNOWN_ROUTE              STOP_PROVIDER, human must declare the route
@@ -44,7 +48,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Callable
 
 from .claude_jules_dispatch import sha256_of
@@ -87,6 +91,13 @@ _KEYS = {"schema_version", "profile", "provider", "transport", "auth_method", "b
          "declared_by", "evidence_refs", "declared_at", "expires_at", "declaration_sha256"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
+# The one narrow exception to the REST API-key hard stop (owner decision 2026-10-15, after the owner's 2026-10-11
+# decision that the Jules API-key route is accepted): only the owner may declare it, only for the carrier transport,
+# only with subscription billing, and only for a record that lives at most four hours. Nothing else widens.
+OWNER_DECLARER = "owner"
+OWNER_API_KEY_TRANSPORT = "carrier-rest-api-key"
+OWNER_API_KEY_MAX_WINDOW = timedelta(hours=4)
+
 
 @dataclass(frozen=True)
 class RouteVerdict:
@@ -96,6 +107,7 @@ class RouteVerdict:
     transport: str | None = None
     auth_class: str = UNKNOWN_AUTH
     billing_class: str = BILLING_UNKNOWN
+    owner_time_boxed: bool = False  # set only by classify_route for the narrow owner exception above
 
 
 @dataclass(frozen=True)
@@ -161,7 +173,10 @@ def classify_route(declaration: Any, *, provider: str, transport: str, now: str)
     if billing in {METERED_CONFIRMED, OVERAGE_CONFIRMED}:
         return RouteVerdict(billing, f"{declaration['billing_route']} billing declared", **common)
     if auth == REST_API_KEY:
-        return RouteVerdict(REST_API_KEY, "REST API-key authentication", **common)
+        owner_window = (billing == SUBSCRIPTION_CONFIRMED and declaration["declared_by"] == OWNER_DECLARER
+                        and transport == OWNER_API_KEY_TRANSPORT and declaration["auth_state"] == "ok"
+                        and expires - declared <= OWNER_API_KEY_MAX_WINDOW)
+        return RouteVerdict(REST_API_KEY, "REST API-key authentication", **common, owner_time_boxed=owner_window)
     if declaration["auth_state"] == "broken":
         return RouteVerdict(AUTH_BROKEN, "authentication broken", **common)
     if auth == ACCOUNT_OAUTH:
@@ -190,6 +205,9 @@ def gate(operation: str, route: RouteVerdict) -> GateDecision:
     if verdict in {METERED_CONFIRMED, OVERAGE_CONFIRMED}:
         return stop(HARD_STOP, f"billing boundary: {verdict}", True)
     if verdict == REST_API_KEY:
+        if operation == SUBSCRIPTION_MODEL_WORK and route.owner_time_boxed and route.billing_class == SUBSCRIPTION_CONFIRMED:
+            return GateDecision(ALLOW, "owner-declared, time-boxed (<= 4 h) API-key carrier route with subscription "
+                                "billing (owner decisions 2026-10-11 and 2026-10-15)", True, True, False)
         return stop(HARD_STOP, "REST API-key route is not approved for provider execution (D1)", True)
     if verdict == AUTH_BROKEN:
         return stop(STOP_PROVIDER, "authentication broken: provider paused, re-login needed; safe work continues",
