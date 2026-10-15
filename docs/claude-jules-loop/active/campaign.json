@@ -189,6 +189,25 @@
       "priority": 40,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-14T10:42:11Z"
+    },
+    {
+      "objective_id": "o9-signal-companion-dotnet",
+      "title": "Signal Tower (yellow lane) bundle 5 (owner approved 2026-10-15 JST): read-only Windows tray app (.NET) that shows the Signal colour by calling signal_companion_cli, its static contract test and the SF-12 roadmap status line",
+      "scope_prefixes": [
+        "windows/SignalCompanion/SignalCompanion.csproj",
+        "windows/SignalCompanion/Program.cs",
+        "windows/SignalCompanion/README.md",
+        "automation/command_bus/tests/test_signal_companion_windows_static.py",
+        "docs/SIGNAL_FOUNDATION_ROADMAP.md"
+      ],
+      "allowed_operations": [
+        "code_edit",
+        "test_add",
+        "docs_update"
+      ],
+      "priority": 40,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-15T09:54:22Z"
     }
   ],
   "control_issue": 346
