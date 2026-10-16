@@ -103,6 +103,39 @@ class TestSignalCompanionWindowsStatic(unittest.TestCase):
         self.assertIn("読み取り専用", content)
         self.assertIn("dotnet run", content)
 
+    def test_program_icon_caching_and_cleanup(self) -> None:
+        content = PROGRAM_PATH.read_text(encoding="utf-8")
+
+        # Program.cs declares a Dictionary cache for icons
+        self.assertTrue(
+            re.search(r"Dictionary\s*<\s*string\s*,\s*Icon\s*>", content),
+            "Program.cs must declare a Dictionary<string, Icon> cache",
+        )
+
+        # GetHicon appears at most once in Program.cs
+        get_hicon_count = len(re.findall(r"\bGetHicon\s*\(", content))
+        self.assertLessEqual(
+            get_hicon_count,
+            1,
+            f"GetHicon must appear at most once in Program.cs, found {get_hicon_count}",
+        )
+
+        # CreateColorIcon reads the cache before building a new icon
+        create_color_icon_match = re.search(
+            r"private static Icon CreateColorIcon\s*\(\s*string\s+([a-zA-Z0-9_]+)\s*\)\s*\{([^}]+)",
+            content,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(
+            create_color_icon_match,
+            "CreateColorIcon method not found in Program.cs",
+        )
+        body_start = create_color_icon_match.group(2)
+        self.assertTrue(
+            "TryGetValue" in body_start or "ContainsKey" in body_start or "[]" in body_start,
+            "CreateColorIcon must check the cache before building a new icon",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
