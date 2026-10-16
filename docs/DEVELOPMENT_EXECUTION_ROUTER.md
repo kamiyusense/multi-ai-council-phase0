@@ -39,6 +39,10 @@ WORK escalation, color continuity and planning ETA.
 Do not create speculative queue/retry/DLQ/dashboard/state-machine/framework work
 as a side effect of an otherwise bounded task.
 
+## Official Symphony goal gate (before selecting a worker)
+
+On any **Official Symphony** mission, first read [Symphony MVP Charter](SYMPHONY_MVP_CHARTER.md) and [PR #398 scope triage](SYMPHONY_MVP_SCOPE_TRIAGE.md). Require a three-question pre-task and post-review answer: **upstream already does it?**; **required for the next actual isolated upstream MVP milestone?**; **what measured gap or formal safety rule justifies custom code?** Specify the next real milestone and defer optional components. A STATIC/fixture pass is not an actual model run. Scope expansion or hardening must not silently displace official-first. This selects *what* to build; existing routing and permission/approval rules select *who* may do it.
+
 ## Route selection
 
 | Condition | Development route |

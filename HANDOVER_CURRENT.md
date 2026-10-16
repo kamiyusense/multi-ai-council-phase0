@@ -9,6 +9,10 @@ Writing Block / Canvas / 編集カードでは代用しない。この規則を�
 
 Updated: 2026-10-01
 
+## 0.0.2 2026-10-16 Symphony official-first MVP goal lock
+
+For all Official Symphony development, read [`docs/SYMPHONY_MVP_CHARTER.md`](docs/SYMPHONY_MVP_CHARTER.md) **before assigning work**, and the [PR #398 triage](docs/SYMPHONY_MVP_SCOPE_TRIAGE.md). User priority: run the existing official Elixir reference with minimal changes in an isolated environment **before** adding custom orchestration or speculative hardening. Apply the charter's three-question scope gate at task creation and acceptance. Do not confuse static/fake turns with a real Codex worker. Keep formal safety, subscription-only/no-unapproved-LIVE, credential, billing and merge boundaries. The charter's priority can change only by the user's explicit decision.
+
 ## 0.0.1 2026-10-04 Relay / Claude STATIC status (read before any Relay work)
 
 - Claude Relay STATIC path is complete on main: route admission, #301 mid-turn

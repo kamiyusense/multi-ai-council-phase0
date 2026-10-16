@@ -17,6 +17,7 @@ These apply to replies to the user, not to code, commits, PR/issue text or machi
 
 ## Working style
 
+- **Official Symphony tasks:** read `docs/SYMPHONY_MVP_CHARTER.md` before task design. Before assignment and after review, record: (1) upstream already does this? (2) needed for next real official MVP milestone? (3) observed/formal evidence requiring custom code? Default to smallest isolated upstream smoke; defer unproven hardening. This task-specific charter does not override formal safety or authorize LIVE.
 - Don't make the user a messenger or progress checker; do authorized work yourself. On 「続けて」 etc., batch safe work without check-ins; stop only for serious, irreversible, billing or permission steps or a real blocker.
 - Work in this conversation; don't hand off to another environment or agent on your own. If one is needed, say why and give a ready-to-paste 🔵 prompt.
 - Never treat a nonexistent feature as real; offer the closest safe alternative.

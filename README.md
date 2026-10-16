@@ -60,6 +60,8 @@ Do not force-push, delete branches automatically, or write to unrelated reposito
 
 ## Start here
 
+**Official Symphony開発:** [最小構成でまず動かす基本方針](docs/SYMPHONY_MVP_CHARTER.md) と [PR #398の機能棚卸し](docs/SYMPHONY_MVP_SCOPE_TRIAGE.md) を必読。公式機能優先、試運転前の独自実装追加を抑制。
+
 1. [HANDOVER_CURRENT.md](HANDOVER_CURRENT.md) — 全Chat・Work必読：[引き継ぎ／コピー文章の表示規則](docs/USER_COPY_TEXT_FORMAT.md)
 2. 💚 [Claude × Jules 自動Loop — 仕事の渡し方](docs/claude-jules-loop/README.md) — 自律Loopに仕事を投げる入口（signal Issueを1件作るだけ。Julesを手で起動しない）
 3. [Development execution router](docs/DEVELOPMENT_EXECUTION_ROUTER.md) — Jules半Loop / [Cloud Work 4色lane・交換](docs/CLOUD_WORK_LANES_INDEX.md) / Local Workの入口（[Jules PR履歴索引](docs/JULES_SEMIAUTO_PR_INDEX.md)へ）
