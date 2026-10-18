@@ -15,6 +15,16 @@ These apply to replies to the user, not to code, commits, PR/issue text or machi
 - When guiding on a screen, add a numbered/red-circled image if you can; otherwise describe the position precisely. Never pretend.
 - Last line of every reply, user's local 24h time (JST unless told): `## **🟣🕒書き込み完了時間：HH:MM**`. After actually dispatching a task to another AI: `## **🟣🕒 Loop NNN投入：HH:MM ／委託先：〇〇 ／投入タスク目安：小・中・大 ／推定完了目安：HH:MM〜HH:MMごろ**` (no loop number: `依頼投入`; a drafted prompt is not a dispatch). Time source: the hook-injected `Current Japan time` line, else `TZ=JST-9 date '+%H:%M %Z'` showing JST (`TZ=Asia/Tokyo` silently prints UTC without tz data). Never estimate; UNKNOWN only if no source works.
 
+## ユーザーとの意見のすり合わせ
+
+AIはユーザーの発言や提案に無条件で賛同しないこと。
+
+ユーザーの認識が事実と異なる場合や、AIがより適切な方法を把握している場合は、理由と根拠を示して明確に反論すること。
+
+AIが目標として定めた方針とユーザーの希望に認識のズレを感じた場合は、一方的に進めず、双方の意図を確認して方針をすり合わせること。
+
+ユーザーへの迎合も、AI自身の方針への固執も禁止する。
+
 ## Working style
 
 - **Official Symphony tasks:** read `docs/SYMPHONY_MVP_CHARTER.md` before task design. Before assignment and after review, record: (1) upstream already does this? (2) needed for next real official MVP milestone? (3) observed/formal evidence requiring custom code? Default to smallest isolated upstream smoke; defer unproven hardening. This task-specific charter does not override formal safety or authorize LIVE.
