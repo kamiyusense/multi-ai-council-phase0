@@ -1,0 +1,1043 @@
+From 6644ffea61c3fde63a5b4980d3d973234f80e316 Mon Sep 17 00:00:00 2001
+From: Claude <kamiyusense@gmail.com>
+Date: Fri, 2 Oct 2026 18:02:54 +0000
+Subject: [PATCH 1/2] Blue current-main integration: drop non-STATIC
+ secret-bearing Session GET workflow and its test
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01KhSuEo1LAgi5bfkphseR48
+---
+ .../blue-existing-session-readback.yml        | 66 ---------------
+ .../test_blue_session_diagnostic_workflow.py  | 83 -------------------
+ .../INTEGRATION.md                            | 11 +++
+ 3 files changed, 11 insertions(+), 149 deletions(-)
+ delete mode 100644 .github/workflows/blue-existing-session-readback.yml
+ delete mode 100644 automation/command_bus/tests/test_blue_session_diagnostic_workflow.py
+
+diff --git a/.github/workflows/blue-existing-session-readback.yml b/.github/workflows/blue-existing-session-readback.yml
+deleted file mode 100644
+index 2107197..0000000
+--- a/.github/workflows/blue-existing-session-readback.yml
++++ /dev/null
+@@ -1,66 +0,0 @@
+-name: Blue one existing completed Session readback
+-
+-on:
+-  push:
+-    branches: [experiment/blue-work-autonomous-development]
+-    paths:
+-      - docs/evidence/blue-work-night-20261002/session-readback-request.json
+-      - docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  readback-existing-session:
+-    if: github.run_attempt == 1
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 5
+-    steps:
+-      - name: Checkout exact isolated commit
+-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+-        with:
+-          ref: ${{ github.sha }}
+-          fetch-depth: 2
+-          persist-credentials: false
+-      - name: Require exactly one create-only bounded request in this commit
+-        id: request
+-        run: |
+-          python - <<'PY'
+-          import json, os, subprocess
+-          from datetime import datetime, timezone
+-          from pathlib import Path
+-          from automation.command_bus.github_readonly import _pairs
+-          old = 'docs/evidence/blue-work-night-20261002/session-readback-request.json'
+-          diagnostic = 'docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json'
+-          change = subprocess.check_output(['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', 'HEAD'], text=True).strip()
+-          assert change in {'A\t' + old, 'A\t' + diagnostic}, 'one create-only request required; no GET attempted'
+-          path = change.split('\t')[1]
+-          if path == diagnostic:
+-              assert datetime.now(timezone.utc) < datetime(2026, 10, 2, 8, 0, tzinfo=timezone.utc), 'diagnostic window expired; no GET attempted'
+-              request = json.loads(Path(path).read_text(), object_pairs_hook=_pairs)
+-              assert request == {
+-                  'session_id': '12436642121757218108',
+-                  'expected_branch': 'jules-work/relay-dev-loop-125-bwj-session-get-reader',
+-                  'expected_create_time': '2026-10-01T19:08:33Z', 'expected_pr': 227,
+-                  'retry': 0, 'fallback': 'disabled',
+-                  'purpose': 'existing-completed-session-diagnostic-only'}, 'diagnostic identity mismatch; no GET attempted'
+-              assert type(request['retry']) is int and type(request['expected_pr']) is int, 'invalid integer types; no GET attempted'
+-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+-              output.write('path=' + path + '\n')
+-          PY
+-      - name: GET one already-existing completed Session
+-        env:
+-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+-          REQUEST_PATH: ${{ steps.request.outputs.path }}
+-        run: |
+-          python -m automation.command_bus.jules_completed_readback_cli \
+-            "$REQUEST_PATH" \
+-            blue-existing-session-readback.json
+-      - name: Save projected nonsecret readback
+-        if: always()
+-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+-        with:
+-          name: blue-existing-session-${{ github.run_id }}
+-          path: blue-existing-session-readback.json
+-          if-no-files-found: warn
+-          retention-days: 7
+diff --git a/automation/command_bus/tests/test_blue_session_diagnostic_workflow.py b/automation/command_bus/tests/test_blue_session_diagnostic_workflow.py
+deleted file mode 100644
+index 073f464..0000000
+--- a/automation/command_bus/tests/test_blue_session_diagnostic_workflow.py
++++ /dev/null
+@@ -1,83 +0,0 @@
+-"""Execute the actual workflow preflight with mocked git/time; no API I/O."""
+-import copy
+-from datetime import datetime, timezone
+-import json
+-import os
+-from pathlib import Path
+-import tempfile
+-import textwrap
+-import unittest
+-from unittest.mock import patch
+-
+-ROOT = Path(__file__).resolve().parents[3]
+-WORKFLOW = ROOT / '.github/workflows/blue-existing-session-readback.yml'
+-PATH = 'docs/evidence/blue-work-continuation-20261002/session-diagnostic-request.json'
+-REQUEST = dict(session_id='12436642121757218108',
+-               expected_branch='jules-work/relay-dev-loop-125-bwj-session-get-reader',
+-               expected_create_time='2026-10-01T19:08:33Z', expected_pr=227,
+-               retry=0, fallback='disabled', purpose='existing-completed-session-diagnostic-only')
+-
+-
+-class DiagnosticWorkflowTests(unittest.TestCase):
+-    def setUp(self):
+-        self.workflow = WORKFLOW.read_text()
+-        self.script = textwrap.dedent(self.workflow.split("python - <<'PY'\n")[1].split('\n          PY')[0])
+-
+-    def execute(self, change=None, request=None, at=None):
+-        at = at or datetime(2026,10,2,6,0,tzinfo=timezone.utc)
+-        class Clock(datetime):
+-            @classmethod
+-            def now(cls, tz=None):
+-                return at
+-        with tempfile.TemporaryDirectory() as tmp:
+-            output = Path(tmp)/'output'
+-            with patch.dict(os.environ, {'GITHUB_OUTPUT':str(output)}), \
+-                 patch('subprocess.check_output', return_value=change or 'A\t'+PATH) as git, \
+-                 patch('datetime.datetime', Clock), \
+-                 patch('pathlib.Path.read_text', return_value=json.dumps(request if request is not None else REQUEST)):
+-                try:
+-                    exec(compile(self.script, str(WORKFLOW), 'exec'), {})
+-                except (AssertionError, ValueError):
+-                    self.assertFalse(output.exists(), 'blocked input must not select a GET path')
+-                    raise
+-            git.assert_called_once()
+-            return output.read_text()
+-
+-    def test_one_fixed_diagnostic_create_selects_exact_path(self):
+-        self.assertEqual(self.execute(), 'path='+PATH+'\n')
+-
+-    def test_modify_delete_and_multiple_file_commit_blocked(self):
+-        for change in ['M\t'+PATH, 'D\t'+PATH, 'A\t'+PATH+'\nA\tother.json', 'A\tother.json']:
+-            with self.subTest(change=change), self.assertRaises(AssertionError):
+-                self.execute(change=change)
+-
+-    def test_wrong_session_pr_branch_time_purpose_blocked(self):
+-        for field, value in [('session_id','999'),('expected_pr',217),
+-                             ('expected_branch','main'), ('expected_create_time','2026-10-01T19:08:34Z'),
+-                             ('purpose','dispatch'), ('retry',1), ('fallback','enabled')]:
+-            with self.subTest(field=field), self.assertRaises(AssertionError):
+-                self.execute(request=dict(REQUEST, **{field:value}))
+-
+-    def test_boolean_retry_not_integer_zero(self):
+-        with self.assertRaises(AssertionError):
+-            self.execute(request=dict(REQUEST, retry=False))
+-
+-    def test_extra_key_blocked(self):
+-        with self.assertRaises(AssertionError):
+-            self.execute(request=dict(REQUEST, token='FAKE_SECRET'))
+-
+-    def test_expired_window_and_exact_deadline_blocked(self):
+-        for at in [datetime(2026,10,2,8,0,tzinfo=timezone.utc),datetime(2026,10,3,0,0,tzinfo=timezone.utc)]:
+-            with self.assertRaises(AssertionError):
+-                self.execute(at=at)
+-
+-    def test_attempt_and_permissions_preserve_read_only_boundary(self):
+-        self.assertIn('if: github.run_attempt == 1', self.workflow)
+-        self.assertIn('permissions:\n  contents: read', self.workflow)
+-        self.assertNotIn(': write', self.workflow)
+-        self.assertNotIn('workflow_dispatch:', self.workflow)
+-        self.assertNotIn('schedule:', self.workflow)
+-        self.assertIn('persist-credentials: false', self.workflow)
+-        self.assertIn('ref: ${{ github.sha }}', self.workflow)
+-        self.assertIn('if: always()', self.workflow)
+-
+diff --git a/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md b/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md
+index 897b3e9..cca9120 100644
+--- a/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md
++++ b/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md
+@@ -47,3 +47,14 @@ The Blue offline workflow is read-only and runs:
+ - four-lane restart/fault simulation
+ 
+ The exact candidate HEAD and Actions result must be read back before any Merge decision.
++
++## Review correction (2026-10-03, independent static review)
++
++The first candidate also carried `.github/workflows/blue-existing-session-readback.yml`
++and its workflow test. That workflow reads the `JULES_API_KEY` secret and performs one
++Jules Session GET for a fixed historical Session whose diagnostic window
++(`2026-10-02T08:00Z`) has already expired. It is not STATIC-only, so it is removed from
++this main-bound candidate together with its test. The source workflow and its evidence
++stay on the #217 branch as historical source evidence; nothing was executed or re-run.
++The only workflow this candidate adds to main is the read-only
++`blue-work-reconcile-static.yml`.
+-- 
+2.43.0
+
+
+From 8aea94123cf527432b9642247c0b9784124b9a10 Mon Sep 17 00:00:00 2001
+From: Claude <kamiyusense@gmail.com>
+Date: Fri, 2 Oct 2026 18:05:48 +0000
+Subject: [PATCH 2/2] Blue current-main integration: restore the three #203
+ tests the port missed (static E2E on the current carrier contract)
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01KhSuEo1LAgi5bfkphseR48
+---
+ .../tests/test_blue_jules_result_event.py     | 201 +++++++++++
+ ...test_blue_work_jules_webhook_static_e2e.py | 331 ++++++++++++++++++
+ .../tests/test_blue_work_wake_prepare.py      | 255 ++++++++++++++
+ .../INTEGRATION.md                            |   9 +
+ 4 files changed, 796 insertions(+)
+ create mode 100644 automation/command_bus/tests/test_blue_jules_result_event.py
+ create mode 100644 automation/command_bus/tests/test_blue_work_jules_webhook_static_e2e.py
+ create mode 100644 automation/command_bus/tests/test_blue_work_wake_prepare.py
+
+diff --git a/automation/command_bus/tests/test_blue_jules_result_event.py b/automation/command_bus/tests/test_blue_jules_result_event.py
+new file mode 100644
+index 0000000..c4ed03c
+--- /dev/null
++++ b/automation/command_bus/tests/test_blue_jules_result_event.py
+@@ -0,0 +1,201 @@
++import unittest
++
++from automation.command_bus.blue_jules_result_event import (
++    EventDecision,
++    EventLineage,
++    classify_blue_jules_result_event,
++)
++
++HEAD = "a" * 40
++BASE_SHA = "c" * 40
++REPO = "kamiyusense/multi-ai-council-phase0"
++WORK_BRANCH = "jules-work/test-branch"
++CMD_ID = "cmd-123"
++
++
++def valid_lineage(**changes):
++    values = {
++        "source_command_id": CMD_ID,
++        "work_branch": WORK_BRANCH,
++        "expected_target_head": BASE_SHA,
++        "expected_repository": REPO,
++    }
++    values.update(changes)
++    return EventLineage(**values)
++
++
++def valid_event(**changes):
++    event = {
++        "action": "opened",
++        "repository": {"full_name": REPO},
++        "pull_request": {
++            "number": 42,
++            "head": {"sha": HEAD},
++            "base": {"ref": WORK_BRANCH, "sha": BASE_SHA},
++        },
++    }
++    event.update(changes)
++    return event
++
++
++class BlueJulesResultEventTests(unittest.TestCase):
++    def classify(self, event=None, lineage=None, seen=()):
++        return classify_blue_jules_result_event(
++            valid_event() if event is None else event,
++            valid_lineage() if lineage is None else lineage,
++            seen,
++        )
++
++    def test_opened_and_synchronize_wake_with_exact_identity(self):
++        for action in ("opened", "synchronize"):
++            with self.subTest(action=action):
++                result = self.classify(valid_event(action=action))
++                self.assertEqual(result.decision, EventDecision.WAKE)
++                self.assertEqual(
++                    result.command_id,
++                    f"blue-jules-result-pr42-{HEAD}",
++                )
++                self.assertEqual(result.reason, "eligible for wake")
++
++    def test_same_pr_same_head_is_deterministic_and_duplicate_is_ignore(self):
++        first = self.classify()
++        second = self.classify()
++        self.assertEqual(first.command_id, second.command_id)
++        duplicate = self.classify(seen={first.command_id})
++        self.assertEqual(duplicate.decision, EventDecision.IGNORE)
++        self.assertEqual(duplicate.command_id, first.command_id)
++        self.assertEqual(duplicate.reason, "duplicate command identity")
++
++    def test_new_head_same_pr_gets_new_identity_and_wakes(self):
++        old = self.classify()
++        event = valid_event()
++        event["pull_request"]["head"]["sha"] = "d" * 40
++        result = self.classify(event, seen={old.command_id})
++        self.assertEqual(result.decision, EventDecision.WAKE)
++        self.assertEqual(result.command_id, f"blue-jules-result-pr42-{'d' * 40}")
++        self.assertNotEqual(result.command_id, old.command_id)
++
++    def test_unsupported_action_prefilters_without_pr_or_lineage_details(self):
++        event = {
++            "action": "closed",
++            "repository": {"full_name": REPO},
++        }
++        result = classify_blue_jules_result_event(event, None, None)
++        self.assertEqual(result.decision, EventDecision.IGNORE)
++        self.assertEqual(result.reason, "unsupported action")
++
++    def test_wrong_repository_prefilters_without_pr_or_lineage_details(self):
++        event = {
++            "action": "opened",
++            "repository": {"full_name": "other/repo"},
++        }
++        result = classify_blue_jules_result_event(event, None, None)
++        self.assertEqual(result.decision, EventDecision.IGNORE)
++        self.assertEqual(result.reason, "wrong repository")
++
++    def test_unrelated_base_prefilters_without_head_number_or_base_sha(self):
++        event = {
++            "action": "opened",
++            "repository": {"full_name": REPO},
++            "pull_request": {"base": {"ref": "main"}},
++        }
++        result = self.classify(event)
++        self.assertEqual(result.decision, EventDecision.IGNORE)
++        self.assertEqual(result.reason, "unrelated base branch")
++
++    def test_matching_work_branch_with_base_sha_mismatch_is_unknown(self):
++        event = valid_event()
++        event["pull_request"]["base"]["sha"] = "f" * 40
++        result = self.classify(event)
++        self.assertEqual(result.decision, EventDecision.UNKNOWN)
++        self.assertEqual(result.reason, "base SHA lineage mismatch")
++
++    def test_missing_candidate_identity_fields_are_unknown(self):
++        cases = []
++
++        missing_base_ref = valid_event()
++        del missing_base_ref["pull_request"]["base"]["ref"]
++        cases.append(missing_base_ref)
++
++        missing_base_sha = valid_event()
++        del missing_base_sha["pull_request"]["base"]["sha"]
++        cases.append(missing_base_sha)
++
++        missing_number = valid_event()
++        del missing_number["pull_request"]["number"]
++        cases.append(missing_number)
++
++        missing_head = valid_event()
++        del missing_head["pull_request"]["head"]["sha"]
++        cases.append(missing_head)
++
++        for event in cases:
++            with self.subTest(event=event):
++                self.assertEqual(self.classify(event).decision, EventDecision.UNKNOWN)
++
++    def test_malformed_head_is_unknown(self):
++        for bad_head in (HEAD.upper(), "a" * 39, "z" * 40, 123):
++            event = valid_event()
++            event["pull_request"]["head"]["sha"] = bad_head
++            with self.subTest(bad_head=bad_head):
++                self.assertEqual(self.classify(event).decision, EventDecision.UNKNOWN)
++
++    def test_malformed_pr_number_is_unknown_including_bool(self):
++        for bad_number in (0, -1, "42", [], True):
++            event = valid_event()
++            event["pull_request"]["number"] = bad_number
++            with self.subTest(bad_number=bad_number):
++                self.assertEqual(self.classify(event).decision, EventDecision.UNKNOWN)
++
++    def test_malformed_lineage_objects_fail_closed_without_throwing(self):
++        for lineage in (
++            None,
++            {},
++            valid_lineage(source_command_id=""),
++            valid_lineage(work_branch=""),
++            valid_lineage(expected_target_head="short"),
++            valid_lineage(expected_repository="other/repo"),
++        ):
++            with self.subTest(lineage=lineage):
++                result = classify_blue_jules_result_event(valid_event(), lineage, ())
++                self.assertEqual(result.decision, EventDecision.UNKNOWN)
++
++    def test_expected_repository_is_fixed_to_phase0_repo(self):
++        event = valid_event(repository={"full_name": "other/repo"})
++        lineage = valid_lineage(expected_repository="other/repo")
++        result = classify_blue_jules_result_event(event, lineage, ())
++        self.assertEqual(result.decision, EventDecision.IGNORE)
++
++        result2 = self.classify(lineage=valid_lineage(expected_repository="other/repo"))
++        self.assertEqual(result2.decision, EventDecision.UNKNOWN)
++        self.assertEqual(result2.reason, "lineage repository mismatch")
++
++    def test_malformed_seen_identity_input_is_unknown(self):
++        for seen in (None, "one-id", [123]):
++            with self.subTest(seen=seen):
++                result = classify_blue_jules_result_event(valid_event(), valid_lineage(), seen)
++                self.assertEqual(result.decision, EventDecision.UNKNOWN)
++
++    def test_actor_title_and_color_are_not_correctness_inputs(self):
++        event = valid_event(
++            sender={"login": "google-labs-jules[bot]"},
++            pull_request={
++                "number": 99,
++                "title": "💙 looks like Jules",
++                "head": {"sha": "e" * 40},
++                "base": {"ref": "main"},
++            },
++        )
++        result = self.classify(event)
++        self.assertEqual(result.decision, EventDecision.IGNORE)
++        self.assertEqual(result.reason, "unrelated base branch")
++
++    def test_malformed_top_level_payload_is_unknown(self):
++        for payload in (None, [], "event"):
++            with self.subTest(payload=payload):
++                result = classify_blue_jules_result_event(payload, valid_lineage(), ())
++                self.assertEqual(result.decision, EventDecision.UNKNOWN)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/automation/command_bus/tests/test_blue_work_jules_webhook_static_e2e.py b/automation/command_bus/tests/test_blue_work_jules_webhook_static_e2e.py
+new file mode 100644
+index 0000000..2495f27
+--- /dev/null
++++ b/automation/command_bus/tests/test_blue_work_jules_webhook_static_e2e.py
+@@ -0,0 +1,331 @@
++import json
++import unittest
++from datetime import datetime, timezone
++from unittest.mock import patch
++
++from automation.command_bus.blue_jules_result_event import (
++    EventDecision,
++    EventLineage,
++    classify_blue_jules_result_event,
++)
++from automation.command_bus.blue_work_wake_prepare import (
++    CarrierSnapshot,
++    TargetSnapshot,
++    prepare_blue_work_wake,
++)
++from automation.command_bus.claude_loop import (
++    BackendMode,
++    VerdictDecision,
++    make_structured_verdict,
++    numbered_command_id,
++    prepare_jules_semiauto_bundle,
++    prepare_jules_semiauto_request,
++    prepare_loop_claim,
++    prepare_next_action,
++)
++# The Jules carrier (feature/chat-work-command-bus) owns the request contract:
++# JULES_CHAT_SEMIAUTO_V2 there carries `work_branch`, not the `origin_*` keys of
++# main's validator.  The origin identity travels in the origin-binding record.
++from automation.command_bus.jules_carrier_current.jules_api_request import validate_request
++
++
++class TestBlueWorkJulesWebhookStaticE2E(unittest.TestCase):
++    def setUp(self):
++        self.now = datetime(2026, 10, 1, 12, 0, 0, tzinfo=timezone.utc)
++        self.expires_at = "2026-10-01T13:00:00+00:00"
++        self.repo = "kamiyusense/multi-ai-council-phase0"
++        self.pr_number = 42
++        self.work_branch = "jules-work/test-branch"
++        self.head_sha_1 = "a" * 40
++        self.head_sha_2 = "b" * 40
++        self.base_sha = "c" * 40
++        self.tree_sha = "d" * 40
++        self.cmd_id = "source-cmd-123"
++        self.worker_generation = 1
++
++    def make_event(self, head_sha, action="opened"):
++        return {
++            "action": action,
++            "repository": {"full_name": self.repo},
++            "pull_request": {
++                "number": self.pr_number,
++                "head": {"sha": head_sha},
++                "base": {"ref": self.work_branch, "sha": self.base_sha},
++            },
++        }
++
++    def make_lineage(self, expected_target_head):
++        return EventLineage(
++            source_command_id=self.cmd_id,
++            work_branch=self.work_branch,
++            expected_target_head=expected_target_head,
++            expected_repository=self.repo,
++        )
++
++    @staticmethod
++    def mock_generation_gate(command_generation, active_generation, fixed_worker_generation):
++        return (
++            type(command_generation) is int
++            and type(active_generation) is int
++            and type(fixed_worker_generation) is int
++            and command_generation > 0
++            and command_generation == active_generation == fixed_worker_generation
++        )
++
++    @staticmethod
++    def mock_receipt_gate(receipt, expected_command, expected_generation):
++        if not isinstance(receipt, dict) or not isinstance(expected_command, dict):
++            return False
++        expected = {
++            "protocol_version": 1,
++            "command_id": expected_command["command_id"],
++            "worker_generation": expected_generation,
++            "status": "PASS",
++            "target_repository": expected_command["target_repository"],
++            "target_pr": expected_command["target_pr"],
++            "target_branch": expected_command["target_branch"],
++            "target_head_before": expected_command["expected_target_head"],
++            "target_head_after": expected_command["expected_target_head"],
++            "terminal": True,
++        }
++        return (
++            type(receipt.get("protocol_version")) is int
++            and type(receipt.get("worker_generation")) is int
++            and type(receipt.get("target_pr")) is int
++            and type(receipt.get("terminal")) is bool
++            and all(receipt.get(key) == value for key, value in expected.items())
++        )
++
++    @staticmethod
++    def make_receipt(command):
++        return {
++            "protocol_version": 1,
++            "command_id": command["command_id"],
++            "worker_generation": command["worker_generation"],
++            "status": "PASS",
++            "target_repository": command["target_repository"],
++            "target_pr": command["target_pr"],
++            "target_branch": command["target_branch"],
++            "target_head_before": command["expected_target_head"],
++            "target_head_after": command["expected_target_head"],
++            "verification": ["mock independent diff and test evidence inspected"],
++            "terminal": True,
++        }
++
++    def test_basic_flow(self):
++        # 1. mock Jules PR opened event -> BWJ-1 classifier
++        event = self.make_event(self.head_sha_1)
++        lineage = self.make_lineage(self.base_sha)
++        classification = classify_blue_jules_result_event(event, lineage, ())
++        self.assertEqual(classification.decision, EventDecision.WAKE)
++        self.assertEqual(classification.command_id, f"blue-jules-result-pr{self.pr_number}-{self.head_sha_1}")
++
++        # 2. BWJ-2 prepare-only Blue wake command
++        carrier = CarrierSnapshot(1, "blue", "[CW_BLUE_V1]", self.worker_generation)
++        target = TargetSnapshot(self.repo, self.pr_number, self.work_branch, self.head_sha_1, self.head_sha_1)
++        prepare_res = prepare_blue_work_wake(classification, carrier, target, (), self.expires_at, self.now)
++        self.assertEqual(prepare_res.status, "PREPARED")
++        self.assertTrue(prepare_res.review_body.startswith("[CW_BLUE_V1]\n"))
++
++        parsed = json.loads(prepare_res.review_body.split("\n", 1)[1])
++        self.assertEqual(parsed["worker_generation"], self.worker_generation)
++        self.assertEqual(parsed["target_pr"], self.pr_number)
++        self.assertEqual(parsed["target_branch"], self.work_branch)
++        self.assertEqual(parsed["expected_target_head"], self.head_sha_1)
++        self.assertEqual(parsed["retry"], 0)
++        self.assertEqual(parsed["fallback"], "disabled")
++        self.assertEqual(parsed["live_provider_or_model_allowed"], False)
++        self.assertEqual(parsed["allowed_paths"], [])
++
++        # 3. Current Blue worker, carrier state and command must all match.
++        self.assertTrue(self.mock_generation_gate(
++            parsed["worker_generation"], self.worker_generation, self.worker_generation
++        ))
++
++        # 4. Only a matching terminal PASS receipt permits Controller continuation.
++        blue_receipt = self.make_receipt(parsed)
++        self.assertTrue(self.mock_receipt_gate(
++            blue_receipt, parsed, self.worker_generation
++        ))
++        verdict = make_structured_verdict(
++            verdict_id="verdict-1",
++            loop_id="loop-1",
++            round=1,
++            generation=self.worker_generation,
++            correlation_id="loop-1-round-1",
++            mode=BackendMode.JULES_BACKEND.value,
++            decision=VerdictDecision.CONTINUE.value,
++            expected_target_head=self.head_sha_1,
++            expected_target_tree=self.tree_sha,
++            reasons=["looks good"],
++            evidence_refs=["some_evidence"],
++            next_prompt="do next thing",
++            terminal=False,
++        )
++        verdict["retry"] = 0
++        verdict["fallback"] = "disabled"
++        verdict["execution_mode"] = "PREPARE_ONLY"
++        verdict["model_executed"] = False
++        verdict["external_send_attempted"] = False
++
++        # 5. prepare_next_action
++        path_policy = [{"path": "some/path", "allowed_ops": ["ADD", "MODIFY"]}]
++        next_action = prepare_next_action(
++            verdict,
++            expected_repo=self.repo,
++            expected_pr=self.pr_number,
++            expires_at=self.expires_at,
++            path_policy=path_policy,
++        )
++        self.assertEqual(next_action.status, "PREPARED")
++
++        # 6. prepare_jules_semiauto_request + schema-v3 claim + origin binding
++        command_id = numbered_command_id(1, "blue-e2e")
++        common = dict(
++            target_branch=self.work_branch,
++            default_branch="main",
++            created_at=self.now.isoformat(),
++            command_id=command_id,
++        )
++        jules_req = prepare_jules_semiauto_request(next_action.request, **common)
++        self.assertEqual(jules_req.status, "PREPARED")
++        req = jules_req.request
++        claim_res = prepare_loop_claim(req, lane_id="J-BLUE", claimed_at=self.now.isoformat())
++        self.assertEqual(claim_res.status, "PREPARED", claim_res.reason)
++        bundle = prepare_jules_semiauto_bundle(next_action.request, claim_res.request, **common)
++        self.assertEqual(bundle.status, "PREPARED", bundle.reason)
++        binding = bundle.request["origin_binding"]
++
++        # 7. validate_request with the carrier's own validator
++        validated = validate_request(req, now=self.now)
++        self.assertEqual(validated["profile"], "JULES_CHAT_SEMIAUTO_V2")
++        self.assertEqual(validated["target_branch"], self.work_branch)
++        self.assertEqual(validated["expected_target_head"], self.head_sha_1)
++        self.assertEqual(validated["expected_target_tree"], self.tree_sha)
++        self.assertEqual(validated["retry"], 0)
++        self.assertEqual(validated["fallback"], "disabled")
++        self.assertEqual(validated["merge_allowed"], False)
++        self.assertEqual(validated["force_push_allowed"], False)
++        self.assertEqual(binding["origin_loop_id"], "loop-1")
++        self.assertEqual(binding["origin_round"], 1)
++        self.assertEqual(binding["origin_correlation_id"], "loop-1-round-1")
++        self.assertEqual(binding["origin_generation"], self.worker_generation)
++        self.assertEqual(binding["command_id"], command_id)
++
++        # 8. Replay identical event -> duplicate
++        classification_dup = classify_blue_jules_result_event(event, lineage, (classification.command_id,))
++        self.assertEqual(classification_dup.decision, EventDecision.IGNORE)
++        dup_prepare_res = prepare_blue_work_wake(classification_dup, carrier, target, (classification.command_id,), self.expires_at, self.now)
++        self.assertEqual(dup_prepare_res.status, "NO_OP")
++        self.assertIsNone(dup_prepare_res.review_body)
++
++        # 9. New head -> new identity
++        event_new = self.make_event(self.head_sha_2)
++        classification_new = classify_blue_jules_result_event(event_new, lineage, (classification.command_id,))
++        self.assertEqual(classification_new.decision, EventDecision.WAKE)
++        self.assertNotEqual(classification_new.command_id, classification.command_id)
++        target_new = TargetSnapshot(
++            self.repo, self.pr_number, self.work_branch,
++            self.head_sha_2, self.head_sha_2,
++        )
++        new_prepared = prepare_blue_work_wake(
++            classification_new, carrier, target_new,
++            (classification.command_id,), self.expires_at, self.now,
++        )
++        self.assertEqual(new_prepared.status, "PREPARED")
++        new_payload = json.loads(new_prepared.review_body.split("\n", 1)[1])
++        self.assertEqual(new_payload["command_id"], classification_new.command_id)
++        self.assertEqual(new_payload["expected_target_head"], self.head_sha_2)
++        self.assertNotEqual(new_prepared.review_body, prepare_res.review_body)
++
++        # Duplicate protection also applies if classifier inputs were not pre-deduplicated.
++        direct_duplicate = prepare_blue_work_wake(
++            classification, carrier, target,
++            (classification.command_id,), self.expires_at, self.now,
++        )
++        self.assertEqual(direct_duplicate.status, "NO_OP")
++        self.assertIsNone(direct_duplicate.review_body)
++
++        # 10. Stale old-head case
++        target_stale = TargetSnapshot(self.repo, self.pr_number, self.work_branch, self.head_sha_1, self.head_sha_2)
++        prepare_res_stale = prepare_blue_work_wake(classification, carrier, target_stale, (), self.expires_at, self.now)
++        self.assertEqual(prepare_res_stale.status, "STALE")
++        self.assertIsNone(prepare_res_stale.review_body)
++
++        # 11. Either current state or fixed worker being stale prevents continuation.
++        self.assertFalse(self.mock_generation_gate(
++            parsed["worker_generation"], self.worker_generation + 1, self.worker_generation
++        ))
++        self.assertFalse(self.mock_generation_gate(
++            parsed["worker_generation"], self.worker_generation, self.worker_generation + 1
++        ))
++        self.assertFalse(self.mock_generation_gate(
++            True, self.worker_generation, self.worker_generation
++        ))
++
++        # 12. Terminal receipt replay prevents next Jules preparation
++        receipt = {
++            "receipt_id": "r1",
++            "state": "CONSUMED",
++            "loop_id": "loop-1",
++            "round": 1,
++            "correlation_id": "loop-1-round-1",
++            "expected_target_head": self.head_sha_1,
++            "expected_target_tree": self.tree_sha
++        }
++        next_action_re = prepare_next_action(
++            verdict,
++            expected_repo=self.repo,
++            expected_pr=self.pr_number,
++            expires_at=self.expires_at,
++            path_policy=path_policy,
++            existing_terminal_receipts=[receipt]
++        )
++        self.assertEqual(next_action_re.status, "NO-OP")
++
++    def test_mock_receipt_gate(self):
++        command = {
++            "command_id": "blue-jules-result-pr42-" + "a" * 40,
++            "worker_generation": 3,
++            "target_repository": self.repo,
++            "target_pr": 42,
++            "target_branch": self.work_branch,
++            "expected_target_head": self.head_sha_1,
++        }
++        valid = self.make_receipt(command)
++        self.assertTrue(self.mock_receipt_gate(valid, command, 3))
++        cases = {
++            "wrong command": {"command_id": "other-command"},
++            "wrong generation": {"worker_generation": 2},
++            "bool generation": {"worker_generation": True},
++            "wrong repository": {"target_repository": "other/repo"},
++            "wrong PR": {"target_pr": 43},
++            "wrong branch": {"target_branch": "main"},
++            "wrong head before": {"target_head_before": self.head_sha_2},
++            "wrong head after": {"target_head_after": self.head_sha_2},
++            "not terminal": {"terminal": False},
++            "truthy nonboolean terminal": {"terminal": 1},
++            "not PASS": {"status": "UNKNOWN"},
++            "wrong protocol": {"protocol_version": 2},
++        }
++        for name, changes in cases.items():
++            with self.subTest(name=name):
++                tampered = {**valid, **changes}
++                self.assertFalse(self.mock_receipt_gate(tampered, command, 3))
++                # No Controller next-task preparation is allowed on an invalid receipt.
++                with patch(
++                    "automation.command_bus.tests.test_blue_work_jules_webhook_static_e2e.prepare_next_action"
++                ) as forbidden_prepare:
++                    if self.mock_receipt_gate(tampered, command, 3):
++                        prepare_next_action(None, expected_repo=self.repo,
++                                            expected_pr=42, expires_at=self.expires_at,
++                                            path_policy=[])
++                    forbidden_prepare.assert_not_called()
++
++        for missing in ("command_id", "worker_generation", "target_repository",
++                        "target_pr", "target_branch", "target_head_before",
++                        "target_head_after", "terminal"):
++            with self.subTest(missing=missing):
++                tampered = dict(valid)
++                del tampered[missing]
++                self.assertFalse(self.mock_receipt_gate(tampered, command, 3))
+diff --git a/automation/command_bus/tests/test_blue_work_wake_prepare.py b/automation/command_bus/tests/test_blue_work_wake_prepare.py
+new file mode 100644
+index 0000000..86ff37b
+--- /dev/null
++++ b/automation/command_bus/tests/test_blue_work_wake_prepare.py
+@@ -0,0 +1,255 @@
++import json
++import unittest
++from datetime import datetime, timedelta, timezone
++
++from automation.command_bus.blue_jules_result_event import EventClassificationResult, EventDecision
++from automation.command_bus.blue_work_wake_prepare import (
++    CarrierSnapshot,
++    TargetSnapshot,
++    PrepareResult,
++    prepare_blue_work_wake,
++)
++
++
++class TestBlueWorkWakePrepare(unittest.TestCase):
++    def setUp(self):
++        self.now = datetime(2026, 10, 1, 12, 0, 0, tzinfo=timezone.utc)
++        self.expires_at = (self.now + timedelta(hours=1)).isoformat()
++
++        self.valid_classification = EventClassificationResult(
++            decision=EventDecision.WAKE,
++            command_id=f"blue-jules-result-pr42-{'a'*40}",
++            reason="eligible for wake"
++        )
++
++        self.valid_carrier = CarrierSnapshot(
++            protocol_version=1,
++            lane="blue",
++            command_prefix="[CW_BLUE_V1]",
++            worker_generation=1,
++        )
++
++        self.valid_target = TargetSnapshot(
++            target_repository="kamiyusense/multi-ai-council-phase0",
++            target_pr=42,
++            target_branch="jules-work/test-branch",
++            expected_target_head="a"*40,
++            current_target_head="a"*40,
++        )
++
++        self.valid_existing_ids = []
++
++    def call_prepare(self, classification=None, carrier=None, target=None, existing_ids=Ellipsis, expires_at=Ellipsis, now=None):
++        return prepare_blue_work_wake(
++            classification=classification if classification is not None else self.valid_classification,
++            carrier=carrier if carrier is not None else self.valid_carrier,
++            target=target if target is not None else self.valid_target,
++            existing_command_ids=existing_ids if existing_ids is not Ellipsis else self.valid_existing_ids,
++            expires_at=expires_at if expires_at is not Ellipsis else self.expires_at,
++            now=now if now is not None else self.now,
++        )
++
++    def test_valid_wake_returns_prepared_and_parseable_body(self):
++        result = self.call_prepare()
++        self.assertEqual(result.status, "PREPARED")
++        self.assertEqual(result.command_id, self.valid_classification.command_id)
++
++        # Verify body starts with prefix
++        self.assertTrue(result.review_body.startswith("[CW_BLUE_V1]\n"))
++
++        # Parse body as JSON
++        json_str = result.review_body[len("[CW_BLUE_V1]\n"):]
++        parsed = json.loads(json_str)
++
++        # Assert exact key set and fixed values
++        expected_keys = {
++            "protocol_version", "command_id", "worker_generation", "target_repository",
++            "target_pr", "target_branch", "expected_target_head", "expires_at",
++            "task", "allowed_paths", "verification", "live_provider_or_model_allowed",
++            "retry", "fallback"
++        }
++        self.assertEqual(set(parsed.keys()), expected_keys)
++        self.assertEqual(parsed["protocol_version"], 1)
++        self.assertEqual(parsed["command_id"], self.valid_classification.command_id)
++        self.assertEqual(parsed["worker_generation"], 1)
++        self.assertEqual(parsed["target_repository"], "kamiyusense/multi-ai-council-phase0")
++        self.assertEqual(parsed["target_pr"], 42)
++        self.assertEqual(parsed["target_branch"], "jules-work/test-branch")
++        self.assertEqual(parsed["expected_target_head"], "a"*40)
++        self.assertEqual(parsed["expires_at"], self.expires_at)
++        self.assertEqual(parsed["allowed_paths"], [])
++        self.assertEqual(parsed["live_provider_or_model_allowed"], False)
++        self.assertEqual(parsed["retry"], 0)
++        self.assertEqual(parsed["fallback"], "disabled")
++
++    def test_malformed_decision_value_returns_unknown(self):
++        for decision in ("WAKE", "BOGUS", None):
++            with self.subTest(decision=decision):
++                classification = EventClassificationResult(
++                    decision=decision,
++                    command_id=self.valid_classification.command_id,
++                )
++                result = self.call_prepare(classification=classification)
++                self.assertEqual(result.status, "UNKNOWN")
++                self.assertIsNone(result.review_body)
++
++    def test_ignore_returns_no_op(self):
++        classification = EventClassificationResult(
++            decision=EventDecision.IGNORE,
++            command_id="some-id"
++        )
++        result = self.call_prepare(classification=classification)
++        self.assertEqual(result.status, "NO_OP")
++        self.assertEqual(result.command_id, "some-id")
++        self.assertIsNone(result.review_body)
++
++    def test_unknown_returns_unknown(self):
++        classification = EventClassificationResult(
++            decision=EventDecision.UNKNOWN,
++            command_id="some-id"
++        )
++        result = self.call_prepare(classification=classification)
++        self.assertEqual(result.status, "UNKNOWN")
++        self.assertIsNone(result.review_body)
++
++    def test_duplicate_returns_no_op(self):
++        result = self.call_prepare(existing_ids=[self.valid_classification.command_id])
++        self.assertEqual(result.status, "NO_OP")
++        self.assertEqual(result.command_id, self.valid_classification.command_id)
++        self.assertIsNone(result.review_body)
++
++    def test_mismatched_deterministic_identity_returns_unknown(self):
++        classification = EventClassificationResult(
++            decision=EventDecision.WAKE,
++            command_id=f"blue-jules-result-pr42-{'b'*40}", # Mismatched head
++        )
++        result = self.call_prepare(classification=classification)
++        self.assertEqual(result.status, "UNKNOWN")
++
++        classification2 = EventClassificationResult(
++            decision=EventDecision.WAKE,
++            command_id=f"blue-jules-result-pr99-{'a'*40}", # Mismatched PR
++        )
++        result2 = self.call_prepare(classification=classification2)
++        self.assertEqual(result2.status, "UNKNOWN")
++
++    def test_current_head_moved_returns_stale(self):
++        target = TargetSnapshot(
++            target_repository="kamiyusense/multi-ai-council-phase0",
++            target_pr=42,
++            target_branch="jules-work/test-branch",
++            expected_target_head="a"*40,
++            current_target_head="b"*40,
++        )
++        result = self.call_prepare(target=target)
++        self.assertEqual(result.status, "STALE")
++        self.assertEqual(result.command_id, self.valid_classification.command_id)
++        self.assertIsNone(result.review_body)
++
++    def test_malformed_heads_returns_unknown(self):
++        for bad_head in ["a"*39, "z"*40, 123, None, ""]:
++            target = TargetSnapshot(
++                target_repository="kamiyusense/multi-ai-council-phase0",
++                target_pr=42,
++                target_branch="jules-work/test-branch",
++                expected_target_head=bad_head,
++                current_target_head="a"*40,
++            )
++            self.assertEqual(self.call_prepare(target=target).status, "UNKNOWN")
++
++            target2 = TargetSnapshot(
++                target_repository="kamiyusense/multi-ai-council-phase0",
++                target_pr=42,
++                target_branch="jules-work/test-branch",
++                expected_target_head="a"*40,
++                current_target_head=bad_head,
++            )
++            self.assertEqual(self.call_prepare(target=target2).status, "UNKNOWN")
++
++    def test_wrong_repo_default_branch_malformed_pr_returns_unknown(self):
++        # wrong repo
++        target_repo = TargetSnapshot(
++            target_repository="other/repo",
++            target_pr=42,
++            target_branch="jules-work/test-branch",
++            expected_target_head="a"*40,
++            current_target_head="a"*40,
++        )
++        self.assertEqual(self.call_prepare(target=target_repo).status, "UNKNOWN")
++
++        # default branch
++        for branch in ["main", "master"]:
++            target_branch = TargetSnapshot(
++                target_repository="kamiyusense/multi-ai-council-phase0",
++                target_pr=42,
++                target_branch=branch,
++                expected_target_head="a"*40,
++                current_target_head="a"*40,
++            )
++            self.assertEqual(self.call_prepare(target=target_branch).status, "UNKNOWN")
++
++        # malformed PR
++        for pr in [0, -1, "42", True, None]:
++            target_pr = TargetSnapshot(
++                target_repository="kamiyusense/multi-ai-council-phase0",
++                target_pr=pr,
++                target_branch="jules-work/test-branch",
++                expected_target_head="a"*40,
++                current_target_head="a"*40,
++            )
++            self.assertEqual(self.call_prepare(target=target_pr).status, "UNKNOWN")
++
++    def test_wrong_prefix_lane_protocol_returns_unknown(self):
++        # prefix
++        carrier_prefix = CarrierSnapshot(1, "blue", "[CW_YELLOW_V1]", 1)
++        self.assertEqual(self.call_prepare(carrier=carrier_prefix).status, "UNKNOWN")
++
++        # lane
++        carrier_lane = CarrierSnapshot(1, "red", "[CW_BLUE_V1]", 1)
++        self.assertEqual(self.call_prepare(carrier=carrier_lane).status, "UNKNOWN")
++
++        # protocol
++        carrier_proto = CarrierSnapshot(2, "blue", "[CW_BLUE_V1]", 1)
++        self.assertEqual(self.call_prepare(carrier=carrier_proto).status, "UNKNOWN")
++
++    def test_generation_zero_negative_bool_non_int_returns_unknown(self):
++        for gen in [0, -1, True, False, "1", None, 1.5]:
++            carrier = CarrierSnapshot(1, "blue", "[CW_BLUE_V1]", gen)
++            self.assertEqual(self.call_prepare(carrier=carrier).status, "UNKNOWN")
++
++    def test_expires_at_none_returns_unknown(self):
++        self.assertEqual(self.call_prepare(expires_at=None).status, "UNKNOWN")
++
++    def test_expires_at_empty_string_returns_unknown(self):
++        self.assertEqual(self.call_prepare(expires_at="").status, "UNKNOWN")
++
++    def test_malformed_naive_equal_now_expired_expiry_returns_unknown(self):
++        # malformed
++        self.assertEqual(self.call_prepare(expires_at="not-a-date").status, "UNKNOWN")
++
++        # naive
++        naive_dt = datetime(2026, 10, 1, 13, 0, 0).isoformat()
++        self.assertEqual(self.call_prepare(expires_at=naive_dt).status, "UNKNOWN")
++
++        # equal now
++        self.assertEqual(self.call_prepare(expires_at=self.now.isoformat()).status, "UNKNOWN")
++
++        # expired
++        past_dt = (self.now - timedelta(hours=1)).isoformat()
++        self.assertEqual(self.call_prepare(expires_at=past_dt).status, "UNKNOWN")
++
++    def test_naive_now_returns_unknown(self):
++        naive_now = datetime(2026, 10, 1, 12, 0, 0)
++        self.assertEqual(self.call_prepare(now=naive_now).status, "UNKNOWN")
++
++    def test_malformed_existing_command_ids_returns_unknown(self):
++        for existing in [None, 123, [123], {"a": 1}]:
++            self.assertEqual(self.call_prepare(existing_ids=existing).status, "UNKNOWN")
++
++    def test_identical_inputs_byte_identical_body(self):
++        res1 = self.call_prepare()
++        res2 = self.call_prepare()
++        self.assertEqual(res1.review_body, res2.review_body)
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md b/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md
+index cca9120..e9df3d3 100644
+--- a/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md
++++ b/docs/evidence/blue-work-main-integration-20261003/INTEGRATION.md
+@@ -58,3 +58,12 @@ this main-bound candidate together with its test. The source workflow and its ev
+ stay on the #217 branch as historical source evidence; nothing was executed or re-run.
+ The only workflow this candidate adds to main is the read-only
+ `blue-work-reconcile-static.yml`.
++
++### Second correction: three Blue tests were not ported
++
++The port was computed from the #217-only diff, so three test files that PR #203
++introduced and #217 did not touch never reached this candidate:
++`test_blue_jules_result_event.py`, `test_blue_work_wake_prepare.py` and
++`test_blue_work_jules_webhook_static_e2e.py`. They are added back (34 tests); the
++static E2E carries the current-carrier-contract change (schema-v3 J-BLUE claim,
++origin identity through the origin-binding bundle) that this document already claims.
+-- 
+2.43.0
+
