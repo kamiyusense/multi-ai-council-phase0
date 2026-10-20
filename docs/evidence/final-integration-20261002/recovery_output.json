@@ -1,0 +1,106 @@
+{
+  "sources": {
+    "data_ref": "origin/claude/claude-jules-autoloop-data",
+    "data_sha": "1690182c28145183ec690d1f2ea656c7a5fdfe71",
+    "carrier_ref": "origin/feature/chat-work-command-bus",
+    "carrier_sha": "7c83ae9312a52c02349d9c4f3d68d4093e65d974"
+  },
+  "owner_chain_contiguous": true,
+  "owner": {
+    "loop_id": "claude-auto-loop-a-001",
+    "owner_role": "SEMI_AUTO",
+    "holder_id": "chatgpt-semiauto-controller",
+    "generation": 2,
+    "fencing_token": 2,
+    "event_type": "HANDOFF",
+    "expires_at": "2026-10-02T08:30:28+00:00",
+    "expected_pr": 220,
+    "expected_target_head": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+    "fencing_monotonic": true
+  },
+  "budget": {
+    "cap": 10,
+    "used": 4,
+    "remaining": 6,
+    "contiguous": true,
+    "commands": [
+      "relay-dev-loop-128-autoloop-live-proof-note",
+      "relay-dev-loop-129-autoloop-budget-summary",
+      "relay-dev-loop-130-autoloop-budget-summary-fix1",
+      "relay-dev-loop-131-autoloop-operator-quickstart"
+    ]
+  },
+  "last_numbered_command_on_carrier": "relay-dev-loop-131-autoloop-operator-quickstart.json",
+  "commands": {
+    "relay-dev-loop-128-autoloop-live-proof-note": {
+      "dispatch_receipt": "DISPATCHED",
+      "session_id": "16228878555691005955",
+      "origin_binding": true,
+      "inspection_heads": [
+        "fc2ad82fb6dac0201f62db0d6c927bd90c985050"
+      ],
+      "review_heads": [
+        "fc2ad82fb6dac0201f62db0d6c927bd90c985050"
+      ],
+      "adoption": {
+        "state": "ADOPTED",
+        "head_before": "f8d30433dc2fa1b65f243e2383d8e51dbc98324d",
+        "head_after": "fc2ad82fb6dac0201f62db0d6c927bd90c985050",
+        "merge": false,
+        "force_push": false
+      }
+    },
+    "relay-dev-loop-129-autoloop-budget-summary": {
+      "dispatch_receipt": "DISPATCHED",
+      "session_id": "9613854744580982311",
+      "origin_binding": true,
+      "inspection_heads": [
+        "de325fc042d44dee31f7c8e31e6afb81cb032d3b"
+      ],
+      "review_heads": [
+        "de325fc042d44dee31f7c8e31e6afb81cb032d3b"
+      ],
+      "adoption": null
+    },
+    "relay-dev-loop-130-autoloop-budget-summary-fix1": {
+      "dispatch_receipt": "DISPATCHED",
+      "session_id": "10117650476672833427",
+      "origin_binding": true,
+      "inspection_heads": [
+        "2eb310cc535a664e74b1bce1e2bd65efee53ae67"
+      ],
+      "review_heads": [
+        "2eb310cc535a664e74b1bce1e2bd65efee53ae67"
+      ],
+      "adoption": {
+        "state": "ADOPTED",
+        "head_before": "fc2ad82fb6dac0201f62db0d6c927bd90c985050",
+        "head_after": "2eb310cc535a664e74b1bce1e2bd65efee53ae67",
+        "merge": false,
+        "force_push": false
+      }
+    },
+    "relay-dev-loop-131-autoloop-operator-quickstart": {
+      "dispatch_receipt": "DISPATCHED",
+      "session_id": "12222938286641699709",
+      "origin_binding": true,
+      "inspection_heads": [
+        "53f2caf67280ca1b4c019f325aea5fb9502f1114"
+      ],
+      "review_heads": [
+        "53f2caf67280ca1b4c019f325aea5fb9502f1114"
+      ],
+      "adoption": {
+        "state": "ADOPTED",
+        "head_before": "2eb310cc535a664e74b1bce1e2bd65efee53ae67",
+        "head_after": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+        "merge": false,
+        "force_push": false
+      }
+    }
+  },
+  "adopted_head": "53f2caf67280ca1b4c019f325aea5fb9502f1114",
+  "owner_expected_head_matches_adopted_head": true,
+  "next_safe_task": null,
+  "next_action_rule": "Owner is SEMI_AUTO (generation 2); Claude AUTO must NOT act until the lease expired + stall >= 2h + no running Jules, or a human hands over."
+}
