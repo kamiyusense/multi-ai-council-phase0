@@ -24,7 +24,7 @@ For all Official Symphony development, read [`docs/SYMPHONY_MVP_CHARTER.md`](doc
 - Pins (updated 2026-10-14): Claude ACP 0.85.1 (PR #315, merged); Codex ACP 2.1.1 (PR #400, merged
   2026-10-14 13:57Z; the real codex-acp 2.1.1 gated tests are still unverified); a carrier workflow on a
   separate branch was last read as pinning 2.1.0 (not changed here, re-check before relying on it);
-  Antigravity 1.2.1 (1.3.0 needs the proprietary binary, a human decision).
+  Antigravity 1.4.0 (pin bump from 1.2.1 on the owner's "1.4いこ", 2026-10-20; the 1.4.0 binary was run on the owner's PC for initialize, login and one turn, see `docs/RELAY_ANTIGRAVITY_ONE_TURN_RESULT_20261020.md`).
 - Counts so far for this line: LIVE 0, real account reads 0, Billing/API-key operations 0.
 
 ## 0. Current development worker routing — read this first

@@ -50,7 +50,7 @@ CLAUDE_POLICY = ProviderPolicy(
 ANTIGRAVITY_POLICY = ProviderPolicy(
     provider_id="google",
     external_agent="antigravity-acp",
-    pinned_version="1.2.1",
+    pinned_version="1.4.0",
 )
 
 
