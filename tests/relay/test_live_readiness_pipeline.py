@@ -45,7 +45,7 @@ def get_valid_preflights():
             "reasons": ["ready"],
             "provider_id": "google",
             "external_agent": "antigravity-acp",
-            "pinned_version": "1.2.1",
+            "pinned_version": "1.4.0",
             "retry_count": 0,
             "fallback_state": "disabled",
             "live_ready": False

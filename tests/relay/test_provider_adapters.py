@@ -265,7 +265,7 @@ class TestProviderAdapters(unittest.TestCase):
         forbidden = (
             "2.1.1",
             "0.85.1",
-            "1.2.1",
+            "1.4.0",
             "@agentclientprotocol/codex-acp",
             "@agentclientprotocol/claude-agent-acp",
             "antigravity-acp",
