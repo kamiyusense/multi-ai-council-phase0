@@ -25,7 +25,7 @@ For all Official Symphony development, read [`docs/SYMPHONY_MVP_CHARTER.md`](doc
   2026-10-14 13:57Z; the real codex-acp 2.1.1 gated tests are still unverified); a carrier workflow on a
   separate branch was last read as pinning 2.1.0 (not changed here, re-check before relying on it);
   Antigravity 1.4.0 (pin bump from 1.2.1 on the owner's "1.4いこ", 2026-10-20; the 1.4.0 binary was run on the owner's PC for initialize, login and one turn, see `docs/RELAY_ANTIGRAVITY_ONE_TURN_RESULT_20261020.md`).
-- Counts so far for this line: LIVE 0, real account reads 0, Billing/API-key operations 0.
+- Counts for this line (owner-approved, each once, 2026-10-15..20): Codex first LIVE 1 (`docs/RELAY_M9_CODEX_FIRST_LIVE_RESULT_20261015.md`); Antigravity initialize-only 1, login-only 1 (real Google sign-in, `docs/RELAY_ANTIGRAVITY_LOGIN_PROBE_RESULT_20261016.md`), one-turn 1 (one real prompt, `docs/RELAY_ANTIGRAVITY_ONE_TURN_RESULT_20261020.md`); Claude through the Relay adapter 0 (the earlier Gate-container Path A runs, 2 real runs on 2026-10-05 with the second PASS, are recorded in `docs/RELAY_CLAUDE_GATED_LIVE_PATH_A_RUNBOOK.md`); API-key/paid-fallback routes 0 (billing route for Antigravity rests on the owner's declaration, UNKNOWN by code). All approvals are consumed; none may be rerun.
 
 ## 0. Current development worker routing — read this first
 
