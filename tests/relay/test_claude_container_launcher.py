@@ -39,6 +39,71 @@ ENTRYPOINT = "/home/yuuki/phase0-runs/path-b/claude_adapter_entrypoint.mjs"
 SECCOMP = "/home/yuuki/work/multi-ai-council-phase0/automation/command_bus/docker/claude-runtime/claude-bwrap-seccomp-amd64.json"
 
 
+def _subprocess_env(base: dict[str, str], fake_bin_dir: Path) -> dict[str, str]:
+    """Env for launcher subprocess tests: ``base`` plus PATH only, never the host environment.
+
+    Host variables such as ANTHROPIC_BASE_URL must not leak in, or the launcher
+    (correctly) refuses with exit 78 and the test result depends on the host.
+    """
+    env = dict(base)
+    env["PATH"] = f"{fake_bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+    for key in FORBIDDEN_ENV_KEYS:
+        env.pop(key, None)
+    return env
+
+
+_SUBPROCESS_FUNCS = {"run", "Popen", "call", "check_call", "check_output"}
+_FORBIDDEN_OS_FUNCS = {
+    "system", "popen", "execl", "execle", "execlp", "execlpe", "execv", "execve", "execvp", "execvpe",
+    "spawnl", "spawnle", "spawnlp", "spawnlpe", "spawnv", "spawnve", "spawnvp", "spawnvpe", "posix_spawn",
+    "posix_spawnp",
+}
+# The only literal docker argv the launcher may hold; everything else comes from the builders.
+_ALLOWED_DOCKER_LITERAL_PREFIXES = {("docker", "kill"): 3, ("docker", "rm", "-f"): 4}
+
+
+def _subprocess_guard_violations(source: str) -> list[str]:
+    """Return static-guard violations for launcher source (empty list means clean)."""
+    violations: list[str] = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            owner = node.func.value
+            owner_name = owner.id if isinstance(owner, ast.Name) else None
+            attr = node.func.attr
+            if owner_name == "os" and attr in _FORBIDDEN_OS_FUNCS:
+                violations.append(f"line {node.lineno}: os.{attr} is forbidden")
+            if owner_name == "subprocess" and attr in _SUBPROCESS_FUNCS:
+                argv_node = node.args[0] if node.args else next(
+                    (kw.value for kw in node.keywords if kw.arg == "args"), None
+                )
+                # Only a list literal or a variable holding a builder-made list is accepted.
+                if not isinstance(argv_node, (ast.List, ast.Name)):
+                    violations.append(f"line {node.lineno}: subprocess.{attr} argv is not a list")
+                shell_kw = next((kw for kw in node.keywords if kw.arg == "shell"), None)
+                if shell_kw is None or not (
+                    isinstance(shell_kw.value, ast.Constant) and shell_kw.value.value is False
+                ):
+                    violations.append(f"line {node.lineno}: subprocess.{attr} without shell=False")
+        if isinstance(node, (ast.List, ast.Tuple)) and node.elts:
+            first = node.elts[0]
+            if isinstance(first, ast.Constant) and first.value == "docker":
+                literal = tuple(
+                    e.value if isinstance(e, ast.Constant) and isinstance(e.value, str) else None
+                    for e in node.elts
+                )
+                allowed = any(
+                    literal[: len(prefix)] == prefix
+                    and len(literal) == length
+                    and literal[-1] is None
+                    for prefix, length in _ALLOWED_DOCKER_LITERAL_PREFIXES.items()
+                )
+                if not allowed:
+                    violations.append(f"line {node.lineno}: literal docker argv {literal!r}")
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.startswith("docker "):
+            violations.append(f"line {node.lineno}: docker command string {node.value!r}")
+    return violations
+
+
 class MockProcess:
     def __init__(self, returncode: int = 0):
         self.returncode = returncode
@@ -277,9 +342,8 @@ exit 0
         fake_docker.chmod(0o755)
 
         script_path = Path(__file__).resolve().parents[2] / "src" / "relay" / "claude_container_launcher.py"
-        new_env = dict(os.environ)
-        new_env["PATH"] = f"{fake_bin_dir}:{new_env.get('PATH', '')}"
-        new_env.pop("PYTHONPATH", None)
+        # Only PATH: no approval env, no PYTHONPATH, no inherited host ANTHROPIC_* variables.
+        new_env = _subprocess_env({}, fake_bin_dir)
 
         # Run with empty environment / missing approval variables
         res = subprocess.run(
@@ -290,6 +354,7 @@ exit 0
             check=False,
         )
         self.assertEqual(res.returncode, 78)
+        self.assertIn("missing required environment variable", res.stderr)
         self.assertFalse(docker_log.exists(), "No docker call should have happened")
 
     # Finding 2 Regression Test: stdio passthrough with fake docker on PATH
@@ -316,8 +381,7 @@ exit 0
         fake_docker.chmod(0o755)
 
         script_path = Path(__file__).resolve().parents[2] / "src" / "relay" / "claude_container_launcher.py"
-        new_env = {**self.valid_env, **os.environ}
-        new_env["PATH"] = f"{fake_bin_dir}:{os.environ.get('PATH', '')}"
+        new_env = _subprocess_env(self.valid_env, fake_bin_dir)
 
         input_bytes = b"hello stream-json stdin passthrough\n"
         res = subprocess.run(
@@ -363,8 +427,7 @@ exit 0
         fake_docker.chmod(0o755)
 
         script_path = Path(__file__).resolve().parents[2] / "src" / "relay" / "claude_container_launcher.py"
-        new_env = {**self.valid_env, **os.environ}
-        new_env["PATH"] = f"{fake_bin_dir}:{os.environ.get('PATH', '')}"
+        new_env = _subprocess_env(self.valid_env, fake_bin_dir)
 
         proc = subprocess.Popen(
             [sys.executable, str(script_path), *OBSERVED],
@@ -391,18 +454,38 @@ exit 0
     # Finding 6: Static AST guard test
     def test_finding6_static_ast_subprocess_guards(self):
         source_path = Path(__file__).resolve().parents[2] / "src" / "relay" / "claude_container_launcher.py"
-        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        source = source_path.read_text(encoding="utf-8")
+        self.assertEqual(_subprocess_guard_violations(source), [])
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                # Check for shell=True
-                for keyword in node.keywords:
-                    if keyword.arg == "shell" and getattr(keyword.value, "value", None) is True:
-                        self.fail("Found shell=True in claude_container_launcher.py")
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    self.assertNotIn(alias.name, ("os.system", "os.exec"), f"Forbidden import {alias.name}")
+        # The launcher really holds the kill/rm literals, so the guard is not vacuous on them.
+        tree = ast.parse(source)
+        docker_literals = [
+            tuple(e.value for e in n.elts if isinstance(e, ast.Constant))
+            for n in ast.walk(tree)
+            if isinstance(n, ast.List) and n.elts
+            and isinstance(n.elts[0], ast.Constant) and n.elts[0].value == "docker"
+        ]
+        self.assertEqual(sorted(docker_literals), [("docker", "kill"), ("docker", "rm", "-f")])
 
+    def test_finding6_static_guard_rejects_mutated_launcher(self):
+        source_path = Path(__file__).resolve().parents[2] / "src" / "relay" / "claude_container_launcher.py"
+        source = source_path.read_text(encoding="utf-8")
+        mutations = {
+            "extra literal docker argv": "\n_X = subprocess.run(['docker', 'create', 'x'], shell=False)\n",
+            "hand-built docker start": "\n_X = subprocess.Popen(['docker', 'start', '--attach', name], shell=False)\n",
+            "docker argv tuple": "\n_X = ('docker', 'kill', '--signal', 'KILL')\n",
+            "string command": "\n_X = subprocess.run('docker kill x', shell=False)\n",
+            "f-string command": "\n_X = subprocess.run(f'docker kill {name}', shell=False)\n",
+            "shell=True": "\n_X = subprocess.run(argv, shell=True)\n",
+            "shell not given": "\n_X = subprocess.run(argv)\n",
+            "shell variable": "\n_X = subprocess.Popen(argv, shell=flag)\n",
+            "args keyword string": "\n_X = subprocess.check_output(args='ls', shell=False)\n",
+            "os.system": "\n_X = os.system('docker ps')\n",
+            "os.execvp": "\n_X = os.execvp('docker', argv)\n",
+        }
+        for label, snippet in mutations.items():
+            with self.subTest(label):
+                self.assertNotEqual(_subprocess_guard_violations(source + snippet), [], label)
 
 if __name__ == "__main__":
     unittest.main()
