@@ -36,7 +36,7 @@ import json
 import os
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -197,6 +197,8 @@ class AcpStdioStaticTransport:
         if (command is None) == (official is None):
             raise ValueError("provide exactly one of command or official")
         if official is not None:
+            # Snapshot the env first so the validated values are exactly the ones the child gets.
+            official = replace(official, env=dict(official.env))
             _validate_official_launch(official, profile)
             self.command, self._env = official.command, dict(official.env)
             self._live = official.live_authorization is not None
