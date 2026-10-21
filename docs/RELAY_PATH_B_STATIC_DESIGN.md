@@ -21,7 +21,7 @@ Status: 2026-10-14. LIVE 0, real account reads 0, Billing/API-key operations 0. 
 ## 2a. Host-side launcher contract
 
 The host-side launcher (`src/relay/claude_container_launcher.py`) invoked as `CLAUDE_CODE_EXECUTABLE` satisfies the following requirements:
-1. Reads `RELAY_CLAUDE_STATE_DIR`, `RELAY_CLAUDE_APPROVAL_SHA256`, `RELAY_CLAUDE_ENTRYPOINT_HOST_PATH`, and `RELAY_CLAUDE_SECCOMP_HOST_PATH` from its environment and calls `relay.claude_live_state.verify_claude_live_authorization(LiveAuthorization(state_dir, sha), 'anthropic')` to get the dispatch id; any missing value or `ValueError` prints one line to stderr and exits 78 without running anything.
+1. Reads `RELAY_CLAUDE_STATE_DIR`, `RELAY_CLAUDE_APPROVAL_SHA256`, `RELAY_CLAUDE_ENTRYPOINT_HOST_PATH`, and `RELAY_CLAUDE_SECCOMP_HOST_PATH` from its environment and calls `relay.claude_live_state.verify_claude_live_authorization(LiveAuthorization(state_dir, sha), 'anthropic')` to get the dispatch id; any missing value or `ValueError` prints one line to stderr and exits 78 without running anything. Note: the launcher only re-verifies these state files (`approval.json`, `consumed.json`, `terminal_receipt.json`) and never creates or writes them itself.
 2. Refuses (exit 78, nothing run) if its environment holds `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, or `CLAUDE_CODE_OAUTH_TOKEN`, or when `os.name == 'nt'`.
 3. Builds argv ONLY with `relay.claude_container_docker.build_docker_create_argv` / `build_docker_start_argv` (never hand-built docker argv); for the auth probe argv (`auth status --json`) it uses the derived id `str(uuid.uuid5(uuid.NAMESPACE_URL, 'phase0-claude-auth-probe:' + dispatch_id))` so the probe container never takes the session container's name.
 4. Runs `docker create` once with its stdout captured (the container id must never reach the launcher's stdout; it may go to stderr), and if it fails exits 1 without starting.
@@ -30,7 +30,7 @@ The host-side launcher (`src/relay/claude_container_launcher.py`) invoked as `CL
 7. After the auth-probe container ends, runs `docker rm -f <probe name>` once; the session container is never removed (it is kept as evidence, like Path A).
 8. Never retries, never restarts, never runs a second create or start, never passes host environment into docker. Runner is injectable for tests and uses `subprocess` with list arguments and `shell=False`.
 
-*Note:* Real Docker behaviour (stdio framing through `docker start`, signal handling, Gate single request) is still UNKNOWN until the owner's PC run.
+*Note:* Real Docker behaviour (stdio framing through `docker start`, signal handling, Gate single request) and whether `claude-agent-acp` falls back to its bundled CLI when `CLAUDE_CODE_EXECUTABLE` fails are still UNKNOWN until the owner's PC run.
 
 ## 3. Work split
 

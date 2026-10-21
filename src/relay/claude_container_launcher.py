@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Host-side launcher for Path B (gated Claude container via official claude-agent-acp).
 
 Runs the Claude CLI inside the proven gated container as ``CLAUDE_CODE_EXECUTABLE``.
@@ -13,7 +14,16 @@ import subprocess
 import sys
 import uuid
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
+
+# Ensure repository root and src directories are on sys.path when executed directly as a script
+_SRC_DIR = str(Path(__file__).resolve().parents[1])
+_REPO_ROOT = str(Path(__file__).resolve().parents[2])
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 from relay.claude_container_argv import AUTH_PROBE_ARGV
 from relay.claude_container_docker import (
@@ -26,6 +36,7 @@ from relay.claude_live_state import LiveAuthorization, verify_claude_live_author
 __all__ = [
     "LauncherRunner",
     "launch_claude_container",
+    "main",
     "FORBIDDEN_ENV_KEYS",
 ]
 
@@ -166,8 +177,9 @@ def launch_claude_container(
         active_runner.run_kill(c_name, timeout=5.0)
         if start_proc is not None:
             try:
-                if hasattr(start_proc, "wait"):
-                    start_proc.wait(timeout=5.0)
+                if hasattr(start_proc, "poll") and start_proc.poll() is None:
+                    if hasattr(start_proc, "wait"):
+                        start_proc.wait(timeout=1.0)
             except Exception:
                 pass
         _cleanup_probe()
@@ -199,10 +211,10 @@ def launch_claude_container(
     return exit_code
 
 
-def _main() -> None:
-    code = launch_claude_container()
-    sys.exit(code)
+def main(argv: Sequence[str] | None = None, env: dict[str, str] | None = None) -> int:
+    """Entry point when executed as a script."""
+    return launch_claude_container(argv=argv, env=env)
 
 
 if __name__ == "__main__":
-    _main()
+    sys.exit(main())
