@@ -45,6 +45,10 @@ OWNER_APPROVED = {
                                    "windows/SignalCompanion/README.md",
                                    "automation/command_bus/tests/test_signal_companion_windows_static.py",
                                    "docs/SIGNAL_FOUNDATION_ROADMAP.md"),
+    # owner decision 2026-10-21 (decision card "Path B の残りの部品を静的に作り始める": 作り始める; "Julesループ利用して")
+    "o10-relay-path-b-launcher": ("src/relay/claude_container_launcher.py",
+                                  "tests/relay/test_claude_container_launcher.py",
+                                  "docs/RELAY_PATH_B_STATIC_DESIGN.md"),
 }
 BLUE = ("blue", "work_event", "cloud_work")
 
