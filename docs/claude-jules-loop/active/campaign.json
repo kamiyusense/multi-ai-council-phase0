@@ -208,6 +208,23 @@
       "priority": 40,
       "approved_by": "kamiyusense",
       "approved_at": "2026-10-15T09:54:22Z"
+    },
+    {
+      "objective_id": "o10-relay-path-b-launcher",
+      "title": "Relay (red lane) Path B: host-side launcher that the official Claude adapter runs as CLAUDE_CODE_EXECUTABLE (docker create / start --attach --interactive, cleanup), tested with a fake docker only",
+      "scope_prefixes": [
+        "src/relay/claude_container_launcher.py",
+        "tests/relay/test_claude_container_launcher.py",
+        "docs/RELAY_PATH_B_STATIC_DESIGN.md"
+      ],
+      "allowed_operations": [
+        "code_edit",
+        "test_add",
+        "docs_update"
+      ],
+      "priority": 30,
+      "approved_by": "kamiyusense",
+      "approved_at": "2026-10-21T12:59:13Z"
     }
   ],
   "control_issue": 346
