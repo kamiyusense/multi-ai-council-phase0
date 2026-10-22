@@ -50,8 +50,10 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
 
 - Claude x Jules loop (control Issue #346): unchanged; the Tower only reads it.
 - Symphony / Codex: lives in the separate repository `kamiyusense/symphony` and runs on the owner's PC only.
-  Registry lane `symphony-codex-auto` records that repository and the state location the Control Tower reads;
-  the state location is UNKNOWN (asked the owner). Codex writes from Symphony to GitHub carry `AI-Agent: codex`.
+  The first trial run targets one Issue in the new private practice repository `kamiyusense/symphony-sandbox`.
+  Registry lane `symphony-codex-auto` (S4) records: main repository `kamiyusense/symphony`, trial repository
+  `kamiyusense/symphony-sandbox`, state location UNKNOWN (the owner decides after the trial run).
+  Codex writes from Symphony to GitHub carry `AI-Agent: codex`.
 - Antigravity: an independent lane, started by the owner by hand. The Tower never assigns it work.
 - Registry lanes `chatgpt-semi-auto`, `chat-work-semi-auto`, `claude-claude-auto`: frozen, not deleted.
 
@@ -106,7 +108,7 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
 | S1 | Move Antigravity launch code and its tests to `archive/antigravity_launch/`, disabled |
 | S2 | Signature list config, approval-comment judge, pre-write check (tests only) |
 | S3 | One-time setup guide (direct URL, Japanese steps, annotated image) + one test approval from the owner's phone and one Grok Bot test comment to compare `performed_via_github_app` (UNKNOWN). Owner presses the two Actions settings |
-| S4 | Registry update (freeze 3 lanes, add antigravity and council, Symphony repository and state location) + board workflow, read-only (regenerates the board from the record and #346) |
+| S4 | Registry update (freeze 3 lanes, add antigravity and council, Symphony main/trial repositories and state location UNKNOWN) + board workflow, read-only (regenerates the board from the record and #346) |
 | S5 | Board input: checkboxes and approval comments reflected into the record |
 | S6 | Director role config, lock, takeover, handover note (static tests) |
 | S7 | Quota reading per section 6 |

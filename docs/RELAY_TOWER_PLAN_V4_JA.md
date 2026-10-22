@@ -42,7 +42,9 @@
 ### 1-4. レーン
 - Claude×Jules ループ（操作盤は Issue #346）：今のまま変えない。Control Tower は読むだけ。
 - Symphony（Codex）：phase0 とは別のリポジトリ **kamiyusense/symphony** で動かす。相棒が管理する PC でだけ動かし、共有の環境には載せない。
-  - Control Tower が読む状態の置き場所：**UNKNOWN（相棒に確認中）**
+  - 最初の試運転は、新しく作る練習用リポジトリ **kamiyusense/symphony-sandbox**（非公開）の Issue 1件だけが対象。
+  - Control Tower が読む状態の置き場所：**UNKNOWN**（試運転が終わってから相棒が決める）
+  - S4 でレジストリの symphony-codex-auto に「本体 kamiyusense/symphony、試運転先 kamiyusense/symphony-sandbox、状態の置き場所 UNKNOWN」と書く。
   - Symphony の Codex が GitHub に書くときも、署名 `AI-Agent: codex` を付ける。
 - Antigravity：独立したレーンで、相棒が手で起動する。Control Tower から仕事を振ることはしない。
 - レジストリにある 3 レーン（chatgpt-semi-auto / chat-work-semi-auto / claude-claude-auto）は、削除せずに凍結する。
@@ -99,7 +101,7 @@
 | S1 | Antigravity の起動コードとそのテストを `archive/antigravity_launch/` に移して無効にする。起動禁止リストは残す | マージの確認だけ |
 | S2 | 署名の一覧（設定ファイル）、「承認」の判定部品、書く前のチェック。テストだけで、まだ何も動かさない | マージの確認だけ |
 | S3 | 最初の設定のガイド（直接開ける URL、日本語の手順、赤丸付きの画像）。あわせて、相棒のスマホから書いた「承認」と、Grok Bot（Cursor 連携経由）が書いたテストコメント1件を比べて、「どのアプリから書いたか」の記録（`performed_via_github_app`）で見分けられるか確かめる（UNKNOWN） | **Actions の設定2つ**、試しの承認コメント1回 |
-| S4 | レジストリの整理（3レーンの凍結、antigravity・council の追加、Symphony のリポジトリと状態の置き場所）＋掲示板の作り直し（読むだけ） | マージの確認だけ |
+| S4 | レジストリの整理（3レーンの凍結、antigravity・council の追加、Symphony の本体・試運転先のリポジトリ、状態の置き場所は UNKNOWN）＋掲示板の作り直し（読むだけ） | マージの確認だけ |
 | S5 | 掲示板の入力欄：チェックと「承認」コメントを読んで、正式な記録に反映する | マージの確認だけ |
 | S6 | 指示役の代役：候補の順番、ロック、交代、引き継ぎメモ（静的テストだけ） | マージの確認だけ |
 | S7 | 利用枠の読み取り（1-7 のとおり） | マージの確認だけ（prod-c1 の変更は別に承認） |
@@ -120,9 +122,8 @@
 
 ---
 
-## 4. 相棒に確認中のこと
-- **Symphony の状態の置き場所**（Control Tower がどこを読めばいいか）：UNKNOWN。
-  - phase0 のリポジトリには、kamiyusense/symphony への言及が見つからなかった。
+## 4. あとで決めること
+- **Symphony の状態の置き場所**（Control Tower がどこを読めばいいか）：UNKNOWN。Symphony の試運転（kamiyusense/symphony-sandbox）が終わってから相棒が決める。
 
 ---
 
