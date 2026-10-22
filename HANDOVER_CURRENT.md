@@ -9,6 +9,10 @@ Writing Block / Canvas / 編集カードでは代用しない。この規則を�
 
 Updated: 2026-10-01
 
+## 0.0.3 2026-10-23 Relay / Control Tower direction V4
+
+Read [`docs/RELAY_TOWER_DIRECTION_V4.md`](docs/RELAY_TOWER_DIRECTION_V4.md) before any Relay, Control Tower, Council or registry work. Summary: Issues are boards (Dependency Dashboard style), the record stays in the repository; every AI write is signed and only an unsigned `承認` comment by `kamiyusense` is a human approval; the Antigravity route is withdrawn from Relay (launch code to be archived and disabled; the owner pastes a Relay-made template by hand); Council = Grok/Claude/Codex official CLIs on the owner's PC; quota is read through official means and UNKNOWN pauses only that AI. The Claude x Jules loop is unchanged.
+
 ## 0.0.2 2026-10-16 Symphony official-first MVP goal lock
 
 For all Official Symphony development, read [`docs/SYMPHONY_MVP_CHARTER.md`](docs/SYMPHONY_MVP_CHARTER.md) **before assigning work**, and the [PR #398 triage](docs/SYMPHONY_MVP_SCOPE_TRIAGE.md). User priority: run the existing official Elixir reference with minimal changes in an isolated environment **before** adding custom orchestration or speculative hardening. Apply the charter's three-question scope gate at task creation and acceptance. Do not confuse static/fake turns with a real Codex worker. Keep formal safety, subscription-only/no-unapproved-LIVE, credential, billing and merge boundaries. The charter's priority can change only by the user's explicit decision.
