@@ -1,5 +1,7 @@
 # Relay Antigravity one-turn runner (STATIC code; no run approved)
 
+> **撤回済み（2026-10-23）**: the Antigravity route was withdrawn from the Relay for terms reasons. Do not run these steps. The launch code is archived and disabled in `archive/antigravity_launch/`; see `docs/RELAY_TOWER_DIRECTION_V4.md` §4.
+
 Status: code and tests only (fake server). **No real binary was started, no login, no model turn.** A real run is a separate human approval typed on the PC console, and it is the first Antigravity step that can use model quota.
 
 ## Why it exists

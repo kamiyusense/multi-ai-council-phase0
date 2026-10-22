@@ -1,5 +1,7 @@
 # Relay Antigravity Account Route Read-Only Checklist
 
+> **撤回済み（2026-10-23）**: the Antigravity route was withdrawn from the Relay for terms reasons. Do not run these steps. The launch code is archived and disabled in `archive/antigravity_launch/`; see `docs/RELAY_TOWER_DIRECTION_V4.md` §4.
+
 This document is a PREPARED/static checklist only. It defines exactly what a future separately authorized read-only inspection must observe to establish that the authenticated identity is the intended Google AI Pro / Antigravity account route, without sending any provider/model turn, revealing private account identifiers or credentials, changing authentication/settings/billing/permissions, or claiming the route is already proven.
 
 Zero external/read-only account-route evidence is acquired by this batch. `antigravity_account_route` remains unresolved/BLOCKED_UNKNOWN.

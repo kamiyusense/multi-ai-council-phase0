@@ -1,5 +1,7 @@
 # Relay Antigravity login-only probe (STATIC code; no run approved)
 
+> **撤回済み（2026-10-23）**: the Antigravity route was withdrawn from the Relay for terms reasons. Do not run these steps. The launch code is archived and disabled in `archive/antigravity_launch/`; see `docs/RELAY_TOWER_DIRECTION_V4.md` §4.
+
 Status: code and tests only (fake server). **No login, no model turn, no Antigravity run happened.** Running it on the real binary is a separate human approval typed on the PC console.
 
 ## What it is

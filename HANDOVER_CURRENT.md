@@ -11,7 +11,7 @@ Updated: 2026-10-01
 
 ## 0.0.3 2026-10-23 Relay / Control Tower direction V4
 
-Read [`docs/RELAY_TOWER_DIRECTION_V4.md`](docs/RELAY_TOWER_DIRECTION_V4.md) before any Relay, Control Tower, Council or registry work. Summary: Issues are boards (Dependency Dashboard style), the record stays in the repository; every AI write is signed and only an unsigned `承認` comment by `kamiyusense` is a human approval; the Antigravity route is withdrawn from Relay (launch code to be archived and disabled; the owner pastes a Relay-made template by hand); Council = Grok/Claude/Codex official CLIs on the owner's PC; quota is read through official means and UNKNOWN pauses only that AI. The Claude x Jules loop is unchanged.
+Read [`docs/RELAY_TOWER_DIRECTION_V4.md`](docs/RELAY_TOWER_DIRECTION_V4.md) before any Relay, Control Tower, Council or registry work. Summary: Issues are boards (Dependency Dashboard style), the record stays in the repository; every AI write is signed and only an unsigned `承認` comment by `kamiyusense` is a human approval; the Antigravity route is withdrawn from Relay (launch code archived and disabled in `archive/antigravity_launch/`; the owner pastes a Relay-made template by hand); Council = Grok/Claude/Codex official CLIs on the owner's PC; quota is read through official means and UNKNOWN pauses only that AI. The Claude x Jules loop is unchanged.
 
 ## 0.0.2 2026-10-16 Symphony official-first MVP goal lock
 

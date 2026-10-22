@@ -1,3 +1,5 @@
+# 使用停止中・実行禁止（規約上の理由、2026-10）
+# SUSPENDED - DO NOT RUN (Antigravity terms, 2026-10). Archived from the Relay; see archive/antigravity_launch/README.md.
 """Antigravity dispatch path (STATIC; nothing real is launched).
 
 Order for one dispatch: envelope -> provider must be Google -> route admission on the host-owned settings
