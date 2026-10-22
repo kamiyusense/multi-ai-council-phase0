@@ -1,5 +1,7 @@
 # Relay Antigravity one-turn run: result record (2026-10-20)
 
+> **撤回済み（2026-10-23）**: the Antigravity route was withdrawn from the Relay for terms reasons. This result is kept as evidence only. The launch code is archived and disabled in `archive/antigravity_launch/`; see `docs/RELAY_TOWER_DIRECTION_V4.md` §4.
+
 Status: the one-shot one-turn runner (#446) ran once on the owner's PC and ended `ONE_TURN_DONE` with the expected answer. Documentation only: no code, registry, workflow or settings change. A second run is a NO-OP (approval consumed).
 
 ## What ran

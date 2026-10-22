@@ -1,3 +1,5 @@
+# 使用停止中・実行禁止（規約上の理由、2026-10）
+# SUSPENDED - DO NOT RUN (Antigravity terms, 2026-10). Archived from the Relay; see archive/antigravity_launch/README.md.
 """Antigravity STATIC dispatch: route admission on the settings snapshot, then the existing lifecycle (fake agent only)."""
 import tempfile
 import unittest

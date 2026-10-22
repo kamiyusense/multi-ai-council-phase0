@@ -1,3 +1,5 @@
+# 使用停止中・実行禁止（規約上の理由、2026-10）
+# SUSPENDED - DO NOT RUN (Antigravity terms, 2026-10). Archived from the Relay; see archive/antigravity_launch/README.md.
 """Antigravity one-turn runner: STATIC tests with a fake ACP server only (no real binary, no provider, no login)."""
 import ast
 import hashlib

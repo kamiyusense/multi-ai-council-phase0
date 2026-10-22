@@ -1,3 +1,5 @@
+# 使用停止中・実行禁止（規約上の理由、2026-10）
+# SUSPENDED - DO NOT RUN (Antigravity terms, 2026-10). Archived from the Relay; see archive/antigravity_launch/README.md.
 """Antigravity ONE-TURN runner (STATIC code; running it on the real binary needs a separate human approval).
 
 Two subcommands, both for an interactive human console:

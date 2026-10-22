@@ -1,3 +1,5 @@
+# 使用停止中・実行禁止（規約上の理由、2026-10）
+# SUSPENDED - DO NOT RUN (Antigravity terms, 2026-10). Archived from the Relay; see archive/antigravity_launch/README.md.
 """Antigravity initialize-only probe (STATIC code; running it on the real binary needs a separate human approval).
 
 What it does, once: check the human-supplied ``agy_acp_server`` binary against a human-supplied SHA-256, ask for a

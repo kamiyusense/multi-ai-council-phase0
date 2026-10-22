@@ -1,5 +1,7 @@
 # Relay Antigravity login-only probe: result record (2026-10-16)
 
+> **撤回済み（2026-10-23）**: the Antigravity route was withdrawn from the Relay for terms reasons. This result is kept as evidence only. The launch code is archived and disabled in `archive/antigravity_launch/`; see `docs/RELAY_TOWER_DIRECTION_V4.md` §4.
+
 Status: the one-shot login-only probe ran once on the owner's PC and ended `LOGIN_PROBE_DONE` with `AUTHENTICATE_OK`. Documentation only: no code, registry, workflow or settings change. A second run is a NO-OP.
 
 ## What ran

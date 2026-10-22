@@ -1,5 +1,7 @@
 # Relay Antigravity Billing Route Read-Only Checklist
 
+> **撤回済み（2026-10-23）**: the Antigravity route was withdrawn from the Relay for terms reasons. Do not run these steps. The launch code is archived and disabled in `archive/antigravity_launch/`; see `docs/RELAY_TOWER_DIRECTION_V4.md` §4.
+
 This document is a PREPARED/static checklist only. It defines exactly what a future separately authorized read-only inspection must observe to establish that API-key, Cloud Billing, and overage/extra-pay routes are not selected for the Google AI Pro / Antigravity product route, without sending any provider/model turn, revealing private billing/account identifiers or credentials, changing authentication/settings/billing/permissions, or claiming the billing route is already proven.
 
 Zero external/read-only billing-route evidence is acquired by this batch. `antigravity_billing_route` remains unresolved/BLOCKED_UNKNOWN.
