@@ -16,7 +16,7 @@ current GitHub state, not this page's examples, before acting.
 | Control issue: checkpoints and stop switch | [#346](https://github.com/kamiyusense/multi-ai-council-phase0/issues/346) |
 | Work queue: signal issues | open issues titled `[loop signal] ...` holding a `<!-- claude-jules-signal v1` block |
 | Tasks | issues titled `[<objective_id>] ...` that the loop creates from signals |
-| Reviewer + tick | Routine "Claude closed-loop reviewer v1" (Sonnet; hourly at :02 and on `pull_request` events). Prompt: [`routine-prompt-v1.9.CANDIDATE.txt`](../evidence/claude-jules-production-starter-20261009/routine-prompt-v1.9.CANDIDATE.txt) |
+| Reviewer + tick | Routine "Claude closed-loop reviewer v1" (Sonnet; hourly at :02 and on `pull_request` events; whether a merge (`pull_request.closed`) wakes it is a Routine UI setting, UNKNOWN from the repository, so after a merge the hourly run is the guaranteed resume). Prompt: [`routine-prompt-v1.9.CANDIDATE.txt`](../evidence/claude-jules-production-starter-20261009/routine-prompt-v1.9.CANDIDATE.txt) |
 | Takeover worker | Routine "Claude takeover worker" (Opus; only on PRs from `claude/takeover-*`). Prompt: [`takeover-routine-prompt-v1.CANDIDATE.txt`](../evidence/claude-jules-production-starter-20261009/takeover-routine-prompt-v1.CANDIDATE.txt) |
 | Design | [Jules API route](../CLAUDE_JULES_API_ROUTE_V1.md), [Claude takeover](../CLAUDE_TAKEOVER_V1.md), [activation history](ACTIVATION.md) |
 

@@ -141,7 +141,9 @@ outcome. Three refused deliveries in one round go to the takeover.
 
 `approvePlan`, session listing, any automatic route fallback, merging, changing the Routine trigger.
 The missing wake after a merge (Routine is not woken by `pull_request.closed`) is a Routine setting and is tracked
-separately.
+separately. Until then, merge-dependent work resumes on the reviewer Routine's hourly run (:02). The `next_wake` label
+"pull_request.closed (merged) event" in `claude_jules_loop.py` means "the merge event if the Routine is configured
+for it, otherwise the hourly run" (see `docs/RELAY_TOWER_DIRECTION_V4.md` §8).
 
 ## Work split
 
