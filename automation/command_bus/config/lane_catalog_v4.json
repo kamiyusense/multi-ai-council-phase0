@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "note": "V4 lane catalog (docs/RELAY_TOWER_DIRECTION_V4.md). Read-only metadata for the board. control_tower_registry.json stays the sealed runtime registry and is not changed by this file.",
+  "lanes": [
+    {
+      "lane_id": "chatgpt-semi-auto",
+      "display_name_ja": "Chat → Jules（半自動）",
+      "v4_status": "FROZEN",
+      "registry_row": "chatgpt-semi-auto",
+      "detail_ref": "issue:33",
+      "state_location": "UNKNOWN",
+      "tower_access": "READ_ONLY"
+    },
+    {
+      "lane_id": "chat-work-semi-auto",
+      "display_name_ja": "Chat → Work（半自動）",
+      "v4_status": "FROZEN",
+      "registry_row": "chat-work-semi-auto",
+      "detail_ref": "issue:33",
+      "state_location": "UNKNOWN",
+      "tower_access": "READ_ONLY"
+    },
+    {
+      "lane_id": "claude-jules-auto",
+      "display_name_ja": "Claude × Jules（自動・prod-c1）",
+      "v4_status": "ACTIVE",
+      "registry_row": "claude-jules-auto",
+      "detail_ref": "issue:346",
+      "state_location": "issue:346",
+      "tower_access": "READ_ONLY"
+    },
+    {
+      "lane_id": "symphony-codex-auto",
+      "display_name_ja": "Symphony → Codex（相棒の PC）",
+      "v4_status": "ACTIVE",
+      "registry_row": "symphony-codex-auto",
+      "detail_ref": "issue:33",
+      "repositories": {"main": "kamiyusense/symphony", "trial": "kamiyusense/symphony-sandbox"},
+      "state_location": "UNKNOWN",
+      "tower_access": "READ_ONLY"
+    },
+    {
+      "lane_id": "claude-claude-auto",
+      "display_name_ja": "Claude → Claude",
+      "v4_status": "FROZEN",
+      "registry_row": "claude-claude-auto",
+      "detail_ref": "issue:33",
+      "state_location": "UNKNOWN",
+      "tower_access": "READ_ONLY"
+    },
+    {
+      "lane_id": "antigravity-manual",
+      "display_name_ja": "Antigravity（手動）",
+      "v4_status": "MANUAL",
+      "registry_row": null,
+      "detail_ref": "issue:33",
+      "state_location": "UNKNOWN",
+      "tower_access": "READ_ONLY"
+    },
+    {
+      "lane_id": "council",
+      "display_name_ja": "Council（Grok / Claude / Codex）",
+      "v4_status": "PLANNED",
+      "registry_row": null,
+      "detail_ref": "issue:33",
+      "state_location": "UNKNOWN",
+      "tower_access": "READ_ONLY"
+    }
+  ]
+}
