@@ -37,7 +37,10 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
   3. contains no signature from the table above;
   4. was never edited (`created_at == updated_at`);
   5. was written after the proposal it approves, and the target still matches (for a PR: the same head SHA);
-  6. is used once; its use is recorded in the durable record.
+  6. is used once; its use is recorded in the durable record;
+  7. was not written through a GitHub App (`performed_via_github_app` is null). Added after the S3 test
+     (`docs/S3_APPROVAL_TEST_RESULT.md`): Claude writes show `claude`, Grok Bot writes show `cursor`, the owner's
+     GitHub Mobile comment shows null.
   Anything else (other authors, `github-actions[bot]`, signed comments, 承認します, OK) is not an approval.
 - Signatures are a convention, not something GitHub enforces. Writers built in this repository refuse to post
   an unsigned body or a bare 承認 (pre-write check, step S2). Grok Bot and Antigravity rely on their prompts.
