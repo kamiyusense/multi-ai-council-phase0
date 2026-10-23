@@ -2,7 +2,8 @@
 
 AI writers post under the owner's account, so the author alone cannot tell a human from an AI.  Every AI write
 carries a signature; a human approval is an unsigned, unedited comment whose whole body is the approval word,
-written by the owner after the target last changed, and used once.
+written by the owner directly (not through a GitHub App such as Claude or Cursor) after the target last changed,
+and used once.
 
 Pure functions only: nothing here reads or writes GitHub.  ``judge_approval`` decides one already-fetched
 comment; ``check_ai_write`` is the pre-write check every AI writer in this repository calls before posting.
@@ -85,7 +86,9 @@ def judge_approval(comment: Mapping[str, Any], *, target_last_changed_at: str, u
     """Decide whether one comment is a human approval of a target.
 
     ``comment`` uses GitHub's issue-comment fields: ``id``, ``user.id``, ``body``, ``created_at``,
-    ``updated_at``.  ``target_last_changed_at`` is when the approved target (proposal or PR head) last
+    ``updated_at``, ``performed_via_github_app``.  The field must be present and null: AI writers that post
+    under the owner's account go through an App (observed 2026-10-23: ``claude``, ``cursor``), while the owner's
+    own comment from GitHub Mobile carries null.  Reactions do not change ``updated_at`` (observed on #459).  ``target_last_changed_at`` is when the approved target (proposal or PR head) last
     changed; an approval written before it no longer matches the target.  Anything missing or malformed is
     not an approval (fail closed).
     """
@@ -98,6 +101,10 @@ def judge_approval(comment: Mapping[str, Any], *, target_last_changed_at: str, u
         return False, "NOT_BARE_APPROVAL"
     if has_signature(body, policy):
         return False, "SIGNED"
+    if "performed_via_github_app" not in comment:
+        return False, "APP_UNKNOWN"
+    if comment["performed_via_github_app"] is not None:
+        return False, "VIA_APP"
     created, updated = _ts(comment.get("created_at")), _ts(comment.get("updated_at"))
     if created is None or updated is None:
         return False, "TIME_UNKNOWN"

@@ -40,4 +40,4 @@
 
 わかっていること（2026-10-23 確認）: Claude がプロジェクトスレッドから書いたコメントは、`performed_via_github_app` が `claude` になっている（Issue #346 のコメントで確認）。
 
-結果は `docs/S3_APPROVAL_TEST_RESULT.md` に記録し、#459 は閉じる。
+結果は [`S3_APPROVAL_TEST_RESULT.md`](S3_APPROVAL_TEST_RESULT.md) に記録した（2026-10-23）。
