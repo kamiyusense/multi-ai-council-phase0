@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "pause_at_used_percent": 95,
+  "grok_weekly_run_cap": 20,
+  "credits_allowed": false
+}
