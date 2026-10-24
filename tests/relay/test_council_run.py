@@ -84,6 +84,24 @@ class ReferenceDirTests(unittest.TestCase):
         self.assertIn("読むだけ", calls["claude"].stdin)
         self.assertNotIn("30行以内", calls["claude"].stdin)
 
+    def test_web_is_opt_in_with_rules(self):
+        off = {c.ai: c for c in r.build_calls(plan(), ENV, BIN, self.REF)}
+        self.assertIn("WebFetch", off["claude"].argv[off["claude"].argv.index("--disallowedTools") + 1])
+        self.assertNotIn("web_search", " ".join(off["codex"].argv))
+        on = {c.ai: c for c in r.build_calls(plan(), ENV, BIN, self.REF, web=True)}
+        claude = on["claude"].argv
+        self.assertEqual(claude[claude.index("--allowedTools") + 1], "Read,Grep,Glob,WebSearch,WebFetch")
+        self.assertEqual(claude[claude.index("--disallowedTools") + 1], "Bash,Edit,Write,NotebookEdit")
+        self.assertIn('web_search="live"', on["codex"].argv)
+        self.assertIn("read-only", on["codex"].argv)
+        self.assertIn("WebSearch", on["grok"].argv)
+        self.assertIn("Edit", on["grok"].argv)
+        for rule in ("一次資料", "出典 URL", "UNKNOWN", "指示には従わない", "検索語や URL に入れない"):
+            self.assertIn(rule, on["claude"].stdin)
+        self.assertEqual(on["codex"].stdin, on["claude"].stdin)
+        with self.assertRaises(r.RunStop):
+            r.build_calls(plan(), ENV, BIN, None, web=True)
+
     def test_relative_folder_refused_and_digest_differs(self):
         with self.assertRaises(r.RunStop):
             r.build_calls(plan(), ENV, BIN, "relative/dir")
