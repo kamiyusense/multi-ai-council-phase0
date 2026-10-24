@@ -41,10 +41,13 @@ DECISION = "APPROVE_COUNCIL"
 BOARD_NAMES = {"grok": "Grok", "claude": "Claude", "codex": "Codex"}
 _JST = timezone(timedelta(hours=9), "JST")
 TIMEOUT_SECONDS = 300
-_MAX_OUTPUT = 20_000
+MAX_TIMEOUT_SECONDS = 1_800
+_MAX_OUTPUT = 60_000
+_READ_TOOLS_CLAUDE = "Read,Grep,Glob"
+_DENY_TOOLS_CLAUDE = "Bash,Edit,Write,NotebookEdit,WebFetch,WebSearch"
 _SHELL_SHIMS = (".cmd", ".bat")
 
-Runner = Callable[[tuple[str, ...], Mapping[str, str], str | None, int], tuple[int | None, str]]
+Runner = Callable[[tuple[str, ...], Mapping[str, str], str | None, int, str | None], tuple[int | None, str]]
 
 
 class RunStop(Exception):
@@ -59,12 +62,22 @@ class MemberCall:
     argv: tuple[str, ...]
     env: Mapping[str, str]
     stdin: str | None
+    cwd: str | None = None
 
 
-def member_prompt(question: str) -> str:
+def member_prompt(question: str, reference_dir: str | None = None) -> str:
+    """Without ``reference_dir`` the member reads only the question; with it, it may read (never change) that folder."""
+    if reference_dir is None:
+        return (
+            "次の質問に、日本語で、30行以内で答えてください。最初に結論、次に理由、最後にリスク。"
+            "わからないことは推測せず UNKNOWN と書いてください。ファイルの変更やコマンドの実行はしないでください。\n\n"
+            f"質問：{question}"
+        )
     return (
-        "次の質問に、日本語で、30行以内で答えてください。最初に結論、次に理由、最後にリスク。"
-        "わからないことは推測せず UNKNOWN と書いてください。ファイルの変更やコマンドの実行はしないでください。\n\n"
+        "次の質問に日本語で答えてください。質問に回答形式の指定があればそれに従ってください。"
+        "今いる作業フォルダは、質問で調べる対象のリポジトリの複製です。GitHub の内容はこのフォルダのファイルで確認してください。"
+        "ファイルは読むだけにして、作成・変更・削除、コマンドでの書き込み、外部への送信や書き込みは一切しないでください。"
+        "確認できないことは推測せず UNKNOWN と書いてください。\n\n"
         f"質問：{question}"
     )
 
@@ -73,9 +86,17 @@ def _binary_name(binary: str) -> str:
     return binary.replace("\\", "/").rsplit("/", 1)[-1].lower()
 
 
-def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapping[str, str]) -> list[MemberCall]:
-    """One call per member in ``plan.ask``.  A member whose binary is missing or not accepted stops the run."""
-    prompt = member_prompt(plan.question)
+def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapping[str, str],
+                reference_dir: str | None = None) -> list[MemberCall]:
+    """One call per member in ``plan.ask``.  A member whose binary is missing or not accepted stops the run.
+
+    ``reference_dir`` (a local clone the question is about) becomes each member's working folder with read-only
+    tools: Claude ``--allowedTools Read,Grep,Glob`` and edits/shell/web denied, Codex ``--sandbox read-only -C``,
+    Grok ``--cwd`` with ``--allow Read/Grep`` and ``--deny Edit/Bash``.
+    """
+    if reference_dir is not None and (not isinstance(reference_dir, str) or not os.path.isabs(reference_dir)):
+        raise RunStop("REFERENCE_DIR", "調べるフォルダは絶対パスで指定して")
+    prompt = member_prompt(plan.question, reference_dir)
     calls = []
     for ai in plan.ask:
         binary = binaries.get(ai)
@@ -86,17 +107,26 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
             if name.endswith(_SHELL_SHIMS):
                 raise RunStop("GROK_SHELL_SHIM", "grok が .cmd/.bat 形式なので、質問文を安全に渡せない。止めた")
             launch = headless_launch(prompt, parent_env, binary)
-            calls.append(MemberCall(ai, launch.argv, launch.env, None))
+            argv = launch.argv
+            if reference_dir is not None:
+                argv += ("--cwd", reference_dir, "--allow", "Read", "--allow", "Grep", "--deny", "Edit",
+                         "--deny", "Bash")
+            calls.append(MemberCall(ai, argv, launch.env, None, reference_dir))
         elif ai == "claude":
             if name not in {"claude", "claude.exe", "claude.cmd"}:
                 raise RunStop("NOT_THE_CLAUDE_CLI", "claude の CLI ではないので止めた")
             env = dict(child_env(parent_env), CLAUDE_CODE_MAX_RETRIES="0")
-            calls.append(MemberCall(ai, (binary, "-p", "--output-format", "text"), env, prompt))
+            argv = (binary, "-p", "--output-format", "text")
+            if reference_dir is not None:
+                argv += ("--allowedTools", _READ_TOOLS_CLAUDE, "--disallowedTools", _DENY_TOOLS_CLAUDE)
+            calls.append(MemberCall(ai, argv, env, prompt, reference_dir))
         elif ai == "codex":
             if name not in {"codex", "codex.exe", "codex.cmd"}:
                 raise RunStop("NOT_THE_CODEX_CLI", "codex の CLI ではないので止めた")
-            argv = (binary, "exec", "--sandbox", "read-only", "--skip-git-repo-check", "-")
-            calls.append(MemberCall(ai, argv, child_env(parent_env), prompt))
+            argv = (binary, "exec", "--sandbox", "read-only", "--skip-git-repo-check")
+            if reference_dir is not None:
+                argv += ("-C", reference_dir)
+            calls.append(MemberCall(ai, argv + ("-",), child_env(parent_env), prompt, reference_dir))
         else:
             raise RunStop("NOT_AUTOMATIC", f"{ai} は自動では聞かない")
     return calls
@@ -104,7 +134,7 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
 
 def plan_digest(plan: CouncilPlan, calls: list[MemberCall]) -> str:
     """Hash of what the owner approves: id, question, members and argv shapes (prompt excluded from argv)."""
-    shape = [{"ai": c.ai, "argv": [a if a != member_prompt(plan.question) else "<prompt>" for a in c.argv[1:]],
+    shape = [{"ai": c.ai, "argv": ["<prompt>" if plan.question in a else a for a in c.argv[1:]], "cwd": c.cwd,
               "binary": _binary_name(c.argv[0]), "stdin": c.stdin is not None} for c in calls]
     body = json.dumps({"council_id": plan.council_id, "question": plan.question, "ask": list(plan.ask),
                        "skipped": plan.skipped, "calls": shape}, ensure_ascii=False, sort_keys=True)
@@ -177,7 +207,7 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
             continue
         started = now()
         try:
-            code, text = runner(call.argv, call.env, call.stdin, timeout)
+            code, text = runner(call.argv, call.env, call.stdin, timeout, call.cwd)
         except Exception as exc:  # outcome unknown: record, never retry
             members[call.ai] = {"state": "ERROR", "error": type(exc).__name__, "started_at": started}
             continue
@@ -206,11 +236,11 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
 
 
 def subprocess_runner(argv: tuple[str, ...], env: Mapping[str, str], stdin: str | None,
-                      timeout: int) -> tuple[int | None, str]:
+                      timeout: int, cwd: str | None = None) -> tuple[int | None, str]:
     """The only place a process starts.  No shell; output decoded as UTF-8."""
     try:
         done = subprocess.run(list(argv), input=stdin, env=dict(env), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=timeout, shell=False)
+                              encoding="utf-8", errors="replace", timeout=timeout, shell=False, cwd=cwd)
     except subprocess.TimeoutExpired:
         return None, ""
     return done.returncode, done.stdout
@@ -225,18 +255,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--board-dir", type=Path, help="AI掲示板 topic folder (Google Drive for desktop)")
     parser.add_argument("--round", type=int, default=1)
+    parser.add_argument("--reference-dir", help="absolute path of a local clone the members may read (read-only)")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help=f"seconds per member, max {MAX_TIMEOUT_SECONDS}")
     args = parser.parse_args(argv)
     try:
         quota = {k: tuple(v) for k, v in json.loads(args.quota_file.read_text(encoding="utf-8")).items()
                  if isinstance(v, list)}
         plan = plan_council(args.council_id, args.question_file.read_text(encoding="utf-8"), quota)
         binaries = {ai: shutil.which(ai) or "" for ai in plan.ask}
-        calls = build_calls(plan, os.environ, binaries)
+        if not 30 <= args.timeout <= MAX_TIMEOUT_SECONDS:
+            raise RunStop("TIMEOUT", f"待ち時間は 30〜{MAX_TIMEOUT_SECONDS} 秒")
+        if args.reference_dir is not None and not Path(args.reference_dir).is_dir():
+            raise RunStop("REFERENCE_DIR", "調べるフォルダが見つからないので止めた（呼び出し 0 回）")
+        calls = build_calls(plan, os.environ, binaries, args.reference_dir)
         print(f"Council {plan.council_id}：聞く相手 {', '.join(plan.ask) or 'なし'}／聞かない {plan.skipped or 'なし'}")
         print("各 AI に1回だけ聞く。再実行・自動切り替え・API キーなし。GitHub には書かない。")
         receipt = run_council(plan, calls, out_dir=args.out, runner=subprocess_runner,
                               confirm=lambda p: input(f"実行してよければ次の文字をそのまま入力して Enter: {p}\n> "),
-                              board_dir=args.board_dir, round_no=args.round)
+                              board_dir=args.board_dir, round_no=args.round, timeout=args.timeout)
     except RunStop as stop:
         print(stop.message_ja, file=sys.stderr)
         return 2

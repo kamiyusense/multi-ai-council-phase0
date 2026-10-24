@@ -50,7 +50,7 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(plan.question, "どっち？")
 
     def test_bad_input_fails_closed(self):
-        for cid, q in (("council-1-x", "q"), (CID, ""), (CID, "x" * 4_001), (None, "q")):
+        for cid, q in (("council-1-x", "q"), (CID, ""), (CID, "x" * 12_001), (None, "q")):
             with self.assertRaises(c.CouncilError):
                 c.plan_council(cid, q, {})
         self.assertEqual(c.plan_council(CID, "q", {"grok": ("yes", "x")}).ask, ())

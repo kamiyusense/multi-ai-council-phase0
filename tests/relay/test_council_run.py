@@ -24,9 +24,9 @@ class FakeRunner:
     def __init__(self, results=None):
         self.calls, self.results = [], results or {}
 
-    def __call__(self, argv, env, stdin, timeout):
+    def __call__(self, argv, env, stdin, timeout, cwd=None):
         ai = Path(argv[0]).name
-        self.calls.append((ai, argv, dict(env), stdin))
+        self.calls.append((ai, argv, dict(env), stdin, cwd))
         result = self.results.get(ai, (0, f"{ai} の答え"))
         if isinstance(result, Exception):
             raise result
@@ -64,6 +64,37 @@ class BuildTests(unittest.TestCase):
         calls = r.build_calls(plan(), ENV, BIN)
         other = plan_council(CID, "別の質問", ALL_OK)
         self.assertNotEqual(r.plan_digest(plan(), calls), r.plan_digest(other, r.build_calls(other, ENV, BIN)))
+
+
+class ReferenceDirTests(unittest.TestCase):
+    REF = "/home/u/ai-video-research"
+
+    def test_read_only_tools_and_working_folder(self):
+        calls = {c.ai: c for c in r.build_calls(plan(), ENV, BIN, self.REF)}
+        self.assertTrue(all(c.cwd == self.REF for c in calls.values()))
+        grok = calls["grok"].argv
+        self.assertEqual(grok[grok.index("--cwd") + 1], self.REF)
+        self.assertIn("Edit", grok[grok.index("--deny") + 1:])
+        claude = calls["claude"].argv
+        self.assertEqual(claude[claude.index("--allowedTools") + 1], "Read,Grep,Glob")
+        self.assertIn("Bash", claude[claude.index("--disallowedTools") + 1])
+        codex = calls["codex"].argv
+        self.assertEqual(codex[-3:], ("-C", self.REF, "-"))
+        self.assertIn("read-only", codex)
+        self.assertIn("読むだけ", calls["claude"].stdin)
+        self.assertNotIn("30行以内", calls["claude"].stdin)
+
+    def test_relative_folder_refused_and_digest_differs(self):
+        with self.assertRaises(r.RunStop):
+            r.build_calls(plan(), ENV, BIN, "relative/dir")
+        p = plan()
+        self.assertNotEqual(r.plan_digest(p, r.build_calls(p, ENV, BIN)),
+                            r.plan_digest(p, r.build_calls(p, ENV, BIN, self.REF)))
+
+    def test_long_questions_up_to_12000(self):
+        self.assertEqual(plan_council(CID, "あ" * 12_000, ALL_OK).ask, ("grok", "claude", "codex"))
+        with self.assertRaises(Exception):
+            plan_council(CID, "あ" * 12_001, ALL_OK)
 
 
 class RunTests(unittest.TestCase):
@@ -117,7 +148,7 @@ class RunTests(unittest.TestCase):
         p2 = plan_council("council-20261024-ef56", "q", ALL_OK)
         calls = r.build_calls(p2, ENV, BIN)
 
-        def stopping(argv, env, stdin, timeout):
+        def stopping(argv, env, stdin, timeout, cwd=None):
             (self.out / p2.council_id / "STOP").write_text("x")
             return 0, "最初だけ"
         receipt = r.run_council(p2, calls, out_dir=self.out, runner=stopping, confirm=typed)
