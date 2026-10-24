@@ -27,7 +27,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -35,9 +35,11 @@ from .council import ANSWER_MARKER, CouncilError, CouncilPlan, plan_council, sum
 from .council_grok import GrokLaunchError, child_env, headless_launch
 
 __all__ = ["MemberCall", "member_prompt", "build_calls", "plan_digest", "approval_phrase", "run_council",
-           "RunStop", "main"]
+           "board_file", "RunStop", "main"]
 
 DECISION = "APPROVE_COUNCIL"
+BOARD_NAMES = {"grok": "Grok", "claude": "Claude", "codex": "Codex"}
+_JST = timezone(timedelta(hours=9), "JST")
 TIMEOUT_SECONDS = 300
 _MAX_OUTPUT = 20_000
 _SHELL_SHIMS = (".cmd", ".bat")
@@ -118,6 +120,19 @@ def answer_comment(council_id: str, ai: str, text: str) -> str:
     return f"{ANSWER_MARKER} {marker} -->\n\n{text.strip()}\n\nAI-Agent: {ai}\n"
 
 
+def board_file(council_id: str, ai: str, text: str, round_no: int, at: datetime) -> tuple[str, str]:
+    """(file name, body) in the Drive "AI掲示板" layout: ``r<round>_<AI名>.md`` with the board's header lines."""
+    name = BOARD_NAMES[ai]
+    body = (f"作成者: {name}（{ai} CLI・相棒の PC・Council 伝言係経由）\n"
+            f"ラウンド: R{round_no}\n"
+            f"作成時刻（JST）: {at.astimezone(_JST).strftime('%Y-%m-%d %H:%M')} JST\n"
+            "確信度: 本文を参照\n"
+            "読んだファイル: なし（質問文だけを読んで回答）\n"
+            f"Council: {council_id}\n\n"
+            f"{text.strip()}\n\nAI-Agent: {ai}\n")
+    return f"r{round_no}_{name}.md", body
+
+
 def _atomic_write(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(text, encoding="utf-8")
@@ -126,13 +141,27 @@ def _atomic_write(path: Path, text: str) -> None:
 
 def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, runner: Runner,
                 confirm: Callable[[str], str], timeout: int = TIMEOUT_SECONDS,
-                now: Callable[[], str] | None = None) -> dict[str, Any]:
-    """Ask, once, after the typed approval.  Returns the receipt (also written to ``out_dir``)."""
+                now: Callable[[], str] | None = None, board_dir: Path | None = None,
+                round_no: int = 1) -> dict[str, Any]:
+    """Ask, once, after the typed approval.  Returns the receipt (also written to ``out_dir``).
+
+    With ``board_dir`` (a Google Drive for desktop folder of the "AI掲示板"), each answer is also written there as
+    ``r<round>_<AI名>.md``; an existing file of that name stops the run before any call (never overwrite).
+    """
     now = now or (lambda: datetime.now(timezone.utc).isoformat())
     out = out_dir / plan.council_id
     receipt_path = out / "receipt.json"
     if receipt_path.exists() or (out / "started").exists():
         raise RunStop("ALREADY_RUN", "この Council はもう一度実行済み（または途中）なので、再実行しない")
+    if board_dir is not None:
+        if isinstance(round_no, bool) or not isinstance(round_no, int) or not 1 <= round_no <= 9:
+            raise RunStop("ROUND", "ラウンド番号は 1〜9")
+        if not board_dir.is_dir():
+            raise RunStop("BOARD_DIR", "掲示板のフォルダが見つからないので止めた（呼び出し 0 回）")
+        taken = [f"r{round_no}_{BOARD_NAMES[c.ai]}.md" for c in calls
+                 if (board_dir / f"r{round_no}_{BOARD_NAMES[c.ai]}.md").exists()]
+        if taken:
+            raise RunStop("BOARD_FILE_EXISTS", f"掲示板にもう {', '.join(taken)} があるので、上書きせず止めた")
     digest = plan_digest(plan, calls)
     phrase = approval_phrase(plan, digest)
     if confirm(phrase).strip() != phrase:
@@ -161,12 +190,16 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
             continue
         answers[call.ai] = text
         _atomic_write(out / f"answer-{call.ai}.md", answer_comment(plan.council_id, call.ai, text))
+        if board_dir is not None:
+            name, body = board_file(plan.council_id, call.ai, text, round_no, datetime.now(timezone.utc))
+            _atomic_write(board_dir / name, body)
         members[call.ai] = {"state": "ANSWERED", "exit_code": 0, "started_at": started, "chars": len(text),
                             "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest()}
     notes = [f"{ai}: {m['state']}" for ai, m in members.items() if m["state"] not in {"ANSWERED", "SKIPPED"}]
     _atomic_write(out / "summary.md", summary_markdown(plan, answers, notes))
     receipt = {"council_id": plan.council_id, "decision": DECISION, "plan_digest": digest, "retry": 0,
-               "fallback": "disabled", "github_write": False, "finished_at": now(), "members": members,
+               "fallback": "disabled", "github_write": False,
+               "board_round": round_no if board_dir else None, "finished_at": now(), "members": members,
                "antigravity": "MANUAL"}
     _atomic_write(receipt_path, json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
     return receipt
@@ -190,6 +223,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--quota-file", required=True, type=Path,
                         help='JSON {"grok": [true, "QUOTA_OK"], ...} from the S7 quota gate')
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--board-dir", type=Path, help="AI掲示板 topic folder (Google Drive for desktop)")
+    parser.add_argument("--round", type=int, default=1)
     args = parser.parse_args(argv)
     try:
         quota = {k: tuple(v) for k, v in json.loads(args.quota_file.read_text(encoding="utf-8")).items()
@@ -200,7 +235,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Council {plan.council_id}：聞く相手 {', '.join(plan.ask) or 'なし'}／聞かない {plan.skipped or 'なし'}")
         print("各 AI に1回だけ聞く。再実行・自動切り替え・API キーなし。GitHub には書かない。")
         receipt = run_council(plan, calls, out_dir=args.out, runner=subprocess_runner,
-                              confirm=lambda p: input(f"実行してよければ次の文字をそのまま入力して Enter: {p}\n> "))
+                              confirm=lambda p: input(f"実行してよければ次の文字をそのまま入力して Enter: {p}\n> "),
+                              board_dir=args.board_dir, round_no=args.round)
     except RunStop as stop:
         print(stop.message_ja, file=sys.stderr)
         return 2
