@@ -1,4 +1,6 @@
 {
+  "precedence_ja": "旧台帳（control_tower_registry.json）と食い違ったときは、運用上の状態（凍結など）はこのファイルに従う。旧台帳の本採用の記録は履歴として残す。",
+  "precedence": "If this file and the old registry (control_tower_registry.json) disagree, the operational status (such as FROZEN) follows this file. The old registry's adoption record stays as history.",
   "schema_version": 1,
   "note": "V4 lane catalog (docs/RELAY_TOWER_DIRECTION_V4.md). Read-only metadata for the board. control_tower_registry.json stays the sealed runtime registry and is not changed by this file.",
   "lanes": [

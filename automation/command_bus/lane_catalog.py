@@ -6,6 +6,9 @@ lane (frozen, active, manual, planned), the Symphony repositories and each lane'
 ``registry_row`` must name an existing registry row and every registry row must appear in the catalog exactly once,
 so the two files cannot drift apart silently.
 
+Precedence (owner decision 2026-10-24): where the two disagree, the operational status (such as FROZEN) follows
+this catalog; the registry's DURABLE adoption record stays as history.  The catalog states this in its first keys.
+
 Pure functions only: nothing here reads or writes GitHub or changes the registry.
 """
 from __future__ import annotations
@@ -21,7 +24,9 @@ CONFIG_DIR = Path(__file__).resolve().parent / "config"
 DEFAULT_CATALOG_PATH = CONFIG_DIR / "lane_catalog_v4.json"
 DEFAULT_REGISTRY_PATH = CONFIG_DIR / "control_tower_registry.json"
 
-_TOP_KEYS = {"schema_version", "note", "lanes"}
+_TOP_KEYS = {"precedence_ja", "precedence", "schema_version", "note", "lanes"}
+PRECEDENCE_JA = ("旧台帳（control_tower_registry.json）と食い違ったときは、運用上の状態（凍結など）はこのファイルに従う。"
+                 "旧台帳の本採用の記録は履歴として残す。")
 _REQUIRED = {"lane_id", "display_name_ja", "v4_status", "registry_row", "detail_ref", "state_location", "tower_access"}
 _OPTIONAL = {"repositories"}
 _STATUSES = {"ACTIVE", "FROZEN", "MANUAL", "PLANNED"}
@@ -48,6 +53,8 @@ def validate_catalog(catalog: Mapping[str, Any], registry: Mapping[str, Any]) ->
     """Return the lanes in catalog order, or raise ``CatalogError``."""
     if not isinstance(catalog, Mapping) or set(catalog) != _TOP_KEYS or catalog["schema_version"] != 1:
         raise CatalogError("CATALOG_SHAPE")
+    if catalog["precedence_ja"] != PRECEDENCE_JA or next(iter(catalog)) != "precedence_ja":
+        raise CatalogError("PRECEDENCE")
     lanes = catalog["lanes"]
     if not isinstance(lanes, list) or not 1 <= len(lanes) <= _MAX_LANES:
         raise CatalogError("CATALOG_LANES")

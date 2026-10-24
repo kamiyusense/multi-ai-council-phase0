@@ -33,6 +33,12 @@ class CommittedCatalogTests(unittest.TestCase):
         self.assertEqual(lane(CATALOG, "claude-jules-auto")["detail_ref"], "issue:346")
         self.assertTrue(all(item["tower_access"] == "READ_ONLY" for item in CATALOG["lanes"]))
 
+    def test_precedence_rule_opens_the_file(self):
+        self.assertEqual(next(iter(CATALOG)), "precedence_ja")
+        self.assertEqual(CATALOG["precedence_ja"], lc.PRECEDENCE_JA)
+        self.assertIn("凍結", CATALOG["precedence_ja"])
+        self.assertIn("履歴として残す", CATALOG["precedence_ja"])
+
     def test_new_lanes_are_not_registry_rows(self):
         for lane_id in ("antigravity-manual", "council"):
             self.assertIsNone(lane(CATALOG, lane_id)["registry_row"])
@@ -61,6 +67,8 @@ class FailClosedTests(unittest.TestCase):
         self.refused(lambda c: lane(c, "council").update(extra=1), "LANE_KEYS")
         self.refused(lambda c: lane(c, "symphony-codex-auto").update(repositories={"trial": "a/b"}), "REPOSITORIES")
         self.refused(lambda c: c.update(schema_version=2), "CATALOG_SHAPE")
+        self.refused(lambda c: c.update(precedence_ja="別の文"), "PRECEDENCE")
+        self.refused(lambda c: c.pop("precedence_ja"), "CATALOG_SHAPE")
 
     def test_duplicate_lane_id(self):
         self.refused(lambda c: lane(c, "council").update(lane_id="antigravity-manual"), "LANE_ID")
