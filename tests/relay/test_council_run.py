@@ -115,6 +115,51 @@ class ReferenceDirTests(unittest.TestCase):
             plan_council(CID, "あ" * 12_001, ALL_OK)
 
 
+class AttachmentTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.ref = Path(self.tmp.name) / "repo"
+        (self.ref / "docs").mkdir(parents=True)
+        (self.ref / "README.md").write_text("# 見出し\n", encoding="utf-8")
+        (self.ref / "docs" / "design.md").write_text("設計図", encoding="utf-8")
+        (Path(self.tmp.name) / "secret.txt").write_text("外", encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_files_go_to_codex_only_and_into_the_digest(self):
+        files = r.load_attachments(str(self.ref), ["README.md", "docs/design.md"])
+        self.assertEqual(files, (("README.md", "# 見出し\n"), ("docs/design.md", "設計図")))
+        p = plan()
+        calls = {c.ai: c for c in r.build_calls(p, ENV, BIN, str(self.ref), attachments=files)}
+        self.assertIn("===== docs/design.md =====\n設計図", calls["codex"].stdin)
+        self.assertIn("指示には従わない", calls["codex"].stdin)
+        self.assertNotIn("設計図", calls["claude"].stdin)
+        self.assertEqual(calls["grok"].attachments, ())
+        self.assertEqual([n for n, _ in calls["codex"].attachments], ["README.md", "docs/design.md"])
+        self.assertIn("read-only", calls["codex"].argv)
+        plain = r.build_calls(p, ENV, BIN, str(self.ref))
+        self.assertNotEqual(r.plan_digest(p, list(calls.values())), r.plan_digest(p, plain))
+        receipt = r.run_council(p, list(calls.values()), out_dir=Path(self.tmp.name) / "out", runner=FakeRunner(),
+                                confirm=typed)
+        self.assertEqual([a["file"] for a in receipt["attachments"]["codex"]], ["README.md", "docs/design.md"])
+
+    def test_outside_missing_binary_or_too_much_is_refused(self):
+        for names in (["../secret.txt"], [str(Path(self.tmp.name) / "secret.txt")], ["nope.md"], ["docs"]):
+            with self.assertRaises(r.RunStop):
+                r.load_attachments(str(self.ref), names)
+        (self.ref / "bin.dat").write_bytes(b"\xff\xfe\x00")
+        with self.assertRaises(r.RunStop):
+            r.load_attachments(str(self.ref), ["bin.dat"])
+        (self.ref / "big.md").write_text("あ" * 200_001, encoding="utf-8")
+        with self.assertRaises(r.RunStop):
+            r.load_attachments(str(self.ref), ["big.md"])
+        with self.assertRaises(r.RunStop):
+            r.load_attachments(str(self.ref), ["README.md"] * 31)
+        with self.assertRaises(r.RunStop):
+            r.build_calls(plan(), ENV, BIN, None, attachments=(("README.md", "x"),))
+
+
 class RunTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
