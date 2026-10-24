@@ -276,7 +276,7 @@ def board_file(council_id: str, ai: str, text: str, round_no: int, at: datetime)
             f"ラウンド: R{round_no}\n"
             f"作成時刻（JST）: {at.astimezone(_JST).strftime('%Y-%m-%d %H:%M')} JST\n"
             "確信度: 本文を参照\n"
-            "読んだファイル: なし（質問文だけを読んで回答）\n"
+            "読んだファイル: 本文を参照（Codex への添付は receipt.json）\n"
             f"Council: {council_id}\n\n"
             f"{text.strip()}\n\nAI-Agent: {ai}\n")
     return f"r{round_no}_{name}.md", body
