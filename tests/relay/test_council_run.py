@@ -159,6 +159,34 @@ class AttachmentTests(unittest.TestCase):
         with self.assertRaises(r.RunStop):
             r.build_calls(plan(), ENV, BIN, None, attachments=(("README.md", "x"),))
 
+    def test_files_named_in_the_question_are_found(self):
+        q = "README.md の見出しと docs/design.md、それに docs/none.md と https://docs.x.ai/build/overview を見て。README.md"
+        self.assertEqual(r.named_files(q, str(self.ref)), ["README.md", "docs/design.md"])
+        self.assertEqual(r.named_files("../secret.txt を読んで", str(self.ref)), [])
+
+
+class ReferenceUpdateTests(unittest.TestCase):
+    def git(self, answers):
+        seen = []
+
+        def run(args):
+            seen.append(args[2])
+            return answers.get(args[2], (0, ""))
+        return run, seen
+
+    def test_fast_forwards_a_clean_main_clone(self):
+        run, seen = self.git({"rev-parse": (0, "main")})
+        r.update_reference("/ref", run)
+        self.assertEqual(seen, ["rev-parse", "status", "fetch", "merge", "rev-parse"])
+
+    def test_changed_or_other_branch_or_failed_fetch_stops(self):
+        for answers in ({"rev-parse": (0, "feature")}, {"rev-parse": (0, "main"), "status": (0, " M a.md")},
+                        {"rev-parse": (0, "main"), "fetch": (1, "")}, {"rev-parse": (0, "main"), "merge": (1, "")}):
+            run, seen = self.git(answers)
+            with self.assertRaises(r.RunStop):
+                r.update_reference("/ref", run)
+            self.assertNotIn("reset", seen)
+
 
 class RunTests(unittest.TestCase):
     def setUp(self):

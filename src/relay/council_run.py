@@ -16,6 +16,9 @@ Rules kept here:
 * The receipt holds states, lengths and hashes, never environment values.
 * Codex cannot open files in read-only non-interactive mode (every command is refused), so ``--attach`` files
   from the reference folder are read here and added to Codex's prompt; their names and hashes are in the approval.
+  Files the question names (``docs/x.md``, ``README.md``) that exist in the folder are attached without a flag.
+* The reference clone is brought to its remote ``main`` before each run (fast-forward only; a changed or
+  non-main clone stops the run), so members never read an old copy.  Only reads from GitHub.
 
 The process runner is injected, so tests use a fake and never start a CLI.
 """
@@ -37,7 +40,7 @@ from typing import Any, Callable, Mapping
 from .council import ANSWER_MARKER, CouncilError, CouncilPlan, plan_council, summary_markdown
 from .council_grok import GrokLaunchError, child_env, headless_launch
 
-__all__ = ["MemberCall", "member_prompt", "load_attachments", "build_calls", "plan_digest", "approval_phrase", "run_council",
+__all__ = ["MemberCall", "member_prompt", "load_attachments", "named_files", "update_reference", "build_calls", "plan_digest", "approval_phrase", "run_council",
            "board_file", "RunStop", "main"]
 
 DECISION = "APPROVE_COUNCIL"
@@ -65,6 +68,7 @@ _RESEARCH_RULES = (
 _SHELL_SHIMS = (".cmd", ".bat")
 _MAX_ATTACH_FILES = 30
 _MAX_ATTACH_CHARS = 200_000
+_NAMED_FILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|txt|json|jsonl|py|ya?ml|toml|csv|srt|vtt|ps1|html)\b")
 
 Runner = Callable[[tuple[str, ...], Mapping[str, str], str | None, int, str | None], tuple[int | None, str]]
 
@@ -125,6 +129,44 @@ def load_attachments(reference_dir: str, names: list[str]) -> tuple[tuple[str, s
             raise RunStop("ATTACH_TOO_LONG", f"添付の合計が {_MAX_ATTACH_CHARS} 文字を超えるので止めた")
         files[path.relative_to(root).as_posix()] = text
     return tuple(files.items())
+
+
+def named_files(question: str, reference_dir: str) -> list[str]:
+    """File paths written in the question that exist in ``reference_dir``, in order of first mention."""
+    root, found = Path(reference_dir).resolve(), []
+    for name in _NAMED_FILE.findall(question):
+        path = (root / name.strip("./")).resolve()
+        rel = path.relative_to(root).as_posix() if path.is_relative_to(root) and path.is_file() else None
+        if rel and rel not in found:
+            found.append(rel)
+    return found
+
+
+GitRunner = Callable[[list[str]], tuple[int, str]]
+
+
+def _git(args: list[str]) -> tuple[int, str]:
+    done = subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
+                          timeout=120, shell=False)
+    return done.returncode, (done.stdout or "").strip()
+
+
+def update_reference(reference_dir: str, git: GitRunner = _git) -> str:
+    """Fast-forward the clone to ``origin/main`` and return its short HEAD.  Never discards local work."""
+    base = ["-C", reference_dir]
+    code, branch = git(base + ["rev-parse", "--abbrev-ref", "HEAD"])
+    if code != 0 or branch != "main":
+        raise RunStop("REFERENCE_NOT_MAIN", "調べるフォルダが main ではないので止めた（呼び出し 0 回）")
+    code, changes = git(base + ["status", "--porcelain"])
+    if code != 0 or changes:
+        raise RunStop("REFERENCE_CHANGED", "調べるフォルダに変更があるので、上書きせず止めた（呼び出し 0 回）")
+    for step in (["fetch", "--quiet", "origin", "main"], ["merge", "--ff-only", "--quiet", "origin/main"]):
+        if git(base + step)[0] != 0:
+            raise RunStop("REFERENCE_UPDATE", "調べるフォルダを最新にできなかったので止めた（呼び出し 0 回）")
+    code, head = git(base + ["rev-parse", "--short", "HEAD"])
+    if code != 0 or not head:
+        raise RunStop("REFERENCE_UPDATE", "調べるフォルダの版がわからないので止めた（呼び出し 0 回）")
+    return head
 
 
 def _attached_prompt(prompt: str, attachments: tuple[tuple[str, str], ...]) -> str:
@@ -339,19 +381,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reference-dir", help="absolute path of a local clone the members may read (read-only)")
     parser.add_argument("--attach", action="append", default=[],
                         help="file in --reference-dir to add to Codex's prompt (repeatable)")
+    parser.add_argument("--no-update-reference", action="store_true",
+                        help="read the clone as it is (default: fast-forward it to origin/main first)")
     parser.add_argument("--web", action="store_true", help="also allow web search/read (owner's choice)")
     parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help=f"seconds per member, max {MAX_TIMEOUT_SECONDS}")
     args = parser.parse_args(argv)
     try:
-        quota = {k: tuple(v) for k, v in json.loads(args.quota_file.read_text(encoding="utf-8")).items()
+        quota = {k: tuple(v) for k, v in json.loads(args.quota_file.read_text(encoding="utf-8-sig")).items()
                  if isinstance(v, list)}
-        plan = plan_council(args.council_id, args.question_file.read_text(encoding="utf-8"), quota)
+        plan = plan_council(args.council_id, args.question_file.read_text(encoding="utf-8-sig"), quota)
         binaries = {ai: shutil.which(ai) or "" for ai in plan.ask}
         if not 30 <= args.timeout <= MAX_TIMEOUT_SECONDS:
             raise RunStop("TIMEOUT", f"待ち時間は 30〜{MAX_TIMEOUT_SECONDS} 秒")
         if args.reference_dir is not None and not Path(args.reference_dir).is_dir():
             raise RunStop("REFERENCE_DIR", "調べるフォルダが見つからないので止めた（呼び出し 0 回）")
-        attachments = load_attachments(args.reference_dir, args.attach) if args.attach and args.reference_dir else ()
+        attachments = ()
+        if args.reference_dir is not None:
+            if not args.no_update_reference:
+                print(f"調べるフォルダを最新にした：{update_reference(args.reference_dir)}")
+            names = list(dict.fromkeys(args.attach + named_files(plan.question, args.reference_dir)))
+            attachments = load_attachments(args.reference_dir, names) if names else ()
         calls = build_calls(plan, os.environ, binaries, args.reference_dir, args.web, attachments)
         if attachments:
             print(f"Codex への添付：{', '.join(n for n, _ in attachments)}")
