@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "fallback_order": ["claude", "codex", "grok"],
+  "lease_minutes": 90,
+  "standin_daily_cap": 12,
+  "standin_actions": ["STATIC_WORK", "STATUS_REPORT"],
+  "primary_actions": ["STATIC_WORK", "STATUS_REPORT", "CODE_CHANGE_PR"]
+}
