@@ -13,3 +13,9 @@ Owner steps (Claude UI, Claude does not change settings):
 3. Open a test PR on `contractor/example-docs-note` with request-example.md in the body.
 
 Open risks: requester identity is only a GitHub login (anyone who can write that login can ask); the Routine uses Claude usage; a second Claude judging the result should stay independent (existing reviewer routine / test_commands).
+
+## Trial limits (owner decision 2026-10-24)
+
+- Daily cap: 10 requests per rolling 24 hours (counted from this routine's own result comments), then "Contractor daily cap reached:" and stop.
+- Watch during the trial: any `contractor/` PR from an author that is not in ALLOWED_REQUESTERS (a request nobody ordered) is refused with no write and reported to the owner. A read-only watcher can list `contractor/*` PRs and compare authors.
+- Not decided yet: whether to add a receipt-first comment and a second identity signal (GitHub App marker); see the review notes in the thread.
