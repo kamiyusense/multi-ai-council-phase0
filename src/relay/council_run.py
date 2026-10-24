@@ -23,6 +23,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -43,6 +44,8 @@ _JST = timezone(timedelta(hours=9), "JST")
 TIMEOUT_SECONDS = 300
 MAX_TIMEOUT_SECONDS = 1_800
 _MAX_OUTPUT = 60_000
+_MAX_ERROR = 1_500
+_SECRET_TEXT = re.compile(r"(?i)(xai-|sk-|ghp_|gho_|github_pat_|bearer\s+)[A-Za-z0-9_\-\.]{6,}|[\w.+-]+@[\w-]+\.[\w.]+")
 _READ_TOOLS_CLAUDE = "Read,Grep,Glob"
 _WEB_TOOLS_CLAUDE = "WebSearch,WebFetch"
 _DENY_TOOLS_CLAUDE = "Bash,Edit,Write,NotebookEdit"
@@ -149,7 +152,9 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
                 raise RunStop("NOT_THE_CODEX_CLI", "codex の CLI ではないので止めた")
             argv = (binary, "exec", "--sandbox", "read-only", "--skip-git-repo-check")
             if reference_dir is not None:
-                argv += ("-C", reference_dir)
+                # Read-only non-interactive mode per the Codex docs (sandbox read-only + approval never): an
+                # untrusted folder otherwise needs an approval for every read command, which exec cannot give.
+                argv += ("-C", reference_dir, "-c", 'approval_policy="never"')
                 if web:
                     argv += ("-c", 'web_search="live"')
             calls.append(MemberCall(ai, argv + ("-",), child_env(parent_env), prompt, reference_dir))
@@ -174,6 +179,11 @@ def approval_phrase(plan: CouncilPlan, digest: str) -> str:
 def answer_comment(council_id: str, ai: str, text: str) -> str:
     marker = json.dumps({"council_id": council_id, "from": ai})
     return f"{ANSWER_MARKER} {marker} -->\n\n{text.strip()}\n\nAI-Agent: {ai}\n"
+
+
+def error_tail(text: str | None) -> str:
+    """Last part of a CLI's error output for the receipt, with tokens and e-mail addresses masked."""
+    return _SECRET_TEXT.sub("[masked]", (text or "")[-_MAX_ERROR:]).strip()
 
 
 def board_file(council_id: str, ai: str, text: str, round_no: int, at: datetime) -> tuple[str, str]:
@@ -233,16 +243,18 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
             continue
         started = now()
         try:
-            code, text = runner(call.argv, call.env, call.stdin, timeout, call.cwd)
+            result = runner(call.argv, call.env, call.stdin, timeout, call.cwd)
+            code, text = result[0], result[1]
+            err = error_tail(result[2]) if len(result) > 2 else ""
         except Exception as exc:  # outcome unknown: record, never retry
             members[call.ai] = {"state": "ERROR", "error": type(exc).__name__, "started_at": started}
             continue
         if code is None:
-            members[call.ai] = {"state": "TIMEOUT", "started_at": started}
+            members[call.ai] = {"state": "TIMEOUT", "started_at": started, "stderr_tail": err}
             continue
         text = (text or "")[:_MAX_OUTPUT]
         if code != 0 or not text.strip():
-            members[call.ai] = {"state": "FAILED", "exit_code": code, "started_at": started}
+            members[call.ai] = {"state": "FAILED", "exit_code": code, "started_at": started, "stderr_tail": err}
             continue
         answers[call.ai] = text
         _atomic_write(out / f"answer-{call.ai}.md", answer_comment(plan.council_id, call.ai, text))
@@ -262,14 +274,15 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
 
 
 def subprocess_runner(argv: tuple[str, ...], env: Mapping[str, str], stdin: str | None,
-                      timeout: int, cwd: str | None = None) -> tuple[int | None, str]:
+                      timeout: int, cwd: str | None = None) -> tuple[int | None, str, str]:
     """The only place a process starts.  No shell; output decoded as UTF-8."""
     try:
         done = subprocess.run(list(argv), input=stdin, env=dict(env), capture_output=True, text=True,
                               encoding="utf-8", errors="replace", timeout=timeout, shell=False, cwd=cwd)
-    except subprocess.TimeoutExpired:
-        return None, ""
-    return done.returncode, done.stdout
+    except subprocess.TimeoutExpired as exc:
+        err = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        return None, "", err
+    return done.returncode, done.stdout, done.stderr
 
 
 def main(argv: list[str] | None = None) -> int:

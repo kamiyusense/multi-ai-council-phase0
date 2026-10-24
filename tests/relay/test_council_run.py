@@ -79,7 +79,7 @@ class ReferenceDirTests(unittest.TestCase):
         self.assertEqual(claude[claude.index("--allowedTools") + 1], "Read,Grep,Glob")
         self.assertIn("Bash", claude[claude.index("--disallowedTools") + 1])
         codex = calls["codex"].argv
-        self.assertEqual(codex[-3:], ("-C", self.REF, "-"))
+        self.assertEqual(codex[-5:], ("-C", self.REF, "-c", 'approval_policy="never"', "-"))
         self.assertIn("read-only", codex)
         self.assertIn("読むだけ", calls["claude"].stdin)
         self.assertNotIn("30行以内", calls["claude"].stdin)
@@ -157,6 +157,16 @@ class RunTests(unittest.TestCase):
         p2 = plan_council("council-20261024-cd34", "q", ALL_OK)
         receipt = r.run_council(p2, r.build_calls(p2, ENV, BIN)[:2], out_dir=self.out, runner=runner, confirm=typed)
         self.assertEqual([receipt["members"][ai]["state"] for ai in ("grok", "claude")], ["FAILED", "FAILED"])
+
+    def test_failure_keeps_a_masked_error_tail(self):
+        runner = FakeRunner({"grok": (1, "", "error: not signed in for kami@example.com token xai-ABCDEF123456"),
+                             "claude": (0, "ok")})
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed)
+        tail = receipt["members"]["grok"]["stderr_tail"]
+        self.assertIn("not signed in", tail)
+        self.assertNotIn("kami@example.com", tail)
+        self.assertNotIn("ABCDEF123456", tail)
+        self.assertNotIn("stderr_tail", receipt["members"]["claude"])
 
     def test_single_use_and_stop_file(self):
         r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed)
