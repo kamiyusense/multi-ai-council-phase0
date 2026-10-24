@@ -125,6 +125,41 @@ class RunTests(unittest.TestCase):
                          ["ANSWERED", "STOPPED", "STOPPED"])
 
 
+class BoardTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.out = Path(self.tmp.name) / "state"
+        self.board = Path(self.tmp.name) / "board"
+        self.board.mkdir()
+        self.plan = plan({"grok": (True, "QUOTA_OK"), "codex": (True, "QUOTA_OK")})
+        self.calls = r.build_calls(self.plan, ENV, BIN)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_answers_land_on_the_board_with_its_header(self):
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed,
+                                board_dir=self.board, round_no=1)
+        self.assertEqual(sorted(p.name for p in self.board.iterdir()), ["r1_Codex.md", "r1_Grok.md"])
+        body = (self.board / "r1_Grok.md").read_text("utf-8")
+        for head in ("作成者: Grok", "ラウンド: R1", "作成時刻（JST）:", "確信度:", "読んだファイル:"):
+            self.assertIn(head, body)
+        self.assertTrue(body.rstrip().endswith("AI-Agent: grok"))
+        self.assertEqual(receipt["board_round"], 1)
+
+    def test_existing_board_file_or_missing_folder_stops_before_any_call(self):
+        (self.board / "r1_Codex.md").write_text("先客", encoding="utf-8")
+        runner = FakeRunner()
+        with self.assertRaises(r.RunStop) as stop:
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, board_dir=self.board)
+        self.assertEqual(stop.exception.code, "BOARD_FILE_EXISTS")
+        self.assertEqual((self.board / "r1_Codex.md").read_text("utf-8"), "先客")
+        for kwargs in ({"board_dir": self.board / "nope"}, {"board_dir": self.board, "round_no": 0}):
+            with self.assertRaises(r.RunStop):
+                r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, **kwargs)
+        self.assertEqual(runner.calls, [])
+
+
 class MainTests(unittest.TestCase):
     def test_missing_cli_stops_before_asking(self):
         with tempfile.TemporaryDirectory() as tmp:
