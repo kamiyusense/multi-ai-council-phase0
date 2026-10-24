@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "board_issue": 462,
+  "checkpoint_issue": 346,
+  "checkpoint_writer_id": 20355232,
+  "stale_checkpoint_hours": 9,
+  "merge_wait_alert_hours": 24
+}
