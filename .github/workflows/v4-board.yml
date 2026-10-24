@@ -1,0 +1,37 @@
+name: V4 read-only board
+
+# docs/RELAY_TOWER_DIRECTION_V4.md step S4b. Regenerates the managed block of the board Issue
+# (automation/command_bus/config/v4_board.json) from the lane catalog and the #346 loop checkpoints.
+# Display only: no record changes, no provider or model, no retry of the one Issue write.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v4-board
+  cancel-in-progress: false
+
+jobs:
+  regenerate-board:
+    if: github.repository == 'kamiyusense/multi-ai-council-phase0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout trusted renderer from main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Regenerate board
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -m automation.command_bus.v4_board_cli
