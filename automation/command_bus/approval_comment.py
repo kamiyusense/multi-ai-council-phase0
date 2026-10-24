@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 __all__ = ["SignaturePolicy", "load_policy", "has_signature", "is_bare_approval", "judge_approval",
-           "check_ai_write", "AiWriteRefused"]
+           "judge_owner_command", "check_ai_write", "AiWriteRefused"]
 
 DEFAULT_POLICY_PATH = Path(__file__).resolve().parent / "config" / "ai_signatures.json"
 _PERIOD = "。"
@@ -121,6 +121,42 @@ def judge_approval(comment: Mapping[str, Any], *, target_last_changed_at: str, u
     if comment_id in set(used_comment_ids):
         return False, "ALREADY_USED"
     return True, "APPROVED"
+
+
+def judge_owner_command(comment: Mapping[str, Any], *, phrases: Iterable[str], used_comment_ids: Iterable[Any],
+                        policy: SignaturePolicy) -> tuple[bool, str, str | None]:
+    """Decide whether one comment is a direct owner command such as ``続けて OK claude`` (board input, step S5).
+
+    Same identity rules as ``judge_approval`` (owner id, unsigned, no GitHub App, never edited, used once) but
+    the body must equal one of ``phrases`` (surrounding whitespace and one trailing 。 allowed) and there is no
+    target time.  The approval word itself is never a command.  Returns (ok, reason, phrase).
+    """
+    user = comment.get("user") if isinstance(comment.get("user"), Mapping) else {}
+    user_id = user.get("id")
+    if isinstance(user_id, bool) or user_id != policy.owner_user_id:
+        return False, "NOT_OWNER", None
+    body = comment.get("body")
+    allowed = [p for p in phrases if isinstance(p, str) and p.strip() and p.strip() != policy.approval_word]
+    matched = next((p for p in allowed if isinstance(body, str) and _bare(body, p.strip())), None)
+    if matched is None:
+        return False, "NOT_COMMAND", None
+    if has_signature(body, policy):
+        return False, "SIGNED", None
+    if "performed_via_github_app" not in comment:
+        return False, "APP_UNKNOWN", None
+    if comment["performed_via_github_app"] is not None:
+        return False, "VIA_APP", None
+    created, updated = _ts(comment.get("created_at")), _ts(comment.get("updated_at"))
+    if created is None or updated is None:
+        return False, "TIME_UNKNOWN", None
+    if updated != created:
+        return False, "EDITED", None
+    comment_id = comment.get("id")
+    if comment_id is None or isinstance(comment_id, bool):
+        return False, "ID_UNKNOWN", None
+    if comment_id in set(used_comment_ids):
+        return False, "ALREADY_USED", None
+    return True, "COMMAND", matched.strip()
 
 
 def check_ai_write(body: str, policy: SignaturePolicy) -> str:

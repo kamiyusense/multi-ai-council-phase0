@@ -1,6 +1,7 @@
 """STATIC checks of the V4 read-only board (no network: a fake transport stands in for GitHub)."""
 from __future__ import annotations
 
+import base64
 import json
 import unittest
 import unittest.mock
@@ -32,14 +33,35 @@ def board_body(inner="old"):
 
 
 class FakeGitHub:
-    def __init__(self, comments, board):
-        self.comments, self.board, self.calls = comments, board, []
+    def __init__(self, comments, board, board_comments=(), record=None):
+        self.comments, self.board, self.board_comments, self.calls = comments, board, list(board_comments), []
+        self.branch = record is not None
+        self.record = record
 
     def __call__(self, method, path, payload):
         self.calls.append((method, path))
         if method == "GET" and "/comments?" in path:
             page = int(path.rsplit("page=", 1)[1])
-            return self.comments[(page - 1) * 100:page * 100]
+            source = self.board_comments if f"/issues/{CONFIG.board_issue}/" in path else self.comments
+            return source[(page - 1) * 100:page * 100]
+        if method == "GET" and "/branches/" in path:
+            if not self.branch:
+                raise cli.NotFound(path)
+            return {"name": CONFIG.record_branch}
+        if method == "GET" and "/contents/" in path:
+            if self.record is None:
+                raise cli.NotFound(path)
+            text = json.dumps(self.record).encode("utf-8")
+            return {"encoding": "base64", "sha": "s1", "content": base64.b64encode(text).decode("ascii")}
+        if method == "GET" and "/git/ref/heads/main" in path:
+            return {"object": {"sha": "m1"}}
+        if method == "POST" and path.endswith("/git/refs"):
+            self.branch = True
+            return {}
+        if method == "PUT" and "/contents/" in path:
+            self.record = json.loads(base64.b64decode(payload["content"]).decode("utf-8"))
+            self.put_payload = payload
+            return {}
         if method == "GET":
             return self.board
         if method == "PATCH":
@@ -137,6 +159,27 @@ class CliTests(unittest.TestCase):
                 cli.run(gh, repo, NOW)
             self.assertFalse(any(c[0] == "PATCH" for c in gh.calls))
 
+    def test_owner_resume_comment_is_recorded_on_the_record_branch_before_the_board(self):
+        resume = {"id": 77, "user": {"id": OWNER}, "body": "続けて OK codex", "created_at": "2026-10-24T04:00:00Z",
+                  "updated_at": "2026-10-24T04:00:00Z", "performed_via_github_app": None}
+        gh = FakeGitHub([checkpoint(NOW - timedelta(hours=1))], {"state": "open", "body": board_body()}, [resume])
+        self.assertEqual(cli.run(gh, REPO, NOW), "UPDATED")
+        writes = [c for c in gh.calls if c[0] in ("POST", "PUT", "PATCH")]
+        self.assertEqual([c[0] for c in writes], ["POST", "PUT", "PATCH"])
+        self.assertEqual(gh.record["resume"], {"codex": {"comment_id": 77, "at": "2026-10-24T04:00:00Z"}})
+        self.assertEqual(gh.put_payload["branch"], "v4-board-record")
+        self.assertIn("AI-Agent: claude", gh.put_payload["message"])
+        self.assertIn("codex：「続けて OK」を受け取った", gh.board["body"])
+        before = len(gh.calls)
+        cli.run(gh, REPO, NOW)
+        self.assertFalse(any(c[0] in ("POST", "PUT") for c in gh.calls[before:]))
+
+    def test_malformed_record_fails_closed_without_writes(self):
+        gh = FakeGitHub([], {"state": "open", "body": board_body()}, record={"schema_version": 2})
+        with self.assertRaises(v4_board.BoardError):
+            cli.run(gh, REPO, NOW)
+        self.assertFalse(any(c[0] in ("POST", "PUT", "PATCH") for c in gh.calls))
+
     def test_dry_run_never_writes(self):
         gh = FakeGitHub([], {"state": "open", "body": board_body()})
         with unittest.mock.patch("builtins.print"):
@@ -147,12 +190,14 @@ class CliTests(unittest.TestCase):
 class ConfigAndWorkflowTests(unittest.TestCase):
     def test_config_points_at_the_board_and_346(self):
         self.assertEqual((CONFIG.board_issue, CONFIG.checkpoint_issue, CONFIG.checkpoint_writer_id), (462, 346, OWNER))
+        self.assertEqual((CONFIG.record_branch, CONFIG.record_path), ("v4-board-record", "v4/board_record.json"))
+        self.assertEqual(set(CONFIG.resume_phrases.values()), {"claude", "codex", "grok"})
         self.assertNotEqual(CONFIG.board_issue, 33)  # #33 is sealed by the post-adoption verifier
 
     def test_workflow_is_scheduled_read_only_except_issues_and_runs_main(self):
         text = (ROOT / ".github/workflows/v4-board.yml").read_text(encoding="utf-8")
         self.assertIn("permissions:\n  contents: read\n\n", text)
-        self.assertIn("      contents: read\n      issues: write\n", text)
+        self.assertIn("      contents: write\n      issues: write\n", text)
         self.assertNotIn("pull_request", text)
         self.assertNotIn("secrets.", text)
         self.assertIn("ref: main", text)
