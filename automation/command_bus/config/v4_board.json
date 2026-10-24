@@ -4,5 +4,12 @@
   "checkpoint_issue": 346,
   "checkpoint_writer_id": 20355232,
   "stale_checkpoint_hours": 9,
-  "merge_wait_alert_hours": 24
+  "merge_wait_alert_hours": 24,
+  "record_branch": "v4-board-record",
+  "record_path": "v4/board_record.json",
+  "resume_phrases": {
+    "続けて OK claude": "claude",
+    "続けて OK codex": "codex",
+    "続けて OK grok": "grok"
+  }
 }

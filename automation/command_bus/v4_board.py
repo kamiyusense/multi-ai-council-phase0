@@ -14,6 +14,7 @@ Pure functions only; the GitHub reads and the one Issue body write live in ``v4_
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -30,8 +31,11 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config" / "v4_board.jso
 BOARD_START = "<!-- v4-board:start -->"
 BOARD_END = "<!-- v4-board:end -->"
 _JST = timezone(timedelta(hours=9))
-_CONFIG_KEYS = {"schema_version", "board_issue", "checkpoint_issue", "checkpoint_writer_id",
-                "stale_checkpoint_hours", "merge_wait_alert_hours"}
+_INT_KEYS = {"board_issue", "checkpoint_issue", "checkpoint_writer_id", "stale_checkpoint_hours",
+             "merge_wait_alert_hours"}
+_CONFIG_KEYS = _INT_KEYS | {"schema_version", "record_branch", "record_path", "resume_phrases"}
+_BRANCH = re.compile(r"[a-z0-9][a-z0-9-]{0,62}")
+_RECORD_PATH = re.compile(r"[a-z0-9_]+(/[a-z0-9_]+)*\.json")
 _STATUS_JA = {"ACTIVE": "動いてる", "FROZEN": "凍結（止めてある）", "MANUAL": "手動（相棒が動かす）",
               "PLANNED": "準備中"}
 _OUTCOME_JA = {"CONTINUE": "作業中", "MERGE_WAIT": "人のマージ待ち", "NO_SAFE_TASK": "安全にできる仕事なし",
@@ -49,6 +53,9 @@ class BoardConfig:
     checkpoint_writer_id: int
     stale_checkpoint_hours: int
     merge_wait_alert_hours: int
+    record_branch: str
+    record_path: str
+    resume_phrases: Mapping[str, str]
 
 
 @dataclass(frozen=True)
@@ -61,10 +68,19 @@ def load_config(path: Path | str = DEFAULT_CONFIG_PATH) -> BoardConfig:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or set(raw) != _CONFIG_KEYS or raw["schema_version"] != 1:
         raise BoardError("CONFIG_SHAPE")
-    values = {k: raw[k] for k in _CONFIG_KEYS - {"schema_version"}}
+    values = {k: raw[k] for k in _INT_KEYS}
     if not all(isinstance(v, int) and not isinstance(v, bool) and 0 < v < 10**9 for v in values.values()):
         raise BoardError("CONFIG_VALUES")
-    return BoardConfig(**values)
+    if not isinstance(raw["record_branch"], str) or not _BRANCH.fullmatch(raw["record_branch"]) \
+            or raw["record_branch"] == "main" or not isinstance(raw["record_path"], str) \
+            or not _RECORD_PATH.fullmatch(raw["record_path"]):
+        raise BoardError("CONFIG_RECORD")
+    phrases = raw["resume_phrases"]
+    if not isinstance(phrases, dict) or not phrases or not all(
+            isinstance(k, str) and k.strip() == k and k and isinstance(v, str) and v for k, v in phrases.items()):
+        raise BoardError("CONFIG_PHRASES")
+    return BoardConfig(**values, record_branch=raw["record_branch"], record_path=raw["record_path"],
+                       resume_phrases=dict(phrases))
 
 
 def _time(value: Any) -> datetime:
@@ -123,8 +139,36 @@ def _cell(text: Any) -> str:
     return str(text).replace("|", "/").replace("\n", " ")
 
 
+def _record_lines(record: Mapping[str, Any] | None, alerts: list[str]) -> list[str]:
+    lines = ["", "## 提案と相棒の返事", ""]
+    if record is None:
+        return lines + ["記録：UNKNOWN（読めない）"]
+    proposals = record.get("proposals") or {}
+    pending = [(pid, p) for pid, p in proposals.items() if p.get("state") == "PENDING"]
+    for pid, p in pending:
+        lines.append(f"- ⏳ 返事待ち：{_cell(p.get('summary_ja'))}（{pid}）")
+    if len(pending) == 1:
+        lines.append("  - OK なら、この掲示板に「承認」の2文字だけをコメント（署名なし・あとで編集しない）")
+    elif len(pending) > 1:
+        lines.append("  - 返事待ちが複数あるので、承認コメントはどれにも付かない（AI が1件ずつに直す）")
+        alerts.append("返事待ちの提案が複数ある")
+    for pid, p in proposals.items():
+        if p.get("state") == "APPROVED":
+            lines.append(f"- ✅ OK 済み：{_cell(p.get('summary_ja'))}（{pid}）")
+        elif p.get("state") == "CHANGED_AFTER_APPROVAL":
+            lines.append(f"- ⚠ OK のあとで書き換えられた：{_cell(p.get('summary_ja'))}（{pid}・OK は無効）")
+            alerts.append(f"提案 {pid} が OK のあとで書き換えられた")
+    if not proposals:
+        lines.append("- 提案はまだない")
+    for ai, entry in sorted((record.get("resume") or {}).items()):
+        lines.append(f"- ▶ {ai}：「続けて OK」を受け取った（{_cell(entry.get('at'))}）")
+    for item in (record.get("rejected") or [])[-3:]:
+        lines.append(f"- ✖ 使えなかったコメント（{_cell(item.get('reason'))}・{_cell(item.get('at'))}）")
+    return lines
+
+
 def render_board(lanes: Sequence[Mapping[str, Any]], points: Sequence[Checkpoint], *, now: datetime,
-                 config: BoardConfig) -> str:
+                 config: BoardConfig, record: Mapping[str, Any] | None = None) -> str:
     """The managed board block (markers included), checked against the AI signature rule."""
     alerts: list[str] = []
     lines = [BOARD_START, "## レーン一覧（読むだけ・自動で作り直し）", "",
@@ -138,22 +182,23 @@ def render_board(lanes: Sequence[Mapping[str, Any]], points: Sequence[Checkpoint
         alerts.append(f"#{config.checkpoint_issue} に Loop の記録が見つからない")
     else:
         last = points[-1]
-        record = last.record
-        outcome = record["outcome"]
+        latest = last.record
+        outcome = latest["outcome"]
         lines.append(f"最新の記録：{_OUTCOME_JA.get(outcome, outcome)}（{_jst(last.at)} JST・{_hours(now - last.at)}前）")
         if now - last.at > timedelta(hours=config.stale_checkpoint_hours):
             alerts.append(f"Loop の記録が {_hours(now - last.at)} 来てない（1時間ごとの見回りが止まってるかも）")
         since = _merge_wait_since(points)
         if since is not None:
-            tasks = sorted({t for a in record.get("human_actions") or [] if isinstance(a, dict)
+            tasks = sorted({t for a in latest.get("human_actions") or [] if isinstance(a, dict)
                             and a.get("action") == "merge" for t in a.get("prs_of_tasks") or []})
             lines.append(f"マージ待ち：{_hours(now - since)}（{_jst(since)} JST から）・タスク {', '.join(tasks) or 'UNKNOWN'}")
             if now - since > timedelta(hours=config.merge_wait_alert_hours):
                 alerts.append(f"マージ待ちが {_hours(now - since)} 続いてる")
-        human = sorted(str(i.get("task_id", "UNKNOWN")) for i in record.get("isolated") or []
+        human = sorted(str(i.get("task_id", "UNKNOWN")) for i in latest.get("isolated") or []
                        if isinstance(i, dict) and i.get("human_required"))
         if human:
             alerts.append(f"相棒の判断が必要なタスク：{', '.join(human)}")
+    lines += _record_lines(record, alerts)
     lines += ["", "## 気にしてほしいこと", ""]
     lines += [f"- 🟠 {a}" for a in alerts] or ["- 🟢 今はなし"]
     lines += ["", "このボードは記録を読んで表示するだけ。ここを書き換えても記録は変わらない。", "",

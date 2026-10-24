@@ -1,8 +1,8 @@
 name: V4 read-only board
 
-# docs/RELAY_TOWER_DIRECTION_V4.md step S4b. Regenerates the managed block of the board Issue
-# (automation/command_bus/config/v4_board.json) from the lane catalog and the #346 loop checkpoints.
-# Display only: no record changes, no provider or model, no retry of the one Issue write.
+# docs/RELAY_TOWER_DIRECTION_V4.md steps S4b/S5. Applies the owner's comments on the board Issue to the board
+# record (its own branch, automation/command_bus/config/v4_board.json), then regenerates the board's managed block
+# from the lane catalog, the record and the #346 loop checkpoints. No provider or model, no retry of a write.
 
 on:
   schedule:
@@ -22,7 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read
+      # contents: write is only for the board record file on its own branch (step S5).
+      contents: write
       issues: write
     steps:
       - name: Checkout trusted renderer from main
