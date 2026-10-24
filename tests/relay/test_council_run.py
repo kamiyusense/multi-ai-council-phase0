@@ -159,6 +159,24 @@ class AttachmentTests(unittest.TestCase):
         with self.assertRaises(r.RunStop):
             r.build_calls(plan(), ENV, BIN, None, attachments=(("README.md", "x"),))
 
+    def test_named_files_are_attached_while_they_fit(self):
+        (self.ref / "big.py").write_text("x" * 119_999, encoding="utf-8")
+        (self.ref / "small.md").write_text("小", encoding="utf-8")
+        (self.ref / "bin.dat").write_bytes(b"\xff\xfe")
+        files = r.load_attachments(str(self.ref), ["README.md"], ["big.py", "docs/design.md", "small.md", "bin.dat",
+                                                                  "README.md"])
+        got = dict(files)
+        self.assertEqual(got["big.py"], r.NOT_ATTACHED)
+        self.assertEqual(got["bin.dat"], r.NOT_ATTACHED)
+        self.assertEqual((got["docs/design.md"], got["small.md"]), ("設計図", "小"))
+        self.assertEqual(len(files), 5)
+        codex = r.build_calls(plan({"codex": (True, "QUOTA_OK")}), ENV, BIN, str(self.ref), attachments=files)[0]
+        self.assertIn("長すぎて添付しなかったファイル（中身は UNKNOWN）：big.py、bin.dat", codex.stdin)
+        self.assertNotIn("===== big.py", codex.stdin)
+        self.assertIn(("big.py", r.NOT_ATTACHED), codex.attachments)
+        with self.assertRaises(r.RunStop):
+            r.load_attachments(str(self.ref), [], ["../secret.txt"])
+
     def test_files_named_in_the_question_are_found(self):
         q = "README.md の見出しと docs/design.md、それに docs/none.md と https://docs.x.ai/build/overview を見て。README.md"
         self.assertEqual(r.named_files(q, str(self.ref)), ["README.md", "docs/design.md"])
