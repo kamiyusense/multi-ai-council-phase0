@@ -32,7 +32,7 @@ Antigravity が 5 分ごとに `watch_board.py` を1回だけ動かす（`sideca
    - ほかの AI の答えはコピーしない（目隠し）。
    - 失敗や結果不明でも送り直さない（retry 0）。
    - 結果不明（START_UNKNOWN）のお題は、あとで受け箱に `answer.md` ができても掲示板には置かない。そのときは相棒が受け箱を見て、必要なら手で貼る。
-   - 24 時間で `daily_cap`（初期値 3）回まで。
+   - 24 時間で `daily_cap`（初期値 6、最大 6。相棒の指定 2026-10-26）回まで。
 
 Antigravity への指示：受け箱の `question.md` だけを読み、`answer.md` に答えを書く。ほかのファイルは触らない。コマンドは使わない。最後に `AI-Agent: antigravity` と書く。
 
@@ -67,10 +67,19 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 
 ## 5. まだ分からないこと（UNKNOWN）
 
-- Windows 版の Antigravity で Sidecar と `schedule` が動くか。`python` という名前で Python が起動するか（動かなければ `py` に変える）。
+- （わかった 2026-10-26）Windows 版でも Sidecar と `schedule` は動く。`python` は Microsoft Store の入口だったので、PC の `sidecar.json` は Python の本体の場所をそのまま書いた。
 - `agentapi new-conversation` が、確認画面なしで最後まで答えを書くか。権限の確認で止まったら、TIMED_OUT で終わる。
 - 検索ありのとき、Default の権限で、検索やページを読むたびに確認画面が出るか。出たら TIMED_OUT で終わる。そのときは `NO_WEB_ANTIGRAVITY` を置いて検索なしで試す。
-- `projectId` をどこで調べるか。
+- （わかった 2026-10-26）`projectId` は `~/.gemini/config/projects/<id>.json` のファイル名と中の `id`。
+- （わかった 2026-10-26）相棒のアプリの権限の選び方は Inherit Global / Request Review / Turbo の3つで、Default はなかった。受け箱のプロジェクトは Request Review、Network の Read URLs に `*` を許可、Plan Review は Always Proceed にした。
 - 「目隠し」は、Antigravity への指示と、プロジェクトに受け箱だけを入れる PC の手順に頼っている。Default の権限で、Antigravity が掲示板のフォルダまで読めてしまうかは分からない。
 - PC がスリープ中・アプリを閉じているときの動き。
 - Google が、この組み合わせ（自作の見張り役 + `agentapi`）を個別に認めたわけではない。根拠は相棒の承認（例外の (a)）。
+
+## 6. 1回目の本番（2026-10-26 01:05 JST）
+
+- 相棒の承認のあと、見張り役がお題「20261026_エージェント基盤くらべ」を拾った。でも `agentapi` を起動できずに止まった（`FileNotFoundError`）。Antigravity には何も送っていない。
+- 原因：Windows では、Antigravity は `agentapi.bat`（中身は `"<language_server.exe>" agentapi %*` の1行）を Sidecar の通り道に置く。Python は `shell=False` だと `.bat` を名前だけでは起動できない。
+- 直し方：見張り役が `agentapi.bat` を読み、中に書いてある本体を、`.bat` と同じ形（`<本体> agentapi new-conversation <質問>`）で呼ぶ。`cmd.exe` を通すと、質問の2行目から先が消えるため。`.bat` の中身が思っていた1行と違えば、何も起動しない。
+- 起動できなかったときは「送っていない」とはっきりしているので、記録は START_FAILED にする（前は START_UNKNOWN だった）。
+- 本番オフのあいだも、見張りの記録に `"agentapi": "found"` か `"missing"` を書く。Sidecar の中から本当に呼べるかを、何も送らずに確かめるため。

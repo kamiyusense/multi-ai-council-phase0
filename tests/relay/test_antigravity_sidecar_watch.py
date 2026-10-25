@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -133,6 +134,7 @@ class WatchBoardTest(unittest.TestCase):
 
     def test_failed_or_unknown_start_is_not_retried(self):
         for runner, expected in ((FakeRunner(returncode=1), "START_FAILED"),
+                                 (FakeRunner(raises=FileNotFoundError("agentapi")), "START_FAILED"),
                                  (FakeRunner(raises=subprocess.TimeoutExpired("agentapi", 120)), "START_UNKNOWN")):
             with self.subTest(expected=expected):
                 shutil.rmtree(self.board)
@@ -144,6 +146,29 @@ class WatchBoardTest(unittest.TestCase):
                 wb.watch_once(self.cfg(), runner=runner, now=NOW + timedelta(minutes=10))
                 self.assertEqual(len(runner.calls), 1)
                 self.assertEqual(self.state()["topics"][wb.topic_key(folder.name, 1)]["state"], expected)
+
+    def test_agentapi_on_the_path_and_the_windows_shim(self):
+        with self.assertRaises(FileNotFoundError):
+            wb.agentapi_command(lambda name: None)
+        self.assertEqual(wb.agentapi_command(lambda name: "/opt/agy/agentapi"), ["/opt/agy/agentapi"])
+        exe = self.tmp / "language_server.exe"
+        exe.write_bytes(b"")
+        shim = self.tmp / "agentapi.bat"
+        for text in (f'@echo off\n"{exe}" agentapi %*\n', f'@echo off\r\n"{exe}" agentapi %*\r\n'):
+            shim.write_text(text, encoding="utf-8", newline="")
+            self.assertEqual(wb.agentapi_command(lambda name: str(shim)), [str(exe), "agentapi"])
+        for text in (f'@echo off\nset X=1\n"{exe}" agentapi %*\n', f'@echo off\n"{exe}" other %*\n',
+                     f'@echo off\n"{self.tmp / "missing.exe"}" agentapi %*\n'):
+            with self.subTest(text=text):
+                shim.write_text(text, encoding="utf-8")
+                with self.assertRaises(FileNotFoundError):
+                    wb.agentapi_command(lambda name: str(shim))
+        for found, expected in ((None, "missing"), ("/opt/agy/agentapi", "found")):
+            with self.subTest(found=found), mock.patch.object(wb.shutil, "which", return_value=found):
+                out = wb.watch_once(self.cfg(armed=False), runner=FakeRunner(), now=NOW)
+                self.assertEqual((out["result"], out["agentapi"]), ("NOT_ARMED", expected))
+        log = [json.loads(line) for line in (self.inbox / wb.LOG_FILE).read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([e["agentapi"] for e in log], ["missing", "found"])
 
     def test_claim_is_saved_before_agentapi_is_called(self):
         self.topic()
@@ -167,7 +192,7 @@ class WatchBoardTest(unittest.TestCase):
         self.assertEqual(wb.watch_once(self.cfg(), runner=runner, now=NOW)["result"], "STOPPED")
         (self.inbox / wb.INBOX_STOP).unlink()
         (self.inbox / wb.STATE_FILE).write_text(json.dumps(
-            {"topics": {}, "starts": [(NOW - timedelta(hours=h)).isoformat() for h in (1, 2, 3)]}), encoding="utf-8")
+            {"topics": {}, "starts": [(NOW - timedelta(hours=h)).isoformat() for h in (1, 2, 3, 4, 5, 6)]}), encoding="utf-8")
         self.assertEqual(wb.watch_once(self.cfg(), runner=runner, now=NOW)["result"], "DAILY_CAP")
         self.assertEqual(runner.calls, [])
 
@@ -206,8 +231,9 @@ class WatchBoardTest(unittest.TestCase):
         path = self.tmp / "watch_config.json"
         path.write_text(json.dumps(good), encoding="utf-8")
         self.assertFalse(wb.load_config(path).armed)
+        self.assertEqual(wb.load_config(path).daily_cap, 6)
         bad = [{**good, "since": "2026-10-26T00:00:00"}, {**good, "inbox_dir": str(self.board / "inbox")},
-               {**good, "board_dir": "relative"}, {**good, "armed": "yes"}, {**good, "daily_cap": 9},
+               {**good, "board_dir": "relative"}, {**good, "armed": "yes"}, {**good, "daily_cap": 7},
                {**good, "agy": "agy -p"}, {**good, "web": "on"}]
         for raw in bad:
             with self.subTest(raw=raw):

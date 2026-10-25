@@ -5,8 +5,10 @@ Antigravity's own Sidecars feature (https://antigravity.google/docs/sidecars) ru
 
 Why this is not "wrapping" Antigravity: Antigravity starts this script, and the only way it reaches a model is
 Antigravity's own ``agentapi new-conversation`` (documented for sidecars).  It never starts ``agy``, never speaks
-ACP, never reads ``~/.gemini`` or any credential, and never touches GitHub.  The use was lifted for this purpose
-only, under the V4 exception (owner approval, 2026-10-25; ``docs/ANTIGRAVITY_SIDECAR_JA.md``).
+ACP, never reads a credential or Antigravity's data (on Windows the one file it reads outside the board and the
+inbox is the one-line ``agentapi.bat`` launcher Antigravity puts on the sidecar's path), and never touches GitHub.
+The use was lifted for this purpose only, under the V4 exception (owner approval, 2026-10-25;
+``docs/ANTIGRAVITY_SIDECAR_JA.md``).
 
 One pass does, in order:
 
@@ -32,6 +34,8 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -86,7 +90,7 @@ class Config:
     since: datetime
     armed: bool = False
     round_no: int = 1
-    daily_cap: int = 3
+    daily_cap: int = 6
     answer_timeout_minutes: int = 120
     board_name: str = "Gemini"
     web: bool = True
@@ -114,21 +118,42 @@ def load_config(path: Path) -> Config:
         raise WatchStop("CONFIG: since needs a time zone, e.g. 2026-10-26T00:00:00+09:00")
     armed = raw.get("armed", False)
     round_no = raw.get("round", 1)
-    daily_cap = raw.get("daily_cap", 3)
+    daily_cap = raw.get("daily_cap", 6)
     timeout = raw.get("answer_timeout_minutes", 120)
     web = raw.get("web", True)
     for name, flag in (("armed", armed), ("web", web)):
         if not isinstance(flag, bool):
             raise WatchStop(f"CONFIG: {name} must be true or false")
-    for name, value, low, high in (("round", round_no, 1, 9), ("daily_cap", daily_cap, 1, 5),
+    for name, value, low, high in (("round", round_no, 1, 9), ("daily_cap", daily_cap, 1, 6),
                                    ("answer_timeout_minutes", timeout, 10, 1440)):
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
             raise WatchStop(f"CONFIG: {name} must be an integer from {low} to {high}")
     return Config(board_dir, inbox_dir, since, armed, round_no, daily_cap, timeout, web=web)
 
 
+def agentapi_command(which: Callable[[str], str | None] | None = None) -> list[str]:
+    """Where ``agentapi`` lives on the sidecar's path, as the start of a command line.
+
+    On Windows Antigravity puts a one-line shim ``agentapi.bat`` (``"<language_server.exe>" agentapi %*``) on the
+    sidecar's path.  ``subprocess`` with ``shell=False`` cannot start a ``.bat`` by its bare name, and passing a
+    multi-line prompt through ``cmd.exe`` would cut it at the first line break, so the shim's own target is called
+    the same way the shim calls it.  Anything unexpected raises ``FileNotFoundError``: nothing is started.
+    """
+    found = (which or shutil.which)("agentapi")
+    if not found:
+        raise FileNotFoundError("agentapi is not on the sidecar's path")
+    if Path(found).suffix.lower() not in {".bat", ".cmd"}:
+        return [found]
+    match = re.fullmatch(r'\s*(?:@echo off\s*)?"([^"]+\.exe)" agentapi %\*\s*',
+                         Path(found).read_text(encoding="utf-8", errors="replace"), re.IGNORECASE)
+    if not match or not Path(match.group(1)).is_file():
+        raise FileNotFoundError(f"unexpected agentapi shim: {found}")
+    return [match.group(1), "agentapi"]
+
+
 def run_agentapi(argv: list[str]) -> "subprocess.CompletedProcess[str]":
-    return subprocess.run(argv, shell=False, capture_output=True, text=True, encoding="utf-8",
+    command = agentapi_command() + list(argv[1:])
+    return subprocess.run(command, shell=False, capture_output=True, text=True, encoding="utf-8",
                           errors="replace", timeout=AGENTAPI_TIMEOUT, check=False)
 
 
@@ -261,6 +286,9 @@ def _start(cfg: Config, state: dict[str, Any], folder: Path, now: datetime, runn
     argv = ["agentapi", "new-conversation", build_prompt(question, answer, web)]
     try:
         done = runner(argv)
+    except FileNotFoundError as exc:
+        # The program was never started, so nothing reached Antigravity.
+        topic.update(state="START_FAILED", error=type(exc).__name__, output_tail=str(exc)[-OUTPUT_TAIL:])
     except (OSError, subprocess.SubprocessError) as exc:
         topic.update(state="START_UNKNOWN", error=type(exc).__name__)
     else:
@@ -298,8 +326,15 @@ def watch_once(cfg: Config, *, runner: Runner = run_agentapi, now: datetime | No
         events = _collect(cfg, state, now)
         _save_state(cfg.inbox_dir, state)
         recent = [t for t in state["starts"] if now - datetime.fromisoformat(t) < timedelta(hours=24)]
+        extra: dict[str, Any] = {}
         if not cfg.armed:
             result = "NOT_ARMED"
+            # Shows, from inside the sidecar, whether a start could reach agentapi.  Nothing is started.
+            try:
+                agentapi_command()
+                extra["agentapi"] = "found"
+            except (OSError, ValueError):
+                extra["agentapi"] = "missing"
         elif len(recent) >= cfg.daily_cap:
             result = "DAILY_CAP"
         else:
@@ -308,8 +343,8 @@ def watch_once(cfg: Config, *, runner: Runner = run_agentapi, now: datetime | No
             if picks:
                 events.append(_start(cfg, state, picks[0], now, runner))
                 result = "STARTED_ONE"
-        _log(cfg.inbox_dir, now, result, events=events)
-        return {"result": result, "events": events}
+        _log(cfg.inbox_dir, now, result, events=events, **extra)
+        return {"result": result, "events": events, **extra}
     finally:
         lock.unlink(missing_ok=True)
 
