@@ -1,0 +1,7 @@
+{
+  "description": "Phase 0 Council: answer new AI掲示板 questions once each (one pass every 5 minutes)",
+  "display_name": "Council 掲示板の見張り",
+  "builtin": "schedule",
+  "args": ["*/5 * * * *", "python", "watch_board.py"],
+  "restart_policy": "never"
+}

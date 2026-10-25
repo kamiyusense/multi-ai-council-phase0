@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "purpose": "Unmerged current repair validation; final test correction, historical manifests untouched",
+  "files": [
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g63.py",
+      "bytes": 6677,
+      "sha256": "c9aa191131d3909991f578c326e0a57103c53ad419d593575ed4d1d17d332e70"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g73.py",
+      "bytes": 2581,
+      "sha256": "d0202d011c62e0799b4c0fc3257b8d51f75cf7069cd554fec7d81e9a559b5241"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 10988,
+      "sha256": "4fba90fd0081bfe3f55182b4654948a1e056deab4ca4e0eb61d301883ccd1064"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_seal_history.py",
+      "bytes": 10731,
+      "sha256": "cba8aa21b874265d9ad5c88dd9ac74e32f3df0e8ecb5befdad93585788749bdd"
+    }
+  ]
+}
