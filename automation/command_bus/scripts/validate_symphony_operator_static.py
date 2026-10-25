@@ -3,6 +3,7 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from .validate_symphony_g63 import sealed_source
 from .validate_symphony_g73 import validate as historical
 from ..symphony_result_manifest import safe_path
 
@@ -44,7 +45,7 @@ def validate(root=ROOT):
             raise ValueError('unsafe/duplicate operator evidence path')
         seen.add(path)
         raw = (subprocess.check_output(['git','show',HISTORICAL_OPERATOR_HEAD+':'+path],cwd=root)
-               if path in SUPERSEDED else (root / path).read_bytes())
+               if path in SUPERSEDED else sealed_source(root,path))
         if len(raw) != entry['bytes'] or hashlib.sha256(raw).hexdigest() != entry['sha256']:
             raise ValueError('operator current source/evidence bytes changed: ' + path)
     gates = json.loads((base / 'gates.json').read_text())
@@ -63,7 +64,7 @@ def validate(root=ROOT):
                 raise ValueError('unsafe/duplicate convergence evidence path')
             fresh_seen.add(path)
             raw = (subprocess.check_output(['git','show',HISTORICAL_CONVERGENCE_HEAD+':'+path],cwd=root)
-                   if path in CONVERGENCE_SUPERSEDED else (root / path).read_bytes())
+                   if path in CONVERGENCE_SUPERSEDED else sealed_source(root,path))
             if len(raw) != entry['bytes'] or hashlib.sha256(raw).hexdigest() != entry['sha256']:
                 raise ValueError('current convergence source/evidence changed: '+path)
         gate = json.loads((current / 'gates.json').read_text())
@@ -88,7 +89,7 @@ def validate_current_connection(root):
         if not safe_path(path) or path in seen:raise ValueError('unsafe connection manifest')
         seen.add(path)
         raw=(subprocess.check_output(['git','show',HISTORICAL_CONNECTION_HEAD+':'+path],cwd=root)
-             if path in CONNECTION_SUPERSEDED | INSTALLATION_SUPERSEDED else (root/path).read_bytes())
+             if path in CONNECTION_SUPERSEDED | INSTALLATION_SUPERSEDED else sealed_source(root,path))
         if len(raw)!=entry['bytes'] or hashlib.sha256(raw).hexdigest()!=entry['sha256']:
             raise ValueError('current connection evidence mismatch: '+path)
     gates=json.loads((base/'checkpoint.json').read_text())
@@ -107,7 +108,7 @@ def validate_current_connection(root):
             raise ValueError('unsafe recovery manifest')
         current_seen.add(path)
         raw=(subprocess.check_output(["git","show",HOST_RECOVERY_HEAD+":"+path],cwd=root)
-             if path in HOST_RECOVERY_SUPERSEDED else (root/path).read_bytes())
+             if path in HOST_RECOVERY_SUPERSEDED else sealed_source(root,path))
         if len(raw)!=entry['bytes'] or hashlib.sha256(raw).hexdigest()!=entry['sha256']:
             raise ValueError('current host recovery evidence mismatch: '+path)
     if not CONNECTION_SUPERSEDED <= current_seen:
@@ -130,7 +131,7 @@ def validate_installation_readiness(root):
              if path in {'automation/command_bus/scripts/validate_symphony_operator_static.py',
                          'automation/command_bus/symphony_subscription_startup.patch',
                          'automation/command_bus/symphony_sqlite_storage.py',
-                         'automation/command_bus/tests/test_symphony_sqlite_installation.py'} else (root/path).read_bytes())
+                         'automation/command_bus/tests/test_symphony_sqlite_installation.py'} else sealed_source(root,path))
         if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
             raise ValueError("current installation readiness bytes differ: "+path)
     required={"automation/command_bus/symphony_sqlite_storage.py",
@@ -151,7 +152,7 @@ def validate_installation_readiness(root):
         corrected.add(path)
         raw=(subprocess.check_output(['git','show','0714d94ce1e255c0de088586e2ea094bd0a43829:'+path],cwd=root)
              if path=='automation/command_bus/scripts/validate_symphony_operator_static.py'
-             else (root/path).read_bytes())
+             else sealed_source(root,path))
         if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
             raise ValueError("current correction bytes differ: "+path)
     if not {"automation/command_bus/symphony_subscription_startup.patch",
@@ -166,7 +167,7 @@ def validate_installation_readiness(root):
     for entry in json.loads((recovery/"manifest.json").read_text())["files"]:
         path=entry["path"]
         if not safe_path(path) or path in actual:raise ValueError("unsafe CI recovery seal")
-        actual.add(path);raw=(root/path).read_bytes()
+        actual.add(path);raw=sealed_source(root,path)
         if len(raw)!=entry["bytes"] or hashlib.sha256(raw).hexdigest()!=entry["sha256"]:
             raise ValueError("current CI recovery bytes differ: "+path)
     if not {"automation/command_bus/symphony_sqlite_storage.py",

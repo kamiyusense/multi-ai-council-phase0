@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "purpose": "New repair-source seal; no historical evidence replaced",
+  "historical_validator_source_head": "fab6f17a979bcfacd6b07804eb90bfa80edee446",
+  "files": [
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g63.py",
+      "bytes": 4779,
+      "sha256": "a95181b685d7793e375e3b98b8e1fb09edc2e18207a78aa95e22fb5449125355"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g73.py",
+      "bytes": 2581,
+      "sha256": "d0202d011c62e0799b4c0fc3257b8d51f75cf7069cd554fec7d81e9a559b5241"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 10988,
+      "sha256": "4fba90fd0081bfe3f55182b4654948a1e056deab4ca4e0eb61d301883ccd1064"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_seal_history.py",
+      "bytes": 6716,
+      "sha256": "cea5b34d5e67505d5581403b84007a5546164a1090ac145044eb397f04560768"
+    }
+  ]
+}

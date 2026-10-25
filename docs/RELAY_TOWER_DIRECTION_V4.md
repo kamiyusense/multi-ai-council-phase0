@@ -71,6 +71,15 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
 - Lines that hold: no tool launches, drives or wraps Antigravity; nothing writes the next instruction where
   Antigravity reads (the answer location and any instruction location are separate, one-way); Antigravity's
   internal files (`~/.gemini/`, transcripts) are never read, only its outputs (PRs, Issues, project files).
+- Exception (owner, 2026-10-25): the three lines above, and "started by the owner by hand" in section 3, may
+  be lifted for one specific use, such as Antigravity's own Sidecars or `schedule` reading the Drive "AI掲示板"
+  topic folder and writing `r1_Antigravity.md`, when either (a) the owner explicitly approves that use, or
+  (b) Google's official terms or docs explicitly permit it. Official means the Terms of Service, the FAQ and
+  antigravity.google docs; forum answers not marked as Google staff do not count. If the official text is
+  UNKNOWN or ambiguous, fail closed and fall back to (a). Each lifted use is recorded with its basis.
+  These never change: no wrapping of `agy` inside Relay, ACP or another vendor's CLI; no account rotation;
+  no AI credits or overage (`useG1Credits` off, AI Credit Overages = Never); a LIVE or first real run still
+  needs the owner's approval sentence. The `antigravity-manual` lane stays as it is until a use is lifted.
 - The Antigravity launch code is moved to `archive/antigravity_launch/` and disabled (step S1), with the header
   "suspended, do not run (terms, 2026-10)", so it can be restored if the terms change. The launch deny-list
   (`LIVE_ADAPTER_MARKERS`) stays active.

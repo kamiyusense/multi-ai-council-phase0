@@ -3,6 +3,7 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from .validate_symphony_g63 import sealed_source
 from .validate_symphony_g72 import G63_HEAD, G71_HEAD, WORKFLOWS, G71_SUPERSEDED
 from .validate_symphony_g63 import validate as historical
 from ..symphony_result_manifest import safe_path
@@ -31,7 +32,7 @@ def validate(root=ROOT):
                    G71_HEAD if name == 'symphony-g71-static' and p in G71_SUPERSEDED else
                    G72_HEAD if name == 'symphony-g72-static' and p in WORKFLOWS else
                    G73_HEAD if name == 'symphony-g73-static' and p in G73_SUPERSEDED else None)
-            raw = subprocess.check_output(['git','show',ref+':'+p],cwd=root) if ref else (root/p).read_bytes()
+            raw = subprocess.check_output(['git','show',ref+':'+p],cwd=root) if ref else sealed_source(root,p)
             if len(raw) != entry['bytes'] or hashlib.sha256(raw).hexdigest() != entry['sha256']:
                 raise ValueError('immutable evidence mismatch: '+p)
             count += 1
