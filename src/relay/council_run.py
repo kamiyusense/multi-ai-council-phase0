@@ -14,6 +14,8 @@ Rules kept here:
 * No GitHub write: answers and the summary are written as local files with the Council marker and signature; the
   owner (or a thread, with the owner's OK) posts them.
 * The receipt holds states, lengths and hashes, never environment values.
+* Every member runs a fixed model at high reasoning effort with no fast mode (owner, 2026-10-25), so answers are
+  compared on equal settings and a CLI default change never alters a run silently.
 * Codex cannot open files in read-only non-interactive mode (every command is refused), so ``--attach`` files
   from the reference folder are read here and added to Codex's prompt; their names and hashes are in the approval.
   Files the question names (``docs/x.md``, ``README.md``) that exist in the folder are attached without a flag.
@@ -66,6 +68,9 @@ _RESEARCH_RULES = (
     "(8) 回答の最後に、調べた範囲（検索した回数と読んだページの数）を1行で書く。"
 )
 _SHELL_SHIMS = (".cmd", ".bat")
+# Owner's choice 2026-10-25: these models, all high, no fast/priority mode.
+MEMBER_MODELS = {"grok": "grok-4.7", "claude": "claude-opus-5-5", "codex": "gpt-6.1-sol"}
+EFFORT = "high"
 _MAX_ATTACH_FILES = 30
 _MAX_ATTACH_CHARS = 200_000
 _AUTO_ATTACH_CHARS = 120_000  # files only named in the question: attached in order while they fit
@@ -236,7 +241,7 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
             if name.endswith(_SHELL_SHIMS):
                 raise RunStop("GROK_SHELL_SHIM", "grok が .cmd/.bat 形式なので、質問文を安全に渡せない。止めた")
             launch = headless_launch(prompt, parent_env, binary)
-            argv = launch.argv
+            argv = launch.argv + ("-m", MEMBER_MODELS["grok"], "--reasoning-effort", EFFORT)
             if reference_dir is not None:
                 argv += ("--cwd", reference_dir, "--allow", "Read", "--allow", "Grep", "--deny", "Edit",
                          "--deny", "Bash")
@@ -247,7 +252,7 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
             if name not in {"claude", "claude.exe", "claude.cmd"}:
                 raise RunStop("NOT_THE_CLAUDE_CLI", "claude の CLI ではないので止めた")
             env = dict(child_env(parent_env), CLAUDE_CODE_MAX_RETRIES="0")
-            argv = (binary, "-p", "--output-format", "text")
+            argv = (binary, "-p", "--output-format", "text", "--model", MEMBER_MODELS["claude"], "--effort", EFFORT)
             if reference_dir is not None:
                 tools = _READ_TOOLS_CLAUDE + ("," + _WEB_TOOLS_CLAUDE if web else "")
                 deny = _DENY_TOOLS_CLAUDE + ("" if web else "," + _WEB_TOOLS_CLAUDE)
@@ -256,7 +261,8 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
         elif ai == "codex":
             if name not in {"codex", "codex.exe", "codex.cmd"}:
                 raise RunStop("NOT_THE_CODEX_CLI", "codex の CLI ではないので止めた")
-            argv = (binary, "exec", "--sandbox", "read-only", "--skip-git-repo-check")
+            argv = (binary, "exec", "--sandbox", "read-only", "--skip-git-repo-check", "-m", MEMBER_MODELS["codex"],
+                    "-c", f'model_reasoning_effort="{EFFORT}"', "-c", 'service_tier="default"')
             if reference_dir is not None:
                 # Read-only non-interactive mode per the Codex docs (sandbox read-only + approval never): an
                 # untrusted folder otherwise needs an approval for every read command, which exec cannot give.
@@ -379,6 +385,7 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
                "fallback": "disabled", "github_write": False,
                "board_round": round_no if board_dir else None, "finished_at": now(), "members": members,
                "antigravity": "MANUAL",
+               "models": {c.ai: {"model": MEMBER_MODELS[c.ai], "effort": EFFORT} for c in calls},
                "attachments": {c.ai: [{"file": n, "sha256": h} for n, h in c.attachments] for c in calls if c.attachments}}
     _atomic_write(receipt_path, json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
     return receipt
