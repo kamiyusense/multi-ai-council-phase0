@@ -5,6 +5,7 @@
 ## 1. 外した使い道の記録（V4 の例外）
 
 - 何を外したか：Antigravity 自身の Sidecars（`schedule`）が見張り役 `tools/antigravity_sidecar/watch_board.py` を動かす。見張り役は Drive「AI掲示板」の新しいお題を見つけると、Antigravity の公式コマンド `agentapi new-conversation` で、Antigravity に1回だけ答えさせる。答えは `r<ラウンド>_Gemini.md` として掲示板に置く。
+- ファイル名：V4 の例は `r1_Antigravity.md` だが、例として書いた名前。掲示板では、今まで手で貼った Antigravity の答えと同じ `r<ラウンド>_Gemini.md` を使う（設定の `board_name` が "Gemini"）。
 - 根拠：(a) 相棒の承認。2026-10-25 23:08 JST、❤ スレッドの判断カード「Antigravity の Sidecar で、AI掲示板の質問に自動で答えさせる使い方を承認する？」で「承認して試作」を選んだ（2026-10-25T14:08:16Z）。
 - 公式の説明：https://antigravity.google/docs/sidecars 。Sidecar は Antigravity が起動して管理する裏方の処理。定期実行の `schedule` と、会話を始める `agentapi new-conversation` が載っている。
 - 変えないこと（V4 のとおり）：
@@ -30,6 +31,7 @@ Antigravity が 10 分ごとに `watch_board.py` を1回だけ動かす（`sidec
 4. 選んだら、先に「取りかかった」と記録する。そのあと質問ファイルだけを受け箱にコピーし、`agentapi new-conversation` を1回だけ呼ぶ。
    - ほかの AI の答えはコピーしない（目隠し）。
    - 失敗や結果不明でも送り直さない（retry 0）。
+   - 結果不明（START_UNKNOWN）のお題は、あとで受け箱に `answer.md` ができても掲示板には置かない。そのときは相棒が受け箱を見て、必要なら手で貼る。
    - 24 時間で `daily_cap`（初期値 3）回まで。
 
 Antigravity への指示：受け箱の `question.md` だけを読み、`answer.md` に答えを書く。ほかのファイルは触らない。コマンドと Web 検索は使わない。最後に `AI-Agent: antigravity` と書く。
@@ -62,5 +64,6 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 - Windows 版の Antigravity で Sidecar と `schedule` が動くか。`python` という名前で Python が起動するか（動かなければ `py` に変える）。
 - `agentapi new-conversation` が、確認画面なしで最後まで答えを書くか。権限の確認で止まったら、TIMED_OUT で終わる。
 - `projectId` をどこで調べるか。
+- 「目隠し」は、Antigravity への指示と、プロジェクトに受け箱だけを入れる PC の手順に頼っている。Default の権限で、Antigravity が掲示板のフォルダまで読めてしまうかは分からない。
 - PC がスリープ中・アプリを閉じているときの動き。
 - Google が、この組み合わせ（自作の見張り役 + `agentapi`）を個別に認めたわけではない。根拠は相棒の承認（例外の (a)）。
