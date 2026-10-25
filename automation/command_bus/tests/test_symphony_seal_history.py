@@ -2,8 +2,10 @@
 import contextlib
 import hashlib
 import io
+import itertools
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -29,6 +31,13 @@ class SealHistoryTests(unittest.TestCase):
         git_dir = subprocess.check_output(['git', 'rev-parse', '--absolute-git-dir'],
                                           cwd=ROOT, text=True).strip()
         (cls.root / '.git').write_text('gitdir: ' + git_dir + '\n')
+        # Always build candidate states from immutable pre-economy Git bytes,
+        # even when the checkout already contains some or all economy PRs.
+        cls.baseline_workflows = {
+            path: subprocess.check_output(['git', 'show',
+                g63.VALIDATOR_SOURCE_HEAD + ':' + path], cwd=ROOT)
+            for path in g63.DRAFT_WORKFLOWS
+        }
 
     @classmethod
     def tearDownClass(cls):
@@ -147,28 +156,52 @@ class SealHistoryTests(unittest.TestCase):
                 operator.validate(self.root)
 
     def test_draft_only_changes_preserve_all_three_sealed_checks(self):
-        with contextlib.ExitStack() as stack:
-            for path, job in g63.DRAFT_WORKFLOWS.items():
-                original = (self.root / path).read_bytes()
-                stack.enter_context(self.altered(path, g63.draft_workflow_bytes(original, job)))
-            with contextlib.redirect_stdout(io.StringIO()):
-                g63.validate(self.root, historical_only=True)
-                g73.validate(self.root)
-                operator.validate(self.root)
+        items = list(g63.DRAFT_WORKFLOWS.items())
+        # None, each partial combination, and all three PRs: 2**3 states.
+        for enabled in itertools.product((False, True), repeat=len(items)):
+            with self.subTest(applied=enabled), contextlib.ExitStack() as stack:
+                for (path, job), apply in zip(items, enabled):
+                    baseline = self.baseline_workflows[path]
+                    candidate = g63.draft_workflow_bytes(baseline, job) if apply else baseline
+                    stack.enter_context(self.altered(path, candidate))
+                with contextlib.redirect_stdout(io.StringIO()):
+                    g63.validate(self.root, historical_only=True)
+                    g73.validate(self.root)
+                    operator.validate(self.root)
 
     def test_draft_workflow_commands_permissions_evidence_and_cancel_tamper_fail(self):
-        mutations = [(b'contents: read', b'contents: write'),
-                     (b'cancel-in-progress: false', b'cancel-in-progress: true'),
-                     (b'python', b'echo'),
-                     (b'retention-days: 30', b'retention-days: 1')]
         for path, job in g63.DRAFT_WORKFLOWS.items():
-            original = g63.draft_workflow_bytes((self.root / path).read_bytes(), job)
-            for before, after in mutations:
-                with self.subTest(path=path, field=before):
+            baseline = self.baseline_workflows[path]
+            for apply in (False, True):
+                original = g63.draft_workflow_bytes(baseline, job) if apply else baseline
+                # A negative result is meaningful only if its unmodified control passes.
+                with self.altered(path, original):
+                    g63.validate_current_safety(self.root)
+                replacements = [(b'contents: read', b'contents: write'),
+                                (b'cancel-in-progress: false', b'cancel-in-progress: true'),
+                                (b'python', b'echo'),
+                                (b'retention-days: 30', b'retention-days: 1')]
+                mutations = []
+                for before, after in replacements:
                     self.assertIn(before, original)
-                    with self.altered(path, original.replace(before, after)):
-                        with self.assertRaisesRegex(ValueError, 'current workflow safety policy'):
-                            g63.validate_current_safety(self.root)
+                    mutations.append((before, original.replace(before, after)))
+                steps = [m.start() for m in re.finditer(rb'(?m)^      - name:', original)]
+                self.assertGreaterEqual(len(steps), 3)
+                # Remove the first validation/preparation step and the evidence upload.
+                mutations.append(('deleted validation', original[:steps[1]] + original[steps[2]:]))
+                mutations.append(('deleted evidence upload', original[:steps[-1]]))
+                for label, changed in mutations:
+                    with self.subTest(path=path, draft=apply, mutation=label):
+                        self.assertNotEqual(changed, original)
+                        with self.altered(path, changed):
+                            with self.assertRaisesRegex(ValueError, 'current workflow safety policy'):
+                                g63.validate_current_safety(self.root)
+
+    def test_repair_source_is_reachable_from_checked_out_history(self):
+        result = subprocess.run(['git', 'merge-base', '--is-ancestor',
+            g63.REPAIR_SOURCE_HEAD, 'HEAD'], cwd=ROOT, capture_output=True)
+        self.assertEqual(result.returncode, 0,
+            'Repair source must be retained in ancestry: use Create a merge commit, not squash/rebase')
 
     def test_first_repair_receipt_tamper_is_rejected(self):
         path = g63.ORIGINAL_REPAIR_MANIFEST

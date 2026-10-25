@@ -21,8 +21,10 @@ workflow manual-only. This repair changes no workflow and no historical evidence
 - The first repair's new `manifest.json` is also preserved, with its source at
   `17e50259742ff7b8061fcc8b9b5d3175c6562114`. The current repair and tamper tests
   have a separate `docs/evidence/symphony-actions-seal-repair/draft-compatibility.json`.
-  No prior receipt or manifest is updated. Missing, duplicate, unexpected or altered
-  current repair entries fail closed.
+  The original manifest and the 563 pre-repair evidence files are immutable.
+  The unmerged `draft-compatibility.json` tracks the current reviewed repair source;
+  corrections are ordinary new commits, preserving every prior revision in Git.
+  Missing, duplicate, unexpected or altered current repair entries fail closed.
 - Historical manifests referencing the controller, synthetic or installation CI
   use their pre-change main bytes. Current CI must match those exact bytes or only
   the approved three-line Draft/ready transition delta. All commands, permissions,
@@ -40,14 +42,44 @@ python -m automation.command_bus.scripts.validate_symphony_operator_static
 python -m unittest automation.command_bus.tests.test_symphony_seal_history -v
 ```
 
-The 20 repair tests include real immutable Git-object reads, historical/current
+The 21 repair tests include real immutable Git-object reads, historical/current
 tampering, missing history, current source changes, missing/duplicate/traversal
 manifest entries, and unchanged OFF/approval refusal. Related sender, approval,
 ledger, host-recovery, Blue and trigger regressions add 126 existing tests.
-All three validators also pass with the PR #476 delta and with all three permitted
-workflow deltas combined. This is local integration proof, not a GitHub ready run.
+The tests build every workflow candidate from `VALIDATOR_SOURCE_HEAD`, not from
+the working tree. They check all eight combinations of PR #476/#478/#479, including
+none, partial and fully applied states. Negative cases first require the unmodified
+control to pass, then reject permission/command changes, removed validation,
+removed evidence upload, altered evidence retention and cancellation policy.
+The actual three economy PR files are also combined in an independent local clone
+for the three validator commands and full command-bus regression suite.
+This is local integration proof, not a GitHub ready run.
 No old evidence is rewritten, no provider runs and no GitHub Actions is manually
 dispatched by these commands. Local PASS and GitHub CI evidence remain distinct.
+
+## Required merge method and history retention
+
+**PR #477 must use Create a merge commit. Do not use Squash and merge or Rebase
+and merge.** The repository currently permits merge commits; no setting is changed.
+
+`REPAIR_SOURCE_HEAD=17e50259742ff7b8061fcc8b9b5d3175c6562114` is the first
+repair source, not merely a branch name. A merge commit retains it as an ancestor
+of the accepted history. Deleting the PR branch later does not remove an ancestor
+reachable from the accepted branch. A fresh full clone must retain this object;
+do not rely on local caches, a PR ref or an orphan GitHub object.
+
+Squash omits the intermediate commits, and GitHub rebase rewrites their SHAs.
+Neither provides the required original source ancestry. Tests require the pinned
+source to be an ancestor of the checked-out history, and unavailable history still
+fails closed. Current workflow checkouts that execute these gates use full history.
+
+Disposable local commit-graph simulations compare merge, squash and rewritten
+rebase histories. They remove the fixture PR ref, clone only the resulting branch
+and prune unreferenced objects. Merge must retain the source and pass all three
+validators; squash/rebase must lose the original pin and be refused. No real main
+branch, GitHub merge or repository merge setting is changed by this verification.
+
+GitHub's merge semantics: https://docs.github.com/en/pull-requests/reference/pull-request-merges
 
 ## Merge dependency
 
