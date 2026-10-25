@@ -220,6 +220,7 @@ class WatchBoardTest(unittest.TestCase):
         self.assertIs(example["armed"], False)
         sidecar = json.loads((TOOL_DIR / "sidecar.json").read_text(encoding="utf-8"))
         self.assertEqual(sidecar["builtin"], "schedule")
+        self.assertEqual(sidecar["args"][0], "*/5 * * * *")
         self.assertEqual(sidecar["args"][1:], ["python", "watch_board.py"])
         self.assertEqual(sidecar["restart_policy"], "never")
 

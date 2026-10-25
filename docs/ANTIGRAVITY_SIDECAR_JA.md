@@ -17,7 +17,7 @@
 
 ## 2. 動き方（1回の見張り）
 
-Antigravity が 10 分ごとに `watch_board.py` を1回だけ動かす（`sidecar.json`）。1回の見張りでやることは次のとおり。
+Antigravity が 5 分ごとに `watch_board.py` を1回だけ動かす（`sidecar.json`）。1回の見張りでやることは次のとおり。見張りそのものは PC の中でファイルを見るだけで、AI の枠は使わない。枠を使うのは 4 で Antigravity に頼むときだけ。
 
 1. 受け箱に `STOP`、または掲示板に `STOP_ANTIGRAVITY` があれば、何もしないで終わる（止めるスイッチ）。
 2. 答え待ちのお題があり、`answer.md` ができて 30 秒以上変わっていなければ、お題フォルダに `r1_Gemini.md` として置く。
