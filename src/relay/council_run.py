@@ -42,7 +42,7 @@ from typing import Any, Callable, Mapping
 from .council import ANSWER_MARKER, CouncilError, CouncilPlan, plan_council, summary_markdown
 from .council_grok import GrokLaunchError, child_env, headless_launch
 
-__all__ = ["MemberCall", "member_prompt", "load_attachments", "named_files", "update_reference", "build_calls", "plan_digest", "approval_phrase", "run_council",
+__all__ = ["MemberCall", "member_prompt", "web_choice", "load_attachments", "named_files", "update_reference", "build_calls", "plan_digest", "approval_phrase", "run_council",
            "board_file", "RunStop", "main"]
 
 DECISION = "APPROVE_COUNCIL"
@@ -206,6 +206,16 @@ def _attached_prompt(prompt: str, attachments: tuple[tuple[str, str], ...]) -> s
         parts.append("\n質問に書かれているが、長すぎて添付しなかったファイル（中身は UNKNOWN）：" + "、".join(left))
     parts += [f"\n\n===== {name} =====\n{text}" for name, text in attachments if text != NOT_ATTACHED]
     return "".join(parts)
+
+
+def web_choice(reference_dir: str | None, web: bool = False, no_web: bool = False) -> bool:
+    """Owner's choice 2026-10-25: web research is on whenever a reference folder is given; ``--no-web`` turns it off.
+
+    ``--web`` without a folder is passed on so ``build_calls`` stops with WEB_NEEDS_REFERENCE.
+    """
+    if web and no_web:
+        raise RunStop("WEB_BOTH", "--web と --no-web は同時に使えない")
+    return (web or reference_dir is not None) and not no_web
 
 
 def _binary_name(binary: str) -> str:
@@ -417,7 +427,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="file in --reference-dir to add to Codex's prompt (repeatable)")
     parser.add_argument("--no-update-reference", action="store_true",
                         help="read the clone as it is (default: fast-forward it to origin/main first)")
-    parser.add_argument("--web", action="store_true", help="also allow web search/read (owner's choice)")
+    parser.add_argument("--web", action="store_true",
+                        help="allow web search/read (already the default with --reference-dir)")
+    parser.add_argument("--no-web", action="store_true", help="switch web search/read off")
     parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help=f"seconds per member, max {MAX_TIMEOUT_SECONDS}")
     args = parser.parse_args(argv)
     try:
@@ -436,7 +448,9 @@ def main(argv: list[str] | None = None) -> int:
             named = [n for n in named_files(plan.question, args.reference_dir) if n not in args.attach]
             if args.attach or named:
                 attachments = load_attachments(args.reference_dir, list(dict.fromkeys(args.attach)), named)
-        calls = build_calls(plan, os.environ, binaries, args.reference_dir, args.web, attachments)
+        web = web_choice(args.reference_dir, args.web, args.no_web)
+        calls = build_calls(plan, os.environ, binaries, args.reference_dir, web, attachments)
+        print("ネット調査：あり（調べ物のルール付き。切るには --no-web）" if web else "ネット調査：なし")
         if attachments:
             print(f"Codex への添付：{', '.join(n for n, t in attachments if t != NOT_ATTACHED)}")
             left = [n for n, t in attachments if t == NOT_ATTACHED]

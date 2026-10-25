@@ -110,6 +110,14 @@ class ReferenceDirTests(unittest.TestCase):
         with self.assertRaises(r.RunStop):
             r.build_calls(plan(), ENV, BIN, None, web=True)
 
+    def test_web_is_on_with_a_folder_unless_switched_off(self):
+        self.assertTrue(r.web_choice(self.REF))
+        self.assertFalse(r.web_choice(self.REF, no_web=True))
+        self.assertFalse(r.web_choice(None))
+        self.assertTrue(r.web_choice(None, web=True))  # build_calls then stops: WEB_NEEDS_REFERENCE
+        with self.assertRaises(r.RunStop):
+            r.web_choice(self.REF, web=True, no_web=True)
+
     def test_relative_folder_refused_and_digest_differs(self):
         with self.assertRaises(r.RunStop):
             r.build_calls(plan(), ENV, BIN, "relative/dir")
