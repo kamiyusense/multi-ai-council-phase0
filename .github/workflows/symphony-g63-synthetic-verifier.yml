@@ -2,6 +2,7 @@ name: Symphony G6.3 synthetic independent verifier
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - automation/command_bus/symphony_sqlite_storage.py
       - automation/command_bus/symphony_subscription_startup.patch
@@ -36,6 +37,8 @@ concurrency:
 
 jobs:
   synthetic-verifier:
+    # Draft skips are NOT_RUN, not validation PASS; no evidence is generated.
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
