@@ -71,6 +71,14 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
 - Lines that hold: no tool launches, drives or wraps Antigravity; nothing writes the next instruction where
   Antigravity reads (the answer location and any instruction location are separate, one-way); Antigravity's
   internal files (`~/.gemini/`, transcripts) are never read, only its outputs (PRs, Issues, project files).
+- Conditional permission (owner instruction, 2026-10-25): the "no launch, drive or wrap" lines above are lifted for one
+  named configuration at a time, and only when at least one of these is recorded in the repository:
+  (a) the owner's explicit approval for that exact configuration (who approved, when, what is covered); or
+  (b) Google's official terms or documentation explicitly permitting it (primary-source quote, URL, retrieval date).
+  Until a record exists, the lines hold. Candidate named in the investigation: Antigravity's own Sidecar plus `agentapi`
+  (Relay would still never start Antigravity; it would only read answers). Even when lifted: no API key, no billing or
+  setting change, no account rotation, only the owner's own GitHub posts are accepted as instructions, retry = 0, and
+  the owner's approval is separate for the first live run. Unknown terms or a failed check fail closed.
 - The Antigravity launch code is moved to `archive/antigravity_launch/` and disabled (step S1), with the header
   "suspended, do not run (terms, 2026-10)", so it can be restored if the terms change. The launch deny-list
   (`LIVE_ADAPTER_MARKERS`) stays active.
