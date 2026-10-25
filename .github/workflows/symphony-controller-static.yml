@@ -2,6 +2,7 @@ name: Symphony-inspired controller static validation
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - automation/command_bus/symphony_operator_*.py
       - automation/command_bus/symphony_operator_oidc_signature.mjs
@@ -125,6 +126,8 @@ concurrency:
 
 jobs:
   static-validation:
+    # Draft skips are NOT_RUN, not validation PASS; no evidence is generated.
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
