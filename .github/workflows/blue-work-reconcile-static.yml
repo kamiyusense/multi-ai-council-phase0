@@ -1,15 +1,9 @@
 name: Blue Work reconciliation offline validation
 
 on:
-  # Current-main integration: one pull_request validation per head.
-  # No push trigger, so the same commit is not tested twice.
-  pull_request:
-    branches:
-      - main
-      - codex/symphony-inspired-minimal-controller
-      - feature/blue-work-jules-webhook-loop
-      - 'jules-work/**'
-    types: [opened, synchronize, reopened]
+  # Blue Work lane is stopped; the per-PR run used about half of the October 2026
+  # Actions minutes. Manual runs only (owner, 2026-10-25).
+  workflow_dispatch:
 
 permissions:
   contents: read
