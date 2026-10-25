@@ -44,9 +44,17 @@ class BuildTests(unittest.TestCase):
         for call in calls:
             self.assertFalse({"XAI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CODEX_API_KEY"} & set(call.env))
         claude, codex = calls[1], calls[2]
-        self.assertEqual(claude.argv, ("/usr/bin/claude", "-p", "--output-format", "text"))
+        self.assertEqual(claude.argv, ("/usr/bin/claude", "-p", "--output-format", "text",
+                                       "--model", "claude-opus-5-5", "--effort", "high"))
         self.assertEqual(claude.env["CLAUDE_CODE_MAX_RETRIES"], "0")
-        self.assertEqual(codex.argv[1:], ("exec", "--sandbox", "read-only", "--skip-git-repo-check", "-"))
+        self.assertEqual(codex.argv[1:], ("exec", "--sandbox", "read-only", "--skip-git-repo-check",
+                                          "-m", "gpt-6.1-sol", "-c", 'model_reasoning_effort="high"',
+                                          "-c", 'service_tier="default"', "-"))
+        grok = calls[0].argv
+        self.assertEqual(grok[grok.index("-m") + 1], "grok-4.7")
+        self.assertEqual(grok[grok.index("--reasoning-effort") + 1], "high")
+        for call in calls:
+            self.assertFalse(any("fast" in a.lower() for a in call.argv))
         self.assertIn("A と B どっち？", claude.stdin)
         self.assertNotIn("A と B どっち？", " ".join(claude.argv + codex.argv))
 
@@ -143,6 +151,7 @@ class AttachmentTests(unittest.TestCase):
         receipt = r.run_council(p, list(calls.values()), out_dir=Path(self.tmp.name) / "out", runner=FakeRunner(),
                                 confirm=typed)
         self.assertEqual([a["file"] for a in receipt["attachments"]["codex"]], ["README.md", "docs/design.md"])
+        self.assertEqual(receipt["models"]["codex"], {"model": "gpt-6.1-sol", "effort": "high"})
 
     def test_outside_missing_binary_or_too_much_is_refused(self):
         for names in (["../secret.txt"], [str(Path(self.tmp.name) / "secret.txt")], ["nope.md"], ["docs"]):
