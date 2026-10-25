@@ -26,12 +26,32 @@ UPDATED_VALIDATORS = frozenset(
 REPAIR_FILES = UPDATED_VALIDATORS | {
     'automation/command_bus/tests/test_symphony_seal_history.py'
 }
-REPAIR_MANIFEST = 'docs/evidence/symphony-actions-seal-repair/manifest.json'
+ORIGINAL_REPAIR_MANIFEST = 'docs/evidence/symphony-actions-seal-repair/manifest.json'
+REPAIR_SOURCE_HEAD = '17e50259742ff7b8061fcc8b9b5d3175c6562114'
+REPAIR_MANIFEST = 'docs/evidence/symphony-actions-seal-repair/draft-compatibility.json'
+DRAFT_WORKFLOWS = {
+    '.github/workflows/symphony-controller-static.yml': 'static-validation',
+    '.github/workflows/symphony-g63-synthetic-verifier.yml': 'synthetic-verifier',
+    '.github/workflows/symphony-operator-installation-static.yml': 'offline-review',
+}
+
+
+def draft_workflow_bytes(original, job):
+    """The sole approved CI delta; all commands/permissions/evidence stay exact."""
+    trigger = b'  pull_request:\n'
+    job_line = ('  ' + job + ':\n').encode()
+    if original.count(trigger) != 1 or original.count(job_line) != 1:
+        raise ValueError('unexpected workflow structure')
+    return original.replace(trigger, trigger +
+        b'    types: [opened, synchronize, reopened, ready_for_review]\n', 1).replace(
+        job_line, job_line +
+        b'    # Draft skips are NOT_RUN, not validation PASS; no evidence is generated.\n'
+        b'    if: ${{ !github.event.pull_request.draft }}\n', 1)
 
 
 def sealed_source(root, path):
     """Superseded validators retain their pre-repair bytes in historical seals."""
-    if path in UPDATED_VALIDATORS:
+    if path in UPDATED_VALIDATORS or path in DRAFT_WORKFLOWS:
         return subprocess.check_output(['git', 'show', VALIDATOR_SOURCE_HEAD + ':' + path], cwd=root)
     return (root / path).read_bytes()
 
@@ -41,8 +61,19 @@ def validate_current_safety(root):
     approved = subprocess.check_output(['git', 'show', BLUE_MANUAL_HEAD + ':' + BLUE_WORKFLOW], cwd=root)
     if (root / BLUE_WORKFLOW).read_bytes() != approved:
         raise ValueError('current Blue manual-only policy changed')
-    manifest = json.loads((root / REPAIR_MANIFEST).read_text())
-    if manifest.get('schema_version') != 1:
+    for path, job in DRAFT_WORKFLOWS.items():
+        original = subprocess.check_output(['git', 'show', VALIDATOR_SOURCE_HEAD + ':' + path], cwd=root)
+        current = (root / path).read_bytes()
+        if current not in (original, draft_workflow_bytes(original, job)):
+            raise ValueError('current workflow safety policy changed: ' + path)
+    # Preserve the first repair receipt too; the follow-up has its own seal.
+    validate_repair_manifest(root, ORIGINAL_REPAIR_MANIFEST, REPAIR_SOURCE_HEAD)
+    validate_repair_manifest(root, REPAIR_MANIFEST)
+
+
+def validate_repair_manifest(root, manifest_path, source_ref=None):
+    manifest = json.loads((root / manifest_path).read_text())
+    if type(manifest.get('schema_version')) is not int or manifest['schema_version'] != 1:
         raise ValueError('invalid repair manifest version')
     seen = set()
     for entry in manifest['files']:
@@ -50,7 +81,8 @@ def validate_current_safety(root):
         if not safe_path(path) or path in seen or path not in REPAIR_FILES:
             raise ValueError('unsafe/duplicate repair manifest path')
         seen.add(path)
-        raw = (root / path).read_bytes()
+        raw = (subprocess.check_output(['git', 'show', source_ref + ':' + path], cwd=root)
+               if source_ref else (root / path).read_bytes())
         if len(raw) != entry['bytes'] or hashlib.sha256(raw).hexdigest() != entry['sha256']:
             raise ValueError('current repair source changed: ' + path)
     if seen != REPAIR_FILES:

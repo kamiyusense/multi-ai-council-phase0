@@ -112,6 +112,9 @@ class SealHistoryTests(unittest.TestCase):
     def test_unknown_manifest_version_is_rejected(self):
         self.assert_bad_manifest(lambda m: m.update(schema_version=999))
 
+    def test_boolean_manifest_version_is_rejected(self):
+        self.assert_bad_manifest(lambda m: m.update(schema_version=True))
+
     def test_wrong_current_hash_is_rejected(self):
         self.assert_bad_manifest(lambda m: m['files'][0].update(sha256='0' * 64))
 
@@ -142,6 +145,38 @@ class SealHistoryTests(unittest.TestCase):
         with self.altered(path, json.dumps(data).encode()):
             with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(ValueError):
                 operator.validate(self.root)
+
+    def test_draft_only_changes_preserve_all_three_sealed_checks(self):
+        with contextlib.ExitStack() as stack:
+            for path, job in g63.DRAFT_WORKFLOWS.items():
+                original = (self.root / path).read_bytes()
+                stack.enter_context(self.altered(path, g63.draft_workflow_bytes(original, job)))
+            with contextlib.redirect_stdout(io.StringIO()):
+                g63.validate(self.root, historical_only=True)
+                g73.validate(self.root)
+                operator.validate(self.root)
+
+    def test_draft_workflow_commands_permissions_evidence_and_cancel_tamper_fail(self):
+        mutations = [(b'contents: read', b'contents: write'),
+                     (b'cancel-in-progress: false', b'cancel-in-progress: true'),
+                     (b'python', b'echo'),
+                     (b'retention-days: 30', b'retention-days: 1')]
+        for path, job in g63.DRAFT_WORKFLOWS.items():
+            original = g63.draft_workflow_bytes((self.root / path).read_bytes(), job)
+            for before, after in mutations:
+                with self.subTest(path=path, field=before):
+                    self.assertIn(before, original)
+                    with self.altered(path, original.replace(before, after)):
+                        with self.assertRaisesRegex(ValueError, 'current workflow safety policy'):
+                            g63.validate_current_safety(self.root)
+
+    def test_first_repair_receipt_tamper_is_rejected(self):
+        path = g63.ORIGINAL_REPAIR_MANIFEST
+        data = json.loads((self.root / path).read_text())
+        data['files'][0]['sha256'] = '0' * 64
+        with self.altered(path, json.dumps(data).encode()):
+            with self.assertRaises(ValueError):
+                g63.validate_current_safety(self.root)
 
 
 if __name__ == '__main__':

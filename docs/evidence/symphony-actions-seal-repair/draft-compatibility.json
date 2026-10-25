@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "purpose": "Current repair source; initial repair seal preserved at 17e50259742ff7b8061fcc8b9b5d3175c6562114",
+  "files": [
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g63.py",
+      "bytes": 6677,
+      "sha256": "c9aa191131d3909991f578c326e0a57103c53ad419d593575ed4d1d17d332e70"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_g73.py",
+      "bytes": 2581,
+      "sha256": "d0202d011c62e0799b4c0fc3257b8d51f75cf7069cd554fec7d81e9a559b5241"
+    },
+    {
+      "path": "automation/command_bus/scripts/validate_symphony_operator_static.py",
+      "bytes": 10988,
+      "sha256": "4fba90fd0081bfe3f55182b4654948a1e056deab4ca4e0eb61d301883ccd1064"
+    },
+    {
+      "path": "automation/command_bus/tests/test_symphony_seal_history.py",
+      "bytes": 8644,
+      "sha256": "418213e6b53a4a0f0c522f81f9abab2ee38eb50bff9c0899797d51aab7b6b282"
+    }
+  ]
+}

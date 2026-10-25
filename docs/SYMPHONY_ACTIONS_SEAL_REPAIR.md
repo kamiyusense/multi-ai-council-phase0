@@ -18,10 +18,15 @@ workflow manual-only. This repair changes no workflow and no historical evidence
 - Historical manifests referring to the three repaired validators retain the
   pre-repair validator bytes at `fab6f17a979bcfacd6b07804eb90bfa80edee446`, unless
   an older explicit source pin already applies.
-- Current repaired validators and their tamper tests have a **new**, separately
-  named manifest at `docs/evidence/symphony-actions-seal-repair/manifest.json`.
-  No old receipt or manifest is updated. Missing, duplicate, unexpected or altered
+- The first repair's new `manifest.json` is also preserved, with its source at
+  `17e50259742ff7b8061fcc8b9b5d3175c6562114`. The current repair and tamper tests
+  have a separate `docs/evidence/symphony-actions-seal-repair/draft-compatibility.json`.
+  No prior receipt or manifest is updated. Missing, duplicate, unexpected or altered
   current repair entries fail closed.
+- Historical manifests referencing the controller, synthetic or installation CI
+  use their pre-change main bytes. Current CI must match those exact bytes or only
+  the approved three-line Draft/ready transition delta. All commands, permissions,
+  concurrency, OFF gates and evidence remain byte-identical. Any other delta fails.
 
 This is offline evidence validation, not LIVE authorization, worker permission,
 result adoption, a billing change or proof of production readiness.
@@ -35,10 +40,12 @@ python -m automation.command_bus.scripts.validate_symphony_operator_static
 python -m unittest automation.command_bus.tests.test_symphony_seal_history -v
 ```
 
-The 16 repair tests include real immutable Git-object reads, historical/current
+The 20 repair tests include real immutable Git-object reads, historical/current
 tampering, missing history, current source changes, missing/duplicate/traversal
 manifest entries, and unchanged OFF/approval refusal. Related sender, approval,
-ledger, host-recovery, Blue and trigger regressions are tested independently.
+ledger, host-recovery, Blue and trigger regressions add 126 existing tests.
+All three validators also pass with the PR #476 delta and with all three permitted
+workflow deltas combined. This is local integration proof, not a GitHub ready run.
 No old evidence is rewritten, no provider runs and no GitHub Actions is manually
 dispatched by these commands. Local PASS and GitHub CI evidence remain distinct.
 
