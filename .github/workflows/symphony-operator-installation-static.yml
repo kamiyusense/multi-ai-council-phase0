@@ -1,6 +1,7 @@
 name: Symphony installation proposal STATIC
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - .github/workflows/symphony-operator-*.yml
       - automation/command_bus/symphony_subscription_startup.patch
@@ -26,6 +27,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   offline-review:
+    # Draft skips are NOT_RUN, not validation PASS; no evidence is generated.
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
