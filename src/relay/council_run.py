@@ -66,6 +66,9 @@ _RESEARCH_RULES = (
     "(6) 作業フォルダの中身（ファイルの文章、パス、コード、非公開の名前）を検索語や URL に入れない。検索は一般的な言葉だけで行う。"
     "(7) ログイン、フォーム送信、アップロード、ダウンロードしたものの実行はしない。"
     "(8) 回答の最後に、調べた範囲（検索した回数と読んだページの数）を1行で書く。"
+    "(9) 調べ物を頼まれたら、実際に検索してから答える。調べていないことを調べたように書かない。ネットで確かめた情報には主張ごとに根拠（出典 URL）を付ける。"
+    "根拠が見つからないことは無理に探し続けず、UNKNOWN と書いてよい。検索はおおむね 5 回、読むページはおおむね 10 ページまでを目安にする。"
+    "出所がわからないサイト、広告やまとめだらけのサイト、ログインやダウンロードを求めるサイトは開かない。"
 )
 _SHELL_SHIMS = (".cmd", ".bat")
 # Owner's choice 2026-10-25: these models, all high, no fast/priority mode.
@@ -105,7 +108,7 @@ def member_prompt(question: str, reference_dir: str | None = None, web: bool = F
     if reference_dir is None:
         return (
             "次の質問に、日本語で、30行以内で答えてください。最初に結論、次に理由、最後にリスク。"
-            "わからないことは推測せず UNKNOWN と書いてください。ファイルの変更やコマンドの実行はしないでください。\n\n"
+            "わからないことは推測せず UNKNOWN と書いてください。ファイルの変更やコマンドの実行はしないでください。" + rules + "\n\n"
             f"質問：{question}"
         )
     return (
@@ -208,14 +211,11 @@ def _attached_prompt(prompt: str, attachments: tuple[tuple[str, str], ...]) -> s
     return "".join(parts)
 
 
-def web_choice(reference_dir: str | None, web: bool = False, no_web: bool = False) -> bool:
-    """Owner's choice 2026-10-25: web research is on whenever a reference folder is given; ``--no-web`` turns it off.
-
-    ``--web`` without a folder is passed on so ``build_calls`` stops with WEB_NEEDS_REFERENCE.
-    """
+def web_choice(web: bool = False, no_web: bool = False) -> bool:
+    """Owner's choice 2026-10-25: web research is on from the start for every member; ``--no-web`` turns it off."""
     if web and no_web:
         raise RunStop("WEB_BOTH", "--web と --no-web は同時に使えない")
-    return (web or reference_dir is not None) and not no_web
+    return not no_web
 
 
 def _binary_name(binary: str) -> str:
@@ -230,12 +230,11 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
     ``reference_dir`` (a local clone the question is about) becomes each member's working folder with read-only
     tools: Claude ``--allowedTools Read,Grep,Glob`` and edits/shell/web denied, Codex ``--sandbox read-only -C``,
     Grok ``--cwd`` with ``--allow Read/Grep`` and ``--deny Edit/Bash``.
-    ``web`` (only with ``reference_dir``, on the owner's instruction) adds web search/read: Claude WebSearch/WebFetch,
-    Codex ``-c web_search="live"``, Grok ``--allow WebSearch/WebFetch``; local files stay read-only.
+    ``web`` (on by default in ``main``, owner's choice) adds web search/read: Claude WebSearch/WebFetch,
+    Codex ``-c web_search="live"``, Grok ``--allow WebSearch/WebFetch``; local files stay read-only.  Without
+    ``reference_dir`` a web member gets web tools only: local reads, edits and shell are denied.
     ``attachments`` (from ``load_attachments``) go into Codex's prompt only; Grok and Claude read the folder.
     """
-    if web and reference_dir is None:
-        raise RunStop("WEB_NEEDS_REFERENCE", "ネット調査は読むフォルダを指定したときだけ使える")
     if reference_dir is not None and (not isinstance(reference_dir, str) or not os.path.isabs(reference_dir)):
         raise RunStop("REFERENCE_DIR", "調べるフォルダは絶対パスで指定して")
     if attachments and reference_dir is None:
@@ -257,6 +256,9 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
                          "--deny", "Bash")
                 if web:
                     argv += ("--allow", "WebSearch", "--allow", "WebFetch")
+            elif web:
+                argv += ("--allow", "WebSearch", "--allow", "WebFetch", "--deny", "Read", "--deny", "Grep",
+                         "--deny", "Edit", "--deny", "Bash")
             calls.append(MemberCall(ai, argv, launch.env, None, reference_dir))
         elif ai == "claude":
             if name not in {"claude", "claude.exe", "claude.cmd"}:
@@ -267,6 +269,9 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
                 tools = _READ_TOOLS_CLAUDE + ("," + _WEB_TOOLS_CLAUDE if web else "")
                 deny = _DENY_TOOLS_CLAUDE + ("" if web else "," + _WEB_TOOLS_CLAUDE)
                 argv += ("--allowedTools", tools, "--disallowedTools", deny)
+            elif web:
+                argv += ("--allowedTools", _WEB_TOOLS_CLAUDE,
+                         "--disallowedTools", _DENY_TOOLS_CLAUDE + "," + _READ_TOOLS_CLAUDE)
             calls.append(MemberCall(ai, argv, env, prompt, reference_dir))
         elif ai == "codex":
             if name not in {"codex", "codex.exe", "codex.cmd"}:
@@ -277,8 +282,8 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
                 # Read-only non-interactive mode per the Codex docs (sandbox read-only + approval never): an
                 # untrusted folder otherwise needs an approval for every read command, which exec cannot give.
                 argv += ("-C", reference_dir, "-c", 'approval_policy="never"')
-                if web:
-                    argv += ("-c", 'web_search="live"')
+            if web:
+                argv += ("-c", 'web_search="live"')
             hashes = tuple((n, t if t == NOT_ATTACHED else hashlib.sha256(t.encode("utf-8")).hexdigest())
                            for n, t in attachments)
             stdin = _attached_prompt(prompt, attachments) if attachments else prompt
@@ -428,7 +433,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-update-reference", action="store_true",
                         help="read the clone as it is (default: fast-forward it to origin/main first)")
     parser.add_argument("--web", action="store_true",
-                        help="allow web search/read (already the default with --reference-dir)")
+                        help="allow web search/read (already the default)")
     parser.add_argument("--no-web", action="store_true", help="switch web search/read off")
     parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help=f"seconds per member, max {MAX_TIMEOUT_SECONDS}")
     args = parser.parse_args(argv)
@@ -448,7 +453,7 @@ def main(argv: list[str] | None = None) -> int:
             named = [n for n in named_files(plan.question, args.reference_dir) if n not in args.attach]
             if args.attach or named:
                 attachments = load_attachments(args.reference_dir, list(dict.fromkeys(args.attach)), named)
-        web = web_choice(args.reference_dir, args.web, args.no_web)
+        web = web_choice(args.web, args.no_web)
         calls = build_calls(plan, os.environ, binaries, args.reference_dir, web, attachments)
         print("ネット調査：あり（調べ物のルール付き。切るには --no-web）" if web else "ネット調査：なし")
         if attachments:
