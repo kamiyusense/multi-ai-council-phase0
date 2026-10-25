@@ -90,7 +90,7 @@ class Config:
     since: datetime
     armed: bool = False
     round_no: int = 1
-    daily_cap: int = 3
+    daily_cap: int = 6
     answer_timeout_minutes: int = 120
     board_name: str = "Gemini"
     web: bool = True
@@ -118,13 +118,13 @@ def load_config(path: Path) -> Config:
         raise WatchStop("CONFIG: since needs a time zone, e.g. 2026-10-26T00:00:00+09:00")
     armed = raw.get("armed", False)
     round_no = raw.get("round", 1)
-    daily_cap = raw.get("daily_cap", 3)
+    daily_cap = raw.get("daily_cap", 6)
     timeout = raw.get("answer_timeout_minutes", 120)
     web = raw.get("web", True)
     for name, flag in (("armed", armed), ("web", web)):
         if not isinstance(flag, bool):
             raise WatchStop(f"CONFIG: {name} must be true or false")
-    for name, value, low, high in (("round", round_no, 1, 9), ("daily_cap", daily_cap, 1, 5),
+    for name, value, low, high in (("round", round_no, 1, 9), ("daily_cap", daily_cap, 1, 6),
                                    ("answer_timeout_minutes", timeout, 10, 1440)):
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
             raise WatchStop(f"CONFIG: {name} must be an integer from {low} to {high}")

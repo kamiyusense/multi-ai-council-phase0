@@ -231,8 +231,9 @@ class WatchBoardTest(unittest.TestCase):
         path = self.tmp / "watch_config.json"
         path.write_text(json.dumps(good), encoding="utf-8")
         self.assertFalse(wb.load_config(path).armed)
+        self.assertEqual(wb.load_config(path).daily_cap, 6)
         bad = [{**good, "since": "2026-10-26T00:00:00"}, {**good, "inbox_dir": str(self.board / "inbox")},
-               {**good, "board_dir": "relative"}, {**good, "armed": "yes"}, {**good, "daily_cap": 9},
+               {**good, "board_dir": "relative"}, {**good, "armed": "yes"}, {**good, "daily_cap": 7},
                {**good, "agy": "agy -p"}, {**good, "web": "on"}]
         for raw in bad:
             with self.subTest(raw=raw):

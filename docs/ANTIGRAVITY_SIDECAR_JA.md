@@ -32,7 +32,7 @@ Antigravity が 5 分ごとに `watch_board.py` を1回だけ動かす（`sideca
    - ほかの AI の答えはコピーしない（目隠し）。
    - 失敗や結果不明でも送り直さない（retry 0）。
    - 結果不明（START_UNKNOWN）のお題は、あとで受け箱に `answer.md` ができても掲示板には置かない。そのときは相棒が受け箱を見て、必要なら手で貼る。
-   - 24 時間で `daily_cap`（初期値 3）回まで。
+   - 24 時間で `daily_cap`（初期値 6、最大 6。相棒の指定 2026-10-26）回まで。
 
 Antigravity への指示：受け箱の `question.md` だけを読み、`answer.md` に答えを書く。ほかのファイルは触らない。コマンドは使わない。最後に `AI-Agent: antigravity` と書く。
 
