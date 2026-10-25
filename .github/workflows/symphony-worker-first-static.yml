@@ -2,6 +2,7 @@ name: Symphony worker-first Local preflight STATIC
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - automation/command_bus/scripts/symphony_worker_first_preflight.py
       - automation/command_bus/tests/test_symphony_worker_first_preflight.py
@@ -33,6 +34,8 @@ concurrency:
 
 jobs:
   worker-first-readonly:
+    # Draft skips are NOT_RUN, not validation PASS; no evidence is generated.
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
