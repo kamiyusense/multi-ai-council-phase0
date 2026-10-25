@@ -192,7 +192,7 @@ class WatchBoardTest(unittest.TestCase):
         self.assertEqual(wb.watch_once(self.cfg(), runner=runner, now=NOW)["result"], "STOPPED")
         (self.inbox / wb.INBOX_STOP).unlink()
         (self.inbox / wb.STATE_FILE).write_text(json.dumps(
-            {"topics": {}, "starts": [(NOW - timedelta(hours=h)).isoformat() for h in (1, 2, 3)]}), encoding="utf-8")
+            {"topics": {}, "starts": [(NOW - timedelta(hours=h)).isoformat() for h in (1, 2, 3, 4, 5, 6)]}), encoding="utf-8")
         self.assertEqual(wb.watch_once(self.cfg(), runner=runner, now=NOW)["result"], "DAILY_CAP")
         self.assertEqual(runner.calls, [])
 
