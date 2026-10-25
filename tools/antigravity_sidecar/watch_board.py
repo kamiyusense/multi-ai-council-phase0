@@ -182,7 +182,7 @@ def _collect(cfg: Config, state: dict[str, Any], now: datetime) -> list[str]:
             elif not target.parent.is_dir():
                 topic.update(state="TOPIC_FOLDER_GONE", ended_at=now.isoformat())
             else:
-                _write_new(target, board_body(cfg, topic["folder"], data.decode("utf-8", "replace"), now))
+                _write_new(target, board_body(cfg, topic["folder"], data.decode("utf-8-sig", "replace"), now))
                 topic.update(state="PUBLISHED", ended_at=now.isoformat(),
                              answer_sha256=hashlib.sha256(data).hexdigest())
             events.append(f"{key}:{topic['state']}")
