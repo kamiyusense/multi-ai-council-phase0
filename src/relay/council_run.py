@@ -16,7 +16,12 @@ Rules kept here:
 * The receipt holds states, lengths and hashes, never environment values.
 * With ``--board-dir``, the same approval also lets the Antigravity sidecar answer that topic (owner, 2026-10-26):
   right after the phrase is accepted the runner leaves ``ANTIGRAVITY_GO_r<round>.json`` on the board (2 hours,
-  never overwritten), naming the sha256 of the board's ``00_お題.md`` (and, from round 2, of ``まとめ_r<n-1>.md``).  It never starts Antigravity; ``--no-antigravity`` leaves no file.
+  never overwritten), naming the sha256 of the board's ``00_お題.md`` (and, from round 2, of ``まとめ_r<n-1>.md``).  ``--no-antigravity`` leaves no file.
+  The phrase then ends in ``A`` or ``B`` (owner, 2026-10-27).  ``A`` restarts the Antigravity desktop app once after
+  the GO file is written, so its start-up sidecar pass answers at once: a normal close (never forced; still running
+  after a short wait means no restart) and a plain start of ``Antigravity.exe`` with no arguments.  It never passes
+  a prompt and never touches agy, ACP or the language server; a failed restart is a warning in the receipt.
+  ``B`` leaves Antigravity alone and the 5-minute sidecar picks the GO up.
 * Every member runs a fixed model at high reasoning effort with no fast mode (owner, 2026-10-25), so answers are
   compared on equal settings and a CLI default change never alters a run silently.
 * Codex cannot open files in read-only non-interactive mode (every command is refused), so ``--attach`` files
@@ -37,16 +42,17 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from .council import ANSWER_MARKER, CouncilError, CouncilPlan, plan_council, summary_markdown
-from .council_grok import GrokLaunchError, child_env, headless_launch
+from .council_grok import _SECRET_NAME, GrokLaunchError, child_env, headless_launch
 
 __all__ = ["MemberCall", "member_prompt", "web_choice", "load_attachments", "named_files", "update_reference", "build_calls", "plan_digest", "approval_phrase", "run_council",
-           "board_file", "go_file", "board_hashes", "RunStop", "main"]
+           "board_file", "go_file", "board_hashes", "restart_antigravity", "RunStop", "main"]
 
 DECISION = "APPROVE_COUNCIL"
 BOARD_NAMES = {"grok": "Grok", "claude": "Claude", "codex": "Codex"}
@@ -55,6 +61,9 @@ GO_HOURS = 2
 QUESTION_FILE = "00_お題.md"
 SUMMARY_FILE = "まとめ_r{round}.md"
 _JST = timezone(timedelta(hours=9), "JST")
+CHOICES = {"A": "RESTART", "B": "WAIT"}
+APP_IMAGE = "Antigravity.exe"
+APP_CLOSE_WAIT_SECONDS = 20
 TIMEOUT_SECONDS = 300
 MAX_TIMEOUT_SECONDS = 1_800
 _MAX_OUTPUT = 60_000
@@ -321,6 +330,46 @@ def approval_phrase(plan: CouncilPlan, digest: str) -> str:
     return f"{DECISION} {plan.council_id} {digest[:12]}"
 
 
+def _app_running(run: Callable[..., Any], system32: Path) -> bool:
+    done = run([str(system32 / "tasklist.exe"), "/FI", f"IMAGENAME eq {APP_IMAGE}", "/NH", "/FO", "CSV"],
+               capture_output=True, text=True, timeout=30, shell=False)
+    return f'"{APP_IMAGE.lower()}"' in (done.stdout or "").lower()
+
+
+def restart_antigravity(env: Mapping[str, str] | None = None, run: Callable[..., Any] = subprocess.run,
+                        popen: Callable[..., Any] = subprocess.Popen, sleep: Callable[[float], None] = time.sleep,
+                        platform: str = sys.platform) -> dict[str, Any]:
+    """Choice ``A``: close the Antigravity desktop app normally if it runs, then start it again, detached.
+
+    Never forced: ``taskkill`` without ``/F`` asks the app to close; if it is still running after
+    ``APP_CLOSE_WAIT_SECONDS`` nothing is started.  The start is ``Antigravity.exe`` with no arguments and an
+    environment without secret-looking names.  Returns the receipt note; a problem is a warning, never a stop.
+    """
+    env = dict(os.environ if env is None else env)
+    if not platform.startswith("win"):
+        return {"state": "WARN_NOT_WINDOWS"}
+    app = Path(env.get("LOCALAPPDATA", "")) / "Programs" / "antigravity" / APP_IMAGE
+    if not env.get("LOCALAPPDATA") or not app.is_file():
+        return {"state": "WARN_APP_NOT_FOUND"}
+    system32 = Path(env.get("SystemRoot") or r"C:\Windows") / "System32"
+    closed = False
+    if _app_running(run, system32):
+        run([str(system32 / "taskkill.exe"), "/IM", APP_IMAGE], capture_output=True, text=True, timeout=30,
+            shell=False)
+        for _ in range(APP_CLOSE_WAIT_SECONDS):
+            sleep(1)
+            if not _app_running(run, system32):
+                break
+        else:
+            return {"state": "WARN_STILL_RUNNING"}
+        closed = True
+    flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    popen([str(app)], env={k: v for k, v in env.items() if not _SECRET_NAME.search(k)}, shell=False,
+          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True,
+          creationflags=flags)
+    return {"state": "RESTARTED" if closed else "STARTED"}
+
+
 def answer_comment(council_id: str, ai: str, text: str) -> str:
     marker = json.dumps({"council_id": council_id, "from": ai})
     return f"{ANSWER_MARKER} {marker} -->\n\n{text.strip()}\n\nAI-Agent: {ai}\n"
@@ -393,13 +442,15 @@ def _atomic_write(path: Path, text: str) -> None:
 def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, runner: Runner,
                 confirm: Callable[[str], str], timeout: int = TIMEOUT_SECONDS,
                 now: Callable[[], str] | None = None, board_dir: Path | None = None,
-                round_no: int = 1, antigravity: bool = True) -> dict[str, Any]:
+                round_no: int = 1, antigravity: bool = True,
+                restart: Callable[[], dict[str, Any]] = restart_antigravity) -> dict[str, Any]:
     """Ask, once, after the typed approval.  Returns the receipt (also written to ``out_dir``).
 
     With ``board_dir`` (a Google Drive for desktop folder of the "AI掲示板"), each answer is also written there as
     ``r<round>_<AI名>.md``; an existing file of that name stops the run before any call (never overwrite).
     With ``antigravity`` (default) a board run also leaves the sidecar's GO file after the approval and before the
-    first call; an existing GO file for that round stops the run the same way.
+    first call; an existing GO file for that round stops the run the same way.  Its phrase must end in `` A``
+    (``restart`` the Antigravity app right after the GO file) or `` B`` (leave it alone).
     """
     now = now or (lambda: datetime.now(timezone.utc).isoformat())
     out = out_dir / plan.council_id
@@ -423,7 +474,9 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
         hashes = board_hashes(board_dir, round_no)
     digest = plan_digest(plan, calls, hashes)
     phrase = approval_phrase(plan, digest)
-    if confirm(phrase).strip() != phrase:
+    typed = confirm(phrase).strip()
+    choice = typed[len(phrase) + 1:] if go_path is not None and typed[:len(phrase) + 1] == phrase + " " else None
+    if (typed != phrase or go_path is not None) and choice not in CHOICES:
         raise RunStop("APPROVAL_NOT_GIVEN", "確認の文字が一致しなかったので止めた（呼び出し 0 回）")
     if go_path is not None:
         if go_path.exists():
@@ -437,7 +490,15 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
         name, body = go_file(plan.council_id, round_no, datetime.now(timezone.utc), hashes)
         _write_new(go_path, body)
         antigravity_note = {"go_file": name, "sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
-                            "expires_at": json.loads(body)["expires_at"], "started_by_runner": False}
+                            "expires_at": json.loads(body)["expires_at"], "choice": choice,
+                            "app": CHOICES[choice], "started_by_runner": False}
+        if choice == "A":
+            try:
+                antigravity_note["restart"] = restart()
+            except Exception as exc:  # a failed restart never fails the Council
+                antigravity_note["restart"] = {"state": "WARN_ERROR", "error": type(exc).__name__}
+            started = antigravity_note["restart"].get("state") in {"STARTED", "RESTARTED"}
+            antigravity_note["started_by_runner"] = started
     stop_file = out / "STOP"
     members: dict[str, dict[str, Any]] = {ai: {"state": "SKIPPED", "reason": r} for ai, r in plan.skipped.items()}
     answers: dict[str, str] = {}
@@ -533,7 +594,12 @@ def main(argv: list[str] | None = None) -> int:
         print("ネット調査：あり（調べ物のルール付き。切るには --no-web）" if web else "ネット調査：なし")
         if args.board_dir is not None:
             print("Antigravity：答えない（--no-antigravity）" if args.no_antigravity else
-                  "Antigravity：この承認で掲示板に GO を置く（2時間有効。起動は Antigravity 側。切るには --no-antigravity）")
+                  "Antigravity：この承認で掲示板に GO を置く（2時間有効。切るには --no-antigravity）")
+        ask = "実行してよければ次の文字をそのまま入力して Enter: {}\n> "
+        if args.board_dir is not None and not args.no_antigravity:
+            ask = ("実行してよければ、どちらか1行をそのまま入力して Enter\n"
+                   "A＝Antigravity を開き直してすぐ答えさせる（開いていれば普通に閉じる。作業中なら B）:\n{} A\n"
+                   "B＝Antigravity には触らない（5分以内に見張り係が拾う）:\n{} B\n> ")
         if attachments:
             print(f"Codex への添付：{', '.join(n for n, t in attachments if t != NOT_ATTACHED)}")
             left = [n for n, t in attachments if t == NOT_ATTACHED]
@@ -542,7 +608,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Council {plan.council_id}：聞く相手 {', '.join(plan.ask) or 'なし'}／聞かない {plan.skipped or 'なし'}")
         print("各 AI に1回だけ聞く。再実行・自動切り替え・API キーなし。GitHub には書かない。")
         receipt = run_council(plan, calls, out_dir=args.out, runner=subprocess_runner,
-                              confirm=lambda p: input(f"実行してよければ次の文字をそのまま入力して Enter: {p}\n> "),
+                              confirm=lambda p: input(ask.format(p, p)),
                               board_dir=args.board_dir, round_no=args.round, timeout=args.timeout,
                               antigravity=not args.no_antigravity)
     except RunStop as stop:
