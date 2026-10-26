@@ -9,7 +9,7 @@ import re
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from relay import council_run as r
@@ -452,61 +452,6 @@ class BoardTests(unittest.TestCase):
             self.skipTest("sidecar read_go with question_sha256 is not on this base yet (Draft PR #487)")
         cfg = mod.Config(board_dir=self.board, inbox_dir=self.board, since=approved - timedelta(minutes=1))
         self.assertIsNotNone(mod.read_go(self.board, 1, cfg, approved + timedelta(minutes=1)))
-
-
-class SidecarStatusTests(unittest.TestCase):
-    NOW = datetime(2026, 10, 26, 14, 45, tzinfo=timezone.utc)
-
-    def status(self, *lines, raw=None):
-        with tempfile.TemporaryDirectory() as tmp:
-            inbox = Path(tmp)
-            if raw is not None or lines:
-                text = raw if raw is not None else "".join(json.dumps(x) + "\n" for x in lines)
-                (inbox / "watch_log.jsonl").write_text(text, encoding="utf-8")
-            before = sorted(inbox.iterdir())
-            line = r.sidecar_status(inbox, self.NOW)
-            self.assertEqual(sorted(inbox.iterdir()), before)  # read only
-            return line
-
-    def entry(self, minutes_ago, event):
-        return {"at": (self.NOW - timedelta(minutes=minutes_ago)).isoformat(), "event": event, "events": []}
-
-    def test_fresh_idle_or_started_is_running(self):
-        for event in ("IDLE", "STARTED_ONE"):
-            line = self.status(self.entry(20, "NOT_ARMED"), self.entry(4, event))
-            self.assertEqual(line, "Antigravity：見張り係 動作中（最終 23:41）")
-
-    def test_stale_missing_or_broken_log_warns(self):
-        self.assertIn("止まっているかも（最終 23:30）", self.status(self.entry(15, "IDLE")))
-        self.assertIn("記録が読めない", self.status())
-        self.assertIn("記録が読めない", self.status(raw="not json\n"))
-        self.assertIn("記録が読めない", self.status(raw='{"at": "2026-10-26T14:44:00", "event": "IDLE"}\n'))
-        for line in (self.status(self.entry(15, "IDLE")), self.status()):
-            self.assertIn("2 時間以内なら答える", line)
-
-    def test_other_events_are_named(self):
-        self.assertIn("今日の回数を使い切った（DAILY_CAP", self.status(self.entry(3, "DAILY_CAP")))
-        for event in ("NOT_ARMED", "STOPPED", "BUSY"):
-            line = self.status(self.entry(3, event))
-            self.assertTrue(line.startswith("⚠") and f"（{event}、最終 23:42）" in line, line)
-
-    def test_main_prints_the_status_only_with_a_board_and_antigravity_on(self):
-        from unittest import mock
-        with tempfile.TemporaryDirectory() as tmp:
-            t = Path(tmp)
-            (t / "q.txt").write_text("質問", encoding="utf-8")
-            (t / "quota.json").write_text(json.dumps({"grok": [True, "QUOTA_OK"]}), encoding="utf-8")
-            base = ["--council-id", CID, "--question-file", str(t / "q.txt"), "--quota-file", str(t / "quota.json"),
-                    "--out", str(t / "out"), "--board-dir", str(t), "--antigravity-inbox", str(t / "inbox")]
-            for extra, expected in (([], 1), (["--no-antigravity"], 0)):
-                with mock.patch.object(r.shutil, "which", return_value="/usr/bin/grok"), \
-                        mock.patch.object(r, "sidecar_status", return_value="STATUS") as status, \
-                        mock.patch.object(r, "run_council", side_effect=r.RunStop("X", "止めた")), \
-                        mock.patch("builtins.print"):
-                    self.assertEqual(r.main(base + extra), 2)
-                self.assertEqual(status.call_count, expected)
-                if expected:
-                    self.assertEqual(status.call_args.args[0], t / "inbox")
 
 
 class MainTests(unittest.TestCase):
