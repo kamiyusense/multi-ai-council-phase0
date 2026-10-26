@@ -218,6 +218,18 @@ class WatchBoardTest(unittest.TestCase):
         _age(folder / wb.QUESTION_FILE, 120)
         self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=FakeRunner(), now=NOW)["result"], "IDLE")
 
+    def test_question_changed_between_check_and_start_sends_nothing_and_claims_nothing(self):
+        folder = self.topic()
+        self.go(folder)
+        cfg = self.cfg(go_file=True)
+        state = wb._load_state(self.inbox)
+        [pick] = wb._candidates(cfg, state, NOW)
+        (folder / wb.QUESTION_FILE).write_text("書き換えた質問", encoding="utf-8")
+        runner = FakeRunner()
+        self.assertEqual(wb._start(cfg, state, pick, NOW, runner),
+                         f"{wb.topic_key(folder.name, 1)}:CHANGED_AFTER_APPROVAL")
+        self.assertEqual((runner.calls, state["topics"], state["starts"]), ([], {}, []))
+
     def test_round_two_waits_for_the_summary_and_reads_it(self):
         folder = self.topic(others=("r1_Gemini.md", "r1_Claude.md"))
         self.go(folder, round_no=2)

@@ -306,8 +306,11 @@ def read_go(folder: Path, round_no: int, cfg: Config, now: datetime) -> dict[str
     if summary_sha is not None and (round_no < 2 or summary_sha != _sha256(
             folder / SUMMARY_FILE.format(round=round_no - 1))):
         return None
-    return {"council_id": council_id, "approved_at": approved.isoformat(), "expires_at": expires.isoformat(),
-            "go_sha256": _sha256(path)}
+    go_fields = {"council_id": council_id, "approved_at": approved.isoformat(), "expires_at": expires.isoformat(),
+                 "go_sha256": _sha256(path), "question_sha256": question_sha}
+    if summary_sha is not None:
+        go_fields["summary_sha256"] = summary_sha
+    return go_fields
 
 
 def _candidates(cfg: Config, state: dict[str, Any], now: datetime) -> list[tuple[Path, int, dict[str, Any] | None]]:
@@ -343,11 +346,16 @@ def _start(cfg: Config, state: dict[str, Any], pick: tuple[Path, int, dict[str, 
     key = topic_key(folder.name, round_no)
     data = (folder / QUESTION_FILE).read_bytes()
     summary_data = (folder / SUMMARY_FILE.format(round=round_no - 1)).read_bytes() if round_no > 1 else None
+    sent = {"question_sha256": hashlib.sha256(data).hexdigest()}
+    if summary_data is not None:
+        sent["summary_sha256"] = hashlib.sha256(summary_data).hexdigest()
+    # The files may change between read_go and here; send only what the GO named. Nothing is
+    # recorded, so the next pass sees the change and read_go refuses it.
+    if go and any(go[name] != sent[name] for name in ("question_sha256", "summary_sha256") if name in go):
+        return f"{key}:CHANGED_AFTER_APPROVAL"
     web = web_allowed(cfg)
     topic: dict[str, Any] = {"folder": folder.name, "round": round_no, "claimed_at": now.isoformat(), "web": web,
-                             "question_sha256": hashlib.sha256(data).hexdigest(), **(go or {})}
-    if summary_data is not None:
-        topic["summary_sha256"] = hashlib.sha256(summary_data).hexdigest()
+                             **(go or {}), **sent}
     state["topics"][key] = topic
     if len(data) + len(summary_data or b"") > MAX_QUESTION_BYTES:
         topic.update(state="QUESTION_TOO_LARGE")
