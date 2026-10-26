@@ -22,3 +22,7 @@ dotnet run --project windows/SignalCompanion -- --snapshot <スナップショ�
 ```
 
 ※ `--snapshot` および `--repo` の指定がない場合は、環境変数 `SIGNAL_SNAPSHOT_PATH` および `SIGNAL_REPO_ROOT`（未指定時はカレントディレクトリエリア）が使用されます。
+
+## Python の指定（SIGNAL_PYTHON）
+
+アプリは既定で `python` コマンドを呼びます。Windows では `python` が Microsoft Store の案内用ダミーになっていることがあり、その場合はアイコンが白（`CLI_ERROR`）のままになります。環境変数 `SIGNAL_PYTHON` に本物の Python の場所（例：`py -3 -c "import sys;print(sys.executable)"` で表示されるパス）を入れて起動すると、そちらを使います。

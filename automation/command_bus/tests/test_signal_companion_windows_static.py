@@ -56,11 +56,21 @@ class TestSignalCompanionWindowsStatic(unittest.TestCase):
     def test_program_process_start_info_and_modules(self) -> None:
         content = PROGRAM_PATH.read_text(encoding="utf-8")
 
-        # ProcessStartInfo FileName must be python
-        fn_matches = re.findall(r'FileName\s*=\s*"([^"]+)"', content)
+        # ProcessStartInfo FileName is the Python interpreter: "python" by default,
+        # or the SIGNAL_PYTHON environment variable (e.g. when "python" is the Store stub).
+        fn_matches = re.findall(r'FileName\s*=\s*([^,\n]+)', content)
         self.assertTrue(fn_matches, "No ProcessStartInfo.FileName setting found in Program.cs")
         for fn in fn_matches:
-            self.assertEqual(fn, "python", f"ProcessStartInfo FileName must be 'python', got '{fn}'")
+            self.assertIn(
+                fn.strip(),
+                ('"python"', "_pythonPath"),
+                f"ProcessStartInfo FileName must be 'python' or _pythonPath, got '{fn}'",
+            )
+        self.assertIn('private static string _pythonPath = "python";', content)
+        assigned = re.findall(r"_pythonPath\s*=\s*([^;]+);", content)
+        for value in assigned:
+            self.assertIn(value.strip(), ('"python"', "python"), f"Unexpected _pythonPath source '{value}'")
+        self.assertIn('Environment.GetEnvironmentVariable("SIGNAL_PYTHON")', content)
 
         # Module named must only be automation.command_bus.signal_companion_cli
         modules = re.findall(r'["\']([a-zA-Z0-9._-]+)["\']', content)
