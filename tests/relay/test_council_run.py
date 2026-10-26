@@ -1,9 +1,15 @@
 """STATIC checks of the Council runner (step S9a).  A fake runner is used; no CLI is ever started."""
 from __future__ import annotations
 
+import hashlib
+import importlib.util
+import inspect
 import json
+import re
+import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from relay import council_run as r
@@ -315,6 +321,7 @@ class BoardTests(unittest.TestCase):
         self.out = Path(self.tmp.name) / "state"
         self.board = Path(self.tmp.name) / "board"
         self.board.mkdir()
+        (self.board / "00_お題.md").write_text("A と B どっち？", encoding="utf-8")
         self.plan = plan({"grok": (True, "QUOTA_OK"), "codex": (True, "QUOTA_OK")})
         self.calls = r.build_calls(self.plan, ENV, BIN)
 
@@ -324,7 +331,8 @@ class BoardTests(unittest.TestCase):
     def test_answers_land_on_the_board_with_its_header(self):
         receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed,
                                 board_dir=self.board, round_no=1)
-        self.assertEqual(sorted(p.name for p in self.board.iterdir()), ["r1_Codex.md", "r1_Grok.md"])
+        self.assertEqual(sorted(p.name for p in self.board.iterdir()),
+                         ["00_お題.md", "ANTIGRAVITY_GO_r1.json", "r1_Codex.md", "r1_Grok.md"])
         body = (self.board / "r1_Grok.md").read_text("utf-8")
         for head in ("作成者: Grok", "ラウンド: R1", "作成時刻（JST）:", "確信度:", "読んだファイル:"):
             self.assertIn(head, body)
@@ -342,6 +350,108 @@ class BoardTests(unittest.TestCase):
             with self.assertRaises(r.RunStop):
                 r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, **kwargs)
         self.assertEqual(runner.calls, [])
+
+
+    def test_go_file_is_left_after_the_approval_and_before_the_first_call(self):
+        seen = []
+
+        def runner(argv, env, stdin, timeout, cwd=None):
+            seen.append((self.board / "ANTIGRAVITY_GO_r2.json").exists())
+            return 0, "答え"
+        phrases = []
+        (self.board / "まとめ_r1.md").write_text("A〜D のまとめ", encoding="utf-8")
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
+                                confirm=lambda p: phrases.append(p) or p, board_dir=self.board, round_no=2)
+        self.assertEqual(seen, [True, True])
+        raw = (self.board / "ANTIGRAVITY_GO_r2.json").read_text("utf-8")
+        go = json.loads(raw)
+        self.assertEqual((go["council_id"], go["round"]), (CID, 2))
+        sha = lambda name: hashlib.sha256((self.board / name).read_bytes()).hexdigest()
+        self.assertEqual(go["question_sha256"], sha("00_お題.md"))
+        self.assertEqual(go["summary_sha256"], sha("まとめ_r1.md"))
+        self.assertFalse((self.board / "ANTIGRAVITY_GO_r2.json.tmp").exists())
+        approved, expires = (datetime.fromisoformat(go[k]) for k in ("approved_at", "expires_at"))
+        self.assertIsNotNone(approved.tzinfo)
+        self.assertEqual(expires - approved, timedelta(hours=2))
+        self.assertEqual(receipt["antigravity"]["go_file"], "ANTIGRAVITY_GO_r2.json")
+        self.assertEqual(receipt["antigravity"]["sha256"], hashlib.sha256(raw.encode("utf-8")).hexdigest())
+        self.assertFalse(receipt["antigravity"]["started_by_runner"])
+        self.assertEqual(phrases, [r.approval_phrase(self.plan, r.plan_digest(
+            self.plan, self.calls, {"question_sha256": go["question_sha256"], "summary_sha256": go["summary_sha256"]}))])
+
+    def test_wrong_phrase_or_existing_go_file_leaves_nothing_and_calls_nothing(self):
+        runner = FakeRunner()
+        with self.assertRaises(r.RunStop):
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=lambda p: "yes",
+                          board_dir=self.board)
+        self.assertEqual([p.name for p in self.board.iterdir()], ["00_お題.md"])
+        (self.board / "ANTIGRAVITY_GO_r1.json").write_text("先客", encoding="utf-8")
+        with self.assertRaises(r.RunStop) as stop:
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, board_dir=self.board)
+        self.assertEqual(stop.exception.code, "GO_FILE_EXISTS")
+        self.assertEqual((self.board / "ANTIGRAVITY_GO_r1.json").read_text("utf-8"), "先客")
+        self.assertEqual(runner.calls, [])
+        self.assertFalse((self.out / CID).exists())
+
+    def test_no_antigravity_leaves_no_go_file_and_keeps_the_old_phrase(self):
+        phrases = []
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(),
+                                confirm=lambda p: phrases.append(p) or p, board_dir=self.board, antigravity=False)
+        self.assertFalse((self.board / "ANTIGRAVITY_GO_r1.json").exists())
+        self.assertEqual(receipt["antigravity"], "MANUAL")
+        self.assertEqual(phrases, [r.approval_phrase(self.plan, r.plan_digest(self.plan, self.calls))])
+        self.assertNotEqual(r.plan_digest(self.plan, self.calls),
+                            r.plan_digest(self.plan, self.calls, r.board_hashes(self.board, 1)))
+
+    def test_without_a_board_there_is_no_go_file(self):
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed)
+        self.assertEqual(receipt["antigravity"], "MANUAL")
+        self.assertEqual([p.name for p in self.board.iterdir()], ["00_お題.md"])
+
+    def test_round_one_has_no_summary_hash_and_a_missing_question_stops(self):
+        (self.board / "まとめ_r0.md").write_text("x", encoding="utf-8")
+        self.assertEqual(list(r.board_hashes(self.board, 1)), ["question_sha256"])
+        self.assertEqual(list(r.board_hashes(self.board, 2)), ["question_sha256"])  # no まとめ_r1.md yet
+        (self.board / "00_お題.md").unlink()
+        runner = FakeRunner()
+        with self.assertRaises(r.RunStop) as stop:
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, board_dir=self.board)
+        self.assertEqual(stop.exception.code, "QUESTION_FILE")
+        self.assertEqual(runner.calls, [])
+
+    def test_question_edited_while_the_phrase_is_typed_stops_before_any_call(self):
+        def edit_then_type(phrase):
+            (self.board / "00_お題.md").write_text("書き換えたお題", encoding="utf-8")
+            return phrase
+        runner = FakeRunner()
+        with self.assertRaises(r.RunStop) as stop:
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=edit_then_type,
+                          board_dir=self.board)
+        self.assertEqual(stop.exception.code, "BOARD_CHANGED")
+        self.assertEqual(runner.calls, [])
+        self.assertFalse((self.board / "ANTIGRAVITY_GO_r1.json").exists())
+
+    def test_the_sidecar_accepts_the_go_file(self):
+        """Contract with tools/antigravity_sidecar/watch_board.py read_go (Draft PR #487)."""
+        r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed, board_dir=self.board)
+        go = json.loads((self.board / "ANTIGRAVITY_GO_r1.json").read_text("utf-8"))
+        self.assertTrue(re.fullmatch(r"[A-Za-z0-9._-]{1,80}", go["council_id"]))
+        self.assertIs(type(go["round"]), int)
+        self.assertNotIn("summary_sha256", go)
+        approved, expires = (datetime.fromisoformat(go[k]) for k in ("approved_at", "expires_at"))
+        self.assertTrue(approved.tzinfo and expires.tzinfo and expires - approved <= timedelta(hours=6))
+        sidecar = Path(__file__).resolve().parents[2] / "tools" / "antigravity_sidecar" / "watch_board.py"
+        spec = importlib.util.spec_from_file_location("watch_board_contract", sidecar)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        try:
+            spec.loader.exec_module(mod)
+        finally:
+            del sys.modules[spec.name]
+        if "folder" not in inspect.signature(getattr(mod, "read_go", lambda path: None)).parameters:
+            self.skipTest("sidecar read_go with question_sha256 is not on this base yet (Draft PR #487)")
+        cfg = mod.Config(board_dir=self.board, inbox_dir=self.board, since=approved - timedelta(minutes=1))
+        self.assertIsNotNone(mod.read_go(self.board, 1, cfg, approved + timedelta(minutes=1)))
 
 
 class MainTests(unittest.TestCase):
