@@ -17,7 +17,9 @@ Rules kept here:
 * With ``--board-dir``, the same approval also lets the Antigravity sidecar answer that topic (owner, 2026-10-26):
   right after the phrase is accepted the runner leaves ``ANTIGRAVITY_GO_r<round>.json`` on the board (2 hours,
   never overwritten), naming the sha256 of the board's ``00_お題.md`` (and, from round 2, of ``まとめ_r<n-1>.md``).  ``--no-antigravity`` leaves no file.
-  The phrase then ends in ``A`` or ``B`` (owner, 2026-10-27).  ``A`` restarts the Antigravity desktop app once after
+  The owner then types ``A`` or ``B`` alone (owner, 2026-10-27 01:38 JST: Claude opens the window, the owner
+  presses one key; the full phrase followed by `` A``/`` B`` is still accepted, and the phrase is shown as the
+  plan's fingerprint).  ``A`` restarts the Antigravity desktop app once after
   the GO file is written, so its start-up sidecar pass answers at once: a normal close (never forced; still running
   after a short wait means no restart) and a plain start of ``Antigravity.exe`` with no arguments.  It never passes
   a prompt and never touches agy, ACP or the language server; a failed restart is a warning in the receipt.
@@ -43,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -449,7 +452,8 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
     With ``board_dir`` (a Google Drive for desktop folder of the "AI掲示板"), each answer is also written there as
     ``r<round>_<AI名>.md``; an existing file of that name stops the run before any call (never overwrite).
     With ``antigravity`` (default) a board run also leaves the sidecar's GO file after the approval and before the
-    first call; an existing GO file for that round stops the run the same way.  Its phrase must end in `` A``
+    first call; an existing GO file for that round stops the run the same way.  The owner types ``A`` or ``B`` alone
+    (either case, half or full width), or the phrase ending in `` A``
     (``restart`` the Antigravity app right after the GO file) or `` B`` (leave it alone).
     """
     now = now or (lambda: datetime.now(timezone.utc).isoformat())
@@ -475,7 +479,10 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
     digest = plan_digest(plan, calls, hashes)
     phrase = approval_phrase(plan, digest)
     typed = confirm(phrase).strip()
-    choice = typed[len(phrase) + 1:] if go_path is not None and typed[:len(phrase) + 1] == phrase + " " else None
+    choice = None
+    if go_path is not None:
+        bare = unicodedata.normalize("NFKC", typed).upper() if len(typed) == 1 else None  # Ａ from a Japanese IME
+        choice = bare if bare in CHOICES else (typed[len(phrase) + 1:] if typed[:len(phrase) + 1] == phrase + " " else None)
     if (typed != phrase or go_path is not None) and choice not in CHOICES:
         raise RunStop("APPROVAL_NOT_GIVEN", "確認の文字が一致しなかったので止めた（呼び出し 0 回）")
     if go_path is not None:
@@ -530,7 +537,8 @@ def run_council(plan: CouncilPlan, calls: list[MemberCall], *, out_dir: Path, ru
                             "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest()}
     notes = [f"{ai}: {m['state']}" for ai, m in members.items() if m["state"] not in {"ANSWERED", "SKIPPED"}]
     _atomic_write(out / "summary.md", summary_markdown(plan, answers, notes))
-    receipt = {"council_id": plan.council_id, "decision": DECISION, "plan_digest": digest, "retry": 0,
+    receipt = {"council_id": plan.council_id, "decision": DECISION, "plan_digest": digest,
+               "approval": {"phrase": phrase, "typed": "KEY" if len(typed) == 1 else "PHRASE"}, "retry": 0,
                "fallback": "disabled", "github_write": False,
                "board_round": round_no if board_dir else None, "finished_at": now(), "members": members,
                "antigravity": antigravity_note,
@@ -597,9 +605,10 @@ def main(argv: list[str] | None = None) -> int:
                   "Antigravity：この承認で掲示板に GO を置く（2時間有効。切るには --no-antigravity）")
         ask = "実行してよければ次の文字をそのまま入力して Enter: {}\n> "
         if args.board_dir is not None and not args.no_antigravity:
-            ask = ("実行してよければ、どちらか1行をそのまま入力して Enter\n"
-                   "A＝Antigravity を開き直してすぐ答えさせる（開いていれば普通に閉じる。作業中なら B）:\n{} A\n"
-                   "B＝Antigravity には触らない（5分以内に見張り係が拾う）:\n{} B\n> ")
+            ask = ("承認の印（この内容の指紋）：{}\n"
+                   "この内容で聞いてよければ、A か B の1文字を打って Enter（ほかの文字なら誰にも聞かずに止まる）\n"
+                   "A＝Antigravity を開き直してすぐ答えさせる（開いていれば普通に閉じる。作業中なら B）\n"
+                   "B＝Antigravity には触らない（5分以内に見張り係が拾う）\n> ")
         if attachments:
             print(f"Codex への添付：{', '.join(n for n, t in attachments if t != NOT_ATTACHED)}")
             left = [n for n, t in attachments if t == NOT_ATTACHED]
@@ -608,7 +617,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Council {plan.council_id}：聞く相手 {', '.join(plan.ask) or 'なし'}／聞かない {plan.skipped or 'なし'}")
         print("各 AI に1回だけ聞く。再実行・自動切り替え・API キーなし。GitHub には書かない。")
         receipt = run_council(plan, calls, out_dir=args.out, runner=subprocess_runner,
-                              confirm=lambda p: input(ask.format(p, p)),
+                              confirm=lambda p: input(ask.format(p)),
                               board_dir=args.board_dir, round_no=args.round, timeout=args.timeout,
                               antigravity=not args.no_antigravity)
     except RunStop as stop:

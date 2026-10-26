@@ -87,7 +87,7 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 
 ## 7. Council の合言葉とつなげる（相棒の選択 2026-10-26「つなげて作る」）
 
-- 相棒が PC で Council の合言葉（`APPROVE_COUNCIL ...`）を打つと、Council の実行係（`src/relay/council_run.py`）が、3社に聞く前にお題フォルダへ札 `ANTIGRAVITY_GO_r<ラウンド>.json` を置く。Relay は Antigravity を起動しない。札を置くだけ。
+- 相棒が PC で Council を承認すると（窓で `A` か `B`、§8）、Council の実行係（`src/relay/council_run.py`）が、3社に聞く前にお題フォルダへ札 `ANTIGRAVITY_GO_r<ラウンド>.json` を置く。Relay は Antigravity を起動しない。札を置くだけ。
 - 見張り役（`"go_file": true`、初期値）は、札があるお題とラウンドにだけ1回答える。札がないお題には答えない。見回り自体は5分おきに続くが、AI は使わない。
 - 札の中身：`council_id`、`round`、`approved_at`、`expires_at`、`question_sha256`（承認したお題の指紋）。ラウンド2以降は `summary_sha256`（まとめの指紋）も書ける。承認が `since` より後で、今が期限より前で、長さが `GO_MAX_HOURS`（6時間）以内で、お題（とまとめ）が承認したときと同じ中身のときだけ有効。承認のあとでお題が書き換えられたら動かない。中身が壊れていたら何もしない。
 - 札を書いてよいのは Council の実行係だけ。チャットの AI やほかの道具は書かない。
@@ -99,9 +99,9 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 
 ## 8. 承認の文の A と B（相棒の選択 2026-10-27 00:13 JST）
 
-- Council の承認の文は2通り。Claude スレがコピペ用に2つ並べて出す。どちらを選ぶかは、Antigravity の様子を見て相棒が決める（PC 側では状態を表示しない）。
-  - `APPROVE_COUNCIL <id> <12文字> A`：札を置いたあと、Council の実行係が Antigravity のアプリを開き直す。開いていれば普通に閉じてから開く。閉じなければ止めて知らせる（無理やり終わらせない）。開いた瞬間に「起動時に1回」の見張り係が札を見て、すぐ答える。
-  - `APPROVE_COUNCIL <id> <12文字> B`：Antigravity に触らない。5分おきの見張り係が札を拾って答える。
+- （相棒の決定 2026-10-27 01:38 JST）承認の窓は Claude が PC に開く。相棒は窓で `A` か `B` の1文字を打って Enter するだけ（小文字や全角でもよい）。窓には承認の文 `APPROVE_COUNCIL <id> <12文字>` も「この内容の指紋」として出て、記録（receipt.json の `approval`）にも残る。前の書き方（承認の文のあとに ` A` か ` B`）も通る。ほかの文字なら誰にも聞かずに止まる。どちらを選ぶかは、Antigravity の様子を見て相棒が決める（PC 側では状態を表示しない）。
+  - `A`：札を置いたあと、Council の実行係が Antigravity のアプリを開き直す。開いていれば普通に閉じてから開く。閉じなければ止めて知らせる（無理やり終わらせない）。開いた瞬間に「起動時に1回」の見張り係が札を見て、すぐ答える。
+  - `B`：Antigravity に触らない。5分おきの見張り係が札を拾って答える。
 - A で普通に閉じても 20 秒たって Antigravity が残っていたら（たとえば閉じるとタスクトレイに隠れるだけのとき）、開き直さずに記録へ WARN_STILL_RUNNING を書く。そのときは5分おきの見張り係が答える。トレイに隠れるかどうかは UNKNOWN（PC で1回試すまで）。
 - A は、Antigravity で作業している途中でも閉じる。作業中なら B を選ぶ。閉じているときは A でも何も消えない。
 - 「起動時に1回」の見張り係：`tools/antigravity_sidecar/startup/sidecar.json`。公式の `command` 型の Sidecar で、`restart_policy` は never。中身は5分おきのものと同じ `watch_board.py` と `watch_config.json` を使う（`../phase0-board-watch/`）。札がなければ何もしない。AI は使わない。
