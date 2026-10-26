@@ -1,9 +1,11 @@
 """STATIC checks of the Council runner (step S9a).  A fake runner is used; no CLI is ever started."""
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from relay import council_run as r
@@ -324,7 +326,8 @@ class BoardTests(unittest.TestCase):
     def test_answers_land_on_the_board_with_its_header(self):
         receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed,
                                 board_dir=self.board, round_no=1)
-        self.assertEqual(sorted(p.name for p in self.board.iterdir()), ["r1_Codex.md", "r1_Grok.md"])
+        self.assertEqual(sorted(p.name for p in self.board.iterdir()),
+                         ["ANTIGRAVITY_GO_r1.json", "r1_Codex.md", "r1_Grok.md"])
         body = (self.board / "r1_Grok.md").read_text("utf-8")
         for head in ("作成者: Grok", "ラウンド: R1", "作成時刻（JST）:", "確信度:", "読んだファイル:"):
             self.assertIn(head, body)
@@ -342,6 +345,56 @@ class BoardTests(unittest.TestCase):
             with self.assertRaises(r.RunStop):
                 r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, **kwargs)
         self.assertEqual(runner.calls, [])
+
+
+    def test_go_file_is_left_after_the_approval_and_before_the_first_call(self):
+        seen = []
+
+        def runner(argv, env, stdin, timeout, cwd=None):
+            seen.append((self.board / "ANTIGRAVITY_GO_r2.json").exists())
+            return 0, "答え"
+        phrases = []
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
+                                confirm=lambda p: phrases.append(p) or p, board_dir=self.board, round_no=2)
+        self.assertEqual(seen, [True, True])
+        raw = (self.board / "ANTIGRAVITY_GO_r2.json").read_text("utf-8")
+        go = json.loads(raw)
+        self.assertEqual((go["council_id"], go["round"]), (CID, 2))
+        approved, expires = (datetime.fromisoformat(go[k]) for k in ("approved_at", "expires_at"))
+        self.assertIsNotNone(approved.tzinfo)
+        self.assertEqual(expires - approved, timedelta(hours=2))
+        self.assertEqual(receipt["antigravity"]["go_file"], "ANTIGRAVITY_GO_r2.json")
+        self.assertEqual(receipt["antigravity"]["sha256"], hashlib.sha256(raw.encode("utf-8")).hexdigest())
+        self.assertFalse(receipt["antigravity"]["started_by_runner"])
+        self.assertEqual(phrases, [r.approval_phrase(self.plan, r.plan_digest(self.plan, self.calls, True))])
+
+    def test_wrong_phrase_or_existing_go_file_leaves_nothing_and_calls_nothing(self):
+        runner = FakeRunner()
+        with self.assertRaises(r.RunStop):
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=lambda p: "yes",
+                          board_dir=self.board)
+        self.assertEqual(list(self.board.iterdir()), [])
+        (self.board / "ANTIGRAVITY_GO_r1.json").write_text("先客", encoding="utf-8")
+        with self.assertRaises(r.RunStop) as stop:
+            r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=typed, board_dir=self.board)
+        self.assertEqual(stop.exception.code, "GO_FILE_EXISTS")
+        self.assertEqual((self.board / "ANTIGRAVITY_GO_r1.json").read_text("utf-8"), "先客")
+        self.assertEqual(runner.calls, [])
+        self.assertFalse((self.out / CID).exists())
+
+    def test_no_antigravity_leaves_no_go_file_and_keeps_the_old_phrase(self):
+        phrases = []
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(),
+                                confirm=lambda p: phrases.append(p) or p, board_dir=self.board, antigravity=False)
+        self.assertFalse((self.board / "ANTIGRAVITY_GO_r1.json").exists())
+        self.assertEqual(receipt["antigravity"], "MANUAL")
+        self.assertEqual(phrases, [r.approval_phrase(self.plan, r.plan_digest(self.plan, self.calls))])
+        self.assertNotEqual(r.plan_digest(self.plan, self.calls), r.plan_digest(self.plan, self.calls, True))
+
+    def test_without_a_board_there_is_no_go_file(self):
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed)
+        self.assertEqual(receipt["antigravity"], "MANUAL")
+        self.assertEqual(list(self.board.iterdir()), [])
 
 
 class MainTests(unittest.TestCase):
