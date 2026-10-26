@@ -43,6 +43,10 @@ def typed(phrase):
     return phrase
 
 
+def typed_b(phrase):
+    return phrase + " B"
+
+
 class BuildTests(unittest.TestCase):
     def test_calls_have_no_keys_and_prompt_via_stdin(self):
         calls = r.build_calls(plan(), ENV, BIN)
@@ -329,7 +333,7 @@ class BoardTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_answers_land_on_the_board_with_its_header(self):
-        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed,
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed_b,
                                 board_dir=self.board, round_no=1)
         self.assertEqual(sorted(p.name for p in self.board.iterdir()),
                          ["00_お題.md", "ANTIGRAVITY_GO_r1.json", "r1_Codex.md", "r1_Grok.md"])
@@ -361,7 +365,7 @@ class BoardTests(unittest.TestCase):
         phrases = []
         (self.board / "まとめ_r1.md").write_text("A〜D のまとめ", encoding="utf-8")
         receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
-                                confirm=lambda p: phrases.append(p) or p, board_dir=self.board, round_no=2)
+                                confirm=lambda p: phrases.append(p) or p + " B", board_dir=self.board, round_no=2)
         self.assertEqual(seen, [True, True])
         raw = (self.board / "ANTIGRAVITY_GO_r2.json").read_text("utf-8")
         go = json.loads(raw)
@@ -403,6 +407,64 @@ class BoardTests(unittest.TestCase):
         self.assertNotEqual(r.plan_digest(self.plan, self.calls),
                             r.plan_digest(self.plan, self.calls, r.board_hashes(self.board, 1)))
 
+    def test_the_phrase_must_end_in_a_or_b_with_a_go_file(self):
+        runner, restarts = FakeRunner(), []
+        for answer in (typed, lambda p: p + " C", lambda p: p + " a", lambda p: p + "A", lambda p: p + " A B"):
+            with self.assertRaises(r.RunStop) as stop:
+                r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=answer,
+                              board_dir=self.board, restart=lambda: restarts.append(1) or {})
+            self.assertEqual(stop.exception.code, "APPROVAL_NOT_GIVEN")
+        self.assertEqual((runner.calls, restarts), ([], []))
+        self.assertEqual([p.name for p in self.board.iterdir()], ["00_お題.md"])
+        for kwargs in ({"board_dir": self.board, "antigravity": False}, {}):
+            with self.assertRaises(r.RunStop):
+                r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
+                              confirm=lambda p: p + " A", restart=lambda: restarts.append(1) or {}, **kwargs)
+        self.assertEqual((runner.calls, restarts), ([], []))
+
+    def test_b_leaves_antigravity_alone(self):
+        restarts = []
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed_b,
+                                board_dir=self.board, restart=lambda: restarts.append(1) or {})
+        self.assertEqual(restarts, [])
+        note = receipt["antigravity"]
+        self.assertEqual((note["choice"], note["app"], note["started_by_runner"]), ("B", "WAIT", False))
+        self.assertNotIn("restart", note)
+
+    def test_a_restarts_the_app_after_the_go_file_and_before_the_first_call(self):
+        order = []
+
+        def restart():
+            order.append(("restart", (self.board / "ANTIGRAVITY_GO_r1.json").exists()))
+            return {"state": "RESTARTED"}
+
+        def runner(argv, env, stdin, timeout, cwd=None):
+            order.append(("call", Path(argv[0]).name))
+            return 0, "答え"
+        phrases = []
+        receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
+                                confirm=lambda p: phrases.append(p) or p + " A", board_dir=self.board, restart=restart)
+        self.assertEqual(order, [("restart", True), ("call", "grok"), ("call", "codex")])
+        note = receipt["antigravity"]
+        self.assertEqual((note["choice"], note["app"], note["restart"], note["started_by_runner"]),
+                         ("A", "RESTART", {"state": "RESTARTED"}, True))
+        same = r.approval_phrase(self.plan, r.plan_digest(self.plan, self.calls, r.board_hashes(self.board, 1)))
+        self.assertEqual(phrases, [same])  # A and B share one digest
+
+    def test_a_failed_restart_is_only_a_warning(self):
+        def broken():
+            raise OSError("no app")
+        for restart, state in ((broken, "WARN_ERROR"), (lambda: {"state": "WARN_STILL_RUNNING"}, "WARN_STILL_RUNNING")):
+            with tempfile.TemporaryDirectory() as tmp:
+                board = Path(tmp) / "board"
+                board.mkdir()
+                (board / "00_お題.md").write_text("お題", encoding="utf-8")
+                receipt = r.run_council(self.plan, self.calls, out_dir=Path(tmp) / "out", runner=FakeRunner(),
+                                        confirm=lambda p: p + " A", board_dir=board, restart=restart)
+            self.assertEqual(receipt["antigravity"]["restart"]["state"], state)
+            self.assertFalse(receipt["antigravity"]["started_by_runner"])
+            self.assertEqual({receipt["members"][ai]["state"] for ai in ("grok", "codex")}, {"ANSWERED"})
+
     def test_without_a_board_there_is_no_go_file(self):
         receipt = r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed)
         self.assertEqual(receipt["antigravity"], "MANUAL")
@@ -422,7 +484,7 @@ class BoardTests(unittest.TestCase):
     def test_question_edited_while_the_phrase_is_typed_stops_before_any_call(self):
         def edit_then_type(phrase):
             (self.board / "00_お題.md").write_text("書き換えたお題", encoding="utf-8")
-            return phrase
+            return phrase + " B"
         runner = FakeRunner()
         with self.assertRaises(r.RunStop) as stop:
             r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=edit_then_type,
@@ -433,7 +495,7 @@ class BoardTests(unittest.TestCase):
 
     def test_the_sidecar_accepts_the_go_file(self):
         """Contract with tools/antigravity_sidecar/watch_board.py read_go (Draft PR #487)."""
-        r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed, board_dir=self.board)
+        r.run_council(self.plan, self.calls, out_dir=self.out, runner=FakeRunner(), confirm=typed_b, board_dir=self.board)
         go = json.loads((self.board / "ANTIGRAVITY_GO_r1.json").read_text("utf-8"))
         self.assertTrue(re.fullmatch(r"[A-Za-z0-9._-]{1,80}", go["council_id"]))
         self.assertIs(type(go["round"]), int)
@@ -454,6 +516,85 @@ class BoardTests(unittest.TestCase):
         self.assertIsNotNone(mod.read_go(self.board, 1, cfg, approved + timedelta(minutes=1)))
 
 
+class RestartAntigravityTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.local = Path(self.tmp.name)
+        self.app = self.local / "Programs" / "antigravity" / "Antigravity.exe"
+        self.app.parent.mkdir(parents=True)
+        self.app.write_bytes(b"")
+        self.env = {"LOCALAPPDATA": str(self.local), "SystemRoot": "C:\\Windows", "PATH": "x",
+                    "XAI_API_KEY": "xai", "GITHUB_TOKEN": "t"}
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def fake(self, running):
+        """``running``: tasklist answers in order (True = the app is listed)."""
+        runs, starts, answers = [], [], list(running)
+
+        class Done:
+            def __init__(self, out):
+                self.stdout = out
+
+        def run(argv, **kw):
+            runs.append(list(argv))
+            self.assertFalse(kw.get("shell"))
+            if Path(argv[0].replace("\\", "/")).name == "tasklist.exe":
+                listed = answers.pop(0)
+                return Done('"Antigravity.exe","123","Console","1","200,000 K"\n' if listed else
+                            "INFO: No tasks are running which match the specified criteria.\n")
+            return Done("")
+
+        def popen(argv, **kw):
+            starts.append((list(argv), kw))
+        return runs, starts, run, popen
+
+    def call(self, running, **kw):
+        runs, starts, run, popen = self.fake(running)
+        note = r.restart_antigravity(kw.pop("env", self.env), run=run, popen=popen, sleep=lambda s: None,
+                                     platform=kw.pop("platform", "win32"))
+        return note, runs, starts
+
+    def test_closed_app_is_just_started_with_no_arguments(self):
+        note, runs, starts = self.call([False])
+        self.assertEqual(note, {"state": "STARTED"})
+        self.assertEqual(len(runs), 1)
+        (argv, kw), = starts
+        self.assertEqual(argv, [str(self.app)])
+        self.assertNotIn("XAI_API_KEY", kw["env"])
+        self.assertNotIn("GITHUB_TOKEN", kw["env"])
+        self.assertEqual(kw["env"]["PATH"], "x")
+        self.assertFalse(kw["shell"])
+
+    def test_open_app_is_closed_normally_then_started(self):
+        note, runs, starts = self.call([True, True, False])
+        self.assertEqual(note, {"state": "RESTARTED"})
+        kill = [a for a in runs if a[0].endswith("taskkill.exe")]
+        self.assertEqual(kill, [[str(Path("C:\\Windows") / "System32" / "taskkill.exe"), "/IM", "Antigravity.exe"]])
+        self.assertNotIn("/F", [x.upper() for a in runs for x in a])
+        self.assertEqual(len(starts), 1)
+
+    def test_app_that_will_not_close_is_never_forced_or_started(self):
+        note, runs, starts = self.call([True] * (r.APP_CLOSE_WAIT_SECONDS + 1))
+        self.assertEqual(note, {"state": "WARN_STILL_RUNNING"})
+        self.assertEqual(starts, [])
+        self.assertEqual(sum(a[0].endswith("taskkill.exe") for a in runs), 1)
+        self.assertNotIn("/F", [x.upper() for a in runs for x in a])
+
+    def test_not_windows_or_no_app_starts_nothing(self):
+        self.assertEqual(self.call([], platform="linux")[0], {"state": "WARN_NOT_WINDOWS"})
+        self.assertEqual(self.call([], env={"PATH": "x"})[0], {"state": "WARN_APP_NOT_FOUND"})
+        self.app.unlink()
+        note, runs, starts = self.call([])
+        self.assertEqual((note, runs, starts), ({"state": "WARN_APP_NOT_FOUND"}, [], []))
+
+    def test_the_restart_never_names_agy_acp_or_a_prompt(self):
+        source = inspect.getsource(r.restart_antigravity) + inspect.getsource(r._app_running)
+        for word in ("agy", "acp", "agentapi", "language_server", ".gemini", '"/f"'):
+            self.assertNotIn(word, source.lower())
+
+
 class MainTests(unittest.TestCase):
     def test_missing_cli_stops_before_asking(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -468,6 +609,25 @@ class MainTests(unittest.TestCase):
             self.assertEqual(code, 2)
             runner.assert_not_called()
             typed_in.assert_not_called()
+
+    def test_board_run_shows_both_a_and_b_lines(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            (t / "q.txt").write_text("質問", encoding="utf-8")
+            (t / "quota.json").write_text(json.dumps({"grok": [True, "QUOTA_OK"]}), encoding="utf-8")
+            (t / "00_お題.md").write_text("質問", encoding="utf-8")
+            base = ["--council-id", CID, "--question-file", str(t / "q.txt"), "--quota-file", str(t / "quota.json"),
+                    "--out", str(t / "out"), "--board-dir", str(t)]
+            for extra, lines in (([], 2), (["--no-antigravity"], 0)):
+                with mock.patch.object(r.shutil, "which", return_value="/usr/bin/grok"), \
+                        mock.patch.object(r, "subprocess_runner") as runner, mock.patch("builtins.print"), \
+                        mock.patch("builtins.input", return_value="no") as typed_in:
+                    self.assertEqual(r.main(base + extra), 2)
+                runner.assert_not_called()
+                shown = typed_in.call_args.args[0]
+                self.assertEqual(len(re.findall(r"APPROVE_COUNCIL \S+ [0-9a-f]{12} [AB]\n", shown)), lines)
+                self.assertEqual(shown.count("APPROVE_COUNCIL"), max(lines, 1))
 
 
 if __name__ == "__main__":
