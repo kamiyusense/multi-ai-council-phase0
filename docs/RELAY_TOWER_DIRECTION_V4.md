@@ -86,7 +86,9 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
   passing it a prompt or touching its internals, is not what the line forbids. Lifted use (owner, 2026-10-27
   00:13 JST, basis (a)): the Council approval phrase ends in `A` (council_run closes Antigravity normally if it is
   open, then starts the app, so the start-up sidecar answers at once) or `B` (Antigravity is not touched; the
-  5-minute sidecar answers). Never force-killed, never given a prompt from outside.
+  5-minute sidecar answers). Never force-killed, never given a prompt from outside. Owner, 2026-10-27 01:38 JST:
+  on a board run the owner may type `A` or `B` alone; the window still shows the full phrase as the plan's
+  fingerprint and the receipt records it.
 - The Antigravity launch code is moved to `archive/antigravity_launch/` and disabled (step S1), with the header
   "suspended, do not run (terms, 2026-10)", so it can be restored if the terms change. The launch deny-list
   (`LIVE_ADAPTER_MARKERS`) stays active.

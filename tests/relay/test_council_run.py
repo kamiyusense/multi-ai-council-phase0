@@ -409,7 +409,8 @@ class BoardTests(unittest.TestCase):
 
     def test_the_phrase_must_end_in_a_or_b_with_a_go_file(self):
         runner, restarts = FakeRunner(), []
-        for answer in (typed, lambda p: p + " C", lambda p: p + " a", lambda p: p + "A", lambda p: p + " A B"):
+        for answer in (typed, lambda p: p + " C", lambda p: p + " a", lambda p: p + "A", lambda p: p + " A B",
+                       lambda p: "C", lambda p: "AB", lambda p: "", lambda p: "Ｃ"):
             with self.assertRaises(r.RunStop) as stop:
                 r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner, confirm=answer,
                               board_dir=self.board, restart=lambda: restarts.append(1) or {})
@@ -417,10 +418,28 @@ class BoardTests(unittest.TestCase):
         self.assertEqual((runner.calls, restarts), ([], []))
         self.assertEqual([p.name for p in self.board.iterdir()], ["00_お題.md"])
         for kwargs in ({"board_dir": self.board, "antigravity": False}, {}):
-            with self.assertRaises(r.RunStop):
-                r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
-                              confirm=lambda p: p + " A", restart=lambda: restarts.append(1) or {}, **kwargs)
+            for answer in (lambda p: p + " A", lambda p: "A"):
+                with self.assertRaises(r.RunStop):
+                    r.run_council(self.plan, self.calls, out_dir=self.out, runner=runner,
+                                  confirm=answer, restart=lambda: restarts.append(1) or {}, **kwargs)
         self.assertEqual((runner.calls, restarts), ([], []))
+
+    def test_a_bare_a_or_b_key_approves_a_board_run_and_the_receipt_keeps_the_phrase(self):
+        for key, choice in (("A", "A"), ("b", "B"), ("Ａ", "A"), ("ｂ", "B")):
+            with tempfile.TemporaryDirectory() as tmp:
+                board = Path(tmp) / "board"
+                board.mkdir()
+                (board / "00_お題.md").write_text("お題", encoding="utf-8")
+                shown, restarts = [], []
+                receipt = r.run_council(self.plan, self.calls, out_dir=Path(tmp) / "out", runner=FakeRunner(),
+                                        confirm=lambda p: shown.append(p) or f" {key}\n", board_dir=board,
+                                        restart=lambda: restarts.append(1) or {"state": "RESTARTED"})
+                self.assertTrue((board / "ANTIGRAVITY_GO_r1.json").exists())
+                phrase = r.approval_phrase(self.plan, r.plan_digest(self.plan, self.calls, r.board_hashes(board, 1)))
+            self.assertEqual(shown, [phrase])
+            self.assertEqual(receipt["approval"], {"phrase": phrase, "typed": "KEY"})
+            self.assertEqual(receipt["antigravity"]["choice"], choice)
+            self.assertEqual(len(restarts), 1 if choice == "A" else 0)
 
     def test_b_leaves_antigravity_alone(self):
         restarts = []
@@ -610,7 +629,7 @@ class MainTests(unittest.TestCase):
             runner.assert_not_called()
             typed_in.assert_not_called()
 
-    def test_board_run_shows_both_a_and_b_lines(self):
+    def test_board_run_asks_for_one_key_and_still_shows_the_phrase(self):
         from unittest import mock
         with tempfile.TemporaryDirectory() as tmp:
             t = Path(tmp)
@@ -619,15 +638,15 @@ class MainTests(unittest.TestCase):
             (t / "00_お題.md").write_text("質問", encoding="utf-8")
             base = ["--council-id", CID, "--question-file", str(t / "q.txt"), "--quota-file", str(t / "quota.json"),
                     "--out", str(t / "out"), "--board-dir", str(t)]
-            for extra, lines in (([], 2), (["--no-antigravity"], 0)):
+            for extra, keys in (([], True), (["--no-antigravity"], False)):
                 with mock.patch.object(r.shutil, "which", return_value="/usr/bin/grok"), \
                         mock.patch.object(r, "subprocess_runner") as runner, mock.patch("builtins.print"), \
                         mock.patch("builtins.input", return_value="no") as typed_in:
                     self.assertEqual(r.main(base + extra), 2)
                 runner.assert_not_called()
                 shown = typed_in.call_args.args[0]
-                self.assertEqual(len(re.findall(r"APPROVE_COUNCIL \S+ [0-9a-f]{12} [AB]\n", shown)), lines)
-                self.assertEqual(shown.count("APPROVE_COUNCIL"), max(lines, 1))
+                self.assertEqual(len(re.findall(r"APPROVE_COUNCIL \S+ [0-9a-f]{12}\n", shown)), 1)
+                self.assertEqual("A か B の1文字" in shown, keys)
 
 
 if __name__ == "__main__":
