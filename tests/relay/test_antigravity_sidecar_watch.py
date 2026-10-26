@@ -48,7 +48,7 @@ class WatchBoardTest(unittest.TestCase):
         self.inbox.mkdir()
 
     def cfg(self, **kw):
-        base = dict(board_dir=self.board, inbox_dir=self.inbox, since=SINCE, armed=True)
+        base = dict(board_dir=self.board, inbox_dir=self.inbox, since=SINCE, armed=True, go_file=False)
         base.update(kw)
         return wb.Config(**base)
 
@@ -170,6 +170,69 @@ class WatchBoardTest(unittest.TestCase):
         log = [json.loads(line) for line in (self.inbox / wb.LOG_FILE).read_text(encoding="utf-8").splitlines()]
         self.assertEqual([e["agentapi"] for e in log], ["missing", "found"])
 
+    def go(self, folder, round_no=1, approved=NOW - timedelta(minutes=5), hours=2, **over):
+        body = {"council_id": "c-20261026-1", "round": round_no, "approved_at": approved.isoformat(),
+                "expires_at": (approved + timedelta(hours=hours)).isoformat(), **over}
+        (folder / wb.GO_FILE.format(round=round_no)).write_text(json.dumps(body), encoding="utf-8")
+
+    def test_go_file_mode_answers_only_an_approved_topic_and_round_once(self):
+        folder = self.topic(others=("r1_Claude.md",))
+        self.topic("20261026_札なし")
+        runner = FakeRunner()
+        self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)["result"], "IDLE")
+        self.go(folder)
+        out = wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)
+        self.assertEqual(out["result"], "STARTED_ONE")
+        key = wb.topic_key(folder.name, 1)
+        topic = self.state()["topics"][key]
+        self.assertEqual((topic["round"], topic["council_id"], topic["state"]), (1, "c-20261026-1", "STARTED"))
+        self.assertEqual(sorted(p.name for p in (self.inbox / key).iterdir()), ["question.md"])
+        self.assertNotIn("summary.md", runner.calls[0][2])
+        # The approval stays valid, but the topic and round never start again, and the other topic has no approval.
+        self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW + timedelta(minutes=5))["result"],
+                         "IDLE")
+        self.assertEqual(len(runner.calls), 1)
+
+    def test_go_file_that_is_not_valid_now_starts_nothing(self):
+        folder = self.topic()
+        bad = [dict(approved=NOW - timedelta(hours=3), hours=2),        # expired
+               dict(approved=NOW + timedelta(minutes=5)),              # not yet approved
+               dict(approved=datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc)),  # before since
+               dict(hours=7),                                          # longer than GO_MAX_HOURS
+               dict(round=2), dict(round=True), dict(council_id="../x"), dict(council_id=7)]
+        for over in bad:
+            with self.subTest(over=over):
+                self.go(folder, **over)
+                runner = FakeRunner()
+                self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)["result"], "IDLE")
+                self.assertEqual(runner.calls, [])
+        (folder / wb.GO_FILE.format(round=1)).write_text("{not json", encoding="utf-8")
+        self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=FakeRunner(), now=NOW)["result"], "IDLE")
+
+    def test_round_two_waits_for_the_summary_and_reads_it(self):
+        folder = self.topic(others=("r1_Gemini.md", "r1_Claude.md"))
+        self.go(folder, round_no=2)
+        runner = FakeRunner()
+        self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)["result"], "IDLE")
+        summary = folder / wb.SUMMARY_FILE.format(round=1)
+        summary.write_text("A: はい / B: いいえ", encoding="utf-8")
+        _age(summary, 120)
+        out = wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)
+        self.assertEqual(out["result"], "STARTED_ONE")
+        key = wb.topic_key(folder.name, 2)
+        work = self.inbox / key
+        self.assertEqual(sorted(p.name for p in work.iterdir()), ["question.md", "summary.md"])
+        self.assertIn(str(work / "summary.md"), runner.calls[0][2])
+        self.assertIn("ラウンド2", runner.calls[0][2])
+        self.assertNotIn(str(self.board), runner.calls[0][2])
+        answer = work / "answer.md"
+        answer.write_text("答え直しです", encoding="utf-8")
+        _age(answer, 120)
+        wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW + timedelta(minutes=5))
+        body = (folder / "r2_Gemini.md").read_text(encoding="utf-8")
+        self.assertIn("ラウンド: R2", body)
+        self.assertEqual(len(runner.calls), 1)
+
     def test_claim_is_saved_before_agentapi_is_called(self):
         self.topic()
         seen = []
@@ -209,7 +272,7 @@ class WatchBoardTest(unittest.TestCase):
         self.topic()
         runner = FakeRunner()
         out = wb.watch_once(self.cfg(), runner=runner, now=NOW, dry_run=True)
-        self.assertEqual(out["would_start"], ["20261026_テスト"])
+        self.assertEqual(out["would_start"], ["20261026_テスト r1"])
         self.assertEqual(runner.calls, [])
         self.assertEqual(list(self.inbox.iterdir()), [])
 
@@ -231,10 +294,11 @@ class WatchBoardTest(unittest.TestCase):
         path = self.tmp / "watch_config.json"
         path.write_text(json.dumps(good), encoding="utf-8")
         self.assertFalse(wb.load_config(path).armed)
+        self.assertTrue(wb.load_config(path).go_file)
         self.assertEqual(wb.load_config(path).daily_cap, 6)
         bad = [{**good, "since": "2026-10-26T00:00:00"}, {**good, "inbox_dir": str(self.board / "inbox")},
                {**good, "board_dir": "relative"}, {**good, "armed": "yes"}, {**good, "daily_cap": 7},
-               {**good, "agy": "agy -p"}, {**good, "web": "on"}]
+               {**good, "agy": "agy -p"}, {**good, "web": "on"}, {**good, "go_file": "yes"}]
         for raw in bad:
             with self.subTest(raw=raw):
                 path.write_text(json.dumps(raw), encoding="utf-8")

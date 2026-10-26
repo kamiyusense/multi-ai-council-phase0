@@ -16,11 +16,19 @@ One pass does, in order:
 2. Collects answers: a started topic whose ``answer.md`` has appeared (and stopped changing) is copied to the
    topic folder as ``r<round>_Gemini.md`` with the board header and ``AI-Agent: antigravity``.  An existing board
    file is never overwritten.  A topic with no answer after ``answer_timeout_minutes`` ends as TIMED_OUT.
-3. Only when ``armed`` is true: picks at most one new topic (``00_お題.md`` present, newer than ``since``,
-   no ``r<round>_Gemini.md`` yet, never seen before), records the claim first, copies only the question into the
-   inbox (blind: Antigravity never sees the other members' answers), and calls ``agentapi new-conversation``
-   once.  A failed or unknown start is recorded and never sent again (retry 0).  At most ``daily_cap`` starts in
-   any 24 hours.
+3. Only when ``armed`` is true: picks at most one new topic and round, records the claim first, copies the input
+   into the inbox, and calls ``agentapi new-conversation`` once.  A failed or unknown start is recorded and never
+   sent again (retry 0).  At most ``daily_cap`` starts in any 24 hours.
+
+Which topics are picked (``go_file``, owner's choice 2026-10-26: one Council approval covers all four members):
+
+* ``go_file`` true (default): only a topic folder holding ``ANTIGRAVITY_GO_r<n>.json`` is answered, for round
+  ``n`` only, while that file is valid (approved after ``since``, not expired, at most ``GO_MAX_HOURS`` long).
+  The Council runner writes it after the owner's approval phrase; nothing else may write it.  Round 1 gets only
+  the question (blind).  Round ``n`` >= 2 also gets ``まとめ_r<n-1>.md`` (the anonymised summary) and waits until it
+  exists.  Each topic and round starts at most once.
+* ``go_file`` false: the older trial mode, round ``round`` of any topic whose ``00_お題.md`` is newer than
+  ``since``; only the question is copied.
 
 Web search (owner, 2026-10-25): on by default under the same research rules the Council members get
 (``src/relay/council_run.py``).  ``"web": false`` in the config, or a ``NO_WEB_ANTIGRAVITY`` file in the board
@@ -44,6 +52,9 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 QUESTION_FILE = "00_お題.md"
+GO_FILE = "ANTIGRAVITY_GO_r{round}.json"
+SUMMARY_FILE = "まとめ_r{round}.md"
+GO_MAX_HOURS = 6
 BOARD_STOP = "STOP_ANTIGRAVITY"
 BOARD_NO_WEB = "NO_WEB_ANTIGRAVITY"
 INBOX_STOP = "STOP"
@@ -94,13 +105,15 @@ class Config:
     answer_timeout_minutes: int = 120
     board_name: str = "Gemini"
     web: bool = True
+    go_file: bool = True
 
 
 def load_config(path: Path) -> Config:
     raw = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(raw, dict):
         raise WatchStop("CONFIG: not a JSON object")
-    known = {"board_dir", "inbox_dir", "since", "armed", "round", "daily_cap", "answer_timeout_minutes", "web"}
+    known = {"board_dir", "inbox_dir", "since", "armed", "round", "daily_cap", "answer_timeout_minutes", "web",
+             "go_file"}
     extra = sorted(set(raw) - known - {"_comment"})
     if extra:
         raise WatchStop(f"CONFIG: unknown keys {extra}")
@@ -121,14 +134,15 @@ def load_config(path: Path) -> Config:
     daily_cap = raw.get("daily_cap", 6)
     timeout = raw.get("answer_timeout_minutes", 120)
     web = raw.get("web", True)
-    for name, flag in (("armed", armed), ("web", web)):
+    go_file = raw.get("go_file", True)
+    for name, flag in (("armed", armed), ("web", web), ("go_file", go_file)):
         if not isinstance(flag, bool):
             raise WatchStop(f"CONFIG: {name} must be true or false")
     for name, value, low, high in (("round", round_no, 1, 9), ("daily_cap", daily_cap, 1, 6),
                                    ("answer_timeout_minutes", timeout, 10, 1440)):
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
             raise WatchStop(f"CONFIG: {name} must be an integer from {low} to {high}")
-    return Config(board_dir, inbox_dir, since, armed, round_no, daily_cap, timeout, web=web)
+    return Config(board_dir, inbox_dir, since, armed, round_no, daily_cap, timeout, web=web, go_file=go_file)
 
 
 def agentapi_command(which: Callable[[str], str | None] | None = None) -> list[str]:
@@ -161,12 +175,20 @@ def topic_key(folder_name: str, round_no: int) -> str:
     return f"r{round_no}-{hashlib.sha256(folder_name.encode('utf-8')).hexdigest()[:12]}"
 
 
-def build_prompt(question: Path, answer: Path, web: bool = False) -> str:
+def build_prompt(question: Path, answer: Path, web: bool = False, summary: Path | None = None,
+                 round_no: int = 1) -> str:
     search = ("コマンドは実行しない。ネットで調べてもかまいません。" + RESEARCH_RULES) if web \
         else "コマンドは実行しない。Web 検索もしない。"
+    if summary is None:
+        read = (f"1. 次のファイルだけを読んでください: {question}\n"
+                "2. その質問に日本語で答えてください。確かでないことは UNKNOWN と書き、推測で埋めないでください。\n")
+    else:
+        read = (f"1. 次の2つのファイルだけを読んでください: {question} と {summary}\n"
+                f"2. これはラウンド{round_no}です。2つ目のファイルは、前のラウンドの4人の答えを名前を伏せてまとめたもの"
+                "（あなたの答えも入っています）。読んだうえで、質問に日本語で答え直してください。意見を変えたところと"
+                "変えなかったところは、理由を書いてください。確かでないことは UNKNOWN と書き、推測で埋めないでください。\n")
     return ("あなたは Council の4人目の回答者（Gemini / Antigravity）です。\n"
-            f"1. 次のファイルだけを読んでください: {question}\n"
-            "2. その質問に日本語で答えてください。確かでないことは UNKNOWN と書き、推測で埋めないでください。\n"
+            + read +
             f"3. 答えを Markdown（UTF-8）で次のファイルに書いてください: {answer}\n"
             "4. ほかのファイルやフォルダは読まない・書かない。ほかの AI の答えも探さない。\n"
             f"5. {search}\n"
@@ -177,12 +199,13 @@ def web_allowed(cfg: Config) -> bool:
     return cfg.web and not (cfg.board_dir / BOARD_NO_WEB).exists()
 
 
-def board_body(cfg: Config, folder_name: str, answer: str, at: datetime, web: bool = False) -> str:
+def board_body(cfg: Config, folder_name: str, answer: str, at: datetime, web: bool = False,
+               round_no: int | None = None) -> str:
     text = answer.strip()
     if not text.endswith(SIGNATURE):
         text += f"\n\n{SIGNATURE}"
     return (f"作成者: {cfg.board_name}（Antigravity・相棒の PC・Sidecar 経由）\n"
-            f"ラウンド: R{cfg.round_no}\n"
+            f"ラウンド: R{round_no or cfg.round_no}\n"
             f"作成時刻（JST）: {at.astimezone(_JST).strftime('%Y-%m-%d %H:%M')} JST\n"
             f"ネット検索: {'あり（調べ物のルール付き）' if web else 'なし'}\n"
             "確信度: 本文を参照\n"
@@ -229,7 +252,8 @@ def _collect(cfg: Config, state: dict[str, Any], now: datetime) -> list[str]:
         if topic.get("state") != "STARTED":
             continue
         answer = cfg.inbox_dir / key / "answer.md"
-        target = cfg.board_dir / topic["folder"] / f"r{cfg.round_no}_{cfg.board_name}.md"
+        round_no = topic.get("round", cfg.round_no)
+        target = cfg.board_dir / topic["folder"] / f"r{round_no}_{cfg.board_name}.md"
         if answer.exists() and _stable(answer, now):
             data = answer.read_bytes()
             if len(data) > MAX_ANSWER_BYTES:
@@ -240,7 +264,7 @@ def _collect(cfg: Config, state: dict[str, Any], now: datetime) -> list[str]:
                 topic.update(state="TOPIC_FOLDER_GONE", ended_at=now.isoformat())
             else:
                 _write_new(target, board_body(cfg, topic["folder"], data.decode("utf-8-sig", "replace"), now,
-                                                bool(topic.get("web"))))
+                                                bool(topic.get("web")), round_no))
                 topic.update(state="PUBLISHED", ended_at=now.isoformat(),
                              answer_sha256=hashlib.sha256(data).hexdigest())
             events.append(f"{key}:{topic['state']}")
@@ -250,28 +274,66 @@ def _collect(cfg: Config, state: dict[str, Any], now: datetime) -> list[str]:
     return events
 
 
-def _candidates(cfg: Config, state: dict[str, Any], now: datetime) -> list[Path]:
+def read_go(path: Path, round_no: int, cfg: Config, now: datetime) -> dict[str, Any] | None:
+    """The approval the Council runner left for this topic and round, or None when it is missing or not valid now."""
+    try:
+        go = json.loads(path.read_text(encoding="utf-8-sig"))
+        approved = datetime.fromisoformat(go["approved_at"])
+        expires = datetime.fromisoformat(go["expires_at"])
+        council_id = go["council_id"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if not isinstance(go, dict) or go.get("round") != round_no or isinstance(go.get("round"), bool) \
+            or not isinstance(council_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", council_id) \
+            or approved.tzinfo is None or expires.tzinfo is None:
+        return None
+    if not (cfg.since <= approved <= now < expires) or expires - approved > timedelta(hours=GO_MAX_HOURS):
+        return None
+    return {"council_id": council_id, "approved_at": approved.isoformat(), "expires_at": expires.isoformat(),
+            "go_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+
+def _candidates(cfg: Config, state: dict[str, Any], now: datetime) -> list[tuple[Path, int, dict[str, Any] | None]]:
+    """(topic folder, round, approval) that may start now, oldest approval first."""
     found = []
     for folder in sorted(p for p in cfg.board_dir.iterdir() if p.is_dir()):
         question = folder / QUESTION_FILE
-        if not question.is_file() or topic_key(folder.name, cfg.round_no) in state["topics"]:
+        if not question.is_file() or not _stable(question, now):
             continue
-        if (folder / f"r{cfg.round_no}_{cfg.board_name}.md").exists():
-            continue
-        mtime = datetime.fromtimestamp(question.stat().st_mtime, timezone.utc)
-        if mtime >= cfg.since and _stable(question, now):
-            found.append(folder)
-    return found
+        rounds = range(1, 10) if cfg.go_file else (cfg.round_no,)
+        for round_no in rounds:
+            if topic_key(folder.name, round_no) in state["topics"] \
+                    or (folder / f"r{round_no}_{cfg.board_name}.md").exists():
+                continue
+            if not cfg.go_file:
+                mtime = datetime.fromtimestamp(question.stat().st_mtime, timezone.utc)
+                if mtime >= cfg.since:
+                    found.append((folder, round_no, None))
+                continue
+            go = read_go(folder / GO_FILE.format(round=round_no), round_no, cfg, now)
+            if go is None:
+                continue
+            if round_no > 1:
+                summary = folder / SUMMARY_FILE.format(round=round_no - 1)
+                if not summary.is_file() or not _stable(summary, now):
+                    continue
+            found.append((folder, round_no, go))
+    return sorted(found, key=lambda c: c[2]["approved_at"] if c[2] else "")
 
 
-def _start(cfg: Config, state: dict[str, Any], folder: Path, now: datetime, runner: Runner) -> str:
-    key = topic_key(folder.name, cfg.round_no)
+def _start(cfg: Config, state: dict[str, Any], pick: tuple[Path, int, dict[str, Any] | None], now: datetime,
+           runner: Runner) -> str:
+    folder, round_no, go = pick
+    key = topic_key(folder.name, round_no)
     data = (folder / QUESTION_FILE).read_bytes()
+    summary_data = (folder / SUMMARY_FILE.format(round=round_no - 1)).read_bytes() if round_no > 1 else None
     web = web_allowed(cfg)
-    topic: dict[str, Any] = {"folder": folder.name, "claimed_at": now.isoformat(), "web": web,
-                             "question_sha256": hashlib.sha256(data).hexdigest()}
+    topic: dict[str, Any] = {"folder": folder.name, "round": round_no, "claimed_at": now.isoformat(), "web": web,
+                             "question_sha256": hashlib.sha256(data).hexdigest(), **(go or {})}
+    if summary_data is not None:
+        topic["summary_sha256"] = hashlib.sha256(summary_data).hexdigest()
     state["topics"][key] = topic
-    if len(data) > MAX_QUESTION_BYTES:
+    if len(data) + len(summary_data or b"") > MAX_QUESTION_BYTES:
         topic.update(state="QUESTION_TOO_LARGE")
         _save_state(cfg.inbox_dir, state)
         return f"{key}:QUESTION_TOO_LARGE"
@@ -283,7 +345,11 @@ def _start(cfg: Config, state: dict[str, Any], folder: Path, now: datetime, runn
     work.mkdir(exist_ok=False)
     question, answer = work / "question.md", work / "answer.md"
     question.write_bytes(data)
-    argv = ["agentapi", "new-conversation", build_prompt(question, answer, web)]
+    summary = None
+    if summary_data is not None:
+        summary = work / "summary.md"
+        summary.write_bytes(summary_data)
+    argv = ["agentapi", "new-conversation", build_prompt(question, answer, web, summary, round_no)]
     try:
         done = runner(argv)
     except FileNotFoundError as exc:
@@ -311,7 +377,7 @@ def watch_once(cfg: Config, *, runner: Runner = run_agentapi, now: datetime | No
         return {"result": "STOPPED", "events": []}
     state = _load_state(cfg.inbox_dir)
     if dry_run:
-        picks = [p.name for p in _candidates(cfg, state, now)]
+        picks = [f"{p.name} r{r}" for p, r, _ in _candidates(cfg, state, now)]
         return {"result": "DRY_RUN", "armed": cfg.armed, "web": web_allowed(cfg), "would_start": picks[:1],
                 "candidates": picks}
     lock = cfg.inbox_dir / LOCK_FILE

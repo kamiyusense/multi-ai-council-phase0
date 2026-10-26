@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to watch_config.json next to watch_board.py. armed stays false until the owner approves the first real run. web true = web search under the research rules; a NO_WEB_ANTIGRAVITY file in the board folder turns it off.",
+  "_comment": "Copy to watch_config.json next to watch_board.py. armed stays false until the owner approves the first real run. web true = web search under the research rules; a NO_WEB_ANTIGRAVITY file in the board folder turns it off. go_file true = answer only a topic and round that has an ANTIGRAVITY_GO_r<n>.json left by the Council runner after the owner's approval.",
   "board_dir": "G:\\マイドライブ\\AI掲示板",
   "inbox_dir": "C:\\Users\\<user>\\antigravity-council-inbox",
   "since": "2026-10-26T00:00:00+09:00",
@@ -7,5 +7,6 @@
   "round": 1,
   "daily_cap": 6,
   "answer_timeout_minutes": 120,
-  "web": true
+  "web": true,
+  "go_file": true
 }
