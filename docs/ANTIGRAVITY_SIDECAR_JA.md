@@ -102,6 +102,7 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 - Council の承認の文は2通り。Claude スレがコピペ用に2つ並べて出す。どちらを選ぶかは、Antigravity の様子を見て相棒が決める（PC 側では状態を表示しない）。
   - `APPROVE_COUNCIL <id> <12文字> A`：札を置いたあと、Council の実行係が Antigravity のアプリを開き直す。開いていれば普通に閉じてから開く。閉じなければ止めて知らせる（無理やり終わらせない）。開いた瞬間に「起動時に1回」の見張り係が札を見て、すぐ答える。
   - `APPROVE_COUNCIL <id> <12文字> B`：Antigravity に触らない。5分おきの見張り係が札を拾って答える。
+- A で普通に閉じても 20 秒たって Antigravity が残っていたら（たとえば閉じるとタスクトレイに隠れるだけのとき）、開き直さずに記録へ WARN_STILL_RUNNING を書く。そのときは5分おきの見張り係が答える。トレイに隠れるかどうかは UNKNOWN（PC で1回試すまで）。
 - A は、Antigravity で作業している途中でも閉じる。作業中なら B を選ぶ。閉じているときは A でも何も消えない。
 - 「起動時に1回」の見張り係：`tools/antigravity_sidecar/startup/sidecar.json`。公式の `command` 型の Sidecar で、`restart_policy` は never。中身は5分おきのものと同じ `watch_board.py` と `watch_config.json` を使う（`../phase0-board-watch/`）。札がなければ何もしない。AI は使わない。
   - PC への入れ方：`~/.gemini/config/sidecars/phase0-board-watch-startup/` を作って `sidecar.json` を置く。`python` は PC の Python の本体の場所に書き換える。`~/.gemini/config/config.json` に `phase0-board-watch-startup` を足す（`enabled` true、`projectId` は5分おきのものと同じ）。今ある設定は消さない。
