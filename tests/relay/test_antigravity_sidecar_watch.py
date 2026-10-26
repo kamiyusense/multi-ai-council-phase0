@@ -1,5 +1,6 @@
 """Tests for tools/antigravity_sidecar/watch_board.py with a fake agentapi runner (nothing is started)."""
 import ast
+import hashlib
 import importlib.util
 import json
 import os
@@ -171,8 +172,9 @@ class WatchBoardTest(unittest.TestCase):
         self.assertEqual([e["agentapi"] for e in log], ["missing", "found"])
 
     def go(self, folder, round_no=1, approved=NOW - timedelta(minutes=5), hours=2, **over):
+        question = hashlib.sha256((folder / wb.QUESTION_FILE).read_bytes()).hexdigest()
         body = {"council_id": "c-20261026-1", "round": round_no, "approved_at": approved.isoformat(),
-                "expires_at": (approved + timedelta(hours=hours)).isoformat(), **over}
+                "expires_at": (approved + timedelta(hours=hours)).isoformat(), "question_sha256": question, **over}
         (folder / wb.GO_FILE.format(round=round_no)).write_text(json.dumps(body), encoding="utf-8")
 
     def test_go_file_mode_answers_only_an_approved_topic_and_round_once(self):
@@ -199,14 +201,21 @@ class WatchBoardTest(unittest.TestCase):
                dict(approved=NOW + timedelta(minutes=5)),              # not yet approved
                dict(approved=datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc)),  # before since
                dict(hours=7),                                          # longer than GO_MAX_HOURS
-               dict(round=2), dict(round=True), dict(council_id="../x"), dict(council_id=7)]
+               dict(round=2), dict(round=True), dict(council_id="../x"), dict(council_id=7),
+               dict(question_sha256="0" * 64), dict(question_sha256=None), dict(summary_sha256="0" * 64)]
         for over in bad:
             with self.subTest(over=over):
                 self.go(folder, **over)
                 runner = FakeRunner()
                 self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)["result"], "IDLE")
                 self.assertEqual(runner.calls, [])
-        (folder / wb.GO_FILE.format(round=1)).write_text("{not json", encoding="utf-8")
+        for text in ("{not json", "[]"):
+            (folder / wb.GO_FILE.format(round=1)).write_text(text, encoding="utf-8")
+            self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=FakeRunner(), now=NOW)["result"], "IDLE")
+        # An edit to the question after the approval starts nothing.
+        self.go(folder)
+        (folder / wb.QUESTION_FILE).write_text("書き換えた質問", encoding="utf-8")
+        _age(folder / wb.QUESTION_FILE, 120)
         self.assertEqual(wb.watch_once(self.cfg(go_file=True), runner=FakeRunner(), now=NOW)["result"], "IDLE")
 
     def test_round_two_waits_for_the_summary_and_reads_it(self):
@@ -217,6 +226,7 @@ class WatchBoardTest(unittest.TestCase):
         summary = folder / wb.SUMMARY_FILE.format(round=1)
         summary.write_text("A: はい / B: いいえ", encoding="utf-8")
         _age(summary, 120)
+        self.go(folder, round_no=2, summary_sha256=hashlib.sha256(summary.read_bytes()).hexdigest())
         out = wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW)
         self.assertEqual(out["result"], "STARTED_ONE")
         key = wb.topic_key(folder.name, 2)

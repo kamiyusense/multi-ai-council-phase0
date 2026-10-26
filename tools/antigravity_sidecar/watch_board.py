@@ -274,14 +274,25 @@ def _collect(cfg: Config, state: dict[str, Any], now: datetime) -> list[str]:
     return events
 
 
-def read_go(path: Path, round_no: int, cfg: Config, now: datetime) -> dict[str, Any] | None:
-    """The approval the Council runner left for this topic and round, or None when it is missing or not valid now."""
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def read_go(folder: Path, round_no: int, cfg: Config, now: datetime) -> dict[str, Any] | None:
+    """The approval the Council runner left for this topic and round, or None when it is missing or not valid now.
+
+    The file is a marker, not authentication: anything that can write the topic folder can make one.  What bounds
+    it is that it must name the exact question (and, when given, summary) it approved, its short window, one start
+    per topic and round, and ``daily_cap``.
+    """
+    path = folder / GO_FILE.format(round=round_no)
     try:
         go = json.loads(path.read_text(encoding="utf-8-sig"))
         approved = datetime.fromisoformat(go["approved_at"])
         expires = datetime.fromisoformat(go["expires_at"])
-        council_id = go["council_id"]
-    except (OSError, ValueError, KeyError, TypeError):
+        council_id, question_sha = go["council_id"], go["question_sha256"]
+        summary_sha = go.get("summary_sha256")
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
     if not isinstance(go, dict) or go.get("round") != round_no or isinstance(go.get("round"), bool) \
             or not isinstance(council_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", council_id) \
@@ -289,8 +300,14 @@ def read_go(path: Path, round_no: int, cfg: Config, now: datetime) -> dict[str, 
         return None
     if not (cfg.since <= approved <= now < expires) or expires - approved > timedelta(hours=GO_MAX_HOURS):
         return None
+    # The approval is for this exact question: an edit after the owner's phrase starts nothing.
+    if question_sha != _sha256(folder / QUESTION_FILE):
+        return None
+    if summary_sha is not None and (round_no < 2 or summary_sha != _sha256(
+            folder / SUMMARY_FILE.format(round=round_no - 1))):
+        return None
     return {"council_id": council_id, "approved_at": approved.isoformat(), "expires_at": expires.isoformat(),
-            "go_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            "go_sha256": _sha256(path)}
 
 
 def _candidates(cfg: Config, state: dict[str, Any], now: datetime) -> list[tuple[Path, int, dict[str, Any] | None]]:
@@ -310,15 +327,14 @@ def _candidates(cfg: Config, state: dict[str, Any], now: datetime) -> list[tuple
                 if mtime >= cfg.since:
                     found.append((folder, round_no, None))
                 continue
-            go = read_go(folder / GO_FILE.format(round=round_no), round_no, cfg, now)
-            if go is None:
-                continue
             if round_no > 1:
                 summary = folder / SUMMARY_FILE.format(round=round_no - 1)
                 if not summary.is_file() or not _stable(summary, now):
                     continue
-            found.append((folder, round_no, go))
-    return sorted(found, key=lambda c: c[2]["approved_at"] if c[2] else "")
+            go = read_go(folder, round_no, cfg, now)
+            if go is not None:
+                found.append((folder, round_no, go))
+    return sorted(found, key=lambda c: datetime.fromisoformat(c[2]["approved_at"]) if c[2] else cfg.since)
 
 
 def _start(cfg: Config, state: dict[str, Any], pick: tuple[Path, int, dict[str, Any] | None], now: datetime,
