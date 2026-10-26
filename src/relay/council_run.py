@@ -17,6 +17,8 @@ Rules kept here:
 * With ``--board-dir``, the same approval also lets the Antigravity sidecar answer that topic (owner, 2026-10-26):
   right after the phrase is accepted the runner leaves ``ANTIGRAVITY_GO_r<round>.json`` on the board (2 hours,
   never overwritten), naming the sha256 of the board's ``00_お題.md`` (and, from round 2, of ``まとめ_r<n-1>.md``).  It never starts Antigravity; ``--no-antigravity`` leaves no file.
+  Before the phrase it reads the last line of the sidecar's ``watch_log.jsonl`` (read only) and says whether the
+  sidecar is polling, since Antigravity does not start with Windows (owner, 2026-10-26).  A stale log only warns.
 * Every member runs a fixed model at high reasoning effort with no fast mode (owner, 2026-10-25), so answers are
   compared on equal settings and a CLI default change never alters a run silently.
 * Codex cannot open files in read-only non-interactive mode (every command is refused), so ``--attach`` files
@@ -46,7 +48,7 @@ from .council import ANSWER_MARKER, CouncilError, CouncilPlan, plan_council, sum
 from .council_grok import GrokLaunchError, child_env, headless_launch
 
 __all__ = ["MemberCall", "member_prompt", "web_choice", "load_attachments", "named_files", "update_reference", "build_calls", "plan_digest", "approval_phrase", "run_council",
-           "board_file", "go_file", "board_hashes", "RunStop", "main"]
+           "board_file", "go_file", "board_hashes", "sidecar_status", "RunStop", "main"]
 
 DECISION = "APPROVE_COUNCIL"
 BOARD_NAMES = {"grok": "Grok", "claude": "Claude", "codex": "Codex"}
@@ -55,6 +57,10 @@ GO_HOURS = 2
 QUESTION_FILE = "00_お題.md"
 SUMMARY_FILE = "まとめ_r{round}.md"
 _JST = timezone(timedelta(hours=9), "JST")
+SIDECAR_LOG = "watch_log.jsonl"
+SIDECAR_INBOX = "antigravity-council-inbox"
+SIDECAR_FRESH_MINUTES = 10
+_SIDECAR_OK = ("IDLE", "STARTED_ONE")
 TIMEOUT_SECONDS = 300
 MAX_TIMEOUT_SECONDS = 1_800
 _MAX_OUTPUT = 60_000
@@ -491,6 +497,36 @@ def subprocess_runner(argv: tuple[str, ...], env: Mapping[str, str], stdin: str 
     return done.returncode, done.stdout, done.stderr
 
 
+def sidecar_status(inbox: Path, now: datetime | None = None) -> str:
+    """One Japanese line on whether the Antigravity sidecar is polling, from the last line of its log.
+
+    Reads only the end of ``watch_log.jsonl``; never writes there and never starts anything.  The sidecar logs
+    every 5 minutes, so a last line older than 10 minutes means it is not running (Antigravity closed, or the PC
+    restarted).  The GO file stays valid for 2 hours, so this is a warning, not a stop.
+    """
+    now = now or datetime.now(timezone.utc)
+    later = f"Antigravity を開けば {GO_HOURS} 時間以内なら答える"
+    try:
+        with open(inbox / SIDECAR_LOG, "rb") as handle:
+            handle.seek(max(0, handle.seek(0, os.SEEK_END) - 4096))
+            lines = handle.read().decode("utf-8", errors="replace").splitlines()
+        last = json.loads(next(line for line in reversed(lines) if line.strip()))
+        at = datetime.fromisoformat(last["at"])
+        event = str(last["event"])
+        if at.tzinfo is None:
+            raise ValueError("at has no time zone")
+    except (OSError, StopIteration, ValueError, KeyError, TypeError):
+        return f"⚠ Antigravity の見張り係の記録が読めない（{inbox / SIDECAR_LOG}）。止まっているかも。{later}"
+    when = at.astimezone(_JST).strftime("%H:%M")
+    if now - at > timedelta(minutes=SIDECAR_FRESH_MINUTES):
+        return f"⚠ Antigravity が止まっているかも（最終 {when}）。{later}"
+    if event in _SIDECAR_OK:
+        return f"Antigravity：見張り係 動作中（最終 {when}）"
+    if event == "DAILY_CAP":
+        return f"⚠ Antigravity は今日の回数を使い切った（DAILY_CAP、最終 {when}）。今日は答えないかも"
+    return f"⚠ Antigravity の見張り係が答えない状態（{event}、最終 {when}）。設定を確かめて。{later}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Council: ask Grok/Claude/Codex once (owner's PC only)")
     parser.add_argument("--council-id", required=True)
@@ -502,6 +538,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--round", type=int, default=1)
     parser.add_argument("--no-antigravity", action="store_true",
                         help="do not leave the Antigravity GO file on the board (default: leave it with --board-dir)")
+    parser.add_argument("--antigravity-inbox", type=Path,
+                        help=f"sidecar inbox folder whose {SIDECAR_LOG} is checked (default: %%USERPROFILE%%\\{SIDECAR_INBOX})")
     parser.add_argument("--reference-dir", help="absolute path of a local clone the members may read (read-only)")
     parser.add_argument("--attach", action="append", default=[],
                         help="file in --reference-dir to add to Codex's prompt (repeatable)")
@@ -534,6 +572,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.board_dir is not None:
             print("Antigravity：答えない（--no-antigravity）" if args.no_antigravity else
                   "Antigravity：この承認で掲示板に GO を置く（2時間有効。起動は Antigravity 側。切るには --no-antigravity）")
+            if not args.no_antigravity:
+                home = Path(os.environ.get("USERPROFILE") or Path.home())
+                print(sidecar_status(args.antigravity_inbox or home / SIDECAR_INBOX))
         if attachments:
             print(f"Codex への添付：{', '.join(n for n, t in attachments if t != NOT_ATTACHED)}")
             left = [n for n, t in attachments if t == NOT_ATTACHED]
