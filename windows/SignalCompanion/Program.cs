@@ -17,6 +17,7 @@ static class Program
     private static readonly Dictionary<string, Icon> _iconCache = new();
     private static string _snapshotPath = "";
     private static string _repoRoot = "";
+    private static string _pythonPath = "python";
     private static string _seenPath = "";
     private static bool _isFirstRun;
     private static NotifyIcon? _trayIcon;
@@ -47,6 +48,12 @@ static class Program
         if (string.IsNullOrEmpty(_repoRoot))
         {
             _repoRoot = Environment.GetEnvironmentVariable("SIGNAL_REPO_ROOT") ?? Directory.GetCurrentDirectory();
+        }
+
+        string? python = Environment.GetEnvironmentVariable("SIGNAL_PYTHON");
+        if (!string.IsNullOrWhiteSpace(python))
+        {
+            _pythonPath = python;
         }
 
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -179,7 +186,7 @@ static class Program
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "python",
+                FileName = _pythonPath,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true,
