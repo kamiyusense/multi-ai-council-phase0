@@ -1,0 +1,7 @@
+{
+  "description": "Phase 0 Council: one board pass when Antigravity starts, so a Council round approved with A is answered at once",
+  "display_name": "Council 掲示板の見張り（起動時に1回）",
+  "command": "python",
+  "args": ["../phase0-board-watch/watch_board.py"],
+  "restart_policy": "never"
+}

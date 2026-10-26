@@ -13,7 +13,7 @@
   - アカウントを切り替えて使わない。
   - AI クレジットや超過課金を使わない（`useG1Credits` はオフ、AI Credit Overages は Never）。
   - 初めての本番実行には、相棒の承認の文が要る（4章）。
-- まだ外していないもの：Relay（`src/relay/`）から Antigravity を起動すること。起動禁止リストと `archive/antigravity_launch/` はそのまま。
+- まだ外していないもの：Relay（`src/relay/`）から Antigravity の中身や CLI を動かすこと。起動禁止リストと `archive/antigravity_launch/` はそのまま。アプリを開く・開き直すことは禁止ではない（V4 の注釈、2026-10-26）。8章を参照。
 
 ## 2. 動き方（1回の見張り）
 
@@ -73,7 +73,8 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 - （わかった 2026-10-26）`projectId` は `~/.gemini/config/projects/<id>.json` のファイル名と中の `id`。
 - （わかった 2026-10-26）相棒のアプリの権限の選び方は Inherit Global / Request Review / Turbo の3つで、Default はなかった。受け箱のプロジェクトは Request Review、Network の Read URLs に `*` を許可、Plan Review は Always Proceed にした。
 - 「目隠し」は、Antigravity への指示と、プロジェクトに受け箱だけを入れる PC の手順に頼っている。Default の権限で、Antigravity が掲示板のフォルダまで読めてしまうかは分からない。
-- PC がスリープ中・アプリを閉じているときの動き。
+- PC がスリープ中の動き。（わかった 2026-10-26）Antigravity は Windows と一緒には起動しない。閉じている間、見張り係は止まっている。
+- 起動時に1回の見張り係（8章）が、本当に Antigravity の起動のたびに1回動くか（公式の説明は「Sidecar は Antigravity が起動して管理する」まで）。
 - Google が、この組み合わせ（自作の見張り役 + `agentapi`）を個別に認めたわけではない。根拠は相棒の承認（例外の (a)）。
 
 ## 6. 1回目の本番（2026-10-26 01:05 JST）
@@ -96,3 +97,13 @@ Antigravity への指示：受け箱の `question.md` だけを読み、`answer.
 - 止め方はこれまでと同じ（`STOP_ANTIGRAVITY`、`armed: false`）。前のやり方（札なし）は `"go_file": false` で残っている。
 - まだ決まっていないこと：`まとめ_r<n>.md` を誰が作るか（UNKNOWN）。Council の実行係が札を置く部分は V4 の担当で、これから作る。
 
+## 8. 承認の文の A と B（相棒の選択 2026-10-27 00:13 JST）
+
+- Council の承認の文は2通り。Claude スレがコピペ用に2つ並べて出す。どちらを選ぶかは、Antigravity の様子を見て相棒が決める（PC 側では状態を表示しない）。
+  - `APPROVE_COUNCIL <id> <12文字> A`：札を置いたあと、Council の実行係が Antigravity のアプリを開き直す。開いていれば普通に閉じてから開く。閉じなければ止めて知らせる（無理やり終わらせない）。開いた瞬間に「起動時に1回」の見張り係が札を見て、すぐ答える。
+  - `APPROVE_COUNCIL <id> <12文字> B`：Antigravity に触らない。5分おきの見張り係が札を拾って答える。
+- A は、Antigravity で作業している途中でも閉じる。作業中なら B を選ぶ。閉じているときは A でも何も消えない。
+- 「起動時に1回」の見張り係：`tools/antigravity_sidecar/startup/sidecar.json`。公式の `command` 型の Sidecar で、`restart_policy` は never。中身は5分おきのものと同じ `watch_board.py` と `watch_config.json` を使う（`../phase0-board-watch/`）。札がなければ何もしない。AI は使わない。
+  - PC への入れ方：`~/.gemini/config/sidecars/phase0-board-watch-startup/` を作って `sidecar.json` を置く。`python` は PC の Python の本体の場所に書き換える。`~/.gemini/config/config.json` に `phase0-board-watch-startup` を足す（`enabled` true、`projectId` は5分おきのものと同じ）。今ある設定は消さない。
+  - 2つの見張り係が同時に動いたら、片方は BUSY で何もしない（鍵ファイル）。
+- アプリを開く部分は Council の実行係（`src/relay/council_run.py`、V4 の担当）。Antigravity の中身・CLI・`~/.gemini` には触らない。

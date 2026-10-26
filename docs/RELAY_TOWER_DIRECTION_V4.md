@@ -80,6 +80,13 @@ explicit chat approval. It does not authorize any LIVE run, billing, permission 
   These never change: no wrapping of `agy` inside Relay, ACP or another vendor's CLI; no account rotation;
   no AI credits or overage (`useG1Credits` off, AI Credit Overages = Never); a LIVE or first real run still
   needs the owner's approval sentence. The `antigravity-manual` lane stays as it is until a use is lifted.
+- Note on "launches" (owner, 2026-10-26 23:59 JST): the line "no tool launches, drives or wraps Antigravity"
+  means no tool drives Antigravity's internals or its CLI (`agy`) automatically, for example through Relay.
+  Opening or restarting the Antigravity desktop app itself, as a person or Windows start-up would, without
+  passing it a prompt or touching its internals, is not what the line forbids. Lifted use (owner, 2026-10-27
+  00:13 JST, basis (a)): the Council approval phrase ends in `A` (council_run closes Antigravity normally if it is
+  open, then starts the app, so the start-up sidecar answers at once) or `B` (Antigravity is not touched; the
+  5-minute sidecar answers). Never force-killed, never given a prompt from outside.
 - The Antigravity launch code is moved to `archive/antigravity_launch/` and disabled (step S1), with the header
   "suspended, do not run (terms, 2026-10)", so it can be restored if the terms change. The launch deny-list
   (`LIVE_ADAPTER_MARKERS`) stays active.

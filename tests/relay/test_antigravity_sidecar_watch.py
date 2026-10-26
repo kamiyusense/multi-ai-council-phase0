@@ -336,6 +336,11 @@ class WatchBoardTest(unittest.TestCase):
         self.assertEqual(sidecar["args"][0], "*/5 * * * *")
         self.assertEqual(sidecar["args"][1:], ["python", "watch_board.py"])
         self.assertEqual(sidecar["restart_policy"], "never")
+        # The start-up sidecar runs the same watcher once, with the same config, and is never restarted.
+        startup = json.loads((TOOL_DIR / "startup" / "sidecar.json").read_text(encoding="utf-8"))
+        self.assertNotIn("builtin", startup)
+        self.assertEqual((startup["command"], startup["args"]), ("python", ["../phase0-board-watch/watch_board.py"]))
+        self.assertEqual(startup["restart_policy"], "never")
 
     def test_web_search_is_on_with_the_council_rules_and_the_board_file_turns_it_off(self):
         from relay import council_run
