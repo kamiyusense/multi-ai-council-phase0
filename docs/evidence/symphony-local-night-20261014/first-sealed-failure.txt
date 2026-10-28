@@ -1,0 +1,14 @@
+{"result": "PASS", "verified_files": 51, "historical_source_reads": 2, "historical_commit": "db578364c3bb22d5ed1af382085645cfb952f36e", "live_count": 0}
+{"result": "PASS", "verified_files": 101, "historical_g72_head": "d9255aeb966a16f484ae0b4044e3e43c38f4c103", "live_count": 0}
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "<dedicated-local-worktree>/automation/command_bus/scripts/validate_symphony_operator_static.py", line 182, in <module>
+    validate()
+    ~~~~~~~~^^
+  File "<dedicated-local-worktree>/automation/command_bus/scripts/validate_symphony_operator_static.py", line 75, in validate
+    validate_installation_readiness(root)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "<dedicated-local-worktree>/automation/command_bus/scripts/validate_symphony_operator_static.py", line 135, in validate_installation_readiness
+    raise ValueError("current installation readiness bytes differ: "+path)
+ValueError: current installation readiness bytes differ: automation/command_bus/tests/fixtures/symphony_sqlite_installation/startup_fixture.exs

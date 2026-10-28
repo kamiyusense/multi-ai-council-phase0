@@ -1,0 +1,114 @@
+{
+  "added_regression_tests": 28,
+  "cloud_filesystem": {
+    "native_fs_observations": "MOCKED_EXT4_ONLY",
+    "production_native_readiness": "NOT_ESTABLISHED",
+    "system_ancestor_uid": "FIXTURE_INJECTED_CLOUD_ROOT_UID"
+  },
+  "commands": {
+    "diff": "git diff --check",
+    "focused": "python -m unittest automation.command_bus.tests.test_symphony_native_binary_preparation automation.command_bus.tests.test_symphony_sqlite_preparation automation.command_bus.tests.test_symphony_worker_first_preparation automation.command_bus.tests.test_symphony_worker_first_preflight automation.command_bus.tests.test_symphony_sqlite_installation automation.command_bus.tests.test_symphony_g73_host automation.command_bus.tests.test_symphony_subscription_startup_patch automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_production_observer -v",
+    "full": "python -m unittest discover -s automation/command_bus/tests -t . -v",
+    "sealed": "python -m automation.command_bus.scripts.validate_symphony_operator_static",
+    "secret_scan": "gitleaks 8.24.3 dir <isolated changed-files scan> --config <trusted default> --gitleaks-ignore-path <absent> --ignore-gitleaks-allow --redact --no-banner",
+    "syntax": "python -m compileall -q automation/command_bus"
+  },
+  "deferred_decisions": [
+    "exact binary source/provenance/digest and concrete native placement approval",
+    "new SQLite root and original initialization/migration/schema independent seal review",
+    "actual runtime command/storage callbacks, observer/snapshot and OS isolation attachment",
+    "fresh independently signed limited subscription LIVE admission",
+    "effective private repo rules and narrow publication capability"
+  ],
+  "diff_check": "PASS",
+  "evidence_logs": {
+    "compression": "gzip, lossless, mtime=0; original Cloud log retained outside Git",
+    "focused": "focused.txt",
+    "full": "full.txt.gz",
+    "full_raw_sha256": "c1ceffed48e0b5e9539a891c98822804e4745a8074bf60a1d192a6a50079a2a9"
+  },
+  "exact_head_ci": "PENDING_AFTER_COMMIT",
+  "fixes": [
+    "binary native filesystem missing from OFF preparation",
+    "binary inode/parent/metadata replacement with unchanged bytes",
+    "observer event stream mutation during preparation",
+    "unbounded direct binary read replaced with bounded descriptor read including FIFO rejection",
+    "dedicated CI secret scan expanded to every added/modified PR file"
+  ],
+  "github_write": "PENDING_DEVELOPMENT_FF_PUSH",
+  "local_host_evidence": "HISTORICAL_ONLY_NOT_REFRESHED",
+  "mode": "STATIC_MOCK_CLOUD_SANDBOX",
+  "model_live_dispatch": 0,
+  "next_safe_action": "development FF push, independent GitHub bytes/tree readback and exact-head CI; then Local handover A-H",
+  "pr": 398,
+  "prior_failed_attempt": {
+    "cause": "SANDBOX_LOCAL_SOCKET_DENIED",
+    "correction": "explicit permitted networking for existing loopback mock tests; no test skips or production guard changes",
+    "errors": 57,
+    "log_sha256": "98ba003bd266ecf2667bbe2479ff6b18f8539e9e61fa424016fa159c9eda2ac3",
+    "ran": 2983,
+    "skipped": 1
+  },
+  "production_installed": false,
+  "production_seals_created": 0,
+  "production_sender": "OFF",
+  "protocol": "SYMPHONY_WORKER_INSTALLATION_CLOUD_CHECKPOINT_V1",
+  "publication_authority": "UNKNOWN",
+  "real_codex_executions": 0,
+  "runtime_github_publication": 0,
+  "sealed_evidence": {
+    "inventory_sha256": "294c9c7d589f2429f2983c36f3e53e879ec8c7af277b513c9f56dbcfb0b217c4",
+    "preserved_blobs": 619,
+    "selected_unchanged_components": {
+      ".github/workflows/symphony-controller-static.yml": "d3d8b19409f9f45059507b6e6416cbe0b66e59b737ef75a6e2d595d0b81981df",
+      ".github/workflows/symphony-operator-authorize.yml": "74266345f8ad43eaf3446a1bd98324b318dc99a04b7c211a14891d4d37b45a7d",
+      ".github/workflows/symphony-operator-candidate.yml": "558cba654f12d098b164c7dd75e7af0f05cebf21e67f7405fdf9cdf999b2bfba",
+      "automation/command_bus/symphony_production_observer.py": "9ddbb29d867b21e8ac75054b5420e4c2cb003792811c3e3660831a83f0c50bbc",
+      "automation/command_bus/symphony_sqlite_storage.py": "ed319a7f599acfd9ac817e62b9b5809a1f3994ca4602e0585bbfc758ecadbaf3",
+      "automation/command_bus/symphony_subscription_startup.patch": "719d1090bdd996def915ca7469b02d7868b968111027a31c1f970179457fd78c"
+    },
+    "validator": "PASS"
+  },
+  "secret_scan": {
+    "archive_sha256": "9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c",
+    "binary_sha256": "e18325d568268b6efb6cd0cc721f8bea5667f4cd1c8d03618ab61987f41269ad",
+    "candidate_allowlist": false,
+    "github_release_checksums_match": true,
+    "result": "PASS",
+    "scanner": "gitleaks 8.24.3"
+  },
+  "source_head": "0f4a0b530646bd12010056d3df5c753a33605547",
+  "source_tree": "767654ccd18c435882e41cf6c34f2b8eea815c09",
+  "starting_main": "06b1a48c2c2893d582db12127eb70f2476bcd1da",
+  "syntax": "PASS",
+  "target_branch": "codex/symphony-worker-first-preflight-20261013",
+  "tests": {
+    "focused": {
+      "command": "python -m unittest automation.command_bus.tests.test_symphony_native_binary_preparation automation.command_bus.tests.test_symphony_sqlite_preparation automation.command_bus.tests.test_symphony_worker_first_preparation automation.command_bus.tests.test_symphony_worker_first_preflight automation.command_bus.tests.test_symphony_sqlite_installation automation.command_bus.tests.test_symphony_g73_host automation.command_bus.tests.test_symphony_subscription_startup_patch automation.command_bus.tests.test_symphony_g72_runtime automation.command_bus.tests.test_symphony_production_observer -v",
+      "ran": 129,
+      "result": "PASS",
+      "seconds": 1.638,
+      "skipped": 0
+    },
+    "full": {
+      "command": "python -m unittest discover -s automation/command_bus/tests -t . -v",
+      "ran": 2983,
+      "result": "PASS",
+      "seconds": 124.662,
+      "skipped": 1
+    }
+  },
+  "upstream": {
+    "continuation_retry_ms": 1000,
+    "exact_startup_patch_apply_reverse": "PASS",
+    "failure_retry_base_ms": 10000,
+    "fresh_agent_runner_blob": "f99a2d97555e46a84ed4c76b03a9b96fb58a424e",
+    "fresh_orchestrator_blob": "b52e991c08ac14d1d5c1c4e6f63e33c35f35bb8c",
+    "pin": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+    "real_elixir_fake_three_turns": "UNKNOWN_ELIXIR_NOT_INSTALLED_IN_CLOUD",
+    "same_thread_recursion_readback": true,
+    "scheduler_changed": false
+  },
+  "worker_thread_starts": 0,
+  "workflow_yaml_shell_python": "PASS"
+}

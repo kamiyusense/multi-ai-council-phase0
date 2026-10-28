@@ -1,0 +1,261 @@
+{
+  "cases": [
+    {
+      "auth_response_logged": false,
+      "case": "baseline-good",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "mock_turn_starts": 3,
+      "model_live": 0,
+      "output_sha256": "2136cc5c3106191d4f7fdb754d3028f854f795aa7e3625a8f4290673714e05ab",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "good",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "mock_turn_starts": 3,
+      "model_live": 0,
+      "output_sha256": "34144dd73da922ec03fceda15ed2f1ab0de5c02875ff96cca15e6284266c85db",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "explicit",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "mock_turn_starts": 3,
+      "model_live": 0,
+      "output_sha256": "6d5c89c7dc48a55f1767556c9b681695b5d3ac6699c27a39a8ba13b5b27df25c",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "notice",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read",
+        "thread/start",
+        "turn/start",
+        "turn/start",
+        "turn/start"
+      ],
+      "mock_turn_starts": 3,
+      "model_live": 0,
+      "output_sha256": "55b19419f2435b08c40857189db382006d8040bfd01fe26245b51adbd1c504f7",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "api",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "missing",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "no-auth",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "custom",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "paid",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "fallback",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "partial",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "error",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "api-selector",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "metered",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "provider-fallback",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    },
+    {
+      "auth_response_logged": false,
+      "case": "billing",
+      "child_authority_selectors": 0,
+      "methods": [
+        "initialize",
+        "initialized",
+        "account/read",
+        "config/read"
+      ],
+      "mock_turn_starts": 0,
+      "model_live": 0,
+      "output_sha256": "2edbb7f3796169388a1a1ef829b34d39747f453ab845f64f7474a1b9f54441fa",
+      "result": "PASS"
+    }
+  ],
+  "good_case_mock_continuation_delta": 0,
+  "live_model_dispatch": 0,
+  "mode": "REAL_ELIXIR_UPSTREAM_WITH_FAKE_JSONL_ONLY",
+  "original_source_sha256": "40b87a197e96755a5343ffb7f211fb3c68e90b4dcdb7658f62d971f07f7e4e6e",
+  "patch_sha256": "719d1090bdd996def915ca7469b02d7868b968111027a31c1f970179457fd78c",
+  "patched_source_sha256": "bd65321a1ce498a5de38ce626a5225d087bd384e7c064260966c2b1a7b3e11e6",
+  "real_codex_launched": false,
+  "scheduler_code_changed": false,
+  "source_pin": "be10a1b79df723d6d7612b5651c8522704dafb2e"
+}
