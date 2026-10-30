@@ -82,6 +82,27 @@ class PolicyTest(unittest.TestCase):
                      "automation/command_bus/tests/test_claude_only_loop.py"):
             self.assertIsNotNone(cl.path_problem(path, "ADD", POLICY), path)
 
+    def test_loop_cannot_change_test_loading_prompts_lanes_or_safety_docs(self):
+        for path in ("tests/conftest.py", "automation/command_bus/tests/conftest.py", "sitecustomize.py",
+                     "usercustomize.py", "src/extra.pth", "tests/__init__.py", "tests/relay/__init__.py",
+                     "automation/command_bus/tests/__init__.py",
+                     "docs/claude-loop/worker-routine-prompt-v1.txt", "docs/claude-loop/reviewer-routine-prompt-v1.txt",
+                     "docs/claude-loop/README.md", "automation/command_bus/config/lane_catalog_v4.json",
+                     "HANDOVER_CURRENT.md", "docs/ARCHITECTURE.md", "docs/PHASE0_IMPLEMENTATION_SPEC.md",
+                     "docs/PHASE0_IMPLEMENTATION_CHECKLIST.md", "docs/DEVELOPMENT_WORKFLOW.md",
+                     "docs/CHAT_WORK_AUTONOMY_RULES.md", "docs/AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md",
+                     "docs/USER_COPY_TEXT_FORMAT.md", "docs/RELAY_TOWER_DIRECTION_V4.md",
+                     "docs/SYMPHONY_MVP_CHARTER.md"):
+            for op in ("ADD", "MODIFY"):
+                self.assertIsNotNone(cl.path_problem(path, op, POLICY), (path, op))
+        self.assertIsNone(cl.path_problem("src/council/__init__.py", "ADD", POLICY))
+
+    def test_full_suite_is_the_known_green_commands(self):
+        # Both pass on main; a suite that is red on main would block every task.
+        self.assertEqual(POLICY["full_suite"], [
+            "python3 -m unittest discover -s automation/command_bus/tests -t .",
+            "PYTHONPATH=src python3 -m pytest -q -p no:cacheprovider tests"])
+
     def test_invalid_policy_is_refused(self):
         bad = dict(POLICY, branch_prefix="loop-")
         with self.assertRaises(cl.PolicyError):

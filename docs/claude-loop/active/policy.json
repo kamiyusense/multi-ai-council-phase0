@@ -1,5 +1,5 @@
 {
-  "note": "Claude Loop (lane claude-claude-auto) policy. Read by automation/command_bus/claude_only_loop.py and both Routines. The loop never writes this directory. Changing it needs the owner's merge.",
+  "note": "Claude Loop (lane claude-claude-auto) policy. Read by automation/command_bus/claude_only_loop.py and both Routines. The loop never writes docs/claude-loop/. Changing it needs the owner's merge.",
   "profile": "CLAUDE_LOOP_POLICY_V1",
   "repository": "kamiyusense/multi-ai-council-phase0",
   "base_branch": "main",
@@ -18,11 +18,11 @@
   "heartbeat_hours": 24,
   "full_suite": [
     "python3 -m unittest discover -s automation/command_bus/tests -t .",
-    "python3 -m pytest -q tests"
+    "PYTHONPATH=src python3 -m pytest -q -p no:cacheprovider tests"
   ],
   "forbidden": {
     "prefixes": [
-      ".github/", ".claude/", "docs/claude-loop/active/", "docs/claude-jules-loop/active/",
+      ".github/", ".claude/", "docs/claude-loop/", "docs/claude-jules-loop/active/",
       "src/relay/", "src/providers/", "windows/", "fixtures/", "docs/evidence/",
       "automation/command_bus/docker/", "automation/command_bus/probes/", "automation/command_bus/scripts/",
       "automation/command_bus/jules_carrier_current/", "automation/command_bus/receipts/",
@@ -32,11 +32,16 @@
     ],
     "exact": [
       ".mcp.json", "pytest.ini", "setup.cfg", ".gitignore", "AGENTS.md", "CLAUDE.md",
-      "automation/command_bus/config/control_tower_registry.json"
+      "automation/command_bus/config/control_tower_registry.json", "automation/command_bus/config/lane_catalog_v4.json",
+      "HANDOVER_CURRENT.md", "docs/ARCHITECTURE.md", "docs/PHASE0_IMPLEMENTATION_SPEC.md",
+      "docs/PHASE0_IMPLEMENTATION_CHECKLIST.md", "docs/DEVELOPMENT_WORKFLOW.md", "docs/CHAT_WORK_AUTONOMY_RULES.md",
+      "docs/AUTONOMOUS_DEVELOPMENT_LOOP_NORTH_STAR.md", "docs/USER_COPY_TEXT_FORMAT.md",
+      "docs/RELAY_TOWER_DIRECTION_V4.md", "docs/SYMPHONY_MVP_CHARTER.md"
     ],
     "name_globs": [
       "*.cmd", "*.ps1", "*.bat", "requirements*.txt", "package.json", "package-lock.json", "pyproject.toml",
-      "Pipfile*", "Dockerfile*", "*compose*.yaml", "*compose*.yml", "*APPROVAL*", "*ADOPTION*"
+      "Pipfile*", "Dockerfile*", "*compose*.yaml", "*compose*.yml", "*APPROVAL*", "*ADOPTION*",
+      "conftest.py", "sitecustomize.py", "usercustomize.py", "*.pth"
     ],
     "substrings": [
       "claude_jules_", "claude_closed_loop_", "claude_loop", "claude_only_loop", "jules_api", "jules_session", "signal_step7",

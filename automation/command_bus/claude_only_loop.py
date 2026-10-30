@@ -180,8 +180,11 @@ def path_problem(path: str, op: str, policy: dict[str, Any]) -> str | None:
     for needle in forb["substrings"]:
         if needle in path:
             return f"{path}: forbidden area ({needle})"
+    in_tests = path.startswith("tests/") or "/tests/" in path
+    if in_tests and name == "__init__.py":
+        return f"{path}: a test package file can change how existing tests load"
     if op == "MODIFY" and (fnmatch.fnmatchcase(name, "test_*.py") or fnmatch.fnmatchcase(name, "test_*.mjs")
-                           or path.startswith("tests/") or "/tests/" in path):
+                           or in_tests):
         return f"{path}: existing tests are read-only (add a new test file instead)"
     return None
 
