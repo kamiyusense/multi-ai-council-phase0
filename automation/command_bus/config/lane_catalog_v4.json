@@ -24,8 +24,8 @@
     },
     {
       "lane_id": "claude-jules-auto",
-      "display_name_ja": "Claude × Jules（自動・prod-c1）",
-      "v4_status": "ACTIVE",
+      "display_name_ja": "Claude × Jules（自動・prod-c1、2026-10-30 終了）",
+      "v4_status": "FROZEN",
       "registry_row": "claude-jules-auto",
       "detail_ref": "issue:346",
       "state_location": "issue:346",
@@ -43,7 +43,7 @@
     },
     {
       "lane_id": "claude-claude-auto",
-      "display_name_ja": "Claude → Claude",
+      "display_name_ja": "Claude → Claude（Claude Loop、#494、初回の実走待ち）",
       "v4_status": "FROZEN",
       "registry_row": "claude-claude-auto",
       "detail_ref": "issue:33",
