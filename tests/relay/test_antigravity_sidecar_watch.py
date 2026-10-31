@@ -246,6 +246,8 @@ class WatchBoardTest(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in work.iterdir()), ["question.md", "summary.md"])
         self.assertIn(str(work / "summary.md"), runner.calls[0][2])
         self.assertIn("ラウンド2", runner.calls[0][2])
+        self.assertIn(wb.REVIEW_RULES, runner.calls[0][2])
+        self.assertNotIn("答え直してください", runner.calls[0][2])
         self.assertNotIn(str(self.board), runner.calls[0][2])
         answer = work / "answer.md"
         answer.write_text("答え直しです", encoding="utf-8")
@@ -383,6 +385,14 @@ class WatchBoardTest(unittest.TestCase):
         for banned in ("agy_acp_server", "antigravity-acp", ".gemini", "oauth", "token", "GITHUB", "requests",
                        "urllib", "http"):
             self.assertNotIn(banned, source.split('"""', 2)[2], banned)
+
+
+
+class ReviewRulesTests(unittest.TestCase):
+    def test_review_rules_match_the_council_runner(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        from relay import council_run
+        self.assertEqual(wb.REVIEW_RULES, council_run.REVIEW_RULES)
 
 
 if __name__ == "__main__":
