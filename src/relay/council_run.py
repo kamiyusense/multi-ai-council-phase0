@@ -301,7 +301,7 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
     ``attachments`` (from ``load_attachments``) go into Codex's prompt only; Grok and Claude read the folder.
     ``review`` = (round, previous まとめ text, Grok's folder): a peer-review round.  Claude and Codex get the まとめ in
     the prompt; Grok reads only that one file from its own folder (``run_council`` copies it there after the
-    approval), with Read allowed and edits/shell denied.
+    approval), with Read allowed and edits/shell denied.  A review round never has web tools (``REVIEW_NO_WEB``).
     """
     if reference_dir is not None and (not isinstance(reference_dir, str) or not os.path.isabs(reference_dir)):
         raise RunStop("REFERENCE_DIR", "調べるフォルダは絶対パスで指定して")
@@ -309,6 +309,9 @@ def build_calls(plan: CouncilPlan, parent_env: Mapping[str, str], binaries: Mapp
         raise RunStop("ATTACH_NEEDS_REFERENCE", "添付は読むフォルダを指定したときだけ使える")
     if review is not None and (jury or reference_dir is not None):
         raise RunStop("REVIEW_ALONE", "採点ラウンドでは、審査員モードと調べるフォルダは使えない（呼び出し 0 回）")
+    if review is not None and web:
+        # The まとめ is untrusted text and every member can read local files; with web on it could carry them out.
+        raise RunStop("REVIEW_NO_WEB", "採点ラウンドではネット調査は使えない（呼び出し 0 回）")
     prompt = member_prompt(plan.question, reference_dir, web, jury) if review is None else \
         review_prompt(plan.question, review[0], review[1], web)
     calls = []
@@ -682,6 +685,11 @@ def main(argv: list[str] | None = None) -> int:
                 attachments = load_attachments(args.reference_dir, list(dict.fromkeys(args.attach)), named)
         # A jury never searches the web: its answers must come from the question alone.
         web = False if args.jury and not args.web else web_choice(args.web, args.no_web)
+        if args.review:
+            # A review round never searches the web (💜 2026-11-01): the まとめ is untrusted and members can read files.
+            if args.web:
+                raise RunStop("REVIEW_NO_WEB", "採点ラウンドではネット調査は使えない（呼び出し 0 回）")
+            web = False
         review = None
         if args.review:
             if args.board_dir is None or args.round < 2:

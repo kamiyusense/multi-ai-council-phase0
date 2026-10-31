@@ -764,6 +764,43 @@ class ReviewTests(unittest.TestCase):
             runner.assert_not_called()
             self.assertEqual(typed_in.called, asked)
 
+    def test_review_never_has_web_tools(self):
+        """💜 2026-11-01: the まとめ is untrusted and members can read local files, so a review round has no web."""
+        calls = r.build_calls(plan(), ENV, BIN, review=self.review)
+        for c in calls:
+            joined = " ".join(c.argv)
+            for word in ("WebFetch", "WebSearch", "web_search"):
+                if word in joined:
+                    # Claude lists web tools only to deny them.
+                    self.assertEqual(c.ai, "claude")
+                    self.assertNotIn(word, c.argv[c.argv.index("--allowedTools") + 1])
+            self.assertIn("ネットでの調べ物はしないでください。", c.stdin if c.stdin else c.argv[c.argv.index("-p") + 1])
+        with self.assertRaises(r.RunStop) as stop:
+            r.build_calls(plan(), ENV, BIN, None, True, review=self.review)
+        self.assertEqual(stop.exception.code, "REVIEW_NO_WEB")
+
+    def test_main_review_turns_web_off_and_refuses_explicit_web(self):
+        from unittest import mock
+        t = Path(self.tmp.name)
+        (t / "quota.json").write_text(json.dumps({"claude": [True, "QUOTA_OK"]}), encoding="utf-8")
+        base = ["--council-id", CID, "--question-file", str(self.board / "00_お題.md"), "--quota-file",
+                str(t / "quota.json"), "--out", str(self.out), "--board-dir", str(self.board), "--no-antigravity",
+                "--review", "--round", "2"]
+        for extra, web_seen in (([], [False]), (["--web"], [])):
+            seen = []
+            real = r.build_calls
+
+            def spy(*a, **k):
+                seen.append(a[4])
+                return real(*a, **k)
+            with mock.patch.object(r.shutil, "which", return_value="/usr/bin/claude"), \
+                    mock.patch.object(r, "build_calls", side_effect=spy), \
+                    mock.patch.object(r, "subprocess_runner") as runner, mock.patch("builtins.print"), \
+                    mock.patch("builtins.input", return_value="no"):
+                self.assertEqual(r.main(base + extra), 2)
+            runner.assert_not_called()
+            self.assertEqual(seen, web_seen)
+
     def test_default_timeout_is_fifteen_minutes(self):
         self.assertEqual(r.TIMEOUT_SECONDS, 900)
 
