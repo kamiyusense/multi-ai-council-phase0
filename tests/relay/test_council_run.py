@@ -84,6 +84,34 @@ class BuildTests(unittest.TestCase):
         self.assertNotEqual(r.plan_digest(plan(), calls), r.plan_digest(other, r.build_calls(other, ENV, BIN)))
 
 
+class JuryTests(unittest.TestCase):
+    """--jury (grading jury for yokomoji-slayer): the question's own answer format, no web, no folder."""
+
+    def test_jury_prompt_reaches_every_member_without_web_tools(self):
+        calls = {c.ai: c for c in r.build_calls(plan(), ENV, BIN, jury=True)}
+        self.assertEqual(set(calls), {"grok", "claude", "codex"})
+        self.assertIn(r.JURY_PROMPT.strip(), calls["claude"].stdin)
+        self.assertIn(r.JURY_PROMPT.strip(), calls["codex"].stdin)
+        self.assertTrue(any(r.JURY_PROMPT.strip()[:20] in a for a in calls["grok"].argv) or
+                        r.JURY_PROMPT.strip()[:20] in (calls["grok"].stdin or ""))
+        self.assertNotIn("30行以内", calls["claude"].stdin)
+        for call in calls.values():
+            self.assertFalse(any("Web" in a for a in call.argv), call.argv)
+            self.assertIsNone(call.cwd)
+        self.assertEqual(calls["claude"].argv, r.build_calls(plan(), ENV, BIN)[1].argv)
+
+    def test_jury_refuses_web_and_reference_folder(self):
+        with self.assertRaises(r.RunStop) as stop:
+            r.build_calls(plan(), ENV, BIN, None, web=True, jury=True)
+        self.assertEqual(stop.exception.code, "JURY_ALONE")
+        with self.assertRaises(r.RunStop):
+            r.build_calls(plan(), ENV, BIN, "/abs/ref", jury=True)
+
+    def test_jury_changes_the_approval_fingerprint(self):
+        self.assertNotEqual(r.plan_digest(plan(), r.build_calls(plan(), ENV, BIN)),
+                            r.plan_digest(plan(), r.build_calls(plan(), ENV, BIN, jury=True)))
+
+
 class ReferenceDirTests(unittest.TestCase):
     REF = "/home/u/ai-video-research"
 
