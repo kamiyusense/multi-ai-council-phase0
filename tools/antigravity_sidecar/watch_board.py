@@ -34,6 +34,7 @@ Which topics are picked (``go_file``, owner's choice 2026-10-26: one Council app
 Web search (owner, 2026-10-25): on by default under the same research rules the Council members get
 (``src/relay/council_run.py``).  ``"web": false`` in the config, or a ``NO_WEB_ANTIGRAVITY`` file in the board
 folder (the owner can add it from the Drive app), turns it off for the next starts.
+Round 2 and later (scoring the まとめ) never searches the web, whatever the config says.
 
 The process runner is injected, so tests use a fake and never start anything.
 """
@@ -366,7 +367,9 @@ def _start(cfg: Config, state: dict[str, Any], pick: tuple[Path, int, dict[str, 
     # recorded, so the next pass sees the change and read_go refuses it.
     if go and any(go[name] != sent[name] for name in ("question_sha256", "summary_sha256") if name in go):
         return f"{key}:CHANGED_AFTER_APPROVAL"
-    web = web_allowed(cfg)
+    # Round 2+ reads the untrusted まとめ and the agent has broad local tools: never with web (💜 2026-11-01,
+    # same rule as council_run --review).
+    web = web_allowed(cfg) and round_no < 2
     topic: dict[str, Any] = {"folder": folder.name, "round": round_no, "claimed_at": now.isoformat(), "web": web,
                              **(go or {}), **sent}
     state["topics"][key] = topic

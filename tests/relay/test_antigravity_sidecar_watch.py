@@ -249,12 +249,18 @@ class WatchBoardTest(unittest.TestCase):
         self.assertIn(wb.REVIEW_RULES, runner.calls[0][2])
         self.assertNotIn("答え直してください", runner.calls[0][2])
         self.assertNotIn(str(self.board), runner.calls[0][2])
+        # 💜 2026-11-01: round 2 reads the untrusted まとめ, so never with web, even though the config allows it.
+        self.assertTrue(self.cfg(go_file=True).web)
+        self.assertIn("Web 検索もしない。", runner.calls[0][2])
+        self.assertNotIn(wb.RESEARCH_RULES, runner.calls[0][2])
+        self.assertFalse(self.state()["topics"][key]["web"])
         answer = work / "answer.md"
         answer.write_text("答え直しです", encoding="utf-8")
         _age(answer, 120)
         wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW + timedelta(minutes=5))
         body = (folder / "r2_Gemini.md").read_text(encoding="utf-8")
         self.assertIn("ラウンド: R2", body)
+        self.assertIn("ネット検索: なし", body)
         self.assertEqual(len(runner.calls), 1)
 
     def test_claim_is_saved_before_agentapi_is_called(self):
