@@ -160,7 +160,8 @@ class ReferenceDirTests(unittest.TestCase):
         self.assertIn('web_search="live"', on["codex"].argv)
         self.assertIn("read-only", on["codex"].argv)
         self.assertIn("一次資料", on["claude"].stdin)
-        self.assertIn("30行以内", on["claude"].stdin)
+        self.assertIn("長さの上限はありません", on["claude"].stdin)
+        self.assertNotIn("30行以内", on["claude"].stdin)
         off = {c.ai: c for c in r.build_calls(plan(), ENV, BIN)}
         self.assertNotIn("--allowedTools", off["claude"].argv)
         self.assertNotIn("WebSearch", off["grok"].argv)
@@ -675,6 +676,133 @@ class MainTests(unittest.TestCase):
                 shown = typed_in.call_args.args[0]
                 self.assertEqual(len(re.findall(r"APPROVE_COUNCIL \S+ [0-9a-f]{12}\n", shown)), 1)
                 self.assertEqual("A か B の1文字" in shown, keys)
+
+
+class ReviewTests(unittest.TestCase):
+    """Round 2+ peer review (owner, 2026-10-31): rank the anonymised answers, never rewrite."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        t = Path(self.tmp.name)
+        self.out, self.board = t / "state", t / "board"
+        self.board.mkdir()
+        (self.board / "00_お題.md").write_text("A と B どっち？", encoding="utf-8")
+        self.summary = "まとめ\n\nA：甲の答え\nB：乙の答え\nC：丙の答え"
+        (self.board / "まとめ_r1.md").write_text(self.summary, encoding="utf-8")
+        self.folder = str((self.out / CID / r.REVIEW_FOLDER).resolve())
+        self.review = (2, self.summary, self.folder)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_review_prompts_carry_the_rules_and_grok_reads_only_its_folder(self):
+        calls = {c.ai: c for c in r.build_calls(plan(), ENV, BIN, review=self.review)}
+        for ai in ("claude", "codex"):
+            self.assertIn(r.REVIEW_RULES, calls[ai].stdin)
+            self.assertIn("丙の答え", calls[ai].stdin)
+            self.assertIn("A と B どっち？", calls[ai].stdin)
+            self.assertIn("順位: B > A > C", calls[ai].stdin)
+        grok = calls["grok"].argv
+        prompt = grok[grok.index("-p") + 1]
+        self.assertIn(r.REVIEW_RULES, prompt)
+        self.assertNotIn("丙の答え", prompt)
+        self.assertEqual(grok[grok.index("--cwd") + 1], self.folder)
+        self.assertEqual(grok[grok.index("Read") - 1], "--allow")
+        for tool in ("Grep", "Edit", "Bash"):
+            self.assertEqual(grok[grok.index(tool) - 1], "--deny")
+        self.assertEqual(calls["grok"].cwd, self.folder)
+        with self.assertRaises(r.RunStop):
+            r.build_calls(plan(), ENV, BIN, review=self.review, jury=True)
+        with self.assertRaises(r.RunStop):
+            r.build_calls(plan(), ENV, BIN, "/abs/ref", review=self.review)
+
+    def test_the_phrase_covers_review_mode_and_the_summary_text(self):
+        normal = r.build_calls(plan(), ENV, BIN)
+        review = r.build_calls(plan(), ENV, BIN, review=self.review)
+        changed = r.build_calls(plan(), ENV, BIN, review=(2, self.summary + "!", self.folder))
+        digests = {r.plan_digest(plan(), normal), r.plan_digest(plan(), review, None, self.summary),
+                   r.plan_digest(plan(), changed, None, self.summary + "!")}
+        self.assertEqual(len(digests), 3)
+
+    def test_grok_gets_the_approved_text_after_the_approval_and_the_receipt_says_review(self):
+        seen = []
+
+        def runner(argv, env, stdin, timeout, cwd=None):
+            if cwd == self.folder:
+                seen.append(sorted(p.name for p in Path(cwd).iterdir()))
+            return 0, "採点\n順位: B > A > C"
+        calls = r.build_calls(plan(), ENV, BIN, review=self.review)
+        (self.board / "まとめ_r1.md").write_text("後から変えた", encoding="utf-8")
+        receipt = r.run_council(plan(), calls, out_dir=self.out, runner=runner, confirm=typed,
+                                board_dir=self.board, round_no=2, antigravity=False, review=self.review)
+        self.assertEqual(seen, [["まとめ_r1.md"]])
+        self.assertEqual((Path(self.folder) / "まとめ_r1.md").read_text("utf-8"), self.summary)
+        self.assertEqual(receipt["mode"], "review")
+        self.assertTrue((self.board / "r2_Claude.md").exists())
+
+    def test_review_needs_a_board_and_round_two(self):
+        calls = r.build_calls(plan(), ENV, BIN, review=self.review)
+        for kwargs in ({"board_dir": None, "round_no": 2}, {"board_dir": self.board, "round_no": 1}):
+            runner = FakeRunner()
+            with self.assertRaises(r.RunStop):
+                r.run_council(plan(), calls, out_dir=self.out, runner=runner, confirm=typed, antigravity=False,
+                              review=self.review, **kwargs)
+            self.assertEqual(runner.calls, [])
+
+    def test_main_review_reads_the_board_summary_and_stops_without_it(self):
+        from unittest import mock
+        t = Path(self.tmp.name)
+        (t / "quota.json").write_text(json.dumps({"claude": [True, "QUOTA_OK"]}), encoding="utf-8")
+        base = ["--council-id", CID, "--question-file", str(self.board / "00_お題.md"), "--quota-file",
+                str(t / "quota.json"), "--out", str(self.out), "--board-dir", str(self.board), "--no-antigravity",
+                "--review"]
+        for extra, asked in ((["--round", "2"], True), (["--round", "1"], False), (["--round", "3"], False)):
+            with mock.patch.object(r.shutil, "which", return_value="/usr/bin/claude"), \
+                    mock.patch.object(r, "subprocess_runner") as runner, mock.patch("builtins.print"), \
+                    mock.patch("builtins.input", return_value="no") as typed_in:
+                self.assertEqual(r.main(base + extra), 2)
+            runner.assert_not_called()
+            self.assertEqual(typed_in.called, asked)
+
+    def test_review_never_has_web_tools(self):
+        """💜 2026-11-01: the まとめ is untrusted and members can read local files, so a review round has no web."""
+        calls = r.build_calls(plan(), ENV, BIN, review=self.review)
+        for c in calls:
+            joined = " ".join(c.argv)
+            for word in ("WebFetch", "WebSearch", "web_search"):
+                if word in joined:
+                    # Claude lists web tools only to deny them.
+                    self.assertEqual(c.ai, "claude")
+                    self.assertNotIn(word, c.argv[c.argv.index("--allowedTools") + 1])
+            self.assertIn("ネットでの調べ物はしないでください。", c.stdin if c.stdin else c.argv[c.argv.index("-p") + 1])
+        with self.assertRaises(r.RunStop) as stop:
+            r.build_calls(plan(), ENV, BIN, None, True, review=self.review)
+        self.assertEqual(stop.exception.code, "REVIEW_NO_WEB")
+
+    def test_main_review_turns_web_off_and_refuses_explicit_web(self):
+        from unittest import mock
+        t = Path(self.tmp.name)
+        (t / "quota.json").write_text(json.dumps({"claude": [True, "QUOTA_OK"]}), encoding="utf-8")
+        base = ["--council-id", CID, "--question-file", str(self.board / "00_お題.md"), "--quota-file",
+                str(t / "quota.json"), "--out", str(self.out), "--board-dir", str(self.board), "--no-antigravity",
+                "--review", "--round", "2"]
+        for extra, web_seen in (([], [False]), (["--web"], [])):
+            seen = []
+            real = r.build_calls
+
+            def spy(*a, **k):
+                seen.append(a[4])
+                return real(*a, **k)
+            with mock.patch.object(r.shutil, "which", return_value="/usr/bin/claude"), \
+                    mock.patch.object(r, "build_calls", side_effect=spy), \
+                    mock.patch.object(r, "subprocess_runner") as runner, mock.patch("builtins.print"), \
+                    mock.patch("builtins.input", return_value="no"):
+                self.assertEqual(r.main(base + extra), 2)
+            runner.assert_not_called()
+            self.assertEqual(seen, web_seen)
+
+    def test_default_timeout_is_fifteen_minutes(self):
+        self.assertEqual(r.TIMEOUT_SECONDS, 900)
 
 
 if __name__ == "__main__":

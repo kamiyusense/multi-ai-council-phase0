@@ -246,13 +246,21 @@ class WatchBoardTest(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in work.iterdir()), ["question.md", "summary.md"])
         self.assertIn(str(work / "summary.md"), runner.calls[0][2])
         self.assertIn("ラウンド2", runner.calls[0][2])
+        self.assertIn(wb.REVIEW_RULES, runner.calls[0][2])
+        self.assertNotIn("答え直してください", runner.calls[0][2])
         self.assertNotIn(str(self.board), runner.calls[0][2])
+        # 💜 2026-11-01: round 2 reads the untrusted まとめ, so never with web, even though the config allows it.
+        self.assertTrue(self.cfg(go_file=True).web)
+        self.assertIn("Web 検索もしない。", runner.calls[0][2])
+        self.assertNotIn(wb.RESEARCH_RULES, runner.calls[0][2])
+        self.assertFalse(self.state()["topics"][key]["web"])
         answer = work / "answer.md"
         answer.write_text("答え直しです", encoding="utf-8")
         _age(answer, 120)
         wb.watch_once(self.cfg(go_file=True), runner=runner, now=NOW + timedelta(minutes=5))
         body = (folder / "r2_Gemini.md").read_text(encoding="utf-8")
         self.assertIn("ラウンド: R2", body)
+        self.assertIn("ネット検索: なし", body)
         self.assertEqual(len(runner.calls), 1)
 
     def test_claim_is_saved_before_agentapi_is_called(self):
@@ -383,6 +391,14 @@ class WatchBoardTest(unittest.TestCase):
         for banned in ("agy_acp_server", "antigravity-acp", ".gemini", "oauth", "token", "GITHUB", "requests",
                        "urllib", "http"):
             self.assertNotIn(banned, source.split('"""', 2)[2], banned)
+
+
+
+class ReviewRulesTests(unittest.TestCase):
+    def test_review_rules_match_the_council_runner(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        from relay import council_run
+        self.assertEqual(wb.REVIEW_RULES, council_run.REVIEW_RULES)
 
 
 if __name__ == "__main__":
