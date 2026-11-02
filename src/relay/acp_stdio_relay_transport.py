@@ -18,9 +18,15 @@ Two launch modes, both STATIC:
 * ``OfficialAdapterLaunch``: an official adapter whose backend is replaced, through
   the adapter's own documented option, by the Relay one-generation gate wrapping a
   repository fixture. Only
-  providers with a verified seam are accepted (openai: ``CODEX_PATH``). Others
-  fail closed as UNKNOWN / LIVE_BOUNDARY. The adapter process is started; no
-  provider/model backend can be reached because the backend is the fixture.
+  providers with a verified seam are accepted (openai: ``CODEX_PATH``; anthropic:
+  ``CLAUDE_CODE_EXECUTABLE``, see below). Others fail closed as UNKNOWN /
+  LIVE_BOUNDARY. The adapter process is started; no provider/model backend can be
+  reached because the backend is the fixture.
+
+  anthropic (Path B) has no fixture variant: its seam is the Relay container
+  launcher, which always talks to Docker, so the launch is accepted only with a
+  consumed Claude one-shot approval (``claude_live_state``) that the launcher
+  itself re-checks from the same state directory and hash.
 """
 
 from __future__ import annotations
@@ -30,7 +36,7 @@ import json
 import os
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +52,7 @@ from .acp_client import (
     acp_mock_text_to_phase0_raw,
 )
 from .acp_stdio_transport import spawn_stdio_transport
+from .claude_live_state import verify_claude_live_authorization
 from .m9_live_state import LiveAuthorization, verify_live_authorization
 from .transport import AdmissionRefused, RouteViolationCancelled
 
@@ -62,12 +69,21 @@ LIVE_ADAPTER_MARKERS = (
 
 # provider_id -> env key through which the official adapter accepts a replacement backend
 # (here: the one-generation gate, which wraps the real/fixture backend).
-_VERIFIED_BACKEND_SEAMS = {"openai": "CODEX_PATH"}
+_VERIFIED_BACKEND_SEAMS = {"openai": "CODEX_PATH", "anthropic": "CLAUDE_CODE_EXECUTABLE"}
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+# anthropic: the only executable the adapter may run as "claude", and the files it mounts into the container.
+_CLAUDE_LAUNCHER = Path(__file__).with_name("claude_container_launcher.py").resolve()
+_CLAUDE_RUNTIME_DIR = _REPO_ROOT / "automation" / "command_bus" / "docker" / "claude-runtime"
+_CLAUDE_LAUNCH_FILES = {
+    "RELAY_CLAUDE_ENTRYPOINT_HOST_PATH": (_CLAUDE_RUNTIME_DIR / "claude_adapter_entrypoint.mjs").resolve(),
+    "RELAY_CLAUDE_SECCOMP_HOST_PATH": (_CLAUDE_RUNTIME_DIR / "claude-bwrap-seccomp-amd64.json").resolve(),
+}
 
 # Credential / route variables that must not reach an adapter in STATIC mode.
 _FORBIDDEN_ENV = frozenset({
     "OPENAI_API_KEY", "CODEX_API_KEY", "MODEL_PROVIDER", "CODEX_CONFIG", "DEFAULT_AUTH_REQUEST",
-    "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_OAUTH_TOKEN",
 })
 
 _DEFAULT_TIMEOUT_SECONDS = 5
@@ -112,6 +128,9 @@ def _validate_official_launch(launch: OfficialAdapterLaunch, profile: ProviderSt
     forbidden = _FORBIDDEN_ENV.intersection(launch.env)
     if forbidden:
         raise ValueError(f"credential/route env not allowed in STATIC mode: {sorted(forbidden)}")
+    if profile.provider_id == "anthropic":
+        _validate_claude_container_launch(launch, seam)
+        return
     # codex-acp may start a second (title-generation) turn on its own. The outer
     # one-generation gate must therefore sit between the adapter and its backend.
     gates = {
@@ -137,6 +156,27 @@ def _validate_official_launch(launch: OfficialAdapterLaunch, profile: ProviderSt
         raise ValueError("RELAY_GATE_BACKEND must not be the gate itself")
 
 
+def _validate_claude_container_launch(launch: OfficialAdapterLaunch, seam: str) -> None:
+    """Path B: the adapter may only run the Relay launcher, bound to one consumed Claude approval."""
+    if not launch.env.get(seam) or Path(launch.env[seam]).resolve() != _CLAUDE_LAUNCHER:
+        raise ValueError(f"{seam} must be the Relay container launcher (claude_container_launcher.py)")
+    if "RELAY_GATE_BACKEND" in launch.env:
+        raise ValueError("RELAY_GATE_BACKEND is the Codex gate setting; not allowed for anthropic")
+    for key, expected in _CLAUDE_LAUNCH_FILES.items():
+        value = launch.env.get(key)
+        if not value or Path(value).resolve() != expected or not expected.is_file():
+            raise ValueError(f"{key} must be the repository file {expected.name}")
+    auth = launch.live_authorization
+    verify_claude_live_authorization(auth, "anthropic")
+    # The launcher re-verifies from its own environment; it must see exactly this approval.
+    if launch.env.get("RELAY_CLAUDE_STATE_DIR") is None or (
+        Path(launch.env["RELAY_CLAUDE_STATE_DIR"]).resolve() != Path(auth.state_dir).resolve()
+    ):
+        raise ValueError("RELAY_CLAUDE_STATE_DIR must be the live authorization's state directory")
+    if launch.env.get("RELAY_CLAUDE_APPROVAL_SHA256") != auth.approval_sha256:
+        raise ValueError("RELAY_CLAUDE_APPROVAL_SHA256 must be the live authorization's approval hash")
+
+
 class AcpStdioStaticTransport:
     """RelayTransport-compatible; one ACP stdio child per transport instance."""
 
@@ -157,6 +197,8 @@ class AcpStdioStaticTransport:
         if (command is None) == (official is None):
             raise ValueError("provide exactly one of command or official")
         if official is not None:
+            # Snapshot the env first so the validated values are exactly the ones the child gets.
+            official = replace(official, env=dict(official.env))
             _validate_official_launch(official, profile)
             self.command, self._env = official.command, dict(official.env)
             self._live = official.live_authorization is not None

@@ -212,11 +212,15 @@ class TestOfficialAdapterLaunchGuards(unittest.TestCase):
     def test_openai_official_launch_accepted_with_fixture_backend(self):
         AcpStdioStaticTransport(PROFILES["openai"](), official=self._launch("openai"))
 
-    def test_claude_and_antigravity_have_no_verified_seam(self):
-        for pid, cmd in (("anthropic", ("node", "claude-agent-acp/dist/index.js")), ("google", ("./agy_acp_server.par",))):
-            with self.subTest(pid):
-                with self.assertRaisesRegex(ValueError, "UNKNOWN / LIVE_BOUNDARY"):
-                    AcpStdioStaticTransport(PROFILES[pid](), official=self._launch(pid, command=cmd))
+    def test_antigravity_has_no_verified_seam(self):
+        with self.assertRaisesRegex(ValueError, "UNKNOWN / LIVE_BOUNDARY"):
+            AcpStdioStaticTransport(PROFILES["google"](), official=self._launch("google", command=("./agy_acp_server.par",)))
+
+    def test_claude_codex_style_launch_is_refused(self):
+        # anthropic has a seam now, but only the container launcher; the Codex gate env is refused.
+        with self.assertRaisesRegex(ValueError, "CLAUDE_CODE_EXECUTABLE"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(
+                "anthropic", command=("node", "claude-agent-acp/dist/index.js")))
 
     def test_backend_outside_fixture_root_or_credentials_refused(self):
         with self.assertRaises(ValueError):
@@ -235,6 +239,102 @@ class TestOfficialAdapterLaunchGuards(unittest.TestCase):
             AcpStdioStaticTransport(PROFILES["openai"](), ("python",), official=self._launch("openai"))
         with self.assertRaises(ValueError):
             AcpStdioStaticTransport(PROFILES["openai"]())
+
+
+class TestClaudeContainerSeam(unittest.TestCase):
+    """Path B seam: STATIC validation only (the transport is constructed, never initialized; no process runs)."""
+
+    def setUp(self):
+        import json
+        import shutil
+        import uuid
+        from pathlib import Path
+        from relay import claude_live_state as st
+        from relay import m9_live_state as m9
+        self.st = st
+        self.tmp = Path(tempfile.mkdtemp(prefix="claude seam "))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        approval = st.build_approval(str(uuid.uuid4()))
+        (self.tmp / st.APPROVAL_FILE).write_text(json.dumps(approval), encoding="utf-8")
+        self.sha = approval["approval_sha256"]
+        self.assertTrue(m9.write_exclusive(self.tmp / st.CONSUMED_FILE, {"approval_sha256": self.sha}))
+        repo = Path(__file__).resolve().parents[2]
+        runtime = repo / "automation" / "command_bus" / "docker" / "claude-runtime"
+        self.env = {
+            "CLAUDE_CODE_EXECUTABLE": str(repo / "src" / "relay" / "claude_container_launcher.py"),
+            "RELAY_CLAUDE_STATE_DIR": str(self.tmp),
+            "RELAY_CLAUDE_APPROVAL_SHA256": self.sha,
+            "RELAY_CLAUDE_ENTRYPOINT_HOST_PATH": str(runtime / "claude_adapter_entrypoint.mjs"),
+            "RELAY_CLAUDE_SECCOMP_HOST_PATH": str(runtime / "claude-bwrap-seccomp-amd64.json"),
+        }
+        self.root = repo / "fixtures" / "relay"
+
+    def _launch(self, env=None, drop=(), auth="default", command=("node", "x/claude-agent-acp/dist/index.js")):
+        from relay.acp_stdio_relay_transport import OfficialAdapterLaunch
+        merged = {k: v for k, v in {**self.env, **(env or {})}.items() if k not in drop}
+        if auth == "default":
+            auth = self.st.LiveAuthorization(self.tmp, self.sha)
+        return OfficialAdapterLaunch(command, merged, self.root, auth)
+
+    def test_consumed_approval_and_launcher_accepted_as_live(self):
+        t = AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch())
+        self.assertTrue(t.live)
+        self.assertEqual(t.spawn_count, 0)
+
+    def test_executable_must_be_the_launcher(self):
+        for value in ("claude", "/usr/bin/claude", __file__, self.env["RELAY_CLAUDE_ENTRYPOINT_HOST_PATH"]):
+            with self.subTest(value):
+                with self.assertRaisesRegex(ValueError, "container launcher"):
+                    AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch({"CLAUDE_CODE_EXECUTABLE": value}))
+        with self.assertRaisesRegex(ValueError, "container launcher"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(drop=("CLAUDE_CODE_EXECUTABLE",)))
+
+    def test_mounted_files_must_be_the_repository_files(self):
+        for key in ("RELAY_CLAUDE_ENTRYPOINT_HOST_PATH", "RELAY_CLAUDE_SECCOMP_HOST_PATH"):
+            with self.subTest(key):
+                with self.assertRaisesRegex(ValueError, key):
+                    AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch({key: __file__}))
+                with self.assertRaisesRegex(ValueError, key):
+                    AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(drop=(key,)))
+
+    def test_launcher_env_must_match_the_authorization(self):
+        other = tempfile.mkdtemp(prefix="claude other ")
+        self.addCleanup(os.rmdir, other)
+        cases = ({"RELAY_CLAUDE_STATE_DIR": other}, {"RELAY_CLAUDE_APPROVAL_SHA256": "0" * 64})
+        for env in cases:
+            with self.subTest(env):
+                with self.assertRaises(ValueError):
+                    AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(env))
+        for key in ("RELAY_CLAUDE_STATE_DIR", "RELAY_CLAUDE_APPROVAL_SHA256"):
+            with self.subTest(drop=key):
+                with self.assertRaisesRegex(ValueError, key):
+                    AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(drop=(key,)))
+
+    def test_no_fixture_mode_unconsumed_or_finished_approval_refused(self):
+        with self.assertRaisesRegex(ValueError, "LiveAuthorization"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(auth=None))
+        (self.tmp / self.st.TERMINAL_FILE).write_text("{}", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "terminal receipt"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch())
+        (self.tmp / self.st.TERMINAL_FILE).unlink()
+        (self.tmp / self.st.CONSUMED_FILE).unlink()
+        with self.assertRaisesRegex(ValueError, "APPROVAL_PROVENANCE_NOT_VERIFIED"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch())
+
+    def test_wrong_approval_hash_refused(self):
+        from relay.m9_live_state import LiveAuthorization
+        with self.assertRaises(ValueError):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(auth=LiveAuthorization(self.tmp, "0" * 64)))
+
+    def test_credentials_gate_backend_and_wrong_adapter_refused(self):
+        for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_OAUTH_TOKEN"):
+            with self.subTest(key):
+                with self.assertRaisesRegex(ValueError, "credential/route env"):
+                    AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch({key: "x"}))
+        with self.assertRaisesRegex(ValueError, "RELAY_GATE_BACKEND"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch({"RELAY_GATE_BACKEND": __file__}))
+        with self.assertRaisesRegex(ValueError, "official adapter"):
+            AcpStdioStaticTransport(PROFILES["anthropic"](), official=self._launch(command=("node", "x/codex-acp/dist/index.js")))
 
 
 class TestLiveLaunchRefused(unittest.TestCase):
