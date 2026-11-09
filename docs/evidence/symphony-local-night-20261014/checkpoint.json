@@ -1,0 +1,73 @@
+{
+  "actual_binary_acquisition_this_batch": false,
+  "actual_observer_snapshot_attachment": false,
+  "actual_runtime_callback_installation": false,
+  "binary_candidate_archive_sha256": "e537d5467761567f355f515187a6258c0e4c9d4039fbd23b7cff8c4048f2cdd1",
+  "binary_candidate_release": "rust-v0.162.0-alpha.17.2",
+  "binary_candidate_selected": false,
+  "checks": {
+    "compile": {
+      "exit": 0,
+      "result": "PASS"
+    },
+    "diff": {
+      "exit": 0,
+      "result": "PASS"
+    },
+    "sealed": {
+      "exit": 0,
+      "result": "PASS"
+    },
+    "workflow": {
+      "exit": 0,
+      "result": "PASS"
+    }
+  },
+  "development_branch": "codex/symphony-worker-first-preflight-20261013",
+  "development_push": "PENDING_AFTER_SECRETS_SCAN",
+  "development_state": "WORKER_FIRST_STATIC_READY",
+  "exact_head_ci": "PENDING_CONTAINING_COMMIT_ACTIONS_READBACK",
+  "existing_binary_filesystem": "v9fs",
+  "existing_binary_mode": "0777",
+  "existing_binary_sha256": "73b73b048546993298234a295de01ef2424e7a8b29def9d0ecb1ca7cb77500d4",
+  "first_failed_gate": "sealed fixture bytes changed; restored original; failure log retained",
+  "historical_evidence_blobs_preserved": 623,
+  "installation": "INSTALLATION_APPROVAL_REQUIRED",
+  "installation_review": "docs/SYMPHONY_LOCAL_NIGHT_INSTALLATION_REVIEW.md",
+  "latest_main_readback_before_commit": "1e24510c71c50553868104fc7a8ad2f6d6e09832",
+  "live": "LIVE_NO_GO",
+  "local_worktree": "dedicated native WSL development tree; original clean/dirty trees preserved",
+  "main_readback": "b6764a9eb5ef593aec58e321b8fd39d81adde951",
+  "main_writes": 0,
+  "merges": 0,
+  "model_live_dispatch": 0,
+  "next_safe_action": "review concrete native acquisition/placement first, then isolated SQLite schema/seal, runtime/isolation installation, separately permitted same-process diagnostic",
+  "oidc_issued": 0,
+  "one_writer": "dedicated local branch; target PR HEAD unchanged at precommit readback",
+  "optional_sqlite_families": "UNREVIEWED_BLOCKED",
+  "os_isolation": "PASS_EXISTING_DOCKER_DISPOSABLE_FIXTURE_ONLY_NOT_INSTALLED",
+  "production_native_binary_placement": false,
+  "production_seal": false,
+  "production_sender": "OFF",
+  "production_sqlite_initialization": false,
+  "protocol": "SYMPHONY_LOCAL_NIGHT_DEVELOPMENT_CHECKPOINT_20261014_V1",
+  "real_codex_executions": 0,
+  "real_elixir_callback_connection": "PASS_FAKE_ONLY_WITH_SYNTHETIC_BINARY_QUALIFICATION",
+  "real_elixir_startup_cases": 16,
+  "repository": "kamiyusense/multi-ai-council-phase0",
+  "request_sha256": "d3720ac950fc8696a2f87dc1ff543adbdec0ed72f0abb7e35903ea52410b7661",
+  "runtime_github_writes": 0,
+  "secret_scan": "PASS_EXISTING_PINNED_OFFLINE_IMAGE",
+  "secrets_saved": false,
+  "settings_permissions_billing_changes": 0,
+  "source_head": "ba250f12a83d5c4e48c6b2d1ec6b7d45038d9adf",
+  "subscription_readback": "NOT_RUN_NEW_APP_SERVER_NOT_AUTHORIZED",
+  "tests": {
+    "focused": 149,
+    "focused_skipped": 0,
+    "full": 3003,
+    "full_skipped": 1
+  },
+  "timestamp": "2026-10-14 14:30:56 UTC",
+  "worker_first_local_ready": "NOT_ESTABLISHED"
+}

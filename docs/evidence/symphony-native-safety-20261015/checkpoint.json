@@ -1,0 +1,54 @@
+{
+  "actual_executable_sha256": "UNKNOWN_NOT_ACQUIRED",
+  "archive_sha256": "86f268d81b898f3e144c5ecff2ad2fda2c5802e042d6195b72538fe0fa125057",
+  "auth_config_db_changes": 0,
+  "candidate_version": "0.162.1",
+  "ci_at_commit": "NOT_YET_STARTED_REMOTE_EXACT_HEAD_REQUIRED",
+  "failure_policy": "PRESERVE_0600_NO_RETRY_OVERWRITE_DELETE; FAILED_REVOCATION_QUARANTINE_UNKNOWN; POST_GRANT_HARD_KILL_GET_ONLY",
+  "final_head": "IDENTIFIED_BY_CONTAINING_COMMIT_AND_REMOTE_READBACK",
+  "live": "NO_GO",
+  "local_evidence_root": "/home/yuuki/symphony-native-safety-20261015-review",
+  "logs_sha256": {
+    "focused.txt": "a8d12936ba68e46460e9911a6f3ca87c3c5a7f24ed2f68ec42da34be768f8112",
+    "full.txt": "645ced18f1ef81f7dc7cd3af7b6171216890a4a546ae10a545bee13db7ed52f1"
+  },
+  "main_readback": "9a449794dd2c98cd195d085b84902afcc1128b04",
+  "mode": "STATIC_SYNTHETIC_FIXTURE_ONLY",
+  "model_dispatch": 0,
+  "placement_tests": {
+    "ran": 27,
+    "skipped": 0
+  },
+  "preservation": {
+    "historical_docs_evidence_blobs": 584,
+    "unrelated_tracked_blobs": 2266
+  },
+  "production_callback_installations": 0,
+  "protocol": "SYMPHONY_NATIVE_PLACEMENT_SAFETY_20261015_V1",
+  "real_codex_acquisitions": 0,
+  "real_codex_executions": 0,
+  "real_codex_placements": 0,
+  "real_sigstore_verification": "UNKNOWN_NOT_EXECUTED",
+  "same_uid_os_exclusion": "REQUIRED_NOT_INSTALLED_OR_PROVEN",
+  "signature_callback": "TRUSTED_SEAM_ONLY_UNINSTALLED_SYNTHETIC_RECEIPTS_IN_TESTS",
+  "source_base": "65e8f2a7b13dbce467bbcb76491a9f60b786f892",
+  "source_sha256": {
+    "automation/command_bus/symphony_native_binary_installation.py": "9c402bc4b0f68213cdeabe62138ae1f378b97997d2fee5c2565239c6c629bcd3",
+    "automation/command_bus/tests/test_symphony_native_binary_installation.py": "99c447d4879fad313bd9c8ad2867d9335dcc6983b1303d69a073b2ea5c0a288d",
+    "docs/SYMPHONY_LOCAL_NIGHT_INSTALLATION_REVIEW.md": "6785c1d644ca85092e949bd3676394cdc7cc229ba76f9531ffcef6b282b2f1ab"
+  },
+  "sqlite_initializations_or_seals": 0,
+  "test_totals": {
+    "focused": 169,
+    "focused_skipped": 1,
+    "full": 3023,
+    "full_skipped": 2
+  },
+  "validation": {
+    "diff_check": "PASS",
+    "original_sealed_evidence": "PASS",
+    "production_workflows": "UNCHANGED_HARD_OFF",
+    "syntax": "PASS"
+  },
+  "worker_first_local_ready": "NOT_ESTABLISHED"
+}

@@ -1,0 +1,15 @@
+{
+  "actual_worker_runtime_installed": false,
+  "caps_dropped": true,
+  "exit_code": 0,
+  "host_operator_auth_roots_mounted": false,
+  "image": "ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+  "model_dispatch": 0,
+  "network": "none",
+  "production_secrets_used": false,
+  "protocol": "SYMPHONY_EXISTING_DOCKER_OS_FIXTURE_V1",
+  "root_readonly": true,
+  "same_host_uid": 1000,
+  "stderr": "/bin/sh: can't create /source/value: Read-only file system\n/bin/sh: can't create /outside: Read-only file system\n",
+  "stdout": "OS_FIXTURE_ISOLATION_PASS"
+}
