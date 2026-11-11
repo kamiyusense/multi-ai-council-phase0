@@ -53,7 +53,7 @@ UNKNOWN判定と人間のMerge境界を維持する。FAIL後は安全な小修�
 - Work交換・故障・再作成は同索引からChatGPT support manualを先に読む。
   PR番号・generation・SHA・automation IDをユーザーの記憶に依存させない。
 - Windows/WSL/Docker/ローカル認証情報などPC固有資源が必要な場合:
-  Green laneを使用せず、GitHub側で可能な確認後、ユーザーがそのまま貼れる
+  Cloud Workのどの色laneも使用せず、GitHub側で可能な確認後、ユーザーがそのまま貼れる
   完全なLocal Work用指示文を
   「## **🔵【以下をLocal Workへそのまま貼り付けてください】**」
   の見出しと1つのコードブロックで渡す。ChatからLocal Workへ勝手にhandoffしない。
