@@ -1,0 +1,6 @@
+git apply --check on the temporary stack (#237+#4+#203+#217 5d17df1):
+  pr217-blue-e2e-carrier-contract.patch        : applies clean (but needs #220's claude_loop.numbered_command_id at import time)
+  pr217-blue-reconcile-single-trigger.patch    : applies clean
+  pr220-claude-loop-profile-import.patch       : applies clean onto #220 044389e side of the conflict resolution; fails before #220 is merged (expected)
+Without the e2e patch: ValueError request keys mismatch missing=['work_branch'] extra=['origin_correlation_id','origin_generation','origin_loop_id','origin_round']
+With the e2e patch but before #220: ImportError cannot import name 'numbered_command_id' from automation.command_bus.claude_loop

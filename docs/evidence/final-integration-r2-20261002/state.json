@@ -1,0 +1,9 @@
+{
+ "read_at": "2026-10-02T09:13Z",
+ "heads": {"main":"ed19f7f","carrier":"7c83ae9","pr237":"aa7f686","pr238_before":"40fc47b","pr4":"f6072c1","pr203":"66d3665","pr217":"5d17df1","pr217_previous":"9d2a230","signal_canonical":"900ab2c","pr236":"776d877","pr239":"f0f3a0a","pr220":"044389e","cloud_work":{"165":"62ab55d","166":"c94de42","167":"5f9e210","171":"cd16ceb"},"autoloop_data":"1690182"},
+ "live_budget": {"loop_a_used":4,"loop_a_cap":10,"blue":"10/10 consumed per Blue docs (PR217 body 9/10 is historical)","new_live_this_batch":0},
+ "stack": {"order_A_tree":"0fef0164b5","order_B_tree":"0fef0164b5","order_A_head":"37668b4","conflicts":{"237->4":"docs/JULES_TASK_PROMPT_SPEC.md (add/add, take main)","220->main":"claude_loop.py, test_claude_loop.py","239->236 stack":"lane_identity_adoption.py, test_sf8_authority_issuer_candidate.py"}},
+ "local_tests": {"command_bus":"1373 OK skip1","cross_lane_and_failure_injection":"22 OK","relay":"801 OK","node":"16 pass","compileall":"OK","yaml":19,"schema_json":28,"diff_check_lines":18},
+ "patches": {"pr217-blue-e2e-carrier-contract":"STILL_REQUIRED (apply after #220 in main)","pr217-blue-reconcile-single-trigger":"STILL_REQUIRED","pr220-claude-loop-profile-import":"STILL_REQUIRED"},
+ "pr237_static_merge_ready": "YES"
+}

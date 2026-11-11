@@ -1,0 +1,14 @@
+--- a/.github/workflows/blue-work-reconcile-static.yml
++++ b/.github/workflows/blue-work-reconcile-static.yml
+@@ -1,9 +1,8 @@
+ name: Blue Work reconciliation offline validation
+ 
+ on:
+-  push:
+-    branches:
+-      - experiment/blue-work-autonomous-development
++  # push trigger removed: the pull_request event already validates every head
++  # commit of this PR, so keeping both ran the same suite twice per push.
+   pull_request:
+     branches:
+       - feature/blue-work-jules-webhook-loop
