@@ -84,13 +84,22 @@ values, or connection errors containing request data.
 
 The runtime keeps `ANTHROPIC_BASE_URL=http://gate:8080`. Docker topology keeps
 the runtime off the egress network. The launcher accepts only the exact fixed
-`HTTPS_PROXY=http://auth-control-proxy:3128`; it rejects HTTP_PROXY, ALL_PROXY,
-NO_PROXY and case variants/overrides. It also requires
-`CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1`, an official Claude Code opt-in that
-delegates hostname resolution to the proxy rather than the caller. This keeps
-external DNS selection inside the fixed allowlist proxy boundary instead of
-the internal-only Claude runtime. The model API destination remains the Gate's
-exact `https://api.anthropic.com` upstream.
+`HTTPS_PROXY=http://auth-control-proxy:3128` plus the exact internal bypass
+`NO_PROXY=gate`. It rejects HTTP_PROXY, ALL_PROXY, lowercase/case-variant
+proxy variables, wildcard NO_PROXY, additional NO_PROXY destinations, and all
+other overrides. It also requires `CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1`, an
+official Claude Code opt-in that delegates external hostname resolution to the
+proxy rather than the caller.
+
+This exact Gate bypass is required by direct actual-client measurement with
+Claude Code 2.1.283. With the production-shaped `HTTPS_PROXY` but no
+`NO_PROXY=gate`, a local Docker-only fixture observed zero Gate requests and
+Claude returned HTTP 405 from the auth-control proxy. With the same proxy plus
+exact `NO_PROXY=gate`, the model request reached the Gate fixture and the 405
+disappeared. Therefore the bypass is not general Internet egress: it only keeps
+the internal model base URL on the Gate while external HTTPS remains subject to
+the fixed auth-control proxy. The model API destination remains the Gate's exact
+`https://api.anthropic.com` upstream.
 
 The sidecar code has no package installs, shell invocation, credential
 handling, mounted volumes, or listening host port. It runs with UID/GID
