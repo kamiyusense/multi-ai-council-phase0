@@ -1,0 +1,119 @@
+249	blue/current-main-integration-v2	true	Blue Work × Jules: current-main STATIC integration
+243	jules-work/relay-dev-loop-132-signal-active-provider-proof-301196275118188780	false	Add signal active provider proof
+242	claude/signal-active-provider-evidence-20261002	true	Signal SF-8: record bounded LIVE provider + owner-authority 
+241	claude/signal-authority-postmerge-checkpoint-20261002	true	docs(signal): record authority issuer post-merge checkpoint
+239	claude/signal-authority-issuer-integration-20261002	true	Signal SF-8: owner-authority issuer workflow + stable lane i
+238	claude/final-integration-checkpoint	true	Final integration checkpoint, merge order and cleanup manife
+236	claude/signal-sf8-oidc-runtime-integration-20261002	true	Signal SF-8: OIDC-bound authenticators, readiness gates, bou
+233	jules-work/relay-dev-loop-131-autoloop-operator-quickstart-12222938286641699709	false	docs: add Claude AUTO loop operator quickstart
+232	jules-work/relay-dev-loop-130-autoloop-budget-summary-fix1-10117650476672833427	false	Add pure helper summarize_budget_slots with unit tests
+231	jules-work/relay-dev-loop-129-autoloop-budget-summary-9613854744580982311	false	feat: Add summarize_budget_slots to budget summary
+230	jules-work/relay-dev-loop-128-autoloop-live-proof-note-16228878555691005955	false	Add Claude AUTO live proof note
+229	jules-work/relay-dev-loop-127-signal-claim-historical-quarantine-3838255705096728080	false	tests: Quarantine historical malformed claim records by exac
+228	jules-work/relay-dev-loop-126-acp-mock-core-lifecycle-7653079414047751821	false	Add mock tests for RelayCoreAdapter lifecycle
+227	jules-work/relay-dev-loop-125-bwj-session-get-reader-12436642121757218108	false	feat(command_bus): Implement bounded Jules Session GET reade
+226	jules-work/relay-dev-loop-124-signal-jules-readback-output-2946267494113271637	false	fix: safely format jules readback output without backtick ex
+225	jules-work/relay-dev-loop-123-signal-sf7-reuse-receipt-4588400676809870769	false	Verify static E2E adoption of CanonicalOwnerReceiptGitHubBac
+224	jules-work/relay-dev-loop-122-acp-mock-phase0-e2e-16522805068327004338	false	Add end-to-end ACP mock test to pure classify regression tes
+223	jules-work/relay-dev-loop-121-acp-mock-phase0-mapper-5381688446073414192	false	feat: pure MOCK-only conversion of local-fake ACP text to ph
+222	jules-work/relay-dev-loop-120-signal-observed-static-e2e-14533806911319619381	false	test: Add static E2E success fixture for Observed Signal
+221	jules-work/relay-dev-loop-119-acp-bounded-text-chunks-3713439262174664509	false	Extend mock ACP text update wire primitive to handle bounded
+220	claude/claude-jules-autoloop-integration	true	Claude × Jules 自律Loop: STATIC/mock integration (LIVE未承認)
+219	jules-work/relay-dev-loop-117-signal-feedback-request-prep-11445038507144485441	false	Add pure preparation seam for same-session feedback message 
+218	jules-work/relay-dev-loop-118-acp-fake-agent-text-update-5934205786356284524	false	feat(relay): Implement bounded fake ACP agent_message_chunk 
+217	experiment/blue-work-autonomous-development	true	💙 Jules×Work隔離実験：照合修正・4色接続・検品用証拠（Merge保留）
+216	jules-work/relay-dev-loop-116-claude-acp-static-binary-binding-3069504073627997331	false	Bind official Claude ACP executable name to static provider 
+215	jules-work/relay-dev-loop-115-signal-feedback-decision-7717908848409829022	false	feat: add pure decision helper for same-session feedback eli
+214	jules-work/relay-dev-loop-112-signal-observed-static-render-17671153565460803991	false	feat: implement static Observed Signal display renderer
+213	jules-work/relay-dev-loop-111-acp-prompt-local-fake-wire-4678784920121868658	false	Loop 111: Implement local fake ACP prompt wire
+211	jules-work/relay-dev-loop-109-acp-session-new-minimal-wire-11686794136278713287	false	Loop 109: Implement acp_open_session_wire for ACP session/ne
+210	jules-work/relay-dev-loop-107-acp-initialize-wire-minimal-9398622966123276523	false	feat(relay): add isolated acp v1 initialize wire primitive
+209	jules-work/relay-dev-loop-108-bwj3-static-webhook-roundtrip-7181719587710409918	false	test: implement mock static integration test for BWJ-3 webho
+208	jules-work/relay-dev-loop-106-signal-observed-result-pr-presence-11049956967589450392	false	feat(automation): Add minimal pure mapper for observed PR he
+207	jules-work/relay-dev-loop-105-bwj2-blue-wake-prepare-correction-9604253777429635872	false	Implement BWJ-2 Blue Cloud Work wake prepare adapter
+206	jules-work/relay-dev-loop-103-signal-observed-pr-run-head-bind-1820468564428243318	false	Add exact-head binding for GitHub workflow run observation
+205	jules-work/relay-dev-loop-104-signal-observed-exact-pr-head-bind-13041223892346641559	false	feat(signal): exact PR-head to workflow check identity bindi
+204	jules-work/relay-dev-loop-100-signal-observed-github-run-map-7646430063480346169	false	feat(signal): add pure github workflow run to observed check
+203	feature/blue-work-jules-webhook-loop	true	feat: build Blue Work-Jules webhook closed loop
+202	jules-work/relay-dev-loop-098-signal-observed-jules-state-map-12367886574206742779	false	feat: Add minimal Jules Session state to Observed Signal sta
+200	jules-work/relay-dev-loop-096-bwj1-wake-event-classifier-9184405308019157078	false	BWJ-1 pure wake identity and event classifier
+199	jules-work/relay-dev-loop-095-claude-auto-current-v2-bridge-1599271591906205990	false	chore: Halt task due to exact incompatibility with bounded p
+197	docs/signal-foundation-roadmap-v2	false	docs(signal): align roadmap with minimal-port Jules policy
+196	jules-work/relay-dev-loop-094-acp-stdio-transport-minimal-port-747824109829788827	false	feat(relay): ACP stdio subprocess transport primitive
+195	jules-work/relay-dev-loop-093-claude-auto-origin-binding-store-v1-16583265501897196759	false	feat: add STATIC durable origin binding store V1
+193	docs/signal-foundation-roadmap-post-pr192	false	docs(signal): define post-PR192 foundation roadmap and navig
+190	jules-work/relay-dev-loop-092-claude-auto-origin-binding-v1-15562902085635691095	false	[AUTO Origin Binding V1] Implement pure cross-binding contra
+189	jules-work/relay-dev-loop-090-signal-semiauto-bootstrap-persistence-9253898000382177924	false	feat(signal): Semi-Auto bootstrap persistence adapter
+188	jules-work/relay-dev-loop-091-claude-auto-carrier-audit-salvage-18405763494951740361	false	test: add claude auto carrier compatibility audit
+187	jules-work/relay-dev-loop-079-claude-auto-carrier-audit-crossbinding-fix-11593389034636354764	false	test: loop 079 claude auto carrier audit crossbinding fix
+186	jules-work/relay-dev-loop-086-antigravity-billing-route-readonly-checklist-8456592078025470765	false	Relay Dev Loop 086: Antigravity Billing Route Read-Only Chec
+185	jules-work/relay-dev-loop-085-signal-semiauto-bootstrap-cycle-break-15546396454518655888	false	feat: implement prepare-only Semi-Auto identity bootstrap
+184	jules-work/relay-dev-loop-080-antigravity-account-route-readonly-checklist-10691954638077367390	false	feat(relay): add static antigravity account route readonly c
+183	jules-work/relay-dev-loop-078-claude-auto-carrier-audit-baseline-fix-1851952483340489577	false	test(carrier): add non-vacuous current carrier compatibility
+182	jules-work/relay-dev-loop-077-signal-semiauto-canonical-id-wiring-12259883803230897339	false	Wire canonical ID into Semi-Auto prepare path
+181	jules-work/relay-dev-loop-076-claude-permissions-path-fence-correction-12059867462476273829	false	feat(relay): Add Claude permissions read-only checklist
+180	jules-work/relay-dev-loop-068-claude-auto-carrier-audit-correction-16043138261786045026	false	Loop 068: Corrective Claude AUTO/Jules carrier compatibility
+179	jules-work/relay-dev-loop-075-signal-semiauto-runtime-id-source-1618058862997275631	false	Adopt canonical static ChatGPT Semi-Auto stable durable loop
+178	jules-work/relay-dev-loop-069-claude-permissions-readonly-checklist-9002911190817805938	false	Relay: Add Claude Permissions Read-Only Checklist
+177	jules-work/relay-dev-loop-065-claude-auto-current-protocol-gap-8567553766522860090	false	Audit Claude AUTO JULES_BACKEND current-carrier compatibilit
+176	jules-work/relay-dev-loop-066-hidden-retry-proof-contract-17544341431725289898	false	feat(relay): add static hidden retry proof contract
+175	jules-work/relay-dev-loop-067-claude-account-auth-readonly-checklist-15188276333525371057	false	feat: add Claude account-auth read-only checklist
+174	jules-work/relay-dev-loop-064-confinement-proof-prep-9391202793526923808	false	Add static confinement proof preparation contract
+173	docs/cloud-work-local-boundary-wording-v1	false	docs: clarify local-only work excludes every Cloud Work colo
+172	cloud-work/replacement-proof-v1	true	🧪 Cloud Work replacement proof target v1
+171	cloud-work/carrier-red-v1	true	❤️ Cloud Work red lane carrier v1
+169	jules-work/relay-dev-loop-063-subscription-route-readonly-checklist-10882225825653455984	false	feat(relay): add subscription route read-only checklist and 
+168	static/issue110-oauth-one-shot-credential-boundary-v1	false	test(claude): keep OAuth credentials out of persistent helpe
+167	cloud-work/carrier-blue-v1	true	💙 Cloud Work blue lane carrier v1
+166	cloud-work/carrier-green-v1	true	💚 Cloud Work green lane carrier v1
+165	cloud-work/carrier-yellow-v1	true	💛 Cloud Work yellow lane carrier v1
+164	static/issue110-oauth-helper-compose-candidate-v1	false	test(claude): define unwired OAuth helper Compose candidate
+161	test/pioneer-connector-writeback-20260930	true	test: reproduce pioneer GitHub connector branch-write workfl
+160	observe/issue110-oauth-readonly-runtime-preflight-v1	false	feat(claude): add read-only OAuth runtime observer candidate
+157	mock/issue110-oauth-helper-exclusive-preflight-v1	false	test(claude): add mock OAuth helper exclusivity preflight
+156	static/issue110-oauth-generation-adapter-topology-v1	false	test(claude): define unwired OAuth helper topology
+155	test/issue110-generation-production-adapter-integration-v1	false	test(claude): compose durable generation with fixed OAuth ad
+152	test/issue110-oauth-generation-transport-contract-v1	false	test(claude): compose OAuth generation state with transport 
+151	prepare/issue110-oauth-refresh-generation-attempt-bind-v1	false	feat(claude): bind prepared OAuth generation to durable atte
+150	prepare/issue110-oauth-refresh-production-adapter-v1	false	feat(claude): add unwired fixed OAuth production adapter
+149	prepare/issue110-oauth-refresh-generation-local-tls-e2e-v1	false	test(claude): prove OAuth generation flow through local TLS 
+148	prepare/issue110-oauth-refresh-generation-prepare-v1	false	feat(claude): prepare generation-bound OAuth refresh plan
+147	prepare/issue110-oauth-refresh-generation-recovery-v1	false	feat(claude): add zero-network OAuth generation recovery
+145	prepare/issue110-oauth-refresh-generation-commit-io-v1	false	feat(claude): atomically commit OAuth generation pending sta
+144	prepare/issue110-oauth-refresh-generation-pending-io-v1	false	feat(claude): stage durable OAuth generation pending state
+143	prepare/issue110-oauth-refresh-generation-attempt-io-v1	false	feat(claude): durably create OAuth generation attempt state
+142	prepare/issue110-oauth-refresh-generation-records-v1	false	feat(claude): define secret-free OAuth generation records
+141	prepare/issue110-oauth-refresh-generation-predecessor-v1	false	feat(claude): validate OAuth refresh predecessor continuity
+140	prepare/issue110-oauth-refresh-generation-paths-v1	false	feat(claude): add validated OAuth refresh generation paths
+138	design/issue110-oauth-refresh-generation-v1	false	docs: design replay-safe OAuth refresh generations
+137	prepare/issue110-oauth-refresh-production-plan-v1	false	feat(claude): lock fixed OAuth production transport plan
+136	prepare/issue110-oauth-refresh-helper-image-v1	false	build(claude): add minimal OAuth refresh helper image
+135	design/issue110-oauth-refresh-container-v1	false	docs: design isolated OAuth refresh container
+134	prepare/issue110-oauth-refresh-transport-fixture-v1	false	test(claude): validate loopback-only OAuth refresh transport
+133	docs/jules-task-prompt-spec-mandatory	false	docs: make Jules task prompt spec mandatory
+132	prepare/issue110-oauth-refresh-helper-v1	false	feat(claude): prepare crash-safe OAuth refresh helper
+131	prepare/issue110-oauth-freshness-preflight-v1	false	feat(claude): fail closed on stale saved OAuth before spawn
+130	handover/issue110-post-routing-current	false	docs: refresh handover after OAuth routing diagnosis
+127	fix/issue110-gate-no-proxy-routing	false	fix(claude): keep Gate model traffic off auth proxy
+124	static/issue110-gate-no-proxy-fix-v1	false	fix(claude): preserve Admission Gate route beside OAuth prox
+120	prepare/issue110-external-tls-proof-v1	false	test(claude): prepare guarded external auth TLS proof
+119	handover/issue110-docker-proof-current	false	docs: refresh handover after Docker component proof
+117	proof/issue110-docker-component-current	false	test: retain credential-free Docker component proof
+116	handover/issue110-postmerge-current	false	docs: refresh Issue 110 post-merge handover
+115	research/work-event-loop-static-20260929	true	Research: GitHub event triggered Work loop static proof
+111	handover/oauth-refresh-static-current	false	docs: refresh current handover for OAuth diagnosis
+72	docs/control-tower-v2-roadmap	false	docs(status): add Control Tower v2 and Windows companion roa
+58	feature/relay-transport-7070955470193506982-13967562536614016571	false	feat(relay): enforce terminal mock ACP cancellation lifecycl
+56	feature/relay-transport-7070955470193506982-5694170212010946486	false	Add bounded isolated ACPClient mock and strict validation te
+54	feature/relay-transport-7070955470193506982-12833271792189498458	false	feat: add ACP mock client and lifecycle integration
+49	feature/relay-transport-7070955470193506982-12891568006126382280	false	feat(relay): implement bounded core compatibility adapter
+48	feature/relay-transport-7070955470193506982-16456418695086747973	false	feat(relay): add RelayCoreAdapter implementation
+45	feature/relay-transport-7070955470193506982-13533608432699206435	false	feat(relay): add RelayCoreAdapter for Core boundary protocol
+32	feature/relay-transport-7070955470193506982-8374650118387557780	false	refactor(relay): consolidate timeout contract to strictly re
+26	feature/relay-transport-7070955470193506982-18393258738639984007	false	feat: include timeout_seconds in envelope hashing for consis
+14	feature/relay-transport-7070955470193506982-8843876465361563911	false	test: cover repeated dispatch block for aborted slot
+13	jules-7743191478550996741-3b3f7a2a	false	Research findings for free reviewer/planner loop after Jules
+8	feature/relay-transport-7070955470193506982-14627861104139180894	false	test(relay): add pre-dispatch abort regression test
+5	docs/chat-work-command-bus-design	false	docs: add Chat-Work GitHub command bus design and recovery r
+3	feature/phase0-core-static	true	feat: add deterministic Phase 0 static core
+2	feature/relay-transport	true	docs: establish Relay PR workbench and Jules handoff

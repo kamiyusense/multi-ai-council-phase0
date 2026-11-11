@@ -1,0 +1,13 @@
+{
+ "read_at_utc": "2026-10-02T18:30Z",
+ "main": "204441254687be75dd14866a63e5296109fee7c6",
+ "merged": {"247":{"head":"e20155c","merge":"2044412","at":"2026-10-02T17:49:18Z"},"246":"a3dd5c8","245":"ac76900","248":"1dc02df","240":"4ddb040","237":"03ee999","4":"a765e3f"},
+ "open": {"249":"d0648c7","238":"8dbb8f4","203":"66d3665","217":"5d17df1","220":"044389e","236":"776d877","239":"582032b","241":"a678746","242":"e2c9acb","243":"5f04ba7"},
+ "issuer_workflow": {"run":37031275812,"result":"ALREADY_EXECUTED_SUCCESS","head_sha":"4ddb0407001dc18c35f5f45bd37f67664fb9ff32","attempt":1},
+ "order": {"A_tree":"3b28f9f71c882a0c51254caa2639e3d3de875dc9","B_tree":"3b28f9f71c882a0c51254caa2639e3d3de875dc9","result":"ORDER_EQUIVALENT","conflicts":[]},
+ "tests_tree_A": {"command_bus":"1306 OK skip1","cross_lane_failure_injection":"22 OK","relay":"801 OK","node":"16 pass","compileall":"OK"},
+ "tests_tree_A_plus_249_fixes": {"command_bus":"1333 OK skip1","tree":"014dfa240e33"},
+ "verdicts": {"247":"ALREADY_MERGED (post-merge static PASS)","249":"NEEDS_STATIC_FIX (2 issues, patch verified, push to #249 denied by safety review)"},
+ "live_budget": {"loop_a":"4/10","blue":"10/10 (Trial10 UNKNOWN, no resend)","new_live":0},
+ "unknown": ["Actions log test counts for #247/#249 (egress policy blocked log host)", "re-classification of 51 open jules-work PRs"]
+}
