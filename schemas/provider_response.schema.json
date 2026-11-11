@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase0-provider-response-v1",
+  "title": "Phase 0 Provider Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "answer_state",
+    "conclusion_code",
+    "safety_warning",
+    "safety_reason",
+    "evidence_refs",
+    "marker_echoes",
+    "answer_text"
+  ],
+  "properties": {
+    "schema_version": {"const": "phase0-response-v1"},
+    "answer_state": {"enum": ["ANSWER", "ANSWER_UNKNOWN", "REFUSAL"]},
+    "conclusion_code": {"type": "string", "minLength": 1},
+    "safety_warning": {"enum": ["PRESENT", "ABSENT", "UNKNOWN"]},
+    "safety_reason": {"type": ["string", "null"]},
+    "evidence_refs": {"type": "array", "items": {"type": "string"}},
+    "marker_echoes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head", "middle", "tail"],
+      "properties": {
+        "head": {"type": ["string", "null"]},
+        "middle": {"type": ["string", "null"]},
+        "tail": {"type": ["string", "null"]}
+      }
+    },
+    "answer_text": {"type": "string"}
+  }
+}

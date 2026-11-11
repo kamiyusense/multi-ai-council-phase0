@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase0-run-manifest-v1",
+  "title": "Phase 0 Run Manifest",
+  "type": "object",
+  "required": ["schema_version", "case_id", "base_commit", "input_sha256", "packet_sha256", "providers"],
+  "properties": {
+    "schema_version": {"const": "phase0-run-v1"},
+    "case_id": {"type": "string", "minLength": 1},
+    "started_at": {"type": ["string", "null"]},
+    "finished_at": {"type": ["string", "null"]},
+    "base_commit": {"type": "string"},
+    "input_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "packet_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "providers": {"type": "object", "additionalProperties": {"type": "string"}}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "phase0-response-v1",
+  "answer_state": "ANSWER",
+  "conclusion_code": "YES",
+  "safety_warning": "ABSENT",
+  "safety_reason": null,
+  "evidence_refs": ["evidence:fixture-1"],
+  "marker_echoes": {"head": "HEAD", "middle": "MIDDLE", "tail": "TAIL"},
+  "answer_text": "fixture answer"
+}

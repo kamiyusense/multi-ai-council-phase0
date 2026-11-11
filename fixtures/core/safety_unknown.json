@@ -1,0 +1,10 @@
+{
+  "schema_version": "phase0-response-v1",
+  "answer_state": "ANSWER_UNKNOWN",
+  "conclusion_code": "UNKNOWN",
+  "safety_warning": "UNKNOWN",
+  "safety_reason": "fixture unknown",
+  "evidence_refs": [],
+  "marker_echoes": {"head": null, "middle": null, "tail": null},
+  "answer_text": "unknown"
+}

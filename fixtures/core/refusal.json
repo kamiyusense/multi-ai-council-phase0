@@ -1,0 +1,10 @@
+{
+  "schema_version": "phase0-response-v1",
+  "answer_state": "REFUSAL",
+  "conclusion_code": "UNKNOWN",
+  "safety_warning": "PRESENT",
+  "safety_reason": "fixture refusal",
+  "evidence_refs": [],
+  "marker_echoes": {"head": "HEAD", "middle": "MIDDLE", "tail": "TAIL"},
+  "answer_text": "refused"
+}
