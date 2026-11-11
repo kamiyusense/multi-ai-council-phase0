@@ -282,5 +282,49 @@ class DeliveryTests(unittest.TestCase):
         self.assertIn('python -m automation.command_bus.tests.test_blue_review_delivery_prepare', workflow)
 
 
+    def test_exact_blue_prefix_must_start_at_byte_zero(self):
+        value, event = submitted_snapshot()
+        accepted = inspect(value, event)
+        self.assertEqual(accepted.get('worker_preflight'), 'VALIDATED')
+        self.assert_closed(accepted)
+
+        exact = event['review']['body']
+        malformed = (
+            ' ' + exact,
+            '[CW_BLUE_VI]' + exact[len('[CW_BLUE_V1]'):],
+            'context ' + exact,
+            'context\\n' + exact,
+            exact.replace('[CW_BLUE_V1]', '[CW_RED_V1]', 1),
+        )
+        for body in malformed:
+            with self.subTest(body=body[:32]):
+                value, event = submitted_snapshot()
+                event['review']['body'] = body
+                result = inspect(value, event)
+                self.assertNotEqual(result.get('worker_preflight'), 'VALIDATED')
+                self.assert_closed(result)
+
+    def test_review_wake_requires_current_cloud_blue_carrier_label(self):
+        for labels in ([], [{'name': 'cloud-red'}]):
+            with self.subTest(labels=labels):
+                value, event = submitted_snapshot()
+                value['wake']['carrier_pr']['labels'] = labels
+                final = deepcopy(value)
+                result = inspect(value, event, final=final)
+                self.assertNotEqual(result.get('worker_preflight'), 'VALIDATED')
+                self.assert_closed(result)
+
+
+    def test_unverified_work_start_claim_does_not_replace_receipt(self):
+        value, event = submitted_snapshot()
+        event['work_execution_id'] = 'MOCK-unverified-run'
+        event['work_started_at'] = NOW.isoformat()
+        result = inspect(value, event)
+        self.assertEqual(result['status'], 'UNKNOWN')
+        self.assertEqual(result['worker_preflight'], 'VALIDATED')
+        self.assertEqual(result['origin_run_authentication'], 'NOT_WIRED')
+        self.assert_closed(result)
+
+
 if __name__ == '__main__':
     print(json.dumps(run_delivery_replay(), indent=2, sort_keys=True))

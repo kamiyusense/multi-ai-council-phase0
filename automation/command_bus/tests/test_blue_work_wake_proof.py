@@ -386,5 +386,16 @@ class ProofTests(unittest.TestCase):
                             proof.collect(reader, ctx, a, NOW)
 
 
+    def test_missing_receipt_after_expiry_remains_unknown(self):
+        value = attempt()
+        expiry = proof._time(value['command']['expires_at'])
+        result = proof.inspect_receipt(
+            [], value, review(value), TARGET, expiry + timedelta(seconds=1),
+            receipt(value)['user'],
+        )
+        self.assertEqual(result['status'], 'UNKNOWN')
+        self.assertEqual(result['reason'], 'receipt missing; STOP/no resend')
+
+
 if __name__ == '__main__':
     unittest.main()
