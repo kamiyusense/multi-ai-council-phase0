@@ -13,7 +13,7 @@ from typing import Any
 
 from .blue_work_reconcile_prepare import _positive, _sha, _time
 from .jules_result_lineage import LineageDecision
-from .jules_semiauto_request_v2 import _validate_path
+from .jules_api_request import _validate_path
 from .reviewer import ReviewerLedger, consume_response, validate_review_request
 
 

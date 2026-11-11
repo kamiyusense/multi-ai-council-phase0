@@ -14,7 +14,7 @@ from typing import Any
 from .blue_jules_result_event import EXPECTED_REPOSITORY, EventLineage
 from .blue_work_reconcile_prepare import _positive, _sha, _time
 from .cloud_work_lanes import lane_identity
-from .jules_semiauto_request_v2 import validate_request
+from .jules_api_request import validate_request
 from .loop_id_claim import verify_command_claim
 from .jules_session_acceptance import extract_session_acceptance, verify_session_acceptance_readback
 from .jules_session_readonly import _exact_time
