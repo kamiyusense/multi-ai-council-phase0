@@ -20,6 +20,7 @@
       "environment": {
         "ANTHROPIC_BASE_URL": "http://gate:8080",
         "HTTPS_PROXY": "http://auth-control-proxy:3128",
+        "NO_PROXY": "gate",
         "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
         "PHASE0_TRANSPORT_MODE": "CONTAINER_INTERNAL",
         "CLAUDE_CODE_MAX_RETRIES": "0",

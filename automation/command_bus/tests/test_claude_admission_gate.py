@@ -478,6 +478,15 @@ class AdmissionGateTests(unittest.TestCase):
         bad["services"]["claude"]["environment"]["NO_PROXY"] = "*"
         cases.append(bad)
         bad = deepcopy(manifest)
+        bad["services"]["claude"]["environment"]["NO_PROXY"] = "gate,localhost"
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["environment"].pop("NO_PROXY")
+        cases.append(bad)
+        bad = deepcopy(manifest)
+        bad["services"]["claude"]["environment"]["no_proxy"] = "gate"
+        cases.append(bad)
+        bad = deepcopy(manifest)
         bad["services"]["auth-control-proxy"]["environment"] = {"HTTPS_PROXY": "http://other:3128"}
         cases.append(bad)
         bad = deepcopy(manifest)

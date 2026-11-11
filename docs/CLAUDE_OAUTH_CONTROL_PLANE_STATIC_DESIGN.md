@@ -83,14 +83,24 @@ does not retry or fall back. It logs no requests, headers, URLs, bodies, SNI
 values, or connection errors containing request data.
 
 The runtime keeps `ANTHROPIC_BASE_URL=http://gate:8080`. Docker topology keeps
-the runtime off the egress network. The launcher accepts only the exact fixed
-`HTTPS_PROXY=http://auth-control-proxy:3128`; it rejects HTTP_PROXY, ALL_PROXY,
-NO_PROXY and case variants/overrides. It also requires
-`CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1`, an official Claude Code opt-in that
-delegates hostname resolution to the proxy rather than the caller. This keeps
-external DNS selection inside the fixed allowlist proxy boundary instead of
-the internal-only Claude runtime. The model API destination remains the Gate's
-exact `https://api.anthropic.com` upstream.
+the runtime off the egress network. Direct measurement with the pinned Claude
+Code 2.1.283 client showed that setting `HTTPS_PROXY` without a bypass also
+routes the internal HTTP model-base request through that proxy. The auth proxy
+correctly rejects such a normal HTTP request with 405, but that means the model
+request never reaches the Gate.
+
+The corrected split-routing contract therefore pins both
+`HTTPS_PROXY=http://auth-control-proxy:3128` and the launcher-owned exact
+`NO_PROXY=gate`. The launcher rejects HTTP_PROXY, ALL_PROXY, lowercase/mixed
+case proxy aliases, any NO_PROXY value other than exactly `gate`, and any
+proxy URL override. `NO_PROXY=gate` is not a general bypass: `gate` is the
+fixed internal service name already enforced by
+`ANTHROPIC_BASE_URL=http://gate:8080`, and the Claude container remains on the
+internal Docker network only. External OAuth/control-plane HTTPS continues to
+use the fixed auth proxy. The launcher also requires
+`CLAUDE_CODE_PROXY_RESOLVES_HOSTS=1` so external hostname resolution stays
+inside the fixed allowlist proxy boundary. The Gate's model upstream remains
+exactly `https://api.anthropic.com`.
 
 The sidecar code has no package installs, shell invocation, credential
 handling, mounted volumes, or listening host port. It runs with UID/GID
@@ -99,6 +109,27 @@ Node base image. Although it joins both internal and egress Docker networks, it
 listens only on the fixed internal address `172.29.247.3:3128`; it does not
 bind `0.0.0.0` and therefore does not intentionally expose the proxy listener
 on its egress-facing interface.
+
+## Direct 2.1.283 split-routing regression
+
+A credential-free, provider-free Docker fixture used the actual pinned Claude
+Code 2.1.283 runtime and the production auth-proxy implementation on an
+`internal: true` Docker network.
+
+Observed routing:
+
+- no HTTPS proxy: model-base traffic reached the local Gate mock;
+- production-shaped HTTPS proxy without NO_PROXY: Gate received zero requests
+  and Claude reported HTTP 405 from the auth proxy;
+- the same HTTPS proxy with exact `NO_PROXY=gate`: Gate traffic was restored
+  and the 405 disappeared.
+
+The terminal regression run is `36488936472` and emitted
+`CLAUDE_PRODUCTION_PROXY_ROUTING_FIXTURE_MEASUREMENT_PASS`. No real OAuth
+credential, Anthropic/provider endpoint, or external model request was used.
+
+This measurement is the basis for the exact `NO_PROXY=gate` correction. It
+does not authorize a real OAuth refresh or model turn.
 
 ## Why option A is rejected for now
 
