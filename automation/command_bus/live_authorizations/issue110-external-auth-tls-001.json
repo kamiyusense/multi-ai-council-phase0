@@ -1,0 +1,10 @@
+{
+  "authorization_id": "ISSUE110-EXTERNAL-AUTH-TLS-001",
+  "scope": "credential-free-external-tls-only",
+  "authorized": true,
+  "expected_probe_blob": "fd5bbc569607eecd9ddc7da4e526e3430c78e29b",
+  "expected_proxy_blob": "3cb626994d8a496a9e91c32138c7ca863d081276",
+  "expected_compose_blob": "5d151afedc5f12106a98b6b84f38f0a1bc821bfa",
+  "retry": 0,
+  "fallback": "disabled"
+}
