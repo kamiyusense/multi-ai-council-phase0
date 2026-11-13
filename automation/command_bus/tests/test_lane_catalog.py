@@ -25,7 +25,8 @@ class CommittedCatalogTests(unittest.TestCase):
     def test_v4_decisions_are_recorded(self):
         status = {item["lane_id"]: item["v4_status"] for item in CATALOG["lanes"]}
         self.assertEqual({k for k, v in status.items() if v == "FROZEN"},
-                         {"chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "claude-claude-auto"})
+                         {"chatgpt-semi-auto", "chat-work-semi-auto", "claude-jules-auto", "claude-claude-auto",
+                          "symphony-codex-auto"})  # Symphony frozen by the owner 2026-11-14
         self.assertEqual(status["antigravity-manual"], "MANUAL")
         symphony = lane(CATALOG, "symphony-codex-auto")
         self.assertEqual(symphony["repositories"], {"main": "kamiyusense/symphony", "trial": "kamiyusense/symphony-sandbox"})

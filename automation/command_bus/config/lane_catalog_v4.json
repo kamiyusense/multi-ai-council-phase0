@@ -33,8 +33,8 @@
     },
     {
       "lane_id": "symphony-codex-auto",
-      "display_name_ja": "Symphony → Codex（相棒の PC）",
-      "v4_status": "ACTIVE",
+      "display_name_ja": "Symphony → Codex（相棒の PC、2026-11-14 正式に凍結）",
+      "v4_status": "FROZEN",
       "registry_row": "symphony-codex-auto",
       "detail_ref": "issue:33",
       "repositories": {"main": "kamiyusense/symphony", "trial": "kamiyusense/symphony-sandbox"},
